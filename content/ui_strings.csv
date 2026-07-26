@@ -1,0 +1,27 @@
+keys,en,tl
+LOGIN_SUBMIT,Log In,Mag-log In
+LOGIN_BUSY,Signing in...,Nagsa-sign in...
+LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at password.
+LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
+LOGIN_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
+LOGIN_ERR_UNKNOWN,Something went wrong. Try again.,May nangyaring mali. Subukan ulit.
+PWD_RULE_LENGTH,At least 8 characters,Hindi bababa sa 8 karakter
+PWD_RULE_UPPERCASE,One uppercase letter,Isang malaking titik
+PWD_RULE_LOWERCASE,One lowercase letter,Isang maliit na titik
+PWD_RULE_NUMBER,One number,Isang numero
+PWD_RULE_SPECIAL,One special character,Isang special na karakter
+PWD_ERR_MISMATCH,Passwords do not match.,Hindi magkatugma ang password.
+PWD_ERR_SERVER,Could not update your password. Try again.,Hindi na-update ang password. Subukan ulit.
+PWD_SUBMIT,Update Password,I-update ang Password
+PWD_BUSY,Updating...,Ina-update...
+LOADING_SETTINGS,Loading settings,Nilo-load ang settings
+LOADING_PROFILE,Loading profile,Nilo-load ang profile
+LOADING_CONTENT,Loading briefings,Nilo-load ang briefings
+LOADING_SESSION,Checking session,Sinusuri ang session
+LOADING_READY,Ready,Handa na
+TIP_UPGRADE_DEFENSES,Tip: Keep your defenses upgraded!,Tip: I-upgrade ang iyong depensa!
+TIP_CHECK_SENDER,Tip: Check the sender's full address, not the display name.,Tip: Tingnan ang buong address ng nagpadala, hindi lang ang pangalan.
+TIP_HOVER_LINK,Tip: A link's text can say anything. The destination is what matters.,Tip: Kahit ano ang nakasulat sa link, ang destinasyon ang mahalaga.
+TIP_URGENCY_IS_A_TELL,Tip: Urgency is a pressure tactic. Slow down and verify.,Tip: Ang pagmamadali ay taktika. Dahan-dahan at i-verify.
+TIP_NEVER_SHARE_OTP,Tip: No legitimate staff will ever ask for your OTP.,Tip: Walang lehitimong staff ang hihingi ng iyong OTP.
+QUIT_CONFIRM_BODY,Quit Level Blue? Your progress this session is saved.,I-quit ang Level Blue? Naka-save ang progress mo.

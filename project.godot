@@ -11,13 +11,30 @@ config_version=5
 [application]
 
 config/name="LevelBlue"
+run/main_scene="uid://cmf0vpioa5r62"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.7", "Mobile")
 config/icon="res://icon.svg"
 
+[autoload]
+
+SettingsService="*uid://p2mqjvioywev"
+SaveService="*uid://b40viyntql7vo"
+ContentDB="*uid://8t88s64sdbd2"
+AuthService="*uid://burf5g5ce6uqt"
+Router="*uid://cxqixc3u0y3mu"
+
 [display]
 
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://content/ui_strings.en.translation", "res://content/ui_strings.tl.translation")
 
 [physics]
 
@@ -25,5 +42,7 @@ window/stretch/aspect="expand"
 
 [rendering]
 
+textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
-renderer/rendering_method="mobile"
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"

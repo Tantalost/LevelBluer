@@ -1,0 +1,113 @@
+[gd_scene format=3 uid="uid://cl215adjme5jk"]
+
+[ext_resource type="Script" uid="uid://2htd6kmnuggo" path="res://src/ui/screens/login/login_screen.gd" id="1_gnqm7"]
+[ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="1_xy5qm"]
+[ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="2_gnqm7"]
+
+[node name="LoginScreen" type="Control" unique_id=1420910459]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gnqm7")
+
+[node name="Background" type="TextureRect" parent="." unique_id=919961094]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch_mode = 6
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="." unique_id=2144064583]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+script = ExtResource("1_xy5qm")
+metadata/_custom_type_script = "uid://c6dwlje13r6yi"
+
+[node name="CenterContainer" type="CenterContainer" parent="SafeAreaContainer" unique_id=453632608]
+layout_mode = 2
+
+[node name="FormRoot" type="PanelContainer" parent="SafeAreaContainer/CenterContainer" unique_id=694563566]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(900, 380)
+layout_mode = 2
+theme = ExtResource("2_gnqm7")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot" unique_id=1478405054]
+layout_mode = 2
+theme_override_constants/separation = 32
+
+[node name="BrandPanel" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer" unique_id=313347812]
+layout_mode = 2
+alignment = 1
+
+[node name="Logo" type="TextureRect" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/BrandPanel" unique_id=787023237]
+layout_mode = 2
+
+[node name="Tagline" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/BrandPanel" unique_id=245972918]
+custom_minimum_size = Vector2(240, 0)
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "LevelBlue"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="VSeparator" type="VSeparator" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer" unique_id=1184942493]
+layout_mode = 2
+
+[node name="FieldPanel" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer" unique_id=1918024035]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel" unique_id=676647896]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="EmailBlock" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer" unique_id=212920397]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/EmailBlock" unique_id=2092180403]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "EMAIL"
+
+[node name="EmailField" type="LineEdit" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/EmailBlock" unique_id=292348659]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PasswordBlock" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer" unique_id=3243671]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/PasswordBlock" unique_id=1247445628]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "PASSWORD"
+
+[node name="PasswordField" type="LineEdit" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/PasswordBlock" unique_id=732567353]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ErrorLabel" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel" unique_id=826925040]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"ErrorText"
+
+[node name="LoginButton" type="Button" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel" unique_id=1936903644]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"

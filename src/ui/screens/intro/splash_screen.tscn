@@ -1,0 +1,69 @@
+[gd_scene format=3 uid="uid://dlfiwm5qp15wh"]
+
+[ext_resource type="Script" uid="uid://b3gr4m5mws5nj" path="res://src/ui/screens/intro/splash_screen.gd" id="1_63qxy"]
+[ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_p78g7"]
+
+[node name="SplashScreen" type="Control" unique_id=822138400]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_63qxy")
+
+[node name="Background" type="TextureRect" parent="." unique_id=1608207393]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="." unique_id=142066135]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 32
+script = ExtResource("2_p78g7")
+extra_margin = 32
+metadata/_custom_type_script = "uid://c6dwlje13r6yi"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SafeAreaContainer" unique_id=65683741]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 2
+
+[node name="Logo" type="TextureRect" parent="SafeAreaContainer/VBoxContainer" unique_id=632027124]
+layout_mode = 2
+stretch_mode = 5
+
+[node name="StatusLabel" type="Label" parent="SafeAreaContainer/VBoxContainer" unique_id=1250700662]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+text = "Loading"
+horizontal_alignment = 1
+
+[node name="ProgressBar" type="ProgressBar" parent="SafeAreaContainer/VBoxContainer" unique_id=1065568765]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 18)
+layout_mode = 2
+theme_override_colors/font_outline_color = Color(1, 1, 1, 0)
+show_percentage = false
+
+[node name="TipLabel" type="Label" parent="SafeAreaContainer/VBoxContainer" unique_id=577673819]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(600, 0)
+layout_mode = 2
+text = "Tips"
+horizontal_alignment = 1
+autowrap_mode = 2

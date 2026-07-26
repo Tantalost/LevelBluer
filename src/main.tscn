@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://cmf0vpioa5r62"]
+
+[ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="1_gh0ne"]
+[ext_resource type="Script" uid="uid://b3ofsamsy1iwo" path="res://src/main.gd" id="2_5q4o7"]
+
+[node name="Main" type="Control" unique_id=1681667206]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_gh0ne")
+script = ExtResource("2_5q4o7")
+
+[node name="Background" type="ColorRect" parent="." unique_id=312877211]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03137255, 0.050980393, 0.09411765, 1)
+
+[node name="ScreenHost" type="Control" parent="." unique_id=420832790]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="QuitDialog" type="ConfirmationDialog" parent="." unique_id=1679535414]
+unique_name_in_owner = true
+oversampling_override = 1.0
