@@ -36,6 +36,10 @@ window/handheld/orientation=4
 
 locale/translations=PackedStringArray("res://content/ui_strings.en.translation", "res://content/ui_strings.tl.translation")
 
+[levelblue]
+
+api_base_url="http://127.0.0.1:8000"
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

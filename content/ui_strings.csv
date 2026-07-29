@@ -14,6 +14,7 @@ PWD_ERR_MISMATCH,Passwords do not match.,Hindi magkatugma ang password.
 PWD_ERR_SERVER,Could not update your password. Try again.,Hindi na-update ang password. Subukan ulit.
 PWD_SUBMIT,Update Password,I-update ang Password
 PWD_BUSY,Updating...,Ina-update...
+LOADING_TITLE,Loading,Naglo-load
 LOADING_SETTINGS,Loading settings,Nilo-load ang settings
 LOADING_PROFILE,Loading profile,Nilo-load ang profile
 LOADING_CONTENT,Loading briefings,Nilo-load ang briefings
@@ -25,3 +26,5 @@ TIP_HOVER_LINK,Tip: A link's text can say anything. The destination is what matt
 TIP_URGENCY_IS_A_TELL,Tip: Urgency is a pressure tactic. Slow down and verify.,Tip: Ang pagmamadali ay taktika. Dahan-dahan at i-verify.
 TIP_NEVER_SHARE_OTP,Tip: No legitimate staff will ever ask for your OTP.,Tip: Walang lehitimong staff ang hihingi ng iyong OTP.
 QUIT_CONFIRM_BODY,Quit Level Blue? Your progress this session is saved.,I-quit ang Level Blue? Naka-save ang progress mo.
+DASHBOARD_PLACEHOLDER,Full dashboard coming soon.,Malapit na ang buong dashboard.
+LOGOUT,Log Out,Mag-log Out

@@ -1,69 +1,124 @@
-[gd_scene format=3 uid="uid://dlfiwm5qp15wh"]
+[gd_scene load_steps=6 format=3 uid="uid://dlfiwm5qp15wh"]
 
 [ext_resource type="Script" uid="uid://b3gr4m5mws5nj" path="res://src/ui/screens/intro/splash_screen.gd" id="1_63qxy"]
 [ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_p78g7"]
+[ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="3_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/loading.png" id="4_loading"]
 
-[node name="SplashScreen" type="Control" unique_id=822138400]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
+bg_color = Color(0.176471, 0.184314, 0.2, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 1, 1, 0.06)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
+bg_color = Color(1, 0.819608, 0.4, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="SplashScreen" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("3_theme")
 script = ExtResource("1_63qxy")
 
-[node name="Background" type="TextureRect" parent="." unique_id=1608207393]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("4_loading")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="SafeAreaContainer" type="MarginContainer" parent="." unique_id=142066135]
+[node name="BottomScrim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -220.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0, 0, 0, 0.45)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 32
-theme_override_constants/margin_right = 32
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 32
 script = ExtResource("2_p78g7")
-extra_margin = 32
-metadata/_custom_type_script = "uid://c6dwlje13r6yi"
+extra_margin = 24
 
-[node name="VBoxContainer" type="VBoxContainer" parent="SafeAreaContainer" unique_id=65683741]
+[node name="Layout" type="VBoxContainer" parent="SafeAreaContainer"]
 layout_mode = 2
-theme_override_constants/separation = 12
-alignment = 2
+theme_override_constants/separation = 0
 
-[node name="Logo" type="TextureRect" parent="SafeAreaContainer/VBoxContainer" unique_id=632027124]
+[node name="Spacer" type="Control" parent="SafeAreaContainer/Layout"]
 layout_mode = 2
-stretch_mode = 5
+size_flags_vertical = 3
 
-[node name="StatusLabel" type="Label" parent="SafeAreaContainer/VBoxContainer" unique_id=1250700662]
+[node name="LoadingGroup" type="CenterContainer" parent="SafeAreaContainer/Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Panel" type="VBoxContainer" parent="SafeAreaContainer/Layout/LoadingGroup"]
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StatusLabel" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(600, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/shadow_outline_size = 4
+theme_override_font_sizes/font_size = 18
 text = "Loading"
 horizontal_alignment = 1
 
-[node name="ProgressBar" type="ProgressBar" parent="SafeAreaContainer/VBoxContainer" unique_id=1065568765]
+[node name="ProgressBar" type="ProgressBar" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(600, 18)
+custom_minimum_size = Vector2(480, 16)
 layout_mode = 2
-theme_override_colors/font_outline_color = Color(1, 1, 1, 0)
+size_flags_horizontal = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
+max_value = 100.0
 show_percentage = false
+value = 35.0
 
-[node name="TipLabel" type="Label" parent="SafeAreaContainer/VBoxContainer" unique_id=577673819]
+[node name="TipLabel" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(600, 0)
 layout_mode = 2
-text = "Tips"
+theme_override_colors/font_color = Color(0.819608, 0.835294, 0.858824, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.75)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 1
+theme_override_constants/shadow_outline_size = 3
+theme_override_font_sizes/font_size = 12
+text = "Tip"
 horizontal_alignment = 1
 autowrap_mode = 2

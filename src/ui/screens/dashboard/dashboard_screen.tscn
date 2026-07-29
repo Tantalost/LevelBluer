@@ -1,0 +1,71 @@
+[gd_scene format=3 uid="uid://c8k2dashboard01"]
+
+[ext_resource type="Script" uid="uid://bqx7m2k8n4pvd" path="res://src/ui/screens/dashboard/dashboard_screen.gd" id="1_dash"]
+[ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="3_theme"]
+
+[node name="DashboardScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("3_theme")
+script = ExtResource("1_dash")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 1)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+script = ExtResource("2_safe")
+
+[node name="CenterContainer" type="CenterContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+
+[node name="PanelRoot" type="PanelContainer" parent="SafeAreaContainer/CenterContainer"]
+custom_minimum_size = Vector2(520, 280)
+layout_mode = 2
+theme = ExtResource("3_theme")
+
+[node name="VBox" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/PanelRoot"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="SafeAreaContainer/CenterContainer/PanelRoot/VBox"]
+layout_mode = 2
+theme_type_variation = &"FieldLabel"
+text = "COMMAND CENTRE"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="SafeAreaContainer/CenterContainer/PanelRoot/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BodyText"
+text = "Full dashboard coming soon."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="LogoutButton" type="Button" parent="SafeAreaContainer/CenterContainer/PanelRoot/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 72)
+layout_mode = 2
+theme_type_variation = &"PrimaryButton"
+text = "Log Out"
