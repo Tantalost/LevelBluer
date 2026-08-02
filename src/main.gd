@@ -11,7 +11,7 @@ func _ready() -> void:
 	Router.quit_requested.connect(_on_quit_requested)
 	_quit_dialog.confirmed.connect(_on_quit_confirmed)
 
-	Router.replace_all(&"intro")
+	Router.replace_all(&"splash")
 
 
 func _on_quit_requested() -> void:

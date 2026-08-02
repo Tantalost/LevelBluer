@@ -1,5 +1,8 @@
 keys,en,tl
 LOGIN_SUBMIT,Log In,Mag-log In
+LOGIN_TAGLINE,"Defend the city\nSpot the scam","Depensa ang lungsod\nTukuyin ang scam"
+LOGIN_EMAIL_LABEL,Email,Email
+LOGIN_PASSWORD_LABEL,Password,Password
 LOGIN_BUSY,Signing in...,Nagsa-sign in...
 LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at password.
 LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
@@ -28,3 +31,6 @@ TIP_NEVER_SHARE_OTP,Tip: No legitimate staff will ever ask for your OTP.,Tip: Wa
 QUIT_CONFIRM_BODY,Quit Level Blue? Your progress this session is saved.,I-quit ang Level Blue? Naka-save ang progress mo.
 DASHBOARD_PLACEHOLDER,Full dashboard coming soon.,Malapit na ang buong dashboard.
 LOGOUT,Log Out,Mag-log Out
+INTRO_TAGLINE,DEFEND • DETECT • DISRUPT,DEPENDA • DETECT • DISRUPT
+INTRO_START_GAME,START GAME,MAGSIMULA
+INTRO_PRESS_HINT,PRESS TO INITIALIZE,PINDUTIN PARA MAG-INITIALIZE

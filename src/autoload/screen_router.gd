@@ -15,7 +15,8 @@ extends Node
 signal screen_changed(screen_id: StringName)
 
 const SCREENS: Dictionary = {
-	&"intro":        "res://src/ui/screens/intro/splash_screen.tscn",
+	&"splash":       "res://src/ui/screens/intro/splash_screen.tscn",
+	&"intro":        "res://src/ui/screens/intro/intro_screen.tscn",
 	&"login":        "res://src/ui/screens/login/login_screen.tscn",
 	&"dashboard":    "res://src/ui/screens/dashboard/dashboard_screen.tscn",
 	&"store":        "res://src/ui/screens/store/store_screen.tscn",

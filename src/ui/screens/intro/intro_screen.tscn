@@ -1,0 +1,232 @@
+[gd_scene load_steps=7 format=3 uid="uid://c7introscreentscn"]
+
+[ext_resource type="Script" uid="uid://c7introscreen01" path="res://src/ui/screens/intro/intro_screen.gd" id="1_intro"]
+[ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="Texture2D" path="res://assets/ui/background.png" id="3_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/logo.png" id="4_logo"]
+[ext_resource type="Script" uid="uid://c7scanlineoverlay1" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_btn"]
+bg_color = Color(0, 0.0392157, 0.0980392, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.831373, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0.831373, 1, 0.4)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_btn_hover"]
+bg_color = Color(0, 0.0392157, 0.0980392, 0.92)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0.831373, 1, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0, 0.831373, 1, 0.55)
+shadow_size = 14
+
+[node name="IntroScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_intro")
+
+[node name="Background" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="DarkOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0196078, 0.0313726, 0.0784314, 0.55)
+
+[node name="ScanlineOverlay" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_scan")
+
+[node name="EdgeLineLeft" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_right = 19.0
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0.831373, 1, 0.12)
+
+[node name="EdgeLineRight" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -19.0
+offset_right = -18.0
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0.831373, 1, 0.12)
+
+[node name="Particles" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_safe")
+
+[node name="Content" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LogoArea" type="Control" parent="SafeAreaContainer/Content"]
+custom_minimum_size = Vector2(0, 280)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LogoCenter" type="CenterContainer" parent="SafeAreaContainer/Content/LogoArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="LogoBob" type="Control" parent="SafeAreaContainer/Content/LogoArea/LogoCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(720, 292)
+layout_mode = 2
+
+[node name="Logo" type="TextureRect" parent="SafeAreaContainer/Content/LogoArea/LogoCenter/LogoBob"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TaglineRow" type="HBoxContainer" parent="SafeAreaContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="TaglineLineLeft" type="ColorRect" parent="SafeAreaContainer/Content/TaglineRow"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0, 0.831373, 1, 0.25)
+
+[node name="TaglineLabel" type="Label" parent="SafeAreaContainer/Content/TaglineRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831373, 1, 0.6)
+theme_override_font_sizes/font_size = 11
+text = "DEFEND • DETECT • DISRUPT"
+horizontal_alignment = 1
+
+[node name="TaglineLineRight" type="ColorRect" parent="SafeAreaContainer/Content/TaglineRow"]
+custom_minimum_size = Vector2(0, 1)
+layout_mode = 2
+size_flags_horizontal = 3
+color = Color(0, 0.831373, 1, 0.25)
+
+[node name="Spacer" type="Control" parent="SafeAreaContainer/Content"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+
+[node name="ButtonArea" type="VBoxContainer" parent="SafeAreaContainer/Content"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="StartButtonWrap" type="CenterContainer" parent="SafeAreaContainer/Content/ButtonArea"]
+layout_mode = 2
+
+[node name="StartButtonRoot" type="Control" parent="SafeAreaContainer/Content/ButtonArea/StartButtonWrap"]
+custom_minimum_size = Vector2(280, 52)
+layout_mode = 2
+
+[node name="ButtonGlow" type="ColorRect" parent="SafeAreaContainer/Content/ButtonArea/StartButtonWrap/StartButtonRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0.831373, 1, 0.07)
+
+[node name="StartButton" type="Button" parent="SafeAreaContainer/Content/ButtonArea/StartButtonWrap/StartButtonRoot"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.941176, 0.807843, 0.596078, 1)
+theme_override_colors/font_hover_color = Color(0.941176, 0.807843, 0.596078, 1)
+theme_override_colors/font_pressed_color = Color(0.941176, 0.807843, 0.596078, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_start_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_start_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_start_btn_hover")
+text = "START GAME"
+flat = false
+
+[node name="PressHintLabel" type="Label" parent="SafeAreaContainer/Content/ButtonArea"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.831373, 1, 0.35)
+theme_override_font_sizes/font_size = 11
+text = "PRESS TO INITIALIZE"
+horizontal_alignment = 1
+
+[node name="BottomPad" type="Control" parent="SafeAreaContainer/Content"]
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
