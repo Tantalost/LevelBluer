@@ -8,6 +8,15 @@ LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at passwor
 LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
 LOGIN_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
 LOGIN_ERR_UNKNOWN,Something went wrong. Try again.,May nangyaring mali. Subukan ulit.
+PWD_TITLE,Security Alert,Babala sa Seguridad
+PWD_SUBTITLE,Update Temporary Password,I-update ang Pansamantalang Password
+PWD_NEW_LABEL,New Password,Bagong Password
+PWD_CONFIRM_LABEL,Confirm Password,Kumpirmahin ang Password
+PWD_NEW_PLACEHOLDER,Enter new password,Ilagay ang bagong password
+PWD_CONFIRM_PLACEHOLDER,Re-type new password,Ulitin ang bagong password
+PWD_SECURE_SUBMIT,Secure Account,I-secure ang Account
+PWD_ERR_EMPTY,Please fill out both fields.,Punan ang parehong field.
+PWD_ERR_WEAK,Password does not meet all requirements.,Hindi natutugunan ng password ang lahat ng requirement.
 PWD_RULE_LENGTH,At least 8 characters,Hindi bababa sa 8 karakter
 PWD_RULE_UPPERCASE,One uppercase letter,Isang malaking titik
 PWD_RULE_LOWERCASE,One lowercase letter,Isang maliit na titik

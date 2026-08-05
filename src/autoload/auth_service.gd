@@ -120,7 +120,7 @@ func change_password(new_password: String) -> Result:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return Result.UNKNOWN
 
-	if parsed.has("error"):
+	if parsed.has("error") or parsed.has("detail"):
 		return Result.UNKNOWN
 
 	_signed_in = true

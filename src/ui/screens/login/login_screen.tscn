@@ -1,6 +1,7 @@
-[gd_scene load_steps=11 format=3 uid="uid://cl215adjme5jk"]
+[gd_scene load_steps=12 format=3 uid="uid://cl215adjme5jk"]
 
 [ext_resource type="Script" uid="uid://2htd6kmnuggo" path="res://src/ui/screens/login/login_screen.gd" id="1_gnqm7"]
+[ext_resource type="PackedScene" uid="uid://bpasswordmodal01" path="res://src/ui/screens/login/password_change_modal.tscn" id="2_pwdmodal"]
 [ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="1_xy5qm"]
 [ext_resource type="Texture2D" path="res://assets/ui/background.png" id="3_bg"]
 [ext_resource type="Texture2D" path="res://assets/ui/logo.png" id="4_logo"]
@@ -352,3 +353,12 @@ theme_override_styles/fill = SubResource("StyleBoxFlat_spinner_fill")
 max_value = 1.0
 show_percentage = false
 indeterminate = true
+
+[node name="PasswordChangeModal" parent="." instance=ExtResource("2_pwdmodal")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

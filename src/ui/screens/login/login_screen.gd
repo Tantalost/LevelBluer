@@ -16,6 +16,7 @@ extends BaseScreen
 @onready var _tagline: Label = %TaglineLabel
 @onready var _email_label: Label = %EmailLabel
 @onready var _password_label: Label = %PasswordLabel
+@onready var _password_modal: PasswordChangeModal = %PasswordChangeModal
 
 var _form_home_y: float = 0.0
 var _busy: bool = false
@@ -33,6 +34,7 @@ func _ready() -> void:
 	_email.text_submitted.connect(func(_t): _password.grab_focus())
 	_password.text_submitted.connect(func(_t): _attempt_login())
 	_submit.pressed.connect(_attempt_login)
+	_password_modal.completed.connect(_on_password_changed)
 
 	for field in [_email, _password]:
 		field.focus_entered.connect(_on_field_focus_entered)
@@ -51,7 +53,12 @@ func on_enter(_args: Dictionary) -> void:
 
 func on_exit() -> void:
 	_password.text = ""
+	_password_modal.close()
 	_slide_form(_form_home_y)
+
+
+func can_go_back() -> bool:
+	return not _password_modal.visible
 
 
 func _apply_copy() -> void:
@@ -123,7 +130,7 @@ func _attempt_login() -> void:
 		AuthService.Result.OK:
 			Router.replace_all(&"dashboard")
 		AuthService.Result.MUST_CHANGE_PASSWORD:
-			Router.replace_all(&"password_change")
+			_password_modal.open()
 		AuthService.Result.INVALID_CREDENTIALS:
 			_show_error("LOGIN_ERR_INVALID")
 		AuthService.Result.NETWORK_ERROR:
@@ -158,3 +165,7 @@ func _show_error(key: String) -> void:
 func _hide_error() -> void:
 	_error.text = ""
 	_error_panel.visible = false
+
+
+func _on_password_changed() -> void:
+	Router.replace_all(&"dashboard")
