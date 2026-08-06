@@ -20,6 +20,11 @@ const SESSION_PATH := "user://session.dat"
 var _participant_code: String = ""
 var _token: String = ""
 var _signed_in: bool = false
+var _display_name: String = "COMMANDER_X"
+var _materials: int = -1
+var _threat_points: int = -1
+var _current_stage: int = 1
+var _mastery: Dictionary = {}
 var _http: HTTPRequest
 
 
@@ -42,6 +47,39 @@ func participant_code() -> String:
 	return _participant_code
 
 
+func display_name() -> String:
+	return _display_name
+
+
+func materials() -> int:
+	return _materials
+
+
+func threat_points() -> int:
+	return _threat_points
+
+
+func current_stage() -> int:
+	return _current_stage
+
+
+func average_mastery() -> float:
+	if _mastery.is_empty():
+		return -1.0
+	var total := 0.0
+	for value in _mastery.values():
+		total += float(value)
+	return total / float(_mastery.size())
+
+
+func weak_mastery_topics(threshold: float = 0.40) -> PackedStringArray:
+	var topics: PackedStringArray = []
+	for topic in _mastery.keys():
+		if float(_mastery[topic]) < threshold:
+			topics.append(str(topic))
+	return topics
+
+
 func restore_session() -> bool:
 	await get_tree().process_frame
 
@@ -62,6 +100,12 @@ func restore_session() -> bool:
 	_token = str(data.get("token", ""))
 	_participant_code = str(data.get("participant_code", ""))
 	_signed_in = bool(data.get("signed_in", false))
+	_display_name = str(data.get("display_name", "COMMANDER_X"))
+	_materials = int(data.get("materials", -1))
+	_threat_points = int(data.get("threat_points", -1))
+	_current_stage = int(data.get("current_stage", 1))
+	var mastery_data: Variant = data.get("mastery", {})
+	_mastery = mastery_data if typeof(mastery_data) == TYPE_DICTIONARY else {}
 
 	if _signed_in and not _token.is_empty() and not _participant_code.is_empty():
 		session_changed.emit(true)
@@ -88,6 +132,7 @@ func sign_in(email: String, password: String) -> Result:
 	_token = str(parsed.get("token", ""))
 	var user: Dictionary = parsed.get("user", {})
 	_participant_code = str(user.get("_id", user.get("id", "")))
+	_apply_user_profile(user)
 
 	if _token.is_empty() or _participant_code.is_empty():
 		push_warning("AuthService login response missing token or user id: %s" % JSON.stringify(parsed))
@@ -133,6 +178,11 @@ func sign_out() -> void:
 	_signed_in = false
 	_token = ""
 	_participant_code = ""
+	_display_name = "COMMANDER_X"
+	_materials = -1
+	_threat_points = -1
+	_current_stage = 1
+	_mastery = {}
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
 	session_changed.emit(false)
 
@@ -175,12 +225,44 @@ func _post_json(path: String, body: Dictionary, authorized: bool = false) -> Var
 	return parsed
 
 
+func _apply_user_profile(user: Dictionary) -> void:
+	_display_name = _format_profile_name(str(user.get("name", "")))
+	_materials = int(user.get("materials", -1))
+	_threat_points = int(user.get("threatPoints", user.get("threat_points", -1)))
+	_current_stage = int(user.get("highestUnlockedStage", user.get("highest_unlocked_stage", 1)))
+
+	var mastery_data: Variant = user.get("mastery", {})
+	if typeof(mastery_data) == TYPE_DICTIONARY:
+		_mastery = mastery_data
+	else:
+		_mastery = {}
+
+
+static func _format_profile_name(name: String) -> String:
+	var trimmed := name.strip_edges()
+	if trimmed.is_empty():
+		return "COMMANDER_X"
+
+	var parts := trimmed.split(" ", false)
+	if parts.is_empty():
+		return "COMMANDER_X"
+	if parts.size() == 1:
+		return parts[0].replace(" ", "_").to_upper()
+
+	return parts[parts.size() - 1].replace(" ", "_").to_upper()
+
+
 func _persist(signed_in: bool, pending_password_change: bool) -> void:
 	var payload := {
 		"token": _token,
 		"participant_code": _participant_code,
 		"signed_in": signed_in,
 		"pending_password_change": pending_password_change,
+		"display_name": _display_name,
+		"materials": _materials,
+		"threat_points": _threat_points,
+		"current_stage": _current_stage,
+		"mastery": _mastery,
 	}
 	var file := FileAccess.open(SESSION_PATH, FileAccess.WRITE)
 	if file == null:

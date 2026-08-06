@@ -1,0 +1,585 @@
+[gd_scene load_steps=7 format=3 uid="uid://c9settings01"]
+
+[ext_resource type="Script" path="res://src/ui/screens/settings/settings_screen.gd" id="1_sett"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_back_btn"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 0
+border_width_top = 0
+border_width_right = 0
+border_width_bottom = 0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_item_panel"]
+bg_color = Color(0.0705882, 0.141176, 0.227451, 0.85)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.227451, 0.415686, 0.541176, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 16.0
+content_margin_top = 14.0
+content_margin_right = 16.0
+content_margin_bottom = 14.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_logout_normal"]
+bg_color = Color(1, 0.266667, 0.4, 0.1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.266667, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 24.0
+content_margin_top = 16.0
+content_margin_right = 24.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_logout_pressed"]
+bg_color = Color(1, 0.266667, 0.4, 0.3)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.266667, 0.4, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+content_margin_left = 24.0
+content_margin_top = 16.0
+content_margin_right = 24.0
+content_margin_bottom = 16.0
+
+[node name="SettingsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sett")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0235294, 0.054902, 0.0941176, 1)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+script = ExtResource("2_safe")
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.478431, 0.721569, 0.831373, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_back_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_back_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_back_btn")
+text = "< BACK"
+
+[node name="HeaderSpacerLeft" type="Control" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0.352941, 0.784314, 1, 1)
+theme_override_constants/shadow_offset_x = 0
+theme_override_constants/shadow_offset_y = 0
+theme_override_constants/shadow_outline_size = 6
+theme_override_font_sizes/font_size = 24
+text = "SETTINGS"
+horizontal_alignment = 1
+
+[node name="HeaderSpacerRight" type="Control" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HeaderRightPad" type="Control" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 20
+
+[node name="AudioSection" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SecAudio" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.823529, 0.827451, 1)
+theme_override_font_sizes/font_size = 12
+text = "AUDIO"
+
+[node name="ItemMasterVolume" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="MasterVolLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Master Volume"
+
+[node name="MasterVolSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Adjust overall game volume"
+
+[node name="ControlBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume/Row"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+alignment = 1
+
+[node name="MasterVolumeSlider" type="HSlider" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume/Row/ControlBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 20)
+layout_mode = 2
+focus_mode = 0
+value = 80.0
+
+[node name="MasterVolumeVal" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemMasterVolume/Row/ControlBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.784314, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "80%"
+
+[node name="ItemSfx" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfx"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfx/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="SfxLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfx/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Sound Effects"
+
+[node name="SfxSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfx/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Enable game sound effects"
+
+[node name="SfxToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfx/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="ItemSfxVolume" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="SfxVolLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "SFX Volume"
+
+[node name="SfxVolSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Sound effects volume level"
+
+[node name="ControlBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume/Row"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+alignment = 1
+
+[node name="SfxVolumeSlider" type="HSlider" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume/Row/ControlBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 20)
+layout_mode = 2
+focus_mode = 0
+value = 70.0
+
+[node name="SfxVolumeVal" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemSfxVolume/Row/ControlBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.784314, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "70%"
+
+[node name="ItemBgm" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemBgm"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemBgm/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="BgmLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemBgm/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Background Music"
+
+[node name="BgmSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemBgm/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Play ambient music"
+
+[node name="BgmToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/AudioSection/ItemBgm/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="GameplaySection" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SecGameplay" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.823529, 0.827451, 1)
+theme_override_font_sizes/font_size = 12
+text = "GAMEPLAY"
+
+[node name="ItemVibration" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemVibration"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemVibration/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="VibrationLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemVibration/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Vibration"
+
+[node name="VibrationSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemVibration/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Haptic feedback on actions"
+
+[node name="VibrationToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemVibration/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="ItemAutoDeploy" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemAutoDeploy"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemAutoDeploy/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="AutoDeployLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemAutoDeploy/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Auto-Deploy Towers"
+
+[node name="AutoDeploySub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemAutoDeploy/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Automatically place towers"
+
+[node name="AutoDeployToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemAutoDeploy/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+
+[node name="ItemDamageNum" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemDamageNum"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemDamageNum/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="DamageNumLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemDamageNum/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Show Damage Numbers"
+
+[node name="DamageNumSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemDamageNum/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Display damage indicators"
+
+[node name="DamageNumToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/GameplaySection/ItemDamageNum/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="NotifSection" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SecNotif" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.823529, 0.827451, 1)
+theme_override_font_sizes/font_size = 12
+text = "NOTIFICATIONS"
+
+[node name="ItemPushNotif" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemPushNotif"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemPushNotif/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="PushNotifLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemPushNotif/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Push Notifications"
+
+[node name="PushNotifSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemPushNotif/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Receive game alerts"
+
+[node name="PushNotifToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemPushNotif/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="ItemReminders" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemReminders"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemReminders/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="RemindersLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemReminders/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Mission Reminders"
+
+[node name="RemindersSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemReminders/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Daily mission alerts"
+
+[node name="RemindersToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/NotifSection/ItemReminders/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="DisplaySection" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SecDisplay" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 0.823529, 0.827451, 1)
+theme_override_font_sizes/font_size = 12
+text = "DISPLAY"
+
+[node name="ItemHqGraphics" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemHqGraphics"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemHqGraphics/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="HqGraphicsLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemHqGraphics/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "High Quality Graphics"
+
+[node name="HqGraphicsSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemHqGraphics/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Enhanced visual effects"
+
+[node name="HqGraphicsToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemHqGraphics/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+button_pressed = true
+
+[node name="ItemFpsCounter" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_item_panel")
+
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemFpsCounter"]
+layout_mode = 2
+
+[node name="TextCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemFpsCounter/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="FpsCounterLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemFpsCounter/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Show FPS Counter"
+
+[node name="FpsCounterSub" type="Label" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemFpsCounter/Row/TextCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Display frame rate"
+
+[node name="FpsCounterToggle" type="CheckButton" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox/DisplaySection/ItemFpsCounter/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+
+[node name="LogoutSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="LogoutButton" type="Button" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(1, 0.266667, 0.4, 1)
+theme_override_colors/font_hover_color = Color(1, 0.5, 0.6, 1)
+theme_override_colors/font_pressed_color = Color(0.8, 0.2, 0.3, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_logout_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_logout_normal")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_logout_pressed")
+text = "LOGOUT"

@@ -27,6 +27,7 @@ const SCREENS: Dictionary = {
 	&"upgrades":     "res://src/ui/screens/deploy/upgrade_screen.tscn",
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
+	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
 }
 
 ## Emitted when the player tries to back out of the root screen. The main
