@@ -35,9 +35,13 @@ func _ready() -> void:
 
 
 func on_enter(_args: Dictionary) -> void:
-	_form_home_y = _form.position.y
 	_error.text = ""
 	_error.visible = false
+	# FormRoot sits in a CenterContainer, which positions it during layout.
+	# Reading before that lands captures 0 and makes every later slide fight
+	# the container.
+	await get_tree().process_frame
+	_form_home_y = _form.position.y
 	_email.grab_focus()
 
 
