@@ -16,7 +16,7 @@ extends BaseScreen
 @onready var _tagline: Label = %TaglineLabel
 @onready var _email_label: Label = %EmailLabel
 @onready var _password_label: Label = %PasswordLabel
-@onready var _password_modal: PasswordChangeModal = %PasswordChangeModal
+@onready var _password_modal = %PasswordChangeModal
 
 var _form_home_y: float = 0.0
 var _busy: bool = false

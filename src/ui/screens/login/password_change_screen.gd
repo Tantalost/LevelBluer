@@ -4,7 +4,7 @@ extends BaseScreen
 ## Login shows the same modal as an overlay; this screen exists so the router
 ## can still navigate here directly if needed.
 
-@onready var _modal: PasswordChangeModal = %PasswordChangeModal
+@onready var _modal = %PasswordChangeModal
 
 
 func _ready() -> void:

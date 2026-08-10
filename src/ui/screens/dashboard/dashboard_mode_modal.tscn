@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://bnoahjgwu5ia"]
+[gd_scene format=3 uid="uid://bnoahjgwu5ia"]
 
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/dashboard_mode_modal.gd" id="1_modal"]
 [ext_resource type="Script" path="res://src/ui/components/gradient_rect.gd" id="2_grad"]
