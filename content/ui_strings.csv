@@ -1,10 +1,22 @@
 keys,en,tl
 LOGIN_SUBMIT,Log In,Mag-log In
+LOGIN_TAGLINE,"Defend the city\nSpot the scam","Depensa ang lungsod\nTukuyin ang scam"
+LOGIN_EMAIL_LABEL,Email,Email
+LOGIN_PASSWORD_LABEL,Password,Password
 LOGIN_BUSY,Signing in...,Nagsa-sign in...
 LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at password.
 LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
 LOGIN_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
 LOGIN_ERR_UNKNOWN,Something went wrong. Try again.,May nangyaring mali. Subukan ulit.
+PWD_TITLE,Security Alert,Babala sa Seguridad
+PWD_SUBTITLE,Update Temporary Password,I-update ang Pansamantalang Password
+PWD_NEW_LABEL,New Password,Bagong Password
+PWD_CONFIRM_LABEL,Confirm Password,Kumpirmahin ang Password
+PWD_NEW_PLACEHOLDER,Enter new password,Ilagay ang bagong password
+PWD_CONFIRM_PLACEHOLDER,Re-type new password,Ulitin ang bagong password
+PWD_SECURE_SUBMIT,Secure Account,I-secure ang Account
+PWD_ERR_EMPTY,Please fill out both fields.,Punan ang parehong field.
+PWD_ERR_WEAK,Password does not meet all requirements.,Hindi natutugunan ng password ang lahat ng requirement.
 PWD_RULE_LENGTH,At least 8 characters,Hindi bababa sa 8 karakter
 PWD_RULE_UPPERCASE,One uppercase letter,Isang malaking titik
 PWD_RULE_LOWERCASE,One lowercase letter,Isang maliit na titik
@@ -14,6 +26,7 @@ PWD_ERR_MISMATCH,Passwords do not match.,Hindi magkatugma ang password.
 PWD_ERR_SERVER,Could not update your password. Try again.,Hindi na-update ang password. Subukan ulit.
 PWD_SUBMIT,Update Password,I-update ang Password
 PWD_BUSY,Updating...,Ina-update...
+LOADING_TITLE,Loading,Naglo-load
 LOADING_SETTINGS,Loading settings,Nilo-load ang settings
 LOADING_PROFILE,Loading profile,Nilo-load ang profile
 LOADING_CONTENT,Loading briefings,Nilo-load ang briefings
@@ -25,3 +38,57 @@ TIP_HOVER_LINK,Tip: A link's text can say anything. The destination is what matt
 TIP_URGENCY_IS_A_TELL,Tip: Urgency is a pressure tactic. Slow down and verify.,Tip: Ang pagmamadali ay taktika. Dahan-dahan at i-verify.
 TIP_NEVER_SHARE_OTP,Tip: No legitimate staff will ever ask for your OTP.,Tip: Walang lehitimong staff ang hihingi ng iyong OTP.
 QUIT_CONFIRM_BODY,Quit Level Blue? Your progress this session is saved.,I-quit ang Level Blue? Naka-save ang progress mo.
+DASH_RANK,ELITE I,ELITE I
+DASH_EXP,1450 / 2000 EXP,1450 / 2000 EXP
+DASH_THREAT_POINTS,Threat Points,Threat Points
+DASH_MATERIALS,Upgrade Materials,Upgrade Materials
+DASH_STORE,Store,Store
+DASH_INTEL,Intel,Intel
+DASH_PROGRESS,Progress,Progress
+DASH_DEPLOY,DEPLOY,DEPLOY
+DASH_DEFEND,DEFEND,DEFEND
+DASH_MINI_LABEL,Current Mission,Kasalukuyang Misyon
+DASH_MODULE_NUM,MODULE %d,MODULE %d
+DASH_MINI_PROGRESS,Stage %d/5 • %d/%d Lessons,Yugto %d/5 • %d/%d Aralin
+DASH_AT_RISK_TITLE,PERFORMANCE ALERT — AT-RISK STATUS,BABALA SA PERFORMANCE — AT-RISK
+DASH_AT_RISK_BODY,Your avg. BKT P(L) is %.1f%%.%s A peer mentor has been dispatched to help.,Ang avg. BKT P(L) mo ay %.1f%%.%s May peer mentor na ipinadala para tumulong.
+DASH_AT_RISK_WEAK, Weakest: %s., Pinakamahina: %s.
+DASH_MODE_TITLE,SELECT GAME MODE,PUMILI NG GAME MODE
+DASH_MODE_SUBTITLE,Choose how you want to deploy,Piliin kung paano mag-deploy
+DASH_MODE_CONFIRM,CONFIRM,KUMPIRMAHIN
+DASH_MODE_CANCEL,✕  CANCEL,✕  KANSELAHIN
+DASHBOARD_PLACEHOLDER,Full dashboard coming soon.,Malapit na ang buong dashboard.
+LOGOUT,Log Out,Mag-log Out
+INTRO_TAGLINE,DEFEND • DETECT • DISRUPT,DEPENDA • DETECT • DISRUPT
+INTRO_START_GAME,START GAME,MAGSIMULA
+INTRO_PRESS_HINT,PRESS TO INITIALIZE,PINDUTIN PARA MAG-INITIALIZE
+SETT_TITLE,SETTINGS,SETTINGS
+SETT_BACK,< BACK,< BUMALIK
+SETT_SEC_AUDIO,AUDIO,AUDIO
+SETT_MASTER_VOL,Master Volume,Pangunahing Boses
+SETT_MASTER_VOL_DESC,Adjust overall game volume,I-adjust ang kabuuang boses ng laro
+SETT_SFX,Sound Effects,Mga Epekto ng Tunog
+SETT_SFX_DESC,Enable game sound effects,I-enable ang mga epekto ng tunog
+SETT_SFX_VOL,SFX Volume,Boses ng SFX
+SETT_SFX_VOL_DESC,Sound effects volume level,Antas ng boses ng mga epekto ng tunog
+SETT_BGM,Background Music,Tugtog sa Likuran
+SETT_BGM_DESC,Play ambient music,Patugtugin ang musika sa likuran
+SETT_SEC_GAMEPLAY,GAMEPLAY,GAMEPLAY
+SETT_VIBRATION,Vibration,Pangangatal (Vibration)
+SETT_VIBRATION_DESC,Haptic feedback on actions,Haptic feedback sa mga aksyon
+SETT_AUTODEPLOY,Auto-Deploy Towers,Awtomatikong Mag-deploy ng Tower
+SETT_AUTODEPLOY_DESC,Automatically place towers,Awtomatikong maglagay ng mga tower
+SETT_DMG_NUM,Show Damage Numbers,Ipakita ang Numero ng Pinsala
+SETT_DMG_NUM_DESC,Display damage indicators,Ipakita ang mga tagapagpahiwatig ng pinsala
+SETT_SEC_NOTIF,NOTIFICATIONS,MGA NOTIPIKASYON
+SETT_PUSH_NOTIF,Push Notifications,Mga Notipikasyon
+SETT_PUSH_NOTIF_DESC,Receive game alerts,Makatanggap ng mga babala sa laro
+SETT_REMINDERS,Mission Reminders,Mga Paalala sa Misyon
+SETT_REMINDERS_DESC,Daily mission alerts,Araw-araw na paalala sa misyon
+SETT_SEC_DISPLAY,DISPLAY,DISPLAY
+SETT_HQ_GRAPHICS,High Quality Graphics,Mataas na Kalidad ng Grapika
+SETT_HQ_GRAPHICS_DESC,Enhanced visual effects,Pinagandang visual effect
+SETT_SHOW_FPS,Show FPS Counter,Ipakita ang FPS Counter
+SETT_SHOW_FPS_DESC,Display frame rate,Ipakita ang frame rate ng laro
+SETT_LOGOUT,LOGOUT,LOGOUT
+

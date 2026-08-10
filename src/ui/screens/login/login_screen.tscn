@@ -1,10 +1,136 @@
-[gd_scene format=3 uid="uid://cl215adjme5jk"]
+[gd_scene load_steps=12 format=3 uid="uid://cl215adjme5jk"]
 
 [ext_resource type="Script" uid="uid://2htd6kmnuggo" path="res://src/ui/screens/login/login_screen.gd" id="1_gnqm7"]
+[ext_resource type="PackedScene" uid="uid://bpasswordmodal01" path="res://src/ui/screens/login/password_change_modal.tscn" id="2_pwdmodal"]
 [ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="1_xy5qm"]
-[ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="2_gnqm7"]
+[ext_resource type="Texture2D" path="res://assets/ui/background.png" id="3_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/logo.png" id="4_logo"]
 
-[node name="LoginScreen" type="Control" unique_id=1420910459]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.0705882, 0.141176, 0.227451, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_input"]
+bg_color = Color(0.956863, 0.945098, 0.913725, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+shadow_size = 2
+shadow_offset = Vector2(2, 2)
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_input_focus"]
+bg_color = Color(0.956863, 0.945098, 0.913725, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+shadow_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+shadow_size = 2
+shadow_offset = Vector2(2, 2)
+content_margin_left = 12.0
+content_margin_top = 10.0
+content_margin_right = 12.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_btn"]
+bg_color = Color(0.94902, 0.72549, 0.294118, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+shadow_size = 4
+shadow_offset = Vector2(3, 4)
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_btn_hover"]
+bg_color = Color(0.968627, 0.768627, 0.352941, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+shadow_size = 4
+shadow_offset = Vector2(3, 4)
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_login_btn_pressed"]
+bg_color = Color(0.8, 0.6, 0.2, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0.0392157, 0.0823529, 0.12549, 1)
+shadow_size = 1
+shadow_offset = Vector2(1, 1)
+content_margin_top = 10.0
+content_margin_bottom = 10.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_error"]
+bg_color = Color(0.239216, 0.0588235, 0.0588235, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.752941, 0.223529, 0.168627, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_spinner_fill"]
+bg_color = Color(0.94902, 0.72549, 0.294118, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="LoginScreen" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,107 +139,228 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gnqm7")
 
-[node name="Background" type="TextureRect" parent="." unique_id=919961094]
+[node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+texture = ExtResource("3_bg")
+expand_mode = 1
 stretch_mode = 6
 
-[node name="SafeAreaContainer" type="MarginContainer" parent="." unique_id=2144064583]
+[node name="DarkOverlay" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
+mouse_filter = 2
+color = Color(0.0196078, 0.0313726, 0.0784314, 0.72)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
 script = ExtResource("1_xy5qm")
-metadata/_custom_type_script = "uid://c6dwlje13r6yi"
 
-[node name="CenterContainer" type="CenterContainer" parent="SafeAreaContainer" unique_id=453632608]
+[node name="CenterContainer" type="CenterContainer" parent="SafeAreaContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="FormRoot" type="PanelContainer" parent="SafeAreaContainer/CenterContainer" unique_id=694563566]
+[node name="FormRoot" type="PanelContainer" parent="SafeAreaContainer/CenterContainer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(900, 380)
+custom_minimum_size = Vector2(720, 0)
 layout_mode = 2
-theme = ExtResource("2_gnqm7")
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
 
-[node name="HBoxContainer" type="HBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot" unique_id=1478405054]
+[node name="Row" type="HBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot"]
 layout_mode = 2
-theme_override_constants/separation = 32
-
-[node name="BrandPanel" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer" unique_id=313347812]
-custom_minimum_size = Vector2(260, 0)
-layout_mode = 2
+theme_override_constants/separation = 0
 alignment = 1
 
-[node name="Logo" type="TextureRect" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/BrandPanel" unique_id=787023237]
+[node name="BrandPanel" type="Control" parent="SafeAreaContainer/CenterContainer/FormRoot/Row"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BrandPanelBg" type="ColorRect" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/BrandPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0509804, 0.109804, 0.188235, 0.9)
+
+[node name="BrandInner" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/BrandPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="BrandPadTop" type="Control" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/BrandPanel/BrandInner"]
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 
-[node name="Tagline" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/BrandPanel" unique_id=245972918]
-custom_minimum_size = Vector2(240, 0)
+[node name="Logo" type="TextureRect" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/BrandPanel/BrandInner"]
+custom_minimum_size = Vector2(0, 76)
 layout_mode = 2
-theme_type_variation = &"FieldLabel"
-text = "LevelBlue"
+size_flags_horizontal = 3
+texture = ExtResource("4_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TaglineLabel" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/BrandPanel/BrandInner"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.478431, 0.721569, 0.831373, 1)
+theme_override_font_sizes/font_size = 10
+text = "DEFEND THE CITY
+SPOT THE SCAM"
 horizontal_alignment = 1
-vertical_alignment = 1
 autowrap_mode = 2
 
-[node name="VSeparator" type="VSeparator" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer" unique_id=1184942493]
+[node name="BrandPadBottom" type="Control" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/BrandPanel/BrandInner"]
+custom_minimum_size = Vector2(0, 18)
 layout_mode = 2
 
-[node name="FieldPanel" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer" unique_id=1918024035]
+[node name="BrandDivider" type="ColorRect" parent="SafeAreaContainer/CenterContainer/FormRoot/Row"]
+custom_minimum_size = Vector2(3, 0)
+layout_mode = 2
+size_flags_vertical = 3
+color = Color(0.0392157, 0.0823529, 0.12549, 1)
+
+[node name="FieldPanel" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 14
+
+[node name="FieldMargin" type="MarginContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="FieldBody" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 14
 alignment = 1
 
-[node name="HBoxContainer" type="HBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel" unique_id=676647896]
+[node name="FieldRow" type="HBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 12
 
-[node name="EmailBlock" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer" unique_id=212920397]
+[node name="EmailBlock" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/FieldRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
-[node name="Label" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/EmailBlock" unique_id=2092180403]
+[node name="EmailLabel" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/FieldRow/EmailBlock"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"FieldLabel"
+theme_override_colors/font_color = Color(0.623529, 0.768627, 0.839216, 1)
+theme_override_font_sizes/font_size = 10
 text = "EMAIL"
 
-[node name="EmailField" type="LineEdit" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/EmailBlock" unique_id=292348659]
+[node name="EmailField" type="LineEdit" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/FieldRow/EmailBlock"]
 unique_name_in_owner = true
-layout_mode = 2
-
-[node name="PasswordBlock" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer" unique_id=3243671]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.105882, 0.141176, 0.188235, 1)
+theme_override_colors/caret_color = Color(0.105882, 0.141176, 0.188235, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_input")
+theme_override_styles/focus = SubResource("StyleBoxFlat_input_focus")
 
-[node name="Label" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/PasswordBlock" unique_id=1247445628]
+[node name="PasswordBlock" type="VBoxContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/FieldRow"]
 layout_mode = 2
-theme_type_variation = &"FieldLabel"
-text = "PASSWORD"
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
 
-[node name="PasswordField" type="LineEdit" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel/HBoxContainer/PasswordBlock" unique_id=732567353]
+[node name="PasswordLabel" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/FieldRow/PasswordBlock"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.623529, 0.768627, 0.839216, 1)
+theme_override_font_sizes/font_size = 10
+text = "PASSWORD"
 
-[node name="ErrorLabel" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel" unique_id=826925040]
+[node name="PasswordField" type="LineEdit" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/FieldRow/PasswordBlock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.105882, 0.141176, 0.188235, 1)
+theme_override_colors/caret_color = Color(0.105882, 0.141176, 0.188235, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_input")
+theme_override_styles/focus = SubResource("StyleBoxFlat_input_focus")
+
+[node name="ErrorPanel" type="PanelContainer" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_type_variation = &"ErrorText"
+theme_override_styles/panel = SubResource("StyleBoxFlat_error")
 
-[node name="LoginButton" type="Button" parent="SafeAreaContainer/CenterContainer/FormRoot/HBoxContainer/FieldPanel" unique_id=1936903644]
+[node name="ErrorLabel" type="Label" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody/ErrorPanel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 72)
 layout_mode = 2
-theme_type_variation = &"PrimaryButton"
-text = "LOGIN"
+theme_override_colors/font_color = Color(1, 0.701961, 0.682353, 1)
+theme_override_font_sizes/font_size = 11
+text = "Error"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="LoginButton" type="Button" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.262745, 0.188235, 0.0470588, 1)
+theme_override_colors/font_hover_color = Color(0.262745, 0.188235, 0.0470588, 1)
+theme_override_colors/font_pressed_color = Color(0.262745, 0.188235, 0.0470588, 1)
+theme_override_colors/font_disabled_color = Color(0.262745, 0.188235, 0.0470588, 0.45)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_login_btn")
+theme_override_styles/hover = SubResource("StyleBoxFlat_login_btn_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_login_btn_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_login_btn")
+text = "▶  Log In"
+
+[node name="BusySpinner" type="ProgressBar" parent="SafeAreaContainer/CenterContainer/FormRoot/Row/FieldPanel/FieldMargin/FieldBody"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_styles/fill = SubResource("StyleBoxFlat_spinner_fill")
+max_value = 1.0
+show_percentage = false
+indeterminate = true
+
+[node name="PasswordChangeModal" parent="." instance=ExtResource("2_pwdmodal")]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

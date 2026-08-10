@@ -1,0 +1,412 @@
+[gd_scene load_steps=16 format=3 uid="uid://bnoahjgwu5ia"]
+
+[ext_resource type="Script" path="res://src/ui/screens/dashboard/dashboard_mode_modal.gd" id="1_modal"]
+[ext_resource type="Script" path="res://src/ui/components/gradient_rect.gd" id="2_grad"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_solo_card"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(1, 0.823529, 0.247059, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(1, 0.823529, 0.247059, 0.9)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pvp_card"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.101961, 0.145098, 0.184314, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+shadow_color = Color(0, 0, 0, 0.9)
+shadow_size = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_bottom"]
+bg_color = Color(0, 0, 0, 0.5)
+content_margin_left = 12.0
+content_margin_top = 16.0
+content_margin_right = 12.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_bottom_active"]
+bg_color = Color(1, 0.823529, 0.247059, 0.18)
+border_width_top = 2
+border_color = Color(1, 0.823529, 0.247059, 1)
+content_margin_left = 12.0
+content_margin_top = 16.0
+content_margin_right = 12.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_bottom_pvp"]
+bg_color = Color(1, 0.266667, 0.4, 0.18)
+border_width_top = 2
+border_color = Color(1, 0.266667, 0.4, 1)
+content_margin_left = 12.0
+content_margin_top = 16.0
+content_margin_right = 12.0
+content_margin_bottom = 16.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(1, 0.823529, 0.247059, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+content_margin_left = 14.0
+content_margin_top = 4.0
+content_margin_right = 14.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge_pvp"]
+bg_color = Color(1, 0.266667, 0.4, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+content_margin_left = 14.0
+content_margin_top = 4.0
+content_margin_right = 14.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_confirm"]
+bg_color = Color(1, 0.823529, 0.247059, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.972549, 0.815686, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+shadow_color = Color(1, 0.823529, 0.247059, 0.8)
+shadow_size = 8
+content_margin_left = 48.0
+content_margin_top = 14.0
+content_margin_right = 48.0
+content_margin_bottom = 14.0
+
+[node name="DashboardModeModal" type="Control"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_modal")
+
+[node name="Overlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0, 0, 0, 0.88)
+
+[node name="CenterRoot" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ModalVBox" type="VBoxContainer" parent="CenterRoot"]
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="ModalTitle" type="Label" parent="CenterRoot/ModalVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 20
+text = "SELECT GAME MODE"
+horizontal_alignment = 1
+
+[node name="ModalSubtitle" type="Label" parent="CenterRoot/ModalVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.352941, 0.478431, 0.666667, 1)
+theme_override_font_sizes/font_size = 10
+text = "Choose how you want to deploy"
+horizontal_alignment = 1
+
+[node name="SpacerTop" type="Control" parent="CenterRoot/ModalVBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+
+[node name="CardsRow" type="HBoxContainer" parent="CenterRoot/ModalVBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="SoloCard" type="Control" parent="CenterRoot/ModalVBox/CardsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+
+[node name="CardPanel" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_solo_card")
+
+[node name="CardBody" type="Control" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel"]
+layout_mode = 2
+
+[node name="Gradient" type="TextureRect" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_grad")
+gradient_colors = PackedColorArray(0.0392157, 0.164706, 0.290196, 1, 0.0509804, 0.239216, 0.431373, 1, 0.101961, 0.372549, 0.627451, 1)
+vertical = true
+
+[node name="SoloDarkOverlay" type="ColorRect" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.62)
+
+[node name="CardContent" type="VBoxContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopPad" type="Control" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+
+[node name="TopLabelWrap" type="CenterContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent"]
+layout_mode = 2
+
+[node name="TopLabelBg" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/TopLabelWrap"]
+layout_mode = 2
+
+[node name="TopLabel" type="Label" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/TopLabelWrap/TopLabelBg"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 8
+text = "SINGLE PLAYER"
+
+[node name="BigIcon" type="Label" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 52
+text = "🛡️"
+horizontal_alignment = 1
+
+[node name="SoloBottom" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_bottom_active")
+
+[node name="BottomVBox" type="VBoxContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/SoloBottom"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="BottomTitle" type="Label" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/SoloBottom/BottomVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 22
+text = "SOLO"
+horizontal_alignment = 1
+
+[node name="BottomSub" type="Label" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/SoloBottom/BottomVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.6)
+theme_override_font_sizes/font_size = 8
+text = "Module-based campaign"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="SoloBadge" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/SoloBottom/BottomVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
+
+[node name="BadgeLabel" type="Label" parent="CenterRoot/ModalVBox/CardsRow/SoloCard/CardPanel/CardBody/CardContent/SoloBottom/BottomVBox/SoloBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.0196078, 0.0392157, 0.0823529, 1)
+theme_override_font_sizes/font_size = 9
+text = "▶ SELECTED"
+horizontal_alignment = 1
+
+[node name="PvpCard" type="Control" parent="CenterRoot/ModalVBox/CardsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+scale = Vector2(0.88, 0.88)
+
+[node name="CardPanel" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_pvp_card")
+
+[node name="CardBody" type="Control" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel"]
+layout_mode = 2
+
+[node name="Gradient" type="TextureRect" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_grad")
+gradient_colors = PackedColorArray(0.227451, 0.0392157, 0.101961, 1, 0.431373, 0.0627451, 0.188235, 1, 0.627451, 0.101961, 0.270588, 1)
+vertical = true
+
+[node name="PvpDarkOverlay" type="ColorRect" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.62)
+
+[node name="CardContent" type="VBoxContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopPad" type="Control" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+
+[node name="TopLabelWrap" type="CenterContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent"]
+layout_mode = 2
+
+[node name="TopLabelBg" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/TopLabelWrap"]
+layout_mode = 2
+
+[node name="TopLabel" type="Label" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/TopLabelWrap/TopLabelBg"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.7)
+theme_override_font_sizes/font_size = 8
+text = "MULTIPLAYER"
+
+[node name="BigIcon" type="Label" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 52
+text = "⚔️"
+horizontal_alignment = 1
+
+[node name="PvpBottom" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_card_bottom")
+
+[node name="BottomVBox" type="VBoxContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/PvpBottom"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="BottomTitle" type="Label" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/PvpBottom/BottomVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 22
+text = "PVP"
+horizontal_alignment = 1
+
+[node name="BottomSub" type="Label" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/PvpBottom/BottomVBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 0.6)
+theme_override_font_sizes/font_size = 8
+text = "Player vs player battles"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="PvpBadge" type="PanelContainer" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/PvpBottom/BottomVBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_styles/panel = SubResource("StyleBoxFlat_badge_pvp")
+
+[node name="BadgeLabel" type="Label" parent="CenterRoot/ModalVBox/CardsRow/PvpCard/CardPanel/CardBody/CardContent/PvpBottom/BottomVBox/PvpBadge"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.0196078, 0.0392157, 0.082051, 1)
+theme_override_font_sizes/font_size = 9
+text = "▶ SELECTED"
+horizontal_alignment = 1
+
+[node name="SpacerMid" type="Control" parent="CenterRoot/ModalVBox"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+
+[node name="ConfirmButton" type="Button" parent="CenterRoot/ModalVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.0196078, 0.0392157, 0.082353, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_confirm")
+theme_override_styles/hover = SubResource("StyleBoxFlat_confirm")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_confirm")
+text = "CONFIRM  🛡️"
+
+[node name="CancelButton" type="Button" parent="CenterRoot/ModalVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+flat = true
+theme_override_colors/font_color = Color(0.227451, 0.290196, 0.376471, 1)
+theme_override_font_sizes/font_size = 9
+text = "✕  CANCEL"
