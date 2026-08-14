@@ -91,3 +91,13 @@ SETT_HQ_GRAPHICS_DESC,Enhanced visual effects,Pinagandang visual effect
 SETT_SHOW_FPS,Show FPS Counter,Ipakita ang FPS Counter
 SETT_SHOW_FPS_DESC,Display frame rate,Ipakita ang frame rate ng laro
 SETT_LOGOUT,LOGOUT,LOGOUT
+PRETEST_TITLE,PRE-TEST,PRE-TEST
+PRETEST_NEXT,NEXT,SUSUNOD
+PRETEST_SUBMIT,SUBMIT,IPASA
+PRETEST_LOCK_TITLE,PRE-TEST REQUIRED,KAILANGAN ANG PRE-TEST
+PRETEST_LOCK_BODY,Complete your baseline assessment before the command centre unlocks.,Tapusin muna ang baseline assessment bago magbukas ang command centre.
+PRETEST_BUTTON,PRE-TEST,PRE-TEST
+PRETEST_ERR_LOAD,Could not load pre-test questions.,Hindi ma-load ang mga tanong.
+PRETEST_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
+PRETEST_ERR_SUBMIT,Could not save your pre-test. Try again.,Hindi na-save ang pre-test. Subukan ulit.
+PRETEST_ERR_INCOMPLETE,Answer every question before submitting.,Sagutin lahat ng tanong bago mag-submit.

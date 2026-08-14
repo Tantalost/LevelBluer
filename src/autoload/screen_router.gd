@@ -28,6 +28,7 @@ const SCREENS: Dictionary = {
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
+	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
 }
 
 ## Emitted when the player tries to back out of the root screen. The main
@@ -138,7 +139,20 @@ func _instantiate(screen_id: StringName) -> BaseScreen:
 		_busy = false
 		return null
 	var packed: PackedScene = load(path)
-	var screen: BaseScreen = packed.instantiate()
+	if packed == null:
+		push_error("Router: failed to load '%s' at %s" % [screen_id, path])
+		_busy = false
+		return null
+
+	var instance: Node = packed.instantiate()
+	if instance == null or not (instance is BaseScreen):
+		push_error("Router: invalid scene for '%s' at %s" % [screen_id, path])
+		_busy = false
+		if instance != null:
+			instance.queue_free()
+		return null
+
+	var screen: BaseScreen = instance
 	screen.screen_id = screen_id
 	screen.set_anchors_preset(Control.PRESET_FULL_RECT)
 	return screen

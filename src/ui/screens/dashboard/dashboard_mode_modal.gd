@@ -84,24 +84,24 @@ func _apply_copy() -> void:
 
 
 func _apply_scale() -> void:
-	var s := func(size: float) -> int: return UiScale.n(size, _view_width)
-	var bw := func(size: float) -> int: return UiScale.bw(size, _view_width)
+	var scaled := func(value: float) -> int: return UiScale.n(value, _view_width)
+	var border_width := func(value: float) -> int: return UiScale.bw(value, _view_width)
 
 	for label in [_title, _subtitle]:
 		if _pixel_font:
 			label.add_theme_font_override("font", _pixel_font)
-	_title.add_theme_font_size_override("font_size", s.call(20))
-	_subtitle.add_theme_font_size_override("font_size", s.call(10))
+	_title.add_theme_font_size_override("font_size", scaled.call(20))
+	_subtitle.add_theme_font_size_override("font_size", scaled.call(10))
 
-	_solo_card.custom_minimum_size = Vector2(s.call(200), s.call(300))
-	_pvp_card.custom_minimum_size = Vector2(s.call(200), s.call(300))
-	_confirm.add_theme_font_size_override("font_size", s.call(14))
-	_cancel.add_theme_font_size_override("font_size", s.call(9))
+	_solo_card.custom_minimum_size = Vector2(scaled.call(200), scaled.call(300))
+	_pvp_card.custom_minimum_size = Vector2(scaled.call(200), scaled.call(300))
+	_confirm.add_theme_font_size_override("font_size", scaled.call(14))
+	_cancel.add_theme_font_size_override("font_size", scaled.call(9))
 	if _pixel_font:
 		_confirm.add_theme_font_override("font", _pixel_font)
 		_cancel.add_theme_font_override("font", _pixel_font)
 
-	var card_border: int = bw.call(3)
+	var card_border: int = border_width.call(3)
 	for card in [_solo_card, _pvp_card]:
 		var panel: PanelContainer = card.get_node("CardPanel")
 		var style := panel.get_theme_stylebox("panel").duplicate() as StyleBoxFlat

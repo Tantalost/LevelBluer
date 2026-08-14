@@ -180,19 +180,19 @@ func _on_logout_pressed() -> void:
 
 func _apply_scale() -> void:
 	var view_w := get_viewport().get_visible_rect().size.x
-	var s := func(size: float) -> int: return UiScale.n(size, view_w)
+	var scaled := func(value: float) -> int: return UiScale.n(value, view_w)
 
-	_safe.add_theme_constant_override("margin_left", s.call(24))
-	_safe.add_theme_constant_override("margin_top", s.call(24))
-	_safe.add_theme_constant_override("margin_right", s.call(24))
-	_safe.add_theme_constant_override("margin_bottom", s.call(24))
+	_safe.add_theme_constant_override("margin_left", scaled.call(24))
+	_safe.add_theme_constant_override("margin_top", scaled.call(24))
+	_safe.add_theme_constant_override("margin_right", scaled.call(24))
+	_safe.add_theme_constant_override("margin_bottom", scaled.call(24))
 
-	_apply_pixel_font_button(_back_button, s.call(14))
-	_apply_pixel_font(_title_label, s.call(24))
-	_apply_pixel_font_button(_logout_button, s.call(14))
+	_apply_pixel_font_button(_back_button, scaled.call(14))
+	_apply_pixel_font(_title_label, scaled.call(24))
+	_apply_pixel_font_button(_logout_button, scaled.call(14))
 
 	for title in [%SecAudio, %SecGameplay, %SecNotif, %SecDisplay]:
-		_apply_pixel_font(title, s.call(12))
+		_apply_pixel_font(title, scaled.call(12))
 
 	for label in [
 		%MasterVolLabel, %SfxLabel, %SfxVolLabel, %BgmLabel,
@@ -200,7 +200,7 @@ func _apply_scale() -> void:
 		%PushNotifLabel, %RemindersLabel,
 		%HqGraphicsLabel, %FpsCounterLabel
 	]:
-		_apply_pixel_font(label, s.call(14))
+		_apply_pixel_font(label, scaled.call(14))
 
 	for sub in [
 		%MasterVolSub, %SfxSub, %SfxVolSub, %BgmSub,
@@ -208,19 +208,19 @@ func _apply_scale() -> void:
 		%PushNotifSub, %RemindersSub,
 		%HqGraphicsSub, %FpsCounterSub
 	]:
-		_apply_pixel_font(sub, s.call(10))
+		_apply_pixel_font(sub, scaled.call(10))
 
 	for val in [_master_val, _sfx_val]:
-		_apply_pixel_font(val, s.call(10))
+		_apply_pixel_font(val, scaled.call(10))
 
 
-func _apply_pixel_font(label: Label, size: int) -> void:
+func _apply_pixel_font(label: Label, font_size: int) -> void:
 	if _pixel_font:
 		label.add_theme_font_override("font", _pixel_font)
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", font_size)
 
 
-func _apply_pixel_font_button(button: Button, size: int) -> void:
+func _apply_pixel_font_button(button: Button, font_size: int) -> void:
 	if _pixel_font:
 		button.add_theme_font_override("font", _pixel_font)
-	button.add_theme_font_size_override("font_size", size)
+	button.add_theme_font_size_override("font_size", font_size)

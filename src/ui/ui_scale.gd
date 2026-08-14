@@ -11,9 +11,9 @@ static func factor(viewport_width: float) -> float:
 	return viewport_width / BASE_WIDTH
 
 
-static func n(size: float, viewport_width: float) -> int:
-	return int(round(size * factor(viewport_width)))
+static func n(value: float, viewport_width: float) -> int:
+	return int(round(value * factor(viewport_width)))
 
 
-static func bw(size: float, viewport_width: float) -> int:
-	return maxi(1, n(size, viewport_width))
+static func bw(value: float, viewport_width: float) -> int:
+	return maxi(1, n(value, viewport_width))

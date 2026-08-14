@@ -58,18 +58,64 @@ func _ready() -> void:
 	%SettingsButton.pressed.connect(func(): Router.push(&"settings"))
 	%ModeSelector.pressed.connect(_open_mode_modal)
 	%DeployButton.pressed.connect(_on_deploy_pressed)
+	%PreTestButton.pressed.connect(func(): Router.push(&"pretest"))
+	%LockSettingsButton.pressed.connect(func(): Router.push(&"settings"))
 
 	_mode_modal.mode_confirmed.connect(_on_mode_confirmed)
 
 
 func on_enter(_args: Dictionary) -> void:
 	_refresh_data()
+	_apply_lock_state()
 	_apply_scale()
 	_update_mode_ui(false)
 
 
+func on_resume() -> void:
+	_refresh_data()
+	_apply_lock_state()
+
+
 func on_exit() -> void:
 	_mode_modal.visible = false
+
+
+func _apply_lock_state() -> void:
+	var locked := not AuthService.has_pre_test_completed()
+	%PreTestLock.visible = locked
+	if locked:
+		_at_risk.visible = false
+		%LockTitle.text = tr("PRETEST_LOCK_TITLE")
+		%LockBody.text = tr("PRETEST_LOCK_BODY")
+		%PreTestButton.text = tr("PRETEST_BUTTON")
+		if _pixel_font:
+			%LockTitle.add_theme_font_override("font", _pixel_font)
+			%LockBody.add_theme_font_override("font", _pixel_font)
+			%PreTestButton.add_theme_font_override("font", _pixel_font)
+		_style_pretest_button()
+		var icon_style := StyleBoxFlat.new()
+		icon_style.bg_color = Color(0.0705882, 0.141176, 0.227451, 0.85)
+		icon_style.border_color = Color("3a6a8a")
+		icon_style.set_border_width_all(2)
+		icon_style.set_corner_radius_all(8)
+		%LockSettingsButton.add_theme_stylebox_override("normal", icon_style)
+		%LockSettingsButton.add_theme_stylebox_override("hover", icon_style)
+		%LockSettingsButton.add_theme_stylebox_override("pressed", icon_style)
+
+
+func _style_pretest_button() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("ffd23f")
+	style.border_color = Color("fff8d0")
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 24
+	style.content_margin_right = 24
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
+	%PreTestButton.add_theme_stylebox_override("normal", style)
+	%PreTestButton.add_theme_stylebox_override("hover", style)
+	%PreTestButton.add_theme_stylebox_override("pressed", style)
 
 
 func _load_font() -> void:
@@ -101,6 +147,8 @@ func _refresh_data() -> void:
 	_inbox_count.text = str(UNREAD_NOTIFICATIONS)
 
 	_refresh_at_risk()
+	if not AuthService.has_pre_test_completed():
+		_at_risk.visible = false
 	_refresh_mini_tracker()
 	%AtRiskTitle.text = tr("DASH_AT_RISK_TITLE")
 	%MiniLabel.text = tr("DASH_MINI_LABEL").to_upper()
@@ -130,49 +178,48 @@ func _refresh_mini_tracker() -> void:
 
 func _apply_scale() -> void:
 	var view_w := get_viewport().get_visible_rect().size.x
-	var s := func(size: float) -> int: return UiScale.n(size, view_w)
-	var bw := func(size: float) -> int: return UiScale.bw(size, view_w)
+	var scaled := func(value: float) -> int: return UiScale.n(value, view_w)
 
-	_safe.add_theme_constant_override("margin_left", s.call(24))
-	_safe.add_theme_constant_override("margin_top", s.call(24))
-	_safe.add_theme_constant_override("margin_right", s.call(24))
-	_safe.add_theme_constant_override("margin_bottom", s.call(24))
+	_safe.add_theme_constant_override("margin_left", scaled.call(24))
+	_safe.add_theme_constant_override("margin_top", scaled.call(24))
+	_safe.add_theme_constant_override("margin_right", scaled.call(24))
+	_safe.add_theme_constant_override("margin_bottom", scaled.call(24))
 
-	_apply_pixel_font(_player_name, s.call(22))
-	_apply_pixel_font(_rank, s.call(15))
-	_apply_pixel_font(_exp, s.call(11))
-	_apply_pixel_font(_threat_value, s.call(16))
-	_apply_pixel_font(_materials_value, s.call(16))
-	_apply_pixel_font(_deploy_label, s.call(30))
-	_apply_pixel_font(_mode_text, s.call(10))
-	_apply_pixel_font(%ThreatLabel, s.call(8))
-	_apply_pixel_font(%MaterialsLabel, s.call(8))
-	_apply_pixel_font(_mini_module, s.call(10))
-	_apply_pixel_font(%MiniLabel, s.call(8))
-	_apply_pixel_font(_mini_text, s.call(9))
-	_apply_pixel_font(%AtRiskTitle, s.call(11))
-	_apply_pixel_font(_at_risk_sub, s.call(9))
-	_apply_pixel_font(_at_risk_pill, s.call(12))
-	_apply_pixel_font_button(%StoreButton, s.call(14))
-	_apply_pixel_font_button(%IntelButton, s.call(14))
-	_apply_pixel_font_button(%ProgressButton, s.call(14))
-	_apply_pixel_font_button(%InboxButton, s.call(17))
-	_apply_pixel_font_button(%SettingsButton, s.call(17))
+	_apply_pixel_font(_player_name, scaled.call(22))
+	_apply_pixel_font(_rank, scaled.call(15))
+	_apply_pixel_font(_exp, scaled.call(11))
+	_apply_pixel_font(_threat_value, scaled.call(16))
+	_apply_pixel_font(_materials_value, scaled.call(16))
+	_apply_pixel_font(_deploy_label, scaled.call(30))
+	_apply_pixel_font(_mode_text, scaled.call(10))
+	_apply_pixel_font(%ThreatLabel, scaled.call(8))
+	_apply_pixel_font(%MaterialsLabel, scaled.call(8))
+	_apply_pixel_font(_mini_module, scaled.call(10))
+	_apply_pixel_font(%MiniLabel, scaled.call(8))
+	_apply_pixel_font(_mini_text, scaled.call(9))
+	_apply_pixel_font(%AtRiskTitle, scaled.call(11))
+	_apply_pixel_font(_at_risk_sub, scaled.call(9))
+	_apply_pixel_font(_at_risk_pill, scaled.call(12))
+	_apply_pixel_font_button(%StoreButton, scaled.call(14))
+	_apply_pixel_font_button(%IntelButton, scaled.call(14))
+	_apply_pixel_font_button(%ProgressButton, scaled.call(14))
+	_apply_pixel_font_button(%InboxButton, scaled.call(17))
+	_apply_pixel_font_button(%SettingsButton, scaled.call(17))
 
 	var store_style := %StoreButton.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-	store_style.content_margin_left = s.call(120)
-	store_style.content_margin_right = s.call(120)
-	store_style.content_margin_top = s.call(30)
-	store_style.content_margin_bottom = s.call(30)
+	store_style.content_margin_left = scaled.call(120)
+	store_style.content_margin_right = scaled.call(120)
+	store_style.content_margin_top = scaled.call(30)
+	store_style.content_margin_bottom = scaled.call(30)
 	%StoreButton.add_theme_stylebox_override("normal", store_style)
 	%StoreButton.add_theme_stylebox_override("hover", store_style)
 	%StoreButton.add_theme_stylebox_override("pressed", store_style)
 
 	var nav_style := %IntelButton.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-	nav_style.content_margin_left = s.call(24)
-	nav_style.content_margin_right = s.call(24)
-	nav_style.content_margin_top = s.call(14)
-	nav_style.content_margin_bottom = s.call(14)
+	nav_style.content_margin_left = scaled.call(24)
+	nav_style.content_margin_right = scaled.call(24)
+	nav_style.content_margin_top = scaled.call(14)
+	nav_style.content_margin_bottom = scaled.call(14)
 	for btn in [%IntelButton, %ProgressButton]:
 		var btn_style := nav_style.duplicate() as StyleBoxFlat
 		btn.add_theme_stylebox_override("normal", btn_style)
@@ -180,35 +227,35 @@ func _apply_scale() -> void:
 		btn.add_theme_stylebox_override("pressed", btn_style)
 
 	var deploy_inner_style := %DeployInner.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
-	deploy_inner_style.content_margin_left = s.call(30)
-	deploy_inner_style.content_margin_right = s.call(30)
-	deploy_inner_style.content_margin_top = s.call(30)
-	deploy_inner_style.content_margin_bottom = s.call(30)
+	deploy_inner_style.content_margin_left = scaled.call(30)
+	deploy_inner_style.content_margin_right = scaled.call(30)
+	deploy_inner_style.content_margin_top = scaled.call(30)
+	deploy_inner_style.content_margin_bottom = scaled.call(30)
 	%DeployInner.add_theme_stylebox_override("panel", deploy_inner_style)
 
-	%AvatarBox.custom_minimum_size = Vector2(s.call(86), s.call(86))
-	%ExpBar.custom_minimum_size = Vector2(s.call(280), s.call(13))
-	%ThreatBox.custom_minimum_size = Vector2(s.call(140), 0)
-	%MaterialsBox.custom_minimum_size = Vector2(s.call(140), 0)
-	%InboxButton.custom_minimum_size = Vector2(s.call(46), s.call(46))
-	%SettingsButton.custom_minimum_size = Vector2(s.call(46), s.call(46))
-	%IntelButton.custom_minimum_size = Vector2(s.call(120), s.call(42))
-	%ProgressButton.custom_minimum_size = Vector2(s.call(120), s.call(42))
-	%ModeRing.custom_minimum_size = Vector2(s.call(60), s.call(60))
-	%DeployInner.custom_minimum_size = Vector2(s.call(120), s.call(90))
-	_mini_tracker.custom_minimum_size = Vector2(s.call(180), 0)
+	%AvatarBox.custom_minimum_size = Vector2(scaled.call(86), scaled.call(86))
+	%ExpBar.custom_minimum_size = Vector2(scaled.call(280), scaled.call(13))
+	%ThreatBox.custom_minimum_size = Vector2(scaled.call(140), 0)
+	%MaterialsBox.custom_minimum_size = Vector2(scaled.call(140), 0)
+	%InboxButton.custom_minimum_size = Vector2(scaled.call(46), scaled.call(46))
+	%SettingsButton.custom_minimum_size = Vector2(scaled.call(46), scaled.call(46))
+	%IntelButton.custom_minimum_size = Vector2(scaled.call(120), scaled.call(42))
+	%ProgressButton.custom_minimum_size = Vector2(scaled.call(120), scaled.call(42))
+	%ModeRing.custom_minimum_size = Vector2(scaled.call(60), scaled.call(60))
+	%DeployInner.custom_minimum_size = Vector2(scaled.call(120), scaled.call(90))
+	_mini_tracker.custom_minimum_size = Vector2(scaled.call(180), 0)
 
 
-func _apply_pixel_font(label: Label, size: int) -> void:
+func _apply_pixel_font(label: Label, font_size: int) -> void:
 	if _pixel_font:
 		label.add_theme_font_override("font", _pixel_font)
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", font_size)
 
 
-func _apply_pixel_font_button(button: Button, size: int) -> void:
+func _apply_pixel_font_button(button: Button, font_size: int) -> void:
 	if _pixel_font:
 		button.add_theme_font_override("font", _pixel_font)
-	button.add_theme_font_size_override("font_size", size)
+	button.add_theme_font_size_override("font_size", font_size)
 
 
 func _open_mode_modal() -> void:

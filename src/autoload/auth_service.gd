@@ -25,6 +25,7 @@ var _materials: int = -1
 var _threat_points: int = -1
 var _current_stage: int = 1
 var _mastery: Dictionary = {}
+var _pre_test_completed: bool = false
 var _http: HTTPRequest
 
 
@@ -61,6 +62,10 @@ func threat_points() -> int:
 
 func current_stage() -> int:
 	return _current_stage
+
+
+func has_pre_test_completed() -> bool:
+	return _pre_test_completed
 
 
 func average_mastery() -> float:
@@ -106,6 +111,7 @@ func restore_session() -> bool:
 	_current_stage = int(data.get("current_stage", 1))
 	var mastery_data: Variant = data.get("mastery", {})
 	_mastery = mastery_data if typeof(mastery_data) == TYPE_DICTIONARY else {}
+	_pre_test_completed = bool(data.get("pre_test_completed", false))
 
 	if _signed_in and not _token.is_empty() and not _participant_code.is_empty():
 		session_changed.emit(true)
@@ -119,7 +125,7 @@ func sign_in(email: String, password: String) -> Result:
 		return Result.INVALID_CREDENTIALS
 
 	var body := {"email": email.strip_edges(), "password": password}
-	var parsed: Variant = await _post_json("/api/auth/login", body)
+	var parsed: Variant = await _request_json("/api/auth/login", HTTPClient.METHOD_POST, body)
 	if parsed == null:
 		return Result.NETWORK_ERROR
 
@@ -154,8 +160,9 @@ func change_password(new_password: String) -> Result:
 		return Result.UNKNOWN
 
 	var body := {"newPassword": new_password}
-	var parsed: Variant = await _post_json(
+	var parsed: Variant = await _request_json(
 		"/api/auth/change-password",
+		HTTPClient.METHOD_POST,
 		body,
 		true,
 	)
@@ -183,22 +190,55 @@ func sign_out() -> void:
 	_threat_points = -1
 	_current_stage = 1
 	_mastery = {}
+	_pre_test_completed = false
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
 	session_changed.emit(false)
+
+
+func fetch_pretest_questions() -> Variant:
+	return await _request_json("/api/pretest/questions", HTTPClient.METHOD_GET, {}, true)
+
+
+func submit_pretest(answers: Array) -> Result:
+	var parsed: Variant = await _request_json(
+		"/api/pretest/submit",
+		HTTPClient.METHOD_POST,
+		{"answers": answers},
+		true,
+	)
+	if parsed == null:
+		return Result.NETWORK_ERROR
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return Result.UNKNOWN
+	if parsed.has("error") or parsed.has("detail"):
+		return Result.UNKNOWN
+
+	var mastery_data: Variant = parsed.get("mastery", {})
+	if typeof(mastery_data) == TYPE_DICTIONARY:
+		_mastery = mastery_data
+	_pre_test_completed = bool(parsed.get("preTestCompleted", true))
+	_persist(_signed_in, false)
+	session_changed.emit(_signed_in)
+	return Result.OK
 
 
 func _api_base() -> String:
 	return str(ProjectSettings.get_setting("levelblue/api_base_url", DEFAULT_API_BASE))
 
 
-func _post_json(path: String, body: Dictionary, authorized: bool = false) -> Variant:
+func _request_json(
+	path: String,
+	method: int,
+	body: Dictionary = {},
+	authorized: bool = false,
+) -> Variant:
 	var url := "%s%s" % [_api_base().trim_suffix("/"), path]
 	var headers := PackedStringArray(["Content-Type: application/json"])
 	if authorized and not _token.is_empty():
 		headers.append("Authorization: Bearer %s" % _token)
 
-	var json_body := JSON.stringify(body)
-	var err := _http.request(url, headers, HTTPClient.METHOD_POST, json_body)
+	var json_body := JSON.stringify(body) if method != HTTPClient.METHOD_GET else ""
+	var err := _http.request(url, headers, method, json_body)
 	if err != OK:
 		push_warning("AuthService request failed to start: %s" % err)
 		return null
@@ -236,6 +276,7 @@ func _apply_user_profile(user: Dictionary) -> void:
 		_mastery = mastery_data
 	else:
 		_mastery = {}
+	_pre_test_completed = bool(user.get("preTestCompleted", false))
 
 
 static func _format_profile_name(name: String) -> String:
@@ -263,6 +304,7 @@ func _persist(signed_in: bool, pending_password_change: bool) -> void:
 		"threat_points": _threat_points,
 		"current_stage": _current_stage,
 		"mastery": _mastery,
+		"pre_test_completed": _pre_test_completed,
 	}
 	var file := FileAccess.open(SESSION_PATH, FileAccess.WRITE)
 	if file == null:

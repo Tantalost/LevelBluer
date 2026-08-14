@@ -719,3 +719,78 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+
+[node name="PreTestLock" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="LockDim" type="ColorRect" parent="PreTestLock"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.0235294, 0.054902, 0.0941176, 0.84)
+
+[node name="LockCenter" type="CenterContainer" parent="PreTestLock"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="LockPanel" type="VBoxContainer" parent="PreTestLock/LockCenter"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="LockTitle" type="Label" parent="PreTestLock/LockCenter/LockPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.823529, 0.247059, 1)
+theme_override_font_sizes/font_size = 18
+text = "PRE-TEST REQUIRED"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="LockBody" type="Label" parent="PreTestLock/LockCenter/LockPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.909804, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Complete your baseline assessment before the command centre unlocks."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="PreTestButton" type="Button" parent="PreTestLock/LockCenter/LockPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.262745, 0.188235, 0.0470588, 1)
+theme_override_font_sizes/font_size = 16
+text = "PRE-TEST"
+
+[node name="LockSettingsButton" type="Button" parent="PreTestLock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(46, 46)
+layout_mode = 0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -70.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = 70.0
+theme_override_font_sizes/font_size = 17
+text = "⚙️"
