@@ -1,209 +1,16 @@
-[gd_scene format=3 uid="uid://beut66b72ljto"]
+[gd_scene load_steps=9 format=3 uid="uid://beut66b72ljto"]
 
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/dashboard_screen.gd" id="1_dash"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
 [ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="3_bg"]
 [ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
-[ext_resource type="Script" path="res://src/ui/components/gradient_rect.gd" id="5_grad"]
 [ext_resource type="PackedScene" uid="uid://bnoahjgwu5ia" path="res://src/ui/screens/dashboard/dashboard_mode_modal.tscn" id="6_modal"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="7_icon"]
+[ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="8_vig"]
+[ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="9_scan"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_avatar"]
-bg_color = Color(0.0705882, 0.141176, 0.227451, 1)
-border_width_left = 3
-border_width_top = 3
-border_width_right = 3
-border_width_bottom = 3
-border_color = Color(0.352941, 0.541176, 0.666667, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exp_bg"]
-bg_color = Color(0.0392157, 0.0823529, 0.12549, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.352941, 0.541176, 0.666667, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_resource"]
-bg_color = Color(0.0705882, 0.141176, 0.227451, 0.85)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.227451, 0.415686, 0.541176, 1)
-corner_radius_top_left = 6
-corner_radius_top_right = 6
-corner_radius_bottom_right = 6
-corner_radius_bottom_left = 6
-content_margin_left = 16.0
-content_margin_top = 10.0
-content_margin_right = 16.0
-content_margin_bottom = 10.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icon_btn"]
-bg_color = Color(0.0705882, 0.141176, 0.227451, 0.85)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.227451, 0.415686, 0.541176, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
-bg_color = Color(1, 0.388235, 0.388235, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.0235294, 0.054902, 0.0941176, 1)
-corner_radius_top_left = 10
-corner_radius_top_right = 10
-corner_radius_bottom_right = 10
-corner_radius_bottom_left = 10
-content_margin_left = 4.0
-content_margin_top = 2.0
-content_margin_right = 4.0
-content_margin_bottom = 2.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_at_risk"]
-bg_color = Color(1, 0.266667, 0.4, 0.1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 0.266667, 0.4, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 12.0
-content_margin_top = 12.0
-content_margin_right = 12.0
-content_margin_bottom = 12.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_at_risk_pill"]
-bg_color = Color(1, 0.266667, 0.4, 0.2)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(1, 0.266667, 0.4, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-content_margin_left = 10.0
-content_margin_top = 4.0
-content_margin_right = 10.0
-content_margin_bottom = 4.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_nav"]
-bg_color = Color(0.0980392, 0.196078, 0.313726, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.352941, 0.541176, 0.666667, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 24.0
-content_margin_top = 14.0
-content_margin_right = 24.0
-content_margin_bottom = 14.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_store"]
-bg_color = Color(0.0980392, 0.196078, 0.313726, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.352941, 0.541176, 0.666667, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 20.0
-content_margin_top = 16.0
-content_margin_right = 20.0
-content_margin_bottom = 16.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mode_ring"]
-bg_color = Color(0.0392157, 0.0588235, 0.0980392, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.823529, 0.247059, 1)
-corner_radius_top_left = 50
-corner_radius_top_right = 50
-corner_radius_bottom_right = 50
-corner_radius_bottom_left = 50
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mini"]
-bg_color = Color(0.0705882, 0.141176, 0.227451, 0.9)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.352941, 0.541176, 0.666667, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 16.0
-content_margin_top = 12.0
-content_margin_right = 16.0
-content_margin_bottom = 12.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mini_bar"]
-bg_color = Color(0.0392157, 0.0823529, 0.12549, 1)
-corner_radius_top_left = 3
-corner_radius_top_right = 3
-corner_radius_bottom_right = 3
-corner_radius_bottom_left = 3
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_deploy_outer"]
-bg_color = Color(1, 0.823529, 0.247059, 1)
-shadow_color = Color(1, 0.694118, 0.239216, 0.9)
-shadow_size = 12
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
-content_margin_left = 5.0
-content_margin_top = 5.0
-content_margin_right = 5.0
-content_margin_bottom = 5.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_deploy_inner"]
-bg_color = Color(0, 0, 0, 0)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-content_margin_left = 16.0
-content_margin_top = 14.0
-content_margin_right = 16.0
-content_margin_bottom = 14.0
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_deploy_btn"]
-bg_color = Color(0, 0, 0, 0)
-border_width_left = 0
-border_width_top = 0
-border_width_right = 0
-border_width_bottom = 0
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("8_vig")
 
 [node name="DashboardScreen" type="Control"]
 layout_mode = 3
@@ -222,7 +29,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0235294, 0.054902, 0.0941176, 1)
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
 
 [node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
@@ -236,6 +43,17 @@ texture = ExtResource("3_bg")
 expand_mode = 1
 stretch_mode = 6
 
+[node name="Vignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
 [node name="SafeAreaContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -243,340 +61,284 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 24
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
 script = ExtResource("2_safe")
 
 [node name="MainVBox" type="VBoxContainer" parent="SafeAreaContainer"]
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-theme_override_constants/separation = 16
+theme_override_constants/separation = 10
 
 [node name="TopSection" type="HBoxContainer" parent="SafeAreaContainer/MainVBox"]
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 12
 
-[node name="ProfileContainer" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="AvatarBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer"]
+[node name="ProfileCard" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(86, 86)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_avatar")
 
-[node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/AvatarBox"]
+[node name="ProfileRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard"]
 layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="AvatarBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+
+[node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/AvatarBox"]
+layout_mode = 2
+mouse_filter = 2
 texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ProfileInfo" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer"]
+[node name="ProfileInfo" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 4
 alignment = 1
 
-[node name="PlayerName" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/ProfileInfo"]
+[node name="PlayerName" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 22
 text = "COMMANDER_X"
 
-[node name="RankRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/ProfileInfo"]
-custom_minimum_size = Vector2(280, 0)
+[node name="RankRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo"]
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="RankLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/ProfileInfo/RankRow"]
+[node name="RankLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo/RankRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0, 1, 0.666667, 1)
-theme_override_font_sizes/font_size = 15
 text = "ELITE I"
 
-[node name="ExpLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/ProfileInfo/RankRow"]
+[node name="ExpLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo/RankRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
-theme_override_font_sizes/font_size = 11
 text = "1450 / 2000 EXP"
 horizontal_alignment = 2
 
-[node name="ExpBar" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/ProfileInfo"]
+[node name="ExpBar" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 13)
+custom_minimum_size = Vector2(240, 10)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_exp_bg")
 
-[node name="ExpBarFill" type="ColorRect" parent="SafeAreaContainer/MainVBox/TopSection/ProfileContainer/ProfileInfo/ExpBar"]
+[node name="ExpBarFill" type="ColorRect" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo/ExpBar"]
 unique_name_in_owner = true
 layout_mode = 1
 anchor_right = 0.725
 anchor_bottom = 1.0
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 1, 1, 1)
 
 [node name="TopSpacer" type="Control" parent="SafeAreaContainer/MainVBox/TopSection"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
 
 [node name="TopRight" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection"]
 layout_mode = 2
-size_flags_vertical = 8
-theme_override_constants/separation = 12
+size_flags_vertical = 4
+theme_override_constants/separation = 8
 alignment = 2
 
-[node name="ThreatGroup" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="ThreatLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatGroup"]
+[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.478431, 0.721569, 0.831373, 1)
-theme_override_font_sizes/font_size = 8
-text = "THREAT POINTS"
 
-[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatGroup"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatBox"]
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_resource")
-
-[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatGroup/ThreatBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ThreatIcon" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatGroup/ThreatBox/ThreatRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "💀"
-
-[node name="ThreatValue" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatGroup/ThreatBox/ThreatRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "1000"
-
-[node name="MaterialsGroup" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
-layout_mode = 2
-theme_override_constants/separation = 4
-
-[node name="MaterialsLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsGroup"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.478431, 0.721569, 0.831373, 1)
-theme_override_font_sizes/font_size = 8
-text = "UPGRADE MATERIALS"
-
-[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsGroup"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 0)
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_resource")
-
-[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsGroup/MaterialsBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="MaterialsIcon" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsGroup/MaterialsBox/MaterialsRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "🔧"
-
-[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsGroup/MaterialsBox/MaterialsRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 16
-text = "200"
-
-[node name="ActionButtons" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
-layout_mode = 2
-size_flags_vertical = 8
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 alignment = 1
 
-[node name="InboxButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ActionButtons"]
+[node name="ThreatIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatBox/ThreatRow"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 2
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatBox/ThreatRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(46, 46)
+layout_mode = 2
+text = "1000"
+
+[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="MaterialsIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsBox/MaterialsRow"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 3
+
+[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsBox/MaterialsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "200"
+
+[node name="InboxButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 2
 focus_mode = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("StyleBoxFlat_icon_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_icon_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_icon_btn")
-text = "✉️"
 
-[node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ActionButtons/InboxButton"]
+[node name="InboxIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/InboxButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 5
+monochrome = true
+
+[node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/InboxButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 34.0
+offset_left = 30.0
 offset_top = -4.0
-offset_right = 54.0
+offset_right = 50.0
 offset_bottom = 16.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_badge")
 
-[node name="InboxCount" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ActionButtons/InboxButton/InboxBadge"]
+[node name="InboxCount" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/InboxButton/InboxBadge"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 10
 text = "2"
 horizontal_alignment = 1
 
-[node name="SettingsButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ActionButtons"]
+[node name="SettingsButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(46, 46)
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 2
 focus_mode = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 17
-theme_override_styles/normal = SubResource("StyleBoxFlat_icon_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_icon_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_icon_btn")
-text = "⚙️"
+
+[node name="SettingsIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/SettingsButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 10
+monochrome = true
 
 [node name="AtRiskBanner" type="PanelContainer" parent="SafeAreaContainer/MainVBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_at_risk")
 
 [node name="AtRiskRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/AtRiskBanner"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="AtRiskIcon" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.266667, 0.4, 1)
-theme_override_font_sizes/font_size = 24
-text = "⚠"
-
 [node name="AtRiskBody" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 2
+theme_override_constants/separation = 4
 
 [node name="AtRiskTitle" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow/AtRiskBody"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.266667, 0.4, 1)
-theme_override_font_sizes/font_size = 11
-text = "PERFORMANCE ALERT — AT-RISK STATUS"
+text = "PERFORMANCE ALERT"
 
 [node name="AtRiskSub" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow/AtRiskBody"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.666667, 0.666667, 1)
-theme_override_font_sizes/font_size = 9
 text = "Alert body"
 autowrap_mode = 3
 
-[node name="AtRiskPillWrap" type="PanelContainer" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow"]
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_at_risk_pill")
-
-[node name="AtRiskPill" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow/AtRiskPillWrap"]
+[node name="AtRiskPill" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.266667, 0.4, 1)
-theme_override_font_sizes/font_size = 12
+size_flags_vertical = 4
 text = "35%"
+vertical_alignment = 1
 
 [node name="FlexSpacer" type="Control" parent="SafeAreaContainer/MainVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+mouse_filter = 2
 
 [node name="BottomSection" type="HBoxContainer" parent="SafeAreaContainer/MainVBox"]
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_constants/separation = 16
-alignment = 2
 
 [node name="BottomLeft" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection"]
 layout_mode = 2
 size_flags_vertical = 8
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="StoreButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(280, 52)
 layout_mode = 2
-size_flags_horizontal = 3
 focus_mode = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_store")
-theme_override_styles/hover = SubResource("StyleBoxFlat_store")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_store")
-text = "Store"
+text = "STORE"
 
 [node name="NavRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft"]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 
 [node name="IntelButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft/NavRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 42)
+custom_minimum_size = Vector2(136, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_nav")
-theme_override_styles/hover = SubResource("StyleBoxFlat_nav")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_nav")
-text = "Intel"
+text = "INTEL"
 
 [node name="ProgressButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft/NavRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 42)
+custom_minimum_size = Vector2(136, 48)
 layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 14
-theme_override_styles/normal = SubResource("StyleBoxFlat_nav")
-theme_override_styles/hover = SubResource("StyleBoxFlat_nav")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_nav")
-text = "Progress"
+text = "PROGRESS"
 
 [node name="BottomSpacer" type="Control" parent="SafeAreaContainer/MainVBox/BottomSection"]
 layout_mode = 2
 size_flags_horizontal = 3
+mouse_filter = 2
 
 [node name="BottomRight" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection"]
 layout_mode = 2
 size_flags_vertical = 8
-theme_override_constants/separation = 16
-alignment = 1
+theme_override_constants/separation = 12
+alignment = 2
 
 [node name="ModeSelector" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(72, 88)
 layout_mode = 2
-size_flags_vertical = 4
+size_flags_vertical = 8
 focus_mode = 0
-flat = true
-theme_override_styles/normal = SubResource("StyleBoxFlat_deploy_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_deploy_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_deploy_btn")
 
 [node name="ModeVBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector"]
 layout_mode = 1
@@ -589,108 +351,91 @@ mouse_filter = 2
 theme_override_constants/separation = 6
 alignment = 1
 
-[node name="ModeRing" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector/ModeVBox"]
+[node name="ModeGlyph" type="Control" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector/ModeVBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 60)
+custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_styles/panel = SubResource("StyleBoxFlat_mode_ring")
-
-[node name="ModeIcon" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector/ModeVBox/ModeRing"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 25
-text = "⚔️"
-horizontal_alignment = 1
-vertical_alignment = 1
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 8
+monochrome = true
 
 [node name="ModeText" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector/ModeVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
-theme_override_constants/shadow_offset_x = 1
-theme_override_constants/shadow_offset_y = 1
-theme_override_font_sizes/font_size = 10
 text = "SOLO"
 horizontal_alignment = 1
 
 [node name="DeployStack" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight"]
 layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 alignment = 2
 
 [node name="MiniTracker" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 0)
+custom_minimum_size = Vector2(280, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_mini")
 
 [node name="MiniVBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker"]
 layout_mode = 2
-theme_override_constants/separation = 6
+theme_override_constants/separation = 0
 
-[node name="MiniHeader" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
+[node name="MiniTitleBar" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
+unique_name_in_owner = true
 layout_mode = 2
 
-[node name="MiniLabel" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniHeader"]
+[node name="MiniBarRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniTitleBar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MiniLabel" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniTitleBar/MiniBarRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.478431, 0.721569, 0.831373, 1)
-theme_override_font_sizes/font_size = 8
-text = "CURRENT MISSION"
+text = "MISSION.DAT"
 
-[node name="MiniModule" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniHeader"]
+[node name="MiniModule" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniTitleBar/MiniBarRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.823529, 0.247059, 1)
-theme_override_font_sizes/font_size = 10
 text = "MODULE 1"
 
-[node name="MiniProgressBar" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
-custom_minimum_size = Vector2(0, 6)
+[node name="MiniWell" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_mini_bar")
 
-[node name="MiniProgressFill" type="ColorRect" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniProgressBar"]
+[node name="MiniWellBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="MiniProgressTrack" type="ColorRect" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell/MiniWellBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="MiniProgressFill" type="ColorRect" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell/MiniWellBox/MiniProgressTrack"]
 unique_name_in_owner = true
 layout_mode = 1
 anchor_right = 0.8
 anchor_bottom = 1.0
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 1, 1, 1)
 
-[node name="MiniProgressText" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
+[node name="MiniProgressText" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell/MiniWellBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.352941, 0.541176, 0.666667, 1)
-theme_override_font_sizes/font_size = 9
-text = "Stage 1/5 • 4/5 Lessons"
+text = "STAGE 1/5  4/5 LESSONS"
 horizontal_alignment = 1
 
-[node name="DeployOuter" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
+[node name="DeployButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 58)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_deploy_outer")
-
-[node name="DeployButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/DeployOuter"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 72)
-layout_mode = 2
-size_flags_horizontal = 3
 focus_mode = 0
-flat = true
-theme_override_styles/normal = SubResource("StyleBoxFlat_deploy_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_deploy_btn")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_deploy_btn")
+text = "DEPLOY  >"
 
-[node name="DeployInner" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/DeployOuter/DeployButton"]
-unique_name_in_owner = true
+[node name="Scanlines" type="Control" parent="."]
+modulate = Color(1, 1, 1, 1.4)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -698,38 +443,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_deploy_inner")
-
-[node name="DeployGradient" type="TextureRect" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/DeployOuter/DeployButton/DeployInner"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-script = ExtResource("5_grad")
-gradient_colors = PackedColorArray(1, 0.886275, 0.541176, 1, 1, 0.65098, 0.203922, 1, 0.85098, 0.301961, 0.0627451, 1)
-vertical = true
-
-[node name="DeployLabel" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/DeployOuter/DeployButton/DeployInner"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.964706, 0.847059, 1)
-theme_override_colors/font_shadow_color = Color(0.419608, 0.137255, 0.0196078, 1)
-theme_override_constants/shadow_offset_x = 3
-theme_override_constants/shadow_offset_y = 3
-theme_override_font_sizes/font_size = 30
-text = "DEPLOY"
-horizontal_alignment = 1
-vertical_alignment = 1
+script = ExtResource("9_scan")
 
 [node name="ModeModal" parent="." instance=ExtResource("6_modal")]
 unique_name_in_owner = true
@@ -749,7 +463,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
 
 [node name="LockDim" type="ColorRect" parent="PreTestLock"]
 layout_mode = 1
@@ -758,8 +471,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-color = Color(0.0235294, 0.054902, 0.0941176, 0.84)
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.84)
 
 [node name="LockCenter" type="CenterContainer" parent="PreTestLock"]
 layout_mode = 1
@@ -770,47 +482,80 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="LockPanel" type="VBoxContainer" parent="PreTestLock/LockCenter"]
-custom_minimum_size = Vector2(420, 0)
+[node name="LockWindow" type="PanelContainer" parent="PreTestLock/LockCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
-theme_override_constants/separation = 14
-alignment = 1
 
-[node name="LockTitle" type="Label" parent="PreTestLock/LockCenter/LockPanel"]
+[node name="LockVBox" type="VBoxContainer" parent="PreTestLock/LockCenter/LockWindow"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="LockTitleBar" type="PanelContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.823529, 0.247059, 1)
-theme_override_font_sizes/font_size = 18
+
+[node name="LockBarRow" type="HBoxContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockTitleBar"]
+layout_mode = 2
+
+[node name="LockFile" type="Label" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockTitleBar/LockBarRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "LOCK.DAT"
+
+[node name="LockWell" type="PanelContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="LockWellBox" type="VBoxContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockWell"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="LockTitle" type="Label" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockWell/LockWellBox"]
+unique_name_in_owner = true
+layout_mode = 2
 text = "PRE-TEST REQUIRED"
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="LockBody" type="Label" parent="PreTestLock/LockCenter/LockPanel"]
+[node name="LockBody" type="Label" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockWell/LockWellBox"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.909804, 0.941176, 1, 1)
-theme_override_font_sizes/font_size = 12
 text = "Complete your baseline assessment before the command centre unlocks."
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="PreTestButton" type="Button" parent="PreTestLock/LockCenter/LockPanel"]
+[node name="PreTestButton" type="Button" parent="PreTestLock/LockCenter/LockWindow/LockVBox"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
-theme_override_colors/font_color = Color(0.262745, 0.188235, 0.0470588, 1)
-theme_override_font_sizes/font_size = 16
-text = "PRE-TEST"
+focus_mode = 0
+text = "PRE-TEST  >"
 
 [node name="LockSettingsButton" type="Button" parent="PreTestLock"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(46, 46)
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 0
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -70.0
-offset_top = 24.0
-offset_right = -24.0
-offset_bottom = 70.0
-theme_override_font_sizes/font_size = 17
-text = "⚙️"
+offset_left = -60.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = 56.0
+focus_mode = 0
+
+[node name="LockSettingsIcon" type="Control" parent="PreTestLock/LockSettingsButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -10.0
+offset_top = -10.0
+offset_right = 10.0
+offset_bottom = 10.0
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 10
+monochrome = true
