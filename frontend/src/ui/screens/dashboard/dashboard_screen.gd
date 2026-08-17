@@ -207,19 +207,19 @@ func _apply_scale() -> void:
 	_apply_pixel_font_button(%SettingsButton, scaled.call(17))
 
 	var store_style := %StoreButton.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-	store_style.content_margin_left = scaled.call(120)
-	store_style.content_margin_right = scaled.call(120)
-	store_style.content_margin_top = scaled.call(30)
-	store_style.content_margin_bottom = scaled.call(30)
+	store_style.content_margin_left = scaled.call(20)
+	store_style.content_margin_right = scaled.call(20)
+	store_style.content_margin_top = scaled.call(14)
+	store_style.content_margin_bottom = scaled.call(14)
 	%StoreButton.add_theme_stylebox_override("normal", store_style)
 	%StoreButton.add_theme_stylebox_override("hover", store_style)
 	%StoreButton.add_theme_stylebox_override("pressed", store_style)
 
 	var nav_style := %IntelButton.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-	nav_style.content_margin_left = scaled.call(24)
-	nav_style.content_margin_right = scaled.call(24)
-	nav_style.content_margin_top = scaled.call(14)
-	nav_style.content_margin_bottom = scaled.call(14)
+	nav_style.content_margin_left = scaled.call(16)
+	nav_style.content_margin_right = scaled.call(16)
+	nav_style.content_margin_top = scaled.call(12)
+	nav_style.content_margin_bottom = scaled.call(12)
 	for btn in [%IntelButton, %ProgressButton]:
 		var btn_style := nav_style.duplicate() as StyleBoxFlat
 		btn.add_theme_stylebox_override("normal", btn_style)
@@ -227,10 +227,10 @@ func _apply_scale() -> void:
 		btn.add_theme_stylebox_override("pressed", btn_style)
 
 	var deploy_inner_style := %DeployInner.get_theme_stylebox("panel").duplicate() as StyleBoxFlat
-	deploy_inner_style.content_margin_left = scaled.call(30)
-	deploy_inner_style.content_margin_right = scaled.call(30)
-	deploy_inner_style.content_margin_top = scaled.call(30)
-	deploy_inner_style.content_margin_bottom = scaled.call(30)
+	deploy_inner_style.content_margin_left = scaled.call(16)
+	deploy_inner_style.content_margin_right = scaled.call(16)
+	deploy_inner_style.content_margin_top = scaled.call(12)
+	deploy_inner_style.content_margin_bottom = scaled.call(12)
 	%DeployInner.add_theme_stylebox_override("panel", deploy_inner_style)
 
 	%AvatarBox.custom_minimum_size = Vector2(scaled.call(86), scaled.call(86))
@@ -239,11 +239,13 @@ func _apply_scale() -> void:
 	%MaterialsBox.custom_minimum_size = Vector2(scaled.call(140), 0)
 	%InboxButton.custom_minimum_size = Vector2(scaled.call(46), scaled.call(46))
 	%SettingsButton.custom_minimum_size = Vector2(scaled.call(46), scaled.call(46))
+	%StoreButton.custom_minimum_size = Vector2(0, scaled.call(48))
 	%IntelButton.custom_minimum_size = Vector2(scaled.call(120), scaled.call(42))
 	%ProgressButton.custom_minimum_size = Vector2(scaled.call(120), scaled.call(42))
 	%ModeRing.custom_minimum_size = Vector2(scaled.call(60), scaled.call(60))
-	%DeployInner.custom_minimum_size = Vector2(scaled.call(120), scaled.call(90))
-	_mini_tracker.custom_minimum_size = Vector2(scaled.call(180), 0)
+	%ModeSelector.custom_minimum_size = Vector2(scaled.call(72), scaled.call(86))
+	%DeployButton.custom_minimum_size = Vector2(scaled.call(240), scaled.call(72))
+	_mini_tracker.custom_minimum_size = Vector2(scaled.call(240), 0)
 
 
 func _apply_pixel_font(label: Label, font_size: int) -> void:
@@ -294,4 +296,4 @@ func _on_deploy_pressed() -> void:
 	if _selected_mode == &"PVP":
 		push_warning("PvP Hub screen not built yet")
 	else:
-		push_warning("Mission Briefing screen not built yet")
+		Router.push(&"stage_select")

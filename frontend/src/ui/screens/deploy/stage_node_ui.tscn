@@ -1,0 +1,57 @@
+[gd_scene load_steps=2 format=3 uid="uid://cr3m1stagenode"]
+
+[ext_resource type="Script" path="res://src/ui/screens/deploy/stage_node_ui.gd" id="1_stage"]
+
+[node name="StageNodeUI" type="VBoxContainer"]
+custom_minimum_size = Vector2(40, 56)
+offset_right = 40.0
+offset_bottom = 56.0
+theme_override_constants/separation = 2
+alignment = 1
+script = ExtResource("1_stage")
+
+[node name="SelectArrow" type="Label" parent="."]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.494118, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 8
+text = "v"
+horizontal_alignment = 1
+
+[node name="CellButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+flat = true
+
+[node name="IndexLabel" type="Label" parent="CellButton"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 12
+text = "1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BossLabel" type="Label" parent="CellButton"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 14
+text = "X"
+horizontal_alignment = 1
+vertical_alignment = 1

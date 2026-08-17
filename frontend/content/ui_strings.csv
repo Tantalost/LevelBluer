@@ -101,3 +101,7 @@ PRETEST_ERR_LOAD,Could not load pre-test questions.,Hindi ma-load ang mga tanong
 PRETEST_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
 PRETEST_ERR_SUBMIT,Could not save your pre-test. Try again.,Hindi na-save ang pre-test. Subukan ulit.
 PRETEST_ERR_INCOMPLETE,Answer every question before submitting.,Sagutin lahat ng tanong bago mag-submit.
+STAGE_MODULE_FALLBACK,Module,Module
+STAGE_HINT_PURCHASE,Purchase: LMB,Bumili: LMB
+STAGE_HINT_ZOOM,Zoom: Scroll,Zoom: Scroll
+STAGE_HINT_MOVE,Move: WASD  RMB,Galaw: WASD  RMB

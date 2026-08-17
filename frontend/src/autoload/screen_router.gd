@@ -36,14 +36,100 @@ const SCREENS: Dictionary = {
 ## than dropping a student out of the app mid-session.
 signal quit_requested
 
+const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
+
+var active_stage_index: int = 0
 var _host: Control = null
 var _stack: Array[BaseScreen] = []
 var _busy: bool = false
+var _gameplay: Node = null
 
 
 ## Called once by the main scene, passing the Control that screens live inside.
 func register_host(host: Control) -> void:
 	_host = host
+
+
+## Hands off to the TD scene without change_scene_to_file(). Swapping the tree
+## root would destroy Main.tscn (ScreenHost, quit dialog, the UI stack).
+func start_level(stage_index: int) -> void:
+	active_stage_index = stage_index
+	if _busy or _host == null:
+		push_error("Router: cannot start level (host not registered or busy)")
+		return
+	if _gameplay != null and is_instance_valid(_gameplay):
+		push_warning("Router: a level is already running")
+		return
+	if not ResourceLoader.exists(LEVEL_SCENE):
+		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
+		return
+
+	_busy = true
+	var packed: PackedScene = load(LEVEL_SCENE) as PackedScene
+	if packed == null:
+		_busy = false
+		push_error("Router: failed to load %s" % LEVEL_SCENE)
+		return
+	var instance: Node = packed.instantiate()
+	if instance == null:
+		_busy = false
+		push_error("Router: failed to instantiate level")
+		return
+
+	if not _stack.is_empty():
+		_stack.back().on_exit()
+	_set_ui_stack_active(false)
+	_gameplay = instance
+	var parent: Node = _host.get_parent()
+	if parent == null:
+		_busy = false
+		_gameplay = null
+		instance.queue_free()
+		_set_ui_stack_active(true)
+		push_error("Router: ScreenHost has no parent")
+		return
+	parent.add_child(_gameplay)
+	_busy = false
+	screen_changed.emit(&"gameplay")
+
+
+func return_to_stage_select() -> void:
+	_teardown_gameplay()
+	if _host == null:
+		return
+	_set_ui_stack_active(true)
+	if not _stack.is_empty():
+		_stack.back().on_resume()
+	screen_changed.emit(current_screen_id())
+
+
+func restart_level() -> void:
+	var stage: int = active_stage_index
+	_teardown_gameplay()
+	start_level(stage)
+
+
+func open_codex(skill_id: String) -> void:
+	if _host == null:
+		push_error("Router: cannot open Codex (host not registered)")
+		return
+	var topic: String = skill_id if not skill_id.is_empty() else "ports"
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"dashboard")
+	push(&"intel_hub")
+	push(&"codex", {"skill_id": topic})
+
+
+func _teardown_gameplay() -> void:
+	if _gameplay == null:
+		return
+	if is_instance_valid(_gameplay):
+		var parent: Node = _gameplay.get_parent()
+		if parent != null:
+			parent.remove_child(_gameplay)
+		_gameplay.queue_free()
+	_gameplay = null
 
 
 func push(screen_id: StringName, args: Dictionary = {}) -> void:
@@ -102,6 +188,9 @@ func pop() -> void:
 ## back arrows to this, not to pop(), so screens that must not be dismissed
 ## (the forced password change) can refuse in one place.
 func request_back() -> void:
+	if _gameplay != null and is_instance_valid(_gameplay):
+		return_to_stage_select()
+		return
 	if _busy or _stack.is_empty():
 		return
 
@@ -118,6 +207,28 @@ func request_back() -> void:
 
 func current_screen_id() -> StringName:
 	return _stack.back().screen_id if not _stack.is_empty() else &""
+
+
+func _set_ui_stack_active(active: bool) -> void:
+	if _host == null:
+		return
+	_host.visible = active
+	_host.process_mode = Node.PROCESS_MODE_INHERIT if active else Node.PROCESS_MODE_DISABLED
+	_set_canvas_layers_visible(_host, active)
+
+
+func _set_canvas_layers_visible(node: Node, active: bool) -> void:
+	# CanvasLayer is not a CanvasItem. Hiding a parent Control does not stop it
+	# from compositing, which is why BREACH left Tiny Forest under the quiz.
+	var kids: Array = node.get_children()
+	for i in kids.size():
+		var child: Node = kids[i] as Node
+		if child == null:
+			continue
+		var layer: CanvasLayer = child as CanvasLayer
+		if layer != null:
+			layer.visible = active
+		_set_canvas_layers_visible(child, active)
 
 
 func _notification(what: int) -> void:

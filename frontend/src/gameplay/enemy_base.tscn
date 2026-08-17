@@ -1,0 +1,32 @@
+[gd_scene format=3 uid="uid://cenemybase001"]
+
+[ext_resource type="Script" path="res://src/gameplay/enemy_base.gd" id="1_enemy"]
+
+[sub_resource type="Gradient" id="Gradient_red"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.86, 0.22, 0.22, 1, 0.86, 0.22, 0.22, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_red"]
+gradient = SubResource("Gradient_red")
+width = 32
+height = 32
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_hit"]
+size = Vector2(40, 40)
+
+[node name="EnemyBase" type="PathFollow2D"]
+rotates = true
+loop = false
+script = ExtResource("1_enemy")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = SubResource("GradientTexture2D_red")
+
+[node name="Hitbox" type="Area2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+monitoring = true
+monitorable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Hitbox"]
+shape = SubResource("RectangleShape2D_hit")

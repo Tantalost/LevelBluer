@@ -1,0 +1,70 @@
+[gd_scene load_steps=3 format=3 uid="uid://bn7p4skillnode"]
+
+[ext_resource type="Script" path="res://src/ui/screens/deploy/skill_node_ui.gd" id="1_skill"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hit"]
+
+[node name="SkillNodeUI" type="Control"]
+custom_minimum_size = Vector2(80, 92)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 80.0
+offset_bottom = 92.0
+script = ExtResource("1_skill")
+
+[node name="AuraParticles" type="CPUParticles2D" parent="."]
+unique_name_in_owner = true
+position = Vector2(40, 10)
+emitting = true
+amount = 14
+lifetime = 1.15
+direction = Vector2(0, -1)
+spread = 28.0
+gravity = Vector2(0, -18)
+initial_velocity_min = 12.0
+initial_velocity_max = 28.0
+scale_amount_min = 1.0
+scale_amount_max = 2.0
+color = Color(0.494118, 0.941176, 1, 1)
+emission_shape = 1
+emission_sphere_radius = 10.0
+
+[node name="HitButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_top = 4.0
+offset_right = 68.0
+offset_bottom = 60.0
+focus_mode = 0
+flat = true
+theme_override_styles/normal = SubResource("StyleBoxEmpty_hit")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_hit")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_hit")
+
+[node name="NodeIcon" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_top = 18.0
+offset_right = 68.0
+offset_bottom = 42.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.494118, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "+"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="RankLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 0.0
+offset_top = 70.0
+offset_right = 80.0
+offset_bottom = 88.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.909804, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 10
+text = "0/1"
+horizontal_alignment = 1

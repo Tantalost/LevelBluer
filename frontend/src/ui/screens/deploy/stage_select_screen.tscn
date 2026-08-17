@@ -1,0 +1,350 @@
+[gd_scene load_steps=10 format=3 uid="uid://dq8k2stage0sel"]
+
+[ext_resource type="Script" path="res://src/ui/screens/deploy/stage_select_screen.gd" id="1_screen"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="2_stars"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/skill_tree_pan_zoom.gd" id="3_pan"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="4_safe"]
+[ext_resource type="PackedScene" uid="uid://cr3m1stagenode" path="res://src/ui/screens/deploy/stage_node_ui.tscn" id="5_stage"]
+[ext_resource type="PackedScene" uid="uid://bn7p4skillnode" path="res://src/ui/screens/deploy/skill_node_ui.tscn" id="6_skill"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="7_pine"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_flat"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_icon"]
+bg_color = Color(0.0705882, 0.141176, 0.227451, 0.55)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.227451, 0.415686, 0.541176, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_breach"]
+bg_color = Color(0.941176, 0.698039, 0.235294, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.964706, 0.847059, 1)
+content_margin_left = 28.0
+content_margin_top = 10.0
+content_margin_right = 28.0
+content_margin_bottom = 10.0
+
+[node name="StageSelectScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_screen")
+stage_count = 10
+stage_node_scene = ExtResource("5_stage")
+skill_node_scene = ExtResource("6_skill")
+module_titles = PackedStringArray("Tiny Forest")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = 0
+
+[node name="Starfield" type="ColorRect" parent="BackgroundLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+script = ExtResource("2_stars")
+
+[node name="TreeLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="SkillTreePanZoom" type="Control" parent="TreeLayer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+clip_contents = true
+script = ExtResource("3_pan")
+
+[node name="SkillTreeCanvas" type="Control" parent="TreeLayer/SkillTreePanZoom"]
+unique_name_in_owner = true
+layout_mode = 0
+mouse_filter = 2
+
+[node name="EdgeLayer" type="Control" parent="TreeLayer/SkillTreePanZoom/SkillTreeCanvas"]
+unique_name_in_owner = true
+z_index = 0
+layout_mode = 0
+mouse_filter = 2
+
+[node name="NodeLayer" type="Control" parent="TreeLayer/SkillTreePanZoom/SkillTreeCanvas"]
+unique_name_in_owner = true
+z_index = 1
+layout_mode = 0
+mouse_filter = 2
+
+[node name="HudLayer" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="SafeArea" type="MarginContainer" parent="HudLayer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 8
+script = ExtResource("4_safe")
+extra_margin = 12
+
+[node name="HudRoot" type="Control" parent="HudLayer/SafeArea"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="TopBar" type="Control" parent="HudLayer/SafeArea/HudRoot"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 88.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="ResourceStack" type="VBoxContainer" parent="HudLayer/SafeArea/HudRoot/TopBar"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 90.0
+offset_bottom = 88.0
+theme_override_constants/separation = 8
+
+[node name="CoinsRow" type="HBoxContainer" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CoinsIcon" type="ColorRect" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/CoinsRow"]
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="CoinsValue" type="Label" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/CoinsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "1"
+
+[node name="WoodRow" type="HBoxContainer" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WoodIcon" type="ColorRect" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/WoodRow"]
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.541176, 0.396078, 0.12549, 1)
+
+[node name="WoodValue" type="Label" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/WoodRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "0"
+
+[node name="GemsRow" type="HBoxContainer" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="GemsIcon" type="ColorRect" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/GemsRow"]
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.776471, 0.309804, 0.85098, 1)
+
+[node name="GemsValue" type="Label" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/GemsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "0"
+
+[node name="KeysRow" type="HBoxContainer" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="KeysIcon" type="ColorRect" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/KeysRow"]
+custom_minimum_size = Vector2(14, 14)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="KeysValue" type="Label" parent="HudLayer/SafeArea/HudRoot/TopBar/ResourceStack/KeysRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "0"
+
+[node name="SettingsButton" type="Button" parent="HudLayer/SafeArea/HudRoot/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_bottom = 40.0
+grow_horizontal = 0
+focus_mode = 0
+theme_override_colors/font_color = Color(0.909804, 0.941176, 1, 1)
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_icon")
+theme_override_styles/hover = SubResource("StyleBoxFlat_icon")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_icon")
+text = "*"
+
+[node name="InputHints" type="VBoxContainer" parent="HudLayer/SafeArea/HudRoot"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -196.0
+offset_right = 220.0
+offset_bottom = -128.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 4
+
+[node name="PurchaseHint" type="Label" parent="HudLayer/SafeArea/HudRoot/InputHints"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "Purchase: LMB"
+
+[node name="ZoomHint" type="Label" parent="HudLayer/SafeArea/HudRoot/InputHints"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "Zoom: Scroll"
+
+[node name="MoveHint" type="Label" parent="HudLayer/SafeArea/HudRoot/InputHints"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 8
+text = "Move: WASD  RMB"
+
+[node name="BottomHud" type="VBoxContainer" parent="HudLayer/SafeArea/HudRoot"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -196.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="ModuleHeader" type="HBoxContainer" parent="HudLayer/SafeArea/HudRoot/BottomHud"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="PrevModuleButton" type="Button" parent="HudLayer/SafeArea/HudRoot/BottomHud/ModuleHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.305882, 0.482353, 0.627451, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxEmpty_flat")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_flat")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_flat")
+text = "<"
+
+[node name="ModuleTitleBlock" type="VBoxContainer" parent="HudLayer/SafeArea/HudRoot/BottomHud/ModuleHeader"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="ModuleTitle" type="Label" parent="HudLayer/SafeArea/HudRoot/BottomHud/ModuleHeader/ModuleTitleBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.745098, 0.862745, 0.909804, 1)
+theme_override_font_sizes/font_size = 14
+text = "Tiny Forest"
+horizontal_alignment = 1
+
+[node name="TitleRule" type="ColorRect" parent="HudLayer/SafeArea/HudRoot/BottomHud/ModuleHeader/ModuleTitleBlock"]
+custom_minimum_size = Vector2(180, 3)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.494118, 0.941176, 1, 0.55)
+
+[node name="NextModuleButton" type="Button" parent="HudLayer/SafeArea/HudRoot/BottomHud/ModuleHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(0.305882, 0.482353, 0.627451, 1)
+theme_override_font_sizes/font_size = 12
+theme_override_styles/normal = SubResource("StyleBoxEmpty_flat")
+theme_override_styles/hover = SubResource("StyleBoxEmpty_flat")
+theme_override_styles/pressed = SubResource("StyleBoxEmpty_flat")
+text = ">"
+
+[node name="StageDock" type="Control" parent="HudLayer/SafeArea/HudRoot/BottomHud"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 108)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TreeBorder" type="Control" parent="HudLayer/SafeArea/HudRoot/BottomHud/StageDock"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_pine")
+
+[node name="StageMargin" type="MarginContainer" parent="HudLayer/SafeArea/HudRoot/BottomHud/StageDock"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 14
+
+[node name="StageRow" type="HBoxContainer" parent="HudLayer/SafeArea/HudRoot/BottomHud/StageDock/StageMargin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 8
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="BreachButton" type="Button" parent="HudLayer/SafeArea/HudRoot/BottomHud"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+theme_override_colors/font_color = Color(0.101961, 0.0705882, 0.0235294, 1)
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_breach")
+theme_override_styles/hover = SubResource("StyleBoxFlat_breach")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_breach")
+text = "BREACH"

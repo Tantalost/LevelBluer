@@ -1,0 +1,163 @@
+[gd_scene load_steps=4 format=3 uid="uid://bcodexintel0001"]
+
+[ext_resource type="Script" path="res://src/ui/screens/intel/codex_screen.gd" id="1_codex"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
+
+[node name="CodexScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_codex")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 1)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+script = ExtResource("2_safe")
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "<"
+
+[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "CODEX"
+
+[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ThreatIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox/ThreatRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "💀"
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "1000"
+
+[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MaterialsIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox/MaterialsRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🔧"
+
+[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox/MaterialsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "200"
+
+[node name="GoldRule" type="ColorRect" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="TabRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TabLineLeft" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/TabRow"]
+custom_minimum_size = Vector2(80, 2)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="UnitsTab" type="Button" parent="SafeAreaContainer/ScreenLayout/TabRow"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 10
+text = "UNITS"
+
+[node name="EnemiesTab" type="Button" parent="SafeAreaContainer/ScreenLayout/TabRow"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 10
+text = "ENEMIES"
+
+[node name="TabLineRight" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/TabRow"]
+custom_minimum_size = Vector2(80, 2)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="WeaknessBanner" type="Label" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 9
+text = "Critical Weakness: Ports"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="EntryGrid" type="GridContainer" parent="SafeAreaContainer/ScreenLayout/Scroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 4

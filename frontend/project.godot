@@ -23,6 +23,8 @@ SaveService="*uid://b40viyntql7vo"
 ContentDB="*uid://8t88s64sdbd2"
 AuthService="*uid://burf5g5ce6uqt"
 Router="*uid://cxqixc3u0y3mu"
+PlayerManager="*res://src/autoload/player_manager.gd"
+StageManager="*res://src/autoload/stage_manager.gd"
 
 [display]
 

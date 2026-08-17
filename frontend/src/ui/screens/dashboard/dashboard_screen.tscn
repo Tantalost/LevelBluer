@@ -134,10 +134,10 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-content_margin_left = 120.0
-content_margin_top = 30.0
-content_margin_right = 120.0
-content_margin_bottom = 30.0
+content_margin_left = 20.0
+content_margin_top = 16.0
+content_margin_right = 20.0
+content_margin_bottom = 16.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mode_ring"]
 bg_color = Color(0.0392157, 0.0588235, 0.0980392, 0.9)
@@ -193,10 +193,10 @@ corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-content_margin_left = 30.0
-content_margin_top = 30.0
-content_margin_right = 30.0
-content_margin_bottom = 30.0
+content_margin_left = 16.0
+content_margin_top = 14.0
+content_margin_right = 16.0
+content_margin_bottom = 14.0
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_deploy_btn"]
 bg_color = Color(0, 0, 0, 0)
@@ -334,6 +334,7 @@ size_flags_horizontal = 3
 layout_mode = 2
 size_flags_vertical = 8
 theme_override_constants/separation = 12
+alignment = 2
 
 [node name="ThreatGroup" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
 layout_mode = 2
@@ -403,7 +404,9 @@ text = "200"
 
 [node name="ActionButtons" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
 layout_mode = 2
+size_flags_vertical = 8
 theme_override_constants/separation = 8
+alignment = 1
 
 [node name="InboxButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ActionButtons"]
 unique_name_in_owner = true
@@ -502,15 +505,19 @@ size_flags_vertical = 3
 [node name="BottomSection" type="HBoxContainer" parent="SafeAreaContainer/MainVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
+alignment = 2
 
 [node name="BottomLeft" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection"]
 layout_mode = 2
-theme_override_constants/separation = 12
+size_flags_vertical = 8
+theme_override_constants/separation = 10
 
 [node name="StoreButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
@@ -521,11 +528,14 @@ text = "Store"
 
 [node name="NavRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft"]
 layout_mode = 2
-theme_override_constants/separation = 12
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
 
 [node name="IntelButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft/NavRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
@@ -536,7 +546,9 @@ text = "Intel"
 
 [node name="ProgressButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft/NavRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 42)
 layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 14
@@ -552,11 +564,14 @@ size_flags_horizontal = 3
 [node name="BottomRight" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection"]
 layout_mode = 2
 size_flags_vertical = 8
-theme_override_constants/separation = 20
+theme_override_constants/separation = 16
+alignment = 1
 
 [node name="ModeSelector" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 88)
 layout_mode = 2
+size_flags_vertical = 4
 focus_mode = 0
 flat = true
 theme_override_styles/normal = SubResource("StyleBoxFlat_deploy_btn")
@@ -602,13 +617,15 @@ horizontal_alignment = 1
 
 [node name="DeployStack" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight"]
 layout_mode = 2
-theme_override_constants/separation = 12
+size_flags_vertical = 4
+theme_override_constants/separation = 10
 alignment = 2
 
 [node name="MiniTracker" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(180, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_mini")
 
 [node name="MiniVBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker"]
@@ -658,11 +675,14 @@ horizontal_alignment = 1
 [node name="DeployOuter" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_styles/panel = SubResource("StyleBoxFlat_deploy_outer")
 
 [node name="DeployButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/DeployOuter"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 72)
 layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 flat = true
 theme_override_styles/normal = SubResource("StyleBoxFlat_deploy_btn")

@@ -1,0 +1,291 @@
+[gd_scene load_steps=4 format=3 uid="uid://bintelhubscr001"]
+
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_hub_screen.gd" id="1_hub"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
+
+[node name="IntelHubScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hub")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 1)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+script = ExtResource("2_safe")
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "<"
+
+[node name="HeaderTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "INTELLIGENCE"
+
+[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ThreatIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox/ThreatRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "💀"
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "1000"
+
+[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MaterialsIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox/MaterialsRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "🔧"
+
+[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox/MaterialsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "200"
+
+[node name="GoldRule" type="ColorRect" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="Body" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="HubTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 22
+text = "INTEL HUB"
+horizontal_alignment = 1
+
+[node name="DiamondRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Body"]
+custom_minimum_size = Vector2(0, 16)
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="LineLeft" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/DiamondRow"]
+custom_minimum_size = Vector2(120, 2)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="Diamond" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/DiamondRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="LineRight" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/DiamondRow"]
+custom_minimum_size = Vector2(120, 2)
+layout_mode = 2
+size_flags_vertical = 4
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="CardsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Body"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="LessonsCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 340)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="LessonsVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="LessonsIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox"]
+custom_minimum_size = Vector2(0, 86)
+layout_mode = 2
+
+[node name="BookBack" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox/LessonsIcon"]
+offset_left = 132.0
+offset_top = 18.0
+offset_right = 186.0
+offset_bottom = 78.0
+rotation = -0.22
+color = Color(0.298039, 0.85098, 0.541176, 1)
+
+[node name="BookMid" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox/LessonsIcon"]
+offset_left = 148.0
+offset_top = 10.0
+offset_right = 202.0
+offset_bottom = 74.0
+color = Color(0.94902, 0.960784, 0.972549, 1)
+
+[node name="BookFront" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox/LessonsIcon"]
+offset_left = 164.0
+offset_top = 16.0
+offset_right = 220.0
+offset_bottom = 80.0
+rotation = 0.18
+color = Color(0.788235, 0.294118, 0.294118, 1)
+
+[node name="LessonsTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "LESSONS"
+horizontal_alignment = 1
+
+[node name="LessonsSub" type="Label" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 8
+text = "Modules · Theory · Simulations"
+horizontal_alignment = 1
+
+[node name="LessonsEnter" type="Button" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/LessonsCard/LessonsVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 10
+text = "TAP TO ENTER  >"
+
+[node name="CodexCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 340)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CodexVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard"]
+layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="CodexIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox"]
+custom_minimum_size = Vector2(0, 86)
+layout_mode = 2
+
+[node name="CodexCoverL" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox/CodexIcon"]
+offset_left = 128.0
+offset_top = 16.0
+offset_right = 178.0
+offset_bottom = 78.0
+color = Color(0.305882, 0.764706, 0.968627, 1)
+
+[node name="CodexCoverR" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox/CodexIcon"]
+offset_left = 186.0
+offset_top = 16.0
+offset_right = 236.0
+offset_bottom = 78.0
+color = Color(0.305882, 0.764706, 0.968627, 1)
+
+[node name="CodexPageL" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox/CodexIcon"]
+offset_left = 136.0
+offset_top = 22.0
+offset_right = 176.0
+offset_bottom = 72.0
+color = Color(0.94902, 0.960784, 0.972549, 1)
+
+[node name="CodexPageR" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox/CodexIcon"]
+offset_left = 188.0
+offset_top = 22.0
+offset_right = 228.0
+offset_bottom = 72.0
+color = Color(0.94902, 0.960784, 0.972549, 1)
+
+[node name="CodexSpine" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox/CodexIcon"]
+offset_left = 176.0
+offset_top = 14.0
+offset_right = 188.0
+offset_bottom = 80.0
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="CodexTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "CODEX"
+horizontal_alignment = 1
+
+[node name="CodexSub" type="Label" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 8
+text = "Units · Enemies · Intel"
+horizontal_alignment = 1
+
+[node name="CodexEnter" type="Button" parent="SafeAreaContainer/ScreenLayout/Body/CardsRow/CodexCard/CodexVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 10
+text = "TAP TO ENTER  >"

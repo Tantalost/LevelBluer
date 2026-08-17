@@ -1,0 +1,427 @@
+[gd_scene load_steps=15 format=3 uid="uid://b8levelbase01"]
+
+[ext_resource type="Script" path="res://src/gameplay/level_manager.gd" id="1_mgr"]
+[ext_resource type="TileSet" uid="uid://cgridtileset01" path="res://assets/gameplay/grid_tileset.tres" id="2_tiles"]
+[ext_resource type="Script" path="res://src/gameplay/tower_placer.gd" id="3_placer"]
+[ext_resource type="PackedScene" uid="uid://ctowerbase001" path="res://src/gameplay/tower_base.tscn" id="4_tower"]
+[ext_resource type="PackedScene" uid="uid://cenemybase001" path="res://src/gameplay/enemy_base.tscn" id="5_enemy"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="6_font"]
+[ext_resource type="Shader" path="res://src/gameplay/quiz_modal_blur.gdshader" id="7_blur"]
+[ext_resource type="Script" path="res://src/gameplay/level_world.gd" id="8_world"]
+[ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="9_vig"]
+[ext_resource type="Shader" path="res://src/gameplay/result_vignette.gdshader" id="10_result"]
+
+[sub_resource type="Curve2D" id="Curve2D_track"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, 80, 400, 0, 0, 0, 0, 640, 180, 0, 0, 0, 0, 1200, 400)
+}
+point_count = 3
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_base"]
+radius = 36.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_quiz_blur"]
+shader = ExtResource("7_blur")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("9_vig")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_result"]
+shader = ExtResource("10_result")
+
+[node name="LevelBase" type="Node2D"]
+
+[node name="LevelManager" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("1_mgr")
+enemy_scene = ExtResource("5_enemy")
+
+[node name="Environment" type="Node2D" parent="."]
+
+[node name="Background" type="ColorRect" parent="Environment"]
+unique_name_in_owner = true
+z_index = -10
+offset_right = 1280.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.0588235, 0.0588235, 0.0823529, 1)
+
+[node name="LevelWorld" type="Node2D" parent="Environment"]
+script = ExtResource("8_world")
+
+[node name="GridMap" type="TileMapLayer" parent="Environment"]
+unique_name_in_owner = true
+tile_set = ExtResource("2_tiles")
+script = ExtResource("3_placer")
+tower_scene = ExtResource("4_tower")
+level_manager_path = NodePath("../../LevelManager")
+
+[node name="EnemyTrack" type="Path2D" parent="Environment"]
+unique_name_in_owner = true
+curve = SubResource("Curve2D_track")
+
+[node name="PlayerBase" type="Area2D" parent="Environment"]
+unique_name_in_owner = true
+position = Vector2(1200, 400)
+collision_layer = 0
+collision_mask = 2
+monitoring = true
+monitorable = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Environment/PlayerBase"]
+shape = SubResource("CircleShape2D_base")
+
+[node name="HeartLabel" type="Label" parent="Environment/PlayerBase"]
+unique_name_in_owner = true
+offset_left = -36.0
+offset_top = -158.0
+offset_right = 36.0
+offset_bottom = -138.0
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "5"
+horizontal_alignment = 1
+
+[node name="GameplayCanvas" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Vignette" type="ColorRect" parent="GameplayCanvas"]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="HUD" type="Control" parent="GameplayCanvas"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="GoldLabel" type="Label" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+layout_mode = 1
+offset_left = 28.0
+offset_top = 24.0
+offset_right = 220.0
+offset_bottom = 48.0
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "GOLD  5"
+vertical_alignment = 1
+
+[node name="WaveFrame" type="PanelContainer" parent="GameplayCanvas/HUD"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -90.0
+offset_top = 16.0
+offset_right = 90.0
+offset_bottom = 52.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="WaveLabel" type="Label" parent="GameplayCanvas/HUD/WaveFrame"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "0/5"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MapLabel" type="Label" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 18.0
+offset_right = -28.0
+offset_bottom = 38.0
+grow_horizontal = 0
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 11
+text = "MAP A1"
+horizontal_alignment = 2
+
+[node name="PhaseLabel" type="Label" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -220.0
+offset_top = 40.0
+offset_right = -28.0
+offset_bottom = 58.0
+grow_horizontal = 0
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = "QUIZ"
+horizontal_alignment = 2
+
+[node name="BaseHealthLabel" type="Label" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+offset_left = 28.0
+offset_top = 52.0
+offset_right = 220.0
+offset_bottom = 72.0
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "BASE  5"
+
+[node name="StartCluster" type="VBoxContainer" parent="GameplayCanvas/HUD"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -220.0
+offset_top = -92.0
+offset_right = -28.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 6
+alignment = 2
+
+[node name="StartWaveButton" type="Button" parent="GameplayCanvas/HUD/StartCluster"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 16
+text = "START"
+
+[node name="StartHintLabel" type="Label" parent="GameplayCanvas/HUD/StartCluster"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 8
+text = "Press Space"
+horizontal_alignment = 1
+
+[node name="BackBufferCopy" type="BackBufferCopy" parent="GameplayCanvas"]
+copy_mode = 2
+
+[node name="QuizModal" type="ColorRect" parent="GameplayCanvas"]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_quiz_blur")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(1, 1, 1, 1)
+
+[node name="PanelContainer" type="PanelContainer" parent="GameplayCanvas/QuizModal"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -110.0
+offset_right = 320.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="GameplayCanvas/QuizModal/PanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="QuestionLabel" type="Label" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "BKT Assessment: Which protocol operates on Port 443?"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="HBoxContainer" type="HBoxContainer" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="BtnCorrect" type="Button" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "HTTPS"
+
+[node name="BtnWrong" type="Button" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "HTTP"
+
+[node name="TowerUpgradePanel" type="PanelContainer" parent="GameplayCanvas"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 3
+anchors_preset = 12
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -280.0
+offset_top = -176.0
+offset_right = 280.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="GameplayCanvas/TowerUpgradePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="StatsLabel" type="Label" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 11
+text = "Basic Node | Dmg: 1"
+horizontal_alignment = 1
+
+[node name="UpgradeOptionsContainer" type="HBoxContainer" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="BtnClose" type="Button" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "Close"
+
+[node name="EndGameModal" type="ColorRect" parent="GameplayCanvas"]
+unique_name_in_owner = true
+visible = false
+material = SubResource("ShaderMaterial_result")
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(1, 1, 1, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="GameplayCanvas/EndGameModal"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -210.0
+offset_right = 280.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="TitleLabel" type="Label" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 22
+text = "SYSTEM BREACHED"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="ItemsLabel" type="Label" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "Items Acquired:"
+horizontal_alignment = 1
+
+[node name="GoldAcquiredLabel" type="Label" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "GOLD  0"
+horizontal_alignment = 1
+
+[node name="TipsLabel" type="Label" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = "Tips: Study more, then open Codex on the Dashboard before you breach again."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CodexButton" type="Button" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 14
+text = "Access Codex"
+
+[node name="UpgradeButton" type="Button" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 14
+text = "UPGRADE"
+
+[node name="RestartButton" type="Button" parent="GameplayCanvas/EndGameModal/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 12
+text = "RESTART"
+
+
