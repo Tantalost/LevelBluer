@@ -26,6 +26,17 @@ const STAGE_DB: Dictionary = {
 			{"enemy_count": 8, "spawn_delay": 0.8, "health_multiplier": 1.2, "enemy_type": "heavy"},
 		],
 	},
+	10: {
+		"name": "Module 1 Post-Assessment",
+		"type": "summative",
+		"starting_gold": 20,
+		"exam_question_count": 5,
+		"exam_required_score": 0.75,
+		"req_lesson": "mod1_all",
+		"waves": [
+			{"enemy_count": 15, "spawn_delay": 0.5, "health_multiplier": 1.5, "enemy_type": "heavy"},
+		],
+	},
 }
 
 

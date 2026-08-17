@@ -239,9 +239,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -320.0
-offset_top = -110.0
+offset_top = -130.0
 offset_right = 320.0
-offset_bottom = 110.0
+offset_bottom = 130.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -256,6 +256,15 @@ theme_override_constants/margin_bottom = 24
 layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
+
+[node name="ExamProgressLabel" type="Label" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = "Question X of Y"
+horizontal_alignment = 1
 
 [node name="QuestionLabel" type="Label" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

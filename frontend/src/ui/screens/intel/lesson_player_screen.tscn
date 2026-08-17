@@ -1,0 +1,346 @@
+[gd_scene format=3 uid="uid://ft6hboaq4b6g"]
+
+[ext_resource type="Script" path="res://src/ui/screens/intel/lesson_player_screen.gd" id="1_player"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="4_stars"]
+[ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="6_icon"]
+[ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="7_vig"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="8_pine"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("7_vig")
+
+[node name="LessonPlayerScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_player")
+
+[node name="Starfield" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+script = ExtResource("4_stars")
+
+[node name="Ground" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.101961, 0.0784314, 0.188235, 1)
+
+[node name="Treeline" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.52
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("8_pine")
+
+[node name="Vignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+script = ExtResource("2_safe")
+
+[node name="Panes" type="HBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="FilePane" type="PanelContainer" parent="SafeAreaContainer/Panes"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="FileBox" type="VBoxContainer" parent="SafeAreaContainer/Panes/FilePane"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ToggleRow" type="HBoxContainer" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TopicToggle" type="Button" parent="SafeAreaContainer/Panes/FilePane/FileBox/ToggleRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "TOPIC"
+
+[node name="CaseToggle" type="Button" parent="SafeAreaContainer/Panes/FilePane/FileBox/ToggleRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "CASE"
+
+[node name="CaseLabel" type="Label" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "CASE: MAIL-01"
+
+[node name="DateLabel" type="Label" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "DATE: 03/11/2026"
+
+[node name="TimeLabel" type="Label" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "TIME: 08:14AM"
+
+[node name="PhotoWell" type="PanelContainer" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PhotoStack" type="Control" parent="SafeAreaContainer/Panes/FilePane/FileBox/PhotoWell"]
+layout_mode = 2
+
+[node name="EvidenceGlyph" type="Control" parent="SafeAreaContainer/Panes/FilePane/FileBox/PhotoWell/PhotoStack"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -64.0
+offset_top = -64.0
+offset_right = 64.0
+offset_bottom = 64.0
+mouse_filter = 2
+script = ExtResource("6_icon")
+kind = 5
+monochrome = true
+
+[node name="TabTL" type="ColorRect" parent="SafeAreaContainer/Panes/FilePane/FileBox/PhotoWell/PhotoStack"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 0
+offset_right = 18.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.94902, 0.941176, 0.913725, 1)
+
+[node name="TabTR" type="ColorRect" parent="SafeAreaContainer/Panes/FilePane/FileBox/PhotoWell/PhotoStack"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -18.0
+offset_bottom = 18.0
+mouse_filter = 2
+color = Color(0.94902, 0.941176, 0.913725, 1)
+
+[node name="TabBL" type="ColorRect" parent="SafeAreaContainer/Panes/FilePane/FileBox/PhotoWell/PhotoStack"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -18.0
+offset_right = 18.0
+mouse_filter = 2
+color = Color(0.94902, 0.941176, 0.913725, 1)
+
+[node name="TabBR" type="ColorRect" parent="SafeAreaContainer/Panes/FilePane/FileBox/PhotoWell/PhotoStack"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -18.0
+offset_top = -18.0
+mouse_filter = 2
+color = Color(0.94902, 0.941176, 0.913725, 1)
+
+[node name="BodyLabel" type="Label" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "CASE FILE BODY"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="FooterLabel" type="Label" parent="SafeAreaContainer/Panes/FilePane/FileBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 10
+text = "LEVEL BLUE  //  INTEL"
+horizontal_alignment = 1
+
+[node name="ReportPane" type="PanelContainer" parent="SafeAreaContainer/Panes"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(480, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ReportBox" type="VBoxContainer" parent="SafeAreaContainer/Panes/ReportPane"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ReportHeader" type="HBoxContainer" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ReportTitle" type="Label" parent="SafeAreaContainer/Panes/ReportPane/ReportBox/ReportHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "REPORT FOR:"
+
+[node name="ProgressLabel" type="Label" parent="SafeAreaContainer/Panes/ReportPane/ReportBox/ReportHeader"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "FILE 01/06"
+
+[node name="CloseButton" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox/ReportHeader"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "X"
+
+[node name="FileNav" type="HBoxContainer" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PrevFile" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox/FileNav"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "<  FILE"
+
+[node name="NextFile" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox/FileNav"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(120, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "FILE  >"
+
+[node name="ChoiceList" type="VBoxContainer" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FlagA" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "[ ] FLAG A"
+alignment = 0
+autowrap_mode = 3
+
+[node name="FlagB" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+focus_mode = 0
+toggle_mode = true
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "[ ] FLAG B"
+alignment = 0
+autowrap_mode = 3
+
+[node name="StatusLabel" type="Label" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 24)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="SubmitButton" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "SUBMIT"
+
+[node name="Scanlines" type="Control" parent="."]
+modulate = Color(1, 1, 1, 2.2)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_scan")

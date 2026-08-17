@@ -22,6 +22,7 @@ const SCREENS: Dictionary = {
 	&"store":        "res://src/ui/screens/store/store_screen.tscn",
 	&"intel_hub":    "res://src/ui/screens/intel/intel_hub_screen.tscn",
 	&"lessons":      "res://src/ui/screens/intel/lessons_screen.tscn",
+	&"lesson_player": "res://src/ui/screens/intel/lesson_player_screen.tscn",
 	&"codex":        "res://src/ui/screens/intel/codex_screen.tscn",
 	&"progress":     "res://src/ui/screens/progress/progress_screen.tscn",
 	&"upgrades":     "res://src/ui/screens/deploy/upgrade_screen.tscn",
@@ -29,6 +30,7 @@ const SCREENS: Dictionary = {
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
 	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
+	&"victory":      "res://src/ui/screens/victory/victory_screen.tscn",
 }
 
 ## Emitted when the player tries to back out of the root screen. The main
@@ -119,6 +121,16 @@ func open_codex(skill_id: String) -> void:
 	replace_all(&"dashboard")
 	push(&"intel_hub")
 	push(&"codex", {"skill_id": topic})
+
+
+func open_victory(accuracy: float, gold: int) -> void:
+	if _host == null:
+		push_error("Router: cannot open Victory (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"dashboard")
+	push(&"victory", {"accuracy": accuracy, "gold": gold})
 
 
 func _teardown_gameplay() -> void:

@@ -13,20 +13,20 @@ enum GamePhase {
 
 @export var enemy_scene: PackedScene
 
-const MOCK_QUESTIONS: Array[Dictionary] = [
-	{
-		"text": "Which port is used for HTTPS?",
-		"correct": "443",
-		"wrong": "80",
-		"skill_id": "ports",
-	},
-	{
-		"text": "Which rule blocks all incoming traffic by default?",
-		"correct": "Implicit Deny",
-		"wrong": "Port Forwarding",
-		"skill_id": "firewalls",
-	},
-]
+const QUESTION_BANK: Dictionary = {
+	"ports": [
+		{"text": "Which port is used for HTTPS?", "correct": "443", "wrong": "80"},
+		{"text": "Which port handles SSH traffic?", "correct": "22", "wrong": "21"},
+	],
+	"firewalls": [
+		{"text": "Which rule blocks all incoming traffic by default?", "correct": "Implicit Deny", "wrong": "Port Forwarding"},
+		{"text": "A firewall operates primarily at which OSI layer?", "correct": "Network (Layer 3)", "wrong": "Application (Layer 7)"},
+	],
+	"crypto": [
+		{"text": "Which algorithm is asymmetric?", "correct": "RSA", "wrong": "AES"},
+		{"text": "What is the primary purpose of a hash?", "correct": "Integrity", "wrong": "Encryption"},
+	],
+}
 
 var current_phase: GamePhase = GamePhase.PRE_MATCH
 var current_gold: int = 5
@@ -35,6 +35,9 @@ var active_enemies: int = 0
 var current_question: Dictionary = {}
 var current_wave_index: int = 0
 var current_stage_config: Dictionary = {}
+var exam_questions_asked: int = 0
+var exam_questions_correct: int = 0
+var exam_history: Array[String] = []
 var _wave_token: int = 0
 var _wave_finished_spawning: bool = true
 var _wave_kills: int = 0
@@ -51,6 +54,7 @@ var _is_wave_intermission: bool = false
 @onready var _map_label: Label = %MapLabel
 @onready var _heart_label: Label = %HeartLabel
 @onready var _quiz_modal: ColorRect = %QuizModal
+@onready var _exam_progress_label: Label = %ExamProgressLabel
 @onready var _question_label: Label = %QuestionLabel
 @onready var _btn_correct: Button = %BtnCorrect
 @onready var _btn_wrong: Button = %BtnWrong
@@ -98,6 +102,7 @@ func _ready() -> void:
 	_heart_label.add_theme_color_override("font_color", Palette.HEART)
 	_start_hint_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_style_start_button()
+	_exam_progress_label.add_theme_color_override("font_color", Palette.GOLD)
 	_question_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_modal_title_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_items_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
@@ -123,9 +128,13 @@ func change_phase(new_phase: GamePhase) -> void:
 			_end_game_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
+			if current_wave_index == 0:
+				exam_questions_asked = 0
+				exam_questions_correct = 0
+				exam_history.clear()
 			_btn_correct.disabled = false
 			_btn_wrong.disabled = false
-			_load_quiz_question()
+			_load_next_question()
 			_quiz_modal.visible = true
 			print("[LevelManager] Entering Phase 1: QUIZ. Loading mock questions...")
 		GamePhase.PHASE_2_BUILD:
@@ -143,9 +152,19 @@ func change_phase(new_phase: GamePhase) -> void:
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
-			var weak_skill: String = PlayerManager.get_weakest_skill()
 			_show_result_screen(true)
-			_modal_title_label.text = "SYSTEM BREACHED\nCritical Weakness: " + weak_skill.capitalize()
+			if base_health <= 0:
+				var weak_skill: String = PlayerManager.get_weakest_skill()
+				_modal_title_label.text = "SYSTEM BREACHED\nCritical Weakness: " + weak_skill.capitalize()
+			elif _is_summative():
+				var exam_count: int = _exam_question_count()
+				var accuracy: float = 0.0
+				if exam_count > 0:
+					accuracy = float(exam_questions_correct) / float(exam_count)
+				var accuracy_pct: int = int(round(accuracy * 100.0))
+				_modal_title_label.text = "EXAM FAILED\nScore: " + str(accuracy_pct) + "% - Remediation Required"
+			else:
+				_modal_title_label.text = "SYSTEM BREACHED"
 			_codex_button.visible = true
 			_upgrade_button.visible = true
 			print("[LevelManager] Entering GAME_OVER. Match lost.")
@@ -153,7 +172,15 @@ func change_phase(new_phase: GamePhase) -> void:
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
-			_show_result_screen(false)
+			var stage_id: int = Router.active_stage_index + 1
+			PlayerManager.mark_stage_cleared(stage_id)
+			print("[Victory] Stage ", stage_id, " cleared. Max stage is now ", PlayerManager.mock_max_stage_cleared)
+			var accuracy: float = 1.0
+			if _is_summative():
+				var exam_count: int = _exam_question_count()
+				if exam_count > 0:
+					accuracy = float(exam_questions_correct) / float(exam_count)
+			Router.open_victory(accuracy, current_gold)
 			print("[LevelManager] Entering VICTORY. Match won.")
 	current_phase = new_phase
 	update_hud()
@@ -185,8 +212,14 @@ func _load_stage_config() -> void:
 	if current_stage_config.is_empty():
 		current_stage_config = StageManager.get_stage_config(1)
 	current_wave_index = 0
-	var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
-	current_gold = int(gold_stored)
+	exam_questions_asked = 0
+	exam_questions_correct = 0
+	if _is_summative():
+		# Pass reward only. Granting this here would double-pay on exam success.
+		current_gold = 0
+	else:
+		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
+		current_gold = int(gold_stored)
 	print("[Stage] Loaded " + str(current_stage_config.get("name", "Unknown")) + " (id " + str(stage_id) + ")")
 
 
@@ -209,6 +242,21 @@ func _current_wave_enemy_count() -> int:
 	var wave_data: Dictionary = _current_wave_data()
 	var count_stored: Variant = wave_data.get("enemy_count", 0)
 	return maxi(0, int(count_stored))
+
+
+func _is_summative() -> bool:
+	var type_stored: Variant = current_stage_config.get("type", "")
+	return str(type_stored) == "summative"
+
+
+func _exam_question_count() -> int:
+	var stored: Variant = current_stage_config.get("exam_question_count", 5)
+	return maxi(1, int(stored))
+
+
+func _exam_required_score() -> float:
+	var stored: Variant = current_stage_config.get("exam_required_score", 0.75)
+	return float(stored)
 
 
 func _phase_display_name() -> String:
@@ -236,15 +284,77 @@ func _on_quiz_wrong_pressed() -> void:
 	_resolve_quiz(2, false)
 
 
-func _load_quiz_question() -> void:
-	if MOCK_QUESTIONS.is_empty():
-		push_error("LevelManager: MOCK_QUESTIONS is empty")
+func _load_next_question() -> void:
+	if QUESTION_BANK.is_empty():
+		push_error("LevelManager: QUESTION_BANK is empty")
 		return
-	var index: int = randi() % MOCK_QUESTIONS.size()
-	current_question = MOCK_QUESTIONS[index]
+	var type_stored: Variant = current_stage_config.get("type", "")
+	var is_formative: bool = str(type_stored) == "formative"
+	if not is_formative:
+		current_question = _pick_summative_question()
+	else:
+		var target_skill: String = ""
+		var all_skills: Array = QUESTION_BANK.keys()
+		if all_skills.is_empty():
+			push_error("LevelManager: QUESTION_BANK has no skills")
+			return
+		if randf() <= 0.8:
+			target_skill = PlayerManager.get_weakest_skill()
+		else:
+			target_skill = str(all_skills[randi() % all_skills.size()])
+		if not QUESTION_BANK.has(target_skill):
+			target_skill = "ports"
+		var bank_stored: Variant = QUESTION_BANK[target_skill]
+		var skill_questions: Array = bank_stored as Array
+		if skill_questions.is_empty():
+			push_error("LevelManager: no questions for skill " + target_skill)
+			return
+		var q_stored: Variant = skill_questions[randi() % skill_questions.size()]
+		var selected_q: Dictionary = q_stored as Dictionary
+		current_question = selected_q.duplicate()
+		current_question["skill_id"] = target_skill
+	if current_question.is_empty():
+		push_error("LevelManager: failed to load a question")
+		return
 	_question_label.text = str(current_question.get("text", ""))
+	if _is_summative():
+		var current_q: int = exam_questions_asked + 1
+		var total_q: int = _exam_question_count()
+		_exam_progress_label.text = "Question " + str(current_q) + " of " + str(total_q)
+		_exam_progress_label.visible = true
+	else:
+		_exam_progress_label.visible = false
 	_btn_correct.text = str(current_question.get("correct", ""))
 	_btn_wrong.text = str(current_question.get("wrong", ""))
+
+
+func _pick_summative_question() -> Dictionary:
+	var all_questions: Array[Dictionary] = []
+	var skill_ids: Array = QUESTION_BANK.keys()
+	for i in skill_ids.size():
+		var skill_id: String = str(skill_ids[i])
+		var list_stored: Variant = QUESTION_BANK[skill_id]
+		var q_list: Array = list_stored as Array
+		for j in q_list.size():
+			var q_stored: Variant = q_list[j]
+			var q_dict: Dictionary = (q_stored as Dictionary).duplicate()
+			q_dict["skill_id"] = skill_id
+			all_questions.append(q_dict)
+	if all_questions.is_empty():
+		push_error("LevelManager: QUESTION_BANK has no questions")
+		return {}
+	var valid_questions: Array[Dictionary] = []
+	for i in all_questions.size():
+		var q: Dictionary = all_questions[i]
+		var text: String = str(q.get("text", ""))
+		if not exam_history.has(text):
+			valid_questions.append(q)
+	if valid_questions.is_empty():
+		exam_history.clear()
+		valid_questions = all_questions
+	var selected_q: Dictionary = valid_questions[randi() % valid_questions.size()]
+	exam_history.append(str(selected_q.get("text", "")))
+	return selected_q
 
 
 func _resolve_quiz(reward: int, is_correct: bool) -> void:
@@ -252,13 +362,39 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		return
 	_btn_correct.disabled = true
 	_btn_wrong.disabled = true
+	exam_questions_asked += 1
+	if is_correct:
+		exam_questions_correct += 1
 	var skill_id: String = str(current_question.get("skill_id", ""))
 	PlayerManager.update_mastery(skill_id, is_correct)
-	current_gold += reward
-	print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
+	if not _is_summative():
+		current_gold += reward
+		print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
+		_quiz_modal.visible = false
+		update_hud()
+		change_phase(GamePhase.PHASE_2_BUILD)
+		return
+	var exam_count: int = _exam_question_count()
+	if exam_questions_asked < exam_count:
+		_load_next_question()
+		_btn_correct.disabled = false
+		_btn_wrong.disabled = false
+		update_hud()
+		return
+	var accuracy: float = float(exam_questions_correct) / float(exam_count)
 	_quiz_modal.visible = false
-	update_hud()
-	change_phase(GamePhase.PHASE_2_BUILD)
+	if accuracy >= _exam_required_score():
+		print("[Exam] Passed with accuracy: " + str(accuracy))
+		var gold_stored: Variant = current_stage_config.get("starting_gold", 20)
+		current_gold = int(gold_stored)
+		update_hud()
+		change_phase(GamePhase.PHASE_2_BUILD)
+		return
+	print("[Exam] Failed with accuracy: " + str(accuracy))
+	var stage_id: int = Router.active_stage_index + 1
+	PlayerManager.lock_stage(stage_id)
+	print("[Exam] Failed. Locking Stage ", stage_id, " for remediation.")
+	change_phase(GamePhase.GAME_OVER)
 
 
 func _on_start_wave_pressed() -> void:

@@ -32,7 +32,6 @@ const MOCK_SKILL_DB: Dictionary = {
 
 ## Simulated save file. Replace with SaveService in a later milestone.
 var mock_coins: int = 5
-var mock_max_stage_cleared: int = 2
 var current_selected_stage: int = 0
 
 @export var stage_count: int = 10
@@ -75,6 +74,7 @@ func on_enter(_args: Dictionary) -> void:
 func on_resume() -> void:
 	visible = true
 	_set_canvas_layers_visible(true)
+	_refresh_breach_button()
 	_apply_scale()
 
 
@@ -118,7 +118,7 @@ func _rebuild_stages() -> void:
 		return
 
 	var count := maxi(1, stage_count)
-	current_selected_stage = clampi(current_selected_stage, 0, mini(count - 1, mock_max_stage_cleared))
+	current_selected_stage = clampi(current_selected_stage, 0, mini(count - 1, PlayerManager.mock_max_stage_cleared))
 	for i in count:
 		var node := stage_node_scene.instantiate() as StageNodeUI
 		if node == null:
@@ -213,13 +213,32 @@ func _refresh_stage_visuals() -> void:
 		var state := "LOCKED"
 		if node.index == current_selected_stage:
 			state = "SELECTED"
-		elif node.index <= mock_max_stage_cleared:
+		elif node.index <= PlayerManager.mock_max_stage_cleared:
 			state = "UNLOCKED"
 		node.apply_visual_state(state)
+	_refresh_breach_button()
+
+
+func _refresh_breach_button() -> void:
+	var stage_id: int = current_selected_stage + 1
+	var config: Dictionary = StageManager.get_stage_config(stage_id)
+	var req_stored: Variant = config.get("req_lesson", "")
+	var req: String = str(req_stored)
+	var misses_req: bool = not req.is_empty() and not PlayerManager.has_completed_lesson(req)
+	var is_remediation_locked: bool = PlayerManager.is_stage_locked(stage_id)
+	if misses_req:
+		%BreachButton.disabled = true
+		%BreachButton.text = "[LOCKED] COMPLETE LESSONS"
+	elif is_remediation_locked:
+		%BreachButton.disabled = true
+		%BreachButton.text = "[LOCKED] REMEDIATION REQUIRED"
+	else:
+		%BreachButton.disabled = false
+		%BreachButton.text = "BREACH"
 
 
 func _on_stage_pressed(index: int) -> void:
-	if index > mock_max_stage_cleared:
+	if index > PlayerManager.mock_max_stage_cleared:
 		print("[Stage Select] Stage locked.")
 		return
 	current_selected_stage = index
@@ -227,6 +246,14 @@ func _on_stage_pressed(index: int) -> void:
 
 
 func _on_breach_pressed() -> void:
+	var stage_id: int = current_selected_stage + 1
+	var config: Dictionary = StageManager.get_stage_config(stage_id)
+	var req_stored: Variant = config.get("req_lesson", "")
+	var req: String = str(req_stored)
+	if not req.is_empty() and not PlayerManager.has_completed_lesson(req):
+		return
+	if PlayerManager.is_stage_locked(stage_id):
+		return
 	Router.start_level(current_selected_stage)
 
 

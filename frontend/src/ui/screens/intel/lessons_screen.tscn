@@ -1,8 +1,16 @@
-[gd_scene load_steps=4 format=3 uid="uid://blessonsscr001"]
+[gd_scene load_steps=9 format=3 uid="uid://blessonsscr001"]
 
 [ext_resource type="Script" path="res://src/ui/screens/intel/lessons_screen.gd" id="1_lessons"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="4_stars"]
+[ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="6_icon"]
+[ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="7_vig"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="8_pine"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("7_vig")
 
 [node name="LessonsScreen" type="Control"]
 layout_mode = 3
@@ -13,7 +21,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_lessons")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Starfield" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +29,42 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0313726, 0.0509804, 0.0941176, 1)
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+script = ExtResource("4_stars")
+
+[node name="Ground" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.101961, 0.0784314, 0.188235, 1)
+
+[node name="Treeline" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.52
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("8_pine")
+
+[node name="Vignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
 
 [node name="SafeAreaContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -30,75 +73,81 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 14
 script = ExtResource("2_safe")
 
 [node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+[node name="OsBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(40, 40)
+custom_minimum_size = Vector2(44, 32)
 layout_mode = 2
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
-text = "<"
+theme_override_font_sizes/font_size = 12
+text = "X"
 
-[node name="HeaderText" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+[node name="OsLed" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.298039, 0.85098, 0.541176, 1)
+
+[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "LESSONS.DAT"
+
+[node name="OsCursor" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "_"
+
+[node name="OsSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 4
+mouse_filter = 2
 
-[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/HeaderText"]
+[node name="CounterLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 18
-text = "LESSONS"
-
-[node name="SubtitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/HeaderText"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 9
-text = "Choose your training module."
-
-[node name="CounterLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 12
 text = "01/05"
 vertical_alignment = 1
 
-[node name="HeaderRule" type="ColorRect" parent="SafeAreaContainer/ScreenLayout"]
+[node name="SubtitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.164706, 0.482353, 0.627451, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "SWIPE OR TAP A FILE"
+horizontal_alignment = 1
 
 [node name="Carousel" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 16
+theme_override_constants/separation = 12
 alignment = 1
-
-[node name="PrevButton" type="Button" parent="SafeAreaContainer/ScreenLayout/Carousel"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(40, 40)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_fonts/font = ExtResource("3_font")
-text = "<"
 
 [node name="ModuleCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Carousel"]
 unique_name_in_owner = true
@@ -109,97 +158,153 @@ size_flags_vertical = 3
 
 [node name="CardVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard"]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 0
+
+[node name="ModuleTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TitleBarRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleTitleBar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ModuleFile" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleTitleBar/TitleBarRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "MODULE_01.DAT"
+
+[node name="ChipA" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleTitleBar/TitleBarRow"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.94902, 0.960784, 0.972549, 0.35)
+
+[node name="ChipB" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleTitleBar/TitleBarRow"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.94902, 0.960784, 0.972549, 0.7)
+
+[node name="ModuleWell" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="WellBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell"]
+layout_mode = 2
+theme_override_constants/separation = 10
 alignment = 1
 
-[node name="ModuleBadge" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
+[node name="ModuleGlyph" type="Control" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+size_flags_horizontal = 4
+mouse_filter = 2
+script = ExtResource("6_icon")
+kind = 0
+monochrome = true
+
+[node name="ModuleBadge" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 8
+theme_override_font_sizes/font_size = 12
 text = "MODULE 1"
-
-[node name="ModuleIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 22
-text = "E"
 horizontal_alignment = 1
 
-[node name="ModuleTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
+[node name="ModuleTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 16
-text = "Phishing & Email Threats"
+theme_override_font_sizes/font_size = 18
+text = "PHISHING & EMAIL THREATS"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="ModuleDesc" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
+[node name="ModuleDesc" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 9
-text = "Identify malicious emails and spoofed senders"
+theme_override_font_sizes/font_size = 12
+text = "IDENTIFY MALICIOUS EMAILS AND SPOOFED SENDERS"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="ProgressRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
+[node name="LockHint" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "COMPLETE MODULE 1 TO UNLOCK"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ProgressRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ProgressText" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ProgressRow"]
+[node name="ProgressText" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox/ProgressRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 8
-text = "4/5 Lessons"
+theme_override_font_sizes/font_size = 12
+text = "0/5 LESSONS"
 
-[node name="ProgressTrack" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ProgressRow"]
-custom_minimum_size = Vector2(0, 10)
+[node name="ProgressTrack" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox/ProgressRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 12)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4
-color = Color(0.0431373, 0.0823529, 0.145098, 1)
+color = Color(0.0313726, 0.0509804, 0.0941176, 1)
 
-[node name="ProgressFill" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ProgressRow/ProgressTrack"]
+[node name="ProgressFill" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox/ProgressRow/ProgressTrack"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
-anchor_right = 0.8
+anchor_right = 0.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.305882, 0.764706, 0.968627, 1)
+color = Color(0.94902, 0.960784, 0.972549, 1)
 
-[node name="PercentLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ProgressRow"]
+[node name="PercentLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox/ModuleWell/WellBox/ProgressRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 8
-text = "80%"
+theme_override_font_sizes/font_size = 12
+text = "0%"
 
 [node name="ContinueButton" type="Button" parent="SafeAreaContainer/ScreenLayout/Carousel/ModuleCard/CardVBox"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 12
-text = ">  CONTINUE"
-
-[node name="NextButton" type="Button" parent="SafeAreaContainer/ScreenLayout/Carousel"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(40, 40)
-layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-theme_override_fonts/font = ExtResource("3_font")
-text = ">"
+theme_override_font_sizes/font_size = 16
+text = "CONTINUE  >"
 
 [node name="ChipRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 alignment = 1
+
+[node name="Scanlines" type="Control" parent="."]
+modulate = Color(1, 1, 1, 2.2)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_scan")

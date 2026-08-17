@@ -1,8 +1,16 @@
-[gd_scene load_steps=4 format=3 uid="uid://bcodexintel0001"]
+[gd_scene load_steps=9 format=3 uid="uid://bcodexintel0001"]
 
 [ext_resource type="Script" path="res://src/ui/screens/intel/codex_screen.gd" id="1_codex"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="4_stars"]
+[ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="6_icon"]
+[ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="7_vig"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="8_pine"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("7_vig")
 
 [node name="CodexScreen" type="Control"]
 layout_mode = 3
@@ -13,7 +21,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_codex")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Starfield" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,7 +29,42 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0313726, 0.0509804, 0.0941176, 1)
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+script = ExtResource("4_stars")
+
+[node name="Ground" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.101961, 0.0784314, 0.188235, 1)
+
+[node name="Treeline" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.52
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("8_pine")
+
+[node name="Vignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
 
 [node name="SafeAreaContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -30,134 +73,218 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 16
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 14
 script = ExtResource("2_safe")
 
 [node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+[node name="OsBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 32)
 layout_mode = 2
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 14
-text = "<"
+theme_override_font_sizes/font_size = 12
+text = "X"
 
-[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
+[node name="OsLed" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.298039, 0.85098, 0.541176, 1)
+
+[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "CODEX.DAT"
+
+[node name="OsCursor" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "_"
+
+[node name="OsSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/ThreatBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="ThreatIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/ThreatBox/ThreatRow"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("6_icon")
+kind = 2
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/ThreatBox/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "1000"
+
+[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/MaterialsBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="MaterialsIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/MaterialsBox/MaterialsRow"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("6_icon")
+kind = 3
+
+[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/MaterialsBox/MaterialsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "200"
+
+[node name="StatusLine" type="Label" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "SELECT A FILE"
+horizontal_alignment = 1
+
+[node name="CatalogCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CardVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CatalogTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TitleBarRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogTitleBar"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CatalogFile" type="Label" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogTitleBar/TitleBarRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 18
-text = "CODEX"
+theme_override_font_sizes/font_size = 11
+text = "UNITS.DAT"
 
-[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="ThreatIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox/ThreatRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "💀"
-
-[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/ThreatBox/ThreatRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 12
-text = "1000"
-
-[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="MaterialsIcon" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox/MaterialsRow"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "🔧"
-
-[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/HeaderBar/MaterialsBox/MaterialsRow"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 12
-text = "200"
-
-[node name="GoldRule" type="ColorRect" parent="SafeAreaContainer/ScreenLayout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 2)
-layout_mode = 2
-color = Color(0.941176, 0.698039, 0.235294, 1)
-
-[node name="TabRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
-layout_mode = 2
-theme_override_constants/separation = 12
-alignment = 1
-
-[node name="TabLineLeft" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/TabRow"]
-custom_minimum_size = Vector2(80, 2)
+[node name="ChipA" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogTitleBar/TitleBarRow"]
+custom_minimum_size = Vector2(12, 12)
 layout_mode = 2
 size_flags_vertical = 4
-color = Color(0.941176, 0.698039, 0.235294, 1)
+mouse_filter = 2
+color = Color(0.94902, 0.960784, 0.972549, 0.35)
 
-[node name="UnitsTab" type="Button" parent="SafeAreaContainer/ScreenLayout/TabRow"]
+[node name="ChipB" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogTitleBar/TitleBarRow"]
+custom_minimum_size = Vector2(12, 12)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.94902, 0.960784, 0.972549, 0.7)
+
+[node name="CatalogWell" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_vertical = 3
+
+[node name="WellBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TabRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="UnitsTab" type="Button" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/TabRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 12
 text = "UNITS"
 
-[node name="EnemiesTab" type="Button" parent="SafeAreaContainer/ScreenLayout/TabRow"]
+[node name="EnemiesTab" type="Button" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/TabRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 10
+theme_override_font_sizes/font_size = 12
 text = "ENEMIES"
 
-[node name="TabLineRight" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/TabRow"]
-custom_minimum_size = Vector2(80, 2)
-layout_mode = 2
-size_flags_vertical = 4
-color = Color(0.941176, 0.698039, 0.235294, 1)
-
-[node name="WeaknessBanner" type="Label" parent="SafeAreaContainer/ScreenLayout"]
+[node name="WeaknessBanner" type="Label" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 9
-text = "Critical Weakness: Ports"
+theme_override_font_sizes/font_size = 11
+text = "CRITICAL WEAKNESS: PORTS"
 horizontal_alignment = 1
+autowrap_mode = 3
 
-[node name="Scroll" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout"]
+[node name="Scroll" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="EntryGrid" type="GridContainer" parent="SafeAreaContainer/ScreenLayout/Scroll"]
+[node name="EntryGrid" type="GridContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/Scroll"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/h_separation = 14
 theme_override_constants/v_separation = 14
-columns = 4
+columns = 3
+
+[node name="Scanlines" type="Control" parent="."]
+modulate = Color(1, 1, 1, 2.2)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_scan")
