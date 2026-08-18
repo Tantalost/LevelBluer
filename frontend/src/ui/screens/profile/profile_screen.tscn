@@ -1,0 +1,543 @@
+[gd_scene load_steps=6 format=3 uid="uid://bprofilescr001"]
+
+[ext_resource type="Script" path="res://src/ui/screens/profile/profile_screen.gd" id="1_prof"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="5_font"]
+
+[node name="ProfileScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_prof")
+
+[node name="BackgroundFallback" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+
+[node name="Background" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.72)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 14
+script = ExtResource("2_safe")
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OsBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 12
+text = "X"
+
+[node name="OsLed" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 4
+color = Color(0.298039, 0.85098, 0.541176, 1)
+
+[node name="HeaderTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 12
+text = "PROFILE.SYS"
+
+[node name="OsCursor" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 12
+text = "_"
+
+[node name="OsSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Scroll" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="HeroCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HeroPad" type="MarginContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="HeroRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="AvatarBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad/HeroRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+
+[node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad/HeroRow/AvatarBox"]
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("4_pfp")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HeroInfo" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad/HeroRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="CallsignLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad/HeroRow/HeroInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "COMMANDER_X"
+
+[node name="RankLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad/HeroRow/HeroInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "RECRUIT I"
+
+[node name="SectionHero" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/HeroCard/HeroPad/HeroRow/HeroInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SECTION"
+
+[node name="IdentityCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IdentityCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="IdentityTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="IdentityFile" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityTitleBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "IDENTITY.DAT"
+
+[node name="IdentityWell" type="MarginContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="IdentityRows" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NameRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows"]
+layout_mode = 2
+
+[node name="FullNameLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/NameRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Full name"
+
+[node name="FullNameValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/NameRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+horizontal_alignment = 2
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="EmailRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows"]
+layout_mode = 2
+
+[node name="EmailLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/EmailRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Email"
+
+[node name="EmailValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/EmailRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+horizontal_alignment = 2
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="SectionRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows"]
+layout_mode = 2
+
+[node name="SectionLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/SectionRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Section"
+
+[node name="SectionValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/SectionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+horizontal_alignment = 2
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="StatusRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/StatusRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Status"
+
+[node name="StatusValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/IdentityCard/IdentityCol/IdentityWell/IdentityRows/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "—"
+horizontal_alignment = 2
+clip_text = true
+text_overrun_behavior = 3
+
+[node name="ProgressCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ProgressCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="ProgressTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ProgressFile" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressTitleBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "PROGRESS.DAT"
+
+[node name="ProgressWell" type="MarginContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="ProgressRows" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LevelRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="LevelLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/LevelRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Tower level"
+
+[node name="LevelValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/LevelRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "LV.1"
+horizontal_alignment = 2
+
+[node name="ExpRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="ExpLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/ExpRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Experience"
+
+[node name="ExpValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/ExpRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 / 500"
+horizontal_alignment = 2
+
+[node name="ExpBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 10)
+layout_mode = 2
+
+[node name="ExpBarFill" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/ExpBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_right = 0.2
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="SessionRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="SessionsLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/SessionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Sessions"
+
+[node name="SessionsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/SessionRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="StageRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="StageLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/StageRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Highest stage"
+
+[node name="StageValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/StageRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1"
+horizontal_alignment = 2
+
+[node name="PreRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="PreLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/PreRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Pre-test"
+
+[node name="PreValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/PreRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0%"
+horizontal_alignment = 2
+
+[node name="PostRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="PostLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/PostRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Post-test"
+
+[node name="PostValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/PostRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0%"
+horizontal_alignment = 2
+
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="ThreatLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Threat points"
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="MatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows"]
+layout_mode = 2
+
+[node name="MaterialsLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/MatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Materials"
+
+[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/ProgressCard/ProgressCol/ProgressWell/ProgressRows/MatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0"
+horizontal_alignment = 2
+
+[node name="SystemsCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SystemsCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="SystemsTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="SystemsFile" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsTitleBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "SYSTEMS.DAT"
+
+[node name="SystemsWell" type="MarginContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="SystemsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TowerCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="TowerCaption" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow/TowerCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "TOWER"
+horizontal_alignment = 1
+
+[node name="TowerLevel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow/TowerCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "LV.1"
+horizontal_alignment = 1
+
+[node name="GladeCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="GladeCaption" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow/GladeCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "GLADE"
+horizontal_alignment = 1
+
+[node name="GladeLevel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow/GladeCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "LV.1"
+horizontal_alignment = 1
+
+[node name="ForgeCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="ForgeCaption" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow/ForgeCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "FORGE"
+horizontal_alignment = 1
+
+[node name="ForgeLevel" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/SystemsCard/SystemsCol/SystemsWell/SystemsRow/ForgeCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "LV.1"
+horizontal_alignment = 1
+
+[node name="MasteryCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MasteryCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/MasteryCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="MasteryTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/MasteryCard/MasteryCol"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="MasteryFile" type="Label" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/MasteryCard/MasteryCol/MasteryTitleBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "MASTERY.DAT"
+
+[node name="MasteryWell" type="MarginContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/MasteryCard/MasteryCol"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="MasteryList" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/Scroll/Content/MasteryCard/MasteryCol/MasteryWell"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10

@@ -41,8 +41,11 @@ def _map_student(row: dict) -> StudentUserPayload:
         id=str(row["id"]),
         name=name or row.get("email", "Student"),
         email=row["email"],
+        firstName=row.get("first_name"),
+        lastName=row.get("last_name"),
         section=row.get("section"),
         status=row.get("status") or "Needs Review",
+        lastActive=row.get("last_active"),
         technical=bool(row.get("technical")),
         pre=int(row.get("pre") or 0),
         post=int(row.get("post") or 0),
@@ -86,6 +89,24 @@ def verify_token(token: str) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         ) from exc
+
+
+def fetch_student_by_id(student_id: str) -> dict:
+    try:
+        response = supabase.table("students").select("*").eq("id", student_id).execute()
+    except Exception as exc:
+        raise _supabase_error(exc) from exc
+    rows = response.data or []
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student not found",
+        )
+    return rows[0]
+
+
+def get_current_student(student_id: str) -> StudentUserPayload:
+    return _map_student(fetch_student_by_id(student_id))
 
 
 def _fetch_student_by_email(email: str) -> dict | None:

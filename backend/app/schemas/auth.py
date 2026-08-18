@@ -30,10 +30,13 @@ class StudentUserPayload(BaseModel):
     id: str = Field(serialization_alias="_id")
     name: str
     email: str
+    firstName: str | None = None
+    lastName: str | None = None
     role: str = "student"
     roleLabel: str = "Student"
     section: str | None = None
     status: str = "Needs Review"
+    lastActive: str | None = None
     technical: bool = False
     pre: int = 0
     post: int = 0

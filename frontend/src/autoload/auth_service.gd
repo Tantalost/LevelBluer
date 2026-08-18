@@ -16,6 +16,17 @@ enum Result {
 
 const DEFAULT_API_BASE := "http://127.0.0.1:8000"
 const SESSION_PATH := "user://session.dat"
+const RANK_STEP := 500
+const RANKS := [
+	"RECRUIT I",
+	"RECRUIT II",
+	"OPERATIVE I",
+	"OPERATIVE II",
+	"SPECIALIST",
+	"ELITE I",
+	"ELITE II",
+	"COMMANDER",
+]
 
 var _participant_code: String = ""
 var _token: String = ""
@@ -27,6 +38,19 @@ var _current_stage: int = 1
 var _mastery: Dictionary = {}
 var _pre_test_completed: bool = false
 var _http: HTTPRequest
+var _user: Dictionary = {}
+var _points: int = 0
+var _section: String = ""
+var _email: String = ""
+var _full_name: String = ""
+var _status: String = "Needs Review"
+var _last_active: String = ""
+var _sessions: int = 0
+var _pre_score: int = 0
+var _post_score: int = 0
+var _tower_level: int = 1
+var _glade_level: int = 1
+var _forge_level: int = 1
 
 
 func _ready() -> void:
@@ -62,6 +86,83 @@ func threat_points() -> int:
 
 func current_stage() -> int:
 	return _current_stage
+
+
+func points() -> int:
+	return _points
+
+
+func section() -> String:
+	return _section
+
+
+func email() -> String:
+	return _email
+
+
+func full_name() -> String:
+	return _full_name if not _full_name.is_empty() else _display_name
+
+
+func status_label() -> String:
+	return _status
+
+
+func last_active() -> String:
+	return _last_active
+
+
+func sessions() -> int:
+	return _sessions
+
+
+func pre_score() -> int:
+	return _pre_score
+
+
+func post_score() -> int:
+	return _post_score
+
+
+func tower_level() -> int:
+	return _tower_level
+
+
+func glade_level() -> int:
+	return _glade_level
+
+
+func forge_level() -> int:
+	return _forge_level
+
+
+func mastery() -> Dictionary:
+	return _mastery.duplicate()
+
+
+func _rank_index() -> int:
+	return clampi(int(_points / RANK_STEP), 0, RANKS.size() - 1)
+
+
+func rank_title() -> String:
+	return RANKS[_rank_index()]
+
+
+func next_rank_points() -> int:
+	var index := _rank_index()
+	if index >= RANKS.size() - 1:
+		return maxi(_points, RANK_STEP * (RANKS.size() - 1))
+	return (index + 1) * RANK_STEP
+
+
+func exp_into_rank() -> int:
+	if _rank_index() >= RANKS.size() - 1:
+		return RANK_STEP
+	return _points % RANK_STEP
+
+
+func exp_rank_span() -> int:
+	return RANK_STEP
 
 
 func has_pre_test_completed() -> bool:
@@ -112,6 +213,22 @@ func restore_session() -> bool:
 	var mastery_data: Variant = data.get("mastery", {})
 	_mastery = mastery_data if typeof(mastery_data) == TYPE_DICTIONARY else {}
 	_pre_test_completed = bool(data.get("pre_test_completed", false))
+	var user_data: Variant = data.get("user", {})
+	if typeof(user_data) == TYPE_DICTIONARY and not user_data.is_empty():
+		_apply_user_profile(user_data, false)
+	else:
+		_points = int(data.get("points", 0))
+		_section = str(data.get("section", ""))
+		_email = str(data.get("email", ""))
+		_full_name = str(data.get("full_name", _display_name))
+		_status = str(data.get("status", "Needs Review"))
+		_last_active = str(data.get("last_active", ""))
+		_sessions = int(data.get("sessions", 0))
+		_pre_score = int(data.get("pre", 0))
+		_post_score = int(data.get("post", 0))
+		_tower_level = int(data.get("tower_level", 1))
+		_glade_level = int(data.get("glade_level", 1))
+		_forge_level = int(data.get("forge_level", 1))
 
 	if _signed_in and not _token.is_empty() and not _participant_code.is_empty():
 		session_changed.emit(true)
@@ -191,6 +308,19 @@ func sign_out() -> void:
 	_current_stage = 1
 	_mastery = {}
 	_pre_test_completed = false
+	_user = {}
+	_points = 0
+	_section = ""
+	_email = ""
+	_full_name = ""
+	_status = "Needs Review"
+	_last_active = ""
+	_sessions = 0
+	_pre_score = 0
+	_post_score = 0
+	_tower_level = 1
+	_glade_level = 1
+	_forge_level = 1
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
 	session_changed.emit(false)
 
@@ -220,6 +350,21 @@ func submit_pretest(answers: Array) -> Result:
 	_persist(_signed_in, false)
 	session_changed.emit(_signed_in)
 	return Result.OK
+
+
+func refresh_profile() -> bool:
+	if _token.is_empty():
+		return false
+	var parsed: Variant = await _request_json("/api/auth/me", HTTPClient.METHOD_GET, {}, true)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return false
+	if parsed.has("error") or parsed.has("detail"):
+		return false
+	if str(parsed.get("_id", parsed.get("id", ""))).is_empty():
+		return false
+	_apply_user_profile(parsed)
+	_persist(_signed_in, false)
+	return true
 
 
 func _api_base() -> String:
@@ -265,18 +410,37 @@ func _request_json(
 	return parsed
 
 
-func _apply_user_profile(user: Dictionary) -> void:
-	_display_name = _format_profile_name(str(user.get("name", "")))
-	_materials = int(user.get("materials", -1))
-	_threat_points = int(user.get("threatPoints", user.get("threat_points", -1)))
-	_current_stage = int(user.get("highestUnlockedStage", user.get("highest_unlocked_stage", 1)))
+func _apply_user_profile(user: Dictionary, overwrite_name: bool = true) -> void:
+	_user = user.duplicate(true)
+	if overwrite_name or _display_name.is_empty() or _display_name == "COMMANDER_X":
+		_display_name = _format_profile_name(str(user.get("name", _display_name)))
+	_full_name = str(user.get("name", _full_name))
+	_email = str(user.get("email", _email))
+	_section = str(user.get("section", _section))
+	_status = str(user.get("status", _status if not _status.is_empty() else "Needs Review"))
+	_last_active = str(user.get("lastActive", user.get("last_active", _last_active)))
+	_points = int(user.get("points", _points))
+	_sessions = int(user.get("sessions", _sessions))
+	_pre_score = int(user.get("pre", _pre_score))
+	_post_score = int(user.get("post", _post_score))
+	_materials = int(user.get("materials", _materials))
+	_threat_points = int(user.get("threatPoints", user.get("threat_points", _threat_points)))
+	_current_stage = int(user.get("highestUnlockedStage", user.get("highest_unlocked_stage", _current_stage)))
+
+	var buildings: Variant = user.get("buildingLevels", user.get("building_levels", {}))
+	if typeof(buildings) == TYPE_DICTIONARY:
+		_tower_level = int(buildings.get("tower", _tower_level))
+		_glade_level = int(buildings.get("glade", _glade_level))
+		_forge_level = int(buildings.get("forge", _forge_level))
+	else:
+		_tower_level = int(user.get("tower_level", _tower_level))
+		_glade_level = int(user.get("glade_level", _glade_level))
+		_forge_level = int(user.get("forge_level", _forge_level))
 
 	var mastery_data: Variant = user.get("mastery", {})
 	if typeof(mastery_data) == TYPE_DICTIONARY:
 		_mastery = mastery_data
-	else:
-		_mastery = {}
-	_pre_test_completed = bool(user.get("preTestCompleted", false))
+	_pre_test_completed = bool(user.get("preTestCompleted", _pre_test_completed))
 
 
 static func _format_profile_name(name: String) -> String:
@@ -305,6 +469,19 @@ func _persist(signed_in: bool, pending_password_change: bool) -> void:
 		"current_stage": _current_stage,
 		"mastery": _mastery,
 		"pre_test_completed": _pre_test_completed,
+		"user": _user,
+		"points": _points,
+		"section": _section,
+		"email": _email,
+		"full_name": _full_name,
+		"status": _status,
+		"last_active": _last_active,
+		"sessions": _sessions,
+		"pre": _pre_score,
+		"post": _post_score,
+		"tower_level": _tower_level,
+		"glade_level": _glade_level,
+		"forge_level": _forge_level,
 	}
 	var file := FileAccess.open(SESSION_PATH, FileAccess.WRITE)
 	if file == null:

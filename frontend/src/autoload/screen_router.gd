@@ -29,6 +29,7 @@ const SCREENS: Dictionary = {
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
+	&"profile":      "res://src/ui/screens/profile/profile_screen.tscn",
 	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
 	&"victory":      "res://src/ui/screens/victory/victory_screen.tscn",
 }

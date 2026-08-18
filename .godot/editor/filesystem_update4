@@ -1,0 +1,7 @@
+res://content/ui_strings.en.translation
+res://content/ui_strings.tl.translation
+res://src/ui/ui_scale.gd
+res://src/ui/screens/dashboard/dashboard_mode_modal.gd
+res://src/ui/screens/dashboard/dashboard_screen.gd
+res://src/ui/screens/settings/settings_screen.gd
+res://src/autoload/screen_router.gd

@@ -78,6 +78,7 @@ theme_override_constants/separation = 12
 [node name="ProfileCard" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection"]
 unique_name_in_owner = true
 layout_mode = 2
+mouse_default_cursor_shape = 2
 
 [node name="ProfileRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard"]
 layout_mode = 2

@@ -1,12 +1,18 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status
 
 from app.schemas.auth import (
     ChangePasswordRequest,
     ChangePasswordResponse,
     LoginRequest,
     LoginResponse,
+    StudentUserPayload,
 )
-from app.services.auth_service import change_student_password, login_student, verify_token
+from app.services.auth_service import (
+    change_student_password,
+    get_current_student,
+    login_student,
+    verify_token,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -23,6 +29,18 @@ def _extract_bearer_token(authorization: str | None) -> str:
 @router.post("/login", response_model=LoginResponse, response_model_by_alias=True)
 def login(payload: LoginRequest) -> LoginResponse:
     return login_student(payload.email, payload.password)
+
+
+@router.get("/me", response_model=StudentUserPayload, response_model_by_alias=True)
+def me(authorization: str | None = Header(default=None)) -> StudentUserPayload:
+    token = _extract_bearer_token(authorization)
+    claims = verify_token(token)
+    if claims.get("role") != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only student accounts can use this endpoint",
+        )
+    return get_current_student(str(claims["id"]))
 
 
 @router.post("/change-password", response_model=ChangePasswordResponse, response_model_by_alias=True)

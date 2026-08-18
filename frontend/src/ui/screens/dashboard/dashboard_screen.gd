@@ -71,6 +71,11 @@ func _ready() -> void:
 	%PreTestButton.pressed.connect(func() -> void: Router.push(&"pretest"))
 	_lock_settings.pressed.connect(func() -> void: Router.push(&"settings"))
 	_mode_modal.mode_confirmed.connect(_on_mode_confirmed)
+	_profile_card.gui_input.connect(_on_profile_gui)
+	_profile_card.mouse_entered.connect(_set_profile_hover.bind(true))
+	_profile_card.mouse_exited.connect(_set_profile_hover.bind(false))
+	_profile_card.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_make_card_click_through(_profile_card)
 
 
 func on_enter(_args: Dictionary) -> void:
@@ -155,8 +160,11 @@ func _refresh_data() -> void:
 	_player_name.text = AuthService.display_name()
 	_threat_value.text = str(_threat_points)
 	_materials_value.text = str(_materials)
-	_rank.text = tr("DASH_RANK")
-	_exp.text = tr("DASH_EXP")
+	_rank.text = AuthService.rank_title()
+	_exp.text = "%d / %d EXP" % [AuthService.points(), AuthService.next_rank_points()]
+	var span := maxi(AuthService.exp_rank_span(), 1)
+	_exp_fill.anchor_right = clampf(float(AuthService.exp_into_rank()) / float(span), 0.05, 1.0)
+	_exp_fill.offset_right = 0.0
 	_store_button.text = tr("DASH_STORE").to_upper()
 	_intel_button.text = tr("DASH_INTEL").to_upper()
 	_progress_button.text = tr("DASH_PROGRESS").to_upper()
@@ -223,6 +231,36 @@ func _on_deploy_pressed() -> void:
 		Router.push(&"stage_select")
 
 
+func _on_profile_gui(event: InputEvent) -> void:
+	var mouse := event as InputEventMouseButton
+	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
+		return
+	Router.push(&"profile")
+
+
+func _set_profile_hover(hovered: bool) -> void:
+	_style_profile_frame(Palette.TEXT_PRIMARY if hovered else Palette.CYAN)
+
+
+func _make_card_click_through(card: Control) -> void:
+	var nodes: Array[Node] = [card]
+	var i: int = 0
+	while i < nodes.size():
+		var node: Node = nodes[i]
+		var kids: Array = node.get_children()
+		for k in kids.size():
+			var child: Node = kids[k] as Node
+			if child != null:
+				nodes.append(child)
+		i += 1
+	for n in nodes.size():
+		if n == 0:
+			continue
+		var control := nodes[n] as Control
+		if control != null:
+			control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
 func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = bg
@@ -265,13 +303,11 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 func _style_avatar() -> void:
 	var box := _pixel_box(Palette.FOREST_NIGHT, Palette.CYAN, 0, 2)
 	_avatar_box.add_theme_stylebox_override("panel", box)
-	var inner := _pixel_box(Color(Palette.BG_HEADER, 0.92), Palette.CYAN, 0, 0)
-	inner.content_margin_left = 8.0
-	inner.content_margin_right = 10.0
-	inner.content_margin_top = 8.0
-	inner.content_margin_bottom = 8.0
-	_profile_card.add_theme_stylebox_override("panel", inner)
-	var frame := _pixel_box(Color(Palette.BG_HEADER, 0.92), Palette.CYAN, 0, 2)
+	_style_profile_frame(Palette.CYAN)
+
+
+func _style_profile_frame(accent: Color) -> void:
+	var frame := _pixel_box(Color(Palette.BG_HEADER, 0.92), accent, 0, 2)
 	frame.content_margin_left = 8.0
 	frame.content_margin_right = 10.0
 	frame.content_margin_top = 8.0
