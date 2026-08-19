@@ -17,6 +17,7 @@ var unlocked_skills: Array[String] = ["firewall_1"]
 var locked_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
+var purchased_items: Array[String] = []
 var mock_max_stage_cleared: int = 9
 
 
@@ -88,6 +89,7 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 func _reset_lesson_state() -> void:
 	completed_lessons.clear()
 	lesson_progress.clear()
+	purchased_items.clear()
 
 
 func _progress_path() -> String:
@@ -126,12 +128,20 @@ func _load_progress() -> void:
 			var module_id := str(keys[i])
 			if not module_id.is_empty():
 				lesson_progress[module_id] = int(progress_dict[module_id])
+	var owned_raw: Variant = data.get("purchased_items", [])
+	if typeof(owned_raw) == TYPE_ARRAY:
+		var owned_arr: Array = owned_raw
+		for i in owned_arr.size():
+			var item_id := str(owned_arr[i])
+			if not item_id.is_empty() and not purchased_items.has(item_id):
+				purchased_items.append(item_id)
 
 
 func _save_progress() -> void:
 	var payload := {
 		"completed_lessons": completed_lessons,
 		"lesson_progress": lesson_progress,
+		"purchased_items": purchased_items,
 	}
 	var file := FileAccess.open(_progress_path(), FileAccess.WRITE)
 	if file == null:
@@ -153,6 +163,20 @@ func unlock_stage(stage_id: int) -> void:
 
 func is_stage_locked(stage_id: int) -> bool:
 	return locked_stages.has(stage_id)
+
+
+func owns_store_item(item_id: String) -> bool:
+	return not item_id.is_empty() and purchased_items.has(item_id)
+
+
+func purchase_store_item(item_id: String, price: int) -> bool:
+	if item_id.is_empty() or owns_store_item(item_id):
+		return false
+	if not AuthService.spend_threat_points(price):
+		return false
+	purchased_items.append(item_id)
+	_save_progress()
+	return true
 
 
 func complete_lesson(lesson_id: String) -> void:

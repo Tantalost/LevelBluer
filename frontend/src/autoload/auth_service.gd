@@ -75,6 +75,22 @@ func threat_points() -> int:
 	return _threat_points
 
 
+func wallet_threat_points() -> int:
+	return _threat_points if _threat_points >= 0 else 1000
+
+
+func spend_threat_points(amount: int) -> bool:
+	if amount < 0:
+		return false
+	var current := wallet_threat_points()
+	if current < amount:
+		return false
+	_threat_points = current - amount
+	if _signed_in:
+		_persist(_signed_in, false)
+	return true
+
+
 func current_stage() -> int:
 	return _current_stage
 

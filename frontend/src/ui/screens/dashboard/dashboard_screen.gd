@@ -154,8 +154,8 @@ func _apply_lock_state() -> void:
 
 
 func _refresh_data() -> void:
+	_threat_points = AuthService.wallet_threat_points()
 	_materials = AuthService.materials() if AuthService.materials() >= 0 else DEFAULT_MATERIALS
-	_threat_points = AuthService.threat_points() if AuthService.threat_points() >= 0 else DEFAULT_THREAT_POINTS
 	_current_stage = AuthService.current_stage()
 	_player_name.text = AuthService.display_name()
 	_threat_value.text = str(_threat_points)

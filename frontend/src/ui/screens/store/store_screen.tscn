@@ -1,0 +1,272 @@
+[gd_scene format=3 uid="uid://bstoreintel0001"]
+
+[ext_resource type="Script" path="res://src/ui/screens/store/store_screen.gd" id="1_store"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="4_stars"]
+[ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="6_icon"]
+[ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="7_vig"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="8_pine"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("7_vig")
+
+[node name="StoreScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_store")
+
+[node name="Starfield" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+script = ExtResource("4_stars")
+
+[node name="Ground" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+color = Color(0.101961, 0.0784314, 0.188235, 1)
+
+[node name="Treeline" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.52
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+script = ExtResource("8_pine")
+
+[node name="Vignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 14
+script = ExtResource("2_safe")
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="OsBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HeaderBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BackButton" type="Button" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 32)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "X"
+
+[node name="OsLed" type="ColorRect" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+mouse_filter = 2
+size_flags_vertical = 4
+color = Color(0.298039, 0.85098, 0.541176, 1)
+
+[node name="HeaderTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "STORE.DAT"
+
+[node name="OsCursor" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 12
+text = "_"
+
+[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/ThreatBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Skull" type="Control" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/ThreatBox/ThreatRow"]
+custom_minimum_size = Vector2(16, 16)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("6_icon")
+kind = 2
+monochrome = true
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar/ThreatBox/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 10
+text = "1000"
+
+[node name="CategoryRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ItemScroll" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ItemGrid" type="GridContainer" parent="SafeAreaContainer/ScreenLayout/ItemScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 2
+
+[node name="Scanlines" type="Control" parent="."]
+modulate = Color(1, 1, 1, 2.2)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("5_scan")
+
+[node name="PurchaseModal" type="ColorRect" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Center" type="CenterContainer" parent="PurchaseModal"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ModalCard" type="PanelContainer" parent="PurchaseModal/Center"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
+
+[node name="ModalBox" type="VBoxContainer" parent="PurchaseModal/Center/ModalCard"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ModalTitle" type="Label" parent="PurchaseModal/Center/ModalCard/ModalBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "ITEM"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ModalText" type="Label" parent="PurchaseModal/Center/ModalCard/ModalBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "PRICE: 0 TP"
+horizontal_alignment = 1
+
+[node name="ModalButtons" type="HBoxContainer" parent="PurchaseModal/Center/ModalCard/ModalBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="ConfirmButton" type="Button" parent="PurchaseModal/Center/ModalCard/ModalBox/ModalButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "CONFIRM"
+
+[node name="CancelButton" type="Button" parent="PurchaseModal/Center/ModalCard/ModalBox/ModalButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "CANCEL"
+
+[node name="Toast" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -160.0
+offset_top = -72.0
+offset_right = 160.0
+offset_bottom = -32.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="ToastLabel" type="Label" parent="Toast"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+text = "OK"
+horizontal_alignment = 1
+autowrap_mode = 3
