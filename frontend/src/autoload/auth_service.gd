@@ -17,16 +17,7 @@ enum Result {
 const DEFAULT_API_BASE := "http://127.0.0.1:8000"
 const SESSION_PATH := "user://session.dat"
 const RANK_STEP := 500
-const RANKS := [
-	"RECRUIT I",
-	"RECRUIT II",
-	"OPERATIVE I",
-	"OPERATIVE II",
-	"SPECIALIST",
-	"ELITE I",
-	"ELITE II",
-	"COMMANDER",
-]
+const RANKS: PackedStringArray = ["RECRUIT I", "RECRUIT II", "OPERATIVE I", "OPERATIVE II", "SPECIALIST", "ELITE I", "ELITE II", "COMMANDER"]
 
 var _participant_code: String = ""
 var _token: String = ""

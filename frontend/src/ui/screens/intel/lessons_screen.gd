@@ -135,7 +135,7 @@ func _select_module(next_index: int) -> void:
 	var locked: bool = not _is_unlocked(_index)
 	var complete: bool = _is_complete(_index)
 	var total: int = maxi(1, LessonCatalog.lesson_count(module_id))
-	var done: int = total if complete else PlayerManager.get_lesson_progress(module_id)
+	var done: int = mini(PlayerManager.get_lesson_progress(module_id), total)
 	var pct: float = 0.0 if locked else clampf(float(done) / float(total), 0.0, 1.0)
 	var accent_name := "muted" if locked else str(module.get("accent", "cyan"))
 	var accent: Color = _accent_of(accent_name)
@@ -192,14 +192,16 @@ func _is_unlocked(index: int) -> bool:
 	if index <= 0:
 		return true
 	var prev: Dictionary = _modules[index - 1]
-	return PlayerManager.has_completed_lesson(str(prev.get("id", "")))
+	var prev_id := str(prev.get("id", ""))
+	return PlayerManager.get_lesson_progress(prev_id) >= LessonCatalog.lesson_count(prev_id)
 
 
 func _is_complete(index: int) -> bool:
 	if index < 0 or index >= _modules.size():
 		return false
 	var module: Dictionary = _modules[index]
-	return PlayerManager.has_completed_lesson(str(module.get("id", "")))
+	var module_id := str(module.get("id", ""))
+	return PlayerManager.get_lesson_progress(module_id) >= LessonCatalog.lesson_count(module_id)
 
 
 func _prepare_swipe_surface() -> void:

@@ -288,9 +288,15 @@ theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 11
 text = "FILE  >"
 
-[node name="ChoiceList" type="VBoxContainer" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+[node name="ChoiceScroll" type="ScrollContainer" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ChoiceList" type="VBoxContainer" parent="SafeAreaContainer/Panes/ReportPane/ReportBox/ChoiceScroll"]
 unique_name_in_owner = true
 layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
 [node name="FlagA" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
@@ -322,8 +328,9 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 24)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 12
+theme_override_font_sizes/font_size = 11
 horizontal_alignment = 1
+autowrap_mode = 3
 
 [node name="SubmitButton" type="Button" parent="SafeAreaContainer/Panes/ReportPane/ReportBox"]
 unique_name_in_owner = true
