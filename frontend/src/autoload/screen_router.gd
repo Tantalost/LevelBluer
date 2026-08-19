@@ -27,6 +27,7 @@ const SCREENS: Dictionary = {
 	&"progress":     "res://src/ui/screens/progress/progress_screen.tscn",
 	&"upgrades":     "res://src/ui/screens/deploy/upgrade_screen.tscn",
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
+	&"module_stages": "res://src/ui/screens/deploy/module_stage_screen.tscn",
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
 	&"profile":      "res://src/ui/screens/profile/profile_screen.tscn",
@@ -112,6 +113,17 @@ func restart_level() -> void:
 	start_level(stage)
 
 
+func open_lessons() -> void:
+	if _host == null:
+		push_error("Router: cannot open Lessons (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"dashboard")
+	push(&"intel_hub")
+	push(&"lessons")
+
+
 func open_codex(skill_id: String) -> void:
 	if _host == null:
 		push_error("Router: cannot open Codex (host not registered)")
@@ -125,13 +137,38 @@ func open_codex(skill_id: String) -> void:
 
 
 func open_victory(accuracy: float, gold: int) -> void:
+	open_results({
+		"won": true,
+		"materials": maxi(0, gold),
+		"accuracy": accuracy,
+	})
+
+
+func open_defeat(tip: String, weak_skill: String) -> void:
+	open_results({
+		"won": false,
+		"materials": 0,
+		"tip": tip,
+		"weak_skill": weak_skill,
+	})
+
+
+func open_results(args: Dictionary) -> void:
 	if _host == null:
-		push_error("Router: cannot open Victory (host not registered)")
+		push_error("Router: cannot open results (host not registered)")
 		return
 	_teardown_gameplay()
 	_set_ui_stack_active(true)
 	replace_all(&"dashboard")
-	push(&"victory", {"accuracy": accuracy, "gold": gold})
+	push(&"victory", args)
+
+
+func retry_level() -> void:
+	if not _stack.is_empty() and _stack.back().screen_id == &"victory":
+		var leaving: BaseScreen = _stack.pop_back()
+		leaving.on_exit()
+		leaving.queue_free()
+	start_level(active_stage_index)
 
 
 func _teardown_gameplay() -> void:

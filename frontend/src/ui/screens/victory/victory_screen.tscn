@@ -1,7 +1,17 @@
-[gd_scene load_steps=3 format=3 uid="uid://bvictoryscr0001"]
+[gd_scene load_steps=11 format=3 uid="uid://bvictoryscr0001"]
 
 [ext_resource type="Script" path="res://src/ui/screens/victory/victory_screen.gd" id="1_victory"]
-[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="2_font"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="2_stars"]
+[ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="3_safe"]
+[ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
+[ext_resource type="Shader" uid="uid://c232k5rpb823v" path="res://src/gameplay/vignette.gdshader" id="5_vig"]
+[ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="6_scan"]
+[ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="7_geo"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="8_icon"]
+[ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="9_bg"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
+shader = ExtResource("5_vig")
 
 [node name="VictoryScreen" type="Control"]
 layout_mode = 3
@@ -12,66 +22,395 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_victory")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Starfield" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 0
-color = Color(0.0588235, 0.0588235, 0.0823529, 0.94)
+mouse_filter = 2
+color = Color(0.0431373, 0.027451, 0.0784314, 1)
+script = ExtResource("2_stars")
 
-[node name="CenterContainer" type="CenterContainer" parent="."]
+[node name="CityArt" type="TextureRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+modulate = Color(0.72, 0.82, 1, 0.7)
+texture = ExtResource("9_bg")
+expand_mode = 1
+stretch_mode = 6
 
-[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+[node name="MapDim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.46)
+
+[node name="HeroArt" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchor_left = 0.52
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+modulate = Color(0.82, 0.92, 1, 0.92)
+texture = ExtResource("4_pfp")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Vignette" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_vignette")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="SafeArea" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 18
+script = ExtResource("3_safe")
+extra_margin = 16
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeArea"]
 layout_mode = 2
-theme_override_constants/separation = 18
+theme_override_constants/separation = 20
+
+[node name="TopBar" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ResultLabel" type="Label" parent="SafeArea/ScreenLayout/TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "RESULT"
+vertical_alignment = 1
+
+[node name="TopSpacer" type="Control" parent="SafeArea/ScreenLayout/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="ProfileButton" type="Control" parent="SafeArea/ScreenLayout/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(236, 48)
+layout_mode = 2
+script = ExtResource("7_geo")
+geo = 2
+shear = 16.0
+fill_key = "panel"
+border_key = "cyan"
+
+[node name="ProfileRow" type="HBoxContainer" parent="SafeArea/ScreenLayout/TopBar/ProfileButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_right = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
 alignment = 1
 
-[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="AvatarBox" type="PanelContainer" parent="SafeArea/ScreenLayout/TopBar/ProfileButton/ProfileRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 22
-text = "SYSTEM SECURED"
-horizontal_alignment = 1
+size_flags_vertical = 4
+mouse_filter = 2
 
-[node name="AccuracyLabel" type="Label" parent="CenterContainer/VBoxContainer"]
-unique_name_in_owner = true
+[node name="AvatarImage" type="TextureRect" parent="SafeArea/ScreenLayout/TopBar/ProfileButton/ProfileRow/AvatarBox"]
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 12
-text = "Exam Accuracy: --%"
-horizontal_alignment = 1
+mouse_filter = 2
+texture = ExtResource("4_pfp")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="GoldLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="PlayerName" type="Label" parent="SafeArea/ScreenLayout/TopBar/ProfileButton/ProfileRow"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 12
-text = "Credits Earned: --"
-horizontal_alignment = 1
+size_flags_horizontal = 3
+text = "<GUEST>"
+clip_text = true
+vertical_alignment = 1
 
-[node name="MasteryLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+[node name="MaterialsBox" type="Control" parent="SafeArea/ScreenLayout/TopBar"]
+custom_minimum_size = Vector2(130, 48)
+layout_mode = 2
+script = ExtResource("7_geo")
+geo = 2
+shear = 12.0
+fill_key = "panel"
+border_key = "gold"
+
+[node name="MaterialsRow" type="HBoxContainer" parent="SafeArea/ScreenLayout/TopBar/MaterialsBox"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_right = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="MaterialsIcon" type="Control" parent="SafeArea/ScreenLayout/TopBar/MaterialsBox/MaterialsRow"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("8_icon")
+kind = 3
+
+[node name="MaterialsCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/TopBar/MaterialsBox/MaterialsRow"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 2
+
+[node name="MaterialsValue" type="Label" parent="SafeArea/ScreenLayout/TopBar/MaterialsBox/MaterialsRow/MaterialsCol"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 9
-text = "Network Threat Matrix Updated."
+text = "0"
+
+[node name="MaterialsDelta" type="Label" parent="SafeArea/ScreenLayout/TopBar/MaterialsBox/MaterialsRow/MaterialsCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "+0"
+
+[node name="TitleBlock" type="VBoxContainer" parent="SafeArea/ScreenLayout"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StageName" type="Label" parent="SafeArea/ScreenLayout/TitleBlock"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "STAGE"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="BtnContinue" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="SafeArea/ScreenLayout/TitleBlock"]
 unique_name_in_owner = true
 layout_mode = 2
-focus_mode = 0
-theme_override_fonts/font = ExtResource("2_font")
-theme_override_font_sizes/font_size = 12
-text = "Return to Dashboard"
+text = "STAGE COMPLETE"
+horizontal_alignment = 1
+
+[node name="MainRow" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 36
+
+[node name="LeftCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow"]
+custom_minimum_size = Vector2(176, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 1
+theme_override_constants/separation = 14
+
+[node name="TypeChip" type="Control" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(176, 40)
+layout_mode = 2
+script = ExtResource("7_geo")
+geo = 2
+title = "STAGE"
+fill_key = "panel"
+border_key = "cyan"
+title_size = 10
+shear = 14.0
+
+[node name="ArtWell" type="PanelContainer" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(176, 280)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="ArtCenter" type="CenterContainer" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ArtWell"]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="ArtGlyph" type="Control" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ArtWell/ArtCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+mouse_filter = 2
+script = ExtResource("8_icon")
+kind = 9
+monochrome = true
+
+[node name="MidCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow"]
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.4
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="WinBlock" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow/MidCol"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="MaterialsBanner" type="Control" parent="SafeArea/ScreenLayout/MainRow/MidCol/WinBlock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 96)
+layout_mode = 2
+script = ExtResource("7_geo")
+geo = 2
+title = "+0"
+subtitle = "MATERIALS GAINED"
+fill_key = "gold"
+border_key = "gold"
+title_size = 22
+subtitle_size = 10
+shear = 28.0
+
+[node name="GradeChip" type="Control" parent="SafeArea/ScreenLayout/MainRow/MidCol/WinBlock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+size_flags_horizontal = 4
+script = ExtResource("7_geo")
+geo = 1
+title = "CLR"
+fill_key = "gold"
+border_key = "gold"
+title_size = 22
+
+[node name="FailBlock" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow/MidCol"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="TipsBox" type="PanelContainer" parent="SafeArea/ScreenLayout/MainRow/MidCol/FailBlock"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="TipsPad" type="MarginContainer" parent="SafeArea/ScreenLayout/MainRow/MidCol/FailBlock/TipsBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 28
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 28
+theme_override_constants/margin_bottom = 24
+
+[node name="TipsCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow/MidCol/FailBlock/TipsBox/TipsPad"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="TipsTitle" type="Label" parent="SafeArea/ScreenLayout/MainRow/MidCol/FailBlock/TipsBox/TipsPad/TipsCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "TIPS"
+horizontal_alignment = 1
+
+[node name="TipsBody" type="Label" parent="SafeArea/ScreenLayout/MainRow/MidCol/FailBlock/TipsBox/TipsPad/TipsCol"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Review Codex, then retry the stage."
+horizontal_alignment = 1
+autowrap_mode = 3
+clip_text = true
+
+[node name="RightSpacer" type="Control" parent="SafeArea/ScreenLayout/MainRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.55
+mouse_filter = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BackButton" type="Control" parent="SafeArea/ScreenLayout/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 52)
+layout_mode = 2
+script = ExtResource("7_geo")
+title = "BACK"
+fill_key = "panel"
+border_key = "cyan"
+title_size = 13
+shear = 24.0
+
+[node name="BottomSpacer" type="Control" parent="SafeArea/ScreenLayout/BottomBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="CodexButton" type="Control" parent="SafeArea/ScreenLayout/BottomBar"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(180, 52)
+layout_mode = 2
+script = ExtResource("7_geo")
+title = "LESSONS"
+fill_key = "gold"
+border_key = "gold"
+title_size = 13
+shear = 24.0
+
+[node name="RetryButton" type="Control" parent="SafeArea/ScreenLayout/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(180, 52)
+layout_mode = 2
+script = ExtResource("7_geo")
+title = "RETRY"
+fill_key = "gold"
+border_key = "gold"
+title_size = 13
+shear = 24.0
+
+[node name="Scanlines" type="Control" parent="."]
+modulate = Color(1, 1, 1, 2)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("6_scan")
+draw_grid = true

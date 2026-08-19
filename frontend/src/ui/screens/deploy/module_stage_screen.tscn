@@ -1,6 +1,6 @@
-[gd_scene load_steps=11 format=3 uid="uid://dq8k2stage0sel"]
+[gd_scene format=3 uid="uid://bmodstage0sel"]
 
-[ext_resource type="Script" path="res://src/ui/screens/deploy/stage_select_screen.gd" id="1_screen"]
+[ext_resource type="Script" path="res://src/ui/screens/deploy/module_stage_screen.gd" id="1_screen"]
 [ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="2_stars"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="3_safe"]
 [ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
@@ -8,13 +8,14 @@
 [ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="6_scan"]
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="7_geo"]
 [ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="8_icon"]
+[ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="9_bg"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("5_vig")
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_flat"]
 
-[node name="StageSelectScreen" type="Control"]
+[node name="ModuleStageScreen" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,6 +34,31 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0.0431373, 0.027451, 0.0784314, 1)
 script = ExtResource("2_stars")
+
+[node name="HeroArt" type="TextureRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+modulate = Color(0.72, 0.82, 1, 0.78)
+texture = ExtResource("9_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="MapDim" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.48)
 
 [node name="Vignette" type="ColorRect" parent="."]
 material = SubResource("ShaderMaterial_vignette")
@@ -53,16 +79,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 12
 script = ExtResource("3_safe")
 extra_margin = 16
 
 [node name="ScreenLayout" type="VBoxContainer" parent="SafeArea"]
 layout_mode = 2
-theme_override_constants/separation = 20
+theme_override_constants/separation = 18
 
 [node name="TopBar" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
 custom_minimum_size = Vector2(0, 52)
@@ -87,8 +113,7 @@ text = "< BACK"
 [node name="TitleLabel" type="Label" parent="SafeArea/ScreenLayout/TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_vertical = 1
-text = "SELECT A MODULE"
+text = "SELECT A STAGE"
 vertical_alignment = 1
 
 [node name="TopSpacer" type="Control" parent="SafeArea/ScreenLayout/TopBar"]
@@ -238,124 +263,181 @@ script = ExtResource("8_icon")
 kind = 10
 monochrome = true
 
-[node name="CarouselRow" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
+[node name="MainRow" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 22
-alignment = 1
+theme_override_constants/separation = 48
 
-[node name="UpgradesCard" type="Button" parent="SafeArea/ScreenLayout/CarouselRow"]
+[node name="LeftCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow"]
+custom_minimum_size = Vector2(340, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 0.38
+theme_override_constants/separation = 16
+
+[node name="ChipRow" type="HBoxContainer" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="TypeChip" type="Control" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ChipRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(152, 392)
+custom_minimum_size = Vector2(132, 40)
 layout_mode = 2
-size_flags_vertical = 4
-focus_mode = 0
-clip_contents = true
-theme_override_styles/normal = SubResource("StyleBoxEmpty_flat")
-theme_override_styles/hover = SubResource("StyleBoxEmpty_flat")
-theme_override_styles/pressed = SubResource("StyleBoxEmpty_flat")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_flat")
+size_flags_horizontal = 3
+script = ExtResource("7_geo")
+geo = 2
+title = "TYPE"
+fill_key = "header"
+border_key = "cyan"
+title_size = 10
+shear = 14.0
 
-[node name="UpgradesPad" type="MarginContainer" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 16
-
-[node name="UpgradesCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard/UpgradesPad"]
+[node name="WavesChip" type="Control" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ChipRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(132, 40)
 layout_mode = 2
-mouse_filter = 2
-theme_override_constants/separation = 10
+size_flags_horizontal = 3
+script = ExtResource("7_geo")
+geo = 2
+title = "WAVES"
+fill_key = "panel"
+border_key = "cyan"
+title_size = 10
+shear = 14.0
 
-[node name="UpgradesTitle" type="Label" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard/UpgradesPad/UpgradesCol"]
+[node name="GoldChip" type="Control" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ChipRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(132, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("7_geo")
+geo = 2
+title = "GOLD"
+fill_key = "panel"
+border_key = "cyan"
+title_size = 10
+shear = 14.0
+
+[node name="ScoreLabel" type="Label" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "UPGRADES"
-horizontal_alignment = 1
+text = "BEST  --"
 
-[node name="UpgradesSub" type="Label" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard/UpgradesPad/UpgradesCol"]
+[node name="StageTitle" type="Label" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "SKILL TREE"
-horizontal_alignment = 1
+text = "STAGE 1"
 autowrap_mode = 3
 
-[node name="UpgradesWell" type="PanelContainer" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard/UpgradesPad/UpgradesCol"]
+[node name="StageSub" type="Label" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
 unique_name_in_owner = true
+layout_mode = 2
+text = "MODULE 1"
+autowrap_mode = 3
+
+[node name="ArtSlot" type="CenterContainer" parent="SafeArea/ScreenLayout/MainRow/LeftCol"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="UpgradesCenter" type="CenterContainer" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard/UpgradesPad/UpgradesCol/UpgradesWell"]
+[node name="ArtWell" type="PanelContainer" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ArtSlot"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(248, 248)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+
+[node name="ArtCenter" type="CenterContainer" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ArtSlot/ArtWell"]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="UpgradesGlyph" type="Control" parent="SafeArea/ScreenLayout/CarouselRow/UpgradesCard/UpgradesPad/UpgradesCol/UpgradesWell/UpgradesCenter"]
-custom_minimum_size = Vector2(96, 96)
+[node name="ArtGlyph" type="Control" parent="SafeArea/ScreenLayout/MainRow/LeftCol/ArtSlot/ArtWell/ArtCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 mouse_filter = 2
 script = ExtResource("8_icon")
-kind = 3
+kind = 9
 monochrome = true
 
-[node name="ModulesTab" type="Control" parent="SafeArea/ScreenLayout/CarouselRow"]
-custom_minimum_size = Vector2(32, 368)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-
-[node name="TabFill" type="ColorRect" parent="SafeArea/ScreenLayout/CarouselRow/ModulesTab"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.941176, 0.698039, 0.235294, 1)
-
-[node name="ModulesTabLabel" type="Label" parent="SafeArea/ScreenLayout/CarouselRow/ModulesTab"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.0313726, 0.0509804, 0.0941176, 1)
-theme_override_font_sizes/font_size = 10
-text = "M
-O
-D
-U
-L
-E
-S"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="CardScroll" type="ScrollContainer" parent="SafeArea/ScreenLayout/CarouselRow"]
-unique_name_in_owner = true
+[node name="RightCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow"]
+custom_minimum_size = Vector2(620, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 4
-horizontal_scroll_mode = 3
-vertical_scroll_mode = 0
+size_flags_stretch_ratio = 0.62
+theme_override_constants/separation = 16
 
-[node name="CardRow" type="HBoxContainer" parent="SafeArea/ScreenLayout/CarouselRow/CardScroll"]
+[node name="PackBanner" type="Control" parent="SafeArea/ScreenLayout/MainRow/RightCol"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 418)
+custom_minimum_size = Vector2(0, 88)
 layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 32
+script = ExtResource("7_geo")
+geo = 2
+shear = 22.0
+fill_key = "header"
+border_key = "cyan"
+
+[node name="PackPad" type="MarginContainer" parent="SafeArea/ScreenLayout/MainRow/RightCol/PackBanner"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_right = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+
+[node name="PackCol" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow/RightCol/PackBanner/PackPad"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="PackLabel" type="Label" parent="SafeArea/ScreenLayout/MainRow/RightCol/PackBanner/PackPad/PackCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "MODULE 1/5"
+horizontal_alignment = 1
+
+[node name="PackTitle" type="Label" parent="SafeArea/ScreenLayout/MainRow/RightCol/PackBanner/PackPad/PackCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "EMAIL TRICKS"
+horizontal_alignment = 1
+
+[node name="PackStats" type="Label" parent="SafeArea/ScreenLayout/MainRow/RightCol/PackBanner/PackPad/PackCol"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "CLR 0   ALL 6"
+horizontal_alignment = 1
+
+[node name="StageScroll" type="ScrollContainer" parent="SafeArea/ScreenLayout/MainRow/RightCol"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+
+[node name="StagePad" type="MarginContainer" parent="SafeArea/ScreenLayout/MainRow/RightCol/StageScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 12
+
+[node name="StageList" type="VBoxContainer" parent="SafeArea/ScreenLayout/MainRow/RightCol/StageScroll/StagePad"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_constants/separation = 18
 alignment = 1
 
 [node name="BottomBar" type="HBoxContainer" parent="SafeArea/ScreenLayout"]
@@ -384,7 +466,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(240, 52)
 layout_mode = 2
 script = ExtResource("7_geo")
-title = "OPEN  >"
+title = "BREACH  >"
 fill_key = "gold"
 border_key = "gold"
 title_size = 14

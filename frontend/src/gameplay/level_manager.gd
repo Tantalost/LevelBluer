@@ -152,22 +152,19 @@ func change_phase(new_phase: GamePhase) -> void:
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
-			_show_result_screen(true)
-			if base_health <= 0:
-				var weak_skill: String = PlayerManager.get_weakest_skill()
-				_modal_title_label.text = "SYSTEM BREACHED\nCritical Weakness: " + weak_skill.capitalize()
-			elif _is_summative():
+			var weak_skill: String = PlayerManager.get_weakest_skill()
+			var tip := "Open Intel, then Codex, and train the weak skill before you deploy again."
+			if _is_summative():
 				var exam_count: int = _exam_question_count()
 				var accuracy: float = 0.0
 				if exam_count > 0:
 					accuracy = float(exam_questions_correct) / float(exam_count)
 				var accuracy_pct: int = int(round(accuracy * 100.0))
-				_modal_title_label.text = "EXAM FAILED\nScore: " + str(accuracy_pct) + "% - Remediation Required"
-			else:
-				_modal_title_label.text = "SYSTEM BREACHED"
-			_codex_button.visible = true
-			_upgrade_button.visible = true
+				tip = "Exam score %d%%. Review the missed topics in Codex, then retry." % accuracy_pct
+			elif not weak_skill.is_empty():
+				tip = "Critical weakness: %s. Train it in Codex before you deploy again." % weak_skill.capitalize()
 			print("[LevelManager] Entering GAME_OVER. Match lost.")
+			Router.open_defeat(tip, weak_skill)
 		GamePhase.VICTORY:
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)

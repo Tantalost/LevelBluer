@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://beut66b72ljto"]
+[gd_scene load_steps=11 format=3 uid="uid://beut66b72ljto"]
 
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/dashboard_screen.gd" id="1_dash"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="7_icon"]
 [ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="8_vig"]
 [ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="9_scan"]
+[ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="10_geo"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vig")
@@ -39,9 +40,34 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+modulate = Color(0.72, 0.82, 1, 1)
 texture = ExtResource("3_bg")
 expand_mode = 1
 stretch_mode = 6
+
+[node name="MapDim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.42)
+
+[node name="HeroArt" type="TextureRect" parent="."]
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 80.0
+grow_horizontal = 0
+grow_vertical = 2
+mouse_filter = 2
+modulate = Color(0.82, 0.92, 1, 0.95)
+texture = ExtResource("4_pfp")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Vignette" type="ColorRect" parent="."]
 material = SubResource("ShaderMaterial_vignette")
@@ -61,382 +87,375 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 22
 theme_override_constants/margin_bottom = 14
 script = ExtResource("2_safe")
 
-[node name="MainVBox" type="VBoxContainer" parent="SafeAreaContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TopSection" type="HBoxContainer" parent="SafeAreaContainer/MainVBox"]
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ProfileCard" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection"]
+[node name="TopBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="GameTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_default_cursor_shape = 2
+size_flags_vertical = 4
+text = "LEVEL BLUE"
+vertical_alignment = 1
 
-[node name="ProfileRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard"]
+[node name="ProfileButton" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 62)
 layout_mode = 2
+script = ExtResource("10_geo")
+geo = 2
+shear = 18.0
+fill_key = "panel"
+border_key = "cyan"
+
+[node name="ProfileRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 22.0
+offset_right = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 theme_override_constants/separation = 10
+alignment = 1
 
-[node name="AvatarBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow"]
+[node name="AvatarBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
 
-[node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/AvatarBox"]
+[node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow/AvatarBox"]
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ProfileInfo" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow"]
+[node name="ProfileInfo" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow"]
 layout_mode = 2
-theme_override_constants/separation = 4
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 8
 alignment = 1
 
-[node name="PlayerName" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo"]
+[node name="PlayerName" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow/ProfileInfo"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "COMMANDER_X"
+clip_text = true
 
-[node name="RankRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo"]
-custom_minimum_size = Vector2(240, 0)
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="RankLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo/RankRow"]
+[node name="RankLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow/ProfileInfo"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
-text = "ELITE I"
+text = "RECRUIT I"
 
-[node name="ExpLabel" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo/RankRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "1450 / 2000 EXP"
-horizontal_alignment = 2
-
-[node name="ExpBar" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 10)
-layout_mode = 2
-
-[node name="ExpBarFill" type="ColorRect" parent="SafeAreaContainer/MainVBox/TopSection/ProfileCard/ProfileRow/ProfileInfo/ExpBar"]
-unique_name_in_owner = true
-layout_mode = 1
-anchor_right = 0.725
-anchor_bottom = 1.0
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="TopSpacer" type="Control" parent="SafeAreaContainer/MainVBox/TopSection"]
+[node name="TopSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="TopRight" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection"]
-layout_mode = 2
-size_flags_vertical = 4
-theme_override_constants/separation = 8
-alignment = 2
-
-[node name="ThreatBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
+[node name="ThreatBox" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(126, 54)
 layout_mode = 2
+script = ExtResource("10_geo")
+geo = 2
+shear = 14.0
+fill_key = "panel"
+border_key = "cyan"
 
-[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatBox"]
-layout_mode = 2
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="ThreatIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatBox/ThreatRow"]
-custom_minimum_size = Vector2(18, 18)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 2
-
-[node name="ThreatValue" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/ThreatBox/ThreatRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "1000"
-
-[node name="MaterialsBox" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsBox"]
-layout_mode = 2
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="MaterialsIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsBox/MaterialsRow"]
-custom_minimum_size = Vector2(18, 18)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 3
-
-[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/MaterialsBox/MaterialsRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "200"
-
-[node name="InboxButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(44, 44)
-layout_mode = 2
-focus_mode = 0
-
-[node name="InboxIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/InboxButton"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -10.0
-offset_top = -10.0
-offset_right = 10.0
-offset_bottom = 10.0
-mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 5
-monochrome = true
-
-[node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/InboxButton"]
-unique_name_in_owner = true
-layout_mode = 0
-offset_left = 30.0
-offset_top = -4.0
-offset_right = 50.0
-offset_bottom = 16.0
-mouse_filter = 2
-
-[node name="InboxCount" type="Label" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/InboxButton/InboxBadge"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "2"
-horizontal_alignment = 1
-
-[node name="SettingsButton" type="Button" parent="SafeAreaContainer/MainVBox/TopSection/TopRight"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(44, 44)
-layout_mode = 2
-focus_mode = 0
-
-[node name="SettingsIcon" type="Control" parent="SafeAreaContainer/MainVBox/TopSection/TopRight/SettingsButton"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -10.0
-offset_top = -10.0
-offset_right = 10.0
-offset_bottom = 10.0
-mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 10
-monochrome = true
-
-[node name="AtRiskBanner" type="PanelContainer" parent="SafeAreaContainer/MainVBox"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-
-[node name="AtRiskRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/AtRiskBanner"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="AtRiskBody" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 4
-
-[node name="AtRiskTitle" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow/AtRiskBody"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "PERFORMANCE ALERT"
-
-[node name="AtRiskSub" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow/AtRiskBody"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "Alert body"
-autowrap_mode = 3
-
-[node name="AtRiskPill" type="Label" parent="SafeAreaContainer/MainVBox/AtRiskBanner/AtRiskRow"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 4
-text = "35%"
-vertical_alignment = 1
-
-[node name="FlexSpacer" type="Control" parent="SafeAreaContainer/MainVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-mouse_filter = 2
-
-[node name="BottomSection" type="HBoxContainer" parent="SafeAreaContainer/MainVBox"]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="BottomLeft" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection"]
-layout_mode = 2
-size_flags_vertical = 8
-theme_override_constants/separation = 8
-
-[node name="StoreButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 52)
-layout_mode = 2
-focus_mode = 0
-text = "STORE"
-
-[node name="NavRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="IntelButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft/NavRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(136, 48)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-text = "INTEL"
-
-[node name="ProgressButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomLeft/NavRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(136, 48)
-layout_mode = 2
-size_flags_horizontal = 3
-focus_mode = 0
-text = "PROGRESS"
-
-[node name="BottomSpacer" type="Control" parent="SafeAreaContainer/MainVBox/BottomSection"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="BottomRight" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection"]
-layout_mode = 2
-size_flags_vertical = 8
-theme_override_constants/separation = 12
-alignment = 2
-
-[node name="ModeSelector" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(72, 88)
-layout_mode = 2
-size_flags_vertical = 8
-focus_mode = 0
-
-[node name="ModeVBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector"]
+[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ThreatBox"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 16.0
+offset_right = -14.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 theme_override_constants/separation = 6
 alignment = 1
 
-[node name="ModeGlyph" type="Control" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector/ModeVBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(36, 36)
+[node name="ThreatIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar/ThreatBox/ThreatRow"]
+custom_minimum_size = Vector2(20, 20)
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 2
+
+[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/ThreatBox/ThreatRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1000"
+vertical_alignment = 1
+
+[node name="MaterialsBox" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(126, 54)
+layout_mode = 2
+script = ExtResource("10_geo")
+geo = 2
+shear = 14.0
+fill_key = "panel"
+border_key = "cyan"
+
+[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/MaterialsBox"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_right = -14.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="MaterialsIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar/MaterialsBox/MaterialsRow"]
+custom_minimum_size = Vector2(20, 20)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 3
+
+[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/MaterialsBox/MaterialsRow"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "200"
+vertical_alignment = 1
+
+[node name="SettingsButton" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 52)
+layout_mode = 2
+script = ExtResource("10_geo")
+geo = 1
+fill_key = "panel"
+border_key = "cyan"
+
+[node name="SettingsIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar/SettingsButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -12.0
+offset_top = -12.0
+offset_right = 12.0
+offset_bottom = 12.0
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 10
+monochrome = true
+
+[node name="AtRiskBanner" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+
+[node name="AtRiskRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="AtRiskBody" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="AtRiskTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow/AtRiskBody"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "PERFORMANCE ALERT"
+
+[node name="AtRiskSub" type="Label" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow/AtRiskBody"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Alert body"
+autowrap_mode = 3
+
+[node name="AtRiskPill" type="Label" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "35%"
+vertical_alignment = 1
+
+[node name="MainRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="LeftCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/MainRow"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 14
+
+[node name="DeployButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(400, 168)
+layout_mode = 2
+script = ExtResource("10_geo")
+title = "DEPLOY"
+subtitle = "SOLO"
+fill_key = "gold"
+border_key = "gold"
+title_size = 24
+subtitle_size = 12
+shear = 52.0
+
+[node name="IntelButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(372, 92)
+layout_mode = 2
+script = ExtResource("10_geo")
+title = "INTEL"
+fill_key = "cyan"
+border_key = "cyan"
+title_size = 20
+shear = 42.0
+
+[node name="LowerPair" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="StoreButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol/LowerPair"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(230, 76)
+layout_mode = 2
+size_flags_horizontal = 3
+script = ExtResource("10_geo")
+title = "STORE"
+fill_key = "panel"
+border_key = "cyan"
+title_size = 16
+shear = 28.0
+
+[node name="ProgressButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol/LowerPair"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(168, 76)
+layout_mode = 2
+script = ExtResource("10_geo")
+title = "PROGRESS"
+fill_key = "header"
+border_key = "cyan"
+title_size = 13
+shear = 24.0
+
+[node name="WorldButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(340, 340)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("10_geo")
+geo = 1
+title = "MISSION"
+subtitle = "MODULE 1"
+detail = "STAGE 1/5"
+fill_key = "cyan"
+border_key = "gold"
+title_size = 20
+subtitle_size = 13
+detail_size = 10
+progress = 0.8
+
+[node name="HeroSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="BottomBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ModeSelector" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(140, 52)
+layout_mode = 2
+script = ExtResource("10_geo")
+geo = 2
+title = "SOLO"
+fill_key = "panel"
+border_key = "gold"
+title_size = 13
+shear = 16.0
+
+[node name="ModeGlyph" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar/ModeSelector"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
 mouse_filter = 2
 script = ExtResource("7_icon")
 kind = 8
 monochrome = true
 
-[node name="ModeText" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/ModeSelector/ModeVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "SOLO"
-horizontal_alignment = 1
-
-[node name="DeployStack" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight"]
-layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 2
-
-[node name="MiniTracker" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 0)
-layout_mode = 2
-
-[node name="MiniVBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="MiniTitleBar" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="MiniBarRow" type="HBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniTitleBar"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="MiniLabel" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniTitleBar/MiniBarRow"]
-unique_name_in_owner = true
+[node name="BottomSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "MISSION.DAT"
-
-[node name="MiniModule" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniTitleBar/MiniBarRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "MODULE 1"
-
-[node name="MiniWell" type="PanelContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="MiniWellBox" type="VBoxContainer" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell"]
-layout_mode = 2
-theme_override_constants/separation = 6
-
-[node name="MiniProgressTrack" type="ColorRect" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell/MiniWellBox"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 10)
-layout_mode = 2
-
-[node name="MiniProgressFill" type="ColorRect" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell/MiniWellBox/MiniProgressTrack"]
-unique_name_in_owner = true
-layout_mode = 1
-anchor_right = 0.8
-anchor_bottom = 1.0
-grow_vertical = 2
 mouse_filter = 2
 
-[node name="MiniProgressText" type="Label" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack/MiniTracker/MiniVBox/MiniWell/MiniWellBox"]
+[node name="InboxButton" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 56)
+layout_mode = 2
+script = ExtResource("10_geo")
+geo = 1
+fill_key = "panel"
+border_key = "cyan"
+
+[node name="InboxIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar/InboxButton"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -12.0
+offset_top = -12.0
+offset_right = 12.0
+offset_bottom = 12.0
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 5
+monochrome = true
+
+[node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/BottomBar/InboxButton"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 38.0
+offset_top = 2.0
+offset_right = 62.0
+offset_bottom = 24.0
+mouse_filter = 2
+
+[node name="InboxCount" type="Label" parent="SafeAreaContainer/ScreenLayout/BottomBar/InboxButton/InboxBadge"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "STAGE 1/5  4/5 LESSONS"
+text = "2"
 horizontal_alignment = 1
 
-[node name="DeployButton" type="Button" parent="SafeAreaContainer/MainVBox/BottomSection/BottomRight/DeployStack"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 58)
-layout_mode = 2
-focus_mode = 0
-text = "DEPLOY  >"
-
 [node name="Scanlines" type="Control" parent="."]
-modulate = Color(1, 1, 1, 1.4)
+modulate = Color(1, 1, 1, 2)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -445,6 +464,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("9_scan")
+draw_grid = true
 
 [node name="ModeModal" parent="." instance=ExtResource("6_modal")]
 unique_name_in_owner = true

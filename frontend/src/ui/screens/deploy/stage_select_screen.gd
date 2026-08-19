@@ -1,380 +1,345 @@
 extends BaseScreen
-## Combined stage-select dock + pan/zoom skill tree. Data/save wiring is out of scope.
+## Module carousel. Unlocked packs open the per-module stage list.
 
-## Mirrors SkillNodeData until Godot .NET can compile the C# resource.
-## Keys match SkillId. Swap this dict for SkillTreeDB.tres in a later milestone.
-const MOCK_SKILL_DB: Dictionary = {
-	"firewall_1": {
-		"name": "Basic Firewall",
-		"graph_pos": Vector2(0, 0),
-		"prereqs": [],
-		"unlock_cost": 1,
-	},
-	"firewall_2": {
-		"name": "Advanced Filtering",
-		"graph_pos": Vector2(0, -150),
-		"prereqs": ["firewall_1"],
-		"unlock_cost": 1,
-	},
-	"crypto_1": {
-		"name": "Basic Encryption",
-		"graph_pos": Vector2(150, 0),
-		"prereqs": ["firewall_1"],
-		"unlock_cost": 1,
-	},
-	"firewall_3": {
-		"name": "Packet Inspection",
-		"graph_pos": Vector2(0, -300),
-		"prereqs": ["firewall_2"],
-		"unlock_cost": 2,
-	},
-}
-
-## Simulated save file. Replace with SaveService in a later milestone.
-var mock_coins: int = 5
-var current_selected_stage: int = 0
-
-@export var stage_count: int = 10
-@export var stage_node_scene: PackedScene
-@export var skill_node_scene: PackedScene
-@export var module_titles: PackedStringArray = PackedStringArray(["Tiny Forest"])
+const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
+const CARD_W := 276.0
+const CARD_H := 418.0
+const CARD_GAP := 32.0
+const CARD_SELECTED_EXTRA := 16.0
+const UPGRADES_W := 152.0
+const UPGRADES_H := 392.0
 
 @onready var _safe: MarginContainer = %SafeArea
-@onready var _pan_zoom: SkillTreePanZoom = %SkillTreePanZoom
-@onready var _edge_layer: Control = %EdgeLayer
-@onready var _node_layer: Control = %NodeLayer
-@onready var _stage_row: HBoxContainer = %StageRow
-@onready var _module_title: Label = %ModuleTitle
+@onready var _back_button: Button = %BackButton
+@onready var _title_label: Label = %TitleLabel
+@onready var _player_name: Label = %PlayerName
+@onready var _threat_value: Label = %ThreatValue
+@onready var _materials_value: Label = %MaterialsValue
+@onready var _settings_button: HudGeoButton = %SettingsButton
+@onready var _upgrades_card: Button = %UpgradesCard
+@onready var _tab_fill: ColorRect = %TabFill
+@onready var _modules_tab_label: Label = %ModulesTabLabel
+@onready var _card_scroll: ScrollContainer = %CardScroll
+@onready var _card_row: HBoxContainer = %CardRow
+@onready var _main_menu: HudGeoButton = %MainMenuButton
+@onready var _breach_button: HudGeoButton = %BreachButton
 
 var _pixel_font: Font
-var _module_index: int = 0
-var _stage_nodes: Array[StageNodeUI] = []
+var _modules: Array[Dictionary] = []
+var _selected: int = 0
+var _cards: Array[Button] = []
+var current_selected_stage: int = 0
 
 
 func _ready() -> void:
 	_load_font()
-	get_viewport().size_changed.connect(_apply_scale)
-	%PrevModuleButton.pressed.connect(func() -> void: _cycle_module(-1))
-	%NextModuleButton.pressed.connect(func() -> void: _cycle_module(1))
-	%SettingsButton.pressed.connect(_on_settings_pressed)
-	%BreachButton.pressed.connect(_on_breach_pressed)
-	_generate_skill_tree()
-	_refresh_coins_label()
+	_modules = LessonCatalog.modules()
+	_back_button.pressed.connect(func() -> void: Router.request_back())
+	_main_menu.pressed.connect(func() -> void: Router.request_back())
+	_settings_button.pressed.connect(func() -> void: Router.push(&"settings"))
+	_upgrades_card.pressed.connect(func() -> void: Router.push(&"upgrades"))
+	_breach_button.pressed.connect(_on_breach_pressed)
+	%ProfileButton.pressed.connect(func() -> void: Router.push(&"profile"))
+	_style_upgrades_card()
+	_style_back()
+	_apply_spacing()
+	_rebuild_cards()
 
 
 func on_enter(_args: Dictionary) -> void:
 	visible = true
-	_set_canvas_layers_visible(true)
-	_rebuild_stages()
-	_refresh_module_title()
-	_apply_scale()
-	_pan_zoom.reset_view.call_deferred()
+	_modules = LessonCatalog.modules()
+	_selected = _first_unlocked()
+	current_selected_stage = _td_index_for(_selected)
+	_refresh_header()
+	_rebuild_cards()
+	_refresh_breach()
 
 
 func on_resume() -> void:
 	visible = true
-	_set_canvas_layers_visible(true)
-	_refresh_breach_button()
-	_apply_scale()
+	_refresh_header()
+	_rebuild_cards()
+	_refresh_breach()
 
 
 func on_exit() -> void:
-	# CanvasLayers paint in global space; parent.visible = false is not enough.
 	visible = false
-	_set_canvas_layers_visible(false)
 
 
-func _set_canvas_layers_visible(active: bool) -> void:
-	var background: CanvasLayer = get_node_or_null("BackgroundLayer") as CanvasLayer
-	var tree: CanvasLayer = get_node_or_null("TreeLayer") as CanvasLayer
-	var hud: CanvasLayer = get_node_or_null("HudLayer") as CanvasLayer
-	if background != null:
-		background.visible = active
-	if tree != null:
-		tree.visible = active
-	if hud != null:
-		hud.visible = active
+func _refresh_header() -> void:
+	_title_label.text = "SELECT A MODULE"
+	_player_name.text = "<%s>" % AuthService.display_name().to_upper()
+	var threat: int = AuthService.wallet_threat_points()
+	var mats: int = AuthService.materials()
+	_threat_value.text = str(threat if threat >= 0 else 0)
+	_materials_value.text = str(mats if mats >= 0 else 0)
+	_tab_fill.color = Palette.GOLD
+	_modules_tab_label.text = "M\nO\nD\nU\nL\nE\nS"
+	_apply_label(_title_label, Palette.TEXT_PRIMARY, 14)
+	_apply_label(_player_name, Palette.TEXT_PRIMARY, 11)
+	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 12)
+	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 12)
+	_apply_label(_modules_tab_label, Palette.BG_DEEP, 10)
+	_apply_label(%UpgradesTitle, Palette.TEXT_PRIMARY, 12)
+	_apply_label(%UpgradesSub, Palette.CYAN, 9)
+	_style_back()
+	_style_upgrades_card()
+	%AvatarBox.add_theme_stylebox_override("panel", _pixel_box(Palette.FOREST_NIGHT, Palette.CYAN, 0, 2))
+	_apply_spacing()
 
 
-func _clear_children(host: Node) -> void:
-	for child in host.get_children():
-		host.remove_child(child)
-		child.queue_free()
+func _style_back() -> void:
+	_back_button.text = tr("SETT_BACK")
+	if _pixel_font != null:
+		_back_button.add_theme_font_override("font", _pixel_font)
+	_back_button.add_theme_font_size_override("font_size", 14)
+	_back_button.add_theme_color_override("font_color", Palette.FIELD_PLACEHOLDER)
+	_back_button.add_theme_color_override("font_hover_color", Palette.TEXT_PRIMARY)
 
 
-func _load_font() -> void:
-	if ResourceLoader.exists("res://assets/fonts/PressStart2P-Regular.ttf"):
-		var file := load("res://assets/fonts/PressStart2P-Regular.ttf") as FontFile
-		if file != null:
-			_pixel_font = file
+func _apply_spacing() -> void:
+	_safe.add_theme_constant_override("margin_left", 22)
+	_safe.add_theme_constant_override("margin_top", 16)
+	_safe.add_theme_constant_override("margin_right", 22)
+	_safe.add_theme_constant_override("margin_bottom", 14)
+	var layout: VBoxContainer = _safe.get_node_or_null("ScreenLayout") as VBoxContainer
+	if layout != null:
+		layout.add_theme_constant_override("separation", 20)
+	var carousel: HBoxContainer = null
+	if layout != null:
+		carousel = layout.get_node_or_null("CarouselRow") as HBoxContainer
+	if carousel != null:
+		carousel.add_theme_constant_override("separation", 22)
+		carousel.alignment = BoxContainer.ALIGNMENT_CENTER
+	_upgrades_card.custom_minimum_size = Vector2(UPGRADES_W, UPGRADES_H)
+	_upgrades_card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if carousel != null:
+		var tab: Control = carousel.get_node_or_null("ModulesTab") as Control
+		if tab != null:
+			tab.custom_minimum_size = Vector2(32, UPGRADES_H - 24.0)
+			tab.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_card_row.add_theme_constant_override("separation", int(CARD_GAP))
+	_card_row.custom_minimum_size = Vector2(0, CARD_H)
+	_card_scroll.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 
-func _rebuild_stages() -> void:
-	_clear_children(_stage_row)
-	_stage_nodes.clear()
+func _style_upgrades_card() -> void:
+	var box := _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.GOLD, 0, 3)
+	_upgrades_card.add_theme_stylebox_override("normal", box)
+	_upgrades_card.add_theme_stylebox_override("hover", _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.TEXT_PRIMARY, 0, 3))
+	_upgrades_card.add_theme_stylebox_override("pressed", box)
+	%UpgradesWell.add_theme_stylebox_override("panel", _pixel_box(Palette.GOLD_DIM, Color(Palette.TEXT_PRIMARY, 0.16), 0, 2))
 
-	if stage_node_scene == null:
-		push_error("StageSelectScreen: stage_node_scene is not assigned")
+
+func _rebuild_cards() -> void:
+	var kids: Array = _card_row.get_children()
+	for i in kids.size():
+		var child: Node = kids[i] as Node
+		if child != null:
+			_card_row.remove_child(child)
+			child.queue_free()
+	_cards.clear()
+	for i in _modules.size():
+		var card := _make_module_card(i)
+		_card_row.add_child(card)
+		_cards.append(card)
+	_center_selected_card.call_deferred()
+
+
+func _make_module_card(index: int) -> Button:
+	var entry: Dictionary = _modules[index]
+	var locked: bool = not _is_unlocked(index)
+	var selected: bool = index == _selected
+	var accent: Color = _accent_of(str(entry.get("accent", "cyan")))
+	if locked:
+		accent = Palette.TEXT_MUTED
+	var card := Button.new()
+	card.focus_mode = Control.FOCUS_NONE
+	card.custom_minimum_size = Vector2(CARD_W + (CARD_SELECTED_EXTRA if selected else 0.0), CARD_H)
+	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var border: Color = Palette.GOLD if selected else accent
+	var box := _pixel_box(Color(Palette.BG_HEADER, 0.94), border, 0, 3 if selected else 2)
+	card.add_theme_stylebox_override("normal", box)
+	card.add_theme_stylebox_override("hover", _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.TEXT_PRIMARY, 0, 3))
+	card.add_theme_stylebox_override("pressed", box)
+	var pad := MarginContainer.new()
+	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pad.add_theme_constant_override("margin_left", 16)
+	pad.add_theme_constant_override("margin_right", 16)
+	pad.add_theme_constant_override("margin_top", 18)
+	pad.add_theme_constant_override("margin_bottom", 16)
+	card.add_child(pad)
+	pad.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var body := VBoxContainer.new()
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_theme_constant_override("separation", 12)
+	pad.add_child(body)
+	body.add_child(_card_label("MODULE %d" % (index + 1), Palette.TEXT_PRIMARY, 15, true))
+	body.add_child(_card_label(str(entry.get("title", "")).to_upper(), Palette.CYAN if not locked else Palette.TEXT_MUTED, 10, true))
+	var total: int = maxi(1, LessonCatalog.lesson_count(str(entry.get("id", ""))))
+	var done: int = 0 if locked else mini(PlayerManager.get_lesson_progress(str(entry.get("id", ""))), total)
+	if _is_complete(index):
+		done = total
+	body.add_child(_card_label("CLR %d    ALL %d" % [done, total], Palette.TEXT_PRIMARY, 9, true))
+	var well := PanelContainer.new()
+	well.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	well.add_theme_stylebox_override("panel", _pixel_box(Color(accent, 0.42 if not locked else 0.18), Color(Palette.TEXT_PRIMARY, 0.12), 0, 2))
+	body.add_child(well)
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	well.add_child(center)
+	var glyph := IntelPixelIcon.new()
+	glyph.kind = IntelPixelIcon.Kind.LOCK if locked else _glyph_for(index)
+	glyph.monochrome = true
+	glyph.custom_minimum_size = Vector2(108, 108)
+	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(glyph)
+	if locked:
+		body.add_child(_card_label("LOCKED", Palette.TEXT_MUTED, 11, true))
+	elif _td_index_for(index) < 0:
+		body.add_child(_card_label("SOON", Palette.GOLD, 11, true))
+	var captured: int = index
+	card.pressed.connect(func() -> void: _select_module(captured))
+	return card
+
+
+func _select_module(index: int) -> void:
+	if index < 0 or index >= _modules.size():
 		return
-
-	var count := maxi(1, stage_count)
-	current_selected_stage = clampi(current_selected_stage, 0, mini(count - 1, PlayerManager.mock_max_stage_cleared))
-	for i in count:
-		var node := stage_node_scene.instantiate() as StageNodeUI
-		if node == null:
-			push_error("StageSelectScreen: stage_node_scene is not a StageNodeUI")
-			return
-		_stage_row.add_child(node)
-		_stage_nodes.append(node)
-		var kind := StageNodeUI.Kind.BOSS if i == count - 1 else StageNodeUI.Kind.NORMAL
-		node.configure(i, kind, _pixel_font)
-		node.stage_pressed.connect(_on_stage_pressed)
-	_refresh_stage_visuals()
+	_selected = index
+	current_selected_stage = maxi(0, _td_index_for(index))
+	_rebuild_cards()
+	_refresh_breach()
+	if _is_unlocked(index):
+		_open_module(index)
 
 
-func _generate_skill_tree() -> void:
-	_clear_children(_edge_layer)
-	_clear_children(_node_layer)
-
-	if skill_node_scene == null:
-		push_error("StageSelectScreen: skill_node_scene is not assigned")
+func _center_selected_card() -> void:
+	if _selected < 0 or _selected >= _cards.size():
 		return
-
-	var view_w := get_viewport().get_visible_rect().size.x
-	var diamond_px := UiScale.n(56, view_w)
-	var font_px := UiScale.n(10, view_w)
-	var spawned_nodes: Dictionary = {}
-
-	# Pass 1: every node exists and has a canvas coordinate before any edge is drawn.
-	for skill_id in MOCK_SKILL_DB:
-		var data: Dictionary = MOCK_SKILL_DB[skill_id]
-		var node := skill_node_scene.instantiate() as SkillNodeUI
-		if node == null:
-			push_error("StageSelectScreen: skill_node_scene is not a SkillNodeUI")
-			return
-		_node_layer.add_child(node)
-		node.configure(skill_id, 0, 1, _pixel_font)
-		node.set_skill_data(skill_id, String(data.get("name", skill_id)), _get_skill_state(skill_id))
-		node.skill_pressed.connect(_on_skill_pressed)
-		node.apply_scale(diamond_px, font_px)
-		node.place_on_canvas(data["graph_pos"])
-		spawned_nodes[skill_id] = node
-
-	# Pass 2: Line2D can now read real Control positions from both endpoints.
-	for skill_id in MOCK_SKILL_DB:
-		var data: Dictionary = MOCK_SKILL_DB[skill_id]
-		var to_node: SkillNodeUI = spawned_nodes.get(skill_id)
-		if to_node == null:
-			continue
-		var target_state := _get_skill_state(skill_id)
-		var prereqs: Array = data.get("prereqs", [])
-		for prereq_id in prereqs:
-			var from_node: SkillNodeUI = spawned_nodes.get(prereq_id)
-			if from_node == null:
-				push_warning("StageSelectScreen: missing prereq '%s' for '%s'" % [prereq_id, skill_id])
-				continue
-			var edge := Line2D.new()
-			edge.width = 3.0
-			edge.default_color = _edge_color(target_state)
-			edge.antialiased = false
-			edge.points = PackedVector2Array([
-				_skill_center(from_node),
-				_skill_center(to_node),
-			])
-			_edge_layer.add_child(edge)
+	var card: Button = _cards[_selected]
+	var view_w := _card_scroll.size.x
+	if view_w <= 1.0:
+		return
+	var target := int(card.position.x - (view_w - card.size.x) * 0.5)
+	_card_scroll.scroll_horizontal = maxi(0, target)
 
 
-func _get_skill_state(skill_id: String) -> String:
-	if PlayerManager.has_skill(skill_id):
-		return "UNLOCKED"
-	var data: Dictionary = MOCK_SKILL_DB.get(skill_id, {})
-	var prereqs: Array = data.get("prereqs", [])
-	for prereq_id in prereqs:
-		if not PlayerManager.has_skill(String(prereq_id)):
-			return "LOCKED"
-	return "PURCHASABLE"
+func _first_unlocked() -> int:
+	for i in _modules.size():
+		if _is_unlocked(i):
+			return i
+	return 0
 
 
-func _edge_color(target_state: String) -> Color:
-	if target_state == "LOCKED":
-		return Color(Palette.CYAN_DIM, 0.4)
-	return Palette.CYAN
+func _is_unlocked(index: int) -> bool:
+	if index <= 0:
+		return true
+	return _is_complete(index - 1)
 
 
-func _skill_center(node: Control) -> Vector2:
-	return node.position + node.size * 0.5
+func _is_complete(index: int) -> bool:
+	if index < 0 or index >= _modules.size():
+		return false
+	var module_id := str(_modules[index].get("id", ""))
+	return PlayerManager.get_lesson_progress(module_id) >= LessonCatalog.lesson_count(module_id)
 
 
-func _refresh_stage_visuals() -> void:
-	for child in _stage_row.get_children():
-		var node := child as StageNodeUI
-		if node == null:
-			continue
-		var state := "LOCKED"
-		if node.index == current_selected_stage:
-			state = "SELECTED"
-		elif node.index <= PlayerManager.mock_max_stage_cleared:
-			state = "UNLOCKED"
-		node.apply_visual_state(state)
-	_refresh_breach_button()
+func _td_index_for(module_index: int) -> int:
+	# STAGE_DB currently has ids 1 and 2 (plus exam 10). Do not invent stages.
+	if module_index == 0 or module_index == 1:
+		return module_index
+	return -1
 
 
-func _refresh_breach_button() -> void:
-	var stage_id: int = current_selected_stage + 1
-	var config: Dictionary = StageManager.get_stage_config(stage_id)
-	var req_stored: Variant = config.get("req_lesson", "")
-	var req: String = str(req_stored)
-	var misses_req: bool = not req.is_empty() and not PlayerManager.has_completed_lesson(req)
-	var is_remediation_locked: bool = PlayerManager.is_stage_locked(stage_id)
-	if misses_req:
-		%BreachButton.disabled = true
-		%BreachButton.text = "[LOCKED] COMPLETE LESSONS"
-	elif is_remediation_locked:
-		%BreachButton.disabled = true
-		%BreachButton.text = "[LOCKED] REMEDIATION REQUIRED"
+func _can_open() -> bool:
+	return not _modules.is_empty() and _is_unlocked(_selected)
+
+
+func _refresh_breach() -> void:
+	if _can_open():
+		_breach_button.title = "OPEN  >"
+		_breach_button.fill_key = "gold"
+		_breach_button.border_key = "gold"
 	else:
-		%BreachButton.disabled = false
-		%BreachButton.text = "BREACH"
-
-
-func _on_stage_pressed(index: int) -> void:
-	if index > PlayerManager.mock_max_stage_cleared:
-		print("[Stage Select] Stage locked.")
-		return
-	current_selected_stage = index
-	_refresh_stage_visuals()
+		_breach_button.title = "LOCKED"
+		_breach_button.fill_key = "header"
+		_breach_button.border_key = "muted"
+	_breach_button.queue_redraw()
 
 
 func _on_breach_pressed() -> void:
-	var stage_id: int = current_selected_stage + 1
-	var config: Dictionary = StageManager.get_stage_config(stage_id)
-	var req_stored: Variant = config.get("req_lesson", "")
-	var req: String = str(req_stored)
-	if not req.is_empty() and not PlayerManager.has_completed_lesson(req):
+	if not _can_open():
 		return
-	if PlayerManager.is_stage_locked(stage_id):
+	_open_module(_selected)
+
+
+func _open_module(index: int) -> void:
+	if not _is_unlocked(index):
 		return
-	Router.start_level(current_selected_stage)
+	Router.push(&"module_stages", {"module_index": index})
 
 
-func _on_skill_pressed(skill_id: String) -> void:
-	var data: Dictionary = MOCK_SKILL_DB.get(skill_id, {})
-	var skill_name := String(data.get("name", skill_id))
-	print("[Skill Tree] Clicked: %s - State: %s" % [skill_name, _get_skill_state(skill_id)])
-	_attempt_purchase(skill_id)
+func _glyph_for(index: int) -> IntelPixelIcon.Kind:
+	match index:
+		0:
+			return IntelPixelIcon.Kind.ENVELOPE
+		1:
+			return IntelPixelIcon.Kind.PHONE
+		2:
+			return IntelPixelIcon.Kind.PHONE
+		3:
+			return IntelPixelIcon.Kind.BADGE
+		_:
+			return IntelPixelIcon.Kind.SKULL
 
 
-func _attempt_purchase(skill_id: String) -> void:
-	if not MOCK_SKILL_DB.has(skill_id):
-		push_warning("StageSelectScreen: unknown skill '%s'" % skill_id)
-		return
-
-	var state := _get_skill_state(skill_id)
-	if state != "PURCHASABLE":
-		print("[Skill Tree] Cannot purchase '%s' (state: %s)" % [skill_id, state])
-		return
-
-	var data: Dictionary = MOCK_SKILL_DB[skill_id]
-	var cost := int(data.get("unlock_cost", 0))
-	if mock_coins < cost:
-		print("[Skill Tree] Insufficient coins for: " + skill_id)
-		return
-
-	mock_coins -= cost
-	PlayerManager.unlock_skill(skill_id)
-	_refresh_coins_label()
-	# _generate_skill_tree already remove_child + queue_free on both layers.
-	_generate_skill_tree()
+func _accent_of(name: String) -> Color:
+	match name:
+		"green":
+			return Palette.GREEN
+		"magenta":
+			return Palette.MAGENTA
+		"gold":
+			return Palette.GOLD
+		"muted":
+			return Palette.TEXT_MUTED
+		_:
+			return Palette.CYAN
 
 
-func _refresh_coins_label() -> void:
-	%CoinsValue.text = str(mock_coins)
+func _card_label(text: String, color: Color, font_size: int, centered: bool) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_apply_label(label, color, font_size)
+	return label
 
 
-func _on_settings_pressed() -> void:
-	pass
+func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = bg
+	box.border_color = border
+	box.set_border_width_all(border_w)
+	box.set_corner_radius_all(radius)
+	return box
 
 
-func _cycle_module(delta: int) -> void:
-	if module_titles.is_empty():
-		return
-	_module_index = wrapi(_module_index + delta, 0, module_titles.size())
-	_refresh_module_title()
-
-
-func _refresh_module_title() -> void:
-	if module_titles.is_empty():
-		_module_title.text = tr("STAGE_MODULE_FALLBACK")
-		return
-	_module_title.text = module_titles[_module_index]
-
-
-func _apply_scale() -> void:
-	var view_w := get_viewport().get_visible_rect().size.x
-	var scaled := func(value: float) -> int: return UiScale.n(value, view_w)
-
-	_safe.add_theme_constant_override("margin_left", scaled.call(16))
-	_safe.add_theme_constant_override("margin_top", scaled.call(12))
-	_safe.add_theme_constant_override("margin_right", scaled.call(16))
-	_safe.add_theme_constant_override("margin_bottom", scaled.call(8))
-
-	_apply_font(%CoinsValue, scaled.call(12))
-	_apply_font(%WoodValue, scaled.call(12))
-	_apply_font(%GemsValue, scaled.call(12))
-	_apply_font(%KeysValue, scaled.call(12))
-	_apply_font(_module_title, scaled.call(14))
-	_module_title.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
-	_apply_font(%PurchaseHint, scaled.call(8))
-	_apply_font(%ZoomHint, scaled.call(8))
-	_apply_font(%MoveHint, scaled.call(8))
-	_apply_font_button(%PrevModuleButton, scaled.call(12))
-	_apply_font_button(%NextModuleButton, scaled.call(12))
-	_apply_font_button(%SettingsButton, scaled.call(16))
-	_apply_font_button(%BreachButton, scaled.call(14))
-
-	%PurchaseHint.text = tr("STAGE_HINT_PURCHASE")
-	%ZoomHint.text = tr("STAGE_HINT_ZOOM")
-	%MoveHint.text = tr("STAGE_HINT_MOVE")
-
-	_refresh_coins_label()
-	%WoodValue.text = "0"
-	%GemsValue.text = "0"
-	%KeysValue.text = "0"
-
-	%ResourceStack.add_theme_constant_override("separation", scaled.call(8))
-	_stage_row.add_theme_constant_override("separation", scaled.call(8))
-	%StageDock.custom_minimum_size = Vector2(0, scaled.call(108))
-	%StageMargin.add_theme_constant_override("margin_left", scaled.call(36))
-	%StageMargin.add_theme_constant_override("margin_right", scaled.call(36))
-	%StageMargin.add_theme_constant_override("margin_top", scaled.call(22))
-	%StageMargin.add_theme_constant_override("margin_bottom", scaled.call(14))
-	%SettingsButton.custom_minimum_size = Vector2(scaled.call(40), scaled.call(40))
-	%PrevModuleButton.custom_minimum_size = Vector2(scaled.call(28), scaled.call(28))
-	%NextModuleButton.custom_minimum_size = Vector2(scaled.call(28), scaled.call(28))
-	%BreachButton.custom_minimum_size = Vector2(scaled.call(160), scaled.call(36))
-
-	var cell := UiScale.n(36, view_w)
-	var cell_font := UiScale.n(12, view_w)
-	for node in _stage_nodes:
-		node.apply_scale(cell, cell_font)
-
-	for child in _node_layer.get_children():
-		var skill := child as SkillNodeUI
-		if skill == null:
-			continue
-		skill.apply_scale(scaled.call(56), scaled.call(10))
-		var data: Dictionary = MOCK_SKILL_DB.get(skill.skill_id, {})
-		skill.place_on_canvas(data.get("graph_pos", Vector2.ZERO))
-
-
-func _apply_font(label: Label, font_size: int) -> void:
-	if _pixel_font:
-		label.add_theme_font_override("font", _pixel_font)
+func _apply_label(label: Label, color: Color, font_size: int) -> void:
+	label.add_theme_color_override("font_color", color)
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
+	if _pixel_font != null:
+		label.add_theme_font_override("font", _pixel_font)
 
 
-func _apply_font_button(button: Button, font_size: int) -> void:
-	if _pixel_font:
-		button.add_theme_font_override("font", _pixel_font)
-	button.add_theme_font_size_override("font_size", font_size)
+func _load_font() -> void:
+	if not ResourceLoader.exists(FONT_PATH):
+		return
+	var file: FontFile = load(FONT_PATH) as FontFile
+	if file != null:
+		_pixel_font = file
