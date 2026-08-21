@@ -3,13 +3,17 @@ extends Control
 
 ## Integer-scaled pixel glyphs. Colors come from Palette only.
 
-enum Kind { BOOKS, CODEX, SKULL, WRENCH, LOCK, ENVELOPE, PHONE, CAMERA, BADGE, TERMINAL, GEAR }
+enum Kind { BOOKS, CODEX, SKULL, WRENCH, LOCK, ENVELOPE, PHONE, CAMERA, BADGE, TERMINAL, GEAR, CHAT, TRIANGLE, SNOWFLAKE, PICKAXE }
 
 @export var kind: Kind = Kind.BOOKS:
 	set(value):
 		kind = value
 		queue_redraw()
 @export var monochrome: bool = false
+@export var ink_override: Color = Color(0, 0, 0, 0):
+	set(value):
+		ink_override = value
+		queue_redraw()
 
 const _GRID := 16
 
@@ -29,7 +33,9 @@ func _draw() -> void:
 	var ox := int((size.x - float(_GRID * cell)) * 0.5)
 	var oy := int((size.y - float(_GRID * cell)) * 0.5)
 	var ink := Palette.TEXT_PRIMARY
-	if not monochrome:
+	if ink_override.a > 0.0:
+		ink = ink_override
+	elif not monochrome:
 		match kind:
 			Kind.WRENCH:
 				ink = Palette.TEXT_SECONDARY
@@ -247,6 +253,82 @@ func _map_for(which: Kind) -> PackedStringArray:
 				"......##........",
 				"................",
 				"................",
+				"................",
+			])
+		Kind.CHAT:
+			return PackedStringArray([
+				"................",
+				"..############..",
+				".#............#.",
+				".#............#.",
+				".#..##..##....#.",
+				".#............#.",
+				".#............#.",
+				"..############..",
+				".....##.........",
+				"....#...........",
+				"...#............",
+				"................",
+				"................",
+				"................",
+				"................",
+				"................",
+			])
+		Kind.TRIANGLE:
+			return PackedStringArray([
+				"................",
+				".......##.......",
+				"......####......",
+				"......####......",
+				".....######.....",
+				".....######.....",
+				"....########....",
+				"....########....",
+				"...##########...",
+				"...##########...",
+				"..############..",
+				"..############..",
+				".##############.",
+				"................",
+				"................",
+				"................",
+			])
+		Kind.SNOWFLAKE:
+			return PackedStringArray([
+				".......##.......",
+				"...##..##..##...",
+				"....##.##.##....",
+				"..##..####..##..",
+				"....########....",
+				"...##########...",
+				"################",
+				"...##########...",
+				"....########....",
+				"..##..####..##..",
+				"....##.##.##....",
+				"...##..##..##...",
+				".......##.......",
+				"................",
+				"................",
+				"................",
+			])
+		Kind.PICKAXE:
+			return PackedStringArray([
+				"................",
+				".##..........##.",
+				".###........###.",
+				"..###......###..",
+				"...###....###...",
+				"....###..###....",
+				".....##..##.....",
+				"......####......",
+				"......####......",
+				".....##..##.....",
+				"....###..###....",
+				"...###....###...",
+				"..###......###..",
+				".###........###.",
+				".##..........##.",
 				"................",
 			])
 	return PackedStringArray()
