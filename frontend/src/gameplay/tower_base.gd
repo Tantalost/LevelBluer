@@ -52,7 +52,20 @@ var current_target: Node2D = null
 func _ready() -> void:
 	area_entered.connect(_on_area_entered)
 	area_exited.connect(_on_area_exited)
+	_sprite.visible = _sprite.texture != null
 	apply_stats("base")
+	queue_redraw()
+
+
+func _draw() -> void:
+	if _sprite.texture != null:
+		return
+	draw_circle(Vector2.ZERO, 22.0, Palette.BG_HEADER)
+	draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 28, Palette.CYAN, 2.0, true)
+	draw_rect(Rect2(-11.0, -12.0, 22.0, 24.0), Palette.CYAN_DIM, true)
+	draw_rect(Rect2(-11.0, -12.0, 22.0, 24.0), Palette.CYAN, false, 2.0)
+	draw_rect(Rect2(8.0, -6.0, 20.0, 12.0), Palette.CYAN, true)
+	draw_circle(Vector2.ZERO, 6.0, Palette.GOLD)
 
 
 func apply_stats(type_id: String) -> void:
@@ -65,7 +78,10 @@ func apply_stats(type_id: String) -> void:
 	fire_rate = float(entry.get("fire_rate", 1.0))
 	current_explosion_radius = explosion_radius_for(type_id)
 	var stored_color: Variant = entry.get("color", Palette.CYAN)
-	modulate = stored_color as Color
+	if _sprite.texture != null:
+		modulate = stored_color as Color
+	else:
+		modulate = Color.WHITE
 
 
 static func entry_for(type_id: String) -> Dictionary:
@@ -119,11 +135,12 @@ func _process(delta: float) -> void:
 	_prune_invalid_targets()
 	if targets_in_range.is_empty():
 		current_target = null
+		rotation = 0.0
 	else:
 		var parent: Node = targets_in_range[0].get_parent()
 		current_target = parent as Node2D
 		if current_target != null:
-			_sprite.look_at(current_target.global_position)
+			look_at(current_target.global_position)
 
 	fire_timer -= delta
 	if fire_timer <= 0.0 and current_target != null and fire_rate > 0.0:

@@ -18,5 +18,5 @@ void fragment() {
 	color += texture(screen_texture, SCREEN_UV + vec2(-px.x, px.y));
 	color += texture(screen_texture, SCREEN_UV + vec2(px.x, px.y));
 	color /= 12.0;
-	COLOR = color * vec4(0.5, 0.5, 0.5, 1.0);
+	COLOR = color * vec4(0.72, 0.76, 0.84, 1.0);
 }

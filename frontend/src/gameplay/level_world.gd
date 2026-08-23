@@ -7,6 +7,8 @@ var _path: PackedVector2Array = PackedVector2Array([
 	Vector2(1200, 400),
 ])
 
+@onready var _base_sprite: Sprite2D = %BaseSprite
+
 
 func _ready() -> void:
 	z_index = -1
@@ -22,7 +24,8 @@ func _draw() -> void:
 	_draw_scatter()
 	_draw_spawn_grove()
 	_draw_chevrons()
-	_draw_castle(Vector2(1200, 400))
+	if _base_sprite == null or _base_sprite.texture == null:
+		_draw_castle(Vector2(1200, 400))
 	_draw_tree_frame(vr)
 
 
@@ -98,26 +101,28 @@ func _draw_chevrons() -> void:
 
 
 func _draw_castle(origin: Vector2) -> void:
-	var shadow := Rect2(origin + Vector2(-52, -18), Vector2(108, 28))
-	draw_rect(shadow, Color(Palette.BG_DEEP, 0.45), true)
-	draw_rect(Rect2(origin + Vector2(-48, -70), Vector2(96, 78)), Palette.CASTLE_SHADOW, true)
-	draw_rect(Rect2(origin + Vector2(-40, -62), Vector2(80, 70)), Palette.CASTLE_STONE, true)
-	draw_rect(Rect2(origin + Vector2(-58, -88), Vector2(22, 96)), Palette.CASTLE_SHADOW, true)
-	draw_rect(Rect2(origin + Vector2(36, -88), Vector2(22, 96)), Palette.CASTLE_SHADOW, true)
-	draw_rect(Rect2(origin + Vector2(-54, -84), Vector2(14, 88)), Palette.CASTLE_STONE, true)
-	draw_rect(Rect2(origin + Vector2(40, -84), Vector2(14, 88)), Palette.CASTLE_STONE, true)
-	for i in 5:
-		var merlon_x: float = origin.x - 38.0 + float(i) * 16.0
-		draw_rect(Rect2(Vector2(merlon_x, origin.y - 78.0), Vector2(10, 10)), Palette.CASTLE_STONE, true)
-	draw_rect(Rect2(origin + Vector2(-10, -18), Vector2(20, 26)), Palette.BG_DEEP, true)
-	var flag_top := origin + Vector2(2, -108)
-	draw_line(origin + Vector2(2, -88), flag_top, Palette.TEXT_PRIMARY, 2.0)
+	draw_rect(Rect2(origin + Vector2(-70, -16), Vector2(140, 36)), Color(Palette.BG_DEEP, 0.5), true)
+	draw_rect(Rect2(origin + Vector2(-62, -88), Vector2(124, 100)), Palette.CASTLE_SHADOW, true)
+	draw_rect(Rect2(origin + Vector2(-52, -78), Vector2(104, 90)), Palette.CASTLE_STONE, true)
+	draw_rect(Rect2(origin + Vector2(-74, -112), Vector2(28, 124)), Palette.CASTLE_SHADOW, true)
+	draw_rect(Rect2(origin + Vector2(46, -112), Vector2(28, 124)), Palette.CASTLE_SHADOW, true)
+	draw_rect(Rect2(origin + Vector2(-68, -106), Vector2(18, 114)), Palette.CASTLE_STONE, true)
+	draw_rect(Rect2(origin + Vector2(50, -106), Vector2(18, 114)), Palette.CASTLE_STONE, true)
+	for i in 6:
+		var merlon_x: float = origin.x - 50.0 + float(i) * 18.0
+		draw_rect(Rect2(Vector2(merlon_x, origin.y - 96.0), Vector2(12, 12)), Palette.CASTLE_STONE, true)
+	draw_rect(Rect2(origin + Vector2(-14, -22), Vector2(28, 34)), Palette.BG_DEEP, true)
+	draw_rect(Rect2(origin + Vector2(-28, -58), Vector2(16, 12)), Palette.CYAN, true)
+	draw_rect(Rect2(origin + Vector2(12, -58), Vector2(16, 12)), Palette.CYAN, true)
+	draw_rect(Rect2(origin + Vector2(-8, -40), Vector2(16, 10)), Palette.GOLD, true)
+	var flag_top := origin + Vector2(2, -136)
+	draw_line(origin + Vector2(2, -112), flag_top, Palette.TEXT_PRIMARY, 2.0)
 	draw_colored_polygon(PackedVector2Array([
 		flag_top,
-		flag_top + Vector2(22, 8),
-		flag_top + Vector2(0, 16),
+		flag_top + Vector2(26, 10),
+		flag_top + Vector2(0, 20),
 	]), Palette.GREEN)
-	_draw_heart(origin + Vector2(0, -128), 10.0)
+	_draw_heart(origin + Vector2(0, -152), 12.0)
 
 
 func _draw_heart(c: Vector2, r: float) -> void:

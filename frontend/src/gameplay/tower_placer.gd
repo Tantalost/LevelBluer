@@ -14,12 +14,45 @@ const SOURCE_ID := 0
 var occupied_cells: Dictionary = {}
 var tower_cost: int = 2
 var selected_tower: TowerBase = null
+var _show_pads: bool = false
+var _pad_overlay: Node2D
 
 @onready var _level_manager: LevelManager = get_node(level_manager_path)
 
 
+class PadOverlay extends Node2D:
+	func _draw() -> void:
+		var host := get_parent() as TowerPlacer
+		if host != null:
+			host.draw_pads(self)
+
+
 func _ready() -> void:
 	_paint_test_map()
+	_pad_overlay = PadOverlay.new()
+	_pad_overlay.z_index = 4
+	add_child(_pad_overlay)
+
+
+func set_build_preview(active: bool) -> void:
+	_show_pads = active
+	if _pad_overlay != null:
+		_pad_overlay.queue_redraw()
+
+
+func draw_pads(canvas: CanvasItem) -> void:
+	if not _show_pads:
+		return
+	var cells: Array[Vector2i] = get_used_cells()
+	for i in cells.size():
+		var cell: Vector2i = cells[i]
+		var data: TileData = get_cell_tile_data(cell)
+		if not _cell_is_buildable(cell, data):
+			continue
+		var center: Vector2 = map_to_local(cell)
+		var rect := Rect2(center - Vector2(15, 15), Vector2(30, 30))
+		canvas.draw_rect(rect, Color(Palette.CYAN, 0.12), true)
+		canvas.draw_rect(rect, Color(Palette.CYAN, 0.7), false, 1.5)
 
 
 func clear_selection() -> void:
@@ -33,6 +66,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if key.pressed and not key.echo and key.keycode == KEY_ESCAPE:
 			clear_selection()
 			get_viewport().set_input_as_handled()
+		return
+	if event is InputEventScreenTouch:
+		var touch := event as InputEventScreenTouch
+		if not touch.pressed:
+			return
+		if _level_manager == null or _level_manager.current_phase != LevelManager.GamePhase.PHASE_2_BUILD:
+			return
+		_handle_grid_click(make_input_local(touch).position)
+		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
@@ -65,12 +107,20 @@ func _handle_grid_click(local_mouse: Vector2) -> void:
 		return
 
 	var tile_data: TileData = get_cell_tile_data(map_pos)
-	if tile_data == null or tile_data.get_custom_data("is_buildable") != true:
+	if not _cell_is_buildable(map_pos, tile_data):
 		print("Invalid placement")
 		clear_selection()
 		return
 
 	_try_place(map_pos)
+
+
+func _cell_is_buildable(cell: Vector2i, tile_data: TileData) -> bool:
+	if get_cell_atlas_coords(cell) == TILE_BUILDABLE:
+		return true
+	if tile_data != null and tile_data.get_custom_data("is_buildable") == true:
+		return true
+	return false
 
 
 func _tower_at(map_pos: Vector2i) -> TowerBase:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://b8levelbase01"]
+[gd_scene load_steps=16 format=3 uid="uid://b8levelbase01"]
 
 [ext_resource type="Script" path="res://src/gameplay/level_manager.gd" id="1_mgr"]
 [ext_resource type="TileSet" uid="uid://cgridtileset01" path="res://assets/gameplay/grid_tileset.tres" id="2_tiles"]
@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://src/gameplay/level_world.gd" id="8_world"]
 [ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="9_vig"]
 [ext_resource type="Shader" path="res://src/gameplay/result_vignette.gdshader" id="10_result"]
+[ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="11_geo"]
 
 [sub_resource type="Curve2D" id="Curve2D_track"]
 _data = {
@@ -74,13 +75,16 @@ shape = SubResource("CircleShape2D_base")
 [node name="HeartLabel" type="Label" parent="Environment/PlayerBase"]
 unique_name_in_owner = true
 offset_left = -36.0
-offset_top = -158.0
+offset_top = -118.0
 offset_right = 36.0
-offset_bottom = -138.0
+offset_bottom = -98.0
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 10
 text = "5"
 horizontal_alignment = 1
+
+[node name="BaseSprite" type="Sprite2D" parent="Environment/PlayerBase"]
+unique_name_in_owner = true
 
 [node name="GameplayCanvas" type="CanvasLayer" parent="."]
 layer = 10
@@ -119,14 +123,10 @@ vertical_alignment = 1
 
 [node name="WaveFrame" type="PanelContainer" parent="GameplayCanvas/HUD"]
 layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -90.0
-offset_top = 16.0
-offset_right = 90.0
-offset_bottom = 52.0
-grow_horizontal = 2
+offset_left = 28.0
+offset_top = 80.0
+offset_right = 208.0
+offset_bottom = 116.0
 mouse_filter = 2
 
 [node name="WaveLabel" type="Label" parent="GameplayCanvas/HUD/WaveFrame"]
@@ -172,7 +172,6 @@ horizontal_alignment = 2
 
 [node name="BaseHealthLabel" type="Label" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true
-visible = false
 layout_mode = 1
 offset_left = 28.0
 offset_top = 52.0
@@ -180,7 +179,7 @@ offset_right = 220.0
 offset_bottom = 72.0
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 10
-text = "BASE  5"
+text = "HP  5"
 
 [node name="StartCluster" type="VBoxContainer" parent="GameplayCanvas/HUD"]
 layout_mode = 1
@@ -189,8 +188,8 @@ anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -220.0
-offset_top = -92.0
+offset_left = -240.0
+offset_top = -120.0
 offset_right = -28.0
 offset_bottom = -24.0
 grow_horizontal = 0
@@ -201,6 +200,7 @@ alignment = 2
 [node name="StartWaveButton" type="Button" parent="GameplayCanvas/HUD/StartCluster"]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(180, 52)
 layout_mode = 2
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 16
@@ -212,8 +212,50 @@ visible = false
 layout_mode = 2
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 8
-text = "Press Space"
+text = "TAP TO START"
 horizontal_alignment = 1
+
+[node name="SpeedButton" type="Control" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -112.0
+offset_top = 72.0
+offset_right = -28.0
+offset_bottom = 128.0
+grow_horizontal = 0
+script = ExtResource("11_geo")
+geo = 2
+title = "x1"
+fill_key = "header"
+border_key = "gold"
+title_size = 16
+shear = 18.0
+
+[node name="TowerCard" type="Control" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -148.0
+offset_right = 220.0
+offset_bottom = -24.0
+grow_vertical = 0
+script = ExtResource("11_geo")
+geo = 0
+title = "NODE"
+subtitle = "2G"
+fill_key = "cyan"
+border_key = "cyan"
+title_size = 14
+subtitle_size = 10
+shear = 22.0
 
 [node name="BackBufferCopy" type="BackBufferCopy" parent="GameplayCanvas"]
 copy_mode = 2
@@ -231,70 +273,138 @@ grow_vertical = 2
 mouse_filter = 0
 color = Color(1, 1, 1, 1)
 
-[node name="PanelContainer" type="PanelContainer" parent="GameplayCanvas/QuizModal"]
+[node name="QuizCenter" type="CenterContainer" parent="GameplayCanvas/QuizModal"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -320.0
-offset_top = -130.0
-offset_right = 320.0
-offset_bottom = 130.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="GameplayCanvas/QuizModal/PanelContainer"]
+[node name="QuizWindow" type="PanelContainer" parent="GameplayCanvas/QuizModal/QuizCenter"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(680, 0)
 layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 24
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 24
 
-[node name="VBoxContainer" type="VBoxContainer" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer"]
+[node name="QuizBody" type="VBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow"]
 layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 1
+theme_override_constants/separation = 0
 
-[node name="ExamProgressLabel" type="Label" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuizTitleBar" type="PanelContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TitleMargin" type="MarginContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizTitleBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 8
+
+[node name="TitleRow" type="HBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizTitleBar/TitleMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="QuizFileLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizTitleBar/TitleMargin/TitleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "QTE.DAT"
+vertical_alignment = 1
+
+[node name="QuizEventLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizTitleBar/TitleMargin/TitleRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "QUICK TRACE"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="QuizLed" type="ColorRect" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizTitleBar/TitleMargin/TitleRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(10, 10)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+color = Color(0.941176, 0.698039, 0.235294, 1)
+
+[node name="QuizWell" type="PanelContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="WellMargin" type="MarginContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 14
+
+[node name="WellBox" type="VBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ExamProgressLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 9
-text = "Question X of Y"
+text = "TRACE  1 / 5"
 horizontal_alignment = 1
 
-[node name="QuestionLabel" type="Label" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuestionLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("6_font")
-theme_override_font_sizes/font_size = 12
-text = "BKT Assessment: Which protocol operates on Port 443?"
+theme_override_font_sizes/font_size = 13
+text = "Which port is used for HTTPS?"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="HBoxContainer" type="HBoxContainer" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="QuizRewardHint" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 24
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 8
+text = "SECURE +5G     MISS +2G"
+horizontal_alignment = 1
+
+[node name="AnswerRow" type="HBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
 alignment = 1
 
-[node name="BtnCorrect" type="Button" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="BtnCorrect" type="Button" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox/AnswerRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 12
-text = "HTTPS"
+text = "443"
+autowrap_mode = 3
 
-[node name="BtnWrong" type="Button" parent="GameplayCanvas/QuizModal/PanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="BtnWrong" type="Button" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox/AnswerRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 12
-text = "HTTP"
+text = "80"
+autowrap_mode = 3
+
+[node name="QuizTapHint" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 8
+text = "TAP FAST"
+horizontal_alignment = 1
 
 [node name="TowerUpgradePanel" type="PanelContainer" parent="GameplayCanvas"]
 unique_name_in_owner = true

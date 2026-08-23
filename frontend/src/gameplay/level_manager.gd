@@ -11,6 +11,8 @@ enum GamePhase {
 	VICTORY,
 }
 
+const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
+
 @export var enemy_scene: PackedScene
 
 const QUESTION_BANK: Dictionary = {
@@ -54,8 +56,16 @@ var _is_wave_intermission: bool = false
 @onready var _map_label: Label = %MapLabel
 @onready var _heart_label: Label = %HeartLabel
 @onready var _quiz_modal: ColorRect = %QuizModal
+@onready var _quiz_window: PanelContainer = %QuizWindow
+@onready var _quiz_title_bar: PanelContainer = %QuizTitleBar
+@onready var _quiz_file_label: Label = %QuizFileLabel
+@onready var _quiz_event_label: Label = %QuizEventLabel
+@onready var _quiz_led: ColorRect = %QuizLed
+@onready var _quiz_well: PanelContainer = %QuizWell
 @onready var _exam_progress_label: Label = %ExamProgressLabel
 @onready var _question_label: Label = %QuestionLabel
+@onready var _quiz_reward_hint: Label = %QuizRewardHint
+@onready var _quiz_tap_hint: Label = %QuizTapHint
 @onready var _btn_correct: Button = %BtnCorrect
 @onready var _btn_wrong: Button = %BtnWrong
 @onready var _end_game_modal: ColorRect = %EndGameModal
@@ -72,8 +82,14 @@ var _is_wave_intermission: bool = false
 @onready var _upgrade_options: HBoxContainer = %UpgradeOptionsContainer
 @onready var _btn_close: Button = %BtnClose
 @onready var _level_background: ColorRect = %Background
+@onready var _speed_button: HudGeoButton = %SpeedButton
+@onready var _tower_card: HudGeoButton = %TowerCard
 
 var _selected_tower: TowerBase = null
+var _pixel_font: Font
+var _quiz_correct_text: String = ""
+var _quiz_led_t: float = 0.0
+var _speed_mult: float = 1.0
 
 
 func _ready() -> void:
@@ -86,6 +102,7 @@ func _ready() -> void:
 	_start_wave_button.pressed.connect(_on_start_wave_pressed)
 	_tower_placer.tower_selected.connect(_on_tower_selected)
 	_btn_close.pressed.connect(_on_upgrade_close_pressed)
+	_speed_button.pressed.connect(_on_speed_pressed)
 	_upgrade_panel.visible = false
 	_end_game_modal.visible = false
 	_quiz_modal.visible = false
@@ -102,8 +119,8 @@ func _ready() -> void:
 	_heart_label.add_theme_color_override("font_color", Palette.HEART)
 	_start_hint_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_style_start_button()
-	_exam_progress_label.add_theme_color_override("font_color", Palette.GOLD)
-	_question_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
+	_load_pixel_font()
+	_style_quiz_ui()
 	_modal_title_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_items_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_gold_acquired_label.add_theme_color_override("font_color", Palette.GOLD)
@@ -114,6 +131,13 @@ func _ready() -> void:
 	update_hud()
 	print("[LevelManager] Initializing Level for Stage Index: ", Router.active_stage_index)
 	change_phase(GamePhase.PHASE_1_QUIZ)
+
+
+func _process(delta: float) -> void:
+	if not _quiz_modal.visible:
+		return
+	_quiz_led_t += delta
+	_quiz_led.color = Palette.GOLD if fmod(_quiz_led_t, 0.85) < 0.48 else Palette.CYAN
 
 
 func change_phase(new_phase: GamePhase) -> void:
@@ -180,6 +204,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			Router.open_victory(accuracy, current_gold)
 			print("[LevelManager] Entering VICTORY. Match won.")
 	current_phase = new_phase
+	_sync_phase_chrome()
 	update_hud()
 	if new_phase == GamePhase.PHASE_3_DEFEND:
 		_begin_wave()
@@ -189,8 +214,12 @@ func change_phase(new_phase: GamePhase) -> void:
 
 func update_hud() -> void:
 	_phase_label.text = _phase_display_name()
+	if current_phase == GamePhase.PHASE_1_QUIZ:
+		_phase_label.add_theme_color_override("font_color", Palette.GOLD)
+	else:
+		_phase_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_gold_label.text = "GOLD  " + str(current_gold)
-	_base_health_label.text = "BASE  " + str(base_health)
+	_base_health_label.text = "HP  " + str(base_health)
 	_heart_label.text = str(base_health)
 	_wave_label.text = str(_wave_kills) + "/" + str(_current_wave_enemy_count())
 	_map_label.text = "MAP A" + str(Router.active_stage_index + 1)
@@ -261,7 +290,7 @@ func _phase_display_name() -> String:
 		GamePhase.PRE_MATCH:
 			return "PRE-MATCH"
 		GamePhase.PHASE_1_QUIZ:
-			return "QUIZ"
+			return "TRACE"
 		GamePhase.PHASE_2_BUILD:
 			return "BUILD"
 		GamePhase.PHASE_3_DEFEND:
@@ -274,11 +303,16 @@ func _phase_display_name() -> String:
 
 
 func _on_quiz_correct_pressed() -> void:
-	_resolve_quiz(5, true)
+	_resolve_quiz_choice(_btn_correct.text)
 
 
 func _on_quiz_wrong_pressed() -> void:
-	_resolve_quiz(2, false)
+	_resolve_quiz_choice(_btn_wrong.text)
+
+
+func _resolve_quiz_choice(picked: String) -> void:
+	var is_correct: bool = picked == _quiz_correct_text
+	_resolve_quiz(5 if is_correct else 2, is_correct)
 
 
 func _load_next_question() -> void:
@@ -314,15 +348,15 @@ func _load_next_question() -> void:
 		push_error("LevelManager: failed to load a question")
 		return
 	_question_label.text = str(current_question.get("text", ""))
-	if _is_summative():
-		var current_q: int = exam_questions_asked + 1
-		var total_q: int = _exam_question_count()
-		_exam_progress_label.text = "Question " + str(current_q) + " of " + str(total_q)
-		_exam_progress_label.visible = true
+	_quiz_correct_text = str(current_question.get("correct", ""))
+	var wrong_text: String = str(current_question.get("wrong", ""))
+	if randi() % 2 == 0:
+		_btn_correct.text = _quiz_correct_text
+		_btn_wrong.text = wrong_text
 	else:
-		_exam_progress_label.visible = false
-	_btn_correct.text = str(current_question.get("correct", ""))
-	_btn_wrong.text = str(current_question.get("wrong", ""))
+		_btn_correct.text = wrong_text
+		_btn_wrong.text = _quiz_correct_text
+	_refresh_quiz_copy()
 
 
 func _pick_summative_question() -> Dictionary:
@@ -417,6 +451,131 @@ func _style_start_button() -> void:
 	normal.content_margin_bottom = 8.0
 	_start_wave_button.add_theme_stylebox_override("normal", normal)
 	_start_wave_button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
+	_start_wave_button.custom_minimum_size = Vector2(180, 52)
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0
+
+
+func _on_speed_pressed() -> void:
+	_speed_mult = 1.0 if _speed_mult > 1.5 else 2.0
+	_apply_speed()
+
+
+func _apply_speed() -> void:
+	var quiz_open: bool = _quiz_modal.visible or current_phase == GamePhase.PHASE_1_QUIZ
+	Engine.time_scale = 1.0 if quiz_open else _speed_mult
+	_speed_button.title = "x2" if _speed_mult > 1.5 else "x1"
+	_speed_button.fill_key = "gold" if _speed_mult > 1.5 else "header"
+	_speed_button.queue_redraw()
+
+
+func _sync_phase_chrome() -> void:
+	var building: bool = current_phase == GamePhase.PHASE_2_BUILD
+	var live: bool = building or current_phase == GamePhase.PHASE_3_DEFEND
+	_tower_placer.set_build_preview(building)
+	_tower_card.visible = building
+	_speed_button.visible = live
+	_apply_speed()
+
+
+func _refresh_quiz_copy() -> void:
+	var exam := _is_summative()
+	_quiz_file_label.text = "EXAM.DAT" if exam else "QTE.DAT"
+	_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
+	_quiz_reward_hint.visible = not exam
+	_quiz_tap_hint.text = "TAP TO PASS" if exam else "TAP FAST"
+	if exam:
+		var current_q: int = exam_questions_asked + 1
+		var total_q: int = _exam_question_count()
+		_exam_progress_label.text = "TRACE  " + str(current_q) + " / " + str(total_q)
+		_exam_progress_label.visible = true
+	else:
+		_exam_progress_label.visible = false
+
+
+func _load_pixel_font() -> void:
+	if not ResourceLoader.exists(FONT_PATH):
+		return
+	var file: FontFile = load(FONT_PATH) as FontFile
+	if file != null:
+		_pixel_font = file
+
+
+func _style_quiz_ui() -> void:
+	var window := _pixel_box(Palette.BG_HEADER, Palette.CYAN, 0, 2)
+	window.shadow_color = Color(Palette.BG_DEEP, 0.72)
+	window.shadow_size = 2
+	window.shadow_offset = Vector2(6, 6)
+	_quiz_window.add_theme_stylebox_override("panel", window)
+	_quiz_title_bar.add_theme_stylebox_override("panel", _pixel_box(Palette.GOLD, Palette.GOLD, 0, 0))
+	_quiz_well.add_theme_stylebox_override("panel", _pixel_box(Color(Palette.BG_PANEL, 0.94), Palette.CYAN_DIM, 0, 0))
+	_quiz_led.color = Palette.GOLD
+	_apply_quiz_label(_quiz_file_label, Palette.TEXT_ON_GOLD, 10)
+	_apply_quiz_label(_quiz_event_label, Palette.TEXT_ON_GOLD, 10)
+	_apply_quiz_label(_exam_progress_label, Palette.GOLD, 9)
+	_apply_quiz_label(_question_label, Palette.TEXT_PRIMARY, 13)
+	_apply_quiz_label(_quiz_reward_hint, Palette.CYAN, 8)
+	_apply_quiz_label(_quiz_tap_hint, Palette.TEXT_MUTED, 8)
+	_style_quiz_choice(_btn_correct)
+	_style_quiz_choice(_btn_wrong)
+	var wave_frame := _wave_label.get_parent() as PanelContainer
+	if wave_frame != null:
+		var chip := _pixel_box(Color(Palette.BG_HEADER, 0.9), Palette.CYAN_DIM, 0, 2)
+		chip.content_margin_left = 12.0
+		chip.content_margin_right = 12.0
+		chip.content_margin_top = 8.0
+		chip.content_margin_bottom = 8.0
+		wave_frame.add_theme_stylebox_override("panel", chip)
+
+
+func _style_quiz_choice(button: Button) -> void:
+	var normal := _pixel_box(Color(Palette.BG_PANEL_ALT, 0.96), Palette.CYAN, 0, 2)
+	normal.border_width_left = 4
+	normal.content_margin_left = 12.0
+	normal.content_margin_right = 12.0
+	normal.content_margin_top = 14.0
+	normal.content_margin_bottom = 14.0
+	var hover := _pixel_box(Palette.GOLD, Palette.TEXT_PRIMARY, 0, 2)
+	hover.border_width_left = 4
+	hover.content_margin_left = 12.0
+	hover.content_margin_right = 12.0
+	hover.content_margin_top = 14.0
+	hover.content_margin_bottom = 14.0
+	var disabled := _pixel_box(Color(Palette.BG_PANEL_ALT, 0.7), Palette.CYAN_DIM, 0, 2)
+	disabled.content_margin_left = 12.0
+	disabled.content_margin_right = 12.0
+	disabled.content_margin_top = 14.0
+	disabled.content_margin_bottom = 14.0
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", hover)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
+	button.add_theme_color_override("font_hover_color", Palette.TEXT_ON_GOLD)
+	button.add_theme_color_override("font_pressed_color", Palette.TEXT_ON_GOLD)
+	button.add_theme_color_override("font_disabled_color", Palette.TEXT_MUTED)
+	button.add_theme_font_size_override("font_size", 12)
+	if _pixel_font != null:
+		button.add_theme_font_override("font", _pixel_font)
+	button.custom_minimum_size = Vector2(0, 56)
+
+
+func _apply_quiz_label(label: Label, color: Color, font_size: int) -> void:
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_font_size_override("font_size", font_size)
+	if _pixel_font != null:
+		label.add_theme_font_override("font", _pixel_font)
+
+
+func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = bg
+	box.border_color = border
+	box.set_border_width_all(border_w)
+	box.set_corner_radius_all(radius)
+	return box
 
 
 func _style_result_buttons() -> void:

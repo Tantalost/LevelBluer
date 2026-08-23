@@ -180,6 +180,7 @@ func _teardown_gameplay() -> void:
 			parent.remove_child(_gameplay)
 		_gameplay.queue_free()
 	_gameplay = null
+	Engine.time_scale = 1.0
 
 
 func push(screen_id: StringName, args: Dictionary = {}) -> void:
