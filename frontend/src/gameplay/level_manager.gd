@@ -31,7 +31,8 @@ var _wave_kills: int = 0
 var _wave_total_enemies: int = 0
 var _is_wave_intermission: bool = false
 
-@onready var _track: Path2D = %EnemyTrack
+@onready var _map_mount: Node2D = %MapMount
+var _track: Path2D
 @onready var _player_base: Area2D = %PlayerBase
 @onready var _phase_label: Label = %PhaseLabel
 @onready var _gold_label: Label = %GoldLabel
@@ -62,7 +63,7 @@ var _is_wave_intermission: bool = false
 @onready var _codex_button: Button = %CodexButton
 @onready var _upgrade_button: Button = %UpgradeButton
 @onready var _restart_button: Button = %RestartButton
-@onready var _tower_placer: TowerPlacer = %GridMap
+var _tower_placer: TowerPlacer
 @onready var _upgrade_panel: PanelContainer = %TowerUpgradePanel
 @onready var _stats_label: Label = %StatsLabel
 @onready var _upgrade_options: HBoxContainer = %UpgradeOptionsContainer
@@ -95,7 +96,6 @@ func _ready() -> void:
 	_btn_correct.pressed.connect(_on_quiz_correct_pressed)
 	_btn_wrong.pressed.connect(_on_quiz_wrong_pressed)
 	_start_wave_button.pressed.connect(_on_start_wave_pressed)
-	_tower_placer.tower_selected.connect(_on_tower_selected)
 	_btn_close.pressed.connect(_on_upgrade_close_pressed)
 	_speed_button.pressed.connect(_on_speed_pressed)
 	_btn_incident_a.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_a))
@@ -127,6 +127,7 @@ func _ready() -> void:
 	_style_result_buttons()
 	_stats_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_load_stage_config()
+	_mount_map()
 	update_hud()
 	print("[LevelManager] Initializing Level for Stage Index: ", Router.active_stage_index)
 	change_phase(GamePhase.PHASE_1_QUIZ)
@@ -255,6 +256,73 @@ func _load_stage_config() -> void:
 		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
 		current_gold = int(gold_stored)
 	print("[Stage] Loaded " + str(current_stage_config.get("name", "Unknown")) + " (id " + str(stage_id) + ")")
+
+
+func _mount_map() -> void:
+	const FALLBACK_MAP := "res://src/gameplay/maps/map_basic.tscn"
+	var stored: Variant = current_stage_config.get("map_scene", FALLBACK_MAP)
+	var scene_path: String = str(stored)
+	if scene_path.is_empty() or not ResourceLoader.exists(scene_path):
+		push_error("LevelManager: map_scene missing or invalid, using basic")
+		scene_path = FALLBACK_MAP
+	var packed: PackedScene = load(scene_path) as PackedScene
+	if packed == null:
+		push_error("LevelManager: failed to load map " + scene_path)
+		return
+	var stale: Array[Node] = []
+	for child in _map_mount.get_children():
+		stale.append(child)
+	for i in stale.size():
+		_map_mount.remove_child(stale[i])
+		stale[i].queue_free()
+	var map_root: Node = packed.instantiate()
+	_map_mount.add_child(map_root)
+	_track = _resolve_track()
+	_tower_placer = _find_tower_placer(map_root)
+	if _tower_placer != null:
+		_tower_placer.bind_level_manager(self)
+		if not _tower_placer.tower_selected.is_connected(_on_tower_selected):
+			_tower_placer.tower_selected.connect(_on_tower_selected)
+	var builder := map_root as MapBuilder
+	if builder != null:
+		var end_pos: Vector2 = builder.get_end_global_position()
+		if end_pos != Vector2.ZERO:
+			_player_base.global_position = end_pos
+
+
+func _resolve_track() -> Path2D:
+	var found: Node = get_tree().get_first_node_in_group("level_path")
+	return found as Path2D
+
+
+func _find_tower_placer(root: Node) -> TowerPlacer:
+	var placer := root as TowerPlacer
+	if placer != null:
+		return placer
+	for child in root.get_children():
+		var nested: TowerPlacer = _find_tower_placer(child)
+		if nested != null:
+			return nested
+	return null
+
+
+func _spawn_enemy(type_id: String, hp_mult: float) -> void:
+	if enemy_scene == null:
+		push_error("LevelManager: enemy_scene is not assigned")
+		return
+	var track: Path2D = get_tree().get_first_node_in_group("level_path") as Path2D
+	_track = track
+	if track == null:
+		push_error("LevelManager: no Path2D in group 'level_path'")
+		return
+	var enemy: EnemyBase = enemy_scene.instantiate() as EnemyBase
+	if enemy == null:
+		push_error("LevelManager: enemy_scene is not an EnemyBase")
+		return
+	enemy.initialize_stats(type_id, hp_mult)
+	enemy.enemy_died.connect(_on_enemy_died)
+	active_enemies += 1
+	track.add_child(enemy)
 
 
 func _current_wave_data() -> Dictionary:
@@ -485,7 +553,8 @@ func _apply_speed() -> void:
 func _sync_phase_chrome() -> void:
 	var building: bool = current_phase == GamePhase.PHASE_2_BUILD
 	var live: bool = building or current_phase == GamePhase.PHASE_3_DEFEND
-	_tower_placer.set_build_preview(building)
+	if _tower_placer != null:
+		_tower_placer.set_build_preview(building)
 	_tower_card.visible = building
 	_speed_button.visible = live
 	_apply_speed()
@@ -538,8 +607,28 @@ func _hide_incident() -> void:
 	_current_incident_correct_btn = null
 
 
+func _wave_type_mix(mix_stored: Variant, fallback_type: String) -> PackedStringArray:
+	var mix: PackedStringArray = PackedStringArray()
+	if typeof(mix_stored) != TYPE_ARRAY:
+		return mix
+	var raw: Array = mix_stored as Array
+	for i in raw.size():
+		var spawn_type: String = str(raw[i]).strip_edges()
+		if spawn_type.is_empty():
+			spawn_type = fallback_type
+		mix.append(spawn_type)
+	return mix
+
+
+func _incident_chance() -> float:
+	var stored: Variant = current_stage_config.get("incident_chance", 0.5)
+	if typeof(stored) != TYPE_INT and typeof(stored) != TYPE_FLOAT:
+		return 0.5
+	return clampf(float(stored), 0.0, 1.0)
+
+
 func _schedule_incident() -> void:
-	if randf() <= 0.5:
+	if randf() > _incident_chance():
 		return
 	if not is_inside_tree():
 		return
@@ -628,12 +717,6 @@ func _on_incident_button_pressed(btn: Button) -> void:
 
 
 func _spawn_penalty_enemies(count: int, type_id: String) -> void:
-	if enemy_scene == null:
-		push_error("LevelManager: enemy_scene is not assigned")
-		return
-	if _track == null:
-		push_error("LevelManager: EnemyTrack is missing")
-		return
 	if current_phase != GamePhase.PHASE_3_DEFEND or not is_inside_tree():
 		return
 	_is_wave_intermission = false
@@ -644,14 +727,7 @@ func _spawn_penalty_enemies(count: int, type_id: String) -> void:
 	_wave_total_enemies += spawn_count
 	update_hud()
 	for i in spawn_count:
-		var enemy: EnemyBase = enemy_scene.instantiate() as EnemyBase
-		if enemy == null:
-			push_error("LevelManager: enemy_scene is not an EnemyBase")
-			return
-		enemy.initialize_stats(resolved_type, hp_mult)
-		enemy.enemy_died.connect(_on_enemy_died)
-		active_enemies += 1
-		_track.add_child(enemy)
+		_spawn_enemy(resolved_type, hp_mult)
 
 
 func _style_quiz_ui() -> void:
@@ -801,35 +877,26 @@ func _begin_wave() -> void:
 
 
 func _spawn_wave(token: int) -> void:
-	if enemy_scene == null:
-		push_error("LevelManager: enemy_scene is not assigned")
-		return
-	if _track == null:
-		push_error("LevelManager: EnemyTrack is missing")
-		return
-
 	var wave_data: Dictionary = _current_wave_data()
 	var count_stored: Variant = wave_data.get("enemy_count", 0)
 	var delay_stored: Variant = wave_data.get("spawn_delay", 1.0)
 	var hp_stored: Variant = wave_data.get("health_multiplier", 1.0)
 	var type_stored: Variant = wave_data.get("enemy_type", "basic")
+	var mix_stored: Variant = wave_data.get("enemy_mix", [])
 	var count: int = maxi(0, int(count_stored))
 	var delay: float = float(delay_stored)
 	var hp_mult: float = float(hp_stored)
 	var type_id: String = str(type_stored)
 	if type_id.is_empty():
 		type_id = "basic"
+	var mix: PackedStringArray = _wave_type_mix(mix_stored, type_id)
 	for i in count:
 		if token != _wave_token or current_phase != GamePhase.PHASE_3_DEFEND or not is_inside_tree():
 			return
-		var enemy: EnemyBase = enemy_scene.instantiate() as EnemyBase
-		if enemy == null:
-			push_error("LevelManager: enemy_scene is not an EnemyBase")
-			return
-		enemy.initialize_stats(type_id, hp_mult)
-		enemy.enemy_died.connect(_on_enemy_died)
-		active_enemies += 1
-		_track.add_child(enemy)
+		var spawn_type: String = type_id
+		if mix.size() > 0:
+			spawn_type = mix[i % mix.size()]
+		_spawn_enemy(spawn_type, hp_mult)
 		if i < count - 1:
 			await get_tree().create_timer(delay).timeout
 
@@ -994,7 +1061,8 @@ func _on_upgrade_purchased(tower_node: TowerBase, target_type: String) -> void:
 
 
 func _on_upgrade_close_pressed() -> void:
-	_tower_placer.clear_selection()
+	if _tower_placer != null:
+		_tower_placer.clear_selection()
 
 
 func _hide_upgrade_ui() -> void:

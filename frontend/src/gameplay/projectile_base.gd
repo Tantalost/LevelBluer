@@ -38,8 +38,10 @@ func _process(delta: float) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if blast_radius > 0.0:
+		VfxManager.spawn_vfx("aoe", global_position)
 		_apply_aoe()
 	else:
+		VfxManager.spawn_vfx("impact", global_position)
 		_apply_single(area)
 	queue_free()
 

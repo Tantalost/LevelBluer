@@ -12,6 +12,7 @@ var _path: PackedVector2Array = PackedVector2Array([
 
 func _ready() -> void:
 	z_index = -1
+	_sync_live_path()
 	get_viewport().size_changed.connect(queue_redraw)
 	queue_redraw()
 
@@ -25,7 +26,10 @@ func _draw() -> void:
 	_draw_spawn_grove()
 	_draw_chevrons()
 	if _base_sprite == null or _base_sprite.texture == null:
-		_draw_castle(Vector2(1200, 400))
+		var castle_at: Vector2 = Vector2(1200, 400)
+		if _base_sprite != null:
+			castle_at = to_local(_base_sprite.global_position)
+		_draw_castle(castle_at)
 	_draw_tree_frame(vr)
 
 
@@ -42,8 +46,23 @@ func _draw_clearing(vr: Rect2) -> void:
 
 
 func _draw_path() -> void:
+	if _path.size() < 2:
+		return
 	draw_polyline(_path, Palette.PATH_DIRT, 78.0, false)
 	draw_polyline(_path, Palette.PATH_DIRT_LIT, 42.0, false)
+
+
+func _sync_live_path() -> void:
+	var path_node := get_tree().get_first_node_in_group("level_path") as Path2D
+	if path_node == null or path_node.curve == null:
+		return
+	var baked: PackedVector2Array = path_node.curve.get_baked_points()
+	if baked.size() < 2:
+		return
+	var points := PackedVector2Array()
+	for i in baked.size():
+		points.append(to_local(path_node.to_global(baked[i])))
+	_path = points
 
 
 func _draw_scatter() -> void:
@@ -79,6 +98,8 @@ func _dist_to_segment(p: Vector2, a: Vector2, b: Vector2) -> float:
 
 func _draw_spawn_grove() -> void:
 	var origin := Vector2(70, 410)
+	if _path.size() > 0:
+		origin = _path[0]
 	var offsets: Array[Vector2] = [
 		Vector2(-36, 8), Vector2(-8, -18), Vector2(22, 14), Vector2(-22, 28), Vector2(10, -4),
 	]
@@ -88,6 +109,8 @@ func _draw_spawn_grove() -> void:
 
 func _draw_chevrons() -> void:
 	var origin := Vector2(130, 400)
+	if _path.size() > 0:
+		origin = _path[0] + Vector2(48, 0)
 	for i in 3:
 		var x: float = origin.x + float(i) * 28.0
 		var col: Color = Color(Palette.GREEN, 0.85 - float(i) * 0.18)

@@ -59,6 +59,7 @@ func take_damage(amount: int) -> void:
 		is_dead = true
 		_kill_hit_tween()
 		_clear_slow_timer()
+		VfxManager.spawn_vfx("death", global_position)
 		enemy_died.emit(bounty)
 		queue_free()
 		return

@@ -4,20 +4,35 @@
 		{"text": "Which port handles SSH traffic?", "correct": "22", "wrong": "21"},
 		{"text": "Which port does DNS typically use?", "correct": "53", "wrong": "25"},
 		{"text": "Which port serves unencrypted HTTP?", "correct": "80", "wrong": "443"},
-		{"text": "Which port is commonly used for RDP?", "correct": "3389", "wrong": "445"}
+		{"text": "Which port is commonly used for RDP?", "correct": "3389", "wrong": "445"},
+		{"text": "Which port is the default for SMTP?", "correct": "25", "wrong": "110"},
+		{"text": "Which port is used for FTP control?", "correct": "21", "wrong": "23"},
+		{"text": "Which port is associated with SMB file shares?", "correct": "445", "wrong": "389"},
+		{"text": "Which port is the default for MySQL?", "correct": "3306", "wrong": "1433"},
+		{"text": "Which port is commonly used for SNMP?", "correct": "161", "wrong": "514"}
 	],
 	"firewalls": [
 		{"text": "Which rule blocks all incoming traffic by default?", "correct": "Implicit Deny", "wrong": "Port Forwarding"},
 		{"text": "A firewall operates primarily at which OSI layer?", "correct": "Network (Layer 3)", "wrong": "Application (Layer 7)"},
 		{"text": "What does a stateful firewall track?", "correct": "Active connections", "wrong": "File hashes"},
 		{"text": "Which placement exposes public services safely?", "correct": "DMZ", "wrong": "Domain Controller"},
-		{"text": "Which action drops traffic without a reply?", "correct": "Drop", "wrong": "Redirect"}
+		{"text": "Which action drops traffic without a reply?", "correct": "Drop", "wrong": "Redirect"},
+		{"text": "What does NAT primarily hide?", "correct": "Internal IP addresses", "wrong": "MAC vendor IDs"},
+		{"text": "Which list decides allow or deny by address and port?", "correct": "ACL", "wrong": "ARP cache"},
+		{"text": "A host-based firewall inspects traffic where?", "correct": "On the endpoint", "wrong": "Only at the ISP"},
+		{"text": "Which design exposes the fewest inbound services?", "correct": "Default deny inbound", "wrong": "Any-any allow"},
+		{"text": "What does egress filtering control?", "correct": "Outbound traffic", "wrong": "DHCP leases"}
 	],
 	"crypto": [
 		{"text": "Which algorithm is asymmetric?", "correct": "RSA", "wrong": "AES"},
 		{"text": "What is the primary purpose of a hash?", "correct": "Integrity", "wrong": "Encryption"},
 		{"text": "Which protocol encrypts web traffic?", "correct": "TLS", "wrong": "FTP"},
 		{"text": "What must stay private in public-key crypto?", "correct": "Private key", "wrong": "Certificate"},
-		{"text": "Which function is one-way by design?", "correct": "SHA-256", "wrong": "Caesar cipher"}
+		{"text": "Which function is one-way by design?", "correct": "SHA-256", "wrong": "Caesar cipher"},
+		{"text": "Which algorithm is symmetric?", "correct": "AES", "wrong": "RSA"},
+		{"text": "What does a digital signature prove?", "correct": "Origin and integrity", "wrong": "Bandwidth"},
+		{"text": "What is Diffie-Hellman used to establish?", "correct": "A shared secret", "wrong": "A MAC address"},
+		{"text": "What does a nonce help prevent?", "correct": "Replay attacks", "wrong": "Packet loss"},
+		{"text": "Perfect forward secrecy protects which keys?", "correct": "Past session keys", "wrong": "DNS records"}
 	]
 }

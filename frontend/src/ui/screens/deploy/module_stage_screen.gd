@@ -38,6 +38,7 @@ var _modules: Array[Dictionary] = []
 var _module_index: int = 0
 var _selected: int = 0
 var current_selected_stage: int = 0
+var _seen_cleared: int = -1
 
 
 func _ready() -> void:
@@ -57,20 +58,35 @@ func _ready() -> void:
 
 func on_enter(args: Dictionary) -> void:
 	visible = true
+	set_process(true)
 	_modules = LessonCatalog.modules()
 	_module_index = clampi(int(args.get("module_index", 0)), 0, maxi(0, _modules.size() - 1))
 	_selected = _first_playable()
 	current_selected_stage = _launch_index(_selected)
+	_seen_cleared = PlayerManager.mock_max_stage_cleared
 	_refresh_all()
 
 
 func on_resume() -> void:
 	visible = true
+	set_process(true)
+	_seen_cleared = PlayerManager.mock_max_stage_cleared
 	_refresh_all()
 
 
 func on_exit() -> void:
+	set_process(false)
 	visible = false
+
+
+func _process(_delta: float) -> void:
+	if not visible:
+		return
+	var cleared: int = PlayerManager.mock_max_stage_cleared
+	if cleared == _seen_cleared:
+		return
+	_seen_cleared = cleared
+	_refresh_all()
 
 
 func _refresh_all() -> void:
@@ -321,10 +337,8 @@ func _is_unlocked(index: int) -> bool:
 	var config: Dictionary = StageManager.get_stage_config(stage_id)
 	if config.is_empty():
 		return false
-	if index > 0:
-		var prev_clear: int = _previous_playable_id(index)
-		if prev_clear > 0 and PlayerManager.mock_max_stage_cleared < prev_clear:
-			return false
+	if stage_id > PlayerManager.mock_max_stage_cleared + 1:
+		return false
 	var req := str(config.get("req_lesson", ""))
 	if not req.is_empty() and not PlayerManager.has_completed_lesson(req):
 		return false

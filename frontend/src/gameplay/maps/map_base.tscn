@@ -1,0 +1,20 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/tools/map_builder.gd" id="1_builder"]
+[ext_resource type="TileSet" uid="uid://cgridtileset01" path="res://assets/gameplay/grid_tileset.tres" id="2_tiles"]
+[ext_resource type="Script" path="res://src/gameplay/tower_placer.gd" id="3_placer"]
+[ext_resource type="PackedScene" uid="uid://ctowerbase001" path="res://src/gameplay/tower_base.tscn" id="4_tower"]
+
+[node name="MapRoot" type="Node2D"]
+script = ExtResource("1_builder")
+map_id = "map_basic"
+tilemap_path = NodePath("TileMapLayer")
+path_path = NodePath("Path2D")
+
+[node name="TileMapLayer" type="TileMapLayer" parent="."]
+tile_set = ExtResource("2_tiles")
+script = ExtResource("3_placer")
+tower_scene = ExtResource("4_tower")
+level_manager_path = NodePath("")
+
+[node name="Path2D" type="Path2D" parent="." groups=["level_path"]]

@@ -16,8 +16,7 @@ var tower_cost: int = 2
 var selected_tower: TowerBase = null
 var _show_pads: bool = false
 var _pad_overlay: Node2D
-
-@onready var _level_manager: LevelManager = get_node(level_manager_path)
+var _level_manager: LevelManager = null
 
 
 class PadOverlay extends Node2D:
@@ -28,10 +27,17 @@ class PadOverlay extends Node2D:
 
 
 func _ready() -> void:
-	_paint_test_map()
+	if not level_manager_path.is_empty() and has_node(level_manager_path):
+		_level_manager = get_node(level_manager_path) as LevelManager
+	if not (get_parent() is MapBuilder) and get_used_cells().is_empty():
+		_paint_test_map()
 	_pad_overlay = PadOverlay.new()
 	_pad_overlay.z_index = 4
 	add_child(_pad_overlay)
+
+
+func bind_level_manager(manager: LevelManager) -> void:
+	_level_manager = manager
 
 
 func set_build_preview(active: bool) -> void:

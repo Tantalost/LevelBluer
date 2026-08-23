@@ -1,9 +1,6 @@
-[gd_scene load_steps=16 format=3 uid="uid://b8levelbase01"]
+[gd_scene load_steps=12 format=3 uid="uid://b8levelbase01"]
 
 [ext_resource type="Script" path="res://src/gameplay/level_manager.gd" id="1_mgr"]
-[ext_resource type="TileSet" uid="uid://cgridtileset01" path="res://assets/gameplay/grid_tileset.tres" id="2_tiles"]
-[ext_resource type="Script" path="res://src/gameplay/tower_placer.gd" id="3_placer"]
-[ext_resource type="PackedScene" uid="uid://ctowerbase001" path="res://src/gameplay/tower_base.tscn" id="4_tower"]
 [ext_resource type="PackedScene" uid="uid://cenemybase001" path="res://src/gameplay/enemy_base.tscn" id="5_enemy"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="6_font"]
 [ext_resource type="Shader" path="res://src/gameplay/quiz_modal_blur.gdshader" id="7_blur"]
@@ -11,12 +8,6 @@
 [ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="9_vig"]
 [ext_resource type="Shader" path="res://src/gameplay/result_vignette.gdshader" id="10_result"]
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="11_geo"]
-
-[sub_resource type="Curve2D" id="Curve2D_track"]
-_data = {
-"points": PackedVector2Array(0, 0, 0, 0, 80, 400, 0, 0, 0, 0, 640, 180, 0, 0, 0, 0, 1200, 400)
-}
-point_count = 3
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_base"]
 radius = 36.0
@@ -30,7 +21,7 @@ shader = ExtResource("9_vig")
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_result"]
 shader = ExtResource("10_result")
 
-[node name="LevelBase" type="Node2D"]
+[node name="LevelBase" type="Node2D" groups=["level_root"]]
 
 [node name="Camera2D" type="Camera2D" parent="."]
 unique_name_in_owner = true
@@ -55,16 +46,8 @@ color = Color(0.0588235, 0.0588235, 0.0823529, 1)
 [node name="LevelWorld" type="Node2D" parent="Environment"]
 script = ExtResource("8_world")
 
-[node name="GridMap" type="TileMapLayer" parent="Environment"]
+[node name="MapMount" type="Node2D" parent="Environment"]
 unique_name_in_owner = true
-tile_set = ExtResource("2_tiles")
-script = ExtResource("3_placer")
-tower_scene = ExtResource("4_tower")
-level_manager_path = NodePath("../../LevelManager")
-
-[node name="EnemyTrack" type="Path2D" parent="Environment"]
-unique_name_in_owner = true
-curve = SubResource("Curve2D_track")
 
 [node name="PlayerBase" type="Area2D" parent="Environment"]
 unique_name_in_owner = true
