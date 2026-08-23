@@ -173,8 +173,8 @@ func _setup_control_handlers() -> void:
 
 
 func _on_logout_pressed() -> void:
-	AuthService.sign_out()
 	SaveService.flush()
+	AuthService.sign_out()
 	Router.replace_all(&"login")
 
 

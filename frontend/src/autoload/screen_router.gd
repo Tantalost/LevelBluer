@@ -137,9 +137,11 @@ func open_codex(skill_id: String) -> void:
 
 
 func open_victory(accuracy: float, gold: int) -> void:
+	var payout: int = maxi(0, gold)
 	open_results({
 		"won": true,
-		"materials": maxi(0, gold),
+		"credits": payout,
+		"materials": payout,
 		"accuracy": accuracy,
 	})
 

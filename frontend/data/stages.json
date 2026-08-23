@@ -1,0 +1,92 @@
+{
+	"1": {
+		"name": "Diagnostic Protocol",
+		"type": "diagnostic",
+		"starting_gold": 2,
+		"waves": [
+			{"enemy_count": 3, "spawn_delay": 1.5, "health_multiplier": 1.0, "enemy_type": "basic"},
+			{"enemy_count": 5, "spawn_delay": 1.0, "health_multiplier": 1.0, "enemy_type": "fast"}
+		]
+	},
+	"2": {
+		"name": "Adaptive Gauntlet",
+		"type": "formative",
+		"starting_gold": 5,
+		"waves": [
+			{"enemy_count": 8, "spawn_delay": 0.8, "health_multiplier": 1.2, "enemy_type": "heavy"}
+		]
+	},
+	"3": {
+		"name": "Packet Filter Drill",
+		"type": "formative",
+		"starting_gold": 6,
+		"waves": [
+			{"enemy_count": 6, "spawn_delay": 1.0, "health_multiplier": 1.0, "enemy_type": "basic"},
+			{"enemy_count": 6, "spawn_delay": 0.8, "health_multiplier": 1.1, "enemy_type": "fast"}
+		]
+	},
+	"4": {
+		"name": "Firewall Lane",
+		"type": "formative",
+		"starting_gold": 7,
+		"waves": [
+			{"enemy_count": 8, "spawn_delay": 0.9, "health_multiplier": 1.1, "enemy_type": "basic"},
+			{"enemy_count": 4, "spawn_delay": 1.2, "health_multiplier": 1.3, "enemy_type": "heavy"}
+		]
+	},
+	"5": {
+		"name": "Cipher Run",
+		"type": "formative",
+		"starting_gold": 8,
+		"waves": [
+			{"enemy_count": 10, "spawn_delay": 0.75, "health_multiplier": 1.2, "enemy_type": "fast"}
+		]
+	},
+	"6": {
+		"name": "Subnet Storm",
+		"type": "formative",
+		"starting_gold": 9,
+		"waves": [
+			{"enemy_count": 8, "spawn_delay": 0.7, "health_multiplier": 1.2, "enemy_type": "fast"},
+			{"enemy_count": 6, "spawn_delay": 1.0, "health_multiplier": 1.4, "enemy_type": "heavy"}
+		]
+	},
+	"7": {
+		"name": "Deep Packet Sweep",
+		"type": "formative",
+		"starting_gold": 10,
+		"waves": [
+			{"enemy_count": 12, "spawn_delay": 0.65, "health_multiplier": 1.3, "enemy_type": "basic"},
+			{"enemy_count": 6, "spawn_delay": 0.9, "health_multiplier": 1.5, "enemy_type": "heavy"}
+		]
+	},
+	"8": {
+		"name": "Zero-Day Surge",
+		"type": "formative",
+		"starting_gold": 12,
+		"waves": [
+			{"enemy_count": 10, "spawn_delay": 0.6, "health_multiplier": 1.3, "enemy_type": "fast"},
+			{"enemy_count": 8, "spawn_delay": 0.8, "health_multiplier": 1.6, "enemy_type": "heavy"}
+		]
+	},
+	"9": {
+		"name": "Lateral Movement",
+		"type": "formative",
+		"starting_gold": 14,
+		"waves": [
+			{"enemy_count": 12, "spawn_delay": 0.55, "health_multiplier": 1.4, "enemy_type": "fast"},
+			{"enemy_count": 8, "spawn_delay": 0.7, "health_multiplier": 1.7, "enemy_type": "heavy"}
+		]
+	},
+	"10": {
+		"name": "Module 1 Post-Assessment",
+		"type": "summative",
+		"starting_gold": 20,
+		"exam_question_count": 15,
+		"exam_required_score": 0.75,
+		"req_lesson": "mod1_all",
+		"waves": [
+			{"enemy_count": 15, "spawn_delay": 0.5, "health_multiplier": 1.5, "enemy_type": "heavy"}
+		]
+	}
+}

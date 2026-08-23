@@ -257,6 +257,72 @@ title_size = 14
 subtitle_size = 10
 shear = 22.0
 
+[node name="IncidentModal" type="PanelContainer" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -290.0
+offset_top = 84.0
+offset_right = 290.0
+offset_bottom = 268.0
+grow_horizontal = 2
+mouse_filter = 0
+
+[node name="IncidentPad" type="MarginContainer" parent="GameplayCanvas/HUD/IncidentModal"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="IncidentCol" type="VBoxContainer" parent="GameplayCanvas/HUD/IncidentModal/IncidentPad"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="IncidentHeader" type="Label" parent="GameplayCanvas/HUD/IncidentModal/IncidentPad/IncidentCol"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = "LIVE INCIDENT"
+horizontal_alignment = 0
+
+[node name="IncidentText" type="Label" parent="GameplayCanvas/HUD/IncidentModal/IncidentPad/IncidentCol"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = "Live incident..."
+autowrap_mode = 3
+
+[node name="IncidentButtons" type="HBoxContainer" parent="GameplayCanvas/HUD/IncidentModal/IncidentPad/IncidentCol"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="BtnIncidentA" type="Button" parent="GameplayCanvas/HUD/IncidentModal/IncidentPad/IncidentCol/IncidentButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = "A"
+autowrap_mode = 3
+
+[node name="BtnIncidentB" type="Button" parent="GameplayCanvas/HUD/IncidentModal/IncidentPad/IncidentCol/IncidentButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = "B"
+autowrap_mode = 3
+
 [node name="BackBufferCopy" type="BackBufferCopy" parent="GameplayCanvas"]
 copy_mode = 2
 

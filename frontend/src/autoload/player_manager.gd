@@ -13,12 +13,14 @@ var mastery_matrix: Dictionary = {
 	"firewalls": DEFAULT_MASTERY,
 	"crypto": DEFAULT_MASTERY,
 }
-var unlocked_skills: Array[String] = ["firewall_1"]
+var unlocked_skills: Array[String] = []
 var locked_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
 var purchased_items: Array[String] = []
-var mock_max_stage_cleared: int = 9
+var unlocked_towers: Array[String] = ["base"]
+var mock_max_stage_cleared: int = 1
+var credits: int = 0
 
 
 func has_skill(skill_id: String) -> bool:
@@ -29,19 +31,33 @@ func unlock_skill(skill_id: String) -> void:
 	if skill_id.is_empty() or unlocked_skills.has(skill_id):
 		return
 	unlocked_skills.append(skill_id)
+	SaveService.save_game()
+
+
+func unlock_tower(tower_id: String) -> void:
+	if tower_id.is_empty() or unlocked_towers.has(tower_id):
+		return
+	unlocked_towers.append(tower_id)
+	SaveService.save_game()
+
+
+func is_tower_unlocked(tower_id: String) -> bool:
+	if tower_id.is_empty():
+		return false
+	return unlocked_towers.has(tower_id)
 
 
 func _ready() -> void:
 	AuthService.session_changed.connect(_on_session_changed)
 	if AuthService.is_signed_in():
-		_load_progress()
+		reset_to_defaults()
+		SaveService.load_game()
 
 
 func _on_session_changed(signed_in: bool) -> void:
+	reset_to_defaults()
 	if signed_in:
-		_load_progress()
-		return
-	_reset_lesson_state()
+		SaveService.load_game()
 
 
 func get_lesson_progress(module_id: String) -> int:
@@ -86,79 +102,51 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 	return true
 
 
-func _reset_lesson_state() -> void:
+func reset_to_defaults() -> void:
+	mock_max_stage_cleared = 1
+	credits = 0
+	locked_stages.clear()
 	completed_lessons.clear()
 	lesson_progress.clear()
 	purchased_items.clear()
+	unlocked_skills.clear()
+	unlocked_towers = ["base"]
+	mastery_matrix = {
+		"ports": DEFAULT_MASTERY,
+		"firewalls": DEFAULT_MASTERY,
+		"crypto": DEFAULT_MASTERY,
+	}
 
 
-func _progress_path() -> String:
-	var code := AuthService.participant_code().strip_edges()
-	var safe := code.validate_filename()
-	if safe.is_empty():
-		safe = "guest"
-	return "user://lesson_progress_%s.json" % safe
-
-
-func _load_progress() -> void:
-	_reset_lesson_state()
-	var path := _progress_path()
-	if not FileAccess.file_exists(path):
+func add_credits(amount: int) -> void:
+	if amount <= 0:
 		return
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if typeof(parsed) != TYPE_DICTIONARY:
-		return
-	var data: Dictionary = parsed
-	var done_raw: Variant = data.get("completed_lessons", [])
-	if typeof(done_raw) == TYPE_ARRAY:
-		var done_arr: Array = done_raw
-		for i in done_arr.size():
-			var lesson_id := str(done_arr[i])
-			if not lesson_id.is_empty() and not completed_lessons.has(lesson_id):
-				completed_lessons.append(lesson_id)
-	var progress_raw: Variant = data.get("lesson_progress", {})
-	if typeof(progress_raw) == TYPE_DICTIONARY:
-		var progress_dict: Dictionary = progress_raw
-		var keys: Array = progress_dict.keys()
-		for i in keys.size():
-			var module_id := str(keys[i])
-			if not module_id.is_empty():
-				lesson_progress[module_id] = int(progress_dict[module_id])
-	var owned_raw: Variant = data.get("purchased_items", [])
-	if typeof(owned_raw) == TYPE_ARRAY:
-		var owned_arr: Array = owned_raw
-		for i in owned_arr.size():
-			var item_id := str(owned_arr[i])
-			if not item_id.is_empty() and not purchased_items.has(item_id):
-				purchased_items.append(item_id)
+	credits += amount
+	SaveService.save_game()
+
+
+func spend_credits(amount: int) -> bool:
+	if amount <= 0 or credits < amount:
+		return false
+	credits -= amount
+	SaveService.save_game()
+	return true
 
 
 func _save_progress() -> void:
-	var payload := {
-		"completed_lessons": completed_lessons,
-		"lesson_progress": lesson_progress,
-		"purchased_items": purchased_items,
-	}
-	var file := FileAccess.open(_progress_path(), FileAccess.WRITE)
-	if file == null:
-		push_warning("PlayerManager: could not save lesson progress.")
-		return
-	file.store_string(JSON.stringify(payload))
-	file.close()
+	SaveService.save_game()
 
 
 func lock_stage(stage_id: int) -> void:
 	if stage_id <= 0:
 		return
 	locked_stages[stage_id] = true
+	SaveService.save_game()
 
 
 func unlock_stage(stage_id: int) -> void:
 	locked_stages.erase(stage_id)
+	SaveService.save_game()
 
 
 func is_stage_locked(stage_id: int) -> bool:
@@ -172,7 +160,7 @@ func owns_store_item(item_id: String) -> bool:
 func purchase_store_item(item_id: String, price: int) -> bool:
 	if item_id.is_empty() or owns_store_item(item_id):
 		return false
-	if not AuthService.spend_threat_points(price):
+	if not spend_credits(price):
 		return false
 	purchased_items.append(item_id)
 	_save_progress()
@@ -183,7 +171,7 @@ func complete_lesson(lesson_id: String) -> void:
 	if lesson_id.is_empty() or completed_lessons.has(lesson_id):
 		return
 	completed_lessons.append(lesson_id)
-	_save_progress()
+	SaveService.save_game()
 
 
 func has_completed_lesson(lesson_id: String) -> bool:
@@ -194,6 +182,7 @@ func mark_stage_cleared(stage_id: int) -> void:
 	if stage_id <= 0:
 		return
 	mock_max_stage_cleared = maxi(mock_max_stage_cleared, stage_id)
+	SaveService.save_game()
 
 
 func get_weakest_skill() -> String:
@@ -223,6 +212,7 @@ func update_mastery(skill_id: String, is_correct: bool) -> void:
 	var new_mastery: float = p_post + ((1.0 - p_post) * P_TRANSIT)
 	mastery_matrix[skill_id] = new_mastery
 	print("[BKT] " + skill_id + " updated: " + str(p_learned) + " -> " + str(new_mastery))
+	SaveService.save_game()
 
 
 func _mastery_of(skill_id: String) -> float:
@@ -243,3 +233,70 @@ func _posterior(p_learned: float, is_correct: bool) -> float:
 	if denom_wrong <= 0.0:
 		return p_learned
 	return numer_wrong / denom_wrong
+
+
+func get_save_data() -> Dictionary:
+	return {
+		"mock_max_stage_cleared": mock_max_stage_cleared,
+		"mastery_matrix": mastery_matrix.duplicate(true),
+		"locked_stages": locked_stages.duplicate(true),
+		"completed_lessons": completed_lessons.duplicate(),
+		"credits": credits,
+		"unlocked_towers": unlocked_towers.duplicate(),
+		"unlocked_skills": unlocked_skills.duplicate(),
+		"lesson_progress": lesson_progress.duplicate(true),
+		"purchased_items": purchased_items.duplicate(),
+	}
+
+
+func apply_save_data(data: Dictionary) -> void:
+	if data.has("mock_max_stage_cleared"):
+		mock_max_stage_cleared = int(data["mock_max_stage_cleared"])
+
+	if data.has("mastery_matrix") and typeof(data["mastery_matrix"]) == TYPE_DICTIONARY:
+		var saved_matrix: Dictionary = data["mastery_matrix"] as Dictionary
+		var matrix_keys: Array = saved_matrix.keys()
+		for i in matrix_keys.size():
+			var skill_id: String = str(matrix_keys[i])
+			if skill_id.is_empty():
+				continue
+			mastery_matrix[skill_id] = float(saved_matrix[matrix_keys[i]])
+
+	if data.has("locked_stages") and typeof(data["locked_stages"]) == TYPE_DICTIONARY:
+		var saved_locks: Dictionary = data["locked_stages"] as Dictionary
+		locked_stages.clear()
+		var lock_keys: Array = saved_locks.keys()
+		for i in lock_keys.size():
+			locked_stages[int(lock_keys[i])] = true
+
+	if data.has("completed_lessons") and typeof(data["completed_lessons"]) == TYPE_ARRAY:
+		var saved_lessons: Array = data["completed_lessons"] as Array
+		completed_lessons.clear()
+		for i in saved_lessons.size():
+			var lesson_id: String = str(saved_lessons[i])
+			if not lesson_id.is_empty() and not completed_lessons.has(lesson_id):
+				completed_lessons.append(lesson_id)
+
+	if data.has("lesson_progress") and typeof(data["lesson_progress"]) == TYPE_DICTIONARY:
+		var saved_progress: Dictionary = data["lesson_progress"] as Dictionary
+		lesson_progress.clear()
+		var progress_keys: Array = saved_progress.keys()
+		for i in progress_keys.size():
+			var module_id: String = str(progress_keys[i])
+			if module_id.is_empty():
+				continue
+			lesson_progress[module_id] = int(saved_progress[progress_keys[i]])
+
+	if data.has("credits"):
+		var credits_raw: Variant = data["credits"]
+		var credits_type: int = typeof(credits_raw)
+		if credits_type == TYPE_INT or credits_type == TYPE_FLOAT:
+			credits = maxi(0, int(credits_raw))
+
+	if data.has("purchased_items") and typeof(data["purchased_items"]) == TYPE_ARRAY:
+		var saved_items: Array = data["purchased_items"] as Array
+		purchased_items.clear()
+		for i in saved_items.size():
+			var item_id: String = str(saved_items[i])
+			if not item_id.is_empty() and not purchased_items.has(item_id):
+				purchased_items.append(item_id)

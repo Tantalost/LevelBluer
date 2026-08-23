@@ -186,7 +186,7 @@ func _make_card(item: Dictionary) -> PanelContainer:
 	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_apply_label(name_label, Palette.TEXT_PRIMARY, 11)
 	var price_label := Label.new()
-	price_label.text = "%d TP" % int(item.get("price", 0))
+	price_label.text = "%d CR" % int(item.get("price", 0))
 	price_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_apply_label(price_label, Palette.GOLD, 10)
 	var buy := Button.new()
@@ -210,7 +210,7 @@ func _make_card(item: Dictionary) -> PanelContainer:
 func _open_modal(item: Dictionary) -> void:
 	_pending = item.duplicate()
 	_modal_title.text = str(item.get("name", "")).to_upper()
-	_modal_text.text = "PRICE: %d TP" % int(item.get("price", 0))
+	_modal_text.text = "PRICE: %d CR" % int(item.get("price", 0))
 	_modal.visible = true
 
 
@@ -233,11 +233,14 @@ func _on_confirm() -> void:
 		return
 	var item_id := str(_pending.get("id", ""))
 	var price := int(_pending.get("price", 0))
-	var message := "Insufficient threat points"
+	var message := "Insufficient credits"
 	if PlayerManager.owns_store_item(item_id):
 		message = "Already owned"
 	elif PlayerManager.purchase_store_item(item_id, price):
 		message = "Purchase successful"
+		print("[Store] Purchase successful.")
+	else:
+		print("[Store] Insufficient credits.")
 	_hide_modal()
 	_refresh_wallet()
 	_rebuild_items()
@@ -251,7 +254,7 @@ func _show_toast(text: String) -> void:
 
 
 func _refresh_wallet() -> void:
-	_threat_value.text = str(AuthService.wallet_threat_points())
+	_threat_value.text = str(PlayerManager.credits)
 
 
 func _style_buy(button: Button, owned: bool) -> void:

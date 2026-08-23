@@ -348,7 +348,7 @@ func _previous_playable_id(index: int) -> int:
 
 
 func _stage_id(index: int) -> int:
-	# Only module 1 maps onto STAGE_DB ids 1, 2, and 10. Other modules have no TD data yet.
+	# Module 1 maps to ContentDB stage ids 1-10. Other modules have no TD data yet.
 	if _module_index != 0:
 		return -1
 	return index + 1

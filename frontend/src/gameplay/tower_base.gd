@@ -37,6 +37,9 @@ const UPGRADE_PATHS: Dictionary = {
 	"crypto": [],
 }
 
+const BUFF_DURATION: float = 6.0
+const BUFF_FIRE_SCALE: float = 1.6
+
 @export var projectile_scene: PackedScene
 var current_type: String = "base"
 var fire_rate: float = 1.0
@@ -45,11 +48,14 @@ var base_damage: int = 1
 var current_explosion_radius: float = 0.0
 var targets_in_range: Array[Area2D] = []
 var current_target: Node2D = null
+var _buff_time_left: float = 0.0
+var _buff_fire_scale: float = 1.0
 
 @onready var _sprite: Sprite2D = $Sprite2D
 
 
 func _ready() -> void:
+	add_to_group("towers")
 	area_entered.connect(_on_area_entered)
 	area_exited.connect(_on_area_exited)
 	_sprite.visible = _sprite.texture != null
@@ -77,11 +83,10 @@ func apply_stats(type_id: String) -> void:
 	base_damage = int(entry.get("damage", 1))
 	fire_rate = float(entry.get("fire_rate", 1.0))
 	current_explosion_radius = explosion_radius_for(type_id)
-	var stored_color: Variant = entry.get("color", Palette.CYAN)
-	if _sprite.texture != null:
-		modulate = stored_color as Color
+	if _buff_time_left > 0.0:
+		modulate = Palette.YELLOW
 	else:
-		modulate = Color.WHITE
+		_restore_modulate()
 
 
 static func entry_for(type_id: String) -> Dictionary:
@@ -142,10 +147,34 @@ func _process(delta: float) -> void:
 		if current_target != null:
 			look_at(current_target.global_position)
 
+	if _buff_time_left > 0.0:
+		_buff_time_left -= delta
+		if _buff_time_left <= 0.0:
+			_buff_time_left = 0.0
+			_buff_fire_scale = 1.0
+			_restore_modulate()
+
 	fire_timer -= delta
-	if fire_timer <= 0.0 and current_target != null and fire_rate > 0.0:
-		fire_timer = 1.0 / fire_rate
+	var active_rate: float = fire_rate * _buff_fire_scale
+	if fire_timer <= 0.0 and current_target != null and active_rate > 0.0:
+		fire_timer = 1.0 / active_rate
 		_fire()
+
+
+func apply_incident_buff() -> void:
+	_buff_time_left = BUFF_DURATION
+	_buff_fire_scale = BUFF_FIRE_SCALE
+	modulate = Palette.YELLOW
+	print("Tower Buffed!")
+
+
+func _restore_modulate() -> void:
+	var entry: Dictionary = entry_for(current_type)
+	var stored_color: Variant = entry.get("color", Palette.CYAN)
+	if _sprite.texture != null:
+		modulate = stored_color as Color
+	else:
+		modulate = Color.WHITE
 
 
 func _fire() -> void:

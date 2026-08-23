@@ -1,6 +1,12 @@
 extends Node
 ## Autoload singleton, registered as "StageManager".
-## In-memory stage and enemy configs only. Persistence is out of scope.
+## Enemy stats stay local. Stage configs are loaded from ContentDB JSON.
+
+const INCIDENT_BANK: Array[Dictionary] = [
+	{"text": "WARNING: Anomalous payload from internal IP. Action?", "correct": "Isolate Subnet", "wrong": "Ignore Traffic"},
+	{"text": "ALERT: Suspicious encryption routine detected!", "correct": "Drop Packets", "wrong": "Reroute"},
+	{"text": "DDoS signature matching known botnet...", "correct": "Enable Rate Limiting", "wrong": "Increase Bandwidth"},
+]
 
 const ENEMY_DB: Dictionary = {
 	"basic": {"speed": 50.0, "base_health": 3, "color": Palette.RED},
@@ -8,46 +14,8 @@ const ENEMY_DB: Dictionary = {
 	"heavy": {"speed": 35.0, "base_health": 8, "color": Palette.ORANGE},
 }
 
-const STAGE_DB: Dictionary = {
-	1: {
-		"name": "Diagnostic Protocol",
-		"type": "diagnostic",
-		"starting_gold": 2,
-		"waves": [
-			{"enemy_count": 3, "spawn_delay": 1.5, "health_multiplier": 1.0, "enemy_type": "basic"},
-			{"enemy_count": 5, "spawn_delay": 1.0, "health_multiplier": 1.0, "enemy_type": "fast"},
-		],
-	},
-	2: {
-		"name": "Adaptive Gauntlet",
-		"type": "formative",
-		"starting_gold": 5,
-		"waves": [
-			{"enemy_count": 8, "spawn_delay": 0.8, "health_multiplier": 1.2, "enemy_type": "heavy"},
-		],
-	},
-	10: {
-		"name": "Module 1 Post-Assessment",
-		"type": "summative",
-		"starting_gold": 20,
-		"exam_question_count": 5,
-		"exam_required_score": 0.75,
-		"req_lesson": "mod1_all",
-		"waves": [
-			{"enemy_count": 15, "spawn_delay": 0.5, "health_multiplier": 1.5, "enemy_type": "heavy"},
-		],
-	},
-}
-
-
 func get_stage_config(stage_id: int) -> Dictionary:
-	if not STAGE_DB.has(stage_id):
-		return {}
-	var stored: Variant = STAGE_DB[stage_id]
-	var config: Dictionary = stored as Dictionary
-	if config.is_empty():
-		return {}
-	return config.duplicate(true)
+	return ContentDB.get_stage(str(stage_id))
 
 
 func get_enemy_stats(type_id: String) -> Dictionary:

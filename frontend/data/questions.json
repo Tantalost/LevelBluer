@@ -1,0 +1,23 @@
+{
+	"ports": [
+		{"text": "Which port is used for HTTPS?", "correct": "443", "wrong": "80"},
+		{"text": "Which port handles SSH traffic?", "correct": "22", "wrong": "21"},
+		{"text": "Which port does DNS typically use?", "correct": "53", "wrong": "25"},
+		{"text": "Which port serves unencrypted HTTP?", "correct": "80", "wrong": "443"},
+		{"text": "Which port is commonly used for RDP?", "correct": "3389", "wrong": "445"}
+	],
+	"firewalls": [
+		{"text": "Which rule blocks all incoming traffic by default?", "correct": "Implicit Deny", "wrong": "Port Forwarding"},
+		{"text": "A firewall operates primarily at which OSI layer?", "correct": "Network (Layer 3)", "wrong": "Application (Layer 7)"},
+		{"text": "What does a stateful firewall track?", "correct": "Active connections", "wrong": "File hashes"},
+		{"text": "Which placement exposes public services safely?", "correct": "DMZ", "wrong": "Domain Controller"},
+		{"text": "Which action drops traffic without a reply?", "correct": "Drop", "wrong": "Redirect"}
+	],
+	"crypto": [
+		{"text": "Which algorithm is asymmetric?", "correct": "RSA", "wrong": "AES"},
+		{"text": "What is the primary purpose of a hash?", "correct": "Integrity", "wrong": "Encryption"},
+		{"text": "Which protocol encrypts web traffic?", "correct": "TLS", "wrong": "FTP"},
+		{"text": "What must stay private in public-key crypto?", "correct": "Private key", "wrong": "Certificate"},
+		{"text": "Which function is one-way by design?", "correct": "SHA-256", "wrong": "Caesar cipher"}
+	]
+}

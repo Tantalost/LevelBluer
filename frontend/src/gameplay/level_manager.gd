@@ -15,21 +15,6 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 
 @export var enemy_scene: PackedScene
 
-const QUESTION_BANK: Dictionary = {
-	"ports": [
-		{"text": "Which port is used for HTTPS?", "correct": "443", "wrong": "80"},
-		{"text": "Which port handles SSH traffic?", "correct": "22", "wrong": "21"},
-	],
-	"firewalls": [
-		{"text": "Which rule blocks all incoming traffic by default?", "correct": "Implicit Deny", "wrong": "Port Forwarding"},
-		{"text": "A firewall operates primarily at which OSI layer?", "correct": "Network (Layer 3)", "wrong": "Application (Layer 7)"},
-	],
-	"crypto": [
-		{"text": "Which algorithm is asymmetric?", "correct": "RSA", "wrong": "AES"},
-		{"text": "What is the primary purpose of a hash?", "correct": "Integrity", "wrong": "Encryption"},
-	],
-}
-
 var current_phase: GamePhase = GamePhase.PRE_MATCH
 var current_gold: int = 5
 var base_health: int = 5
@@ -43,6 +28,7 @@ var exam_history: Array[String] = []
 var _wave_token: int = 0
 var _wave_finished_spawning: bool = true
 var _wave_kills: int = 0
+var _wave_total_enemies: int = 0
 var _is_wave_intermission: bool = false
 
 @onready var _track: Path2D = %EnemyTrack
@@ -84,8 +70,14 @@ var _is_wave_intermission: bool = false
 @onready var _level_background: ColorRect = %Background
 @onready var _speed_button: HudGeoButton = %SpeedButton
 @onready var _tower_card: HudGeoButton = %TowerCard
+@onready var _incident_modal: PanelContainer = %IncidentModal
+@onready var _incident_text: Label = %IncidentText
+@onready var _btn_incident_a: Button = %BtnIncidentA
+@onready var _btn_incident_b: Button = %BtnIncidentB
 
 var _selected_tower: TowerBase = null
+var _current_incident_correct_btn: Button = null
+var _incident_timeout_timer: SceneTreeTimer = null
 var _pixel_font: Font
 var _quiz_correct_text: String = ""
 var _quiz_led_t: float = 0.0
@@ -103,9 +95,12 @@ func _ready() -> void:
 	_tower_placer.tower_selected.connect(_on_tower_selected)
 	_btn_close.pressed.connect(_on_upgrade_close_pressed)
 	_speed_button.pressed.connect(_on_speed_pressed)
+	_btn_incident_a.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_a))
+	_btn_incident_b.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_b))
 	_upgrade_panel.visible = false
 	_end_game_modal.visible = false
 	_quiz_modal.visible = false
+	_hide_incident()
 	_set_start_controls_visible(false)
 	_level_background.color = Palette.GAMEPLAY_BG
 	_level_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -121,6 +116,7 @@ func _ready() -> void:
 	_style_start_button()
 	_load_pixel_font()
 	_style_quiz_ui()
+	_style_incident_ui()
 	_modal_title_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_items_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_gold_acquired_label.add_theme_color_override("font_color", Palette.GOLD)
@@ -141,6 +137,8 @@ func _process(delta: float) -> void:
 
 
 func change_phase(new_phase: GamePhase) -> void:
+	if new_phase != GamePhase.PHASE_3_DEFEND:
+		_hide_incident()
 	match new_phase:
 		GamePhase.PRE_MATCH:
 			_quiz_modal.visible = false
@@ -171,6 +169,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			_set_start_controls_visible(false)
 			_end_game_modal.visible = false
 			_hide_upgrade_ui()
+			_hide_incident()
 			print("[LevelManager] Entering Phase 3: DEFEND. Spawning wave " + str(current_wave_index + 1) + "...")
 		GamePhase.GAME_OVER:
 			_quiz_modal.visible = false
@@ -201,14 +200,19 @@ func change_phase(new_phase: GamePhase) -> void:
 				var exam_count: int = _exam_question_count()
 				if exam_count > 0:
 					accuracy = float(exam_questions_correct) / float(exam_count)
-			Router.open_victory(accuracy, current_gold)
+			var credit_payout: int = 50 + maxi(0, current_gold)
+			PlayerManager.add_credits(credit_payout)
+			print("[Economy] Victory payout +" + str(credit_payout) + " credits. Wallet: " + str(PlayerManager.credits))
+			Router.open_victory(accuracy, credit_payout)
 			print("[LevelManager] Entering VICTORY. Match won.")
 	current_phase = new_phase
 	_sync_phase_chrome()
 	update_hud()
 	if new_phase == GamePhase.PHASE_3_DEFEND:
 		_begin_wave()
+		_schedule_incident()
 	else:
+		_hide_incident()
 		_wave_token += 1
 
 
@@ -221,7 +225,7 @@ func update_hud() -> void:
 	_gold_label.text = "GOLD  " + str(current_gold)
 	_base_health_label.text = "HP  " + str(base_health)
 	_heart_label.text = str(base_health)
-	_wave_label.text = str(_wave_kills) + "/" + str(_current_wave_enemy_count())
+	_wave_label.text = str(_wave_kills) + "/" + str(_wave_total_enemies)
 	_map_label.text = "MAP A" + str(Router.active_stage_index + 1)
 
 
@@ -232,7 +236,7 @@ func _fit_level_background() -> void:
 
 
 func _load_stage_config() -> void:
-	# Stage select is 0-based. STAGE_DB keys are 1-based diagnostic/formative IDs.
+	# Stage select is 0-based. ContentDB stage keys are 1-based string IDs.
 	var stage_id: int = Router.active_stage_index + 1
 	current_stage_config = StageManager.get_stage_config(stage_id)
 	if current_stage_config.is_empty():
@@ -316,8 +320,9 @@ func _resolve_quiz_choice(picked: String) -> void:
 
 
 func _load_next_question() -> void:
-	if QUESTION_BANK.is_empty():
-		push_error("LevelManager: QUESTION_BANK is empty")
+	var question_bank: Dictionary = ContentDB.get_questions()
+	if question_bank.is_empty():
+		push_error("LevelManager: question bank is empty")
 		return
 	var type_stored: Variant = current_stage_config.get("type", "")
 	var is_formative: bool = str(type_stored) == "formative"
@@ -325,17 +330,17 @@ func _load_next_question() -> void:
 		current_question = _pick_summative_question()
 	else:
 		var target_skill: String = ""
-		var all_skills: Array = QUESTION_BANK.keys()
+		var all_skills: Array = question_bank.keys()
 		if all_skills.is_empty():
-			push_error("LevelManager: QUESTION_BANK has no skills")
+			push_error("LevelManager: question bank has no skills")
 			return
 		if randf() <= 0.8:
 			target_skill = PlayerManager.get_weakest_skill()
 		else:
 			target_skill = str(all_skills[randi() % all_skills.size()])
-		if not QUESTION_BANK.has(target_skill):
+		if not question_bank.has(target_skill):
 			target_skill = "ports"
-		var bank_stored: Variant = QUESTION_BANK[target_skill]
+		var bank_stored: Variant = question_bank[target_skill]
 		var skill_questions: Array = bank_stored as Array
 		if skill_questions.is_empty():
 			push_error("LevelManager: no questions for skill " + target_skill)
@@ -360,11 +365,12 @@ func _load_next_question() -> void:
 
 
 func _pick_summative_question() -> Dictionary:
+	var question_bank: Dictionary = ContentDB.get_questions()
 	var all_questions: Array[Dictionary] = []
-	var skill_ids: Array = QUESTION_BANK.keys()
+	var skill_ids: Array = question_bank.keys()
 	for i in skill_ids.size():
 		var skill_id: String = str(skill_ids[i])
-		var list_stored: Variant = QUESTION_BANK[skill_id]
+		var list_stored: Variant = question_bank[skill_id]
 		var q_list: Array = list_stored as Array
 		for j in q_list.size():
 			var q_stored: Variant = q_list[j]
@@ -372,7 +378,7 @@ func _pick_summative_question() -> Dictionary:
 			q_dict["skill_id"] = skill_id
 			all_questions.append(q_dict)
 	if all_questions.is_empty():
-		push_error("LevelManager: QUESTION_BANK has no questions")
+		push_error("LevelManager: question bank has no questions")
 		return {}
 	var valid_questions: Array[Dictionary] = []
 	for i in all_questions.size():
@@ -456,6 +462,7 @@ func _style_start_button() -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	_hide_incident()
 
 
 func _on_speed_pressed() -> void:
@@ -501,6 +508,142 @@ func _load_pixel_font() -> void:
 	var file: FontFile = load(FONT_PATH) as FontFile
 	if file != null:
 		_pixel_font = file
+
+
+func _style_incident_ui() -> void:
+	var panel := _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.GOLD, 0, 2)
+	panel.shadow_color = Color(Palette.BG_DEEP, 0.72)
+	panel.shadow_size = 2
+	panel.shadow_offset = Vector2(4, 4)
+	_incident_modal.add_theme_stylebox_override("panel", panel)
+	var header: Label = _incident_modal.find_child("IncidentHeader", true, false) as Label
+	if header != null:
+		_apply_quiz_label(header, Palette.GOLD, 9)
+	_apply_quiz_label(_incident_text, Palette.TEXT_PRIMARY, 10)
+	_style_quiz_choice(_btn_incident_a)
+	_style_quiz_choice(_btn_incident_b)
+	_btn_incident_a.custom_minimum_size = Vector2(0, 44)
+	_btn_incident_b.custom_minimum_size = Vector2(0, 44)
+	_btn_incident_a.add_theme_font_size_override("font_size", 9)
+	_btn_incident_b.add_theme_font_size_override("font_size", 9)
+
+
+func _hide_incident() -> void:
+	_cancel_incident_timeout()
+	_incident_modal.visible = false
+	_current_incident_correct_btn = null
+
+
+func _schedule_incident() -> void:
+	if randf() <= 0.5:
+		return
+	if not is_inside_tree():
+		return
+	var token: int = _wave_token
+	var timer: SceneTreeTimer = get_tree().create_timer(3.0)
+	timer.timeout.connect(_on_incident_delay_elapsed.bind(token))
+
+
+func _on_incident_delay_elapsed(token: int) -> void:
+	if not is_inside_tree():
+		return
+	if token != _wave_token:
+		return
+	if current_phase != GamePhase.PHASE_3_DEFEND:
+		return
+	if _is_wave_intermission:
+		return
+	_trigger_incident()
+
+
+func _trigger_incident() -> void:
+	if StageManager.INCIDENT_BANK.is_empty():
+		return
+	if current_phase != GamePhase.PHASE_3_DEFEND:
+		return
+	var bank_size: int = StageManager.INCIDENT_BANK.size()
+	var event: Dictionary = StageManager.INCIDENT_BANK[randi() % bank_size]
+	_incident_text.text = str(event.get("text", ""))
+	var correct_text: String = str(event.get("correct", ""))
+	var wrong_text: String = str(event.get("wrong", ""))
+	if randf() > 0.5:
+		_btn_incident_a.text = correct_text
+		_btn_incident_b.text = wrong_text
+		_current_incident_correct_btn = _btn_incident_a
+	else:
+		_btn_incident_a.text = wrong_text
+		_btn_incident_b.text = correct_text
+		_current_incident_correct_btn = _btn_incident_b
+	_incident_modal.visible = true
+	_cancel_incident_timeout()
+	if not is_inside_tree():
+		return
+	_incident_timeout_timer = get_tree().create_timer(6.0)
+	_incident_timeout_timer.timeout.connect(_on_incident_timeout)
+
+
+func _cancel_incident_timeout() -> void:
+	if _incident_timeout_timer != null and _incident_timeout_timer.timeout.is_connected(_on_incident_timeout):
+		_incident_timeout_timer.timeout.disconnect(_on_incident_timeout)
+	_incident_timeout_timer = null
+
+
+func _on_incident_timeout() -> void:
+	_incident_timeout_timer = null
+	if not is_inside_tree():
+		return
+	if not _incident_modal.visible:
+		return
+	if current_phase != GamePhase.PHASE_3_DEFEND:
+		_hide_incident()
+		return
+	_incident_modal.visible = false
+	_current_incident_correct_btn = null
+	print("[Incident] Ignored! Auto-failing and spawning penalties.")
+	_spawn_penalty_enemies(3, "fast")
+	_check_wave_cleared()
+
+
+func _on_incident_button_pressed(btn: Button) -> void:
+	if not _incident_modal.visible:
+		return
+	_cancel_incident_timeout()
+	_incident_modal.visible = false
+	if btn == _current_incident_correct_btn:
+		print("[Incident] Correct! Buffing towers.")
+		get_tree().call_group("towers", "apply_incident_buff")
+	else:
+		print("[Incident] Wrong! Spawning penalty enemies.")
+		_spawn_penalty_enemies(3, "fast")
+	_current_incident_correct_btn = null
+	_check_wave_cleared()
+
+
+func _spawn_penalty_enemies(count: int, type_id: String) -> void:
+	if enemy_scene == null:
+		push_error("LevelManager: enemy_scene is not assigned")
+		return
+	if _track == null:
+		push_error("LevelManager: EnemyTrack is missing")
+		return
+	if current_phase != GamePhase.PHASE_3_DEFEND or not is_inside_tree():
+		return
+	_is_wave_intermission = false
+	var wave_data: Dictionary = _current_wave_data()
+	var hp_mult: float = float(wave_data.get("health_multiplier", 1.0))
+	var resolved_type: String = type_id if not type_id.is_empty() else "fast"
+	var spawn_count: int = maxi(0, count)
+	_wave_total_enemies += spawn_count
+	update_hud()
+	for i in spawn_count:
+		var enemy: EnemyBase = enemy_scene.instantiate() as EnemyBase
+		if enemy == null:
+			push_error("LevelManager: enemy_scene is not an EnemyBase")
+			return
+		enemy.initialize_stats(resolved_type, hp_mult)
+		enemy.enemy_died.connect(_on_enemy_died)
+		active_enemies += 1
+		_track.add_child(enemy)
 
 
 func _style_quiz_ui() -> void:
@@ -644,6 +787,7 @@ func _begin_wave() -> void:
 	_wave_token += 1
 	_wave_finished_spawning = false
 	_wave_kills = 0
+	_wave_total_enemies = _current_wave_enemy_count()
 	update_hud()
 	_spawn_wave(_wave_token)
 
@@ -714,6 +858,8 @@ func _on_player_base_area_entered(area: Area2D) -> void:
 
 func _check_wave_cleared() -> void:
 	if current_phase != GamePhase.PHASE_3_DEFEND:
+		return
+	if _incident_modal.visible:
 		return
 	if _is_wave_intermission:
 		return

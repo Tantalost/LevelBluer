@@ -51,7 +51,7 @@ func _ready() -> void:
 
 func on_enter(args: Dictionary) -> void:
 	_won = bool(args.get("won", true))
-	_materials_gained = maxi(0, int(args.get("materials", args.get("gold", 0))))
+	_materials_gained = maxi(0, int(args.get("credits", args.get("materials", args.get("gold", 0)))))
 	_weak_skill = str(args.get("weak_skill", ""))
 	var tip := str(args.get("tip", ""))
 	_refresh(tip)
@@ -82,7 +82,7 @@ func _refresh(tip: String) -> void:
 	if _won:
 		_stop_typewriter()
 		_materials_banner.title = "+%d" % _materials_gained
-		_materials_banner.subtitle = "MATERIALS GAINED"
+		_materials_banner.subtitle = "CREDITS EARNED"
 		_materials_banner.fill_key = "gold"
 		_materials_banner.border_key = "gold"
 		_grade_chip.title = "CLR"
@@ -107,8 +107,7 @@ func _refresh(tip: String) -> void:
 func _style_header() -> void:
 	_result_label.text = "RESULT"
 	_player_name.text = "<%s>" % AuthService.display_name().to_upper()
-	var mats: int = AuthService.materials()
-	_materials_value.text = str(mats if mats >= 0 else 0)
+	_materials_value.text = str(PlayerManager.credits)
 	_materials_delta.visible = _won and _materials_gained > 0
 	_materials_delta.text = "+%d" % _materials_gained if _materials_delta.visible else ""
 	_apply_label(_result_label, Palette.CYAN, 13)
