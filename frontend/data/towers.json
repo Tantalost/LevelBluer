@@ -1,0 +1,35 @@
+{
+	"base": {
+		"name": "Basic Node",
+		"damage": 1,
+		"fire_rate": 1.0,
+		"color": "CYAN",
+		"cost": 0,
+		"req_skill": "",
+		"splash_radius": 0.0,
+		"slow_factor": 1.0,
+		"slow_duration": 0.0
+	},
+	"network": {
+		"name": "Firewall",
+		"damage": 1,
+		"fire_rate": 2.5,
+		"color": "GREEN",
+		"cost": 3,
+		"req_skill": "firewall_1",
+		"splash_radius": 0.0,
+		"slow_factor": 0.5,
+		"slow_duration": 1.5
+	},
+	"crypto": {
+		"name": "Decryptor",
+		"damage": 3,
+		"fire_rate": 0.8,
+		"color": "MAGENTA",
+		"cost": 4,
+		"req_skill": "crypto_1",
+		"splash_radius": 64.0,
+		"slow_factor": 1.0,
+		"slow_duration": 0.0
+	}
+}

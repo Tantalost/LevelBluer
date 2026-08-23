@@ -561,12 +561,16 @@ func _on_incident_delay_elapsed(token: int) -> void:
 
 
 func _trigger_incident() -> void:
-	if StageManager.INCIDENT_BANK.is_empty():
+	var incident_bank: Array = ContentDB.get_incidents()
+	if incident_bank.is_empty():
 		return
 	if current_phase != GamePhase.PHASE_3_DEFEND:
 		return
-	var bank_size: int = StageManager.INCIDENT_BANK.size()
-	var event: Dictionary = StageManager.INCIDENT_BANK[randi() % bank_size]
+	var bank_size: int = incident_bank.size()
+	var event_stored: Variant = incident_bank[randi() % bank_size]
+	if typeof(event_stored) != TYPE_DICTIONARY:
+		return
+	var event: Dictionary = event_stored as Dictionary
 	_incident_text.text = str(event.get("text", ""))
 	var correct_text: String = str(event.get("correct", ""))
 	var wrong_text: String = str(event.get("wrong", ""))

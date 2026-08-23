@@ -1,0 +1,17 @@
+[
+	{
+		"text": "WARNING: Anomalous payload from internal IP. Action?",
+		"correct": "Isolate Subnet",
+		"wrong": "Ignore Traffic"
+	},
+	{
+		"text": "ALERT: Suspicious encryption routine detected!",
+		"correct": "Drop Packets",
+		"wrong": "Reroute"
+	},
+	{
+		"text": "DDoS signature matching known botnet...",
+		"correct": "Enable Rate Limiting",
+		"wrong": "Increase Bandwidth"
+	}
+]

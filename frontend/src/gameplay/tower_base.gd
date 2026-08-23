@@ -1,44 +1,6 @@
 class_name TowerBase
 extends Area2D
-## Branching discipline upgrades. Mock DB only — Resources come later.
-
-const TOWER_DB: Dictionary = {
-	"base": {
-		"name": "Basic Node",
-		"damage": 1,
-		"fire_rate": 1.0,
-		"color": Palette.CYAN,
-		"req_skill": "",
-		"splash_radius": 0.0,
-		"slow_factor": 1.0,
-		"slow_duration": 0.0,
-		"explosion_radius": 0.0,
-	},
-	"network": {
-		"name": "Firewall",
-		"damage": 1,
-		"fire_rate": 2.5,
-		"color": Palette.GREEN,
-		"cost": 3,
-		"req_skill": "firewall_1",
-		"splash_radius": 0.0,
-		"slow_factor": 0.5,
-		"slow_duration": 1.5,
-		"explosion_radius": 0.0,
-	},
-	"crypto": {
-		"name": "Decryptor",
-		"damage": 3,
-		"fire_rate": 0.8,
-		"color": Palette.MAGENTA,
-		"cost": 4,
-		"req_skill": "crypto_1",
-		"splash_radius": 64.0,
-		"slow_factor": 1.0,
-		"slow_duration": 0.0,
-		"explosion_radius": 64.0,
-	},
-}
+## Branching discipline upgrades. Combat stats come from ContentDB JSON.
 
 const UPGRADE_PATHS: Dictionary = {
 	"base": ["network", "crypto"],
@@ -103,12 +65,7 @@ func apply_stats(type_id: String) -> void:
 
 
 static func entry_for(type_id: String) -> Dictionary:
-	if not TOWER_DB.has(type_id):
-		return {}
-	var stored: Variant = TOWER_DB[type_id]
-	if typeof(stored) != TYPE_DICTIONARY:
-		return {}
-	return stored as Dictionary
+	return ContentDB.get_tower(type_id)
 
 
 static func cost_for(type_id: String) -> int:

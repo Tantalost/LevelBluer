@@ -16,15 +16,27 @@ var _hit_tween: Tween = null
 
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
-	var stats: Dictionary = StageManager.get_enemy_stats(type_id)
-	var health_stored: Variant = stats.get("base_health", 3)
+	var stats: Dictionary = ContentDB.get_enemy(type_id)
+	var health_stored: Variant = stats.get("hp", stats.get("base_health", 3))
 	var speed_stored: Variant = stats.get("speed", 50.0)
 	var color_stored: Variant = stats.get("color", Palette.RED)
-	max_health = maxi(1, int(round(float(int(health_stored)) * hp_mult)))
+	var bounty_stored: Variant = stats.get("bounty", 1)
+	var hp: int = 3
+	if typeof(health_stored) == TYPE_INT or typeof(health_stored) == TYPE_FLOAT:
+		hp = int(health_stored)
+	max_health = maxi(1, int(round(float(hp) * hp_mult)))
 	current_health = max_health
-	_base_move_speed = float(speed_stored)
+	var speed: float = 50.0
+	if typeof(speed_stored) == TYPE_INT or typeof(speed_stored) == TYPE_FLOAT:
+		speed = float(speed_stored)
+	_base_move_speed = speed
 	move_speed = _base_move_speed
-	_base_color = color_stored as Color
+	if typeof(color_stored) == TYPE_COLOR:
+		_base_color = color_stored as Color
+	else:
+		_base_color = Palette.RED
+	if typeof(bounty_stored) == TYPE_INT or typeof(bounty_stored) == TYPE_FLOAT:
+		bounty = maxi(0, int(bounty_stored))
 	_apply_tint(_base_color)
 
 

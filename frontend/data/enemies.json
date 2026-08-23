@@ -1,0 +1,20 @@
+{
+	"basic": {
+		"hp": 3,
+		"speed": 50.0,
+		"color": "RED",
+		"bounty": 1
+	},
+	"fast": {
+		"hp": 2,
+		"speed": 90.0,
+		"color": "YELLOW",
+		"bounty": 1
+	},
+	"heavy": {
+		"hp": 8,
+		"speed": 35.0,
+		"color": "ORANGE",
+		"bounty": 2
+	}
+}
