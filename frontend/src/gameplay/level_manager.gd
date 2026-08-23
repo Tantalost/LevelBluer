@@ -82,6 +82,9 @@ var _pixel_font: Font
 var _quiz_correct_text: String = ""
 var _quiz_led_t: float = 0.0
 var _speed_mult: float = 1.0
+var _shake_intensity: float = 0.0
+
+@onready var _camera: Camera2D = %Camera2D
 
 
 func _ready() -> void:
@@ -130,6 +133,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_update_camera_shake(delta)
 	if not _quiz_modal.visible:
 		return
 	_quiz_led_t += delta
@@ -848,12 +852,32 @@ func _on_player_base_area_entered(area: Area2D) -> void:
 	base_health -= 1
 	active_enemies = maxi(0, active_enemies - 1)
 	enemy.queue_free()
+	add_camera_shake(15.0)
 	print("[Enemy] Base breached!")
 	update_hud()
 	if base_health <= 0:
 		change_phase(GamePhase.GAME_OVER)
 		return
 	_check_wave_cleared()
+
+
+func add_camera_shake(intensity: float = 10.0) -> void:
+	_shake_intensity = maxf(_shake_intensity, intensity)
+
+
+func _update_camera_shake(delta: float) -> void:
+	if _camera == null:
+		return
+	if _shake_intensity <= 0.0:
+		return
+	_shake_intensity = lerpf(_shake_intensity, 0.0, delta * 5.0)
+	_camera.offset = Vector2(
+		randf_range(-_shake_intensity, _shake_intensity),
+		randf_range(-_shake_intensity, _shake_intensity)
+	)
+	if _shake_intensity < 0.5:
+		_shake_intensity = 0.0
+		_camera.offset = Vector2.ZERO
 
 
 func _check_wave_cleared() -> void:
@@ -918,8 +942,7 @@ func _rebuild_upgrade_buttons(tower_node: TowerBase) -> void:
 		return
 	for path_id: String in paths:
 		var btn := Button.new()
-		var req: String = TowerBase.req_skill_for(path_id)
-		var is_unlocked: bool = req.is_empty() or PlayerManager.has_skill(req)
+		var is_unlocked: bool = PlayerManager.is_tower_unlocked(path_id)
 		if is_unlocked:
 			btn.text = TowerBase.display_name_for(path_id) + " (" + str(TowerBase.cost_for(path_id)) + "G)"
 		else:
@@ -952,9 +975,8 @@ func _on_upgrade_purchased(tower_node: TowerBase, target_type: String) -> void:
 	if tower_node == null or not is_instance_valid(tower_node):
 		_hide_upgrade_ui()
 		return
-	var req: String = TowerBase.req_skill_for(target_type)
-	if not req.is_empty() and not PlayerManager.has_skill(req):
-		print("[Upgrade] Locked. Requires: " + req)
+	if not PlayerManager.is_tower_unlocked(target_type):
+		print("[Upgrade] Locked. Unlock this node in the skill tree first: " + target_type)
 		return
 	var cost: int = TowerBase.cost_for(target_type)
 	if current_gold < cost:

@@ -7,25 +7,27 @@ const MOCK_SKILL_DB: Dictionary = {
 		"name": "Basic Firewall",
 		"graph_pos": Vector2(0, 0),
 		"prereqs": [],
-		"unlock_cost": 1,
+		"unlock_cost": 200,
+		"tower_id": "network",
 	},
 	"firewall_2": {
 		"name": "Advanced Filtering",
 		"graph_pos": Vector2(0, -150),
 		"prereqs": ["firewall_1"],
-		"unlock_cost": 1,
+		"unlock_cost": 250,
 	},
 	"crypto_1": {
 		"name": "Basic Encryption",
 		"graph_pos": Vector2(150, 0),
 		"prereqs": ["firewall_1"],
-		"unlock_cost": 1,
+		"unlock_cost": 200,
+		"tower_id": "crypto",
 	},
 	"firewall_3": {
 		"name": "Packet Inspection",
 		"graph_pos": Vector2(0, -300),
 		"prereqs": ["firewall_2"],
-		"unlock_cost": 2,
+		"unlock_cost": 300,
 	},
 }
 
@@ -40,7 +42,6 @@ const MOCK_SKILL_DB: Dictionary = {
 @onready var _coins_value: Label = %CoinsValue
 
 var _pixel_font: Font
-var mock_coins: int = 5
 
 
 func _ready() -> void:
@@ -55,6 +56,8 @@ func _ready() -> void:
 func on_enter(_args: Dictionary) -> void:
 	visible = true
 	_set_canvas_layers_visible(true)
+	_refresh_coins_label()
+	_generate_skill_tree()
 	_apply_scale()
 	_pan_zoom.reset_view.call_deferred()
 
@@ -62,6 +65,8 @@ func on_enter(_args: Dictionary) -> void:
 func on_resume() -> void:
 	visible = true
 	_set_canvas_layers_visible(true)
+	_refresh_coins_label()
+	_generate_skill_tree()
 	_apply_scale()
 
 
@@ -151,12 +156,19 @@ func _generate_skill_tree() -> void:
 
 
 func _get_skill_state(skill_id: String) -> String:
-	if PlayerManager.has_skill(skill_id):
-		return "UNLOCKED"
 	var data: Dictionary = MOCK_SKILL_DB.get(skill_id, {})
+	var tower_id: String = str(data.get("tower_id", ""))
+	if PlayerManager.has_skill(skill_id) or (not tower_id.is_empty() and PlayerManager.is_tower_unlocked(tower_id)):
+		return "UNLOCKED"
 	var prereqs: Array = data.get("prereqs", [])
 	for i in prereqs.size():
-		if not PlayerManager.has_skill(str(prereqs[i])):
+		var prereq_id: String = str(prereqs[i])
+		var prereq_data: Dictionary = MOCK_SKILL_DB.get(prereq_id, {})
+		var prereq_tower: String = str(prereq_data.get("tower_id", ""))
+		var prereq_ok: bool = PlayerManager.has_skill(prereq_id)
+		if not prereq_tower.is_empty() and PlayerManager.is_tower_unlocked(prereq_tower):
+			prereq_ok = true
+		if not prereq_ok:
 			return "LOCKED"
 	return "PURCHASABLE"
 
@@ -179,20 +191,35 @@ func _attempt_purchase(skill_id: String) -> void:
 	if not MOCK_SKILL_DB.has(skill_id):
 		return
 	var state := _get_skill_state(skill_id)
+	if state == "UNLOCKED":
+		print("[SkillTree] Already unlocked: " + skill_id)
+		return
 	if state != "PURCHASABLE":
 		return
 	var data: Dictionary = MOCK_SKILL_DB[skill_id]
-	var cost := int(data.get("unlock_cost", 0))
-	if mock_coins < cost:
+	var node_cost: int = int(data.get("unlock_cost", 0))
+	var tower_id: String = str(data.get("tower_id", ""))
+	if not tower_id.is_empty() and PlayerManager.is_tower_unlocked(tower_id):
+		print("[SkillTree] Tower already unlocked.")
+		PlayerManager.unlock_skill(skill_id)
+		_refresh_coins_label()
+		_generate_skill_tree()
 		return
-	mock_coins -= cost
-	PlayerManager.unlock_skill(skill_id)
-	_refresh_coins_label()
-	_generate_skill_tree()
+	if PlayerManager.spend_credits(node_cost):
+		PlayerManager.unlock_skill(skill_id)
+		if not tower_id.is_empty():
+			PlayerManager.unlock_tower(tower_id)
+			print("[SkillTree] Successfully unlocked: " + tower_id)
+		else:
+			print("[SkillTree] Successfully unlocked: " + skill_id)
+		_refresh_coins_label()
+		_generate_skill_tree()
+	else:
+		print("[SkillTree] Insufficient credits for upgrade.")
 
 
 func _refresh_coins_label() -> void:
-	_coins_value.text = str(mock_coins)
+	_coins_value.text = str(PlayerManager.credits)
 
 
 func _apply_scale() -> void:

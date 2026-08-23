@@ -9,6 +9,9 @@ const TOWER_DB: Dictionary = {
 		"fire_rate": 1.0,
 		"color": Palette.CYAN,
 		"req_skill": "",
+		"splash_radius": 0.0,
+		"slow_factor": 1.0,
+		"slow_duration": 0.0,
 		"explosion_radius": 0.0,
 	},
 	"network": {
@@ -18,16 +21,22 @@ const TOWER_DB: Dictionary = {
 		"color": Palette.GREEN,
 		"cost": 3,
 		"req_skill": "firewall_1",
+		"splash_radius": 0.0,
+		"slow_factor": 0.5,
+		"slow_duration": 1.5,
 		"explosion_radius": 0.0,
 	},
 	"crypto": {
 		"name": "Decryptor",
 		"damage": 3,
-		"fire_rate": 0.5,
+		"fire_rate": 0.8,
 		"color": Palette.MAGENTA,
 		"cost": 4,
 		"req_skill": "crypto_1",
-		"explosion_radius": 80.0,
+		"splash_radius": 64.0,
+		"slow_factor": 1.0,
+		"slow_duration": 0.0,
+		"explosion_radius": 64.0,
 	},
 }
 
@@ -46,6 +55,8 @@ var fire_rate: float = 1.0
 var fire_timer: float = 0.0
 var base_damage: int = 1
 var current_explosion_radius: float = 0.0
+var current_slow_factor: float = 1.0
+var current_slow_duration: float = 0.0
 var targets_in_range: Array[Area2D] = []
 var current_target: Node2D = null
 var _buff_time_left: float = 0.0
@@ -82,7 +93,9 @@ func apply_stats(type_id: String) -> void:
 	current_type = type_id
 	base_damage = int(entry.get("damage", 1))
 	fire_rate = float(entry.get("fire_rate", 1.0))
-	current_explosion_radius = explosion_radius_for(type_id)
+	current_explosion_radius = splash_radius_for(type_id)
+	current_slow_factor = slow_factor_for(type_id)
+	current_slow_duration = slow_duration_for(type_id)
 	if _buff_time_left > 0.0:
 		modulate = Palette.YELLOW
 	else:
@@ -124,7 +137,22 @@ static func req_skill_for(type_id: String) -> String:
 
 
 static func explosion_radius_for(type_id: String) -> float:
-	return float(entry_for(type_id).get("explosion_radius", 0.0))
+	return splash_radius_for(type_id)
+
+
+static func splash_radius_for(type_id: String) -> float:
+	var entry: Dictionary = entry_for(type_id)
+	if entry.has("splash_radius"):
+		return float(entry["splash_radius"])
+	return float(entry.get("explosion_radius", 0.0))
+
+
+static func slow_factor_for(type_id: String) -> float:
+	return float(entry_for(type_id).get("slow_factor", 1.0))
+
+
+static func slow_duration_for(type_id: String) -> float:
+	return float(entry_for(type_id).get("slow_duration", 0.0))
 
 
 func _on_area_entered(area: Area2D) -> void:
@@ -185,7 +213,13 @@ func _fire() -> void:
 	if projectile == null:
 		push_warning("[Tower] projectile_scene is not a ProjectileBase.")
 		return
-	projectile.initialize(current_target, base_damage, current_explosion_radius)
+	projectile.initialize(
+		current_target,
+		base_damage,
+		current_explosion_radius,
+		current_slow_factor,
+		current_slow_duration,
+	)
 	var parent_node: Node = get_parent()
 	if parent_node == null:
 		return

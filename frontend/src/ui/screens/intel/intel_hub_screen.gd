@@ -32,6 +32,7 @@ const FALLBACK_MATERIALS := 200
 @onready var _codex_title: Label = %CodexTitle
 @onready var _codex_sub: Label = %CodexSub
 @onready var _codex_enter: Button = %CodexEnter
+@onready var _threat_matrix: ThreatMatrixPanel = %ThreatMatrixPanel
 
 var _pixel_font: Font
 var _blink_t: float = 0.0
@@ -84,11 +85,13 @@ func _process(delta: float) -> void:
 func on_enter(_args: Dictionary) -> void:
 	set_process(true)
 	_refresh_resources()
+	_threat_matrix.refresh_matrix()
 
 
 func on_resume() -> void:
 	set_process(true)
 	_refresh_resources()
+	_threat_matrix.refresh_matrix()
 
 
 func on_exit() -> void:

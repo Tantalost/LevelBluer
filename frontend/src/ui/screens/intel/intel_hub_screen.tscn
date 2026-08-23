@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://bintelhubscr001"]
+[gd_scene load_steps=10 format=3 uid="uid://bintelhubscr001"]
 
 [ext_resource type="Script" path="res://src/ui/screens/intel/intel_hub_screen.gd" id="1_hub"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="6_icon"]
 [ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="7_vig"]
 [ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="8_pine"]
+[ext_resource type="PackedScene" uid="uid://bthreatmatrix01" path="res://src/ui/components/threat_matrix_panel.tscn" id="9_matrix"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("7_vig")
@@ -182,6 +183,10 @@ theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 12
 text = "SELECT A MODULE TO MOUNT"
 horizontal_alignment = 1
+
+[node name="ThreatMatrixPanel" parent="SafeAreaContainer/ScreenLayout" instance=ExtResource("9_matrix")]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="CardsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
 layout_mode = 2

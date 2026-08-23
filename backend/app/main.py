@@ -5,10 +5,11 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.routes.auth import router as auth_router
 from app.routes.pretest import router as pretest_router
+from app.routes.progress import router as progress_router
 
 app = FastAPI(
     title="LevelBlue Mobile API",
-    description="Python backend for the Godot mobile game — student auth, pre-test, and BKT.",
+    description="Python backend for the Godot mobile game — student auth, pre-test, BKT, and save sync.",
     version="1.0.0",
 )
 
@@ -22,6 +23,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(pretest_router)
+app.include_router(progress_router)
 
 
 @app.exception_handler(HTTPException)

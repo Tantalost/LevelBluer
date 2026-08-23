@@ -21,6 +21,7 @@ var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
 var mock_max_stage_cleared: int = 1
 var credits: int = 0
+var _session_hydrated: bool = false
 
 
 func has_skill(skill_id: String) -> bool:
@@ -50,14 +51,26 @@ func is_tower_unlocked(tower_id: String) -> bool:
 func _ready() -> void:
 	AuthService.session_changed.connect(_on_session_changed)
 	if AuthService.is_signed_in():
-		reset_to_defaults()
-		SaveService.load_game()
+		_hydrate_signed_in_session()
 
 
 func _on_session_changed(signed_in: bool) -> void:
+	if not signed_in:
+		_session_hydrated = false
+		reset_to_defaults()
+		return
+	if _session_hydrated:
+		return
+	await _hydrate_signed_in_session()
+
+
+func _hydrate_signed_in_session() -> void:
 	reset_to_defaults()
-	if signed_in:
+	SaveService.fetch_cloud_save()
+	var fetch_ok: bool = await SaveService.wait_for_cloud_fetch()
+	if not fetch_ok:
 		SaveService.load_game()
+	_session_hydrated = true
 
 
 func get_lesson_progress(module_id: String) -> int:
@@ -300,3 +313,20 @@ func apply_save_data(data: Dictionary) -> void:
 			var item_id: String = str(saved_items[i])
 			if not item_id.is_empty() and not purchased_items.has(item_id):
 				purchased_items.append(item_id)
+
+	if data.has("unlocked_towers") and typeof(data["unlocked_towers"]) == TYPE_ARRAY:
+		var saved_towers: Array = data["unlocked_towers"] as Array
+		unlocked_towers.clear()
+		unlocked_towers.append("base")
+		for i in saved_towers.size():
+			var tower_id: String = str(saved_towers[i])
+			if not tower_id.is_empty() and not unlocked_towers.has(tower_id):
+				unlocked_towers.append(tower_id)
+
+	if data.has("unlocked_skills") and typeof(data["unlocked_skills"]) == TYPE_ARRAY:
+		var saved_skills: Array = data["unlocked_skills"] as Array
+		unlocked_skills.clear()
+		for i in saved_skills.size():
+			var skill_id: String = str(saved_skills[i])
+			if not skill_id.is_empty() and not unlocked_skills.has(skill_id):
+				unlocked_skills.append(skill_id)

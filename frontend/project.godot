@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 SettingsService="*uid://p2mqjvioywev"
+AudioManager="*res://src/autoload/audio_manager.gd"
 SaveService="*uid://b40viyntql7vo"
 ContentDB="*uid://8t88s64sdbd2"
 AuthService="*uid://burf5g5ce6uqt"

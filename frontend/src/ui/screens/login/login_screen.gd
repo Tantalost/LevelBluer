@@ -124,6 +124,8 @@ func _attempt_login() -> void:
 
 	_set_busy(true)
 	var result: AuthService.Result = await AuthService.sign_in(email, password)
+	if result == AuthService.Result.OK:
+		await SaveService.wait_for_cloud_fetch()
 	_set_busy(false)
 
 	match result:
@@ -168,4 +170,5 @@ func _hide_error() -> void:
 
 
 func _on_password_changed() -> void:
+	await SaveService.wait_for_cloud_fetch()
 	Router.replace_all(&"dashboard")

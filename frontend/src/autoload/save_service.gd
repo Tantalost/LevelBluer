@@ -1,6 +1,35 @@
 extends Node
 ## Autoload singleton, registered as "SaveService".
-## Per-account snapshots on this device. Cloud sync is out of scope.
+## Local JSON is the session source of truth while offline.
+## After login, a cloud pull overwrites local when a remote blob exists.
+
+signal cloud_fetch_completed(success: bool)
+
+const DEFAULT_API_BASE := "http://127.0.0.1:8000"
+const SYNC_PATH := "/api/progress/sync"
+const SYNC_TIMEOUT_SEC := 10.0
+
+var _http_request: HTTPRequest
+var _http_fetch: HTTPRequest
+var _sync_in_flight: bool = false
+var _resync_queued: bool = false
+var _fetch_in_flight: bool = false
+var _last_fetch_ok: bool = false
+
+
+func _ready() -> void:
+	_http_request = HTTPRequest.new()
+	_http_request.timeout = SYNC_TIMEOUT_SEC
+	_http_request.use_threads = true
+	add_child(_http_request)
+	_http_request.request_completed.connect(_on_sync_completed)
+
+	_http_fetch = HTTPRequest.new()
+	_http_fetch.timeout = SYNC_TIMEOUT_SEC
+	_http_fetch.use_threads = true
+	add_child(_http_fetch)
+	_http_fetch.request_completed.connect(_on_fetch_completed)
+
 
 func load_local() -> void:
 	load_game()
@@ -23,6 +52,7 @@ func save_game() -> void:
 	file.store_string(json_string)
 	file.close()
 	print("[SaveService] Game saved successfully. path=", path)
+	_sync_to_cloud()
 
 
 func load_game() -> void:
@@ -45,8 +75,156 @@ func load_game() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		push_error("[SaveService] Save root is not a Dictionary: " + path)
 		return
-	PlayerManager.apply_save_data(data as Dictionary)
+	var parsed: Dictionary = data as Dictionary
+	if not _looks_like_save(parsed):
+		push_error("[SaveService] Save file is not a player snapshot: " + path)
+		return
+	PlayerManager.apply_save_data(parsed)
 	print("[SaveService] Save loaded successfully. path=", path)
+
+
+func fetch_cloud_save() -> void:
+	if _fetch_in_flight:
+		return
+	if not AuthService.is_signed_in():
+		_finish_fetch(false)
+		return
+	var token: String = AuthService.auth_token()
+	if token.is_empty() or _http_fetch == null:
+		_finish_fetch(false)
+		return
+
+	var url: String = _api_base() + SYNC_PATH
+	var headers: PackedStringArray = [
+		"Authorization: Bearer " + token,
+	]
+	_fetch_in_flight = true
+	var error: Error = _http_fetch.request(url, headers, HTTPClient.METHOD_GET)
+	if error != OK:
+		push_warning("[SaveService] Failed to initiate cloud fetch. error=" + str(error))
+		_finish_fetch(false)
+
+
+func wait_for_cloud_fetch() -> bool:
+	if _fetch_in_flight:
+		return await cloud_fetch_completed
+	return _last_fetch_ok
+
+
+func _on_fetch_completed(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray,
+) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
+		push_warning("[SaveService] Cloud fetch failed or offline. response_code=" + str(response_code))
+		_finish_fetch(false)
+		return
+
+	var json_string: String = body.get_string_from_utf8()
+	if json_string.strip_edges().is_empty() or json_string.strip_edges() == "null":
+		print("[SaveService] No cloud save exists yet. Loading local fallback.")
+		load_game()
+		_finish_fetch(true)
+		return
+
+	var save_dict: Dictionary = _extract_save_dict(json_string)
+	if save_dict.is_empty():
+		print("[SaveService] Cloud returned no player snapshot. Loading local fallback.")
+		load_game()
+		_finish_fetch(true)
+		return
+
+	var path: String = _resolve_save_path()
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		push_warning("[SaveService] Cloud save parsed but local write failed. Applying in memory.")
+		PlayerManager.apply_save_data(save_dict)
+		_finish_fetch(true)
+		return
+	file.store_string(JSON.stringify(save_dict))
+	file.close()
+	print("[SaveService] Cloud save downloaded and written to disk.")
+	load_game()
+	_finish_fetch(true)
+
+
+func _extract_save_dict(json_string: String) -> Dictionary:
+	var json: JSON = JSON.new()
+	if json.parse(json_string) != OK:
+		return {}
+	var data: Variant = json.data
+	if typeof(data) != TYPE_DICTIONARY:
+		return {}
+	var parsed: Dictionary = data as Dictionary
+	var payload: Variant = parsed.get("payload", parsed)
+	if typeof(payload) != TYPE_DICTIONARY:
+		return {}
+	var save_dict: Dictionary = payload as Dictionary
+	if not _looks_like_save(save_dict):
+		return {}
+	return save_dict
+
+
+func _looks_like_save(data: Dictionary) -> bool:
+	return data.has("mastery_matrix") or data.has("mock_max_stage_cleared")
+
+
+func _finish_fetch(success: bool) -> void:
+	_fetch_in_flight = false
+	_last_fetch_ok = success
+	cloud_fetch_completed.emit(success)
+
+
+func _sync_to_cloud() -> void:
+	if not AuthService.is_signed_in():
+		return
+	var token: String = AuthService.auth_token()
+	if token.is_empty():
+		return
+	if _http_request == null:
+		return
+	if _sync_in_flight:
+		_resync_queued = true
+		return
+
+	var data: Dictionary = PlayerManager.get_save_data()
+	var json_string: String = JSON.stringify(data)
+	var url: String = _api_base() + SYNC_PATH
+	var headers: PackedStringArray = [
+		"Content-Type: application/json",
+		"Authorization: Bearer " + token,
+	]
+
+	_sync_in_flight = true
+	var error: Error = _http_request.request(url, headers, HTTPClient.METHOD_POST, json_string)
+	if error != OK:
+		_sync_in_flight = false
+		push_warning("[SaveService] Failed to initiate cloud sync. error=" + str(error))
+
+
+func _on_sync_completed(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	_body: PackedByteArray,
+) -> void:
+	_sync_in_flight = false
+	if result != HTTPRequest.RESULT_SUCCESS:
+		push_warning("[SaveService] Cloud sync skipped (offline or network error). result=" + str(result))
+	elif response_code >= 200 and response_code < 300:
+		print("[SaveService] Cloud sync successful.")
+	else:
+		push_warning("[SaveService] Cloud sync failed. Code: " + str(response_code))
+
+	if _resync_queued:
+		_resync_queued = false
+		_sync_to_cloud()
+
+
+func _api_base() -> String:
+	return str(ProjectSettings.get_setting("levelblue/api_base_url", DEFAULT_API_BASE)).trim_suffix("/")
 
 
 func _resolve_save_path() -> String:
