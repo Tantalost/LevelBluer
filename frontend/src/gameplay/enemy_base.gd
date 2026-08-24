@@ -13,11 +13,13 @@ var is_dead: bool = false
 var _leaked: bool = false
 var _base_move_speed: float = 50.0
 var _base_color: Color = Palette.RED
+var _type_id: String = ""
 var _slow_timer: SceneTreeTimer = null
 var _hit_tween: Tween = null
 
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
+	_type_id = type_id
 	var stats: Dictionary = ContentDB.get_enemy(type_id)
 	var health_stored: Variant = stats.get("hp", stats.get("base_health", 3))
 	var speed_stored: Variant = stats.get("speed", 50.0)
@@ -80,6 +82,7 @@ func take_damage(amount: int) -> void:
 		_kill_hit_tween()
 		_clear_slow_timer()
 		VfxManager.spawn_vfx("death", global_position)
+		TaskManager.record_enemy_defeated(_type_id)
 		enemy_died.emit(bounty)
 		queue_free()
 		return

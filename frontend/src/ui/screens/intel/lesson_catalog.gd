@@ -85,6 +85,23 @@ static func lesson_count(module_id: String) -> int:
 	return lessons_for(module_id).size()
 
 
+static func total_units() -> int:
+	var n: int = 0
+	var ids: Array[String] = module_ids()
+	for i in ids.size():
+		n += lesson_count(ids[i])
+	return maxi(1, n)
+
+
+static func completed_units() -> int:
+	var n: int = 0
+	var ids: Array[String] = module_ids()
+	for i in ids.size():
+		var total: int = lesson_count(ids[i])
+		n += clampi(PlayerManager.get_lesson_progress(ids[i]), 0, total)
+	return n
+
+
 static func checklist_label(item: int) -> String:
 	var index := item - 1
 	if index < 0 or index >= CHECKLIST.size():

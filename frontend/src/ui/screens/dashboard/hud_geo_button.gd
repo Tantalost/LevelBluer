@@ -4,7 +4,7 @@ extends Control
 
 signal pressed
 
-enum Geo { SLASH, DIAMOND, CHIP }
+enum Geo { SLASH, DIAMOND, CHIP, HEX }
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 
@@ -71,10 +71,11 @@ func _draw() -> void:
 		fill = fill.lightened(0.08)
 		border = Palette.TEXT_PRIMARY
 	draw_colored_polygon(_poly, fill)
-	var hi := PackedVector2Array([_poly[0], _poly[1]])
-	var lo := PackedVector2Array([_poly[2], _poly[3]])
-	draw_polyline(hi, Color(Palette.TEXT_PRIMARY, 0.28), 2.0)
-	draw_polyline(lo, Color(Palette.BG_DEEP, 0.7), 2.0)
+	if _poly.size() == 4:
+		var hi := PackedVector2Array([_poly[0], _poly[1]])
+		var lo := PackedVector2Array([_poly[2], _poly[3]])
+		draw_polyline(hi, Color(Palette.TEXT_PRIMARY, 0.28), 2.0)
+		draw_polyline(lo, Color(Palette.BG_DEEP, 0.7), 2.0)
 	var closed := PackedVector2Array(_poly)
 	closed.append(_poly[0])
 	draw_polyline(closed, border, 2.5)
@@ -84,8 +85,14 @@ func _draw() -> void:
 func _draw_copy() -> void:
 	if _font == null:
 		return
-	var title_color := Palette.TEXT_ON_GOLD if fill_key == "gold" or fill_key == "orange" else Palette.TEXT_PRIMARY
-	var sub_color := Palette.TEXT_ON_GOLD if fill_key == "gold" or fill_key == "orange" else Palette.CYAN
+	var title_color := Palette.TEXT_PRIMARY
+	var sub_color := Palette.CYAN
+	if fill_key == "gold" or fill_key == "orange":
+		title_color = Palette.TEXT_ON_GOLD
+		sub_color = Palette.TEXT_ON_GOLD
+	elif fill_key == "frost":
+		title_color = Palette.FIELD_TEXT
+		sub_color = Palette.CYAN_DIM
 	var lines: Array[Dictionary] = []
 	if not title.is_empty():
 		lines.append({"text": title, "size": title_size, "color": title_color})
@@ -148,6 +155,8 @@ func _rebuild_poly() -> void:
 				Vector2(w * 0.5, h - 4.0),
 				Vector2(4.0, h * 0.5),
 			])
+		Geo.HEX:
+			_poly = _hex_poly(w, h)
 		Geo.CHIP:
 			_poly = PackedVector2Array([
 				Vector2(s, 0.0),
@@ -164,6 +173,16 @@ func _rebuild_poly() -> void:
 			])
 
 
+func _hex_poly(w: float, h: float) -> PackedVector2Array:
+	var center := Vector2(w, h) * 0.5
+	var radius: float = minf(w, h) * 0.5 - 3.0
+	var pts := PackedVector2Array()
+	for i in 6:
+		var angle: float = deg_to_rad(60.0 * float(i) - 30.0)
+		pts.append(center + Vector2(cos(angle), sin(angle)) * radius)
+	return pts
+
+
 func _fill_color() -> Color:
 	match fill_key:
 		"gold":
@@ -174,6 +193,12 @@ func _fill_color() -> Color:
 			return Palette.RED
 		"cyan":
 			return Palette.CYAN_DIM
+		"frost":
+			return Color(Palette.FIELD_BG, 0.94)
+		"violet":
+			return Palette.PINE
+		"indigo":
+			return Palette.PINE.lerp(Palette.FOREST_NIGHT, 0.28)
 		"panel":
 			return Color(Palette.BG_PANEL, 0.94)
 		_:
@@ -188,6 +213,8 @@ func _border_color() -> Color:
 			return Palette.ORANGE
 		"red":
 			return Palette.RED
+		"magenta":
+			return Palette.MAGENTA
 		"muted":
 			return Palette.TEXT_MUTED
 		_:

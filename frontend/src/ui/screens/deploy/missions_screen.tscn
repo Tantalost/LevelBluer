@@ -1,0 +1,114 @@
+[gd_scene load_steps=3 format=3 uid="uid://dm556ql2hkodk"]
+
+[ext_resource type="Script" path="res://src/ui/screens/deploy/missions_screen.gd" id="1_missions"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="2_font"]
+
+[node name="MissionsScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_missions")
+
+[node name="Dimmer" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.55)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ModalCard" type="PanelContainer" parent="Center"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(720, 400)
+layout_mode = 2
+
+[node name="ModalBox" type="VBoxContainer" parent="Center/ModalCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="HeaderPad" type="MarginContainer" parent="Center/ModalCard/ModalBox"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 10
+
+[node name="HeaderCol" type="VBoxContainer" parent="Center/ModalCard/ModalBox/HeaderPad"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="HeaderTitle" type="Label" parent="Center/ModalCard/ModalBox/HeaderPad/HeaderCol"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "MISSIONS"
+horizontal_alignment = 1
+
+[node name="TabRow" type="HBoxContainer" parent="Center/ModalCard/ModalBox/HeaderPad/HeaderCol"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="TabLeft" type="Button" parent="Center/ModalCard/ModalBox/HeaderPad/HeaderCol/TabRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 28)
+layout_mode = 2
+focus_mode = 0
+flat = true
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "<"
+
+[node name="TabLabel" type="Label" parent="Center/ModalCard/ModalBox/HeaderPad/HeaderCol/TabRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "DAILY"
+horizontal_alignment = 1
+
+[node name="TabRight" type="Button" parent="Center/ModalCard/ModalBox/HeaderPad/HeaderCol/TabRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 28)
+layout_mode = 2
+focus_mode = 0
+flat = true
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = ">"
+
+[node name="BodyPanel" type="PanelContainer" parent="Center/ModalCard/ModalBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ColumnRow" type="HBoxContainer" parent="Center/ModalCard/ModalBox/BodyPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="DoneButton" type="Button" parent="Center/ModalCard/ModalBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+focus_mode = 0
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "DONE"

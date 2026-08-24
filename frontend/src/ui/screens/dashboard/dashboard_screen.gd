@@ -5,9 +5,7 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const DEFAULT_MATERIALS := 200
 const DEFAULT_THREAT_POINTS := 1000
 const DEFAULT_CURRENT_STAGE := 1
-const MODULE_PROGRESS := 80
-const MODULE_LESSONS_DONE := 4
-const MODULE_LESSONS_TOTAL := 5
+const STAGE_TOTAL := 10
 const UNREAD_NOTIFICATIONS := 2
 
 @onready var _game_title: Label = %GameTitle
@@ -17,6 +15,10 @@ const UNREAD_NOTIFICATIONS := 2
 @onready var _rank: Label = %RankLabel
 @onready var _threat_value: Label = %ThreatValue
 @onready var _materials_value: Label = %MaterialsValue
+@onready var _threat_caption: Label = %ThreatCaption
+@onready var _materials_caption: Label = %MaterialsCaption
+@onready var _top_bar_panel: PanelContainer = %HeaderBand
+@onready var _map_dim: ColorRect = %MapDim
 @onready var _inbox_button: HudGeoButton = %InboxButton
 @onready var _settings_button: HudGeoButton = %SettingsButton
 @onready var _inbox_badge: PanelContainer = %InboxBadge
@@ -53,7 +55,7 @@ func _ready() -> void:
 	_inbox_button.pressed.connect(func() -> void: push_warning("Inbox screen not built yet"))
 	_settings_button.pressed.connect(func() -> void: Router.push(&"settings"))
 	_profile_button.pressed.connect(func() -> void: Router.push(&"profile"))
-	_world_button.pressed.connect(_on_deploy_pressed)
+	_world_button.pressed.connect(_on_mission_pressed)
 	_mode_selector.pressed.connect(_open_mode_modal)
 	_deploy_button.pressed.connect(_on_deploy_pressed)
 	%PreTestButton.pressed.connect(func() -> void: Router.push(&"pretest"))
@@ -77,6 +79,8 @@ func on_exit() -> void:
 
 
 func _style_chrome() -> void:
+	_map_dim.color = Color(Palette.BG_DEEP, 0.18)
+	_style_top_bar()
 	_style_avatar()
 	_style_badge()
 	_style_at_risk()
@@ -85,11 +89,13 @@ func _style_chrome() -> void:
 	_style_title_bar(_lock_title_bar, Palette.ORANGE)
 	_style_well(_lock_well, Palette.ORANGE)
 	_style_cta(%PreTestButton, Palette.GOLD, Palette.TEXT_ON_GOLD)
-	_apply_label(_game_title, Palette.CYAN, 14)
-	_apply_label(_player_name, Palette.TEXT_PRIMARY, 13)
-	_apply_label(_rank, Palette.CYAN, 10)
-	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 12)
+	_apply_label(_game_title, Palette.FIELD_TEXT, 14)
+	_apply_label(_player_name, Palette.FIELD_TEXT, 11)
+	_apply_label(_rank, Palette.PINE, 8)
+	_apply_label(_threat_caption, Palette.FIELD_TEXT, 8)
+	_apply_label(_materials_caption, Palette.FIELD_TEXT, 8)
+	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 10)
+	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 10)
 	_apply_label(_inbox_count, Palette.TEXT_PRIMARY, 10)
 	_apply_label(_at_risk_title, Palette.TEXT_PRIMARY, 13)
 	_apply_label(_at_risk_sub, Palette.TEXT_PRIMARY, 11)
@@ -121,7 +127,7 @@ func _refresh_data() -> void:
 	_threat_points = AuthService.wallet_threat_points()
 	_materials = AuthService.materials() if AuthService.materials() >= 0 else DEFAULT_MATERIALS
 	_current_stage = AuthService.current_stage()
-	_player_name.text = AuthService.display_name().to_upper()
+	_player_name.text = "< %s >" % AuthService.display_name().to_upper()
 	_threat_value.text = str(_threat_points)
 	_materials_value.text = str(_materials)
 	_rank.text = AuthService.rank_title().to_upper()
@@ -130,9 +136,7 @@ func _refresh_data() -> void:
 	_progress_button.title = tr("DASH_PROGRESS").to_upper()
 	_progress_button.subtitle = ""
 	_world_button.title = "MISSION"
-	_world_button.subtitle = tr("DASH_MODULE_NUM") % 1
-	_world_button.detail = (tr("DASH_MINI_PROGRESS") % [_current_stage, MODULE_LESSONS_DONE, MODULE_LESSONS_TOTAL]).to_upper()
-	_world_button.progress = float(MODULE_PROGRESS) / 100.0
+	_refresh_mission_progress()
 	_world_button.queue_redraw()
 	_store_button.queue_redraw()
 	_intel_button.queue_redraw()
@@ -165,7 +169,7 @@ func _refresh_world() -> void:
 	var show_mission := _selected_mode == &"SOLO"
 	_world_button.visible = show_mission
 	if show_mission:
-		_world_button.progress = float(MODULE_PROGRESS) / 100.0
+		_refresh_mission_progress()
 		_world_button.queue_redraw()
 
 
@@ -179,26 +183,49 @@ func _on_mode_confirmed(mode: StringName) -> void:
 	_update_mode_ui()
 
 
+func _refresh_mission_progress() -> void:
+	var stage_cleared: int = clampi(PlayerManager.mock_max_stage_cleared, 0, STAGE_TOTAL)
+	var lesson_total: int = LessonCatalog.total_units()
+	var lesson_done: int = LessonCatalog.completed_units()
+	if PlayerManager.module_1_complete:
+		_world_button.subtitle = "CERTIFIED"
+	else:
+		_world_button.subtitle = tr("DASH_MODULE_NUM") % 1
+	_world_button.detail = "STAGE %d/%d\n%d/%d LESSONS" % [stage_cleared, STAGE_TOTAL, lesson_done, lesson_total]
+	var stage_frac: float = float(stage_cleared) / float(STAGE_TOTAL)
+	var lesson_frac: float = 0.0
+	if lesson_total > 0:
+		lesson_frac = float(lesson_done) / float(lesson_total)
+	_world_button.progress = clampf((stage_frac + lesson_frac) * 0.5, 0.0, 1.0)
+
+
 func _update_mode_ui() -> void:
 	var is_solo := _selected_mode == &"SOLO"
 	_mode_selector.title = "SOLO" if is_solo else "PVP"
-	_mode_selector.border_key = "gold" if is_solo else "red"
-	_mode_selector.fill_key = "panel"
+	_mode_selector.border_key = "cyan" if is_solo else "red"
+	_mode_selector.fill_key = "frost"
 	_mode_selector.queue_redraw()
 	_deploy_button.title = tr("DASH_DEPLOY") if is_solo else tr("DASH_DEFEND")
 	_deploy_button.subtitle = "SOLO" if is_solo else "PVP"
-	_deploy_button.fill_key = "gold" if is_solo else "red"
-	_deploy_button.border_key = "gold" if is_solo else "red"
+	_deploy_button.fill_key = "frost"
+	_deploy_button.border_key = "cyan" if is_solo else "red"
 	_deploy_button.queue_redraw()
-	_world_button.border_key = "gold" if is_solo else "red"
+	_world_button.border_key = "cyan" if is_solo else "red"
 	_refresh_world()
+
+
+func _on_mission_pressed() -> void:
+	if _selected_mode == &"PVP":
+		push_warning("PvP Hub screen not built yet")
+	else:
+		Router.open_missions_screen()
 
 
 func _on_deploy_pressed() -> void:
 	if _selected_mode == &"PVP":
 		push_warning("PvP Hub screen not built yet")
 	else:
-		Router.push(&"stage_select")
+		Router.open_module_select_screen()
 
 
 func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
@@ -235,8 +262,17 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 	well.add_theme_stylebox_override("panel", style)
 
 
+func _style_top_bar() -> void:
+	var style := _pixel_box(Palette.FIELD_BG, Palette.FIELD_BG, 0, 0)
+	style.content_margin_left = 14.0
+	style.content_margin_right = 12.0
+	style.content_margin_top = 4.0
+	style.content_margin_bottom = 4.0
+	_top_bar_panel.add_theme_stylebox_override("panel", style)
+
+
 func _style_avatar() -> void:
-	var box := _pixel_box(Palette.FOREST_NIGHT, Palette.CYAN, 0, 2)
+	var box := _pixel_box(Palette.PINE, Palette.CYAN, 0, 2)
 	_avatar_box.add_theme_stylebox_override("panel", box)
 
 

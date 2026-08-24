@@ -1,7 +1,6 @@
 class_name LessonsScreen
 extends BaseScreen
-## Curriculum reader. Completing the three core lessons grants mod1_all,
-## which is the Stage 10 req_lesson lock.
+## Module picker for Intel Lessons. Same packs as Deploy. Opens the two-pane player.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 
@@ -28,7 +27,8 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 @onready var _complete_button: Button = %CompleteButton
 
 var _pixel_font: Font
-var _current_lesson_id: String = ""
+var _modules: Array[Dictionary] = []
+var _selected_index: int = 0
 var _blink_t: float = 0.0
 
 
@@ -53,10 +53,12 @@ func _ready() -> void:
 	_apply_label(_reader_file, Palette.TEXT_PRIMARY, 11)
 	_apply_label(_reader_title, Palette.TEXT_PRIMARY, 16)
 	_apply_label(_tag_label, Palette.CYAN, 11)
+	_title_label.text = "LESSONS.DAT"
+	_subtitle_label.text = "SELECT A MODULE TIED TO DEPLOY"
+	_list_file.text = "MODULES.DAT"
 	_back_button.pressed.connect(func() -> void: Router.request_back())
-	_lesson_list.item_selected.connect(_on_lesson_selected)
-	_complete_button.pressed.connect(_on_complete_pressed)
-	_refresh_list_ui()
+	_lesson_list.item_selected.connect(_on_module_selected)
+	_complete_button.pressed.connect(_on_open_pressed)
 
 
 func _process(delta: float) -> void:
@@ -80,85 +82,134 @@ func on_exit() -> void:
 	set_process(false)
 
 
-func _on_lesson_selected(index: int) -> void:
-	if index < 0 or index >= _lesson_list.item_count:
+func _on_module_selected(index: int) -> void:
+	if index < 0 or index >= _modules.size():
 		return
-	var meta: Variant = _lesson_list.get_item_metadata(index)
-	_show_lesson(str(meta))
+	_selected_index = index
+	_show_module(index)
 
 
-func _on_complete_pressed() -> void:
-	if _current_lesson_id.is_empty():
+func _on_open_pressed() -> void:
+	if not _can_open(_selected_index):
 		return
-	PlayerManager.complete_lesson(_current_lesson_id)
-	if PlayerManager.has_completed_lesson("ports_basics") and \
-			PlayerManager.has_completed_lesson("firewalls_intro") and \
-			PlayerManager.has_completed_lesson("crypto_101"):
-		PlayerManager.complete_lesson("mod1_all")
-	_refresh_list_ui()
+	var module_id: String = _module_id(_selected_index)
+	if module_id.is_empty():
+		return
+	var review: bool = _is_complete(_selected_index)
+	Router.push(&"lesson_player", {"module_id": module_id, "review": review})
 
 
 func _refresh_list_ui() -> void:
-	var ids: Array[String] = ContentDB.get_all_lesson_ids()
-	var keep_id: String = _current_lesson_id
+	_modules = LessonCatalog.modules()
+	var keep_id: String = _module_id(_selected_index)
 	_lesson_list.clear()
 	var select_index: int = 0
-	for i in ids.size():
-		var lesson_id: String = ids[i]
-		var lesson: Dictionary = ContentDB.get_lesson(lesson_id)
-		var title: String = str(lesson.get("title", lesson_id)).to_upper()
-		var done: bool = PlayerManager.has_completed_lesson(lesson_id)
-		var mark: String = "[X] " if done else "[ ] "
-		_lesson_list.add_item(mark + title)
-		_lesson_list.set_item_metadata(i, lesson_id)
-		if lesson_id == keep_id:
+	for i in _modules.size():
+		var entry: Dictionary = _modules[i]
+		var module_id: String = str(entry.get("id", ""))
+		var title: String = str(entry.get("title", module_id)).to_upper()
+		var mark: String = _row_mark(i)
+		_lesson_list.add_item("%s %02d  %s" % [mark, i + 1, title])
+		_lesson_list.set_item_metadata(i, module_id)
+		if module_id == keep_id:
 			select_index = i
-	if ids.is_empty():
-		_current_lesson_id = ""
-		_reader_title.text = "NO LESSONS"
-		_tag_label.text = "SKILL: —"
-		_reader_body.text = "lessons.json is empty or failed to parse."
+	if _modules.is_empty():
+		_selected_index = 0
+		_reader_title.text = "NO MODULES"
+		_tag_label.text = "DEPLOY: —"
+		_reader_body.text = "LessonCatalog has no packs."
 		_reader_file.text = "EMPTY.DAT"
 		_counter_label.text = "00/00"
-		_style_complete(true, false)
+		_style_open(true, false, false)
 		return
-	_lesson_list.select(select_index)
-	_show_lesson(str(_lesson_list.get_item_metadata(select_index)))
+	_selected_index = select_index
+	_lesson_list.select(_selected_index)
+	_show_module(_selected_index)
 
 
-func _show_lesson(lesson_id: String) -> void:
-	_current_lesson_id = lesson_id
-	var lesson: Dictionary = ContentDB.get_lesson(lesson_id)
-	if lesson.is_empty():
-		_reader_title.text = "MISSING FILE"
-		_tag_label.text = "SKILL: —"
-		_reader_body.text = "No entry for %s." % lesson_id
-		_reader_file.text = "MISSING.DAT"
-		_style_complete(true, false)
+func _show_module(index: int) -> void:
+	if index < 0 or index >= _modules.size():
 		return
-	var title: String = str(lesson.get("title", lesson_id))
-	var skill_tag: String = str(lesson.get("skill_tag", ""))
-	var done: bool = PlayerManager.has_completed_lesson(lesson_id)
-	_reader_title.text = title.to_upper()
-	_tag_label.text = "SKILL: %s" % (skill_tag.to_upper() if not skill_tag.is_empty() else "—")
-	_reader_body.text = str(lesson.get("body", ""))
-	_reader_file.text = "%s.DAT" % lesson_id.to_upper()
-	var ids: Array[String] = ContentDB.get_all_lesson_ids()
-	var index: int = ids.find(lesson_id)
-	_counter_label.text = "%02d/%02d" % [index + 1, ids.size()]
-	_style_complete(done, true)
+	var entry: Dictionary = _modules[index]
+	var module_id: String = str(entry.get("id", ""))
+	var total: int = maxi(1, LessonCatalog.lesson_count(module_id))
+	var done: int = clampi(PlayerManager.get_lesson_progress(module_id), 0, total)
+	var locked: bool = not _is_unlocked(index)
+	var complete: bool = _is_complete(index)
+	_reader_title.text = str(entry.get("title", module_id)).to_upper()
+	_tag_label.text = _stage_tag(index)
+	_reader_file.text = "%s.DAT" % module_id.to_upper()
+	_counter_label.text = "%02d/%02d" % [index + 1, _modules.size()]
+	var body: String = str(entry.get("desc", ""))
+	body += "\n\nUNITS  %d / %d" % [done, total]
+	body += "\n\nLeft pane is the case. Right pane is the drill. The unit is not cleared until that drill is finished."
+	if locked:
+		body += "\n\nLocked until the previous module is cleared."
+	elif complete:
+		body += "\n\nCleared. Open in review to replay the files."
+	_reader_body.text = body
+	_style_open(locked, complete, done > 0)
 
 
-func _style_complete(already_done: bool, has_lesson: bool) -> void:
-	var locked: bool = (not has_lesson) or already_done
+func _row_mark(index: int) -> String:
+	if not _is_unlocked(index):
+		return "[ ]"
+	if _is_complete(index):
+		return "[X]"
+	if PlayerManager.get_lesson_progress(_module_id(index)) > 0:
+		return "[>]"
+	return "[ ]"
+
+
+func _stage_tag(index: int) -> String:
+	if index == 0:
+		return "DEPLOY: MODULE 1  /  STAGES 1-10"
+	if index == 1:
+		return "DEPLOY: MODULE 2  /  STAGES SOON"
+	return "DEPLOY: MODULE %d  /  STAGES SOON" % (index + 1)
+
+
+func _module_id(index: int) -> String:
+	if index < 0 or index >= _modules.size():
+		return ""
+	return str(_modules[index].get("id", ""))
+
+
+func _is_unlocked(index: int) -> bool:
+	if index <= 0:
+		return true
+	return _is_complete(index - 1)
+
+
+func _is_complete(index: int) -> bool:
+	var module_id: String = _module_id(index)
+	if module_id.is_empty():
+		return false
+	return PlayerManager.get_lesson_progress(module_id) >= LessonCatalog.lesson_count(module_id)
+
+
+func _can_open(index: int) -> bool:
+	return index >= 0 and index < _modules.size() and _is_unlocked(index)
+
+
+func _style_open(locked: bool, complete: bool, in_progress: bool) -> void:
 	_complete_button.disabled = locked
-	_complete_button.text = "CLEARED" if already_done else "MARK AS COMPLETE"
-	var fill: Color = Palette.GREEN if already_done else Palette.CYAN
-	if not has_lesson:
-		fill = Palette.RED_DEEP
-	var text: Color = Palette.BG_DEEP if already_done else Palette.TEXT_PRIMARY
-	if not has_lesson:
+	if locked:
+		_complete_button.text = "LOCKED"
+	elif complete:
+		_complete_button.text = "REVIEW  >"
+	elif in_progress:
+		_complete_button.text = "CONTINUE  >"
+	else:
+		_complete_button.text = "OPEN  >"
+	var fill: Color = Palette.CYAN
+	var text: Color = Palette.BG_DEEP
+	if locked:
+		fill = Palette.TEXT_MUTED
 		text = Palette.TEXT_PRIMARY
+	elif complete:
+		fill = Palette.GOLD
+		text = Palette.TEXT_ON_GOLD
 	var box: StyleBoxFlat = _pixel_box(fill, Palette.BG_DEEP, 0, 0)
 	box.content_margin_left = 16.0
 	box.content_margin_right = 16.0

@@ -65,14 +65,12 @@ func _on_start_pressed() -> void:
 
 	var has_session: bool = await AuthService.restore_session()
 	if has_session:
-		Router.open_splash_screen()
+		await Router.open_splash_screen()
 	else:
 		await SettingsService.load_local()
 		await SaveService.load_local()
 		await ContentDB.load_all()
-		Router.open_login_screen()
-
-	TransitionManager.fade_to_clear()
+		await Router.open_login_screen()
 
 
 func _build_particles() -> void:

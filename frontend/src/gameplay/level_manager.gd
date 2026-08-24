@@ -206,6 +206,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			_hide_upgrade_ui()
 			var stage_id: int = Router.active_stage_index + 1
 			PlayerManager.mark_stage_cleared(stage_id)
+			TaskManager.record_stage_cleared()
 			print("[Victory] Stage ", stage_id, " cleared. Max stage is now ", PlayerManager.mock_max_stage_cleared)
 			var accuracy: float = 1.0
 			if _is_summative():

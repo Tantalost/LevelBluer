@@ -30,7 +30,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0431373, 0.027451, 0.0784314, 1)
+color = Color(0.0313726, 0.0509804, 0.0941176, 1)
 
 [node name="Background" type="TextureRect" parent="."]
 layout_mode = 1
@@ -40,12 +40,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-modulate = Color(0.72, 0.82, 1, 1)
+modulate = Color(0.92, 0.96, 1, 1)
 texture = ExtResource("3_bg")
 expand_mode = 1
 stretch_mode = 6
 
 [node name="MapDim" type="ColorRect" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -53,23 +54,22 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0313726, 0.0509804, 0.0941176, 0.42)
+color = Color(0.0313726, 0.0509804, 0.0941176, 0.18)
 
 [node name="HeroArt" type="TextureRect" parent="."]
 layout_mode = 1
-anchor_left = 0.5
+anchor_left = 0.52
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 80.0
 grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 2
-modulate = Color(0.82, 0.92, 1, 0.95)
 texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="Vignette" type="ColorRect" parent="."]
+modulate = Color(1, 1, 1, 0.35)
 material = SubResource("ShaderMaterial_vignette")
 layout_mode = 1
 anchors_preset = 15
@@ -80,193 +80,194 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(1, 1, 1, 1)
 
-[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+[node name="HeaderBand" type="PanelContainer" parent="."]
+unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 10
 anchor_right = 1.0
-anchor_bottom = 1.0
+offset_bottom = 68.0
 grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/margin_left = 22
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 22
-theme_override_constants/margin_bottom = 14
-script = ExtResource("2_safe")
 
-[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+[node name="HeaderInner" type="MarginContainer" parent="HeaderBand"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 8
+
+[node name="TopBar" type="HBoxContainer" parent="HeaderBand/HeaderInner"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TopBar" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
-custom_minimum_size = Vector2(0, 62)
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="GameTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar"]
+[node name="GameTitle" type="Label" parent="HeaderBand/HeaderInner/TopBar"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 4
 text = "LEVEL BLUE"
 vertical_alignment = 1
 
-[node name="ProfileButton" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
+[node name="TopSpacer" type="Control" parent="HeaderBand/HeaderInner/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="ProfileButton" type="Control" parent="HeaderBand/HeaderInner/TopBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 62)
+custom_minimum_size = Vector2(280, 48)
 layout_mode = 2
 script = ExtResource("10_geo")
 geo = 2
-shear = 18.0
-fill_key = "panel"
-border_key = "cyan"
+shear = 10.0
+fill_key = "frost"
+border_key = "muted"
 
-[node name="ProfileRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton"]
+[node name="ProfileRow" type="HBoxContainer" parent="HeaderBand/HeaderInner/TopBar/ProfileButton"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 22.0
-offset_right = -18.0
+offset_left = 14.0
+offset_right = -12.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 8
 alignment = 1
 
-[node name="AvatarBox" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow"]
+[node name="ProfileInfo" type="VBoxContainer" parent="HeaderBand/HeaderInner/TopBar/ProfileButton/ProfileRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="PlayerName" type="Label" parent="HeaderBand/HeaderInner/TopBar/ProfileButton/ProfileRow/ProfileInfo"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+text = "< COMMANDER >"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="RankLabel" type="Label" parent="HeaderBand/HeaderInner/TopBar/ProfileButton/ProfileRow/ProfileInfo"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "RECRUIT I"
+horizontal_alignment = 1
+
+[node name="AvatarBox" type="PanelContainer" parent="HeaderBand/HeaderInner/TopBar/ProfileButton/ProfileRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
 
-[node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow/AvatarBox"]
+[node name="AvatarImage" type="TextureRect" parent="HeaderBand/HeaderInner/TopBar/ProfileButton/ProfileRow/AvatarBox"]
 layout_mode = 2
 mouse_filter = 2
 texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ProfileInfo" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-theme_override_constants/separation = 8
-alignment = 1
-
-[node name="PlayerName" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow/ProfileInfo"]
+[node name="SettingsButton" type="Control" parent="HeaderBand/HeaderInner/TopBar"]
 unique_name_in_owner = true
-layout_mode = 2
-text = "COMMANDER_X"
-clip_text = true
-
-[node name="RankLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/ProfileButton/ProfileRow/ProfileInfo"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "RECRUIT I"
-
-[node name="TopSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="ThreatBox" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(126, 54)
-layout_mode = 2
-script = ExtResource("10_geo")
-geo = 2
-shear = 14.0
-fill_key = "panel"
-border_key = "cyan"
-
-[node name="ThreatRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/ThreatBox"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_right = -14.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="ThreatIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar/ThreatBox/ThreatRow"]
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 2
-
-[node name="ThreatValue" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/ThreatBox/ThreatRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "1000"
-vertical_alignment = 1
-
-[node name="MaterialsBox" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(126, 54)
-layout_mode = 2
-script = ExtResource("10_geo")
-geo = 2
-shear = 14.0
-fill_key = "panel"
-border_key = "cyan"
-
-[node name="MaterialsRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/TopBar/MaterialsBox"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 16.0
-offset_right = -14.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="MaterialsIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar/MaterialsBox/MaterialsRow"]
-custom_minimum_size = Vector2(20, 20)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 3
-
-[node name="MaterialsValue" type="Label" parent="SafeAreaContainer/ScreenLayout/TopBar/MaterialsBox/MaterialsRow"]
-unique_name_in_owner = true
-layout_mode = 2
-text = "200"
-vertical_alignment = 1
-
-[node name="SettingsButton" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(56, 52)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 script = ExtResource("10_geo")
 geo = 1
-fill_key = "panel"
+fill_key = "violet"
 border_key = "cyan"
 
-[node name="SettingsIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/TopBar/SettingsButton"]
+[node name="SettingsIcon" type="Control" parent="HeaderBand/HeaderInner/TopBar/SettingsButton"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -12.0
-offset_top = -12.0
-offset_right = 12.0
-offset_bottom = 12.0
+offset_left = -11.0
+offset_top = -11.0
+offset_right = 11.0
+offset_bottom = 11.0
 mouse_filter = 2
 script = ExtResource("7_icon")
 kind = 10
 monochrome = true
+
+[node name="ThreatCaption" type="Label" parent="HeaderBand/HeaderInner/TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "THREAT"
+vertical_alignment = 1
+
+[node name="ThreatBox" type="Control" parent="HeaderBand/HeaderInner/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 48)
+layout_mode = 2
+script = ExtResource("10_geo")
+geo = 3
+fill_key = "indigo"
+border_key = "cyan"
+
+[node name="ThreatValue" type="Label" parent="HeaderBand/HeaderInner/TopBar/ThreatBox"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+text = "1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MaterialsCaption" type="Label" parent="HeaderBand/HeaderInner/TopBar"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
+text = "MATS"
+vertical_alignment = 1
+
+[node name="MaterialsBox" type="Control" parent="HeaderBand/HeaderInner/TopBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 48)
+layout_mode = 2
+script = ExtResource("10_geo")
+geo = 3
+fill_key = "violet"
+border_key = "cyan"
+
+[node name="MaterialsValue" type="Label" parent="HeaderBand/HeaderInner/TopBar/MaterialsBox"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+text = "200"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 68.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 12
+script = ExtResource("2_safe")
+
+[node name="ScreenLayout" type="VBoxContainer" parent="SafeAreaContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
 
 [node name="AtRiskBanner" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
 unique_name_in_owner = true
@@ -303,67 +304,67 @@ vertical_alignment = 1
 [node name="MainRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 20
+theme_override_constants/separation = 18
 
 [node name="LeftCol" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/MainRow"]
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="DeployButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(400, 168)
+custom_minimum_size = Vector2(420, 150)
 layout_mode = 2
 script = ExtResource("10_geo")
 title = "DEPLOY"
 subtitle = "SOLO"
-fill_key = "gold"
-border_key = "gold"
-title_size = 24
-subtitle_size = 12
-shear = 52.0
+fill_key = "frost"
+border_key = "cyan"
+title_size = 22
+subtitle_size = 11
+shear = 56.0
 
 [node name="IntelButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(372, 92)
+custom_minimum_size = Vector2(390, 88)
 layout_mode = 2
 script = ExtResource("10_geo")
 title = "INTEL"
-fill_key = "cyan"
-border_key = "cyan"
-title_size = 20
-shear = 42.0
+fill_key = "frost"
+border_key = "muted"
+title_size = 18
+shear = 46.0
 
 [node name="LowerPair" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol"]
 layout_mode = 2
-theme_override_constants/separation = 14
+theme_override_constants/separation = 12
 
 [node name="StoreButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol/LowerPair"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(230, 76)
+custom_minimum_size = Vector2(228, 72)
 layout_mode = 2
 size_flags_horizontal = 3
 script = ExtResource("10_geo")
 title = "STORE"
-fill_key = "panel"
-border_key = "cyan"
-title_size = 16
+fill_key = "frost"
+border_key = "muted"
+title_size = 14
 shear = 28.0
 
 [node name="ProgressButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow/LeftCol/LowerPair"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(168, 76)
+custom_minimum_size = Vector2(168, 72)
 layout_mode = 2
 script = ExtResource("10_geo")
 title = "PROGRESS"
-fill_key = "header"
-border_key = "cyan"
-title_size = 13
+fill_key = "frost"
+border_key = "muted"
+title_size = 12
 shear = 24.0
 
 [node name="WorldButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(340, 340)
+custom_minimum_size = Vector2(300, 300)
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("10_geo")
@@ -371,11 +372,11 @@ geo = 1
 title = "MISSION"
 subtitle = "MODULE 1"
 detail = "STAGE 1/5"
-fill_key = "cyan"
-border_key = "gold"
-title_size = 20
-subtitle_size = 13
-detail_size = 10
+fill_key = "indigo"
+border_key = "cyan"
+title_size = 18
+subtitle_size = 11
+detail_size = 9
 progress = 0.8
 
 [node name="HeroSpacer" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow"]
@@ -390,15 +391,15 @@ theme_override_constants/separation = 12
 
 [node name="ModeSelector" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(140, 52)
+custom_minimum_size = Vector2(96, 48)
 layout_mode = 2
 script = ExtResource("10_geo")
 geo = 2
 title = "SOLO"
-fill_key = "panel"
-border_key = "gold"
-title_size = 13
-shear = 16.0
+fill_key = "frost"
+border_key = "cyan"
+title_size = 10
+shear = 10.0
 
 [node name="ModeGlyph" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar/ModeSelector"]
 unique_name_in_owner = true
@@ -416,14 +417,18 @@ mouse_filter = 2
 
 [node name="InboxButton" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 56)
+custom_minimum_size = Vector2(140, 48)
 layout_mode = 2
 script = ExtResource("10_geo")
-geo = 1
-fill_key = "panel"
-border_key = "cyan"
+geo = 2
+title = "INBOX"
+fill_key = "frost"
+border_key = "muted"
+title_size = 10
+shear = 10.0
 
 [node name="InboxIcon" type="Control" parent="SafeAreaContainer/ScreenLayout/BottomBar/InboxButton"]
+visible = false
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -442,9 +447,9 @@ monochrome = true
 [node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/BottomBar/InboxButton"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 38.0
+offset_left = 108.0
 offset_top = 2.0
-offset_right = 62.0
+offset_right = 132.0
 offset_bottom = 24.0
 mouse_filter = 2
 
@@ -455,6 +460,7 @@ text = "2"
 horizontal_alignment = 1
 
 [node name="Scanlines" type="Control" parent="."]
+visible = false
 modulate = Color(1, 1, 1, 2)
 layout_mode = 1
 anchors_preset = 15
