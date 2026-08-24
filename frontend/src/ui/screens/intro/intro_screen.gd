@@ -14,6 +14,7 @@ const DOT_POSITIONS: Array[Dictionary] = [
 ]
 
 @onready var _background: TextureRect = %Background
+@onready var _logo: TextureRect = %Logo
 @onready var _logo_bob: Control = %LogoBob
 @onready var _start_button: Button = %StartButton
 @onready var _button_glow: ColorRect = %ButtonGlow
@@ -22,6 +23,8 @@ const DOT_POSITIONS: Array[Dictionary] = [
 @onready var _press_hint: Label = %PressHintLabel
 
 var _loop_tweens: Array[Tween] = []
+var _float_tween: Tween = null
+var _start_locked: bool = false
 
 
 func _ready() -> void:
@@ -30,6 +33,8 @@ func _ready() -> void:
 
 func on_enter(_args: Dictionary) -> void:
 	modulate.a = 1.0
+	_start_locked = false
+	_start_button.disabled = false
 	_tagline.text = tr("INTRO_TAGLINE")
 	_start_button.text = tr("INTRO_START_GAME")
 	_press_hint.text = tr("INTRO_PRESS_HINT")
@@ -50,7 +55,24 @@ func can_go_back() -> bool:
 
 
 func _on_start_pressed() -> void:
-	Router.replace_all(&"login")
+	if _start_locked:
+		return
+	_start_locked = true
+	_start_button.disabled = true
+	_stop_animations()
+
+	await TransitionManager.fade_to_black()
+
+	var has_session: bool = await AuthService.restore_session()
+	if has_session:
+		Router.open_splash_screen()
+	else:
+		await SettingsService.load_local()
+		await SaveService.load_local()
+		await ContentDB.load_all()
+		Router.open_login_screen()
+
+	TransitionManager.fade_to_clear()
 
 
 func _build_particles() -> void:
@@ -88,19 +110,12 @@ func _animate_particle(dot: ColorRect, delay: float, range_px: float) -> void:
 	loop.tween_property(dot, "position:y", home_y, 2.8) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	loop.parallel().tween_property(dot, "modulate:a", 0.3, 1.4)
+	_loop_tweens.append(loop)
 
 
 func _start_animations() -> void:
 	_stop_animations()
-
-	# Logo bob — matches prototype ±15 px over 2.5 s each way.
-	var logo_home := _logo_bob.offset_top
-	var logo_bob := create_tween().set_loops()
-	logo_bob.tween_property(_logo_bob, "offset_top", logo_home - 15.0, 2.5) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	logo_bob.tween_property(_logo_bob, "offset_top", logo_home, 2.5) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	_loop_tweens.append(logo_bob)
+	_start_floating_animation()
 
 	# Background breathe — scale 1.0 ↔ 1.05 over 10 s.
 	var bg_breathe := create_tween().set_loops()
@@ -119,7 +134,24 @@ func _start_animations() -> void:
 	_loop_tweens.append(glow_pulse)
 
 
+func _start_floating_animation() -> void:
+	# Logo is full-rect inside LogoBob. Tween the bob's offset, not position:y —
+	# anchored TextureRects ignore position.y.
+	var original_top: float = _logo_bob.offset_top
+	var float_distance: float = 15.0
+	var float_duration: float = 2.0
+	_float_tween = create_tween().set_loops()
+	_float_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_float_tween.tween_property(_logo_bob, "offset_top", original_top - float_distance, float_duration)
+	_float_tween.tween_property(_logo_bob, "offset_top", original_top, float_duration)
+	_loop_tweens.append(_float_tween)
+	_logo.pivot_offset = _logo.size * 0.5
+
+
 func _stop_animations() -> void:
+	if _float_tween != null and _float_tween.is_valid():
+		_float_tween.kill()
+	_float_tween = null
 	for tween in _loop_tweens:
 		if tween != null and tween.is_running():
 			tween.kill()

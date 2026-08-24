@@ -1,27 +1,10 @@
 class_name CodexScreen
 extends BaseScreen
-## Intel catalog. TAP FOR INFO stays mock this milestone.
-## Visual: CODEX.DAT window on the Intel terminal desktop.
+## Unit and enemy reference. Stats are read from ContentDB JSON. No completion.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const FALLBACK_THREAT := 1000
 const FALLBACK_MATERIALS := 200
-
-const UNITS: Array[Dictionary] = [
-	{"name": "Firewall Sentinel", "role": "DEFENDER", "rarity": "COMMON", "glyph": "terminal", "file": "SENTINEL.DAT", "skill_id": "firewalls", "accent": "cyan"},
-	{"name": "IDS Watcher", "role": "SCANNER", "rarity": "UNCOMMON", "glyph": "camera", "file": "WATCHER.DAT", "skill_id": "ports", "accent": "green"},
-	{"name": "Honeypot Lure", "role": "TRAPPER", "rarity": "UNCOMMON", "glyph": "badge", "file": "LURE.DAT", "skill_id": "", "accent": "gold"},
-	{"name": "SIEM Analyst", "role": "SUPPORT", "rarity": "RARE", "glyph": "codex", "file": "ANALYST.DAT", "skill_id": "", "accent": "magenta"},
-	{"name": "Key Vault", "role": "SUPPORT", "rarity": "RARE", "glyph": "lock", "file": "VAULT.DAT", "skill_id": "", "accent": "magenta"},
-	{"name": "Patch Kit", "role": "SUPPORT", "rarity": "COMMON", "glyph": "wrench", "file": "PATCH.DAT", "skill_id": "", "accent": "gold"},
-]
-
-const ENEMIES: Array[Dictionary] = [
-	{"name": "Phish Kit", "role": "INTRUDER", "rarity": "COMMON", "glyph": "envelope", "file": "PHISH.DAT", "skill_id": "", "accent": "red"},
-	{"name": "Brute Bot", "role": "INTRUDER", "rarity": "UNCOMMON", "glyph": "skull", "file": "BRUTE.DAT", "skill_id": "ports", "accent": "gold"},
-	{"name": "Ransom Drop", "role": "INTRUDER", "rarity": "RARE", "glyph": "lock", "file": "RANSOM.DAT", "skill_id": "", "accent": "magenta"},
-	{"name": "Packet Sniff", "role": "SCANNER", "rarity": "UNCOMMON", "glyph": "phone", "file": "SNIFF.DAT", "skill_id": "firewalls", "accent": "cyan"},
-]
 
 @onready var _os_bar: PanelContainer = %OsBar
 @onready var _os_cursor: Label = %OsCursor
@@ -41,11 +24,14 @@ const ENEMIES: Array[Dictionary] = [
 @onready var _units_tab: Button = %UnitsTab
 @onready var _enemies_tab: Button = %EnemiesTab
 @onready var _weakness_banner: Label = %WeaknessBanner
-@onready var _grid: GridContainer = %EntryGrid
+@onready var _unit_list: ItemList = %UnitList
+@onready var _stats_title: Label = %StatsTitle
+@onready var _stats_body: RichTextLabel = %StatsBody
 
 var _pixel_font: Font
 var _tab: StringName = &"units"
 var _focus_skill: String = ""
+var _current_unit_id: String = ""
 var _blink_t: float = 0.0
 
 
@@ -56,6 +42,8 @@ func _ready() -> void:
 	_style_close_button()
 	_style_resource_pill(_threat_box)
 	_style_resource_pill(_materials_box)
+	_style_item_list()
+	_style_stats_body()
 	_apply_label(_title_label, Palette.TEXT_PRIMARY, 14)
 	_apply_label(_os_cursor, Palette.GREEN, 14)
 	_apply_label(_status_line, Palette.TEXT_MUTED, 12)
@@ -63,16 +51,18 @@ func _ready() -> void:
 	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 12)
 	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 12)
 	_apply_label(_weakness_banner, Palette.TEXT_PRIMARY, 11)
+	_apply_label(_stats_title, Palette.TEXT_PRIMARY, 14)
 	_back_button.pressed.connect(_on_back_pressed)
 	_units_tab.pressed.connect(func() -> void: _set_tab(&"units"))
 	_enemies_tab.pressed.connect(func() -> void: _set_tab(&"enemies"))
+	_unit_list.item_selected.connect(_on_unit_selected)
 	_weakness_banner.visible = false
 	_set_tab(&"units")
 
 
 func _process(delta: float) -> void:
 	_blink_t += delta
-	var on := fmod(_blink_t, 1.05) < 0.58
+	var on: bool = fmod(_blink_t, 1.05) < 0.58
 	_os_cursor.visible = on
 	_os_led.color = Palette.GREEN if on else Color(Palette.GREEN, 0.28)
 
@@ -108,19 +98,33 @@ func load_topic(skill_id: String) -> void:
 		return
 	_weakness_banner.visible = true
 	_weakness_banner.text = "CRITICAL WEAKNESS: %s" % skill_id.to_upper()
-	if _catalog_has_skill(UNITS, skill_id):
+	if _tab_has_skill(&"units", skill_id):
 		_set_tab(&"units")
-	elif _catalog_has_skill(ENEMIES, skill_id):
+	elif _tab_has_skill(&"enemies", skill_id):
 		_set_tab(&"enemies")
 	else:
 		_set_tab(_tab)
 
 
-func _catalog_has_skill(source: Array[Dictionary], skill_id: String) -> bool:
-	for i in source.size():
-		if str(source[i].get("skill_id", "")) == skill_id:
+func _tab_has_skill(tab: StringName, skill_id: String) -> bool:
+	var ids: Array[String] = ContentDB.get_all_tower_ids() if tab == &"units" else ContentDB.get_all_enemy_ids()
+	for i in ids.size():
+		if _unit_matches_skill(tab, ids[i], skill_id):
 			return true
 	return false
+
+
+func _unit_matches_skill(tab: StringName, unit_id: String, skill_id: String) -> bool:
+	if skill_id.is_empty():
+		return false
+	var needle: String = skill_id.to_lower()
+	if tab == &"units":
+		var tower: Dictionary = ContentDB.get_tower(unit_id)
+		var req: String = str(tower.get("req_skill", "")).to_lower()
+		if req == needle or req.begins_with(needle) or needle.begins_with(req):
+			return not req.is_empty()
+		return unit_id.to_lower() == needle
+	return unit_id.to_lower() == needle
 
 
 func _set_tab(tab: StringName) -> void:
@@ -133,165 +137,162 @@ func _set_tab(tab: StringName) -> void:
 	_style_window(_catalog_card, Palette.RED if enemies else Palette.GOLD)
 	_style_title_bar(_catalog_title_bar, Palette.RED_DEEP if enemies else Palette.ORANGE)
 	_style_well(_catalog_well, Palette.RED if enemies else Palette.ORANGE)
-	_rebuild_grid()
+	_rebuild_list()
 
 
-func _rebuild_grid() -> void:
-	var kids: Array = _grid.get_children()
-	for i in kids.size():
-		var node: Node = kids[i] as Node
-		if node == null:
-			continue
-		_grid.remove_child(node)
-		node.queue_free()
-	var source: Array[Dictionary] = UNITS if _tab == &"units" else ENEMIES
-	for i in source.size():
-		_grid.add_child(_make_entry_card(source[i]))
+func _rebuild_list() -> void:
+	var ids: Array[String] = ContentDB.get_all_enemy_ids() if _tab == &"enemies" else ContentDB.get_all_tower_ids()
+	_unit_list.clear()
+	var select_index: int = 0
+	for i in ids.size():
+		var unit_id: String = ids[i]
+		var label: String = _list_label(_tab, unit_id)
+		_unit_list.add_item(label)
+		_unit_list.set_item_metadata(i, unit_id)
+		if _unit_matches_skill(_tab, unit_id, _focus_skill):
+			select_index = i
+		elif unit_id == _current_unit_id:
+			select_index = i
+	if ids.is_empty():
+		_current_unit_id = ""
+		_stats_title.text = "NO ENTRIES"
+		_stats_body.text = "No authored units in ContentDB."
+		return
+	_unit_list.select(select_index)
+	_show_unit(str(_unit_list.get_item_metadata(select_index)))
 
 
-func _make_entry_card(entry: Dictionary) -> Button:
-	var accent: Color = _accent_of(str(entry.get("accent", "cyan")))
-	var skill_id: String = str(entry.get("skill_id", ""))
-	var focused: bool = not _focus_skill.is_empty() and skill_id == _focus_skill
-	var card := Button.new()
-	card.focus_mode = Control.FOCUS_NONE
-	card.custom_minimum_size = Vector2(240, 248)
-	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var box := _pixel_box(Palette.BG_HEADER, Palette.TEXT_PRIMARY if focused else accent, 0, 3 if focused else 2)
-	box.content_margin_left = 0.0
-	box.content_margin_right = 0.0
-	box.content_margin_top = 0.0
-	box.content_margin_bottom = 0.0
-	box.shadow_color = Color(Palette.BG_DEEP, 0.7)
-	box.shadow_size = 1
-	box.shadow_offset = Vector2(4, 4)
-	card.add_theme_stylebox_override("normal", box)
-	card.add_theme_stylebox_override("hover", box)
-	card.add_theme_stylebox_override("pressed", box)
-	var column := VBoxContainer.new()
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation", 0)
-	card.add_child(column)
-	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	column.add_child(_strip(str(entry.get("file", "FILE.DAT")), accent, Palette.TEXT_PRIMARY, 10, false))
-	var pad := MarginContainer.new()
-	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	pad.add_theme_constant_override("margin_left", 10)
-	pad.add_theme_constant_override("margin_right", 10)
-	pad.add_theme_constant_override("margin_top", 10)
-	pad.add_theme_constant_override("margin_bottom", 8)
-	column.add_child(pad)
-	var body := VBoxContainer.new()
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body.alignment = BoxContainer.ALIGNMENT_CENTER
-	body.add_theme_constant_override("separation", 8)
-	pad.add_child(body)
-	var glyph := IntelPixelIcon.new()
-	glyph.kind = _glyph_kind(str(entry.get("glyph", "codex")))
-	glyph.monochrome = true
-	glyph.custom_minimum_size = Vector2(40, 40)
-	glyph.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	body.add_child(glyph)
-	body.add_child(_card_label(str(entry.get("name", "")).to_upper(), Palette.TEXT_PRIMARY, 10, true, true))
-	body.add_child(_role_chip(str(entry.get("role", "")), accent))
-	body.add_child(_card_label(str(entry.get("rarity", "")), Palette.TEXT_PRIMARY, 9, true, false))
-	column.add_child(_strip("TAP FOR INFO", Color(Palette.BG_DEEP, 0.55), Palette.TEXT_PRIMARY, 9, true))
-	var entry_name: String = str(entry.get("name", ""))
-	card.pressed.connect(func() -> void: print("[Codex] " + entry_name))
-	return card
+func _on_unit_selected(index: int) -> void:
+	if index < 0 or index >= _unit_list.item_count:
+		return
+	_show_unit(str(_unit_list.get_item_metadata(index)))
 
 
-func _strip(text: String, fill: Color, color: Color, font_size: int, centered: bool) -> PanelContainer:
-	var bar := PanelContainer.new()
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := _pixel_box(fill, fill, 0, 0)
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 8.0
-	style.content_margin_bottom = 8.0
-	bar.add_theme_stylebox_override("panel", style)
-	bar.add_child(_card_label(text, color, font_size, centered, false))
-	return bar
+func _list_label(tab: StringName, unit_id: String) -> String:
+	if tab == &"units":
+		var tower: Dictionary = ContentDB.get_tower(unit_id)
+		var tower_name: String = str(tower.get("name", unit_id))
+		if tower_name.is_empty():
+			tower_name = unit_id
+		return tower_name.to_upper()
+	return unit_id.to_upper()
 
 
-func _role_chip(role: String, accent: Color) -> PanelContainer:
-	var chip := PanelContainer.new()
-	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var style := _pixel_box(Color(Palette.BG_DEEP, 0.45), accent, 0, 2)
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 6.0
-	style.content_margin_bottom = 6.0
-	chip.add_theme_stylebox_override("panel", style)
-	chip.add_child(_card_label(role, Palette.TEXT_PRIMARY, 9, true, false))
-	return chip
-
-
-func _card_label(text: String, color: Color, font_size: int, centered: bool, wrap: bool) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	if wrap:
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		label.max_lines_visible = 2
+func _show_unit(unit_id: String) -> void:
+	_current_unit_id = unit_id
+	if _tab == &"units":
+		_show_tower(unit_id)
 	else:
-		label.autowrap_mode = TextServer.AUTOWRAP_OFF
-		label.clip_text = true
-	_apply_label(label, color, font_size)
-	return label
+		_show_enemy(unit_id)
 
 
-func _glyph_kind(name: String) -> IntelPixelIcon.Kind:
-	match name:
-		"terminal":
-			return IntelPixelIcon.Kind.TERMINAL
-		"camera":
-			return IntelPixelIcon.Kind.CAMERA
-		"badge":
-			return IntelPixelIcon.Kind.BADGE
-		"lock":
-			return IntelPixelIcon.Kind.LOCK
-		"wrench":
-			return IntelPixelIcon.Kind.WRENCH
-		"envelope":
-			return IntelPixelIcon.Kind.ENVELOPE
-		"skull":
-			return IntelPixelIcon.Kind.SKULL
-		"phone":
-			return IntelPixelIcon.Kind.PHONE
-		_:
-			return IntelPixelIcon.Kind.CODEX
+func _show_tower(unit_id: String) -> void:
+	var raw: Dictionary = _raw_entry(ContentDB.towers, unit_id)
+	var stats: Dictionary = ContentDB.get_tower(unit_id)
+	var display_name: String = str(stats.get("name", unit_id))
+	if display_name.is_empty():
+		display_name = unit_id
+	_stats_title.text = display_name.to_upper()
+	_stats_body.text = _format_stats(raw, [
+		"name",
+		"damage",
+		"fire_rate",
+		"splash_radius",
+		"slow_factor",
+		"slow_duration",
+		"cost",
+		"req_skill",
+		"color",
+	])
 
 
-func _accent_of(name: String) -> Color:
-	match name:
-		"green":
-			return Palette.GREEN
-		"gold":
-			return Palette.GOLD
-		"magenta":
-			return Palette.MAGENTA
-		"red":
-			return Palette.RED
-		_:
-			return Palette.CYAN
+func _show_enemy(unit_id: String) -> void:
+	var raw: Dictionary = _raw_entry(ContentDB.enemies, unit_id)
+	_stats_title.text = unit_id.to_upper()
+	_stats_body.text = _format_stats(raw, [
+		"hp",
+		"speed",
+		"bounty",
+		"color",
+	])
+
+
+func _raw_entry(source: Dictionary, unit_id: String) -> Dictionary:
+	if unit_id.is_empty() or not source.has(unit_id):
+		return {}
+	var stored: Variant = source[unit_id]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+func _format_stats(raw: Dictionary, preferred_order: PackedStringArray) -> String:
+	if raw.is_empty():
+		return "No stats authored for this unit."
+	var lines: PackedStringArray = PackedStringArray()
+	var seen: Dictionary = {}
+	for i in preferred_order.size():
+		var key: String = String(preferred_order[i])
+		if not raw.has(key):
+			continue
+		seen[key] = true
+		lines.append(_stat_line(key, raw[key]))
+	var leftover: Array = raw.keys()
+	leftover.sort()
+	for j in leftover.size():
+		var extra_key: String = str(leftover[j])
+		if seen.has(extra_key):
+			continue
+		lines.append(_stat_line(extra_key, raw[extra_key]))
+	return "\n".join(lines)
+
+
+func _stat_line(key: String, value: Variant) -> String:
+	var label: String = key.to_upper().replace("_", " ")
+	return "[b]%s[/b]: %s" % [label, str(value)]
+
+
+func _style_item_list() -> void:
+	var panel: StyleBoxFlat = _pixel_box(Palette.BG_DEEP, Palette.CYAN_DIM, 0, 2)
+	panel.content_margin_left = 8.0
+	panel.content_margin_right = 8.0
+	panel.content_margin_top = 8.0
+	panel.content_margin_bottom = 8.0
+	var selected: StyleBoxFlat = _pixel_box(Palette.GOLD, Palette.TEXT_PRIMARY, 0, 2)
+	selected.content_margin_left = 8.0
+	selected.content_margin_right = 8.0
+	selected.content_margin_top = 8.0
+	selected.content_margin_bottom = 8.0
+	_unit_list.add_theme_stylebox_override("panel", panel)
+	_unit_list.add_theme_stylebox_override("selected", selected)
+	_unit_list.add_theme_stylebox_override("hovered", selected)
+	_unit_list.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
+	_unit_list.add_theme_color_override("font_hovered_color", Palette.BG_DEEP)
+	_unit_list.add_theme_color_override("font_selected_color", Palette.BG_DEEP)
+	_unit_list.add_theme_constant_override("v_separation", 8)
+	if _pixel_font != null:
+		_unit_list.add_theme_font_override("font", _pixel_font)
+	_unit_list.add_theme_font_size_override("font_size", 11)
+
+
+func _style_stats_body() -> void:
+	_stats_body.add_theme_color_override("default_color", Palette.TEXT_PRIMARY)
+	if _pixel_font != null:
+		_stats_body.add_theme_font_override("normal_font", _pixel_font)
+		_stats_body.add_theme_font_override("bold_font", _pixel_font)
+	_stats_body.add_theme_font_size_override("normal_font_size", 12)
+	_stats_body.add_theme_font_size_override("bold_font_size", 12)
 
 
 func _style_chip(tab: Button, selected: bool, threat: bool) -> void:
-	var fill := Palette.FOREST_NIGHT
-	var border := Palette.CYAN_DIM
-	var text := Palette.TEXT_PRIMARY
+	var fill: Color = Palette.FOREST_NIGHT
+	var border: Color = Palette.CYAN_DIM
+	var text: Color = Palette.TEXT_PRIMARY
 	if selected:
 		fill = Palette.RED if threat else Palette.GOLD
 		border = Palette.TEXT_PRIMARY
 		text = Palette.TEXT_PRIMARY if threat else Palette.TEXT_ON_GOLD
-	var box := _pixel_box(fill, border, 0, 2)
+	var box: StyleBoxFlat = _pixel_box(fill, border, 0, 2)
 	box.content_margin_left = 12.0
 	box.content_margin_right = 12.0
 	box.content_margin_top = 12.0
@@ -316,7 +317,7 @@ func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBo
 
 
 func _style_os_bar() -> void:
-	var style := _pixel_box(Color(Palette.BG_HEADER, 0.92), Palette.CYAN_DIM, 0, 2)
+	var style: StyleBoxFlat = _pixel_box(Color(Palette.BG_HEADER, 0.92), Palette.CYAN_DIM, 0, 2)
 	style.content_margin_left = 8.0
 	style.content_margin_right = 8.0
 	style.content_margin_top = 6.0
@@ -325,7 +326,7 @@ func _style_os_bar() -> void:
 
 
 func _style_resource_pill(box: PanelContainer) -> void:
-	var style := _pixel_box(Color(Palette.FOREST_NIGHT, 0.9), Palette.TEXT_MUTED, 0, 1)
+	var style: StyleBoxFlat = _pixel_box(Color(Palette.FOREST_NIGHT, 0.9), Palette.TEXT_MUTED, 0, 1)
 	style.content_margin_left = 8.0
 	style.content_margin_right = 10.0
 	style.content_margin_top = 5.0
@@ -335,8 +336,8 @@ func _style_resource_pill(box: PanelContainer) -> void:
 
 func _style_close_button() -> void:
 	_back_button.custom_minimum_size = Vector2(44, 32)
-	var normal := _pixel_box(Palette.RED, Palette.RED_DEEP, 0, 2)
-	var hover := _pixel_box(Palette.RED, Palette.TEXT_PRIMARY, 0, 2)
+	var normal: StyleBoxFlat = _pixel_box(Palette.RED, Palette.RED_DEEP, 0, 2)
+	var hover: StyleBoxFlat = _pixel_box(Palette.RED, Palette.TEXT_PRIMARY, 0, 2)
 	_back_button.add_theme_stylebox_override("normal", normal)
 	_back_button.add_theme_stylebox_override("hover", hover)
 	_back_button.add_theme_stylebox_override("pressed", hover)
@@ -347,7 +348,7 @@ func _style_close_button() -> void:
 
 
 func _style_window(card: PanelContainer, accent: Color) -> void:
-	var box := _pixel_box(Palette.BG_HEADER, accent, 0, 3)
+	var box: StyleBoxFlat = _pixel_box(Palette.BG_HEADER, accent, 0, 3)
 	box.content_margin_left = 0.0
 	box.content_margin_right = 0.0
 	box.content_margin_top = 0.0
@@ -359,7 +360,7 @@ func _style_window(card: PanelContainer, accent: Color) -> void:
 
 
 func _style_title_bar(bar: PanelContainer, fill: Color) -> void:
-	var style := _pixel_box(fill, fill, 0, 0)
+	var style: StyleBoxFlat = _pixel_box(fill, fill, 0, 0)
 	style.content_margin_left = 10.0
 	style.content_margin_right = 8.0
 	style.content_margin_top = 7.0
@@ -368,7 +369,7 @@ func _style_title_bar(bar: PanelContainer, fill: Color) -> void:
 
 
 func _style_well(well: PanelContainer, fill: Color) -> void:
-	var style := _pixel_box(fill, Color(Palette.TEXT_PRIMARY, 0.12), 0, 2)
+	var style: StyleBoxFlat = _pixel_box(fill, Color(Palette.TEXT_PRIMARY, 0.12), 0, 2)
 	style.content_margin_left = 12.0
 	style.content_margin_right = 12.0
 	style.content_margin_top = 12.0

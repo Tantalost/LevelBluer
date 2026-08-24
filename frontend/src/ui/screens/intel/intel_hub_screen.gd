@@ -85,12 +85,14 @@ func _process(delta: float) -> void:
 func on_enter(_args: Dictionary) -> void:
 	set_process(true)
 	_refresh_resources()
+	_refresh_certified_chrome()
 	_threat_matrix.refresh_matrix()
 
 
 func on_resume() -> void:
 	set_process(true)
 	_refresh_resources()
+	_refresh_certified_chrome()
 	_threat_matrix.refresh_matrix()
 
 
@@ -141,6 +143,17 @@ func _refresh_resources() -> void:
 	var materials: int = AuthService.materials()
 	_threat_value.text = str(threat if threat >= 0 else FALLBACK_THREAT)
 	_materials_value.text = str(materials if materials >= 0 else FALLBACK_MATERIALS)
+
+
+func _refresh_certified_chrome() -> void:
+	if not PlayerManager.module_1_complete:
+		_status_line.text = "SELECT A MODULE TO MOUNT"
+		_apply_label(_status_line, Palette.TEXT_MUTED, 12)
+		_ground.color = Palette.FOREST_FLOOR
+		return
+	_status_line.text = "STATUS: CERTIFIED"
+	_apply_label(_status_line, Palette.GOLD, 12)
+	_ground.color = Palette.FOREST_FLOOR.lerp(Palette.GOLD, 0.18)
 
 
 func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:

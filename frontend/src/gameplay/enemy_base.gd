@@ -3,12 +3,14 @@ extends PathFollow2D
 ## Path-following packet with a health pool. Economy payout is signaled, not applied here.
 
 signal enemy_died(bounty_amount: int)
+signal reached_base
 
 @export var move_speed: float = 150.0
 var max_health: int = 3
 var current_health: int = 3
 var bounty: int = 1
 var is_dead: bool = false
+var _leaked: bool = false
 var _base_move_speed: float = 50.0
 var _base_color: Color = Palette.RED
 var _slow_timer: SceneTreeTimer = null
@@ -45,14 +47,32 @@ func _ready() -> void:
 	add_to_group("enemies")
 
 
-func _process(delta: float) -> void:
-	if is_dead or is_queued_for_deletion():
+func _physics_process(delta: float) -> void:
+	if is_dead or _leaked or is_queued_for_deletion():
 		return
 	progress += move_speed * delta
+	if loop:
+		return
+	if progress_ratio < 0.999:
+		return
+	if not mark_leaked():
+		return
+	reached_base.emit()
+	queue_free()
+
+
+func mark_leaked() -> bool:
+	if is_dead or _leaked or is_queued_for_deletion():
+		return false
+	_leaked = true
+	is_dead = true
+	_kill_hit_tween()
+	_clear_slow_timer()
+	return true
 
 
 func take_damage(amount: int) -> void:
-	if is_dead or is_queued_for_deletion():
+	if is_dead or _leaked or is_queued_for_deletion():
 		return
 	current_health -= amount
 	if current_health <= 0:

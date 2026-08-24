@@ -33,6 +33,7 @@ const SCREENS: Dictionary = {
 	&"profile":      "res://src/ui/screens/profile/profile_screen.tscn",
 	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
 	&"victory":      "res://src/ui/screens/victory/victory_screen.tscn",
+	&"certificate":  "res://src/ui/screens/intel/certificate_screen.tscn",
 }
 
 ## Emitted when the player tries to back out of the root screen. The main
@@ -113,6 +114,26 @@ func restart_level() -> void:
 	start_level(stage)
 
 
+func open_intel_hub() -> void:
+	if _host == null:
+		push_error("Router: cannot open Intel Hub (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"dashboard")
+	push(&"intel_hub")
+
+
+func open_settings() -> void:
+	if _host == null:
+		push_error("Router: cannot open Settings (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"dashboard")
+	push(&"settings")
+
+
 func open_lessons() -> void:
 	if _host == null:
 		push_error("Router: cannot open Lessons (host not registered)")
@@ -134,6 +155,35 @@ func open_codex(skill_id: String) -> void:
 	replace_all(&"dashboard")
 	push(&"intel_hub")
 	push(&"codex", {"skill_id": topic})
+
+
+func open_splash_screen() -> void:
+	if _host == null:
+		push_error("Router: cannot open Splash (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"splash")
+
+
+func open_login_screen() -> void:
+	if _host == null:
+		push_error("Router: cannot open Login (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"login")
+
+
+func open_certificate_screen() -> void:
+	if _host == null:
+		push_error("Router: cannot open Certificate (host not registered)")
+		return
+	_teardown_gameplay()
+	_set_ui_stack_active(true)
+	replace_all(&"dashboard")
+	push(&"intel_hub")
+	push(&"certificate")
 
 
 func open_victory(accuracy: float, gold: int) -> void:
@@ -183,6 +233,9 @@ func _teardown_gameplay() -> void:
 		_gameplay.queue_free()
 	_gameplay = null
 	Engine.time_scale = 1.0
+	var tree: SceneTree = get_tree()
+	if tree != null:
+		tree.paused = false
 
 
 func push(screen_id: StringName, args: Dictionary = {}) -> void:
@@ -242,7 +295,9 @@ func pop() -> void:
 ## (the forced password change) can refuse in one place.
 func request_back() -> void:
 	if _gameplay != null and is_instance_valid(_gameplay):
-		return_to_stage_select()
+		var manager: Node = _gameplay.get_node_or_null("LevelManager")
+		if manager is LevelManager:
+			(manager as LevelManager).toggle_pause()
 		return
 	if _busy or _stack.is_empty():
 		return

@@ -69,7 +69,10 @@ var _tower_placer: TowerPlacer
 @onready var _upgrade_options: HBoxContainer = %UpgradeOptionsContainer
 @onready var _btn_close: Button = %BtnClose
 @onready var _level_background: ColorRect = %Background
-@onready var _speed_button: HudGeoButton = %SpeedButton
+@onready var _btn_speed_1x: HudGeoButton = %BtnSpeed1x
+@onready var _btn_speed_2x: HudGeoButton = %BtnSpeed2x
+@onready var _btn_pause: HudGeoButton = %BtnPause
+@onready var _pause_menu: PauseMenu = %PauseMenu
 @onready var _tower_card: HudGeoButton = %TowerCard
 @onready var _incident_modal: PanelContainer = %IncidentModal
 @onready var _incident_text: Label = %IncidentText
@@ -97,7 +100,9 @@ func _ready() -> void:
 	_btn_wrong.pressed.connect(_on_quiz_wrong_pressed)
 	_start_wave_button.pressed.connect(_on_start_wave_pressed)
 	_btn_close.pressed.connect(_on_upgrade_close_pressed)
-	_speed_button.pressed.connect(_on_speed_pressed)
+	_btn_speed_1x.pressed.connect(_on_speed_1x_pressed)
+	_btn_speed_2x.pressed.connect(_on_speed_2x_pressed)
+	_btn_pause.pressed.connect(toggle_pause)
 	_btn_incident_a.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_a))
 	_btn_incident_b.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_b))
 	_upgrade_panel.visible = false
@@ -177,6 +182,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			_hide_incident()
 			print("[LevelManager] Entering Phase 3: DEFEND. Spawning wave " + str(current_wave_index + 1) + "...")
 		GamePhase.GAME_OVER:
+			Engine.time_scale = 1.0
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
@@ -194,6 +200,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			print("[LevelManager] Entering GAME_OVER. Match lost.")
 			Router.open_defeat(tip, weak_skill)
 		GamePhase.VICTORY:
+			Engine.time_scale = 1.0
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
@@ -208,7 +215,12 @@ func change_phase(new_phase: GamePhase) -> void:
 			var credit_payout: int = 50 + maxi(0, current_gold)
 			PlayerManager.add_credits(credit_payout)
 			print("[Economy] Victory payout +" + str(credit_payout) + " credits. Wallet: " + str(PlayerManager.credits))
-			Router.open_victory(accuracy, credit_payout)
+			if _is_module_final():
+				PlayerManager.module_1_complete = true
+				SaveService.save_game()
+				Router.open_certificate_screen()
+			else:
+				Router.open_victory(accuracy, credit_payout)
 			print("[LevelManager] Entering VICTORY. Match won.")
 	current_phase = new_phase
 	_sync_phase_chrome()
@@ -321,6 +333,7 @@ func _spawn_enemy(type_id: String, hp_mult: float) -> void:
 		return
 	enemy.initialize_stats(type_id, hp_mult)
 	enemy.enemy_died.connect(_on_enemy_died)
+	enemy.reached_base.connect(_on_enemy_reached_base)
 	active_enemies += 1
 	track.add_child(enemy)
 
@@ -349,6 +362,12 @@ func _current_wave_enemy_count() -> int:
 func _is_summative() -> bool:
 	var type_stored: Variant = current_stage_config.get("type", "")
 	return str(type_stored) == "summative"
+
+
+func _is_module_final() -> bool:
+	# Router.active_stage_index is 0-based. Stage 10 is index 9.
+	var stage_id: int = Router.active_stage_index + 1
+	return _is_summative() and stage_id == 10
 
 
 func _exam_question_count() -> int:
@@ -534,20 +553,29 @@ func _style_start_button() -> void:
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
+	var tree: SceneTree = get_tree()
+	if tree != null:
+		tree.paused = false
 	_hide_incident()
 
 
-func _on_speed_pressed() -> void:
-	_speed_mult = 1.0 if _speed_mult > 1.5 else 2.0
+func _on_speed_1x_pressed() -> void:
+	_speed_mult = 1.0
+	_apply_speed()
+
+
+func _on_speed_2x_pressed() -> void:
+	_speed_mult = 2.0
 	_apply_speed()
 
 
 func _apply_speed() -> void:
 	var quiz_open: bool = _quiz_modal.visible or current_phase == GamePhase.PHASE_1_QUIZ
 	Engine.time_scale = 1.0 if quiz_open else _speed_mult
-	_speed_button.title = "x2" if _speed_mult > 1.5 else "x1"
-	_speed_button.fill_key = "gold" if _speed_mult > 1.5 else "header"
-	_speed_button.queue_redraw()
+	_btn_speed_1x.fill_key = "gold" if _speed_mult <= 1.5 else "header"
+	_btn_speed_2x.fill_key = "gold" if _speed_mult > 1.5 else "header"
+	_btn_speed_1x.queue_redraw()
+	_btn_speed_2x.queue_redraw()
 
 
 func _sync_phase_chrome() -> void:
@@ -556,7 +584,8 @@ func _sync_phase_chrome() -> void:
 	if _tower_placer != null:
 		_tower_placer.set_build_preview(building)
 	_tower_card.visible = building
-	_speed_button.visible = live
+	_btn_speed_1x.visible = live
+	_btn_speed_2x.visible = live
 	_apply_speed()
 
 
@@ -915,14 +944,33 @@ func _on_enemy_died(bounty_amount: int) -> void:
 	_check_wave_cleared()
 
 
+func _on_enemy_reached_base() -> void:
+	_apply_base_breach()
+
+
 func _on_player_base_area_entered(area: Area2D) -> void:
-	var enemy: EnemyBase = area.get_parent() as EnemyBase
-	if enemy == null or enemy.is_dead or enemy.is_queued_for_deletion():
+	var enemy: EnemyBase = _enemy_from_hitbox(area)
+	if enemy == null:
 		return
-	enemy.is_dead = true
+	if not enemy.mark_leaked():
+		return
+	enemy.queue_free()
+	_apply_base_breach()
+
+
+func _enemy_from_hitbox(area: Area2D) -> EnemyBase:
+	var node: Node = area
+	while node != null:
+		var enemy: EnemyBase = node as EnemyBase
+		if enemy != null:
+			return enemy
+		node = node.get_parent()
+	return null
+
+
+func _apply_base_breach() -> void:
 	base_health -= 1
 	active_enemies = maxi(0, active_enemies - 1)
-	enemy.queue_free()
 	add_camera_shake(15.0)
 	print("[Enemy] Base breached!")
 	update_hud()
@@ -1085,6 +1133,10 @@ func _on_restart_pressed() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		toggle_pause()
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey:
 		var key := event as InputEventKey
 		if not key.pressed or key.echo:
@@ -1092,3 +1144,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		if key.keycode == KEY_SPACE and current_phase == GamePhase.PHASE_2_BUILD:
 			_on_start_wave_pressed()
 			get_viewport().set_input_as_handled()
+
+
+func toggle_pause() -> void:
+	if current_phase == GamePhase.GAME_OVER or current_phase == GamePhase.VICTORY:
+		return
+	if _pause_menu.visible:
+		_pause_menu.resume_game()
+	else:
+		_pause_menu.pause_game()

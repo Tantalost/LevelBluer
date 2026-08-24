@@ -78,7 +78,7 @@ func _boot() -> void:
 	if elapsed < MIN_DISPLAY_SECONDS:
 		await get_tree().create_timer(MIN_DISPLAY_SECONDS - elapsed).timeout
 
-	Router.replace_all(&"dashboard" if has_session else &"intro")
+	Router.replace_all(&"dashboard" if has_session else &"login")
 
 
 func _set_status(key: String, target: float) -> void:

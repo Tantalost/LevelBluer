@@ -7,6 +7,10 @@ var stages: Dictionary = {}
 var enemies: Dictionary = {}
 var towers: Dictionary = {}
 var incidents: Array = []
+var lessons: Dictionary = {}
+
+const CORE_LESSON_IDS: PackedStringArray = ["ports_basics", "firewalls_intro", "crypto_101"]
+const MODULE_UNLOCK_LESSON := "mod1_all"
 
 
 func _ready() -> void:
@@ -15,12 +19,14 @@ func _ready() -> void:
 	_load_json_dict("res://data/enemies.json", enemies)
 	_load_json_dict("res://data/towers.json", towers)
 	_load_json_array("res://data/incidents.json", incidents)
+	_load_json_dict("res://data/lessons.json", lessons)
 	print(
 		"[ContentDB] Parsed skills=", questions.size(),
 		" stages=", stages.size(),
 		" enemies=", enemies.size(),
 		" towers=", towers.size(),
-		" incidents=", incidents.size()
+		" incidents=", incidents.size(),
+		" lessons=", lessons.size()
 	)
 
 
@@ -35,6 +41,8 @@ func load_all() -> void:
 		_load_json_dict("res://data/towers.json", towers)
 	if incidents.is_empty():
 		_load_json_array("res://data/incidents.json", incidents)
+	if lessons.is_empty():
+		_load_json_dict("res://data/lessons.json", lessons)
 	await get_tree().process_frame
 
 
@@ -86,6 +94,49 @@ func get_incidents() -> Array:
 			"wrong": str(event.get("wrong", "")),
 		})
 	return result
+
+
+func get_lesson(lesson_id: String) -> Dictionary:
+	if lesson_id.is_empty() or not lessons.has(lesson_id):
+		return {}
+	var stored: Variant = lessons[lesson_id]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	var raw: Dictionary = stored as Dictionary
+	return {
+		"id": lesson_id,
+		"title": str(raw.get("title", lesson_id)),
+		"body": str(raw.get("body", "")),
+		"skill_tag": str(raw.get("skill_tag", "")),
+	}
+
+
+func get_all_lesson_ids() -> Array[String]:
+	var ids: Array[String] = []
+	var keys: Array = lessons.keys()
+	for i in keys.size():
+		var lesson_id: String = str(keys[i])
+		if not lesson_id.is_empty():
+			ids.append(lesson_id)
+	return ids
+
+
+func get_all_tower_ids() -> Array[String]:
+	return _sorted_string_ids(towers.keys())
+
+
+func get_all_enemy_ids() -> Array[String]:
+	return _sorted_string_ids(enemies.keys())
+
+
+func _sorted_string_ids(raw_keys: Array) -> Array[String]:
+	var ids: Array[String] = []
+	for i in raw_keys.size():
+		var entry_id: String = str(raw_keys[i])
+		if not entry_id.is_empty():
+			ids.append(entry_id)
+	ids.sort()
+	return ids
 
 
 func _normalize_enemy(raw: Dictionary) -> Dictionary:

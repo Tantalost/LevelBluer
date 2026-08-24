@@ -1,24 +1,25 @@
-[gd_scene load_steps=8 format=3 uid="uid://blessonsscr001"]
+[gd_scene format=3 uid="uid://dliqohnxboksm"]
 
-[ext_resource type="Script" path="res://src/ui/screens/intel/lessons_screen.gd" id="1_lessons"]
+[ext_resource type="Script" path="res://src/ui/screens/intel/certificate_screen.gd" id="1_cert"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="3_font"]
 [ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="4_stars"]
 [ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
 [ext_resource type="Shader" path="res://src/gameplay/vignette.gdshader" id="7_vig"]
 [ext_resource type="Script" path="res://src/ui/screens/deploy/pine_tree_border.gd" id="8_pine"]
+[ext_resource type="PackedScene" uid="uid://bthreatmatrix01" path="res://src/ui/components/threat_matrix_panel.tscn" id="9_matrix"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("7_vig")
 
-[node name="LessonsScreen" type="Control"]
+[node name="CertificateScreen" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_lessons")
+script = ExtResource("1_cert")
 
 [node name="Starfield" type="ColorRect" parent="."]
 layout_mode = 1
@@ -107,12 +108,12 @@ size_flags_vertical = 4
 mouse_filter = 2
 color = Color(0.298039, 0.85098, 0.541176, 1)
 
-[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+[node name="HeaderTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 14
-text = "LESSONS.DAT"
+text = "CERT.SYS"
 
 [node name="OsCursor" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
 unique_name_in_owner = true
@@ -126,129 +127,74 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="CounterLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/OsBar/HeaderBar"]
+[node name="StatusLine" type="Label" parent="SafeAreaContainer/ScreenLayout"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 12
-text = "01/03"
-vertical_alignment = 1
-
-[node name="SubtitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 12
-text = "STUDY THEN MARK COMPLETE"
+text = "STATUS: CERTIFIED"
 horizontal_alignment = 1
 
-[node name="StudySplit" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 12
-
-[node name="ListCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit"]
+[node name="CertCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ListVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ListCard"]
+[node name="CertVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/CertCard"]
 layout_mode = 2
 theme_override_constants/separation = 0
 
-[node name="ListTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ListCard/ListVBox"]
+[node name="CertTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="ListFile" type="Label" parent="SafeAreaContainer/ScreenLayout/StudySplit/ListCard/ListVBox/ListTitleBar"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 11
-text = "CURRICULUM.DAT"
-
-[node name="ListWell" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ListCard/ListVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="LessonList" type="ItemList" parent="SafeAreaContainer/ScreenLayout/StudySplit/ListCard/ListVBox/ListWell"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_vertical = 3
-focus_mode = 0
-theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 11
-allow_reselect = true
-auto_height = false
-
-[node name="ReaderCard" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit"]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-
-[node name="ReaderVBox" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard"]
-layout_mode = 2
-theme_override_constants/separation = 0
-
-[node name="ReaderTitleBar" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox"]
-unique_name_in_owner = true
-layout_mode = 2
-
-[node name="ReaderFile" type="Label" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox/ReaderTitleBar"]
+[node name="CertFile" type="Label" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox/CertTitleBar"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 11
-text = "LESSON.DAT"
+text = "MODULE_1.CRT"
 
-[node name="ReaderWell" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox"]
+[node name="CertWell" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ReaderColumn" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox/ReaderWell"]
+[node name="CertColumn" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox/CertWell"]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 14
 
-[node name="ReaderTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox/ReaderWell/ReaderColumn"]
+[node name="TitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox/CertWell/CertColumn"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 16
-text = "SELECT A LESSON"
+text = "MODULE 1 CLEARED: NETWORK DEFENDER"
+horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="TagLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox/ReaderWell/ReaderColumn"]
+[node name="SubtitleLabel" type="Label" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox/CertWell/CertColumn"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("3_font")
-theme_override_font_sizes/font_size = 11
-text = "SKILL: —"
+theme_override_font_sizes/font_size = 12
+text = "ISSUED TO  OPERATIVE"
+horizontal_alignment = 1
+autowrap_mode = 3
 
-[node name="ReaderBody" type="RichTextLabel" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox/ReaderWell/ReaderColumn"]
+[node name="ThreatMatrixPanel" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox/CertWell/CertColumn" instance=ExtResource("9_matrix")]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_fonts/normal_font = ExtResource("3_font")
-theme_override_fonts/bold_font = ExtResource("3_font")
-theme_override_font_sizes/normal_font_size = 12
-theme_override_font_sizes/bold_font_size = 12
-bbcode_enabled = true
-fit_content = false
-scroll_active = true
-text = "Select a file from the curriculum list."
 
-[node name="CompleteButton" type="Button" parent="SafeAreaContainer/ScreenLayout/StudySplit/ReaderCard/ReaderVBox"]
+[node name="ReturnButton" type="Button" parent="SafeAreaContainer/ScreenLayout/CertCard/CertVBox"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 58)
 layout_mode = 2
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 14
-text = "MARK AS COMPLETE"
+text = "RETURN TO INTEL HUB"
 
 [node name="Scanlines" type="Control" parent="."]
 modulate = Color(1, 1, 1, 2.2)

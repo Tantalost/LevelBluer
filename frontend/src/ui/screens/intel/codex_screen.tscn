@@ -265,18 +265,47 @@ text = "CRITICAL WEAKNESS: PORTS"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Scroll" type="ScrollContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox"]
+[node name="SplitRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox"]
 layout_mode = 2
 size_flags_vertical = 3
-horizontal_scroll_mode = 0
+theme_override_constants/separation = 12
 
-[node name="EntryGrid" type="GridContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/Scroll"]
+[node name="UnitList" type="ItemList" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/SplitRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_vertical = 3
+focus_mode = 0
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 11
+allow_reselect = true
+
+[node name="StatsColumn" type="VBoxContainer" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/SplitRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/h_separation = 14
-theme_override_constants/v_separation = 14
-columns = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="StatsTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/SplitRow/StatsColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+text = "SELECT A UNIT"
+autowrap_mode = 3
+
+[node name="StatsBody" type="RichTextLabel" parent="SafeAreaContainer/ScreenLayout/CatalogCard/CardVBox/CatalogWell/WellBox/SplitRow/StatsColumn"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_fonts/normal_font = ExtResource("3_font")
+theme_override_fonts/bold_font = ExtResource("3_font")
+theme_override_font_sizes/normal_font_size = 12
+theme_override_font_sizes/bold_font_size = 12
+bbcode_enabled = true
+fit_content = false
+scroll_active = true
+text = "Select a unit to inspect authored stats."
 
 [node name="Scanlines" type="Control" parent="."]
 modulate = Color(1, 1, 1, 2.2)

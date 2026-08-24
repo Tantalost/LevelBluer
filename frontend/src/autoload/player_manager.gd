@@ -21,6 +21,7 @@ var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
 var mock_max_stage_cleared: int = 1
 var credits: int = 0
+var module_1_complete: bool = false
 var _session_hydrated: bool = false
 
 
@@ -124,6 +125,7 @@ func reset_to_defaults() -> void:
 	purchased_items.clear()
 	unlocked_skills.clear()
 	unlocked_towers = ["base"]
+	module_1_complete = false
 	mastery_matrix = {
 		"ports": DEFAULT_MASTERY,
 		"firewalls": DEFAULT_MASTERY,
@@ -184,7 +186,19 @@ func complete_lesson(lesson_id: String) -> void:
 	if lesson_id.is_empty() or completed_lessons.has(lesson_id):
 		return
 	completed_lessons.append(lesson_id)
+	if lesson_id != ALL_MODULES_LESSON:
+		_try_grant_module_unlock()
 	SaveService.save_game()
+
+
+func _try_grant_module_unlock() -> void:
+	for i in ContentDB.CORE_LESSON_IDS.size():
+		var core_id: String = String(ContentDB.CORE_LESSON_IDS[i])
+		if not has_completed_lesson(core_id):
+			return
+	if has_completed_lesson(ALL_MODULES_LESSON):
+		return
+	completed_lessons.append(ALL_MODULES_LESSON)
 
 
 func has_completed_lesson(lesson_id: String) -> bool:
@@ -259,6 +273,7 @@ func get_save_data() -> Dictionary:
 		"unlocked_skills": unlocked_skills.duplicate(),
 		"lesson_progress": lesson_progress.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
+		"module_1_complete": module_1_complete,
 	}
 
 
@@ -330,3 +345,11 @@ func apply_save_data(data: Dictionary) -> void:
 			var skill_id: String = str(saved_skills[i])
 			if not skill_id.is_empty() and not unlocked_skills.has(skill_id):
 				unlocked_skills.append(skill_id)
+
+	if data.has("module_1_complete"):
+		var complete_raw: Variant = data["module_1_complete"]
+		var complete_type: int = typeof(complete_raw)
+		if complete_type == TYPE_BOOL:
+			module_1_complete = complete_raw
+		elif complete_type == TYPE_INT or complete_type == TYPE_FLOAT:
+			module_1_complete = int(complete_raw) != 0
