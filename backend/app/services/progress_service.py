@@ -6,23 +6,54 @@ from app.supabase_client import supabase
 
 # Pretest BKT lives on students.mastery_phishing / etc. Never write game skills there.
 GAME_BKT_TOPICS = ("ports", "firewalls", "crypto")
+STUDENT_SYNC_KEYS = (
+    "threat_points",
+    "upgrade_materials",
+    "points",
+    "sessions",
+    "tower_level",
+    "glade_level",
+    "forge_level",
+    "mastery_phishing",
+    "mastery_smishing",
+    "mastery_vishing",
+    "mastery_pretexting",
+    "mastery_baiting",
+    "pre",
+    "post",
+)
 
 
 def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> ProgressSyncResponse:
     student = fetch_student_by_id(student_id)
     current_stage = int(student.get("highest_unlocked_stage") or 1)
     incoming_stage = max(1, int(payload.mock_max_stage_cleared))
+    dumped = payload.model_dump()
     update = {
         "last_active": datetime.now(UTC).isoformat(),
         "highest_unlocked_stage": max(current_stage, incoming_stage),
     }
+    student_patch = dumped.get("student")
+    if isinstance(student_patch, dict):
+        for key in STUDENT_SYNC_KEYS:
+            if key not in student_patch or student_patch[key] is None:
+                continue
+            value = student_patch[key]
+            if key in ("pre", "post", "highest_unlocked_stage"):
+                update[key] = max(int(student.get(key) or 0), int(value))
+            elif key.startswith("mastery_"):
+                update[key] = float(value)
+            else:
+                update[key] = int(value)
+
     try:
         supabase.table("students").update(update).eq("id", student_id).execute()
     except Exception as exc:
         raise _supabase_error(exc) from exc
 
     _upsert_game_bkt(student_id, payload.mastery_matrix)
-    _upsert_save_blob(student_id, payload.model_dump())
+    blob = {k: v for k, v in dumped.items() if k != "student"}
+    _upsert_save_blob(student_id, blob)
     return ProgressSyncResponse()
 
 

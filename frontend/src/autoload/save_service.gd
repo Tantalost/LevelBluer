@@ -1,13 +1,15 @@
 extends Node
 ## Autoload singleton, registered as "SaveService".
 ## Local JSON is the session source of truth while offline.
-## After login, a cloud pull overwrites local when a remote blob exists.
+## Offline mutations are queued and pushed to the cloud when a request succeeds.
 
 signal cloud_fetch_completed(success: bool)
+signal cloud_sync_completed(success: bool)
 
 const DEFAULT_API_BASE := "http://127.0.0.1:8000"
 const SYNC_PATH := "/api/progress/sync"
 const SYNC_TIMEOUT_SEC := 10.0
+const RETRY_SEC := 20.0
 
 var _http_request: HTTPRequest
 var _http_fetch: HTTPRequest
@@ -15,6 +17,7 @@ var _sync_in_flight: bool = false
 var _resync_queued: bool = false
 var _fetch_in_flight: bool = false
 var _last_fetch_ok: bool = false
+var _retry_left: float = 0.0
 
 
 func _ready() -> void:
@@ -29,6 +32,24 @@ func _ready() -> void:
 	_http_fetch.use_threads = true
 	add_child(_http_fetch)
 	_http_fetch.request_completed.connect(_on_fetch_completed)
+	set_process(true)
+
+
+func _process(delta: float) -> void:
+	if not AuthService.is_signed_in():
+		return
+	if not StudentDatabase.has_pending_sync(AuthService.participant_code()):
+		return
+	_retry_left -= delta
+	if _retry_left > 0.0:
+		return
+	_retry_left = RETRY_SEC
+	push_pending_sync()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		push_pending_sync()
 
 
 func load_local() -> void:
@@ -84,6 +105,10 @@ func load_game() -> void:
 
 
 func fetch_cloud_save() -> void:
+	if StudentDatabase.has_pending_sync(AuthService.participant_code()):
+		push_pending_sync()
+		_finish_fetch(false)
+		return
 	if _fetch_in_flight:
 		return
 	if not AuthService.is_signed_in():
@@ -177,6 +202,10 @@ func _finish_fetch(success: bool) -> void:
 	cloud_fetch_completed.emit(success)
 
 
+func push_pending_sync() -> void:
+	_sync_to_cloud()
+
+
 func _sync_to_cloud() -> void:
 	if not AuthService.is_signed_in():
 		return
@@ -190,6 +219,7 @@ func _sync_to_cloud() -> void:
 		return
 
 	var data: Dictionary = PlayerManager.get_save_data()
+	data["student"] = AuthService.cloud_sync_payload()
 	var json_string: String = JSON.stringify(data)
 	var url: String = _api_base() + SYNC_PATH
 	var headers: PackedStringArray = [
@@ -201,6 +231,7 @@ func _sync_to_cloud() -> void:
 	var error: Error = _http_request.request(url, headers, HTTPClient.METHOD_POST, json_string)
 	if error != OK:
 		_sync_in_flight = false
+		_retry_left = RETRY_SEC
 		push_warning("[SaveService] Failed to initiate cloud sync. error=" + str(error))
 
 
@@ -211,12 +242,18 @@ func _on_sync_completed(
 	_body: PackedByteArray,
 ) -> void:
 	_sync_in_flight = false
+	var ok: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	if result != HTTPRequest.RESULT_SUCCESS:
 		push_warning("[SaveService] Cloud sync skipped (offline or network error). result=" + str(result))
-	elif response_code >= 200 and response_code < 300:
+		_retry_left = RETRY_SEC
+	elif ok:
 		print("[SaveService] Cloud sync successful.")
+		StudentDatabase.mark_synced(AuthService.participant_code())
+		_retry_left = RETRY_SEC
 	else:
 		push_warning("[SaveService] Cloud sync failed. Code: " + str(response_code))
+		_retry_left = RETRY_SEC
+	cloud_sync_completed.emit(ok)
 
 	if _resync_queued:
 		_resync_queued = false

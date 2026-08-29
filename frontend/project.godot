@@ -22,6 +22,7 @@ SettingsService="*uid://p2mqjvioywev"
 AudioManager="*res://src/autoload/audio_manager.gd"
 VfxManager="*res://src/autoload/vfx_manager.gd"
 SaveService="*uid://b40viyntql7vo"
+StudentDatabase="*res://src/autoload/student_database.gd"
 ContentDB="*uid://8t88s64sdbd2"
 AuthService="*uid://burf5g5ce6uqt"
 Router="*uid://cxqixc3u0y3mu"
@@ -38,9 +39,21 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
 
+[input]
+
+ui_cancel={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194305,"physical_keycode":4194305,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+
 [internationalization]
 
 locale/translations=PackedStringArray("res://content/ui_strings.en.translation", "res://content/ui_strings.tl.translation")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg")
 
 [levelblue]
 
@@ -56,11 +69,3 @@ textures/canvas_textures/default_texture_filter=0
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-
-[input]
-
-ui_cancel={
-"deadzone": 0.5,
-"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194305,"physical_keycode":4194305,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
-]
-}

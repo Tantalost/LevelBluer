@@ -46,11 +46,23 @@ var _forge_level: int = 1
 
 func _ready() -> void:
 	_http = HTTPRequest.new()
+	_http.timeout = 8.0
 	add_child(_http)
 
 
 func is_signed_in() -> bool:
 	return _signed_in
+
+
+func start_background_refresh() -> void:
+	if StudentDatabase.has_pending_sync(_participant_code):
+		SaveService.push_pending_sync()
+		return
+	_run_background_refresh()
+
+
+func _run_background_refresh() -> void:
+	await refresh_profile()
 
 
 func auth_token() -> String:
@@ -196,6 +208,14 @@ func weak_mastery_topics(threshold: float = 0.40) -> PackedStringArray:
 func restore_session() -> bool:
 	await get_tree().process_frame
 
+	var sqlite_row: Dictionary = StudentDatabase.load_signed_in_student()
+	if not sqlite_row.is_empty():
+		_apply_student_row(sqlite_row)
+		_signed_in = true
+		_persist(true, false, int(sqlite_row.get("needs_cloud_sync", 0)) == 1)
+		session_changed.emit(true)
+		return true
+
 	if not FileAccess.file_exists(SESSION_PATH):
 		return false
 
@@ -238,6 +258,7 @@ func restore_session() -> bool:
 		_forge_level = int(data.get("forge_level", 1))
 
 	if _signed_in and not _token.is_empty() and not _participant_code.is_empty():
+		_persist(true, false, true)
 		session_changed.emit(true)
 		return true
 
@@ -270,11 +291,11 @@ func sign_in(email: String, password: String) -> Result:
 
 	if bool(parsed.get("mustChangePassword", false)):
 		_signed_in = false
-		_persist(false, true)
+		_persist(false, true, false)
 		return Result.MUST_CHANGE_PASSWORD
 
 	_signed_in = true
-	_persist(true, false)
+	_persist(true, false, false)
 	session_changed.emit(true)
 	return Result.OK
 
@@ -300,7 +321,7 @@ func change_password(new_password: String) -> Result:
 		return Result.UNKNOWN
 
 	_signed_in = true
-	_persist(true, false)
+	_persist(true, false, false)
 	session_changed.emit(true)
 	return Result.OK
 
@@ -328,6 +349,7 @@ func sign_out() -> void:
 	_tower_level = 1
 	_glade_level = 1
 	_forge_level = 1
+	StudentDatabase.clear_session()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
 	session_changed.emit(false)
 
@@ -354,23 +376,23 @@ func submit_pretest(answers: Array) -> Result:
 	if typeof(mastery_data) == TYPE_DICTIONARY:
 		_mastery = mastery_data
 	_pre_test_completed = bool(parsed.get("preTestCompleted", true))
-	_persist(_signed_in, false)
+	_persist(_signed_in, false, true)
 	session_changed.emit(_signed_in)
 	return Result.OK
 
 
 func refresh_profile() -> bool:
 	if _token.is_empty():
-		return false
+		return _signed_in and not _participant_code.is_empty()
 	var parsed: Variant = await _request_json("/api/auth/me", HTTPClient.METHOD_GET, {}, true)
 	if typeof(parsed) != TYPE_DICTIONARY:
-		return false
+		return _signed_in and not _participant_code.is_empty()
 	if parsed.has("error") or parsed.has("detail"):
-		return false
+		return _signed_in and not _participant_code.is_empty()
 	if str(parsed.get("_id", parsed.get("id", ""))).is_empty():
-		return false
+		return _signed_in and not _participant_code.is_empty()
 	_apply_user_profile(parsed)
-	_persist(_signed_in, false)
+	_persist(_signed_in, false, false)
 	return true
 
 
@@ -450,6 +472,63 @@ func _apply_user_profile(user: Dictionary, overwrite_name: bool = true) -> void:
 	_pre_test_completed = bool(user.get("preTestCompleted", _pre_test_completed))
 
 
+func _apply_student_row(row: Dictionary) -> void:
+	_participant_code = str(row.get("id", ""))
+	_token = str(row.get("auth_token", ""))
+	_display_name = str(row.get("display_name", ""))
+	_full_name = str(row.get("name", _full_name))
+	if _display_name.is_empty():
+		_display_name = _format_profile_name(_full_name)
+	_email = str(row.get("email", ""))
+	_section = str(row.get("section", ""))
+	_status = str(row.get("status", "Needs Review"))
+	_last_active = str(row.get("last_active", ""))
+	_points = int(row.get("points", 0))
+	_sessions = int(row.get("sessions", 0))
+	_pre_score = int(row.get("pre", 0))
+	_post_score = int(row.get("post", 0))
+	_materials = int(row.get("upgrade_materials", 0))
+	_threat_points = int(row.get("threat_points", 0))
+	_current_stage = int(row.get("highest_unlocked_stage", 1))
+	_tower_level = int(row.get("tower_level", 1))
+	_glade_level = int(row.get("glade_level", 1))
+	_forge_level = int(row.get("forge_level", 1))
+	_pre_test_completed = int(row.get("pre_test_completed", 0)) == 1
+	_mastery = {
+		"Phishing": float(row.get("mastery_phishing", 0.0)),
+		"Smishing": float(row.get("mastery_smishing", 0.0)),
+		"Vishing": float(row.get("mastery_vishing", 0.0)),
+		"Pretexting": float(row.get("mastery_pretexting", 0.0)),
+		"Baiting": float(row.get("mastery_baiting", 0.0)),
+	}
+	_user = {
+		"id": _participant_code,
+		"name": _full_name,
+		"email": _email,
+		"firstName": str(row.get("first_name", "")),
+		"lastName": str(row.get("last_name", "")),
+		"section": _section,
+		"status": _status,
+		"lastActive": _last_active,
+		"technical": int(row.get("technical", 0)) == 1,
+		"pre": _pre_score,
+		"post": _post_score,
+		"sessions": _sessions,
+		"points": _points,
+		"threatPoints": _threat_points,
+		"materials": _materials,
+		"highestUnlockedStage": _current_stage,
+		"buildingLevels": {
+			"tower": _tower_level,
+			"glade": _glade_level,
+			"forge": _forge_level,
+		},
+		"interventionStatus": str(row.get("intervention_status", "NORMAL")),
+		"mastery": _mastery.duplicate(),
+		"preTestCompleted": _pre_test_completed,
+	}
+
+
 static func _format_profile_name(name: String) -> String:
 	var trimmed := name.strip_edges()
 	if trimmed.is_empty():
@@ -464,7 +543,27 @@ static func _format_profile_name(name: String) -> String:
 	return parts[parts.size() - 1].replace(" ", "_").to_upper()
 
 
-func _persist(signed_in: bool, pending_password_change: bool) -> void:
+func cloud_sync_payload() -> Dictionary:
+	return {
+		"threat_points": maxi(_threat_points, 0),
+		"upgrade_materials": maxi(_materials, 0),
+		"points": _points,
+		"sessions": _sessions,
+		"tower_level": _tower_level,
+		"glade_level": _glade_level,
+		"forge_level": _forge_level,
+		"highest_unlocked_stage": _current_stage,
+		"pre": _pre_score,
+		"post": _post_score,
+		"mastery_phishing": float(_mastery.get("Phishing", 0.0)),
+		"mastery_smishing": float(_mastery.get("Smishing", 0.0)),
+		"mastery_vishing": float(_mastery.get("Vishing", 0.0)),
+		"mastery_pretexting": float(_mastery.get("Pretexting", 0.0)),
+		"mastery_baiting": float(_mastery.get("Baiting", 0.0)),
+	}
+
+
+func _persist(signed_in: bool, pending_password_change: bool, mark_dirty: bool = true) -> void:
 	var payload := {
 		"token": _token,
 		"participant_code": _participant_code,
@@ -492,7 +591,47 @@ func _persist(signed_in: bool, pending_password_change: bool) -> void:
 	}
 	var file := FileAccess.open(SESSION_PATH, FileAccess.WRITE)
 	if file == null:
-		push_warning("Could not persist session.")
+		push_warning("Could not persist session file.")
+	else:
+		file.store_string(JSON.stringify(payload))
+		file.close()
+	if _participant_code.is_empty():
 		return
-	file.store_string(JSON.stringify(payload))
-	file.close()
+	var sqlite_row := {
+		"id": _participant_code,
+		"name": _full_name if not _full_name.is_empty() else _display_name,
+		"section": _section,
+		"pre": _pre_score,
+		"post": _post_score,
+		"sessions": _sessions,
+		"points": _points,
+		"last_active": _last_active if not _last_active.is_empty() else "Just now",
+		"technical": bool(_user.get("technical", false)),
+		"status": _status,
+		"mastery_phishing": float(_mastery.get("Phishing", 0.0)),
+		"mastery_smishing": float(_mastery.get("Smishing", 0.0)),
+		"mastery_vishing": float(_mastery.get("Vishing", 0.0)),
+		"mastery_pretexting": float(_mastery.get("Pretexting", 0.0)),
+		"mastery_baiting": float(_mastery.get("Baiting", 0.0)),
+		"threat_points": maxi(_threat_points, 0),
+		"upgrade_materials": maxi(_materials, 0),
+		"highest_unlocked_stage": _current_stage,
+		"tower_level": _tower_level,
+		"glade_level": _glade_level,
+		"forge_level": _forge_level,
+		"intervention_status": str(_user.get("interventionStatus", _user.get("intervention_status", "NORMAL"))),
+		"requires_password_change": pending_password_change,
+		"email": _email,
+		"first_name": str(_user.get("firstName", _user.get("first_name", ""))),
+		"last_name": str(_user.get("lastName", _user.get("last_name", ""))),
+		"middle_initial": str(_user.get("middleInitial", _user.get("middle_initial", ""))),
+		"auth_token": _token,
+		"signed_in": signed_in,
+		"pre_test_completed": _pre_test_completed,
+		"pending_password_change": pending_password_change,
+		"display_name": _display_name,
+		"needs_cloud_sync": mark_dirty,
+	}
+	StudentDatabase.upsert_student(sqlite_row)
+	if signed_in and mark_dirty:
+		SaveService.push_pending_sync()
