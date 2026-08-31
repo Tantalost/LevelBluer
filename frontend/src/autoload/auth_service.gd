@@ -16,6 +16,7 @@ enum Result {
 
 const DEFAULT_API_BASE := "http://127.0.0.1:8000"
 const SESSION_PATH := "user://session.dat"
+const REQUEST_TIMEOUT_SEC := 25.0
 const RANK_STEP := 500
 const RANKS: PackedStringArray = ["RECRUIT I", "RECRUIT II", "OPERATIVE I", "OPERATIVE II", "SPECIALIST", "ELITE I", "ELITE II", "COMMANDER"]
 
@@ -29,6 +30,7 @@ var _current_stage: int = 1
 var _mastery: Dictionary = {}
 var _pre_test_completed: bool = false
 var _http: HTTPRequest
+var _request_seq: int = 0
 var _user: Dictionary = {}
 var _points: int = 0
 var _section: String = ""
@@ -46,7 +48,8 @@ var _forge_level: int = 1
 
 func _ready() -> void:
 	_http = HTTPRequest.new()
-	_http.timeout = 8.0
+	_http.timeout = REQUEST_TIMEOUT_SEC
+	_http.use_threads = true
 	add_child(_http)
 
 
@@ -269,7 +272,9 @@ func sign_in(email: String, password: String) -> Result:
 	if email.is_empty() or password.is_empty():
 		return Result.INVALID_CREDENTIALS
 
-	var body := {"email": email.strip_edges(), "password": password}
+	_abort_http()
+	await get_tree().process_frame
+	var body := {"email": email.strip_edges().to_lower(), "password": password}
 	var parsed: Variant = await _request_json("/api/auth/login", HTTPClient.METHOD_POST, body)
 	if parsed == null:
 		return Result.NETWORK_ERROR
@@ -327,6 +332,7 @@ func change_password(new_password: String) -> Result:
 
 
 func sign_out() -> void:
+	_abort_http()
 	_signed_in = false
 	_token = ""
 	_participant_code = ""
@@ -400,24 +406,51 @@ func _api_base() -> String:
 	return str(ProjectSettings.get_setting("levelblue/api_base_url", DEFAULT_API_BASE))
 
 
+func _abort_http() -> void:
+	_request_seq += 1
+	if _http == null:
+		return
+	if _http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		_http.cancel_request()
+
+
 func _request_json(
 	path: String,
 	method: int,
 	body: Dictionary = {},
 	authorized: bool = false,
 ) -> Variant:
+	_request_seq += 1
+	var seq := _request_seq
 	var url := "%s%s" % [_api_base().trim_suffix("/"), path]
-	var headers := PackedStringArray(["Content-Type: application/json"])
+	var headers := PackedStringArray([
+		"Content-Type: application/json",
+		"Accept: application/json",
+	])
 	if authorized and not _token.is_empty():
 		headers.append("Authorization: Bearer %s" % _token)
 
+	if _http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		_http.cancel_request()
+		await get_tree().process_frame
+		if seq != _request_seq:
+			return null
+
 	var json_body := JSON.stringify(body) if method != HTTPClient.METHOD_GET else ""
 	var err := _http.request(url, headers, method, json_body)
+	if err == ERR_BUSY:
+		_http.cancel_request()
+		await get_tree().process_frame
+		if seq != _request_seq:
+			return null
+		err = _http.request(url, headers, method, json_body)
 	if err != OK:
 		push_warning("AuthService request failed to start: %s" % err)
 		return null
 
 	var completed: Array = await _http.request_completed
+	if seq != _request_seq:
+		return null
 	var result_code: int = completed[0]
 	var response_code: int = completed[1]
 	var response_body: PackedByteArray = completed[3]
@@ -429,12 +462,14 @@ func _request_json(
 	var text := response_body.get_string_from_utf8()
 	var parsed: Variant = JSON.parse_string(text) if not text.is_empty() else {}
 
-	if response_code == 401 and not authorized:
+	if response_code == 401:
 		return parsed if typeof(parsed) == TYPE_DICTIONARY else {"error": "Unauthorized"}
 
 	if response_code < 200 or response_code >= 300:
 		push_warning("AuthService HTTP %s: %s" % [response_code, text])
-		return parsed if typeof(parsed) == TYPE_DICTIONARY else null
+		if response_code >= 500:
+			return null
+		return parsed if typeof(parsed) == TYPE_DICTIONARY else {"error": "Request failed"}
 
 	return parsed
 

@@ -237,6 +237,13 @@ func mark_synced(student_id: String) -> void:
 		push_warning("StudentDatabase: mark synced failed. %s" % _db.error_message)
 
 
+func clear_session() -> void:
+	if not is_available():
+		return
+	if not _db.query("UPDATE students SET signed_in = 0, auth_token = '', pending_password_change = 0 WHERE signed_in = 1;"):
+		push_warning("StudentDatabase: clear session failed. %s" % _db.error_message)
+
+
 func _ensure_column(column_name: String, declaration: String) -> void:
 	if not _db.query("PRAGMA table_info(students);"):
 		return
@@ -250,10 +257,6 @@ func _ensure_column(column_name: String, declaration: String) -> void:
 			return
 	if not _db.query("ALTER TABLE students ADD COLUMN %s %s;" % [column_name, declaration]):
 		push_warning("StudentDatabase: add column %s failed. %s" % [column_name, _db.error_message])
-	if not is_available():
-		return
-	if not _db.query("UPDATE students SET signed_in = 0, auth_token = '', pending_password_change = 0 WHERE signed_in = 1;"):
-		push_warning("StudentDatabase: clear session failed. %s" % _db.error_message)
 
 
 static func _clamp_status(status: String) -> String:
