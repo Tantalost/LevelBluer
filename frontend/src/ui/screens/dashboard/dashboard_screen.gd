@@ -1,3 +1,4 @@
+@tool
 extends BaseScreen
 ## Command centre: slash menu, mission diamond, hero art. Palette-only chrome.
 
@@ -49,6 +50,8 @@ var _current_stage: int = DEFAULT_CURRENT_STAGE
 func _ready() -> void:
 	_load_font()
 	_style_chrome()
+	if Engine.is_editor_hint():
+		return
 	_store_button.pressed.connect(func() -> void: Router.push(&"store"))
 	_intel_button.pressed.connect(func() -> void: Router.push(&"intel_hub"))
 	_progress_button.pressed.connect(func() -> void: Router.push(&"progress"))
@@ -79,32 +82,32 @@ func on_exit() -> void:
 
 
 func _style_chrome() -> void:
-	_map_dim.color = Color(Palette.BG_DEEP, 0.18)
+	_map_dim.color = Color(Palette.DEEP_SPACE, 0.18)
 	_style_top_bar()
 	_style_avatar()
 	_style_badge()
 	_style_at_risk()
 	_style_icon_button(_lock_settings)
-	_style_window(_lock_window, Palette.GOLD)
-	_style_title_bar(_lock_title_bar, Palette.ORANGE)
-	_style_well(_lock_well, Palette.ORANGE)
-	_style_cta(%PreTestButton, Palette.GOLD, Palette.TEXT_ON_GOLD)
-	_apply_label(_game_title, Palette.FIELD_TEXT, 14)
-	_apply_label(_player_name, Palette.FIELD_TEXT, 11)
-	_apply_label(_rank, Palette.PINE, 8)
-	_apply_label(_threat_caption, Palette.FIELD_TEXT, 8)
-	_apply_label(_materials_caption, Palette.FIELD_TEXT, 8)
-	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 10)
-	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 10)
-	_apply_label(_inbox_count, Palette.TEXT_PRIMARY, 10)
-	_apply_label(_at_risk_title, Palette.TEXT_PRIMARY, 13)
-	_apply_label(_at_risk_sub, Palette.TEXT_PRIMARY, 11)
-	_apply_label(_at_risk_pill, Palette.TEXT_PRIMARY, 16)
-	_apply_label(%LockTitle, Palette.TEXT_PRIMARY, 16)
-	_apply_label(%LockBody, Palette.TEXT_PRIMARY, 12)
+	_style_window(_lock_window, Palette.PRIMARY_BLUE)
+	_style_title_bar(_lock_title_bar, Palette.NAVY_700)
+	_style_well(_lock_well, Palette.TEAL_800)
+	_style_cta(%PreTestButton, Palette.PRIMARY_BLUE, Palette.CREAM)
+	_apply_label(_game_title, Palette.INK, 14)
+	_apply_label(_player_name, Palette.INK, 11)
+	_apply_label(_rank, Palette.CYAN_400, 8)
+	_apply_label(_threat_caption, Palette.INK, 8)
+	_apply_label(_materials_caption, Palette.INK, 8)
+	_apply_label(_threat_value, Palette.CREAM, 10)
+	_apply_label(_materials_value, Palette.CREAM, 10)
+	_apply_label(_inbox_count, Palette.CREAM, 10)
+	_apply_label(_at_risk_title, Palette.CREAM, 13)
+	_apply_label(_at_risk_sub, Palette.CREAM, 11)
+	_apply_label(_at_risk_pill, Palette.CREAM, 16)
+	_apply_label(%LockTitle, Palette.CREAM, 16)
+	_apply_label(%LockBody, Palette.CREAM, 12)
 	var lock_file: Label = _lock_title_bar.find_child("LockFile", true, false) as Label
 	if lock_file != null:
-		_apply_label(lock_file, Palette.TEXT_PRIMARY, 11)
+		_apply_label(lock_file, Palette.CREAM, 11)
 
 
 func _apply_lock_state() -> void:
@@ -116,7 +119,7 @@ func _apply_lock_state() -> void:
 	%LockTitle.text = tr("PRETEST_LOCK_TITLE")
 	%LockBody.text = tr("PRETEST_LOCK_BODY")
 	%PreTestButton.text = tr("PRETEST_BUTTON") + "  >"
-	_style_cta(%PreTestButton, Palette.GOLD, Palette.TEXT_ON_GOLD)
+	_style_cta(%PreTestButton, Palette.PRIMARY_BLUE, Palette.CREAM)
 	if _pixel_font != null:
 		%LockTitle.add_theme_font_override("font", _pixel_font)
 		%LockBody.add_theme_font_override("font", _pixel_font)
@@ -238,7 +241,7 @@ func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBo
 
 
 func _style_window(card: PanelContainer, accent: Color) -> void:
-	var box := _pixel_box(Color(Palette.BG_HEADER, 0.94), accent, 0, 3)
+	var box := _pixel_box(Color(Palette.NAVY_900, 0.94), accent, 0, 3)
 	box.shadow_color = Color(accent, 0.28)
 	box.shadow_size = 2
 	card.add_theme_stylebox_override("panel", box)
@@ -254,7 +257,7 @@ func _style_title_bar(bar: PanelContainer, fill: Color) -> void:
 
 
 func _style_well(well: PanelContainer, fill: Color) -> void:
-	var style := _pixel_box(fill, Color(Palette.TEXT_PRIMARY, 0.16), 0, 2)
+	var style := _pixel_box(fill, Color(Palette.CREAM, 0.16), 0, 2)
 	style.content_margin_left = 12.0
 	style.content_margin_right = 12.0
 	style.content_margin_top = 10.0
@@ -263,7 +266,7 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 
 
 func _style_top_bar() -> void:
-	var style := _pixel_box(Palette.FIELD_BG, Palette.FIELD_BG, 0, 0)
+	var style := _pixel_box(Palette.CREAM, Palette.CREAM, 0, 0)
 	style.content_margin_left = 14.0
 	style.content_margin_right = 12.0
 	style.content_margin_top = 4.0
@@ -272,7 +275,7 @@ func _style_top_bar() -> void:
 
 
 func _style_avatar() -> void:
-	var box := _pixel_box(Palette.PINE, Palette.CYAN, 0, 2)
+	var box := _pixel_box(Palette.TEAL_900, Palette.CYAN_400, 0, 2)
 	_avatar_box.add_theme_stylebox_override("panel", box)
 
 
@@ -281,15 +284,15 @@ func _style_icon_button(button: Button) -> void:
 	if side < 44.0:
 		side = 44.0
 	button.custom_minimum_size = Vector2(side, side)
-	var box := _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.CYAN, 0, 2)
+	var box := _pixel_box(Color(Palette.NAVY_900, 0.94), Palette.CYAN_400, 0, 2)
 	button.add_theme_stylebox_override("normal", box)
-	button.add_theme_stylebox_override("hover", _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.TEXT_PRIMARY, 0, 2))
-	button.add_theme_stylebox_override("pressed", _pixel_box(Color(Palette.BG_HEADER, 0.94), Palette.GOLD, 0, 2))
-	button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
+	button.add_theme_stylebox_override("hover", _pixel_box(Color(Palette.NAVY_900, 0.94), Palette.BLUE_400, 0, 2))
+	button.add_theme_stylebox_override("pressed", _pixel_box(Color(Palette.NAVY_900, 0.94), Palette.PRIMARY_BLUE, 0, 2))
+	button.add_theme_color_override("font_color", Palette.CREAM)
 
 
 func _style_badge() -> void:
-	var box := _pixel_box(Palette.RED, Palette.RED_DEEP, 0, 2)
+	var box := _pixel_box(Palette.DANGER, Palette.DANGER, 0, 2)
 	box.content_margin_left = 4.0
 	box.content_margin_right = 4.0
 	box.content_margin_top = 2.0
@@ -298,7 +301,7 @@ func _style_badge() -> void:
 
 
 func _style_at_risk() -> void:
-	var box := _pixel_box(Color(Palette.RED_DEEP, 0.92), Palette.RED, 0, 2)
+	var box := _pixel_box(Color(Palette.DANGER, 0.92), Palette.DANGER, 0, 2)
 	box.content_margin_left = 12.0
 	box.content_margin_right = 12.0
 	box.content_margin_top = 10.0
@@ -307,7 +310,7 @@ func _style_at_risk() -> void:
 
 
 func _style_cta(button: Button, fill: Color, text: Color) -> void:
-	var box := _pixel_box(fill, Palette.BG_DEEP, 0, 2)
+	var box := _pixel_box(fill, Palette.DEEP_SPACE, 0, 2)
 	box.content_margin_left = 18.0
 	box.content_margin_right = 18.0
 	box.content_margin_top = 18.0

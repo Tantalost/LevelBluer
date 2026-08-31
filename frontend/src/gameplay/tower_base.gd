@@ -182,6 +182,7 @@ func _fire() -> void:
 		return
 	parent_node.add_child(projectile)
 	projectile.global_position = global_position
+	AudioManager.play_sfx("shoot")
 
 
 func _prune_invalid_targets() -> void:

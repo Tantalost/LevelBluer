@@ -1,47 +1,64 @@
+@tool
 class_name Palette
-extends RefCounted
-## Every colour in Level Blue lives here. Sampled from the MVP screens.
-##
-## Nothing else in the project should contain a hex literal. When the art
-## direction shifts, this is the only file that changes.
+extends Node
+## Global color palette based on the standardized UI spec.
 
-# Surfaces
-const BG_DEEP := Color("080D18")        # page background, behind everything
-const GAMEPLAY_BG := Color("0f0f15")    # opaque TD floor; blocks UI bleed under the grid
-const FOREST_NIGHT := Color("12081C")   # gameplay clearing sky / deep shade
-const FOREST_FLOOR := Color("1A1430")   # grass in the playable clearing
-const PATH_DIRT := Color("5C3A32")      # enemy track
-const PATH_DIRT_LIT := Color("7A5244")  # path highlight
-const CASTLE_STONE := Color("6A6E78")   # player base keep
-const CASTLE_SHADOW := Color("3A3E48")  # keep recesses
-const HEART := Color("E889B8")          # base-health pip over the castle
-const BG_STARFIELD := Color("0B0714")   # stage-select / skill-tree night sky
-const BG_PANEL := Color("14263C")       # standard card / panel fill
-const BG_PANEL_ALT := Color("0F1E30")   # recessed panel, input backgrounds
-const BG_HEADER := Color("0B1524")      # screen header bar
-const PINE := Color("1C4F4A")           # stage-dock tree fill
-const PINE_LIT := Color("2F7A6A")       # stage-dock tree highlight
-const SKILL_AURA := Color("7EF0FF")     # selected skill-node glow
+# Backgrounds & Surfaces
+const DEEP_SPACE := Color("#050B18") # Deep background
+const NAVY_900 := Color("#0A1730")   # Panel background
+const NAVY_800 := Color("#102040")   # Card surface
+const NAVY_700 := Color("#173058")   # Borders/raised
 
-# Accents
-const CYAN := Color("4EC3F7")           # lessons, primary borders, links
-const CYAN_DIM := Color("2A7BA0")       # inactive / disabled cyan
-const GOLD := Color("F0B23C")           # primary actions, codex, currency
-const GOLD_DIM := Color("8A6520")       # disabled gold
-const YELLOW := Color("E8C84A")         # fast packets
-const ORANGE := Color("D97A2A")         # heavy packets
-const RED := Color("C94B4B")            # security alert, errors
-const RED_DEEP := Color("5E1A1A")       # alert header fill
-const GREEN := Color("4CD98A")          # success, rank, satisfied rules
-const MAGENTA := Color("C64FD9")        # streak / tertiary stat
+# Mission & Fills
+const TEAL_900 := Color("#0E2A28")   # Mission fill
+const TEAL_800 := Color("#153B37")   # Mission fill alt
 
-# Text
-const TEXT_PRIMARY := Color("F2F5F8")
-const TEXT_SECONDARY := Color("8FA3B8")
-const TEXT_MUTED := Color("5A6E85")
-const TEXT_ON_GOLD := Color("1A1206")   # dark text on the gold buttons
+# Accents & Interactions
+const PRIMARY_BLUE := Color("#2E6BFF") # Primary CTA
+const BLUE_400 := Color("#4F8CFF")     # Hover state
+const CYAN_400 := Color("#4FE0D4")     # Active/glow
+const CYAN_300 := Color("#8FF0E6")     # Icon tint
 
-# Input fields — the near-white boxes in the login and password screens
-const FIELD_BG := Color("F2F0E9")
-const FIELD_TEXT := Color("1A2333")
-const FIELD_PLACEHOLDER := Color("6FA8C7")
+# Light Elements & Text
+const CREAM := Color("#F3ECD6")      # HUD panels
+const INK := Color("#101623")        # Text on cream
+
+# System States
+const SUCCESS := Color("#33D17A")
+const DANGER := Color("#FF5C5C")     # Threat/danger
+const WARNING := Color("#FFB648")
+
+# Legacy names — same hex as the spec, so unmigrated screens still parse.
+const BG_DEEP := DEEP_SPACE
+const GAMEPLAY_BG := DEEP_SPACE
+const FOREST_NIGHT := DEEP_SPACE
+const FOREST_FLOOR := NAVY_900
+const PATH_DIRT := NAVY_700
+const PATH_DIRT_LIT := TEAL_800
+const CASTLE_STONE := NAVY_700
+const CASTLE_SHADOW := NAVY_900
+const HEART := DANGER
+const BG_STARFIELD := DEEP_SPACE
+const BG_PANEL := NAVY_800
+const BG_PANEL_ALT := NAVY_900
+const BG_HEADER := NAVY_900
+const PINE := TEAL_900
+const PINE_LIT := TEAL_800
+const SKILL_AURA := CYAN_400
+const CYAN := CYAN_400
+const CYAN_DIM := PRIMARY_BLUE
+const GOLD := WARNING
+const GOLD_DIM := WARNING
+const YELLOW := WARNING
+const ORANGE := WARNING
+const RED := DANGER
+const RED_DEEP := DANGER
+const GREEN := SUCCESS
+const MAGENTA := PRIMARY_BLUE
+const TEXT_PRIMARY := CREAM
+const TEXT_SECONDARY := CYAN_300
+const TEXT_MUTED := NAVY_700
+const TEXT_ON_GOLD := INK
+const FIELD_BG := CREAM
+const FIELD_TEXT := INK
+const FIELD_PLACEHOLDER := CYAN_400

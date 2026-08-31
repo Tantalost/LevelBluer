@@ -29,6 +29,8 @@ func spawn_vfx(effect_id: String, pos: Vector2) -> void:
 	if not emitter.finished.is_connected(emitter.queue_free):
 		emitter.finished.connect(emitter.queue_free)
 	emitter.emitting = true
+	if effect_id == "aoe" or effect_id == "death":
+		AudioManager.play_sfx("explosion")
 
 
 func _resolve_host() -> Node:

@@ -1,14 +1,18 @@
+@tool
 class_name HudGeoButton
 extends Control
 ## Pixel HUD shapes: slash parallelogram, diamond, and resource chip.
 
 signal pressed
 
-enum Geo { SLASH, DIAMOND, CHIP, HEX }
+enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER }
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 
-@export var geo: Geo = Geo.SLASH
+@export var geo: Geo = Geo.SLASH:
+	set(value):
+		geo = value
+		queue_redraw()
 @export var title: String = ""
 @export var subtitle: String = ""
 @export var detail: String = ""
@@ -17,7 +21,10 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 @export var title_size: int = 16
 @export var subtitle_size: int = 12
 @export var detail_size: int = 10
-@export var shear: float = 36.0
+@export var shear: float = 36.0:
+	set(value):
+		shear = value
+		queue_redraw()
 @export var progress: float = -1.0
 
 var _font: Font
@@ -51,6 +58,7 @@ func _gui_input(event: InputEvent) -> void:
 	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if _has_point(mouse.position):
+		AudioManager.play_sfx("ui_click")
 		pressed.emit()
 		accept_event()
 
@@ -69,13 +77,13 @@ func _draw() -> void:
 	var border := _border_color()
 	if _hover:
 		fill = fill.lightened(0.08)
-		border = Palette.TEXT_PRIMARY
+		border = Palette.BLUE_400
 	draw_colored_polygon(_poly, fill)
 	if _poly.size() == 4:
 		var hi := PackedVector2Array([_poly[0], _poly[1]])
 		var lo := PackedVector2Array([_poly[2], _poly[3]])
-		draw_polyline(hi, Color(Palette.TEXT_PRIMARY, 0.28), 2.0)
-		draw_polyline(lo, Color(Palette.BG_DEEP, 0.7), 2.0)
+		draw_polyline(hi, Color(Palette.CREAM, 0.28), 2.0)
+		draw_polyline(lo, Color(Palette.DEEP_SPACE, 0.7), 2.0)
 	var closed := PackedVector2Array(_poly)
 	closed.append(_poly[0])
 	draw_polyline(closed, border, 2.5)
@@ -85,14 +93,17 @@ func _draw() -> void:
 func _draw_copy() -> void:
 	if _font == null:
 		return
-	var title_color := Palette.TEXT_PRIMARY
-	var sub_color := Palette.CYAN
-	if fill_key == "gold" or fill_key == "orange":
-		title_color = Palette.TEXT_ON_GOLD
-		sub_color = Palette.TEXT_ON_GOLD
+	var title_color := Palette.CREAM
+	var sub_color := Palette.CYAN_400
+	if fill_key == "gold":
+		title_color = Palette.CREAM
+		sub_color = Palette.CYAN_300
+	elif fill_key == "orange":
+		title_color = Palette.INK
+		sub_color = Palette.INK
 	elif fill_key == "frost":
-		title_color = Palette.FIELD_TEXT
-		sub_color = Palette.CYAN_DIM
+		title_color = Palette.INK
+		sub_color = Palette.CYAN_400
 	var lines: Array[Dictionary] = []
 	if not title.is_empty():
 		lines.append({"text": title, "size": title_size, "color": title_color})
@@ -132,8 +143,8 @@ func _draw_copy() -> void:
 	y += bar_gap
 	var bar_w := size.x * (0.34 if geo == Geo.DIAMOND else 0.52)
 	var bar_x := cx - bar_w * 0.5
-	draw_rect(Rect2(bar_x, y, bar_w, bar_h), Palette.BG_DEEP)
-	draw_rect(Rect2(bar_x, y, bar_w * clampf(progress, 0.0, 1.0), bar_h), Palette.TEXT_PRIMARY)
+	draw_rect(Rect2(bar_x, y, bar_w, bar_h), Palette.DEEP_SPACE)
+	draw_rect(Rect2(bar_x, y, bar_w * clampf(progress, 0.0, 1.0), bar_h), Palette.CYAN_400)
 
 
 func _blit_line(text: String, font_size: int, color: Color, cx: float, top: float) -> float:
@@ -164,7 +175,22 @@ func _rebuild_poly() -> void:
 				Vector2(w - s, h),
 				Vector2(0.0, h),
 			])
-		_:
+		Geo.BANNER: 
+			# Asymmetrical Banner:
+			# Left point is pushed low. Right point is almost perfectly centered.
+			var left_point_y := h * 0.75   # Pushed 75% down
+			var right_point_y := h * 0.55  # Just slightly off-center (difference of like 1)
+
+			_poly = PackedVector2Array([
+				Vector2(0.0, left_point_y),       # Left point (<)
+				Vector2(s, 0.0),                  # Top-left corner
+				Vector2(w - s, 0.0),              # Top-right corner
+				Vector2(w, right_point_y),        # Right point (>)
+				Vector2(w - s, h),                # Bottom-right corner
+				Vector2(s, h)                     # Bottom-left corner
+			])
+			
+		_: # <--- DEFAULT CATCH-ALL MUST BE AT THE VERY BOTTOM
 			_poly = PackedVector2Array([
 				Vector2(s, 0.0),
 				Vector2(w, 0.0),
@@ -186,36 +212,36 @@ func _hex_poly(w: float, h: float) -> PackedVector2Array:
 func _fill_color() -> Color:
 	match fill_key:
 		"gold":
-			return Palette.GOLD
+			return Palette.PRIMARY_BLUE
 		"orange":
-			return Palette.ORANGE
+			return Palette.WARNING
 		"red":
-			return Palette.RED
+			return Palette.DANGER
 		"cyan":
-			return Palette.CYAN_DIM
+			return Palette.PRIMARY_BLUE
 		"frost":
-			return Color(Palette.FIELD_BG, 0.94)
+			return Color(Palette.CREAM, 0.94)
 		"violet":
-			return Palette.PINE
+			return Palette.TEAL_900
 		"indigo":
-			return Palette.PINE.lerp(Palette.FOREST_NIGHT, 0.28)
+			return Palette.TEAL_800
 		"panel":
-			return Color(Palette.BG_PANEL, 0.94)
+			return Color(Palette.NAVY_800, 0.94)
 		_:
-			return Color(Palette.BG_HEADER, 0.94)
+			return Color(Palette.NAVY_900, 0.94)
 
 
 func _border_color() -> Color:
 	match border_key:
 		"gold":
-			return Palette.GOLD
+			return Palette.WARNING
 		"orange":
-			return Palette.ORANGE
+			return Palette.WARNING
 		"red":
-			return Palette.RED
+			return Palette.DANGER
 		"magenta":
-			return Palette.MAGENTA
+			return Palette.PRIMARY_BLUE
 		"muted":
-			return Palette.TEXT_MUTED
+			return Palette.NAVY_700
 		_:
-			return Palette.CYAN
+			return Palette.CYAN_400

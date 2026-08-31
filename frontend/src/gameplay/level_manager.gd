@@ -136,6 +136,7 @@ func _ready() -> void:
 	update_hud()
 	print("[LevelManager] Initializing Level for Stage Index: ", Router.active_stage_index)
 	change_phase(GamePhase.PHASE_1_QUIZ)
+	AudioManager.play_bgm(AudioManager.level_track)
 
 
 func _process(delta: float) -> void:

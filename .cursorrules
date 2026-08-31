@@ -27,3 +27,24 @@ If a request breaks the existing scene hierarchy, introduces a physics race cond
 Provide exact GDScript diffs with clear indications of what to add, replace, or remove.
 
 Before writing a large block of code or creating a complex new system (like the Stage Select manager), outline your proposed Node structure and Signal routing in 2-3 bullet points to get my sign-off first.
+
+## UI Design System
+
+| Role | Color Name | Hex Code |
+| :--- | :--- | :--- |
+| Deep background | Deep Space | `#050B18` |
+| Panel background | Navy 900 | `#0A1730` |
+| Card surface | Navy 800 | `#102040` |
+| Borders/raised | Navy 700 | `#173058` |
+| Mission fill | Teal 900 | `#0E2A28` |
+| Mission fill alt | Teal 800 | `#153B37` |
+| Primary CTA | Primary Blue | `#2E6BFF` |
+| Hover state | Blue 400 | `#4F8CFF` |
+| Active/glow | Cyan 400 | `#4FE0D4` |
+| Icon tint | Cyan 300 | `#8FF0E6` |
+| HUD panels | Cream | `#F3ECD6` |
+| Text on cream | Ink | `#101623` |
+| Success | Success | `#33D17A` |
+| Threat/danger | Danger | `#FF5C5C` |
+| Warning | Warning | `#FFB648` |
+
