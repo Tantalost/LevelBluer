@@ -22,6 +22,7 @@ SettingsService="*uid://p2mqjvioywev"
 AudioManager="*res://src/autoload/audio_manager.tscn"
 VfxManager="*res://src/autoload/vfx_manager.gd"
 SaveService="*uid://b40viyntql7vo"
+StudentDatabase="*res://src/autoload/student_database.gd"
 ContentDB="*uid://8t88s64sdbd2"
 AuthService="*uid://burf5g5ce6uqt"
 Router="*uid://cxqixc3u0y3mu"
@@ -49,6 +50,10 @@ ui_cancel={
 [internationalization]
 
 locale/translations=PackedStringArray("res://content/ui_strings.en.translation", "res://content/ui_strings.tl.translation")
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg")
 
 [levelblue]
 

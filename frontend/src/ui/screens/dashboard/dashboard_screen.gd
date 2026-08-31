@@ -67,6 +67,7 @@ func _ready() -> void:
 
 
 func on_enter(_args: Dictionary) -> void:
+	SaveService.push_pending_sync()
 	_refresh_data()
 	_apply_lock_state()
 	_update_mode_ui()

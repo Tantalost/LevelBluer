@@ -70,7 +70,8 @@ func _boot() -> void:
 	_set_status("LOADING_SESSION", 0.90)
 	var has_session: bool = await AuthService.restore_session()
 	if has_session:
-		await SaveService.wait_for_cloud_fetch()
+		AuthService.start_background_refresh()
+		SaveService.fetch_cloud_save()
 
 	_set_status("LOADING_READY", 1.0)
 

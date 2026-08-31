@@ -67,11 +67,9 @@ func _on_session_changed(signed_in: bool) -> void:
 
 func _hydrate_signed_in_session() -> void:
 	reset_to_defaults()
-	SaveService.fetch_cloud_save()
-	var fetch_ok: bool = await SaveService.wait_for_cloud_fetch()
-	if not fetch_ok:
-		SaveService.load_game()
+	SaveService.load_game()
 	_session_hydrated = true
+	SaveService.fetch_cloud_save()
 
 
 func get_lesson_progress(module_id: String) -> int:
