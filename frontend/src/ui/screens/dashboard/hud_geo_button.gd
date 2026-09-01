@@ -5,9 +5,10 @@ extends Control
 
 signal pressed
 
-enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER }
+enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER, FLAG }
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
+const STORY_TEX_PATH := "res://assets/ui/dashboard.png"
 
 @export var geo: Geo = Geo.SLASH:
 	set(value):
@@ -28,6 +29,7 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 @export var progress: float = -1.0
 
 var _font: Font
+var _story_tex: Texture2D
 var _hover: bool = false
 var _poly: PackedVector2Array = PackedVector2Array()
 
@@ -39,6 +41,8 @@ func _ready() -> void:
 		var file: FontFile = load(FONT_PATH) as FontFile
 		if file != null:
 			_font = file
+	if ResourceLoader.exists(STORY_TEX_PATH):
+		_story_tex = load(STORY_TEX_PATH) as Texture2D
 	queue_redraw()
 
 
@@ -63,6 +67,10 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+func _is_flag() -> bool:
+	return geo == Geo.FLAG or int(geo) == 5
+
+
 func _has_point(point: Vector2) -> bool:
 	if _poly.size() < 3:
 		_rebuild_poly()
@@ -77,16 +85,26 @@ func _draw() -> void:
 	var border := _border_color()
 	if _hover:
 		fill = fill.lightened(0.08)
-		border = Palette.BLUE_400
+		if not _is_flag():
+			border = Palette.BLUE_400
+	if _is_flag():
+		var shadow := PackedVector2Array()
+		for i in _poly.size():
+			shadow.append(_poly[i] + Vector2(4.0, 5.0))
+		draw_colored_polygon(shadow, Color(Palette.DEEP_SPACE, 0.5))
 	draw_colored_polygon(_poly, fill)
-	if _poly.size() == 4:
+	if _is_flag():
+		_draw_flag_texture()
+		_draw_flag_band()
+	if geo == Geo.SLASH or geo == Geo.CHIP:
 		var hi := PackedVector2Array([_poly[0], _poly[1]])
 		var lo := PackedVector2Array([_poly[2], _poly[3]])
 		draw_polyline(hi, Color(Palette.CREAM, 0.28), 2.0)
 		draw_polyline(lo, Color(Palette.DEEP_SPACE, 0.7), 2.0)
 	var closed := PackedVector2Array(_poly)
 	closed.append(_poly[0])
-	draw_polyline(closed, border, 2.5)
+	var border_w := 3.5 if _is_flag() else 2.5
+	draw_polyline(closed, border, border_w)
 	_draw_copy()
 
 
@@ -104,6 +122,12 @@ func _draw_copy() -> void:
 	elif fill_key == "frost":
 		title_color = Palette.INK
 		sub_color = Palette.CYAN_400
+	if geo == Geo.DIAMOND:
+		title_color = Palette.INK if fill_key == "frost" else Palette.CREAM
+		sub_color = Color(title_color, 0.72)
+	elif _is_flag():
+		title_color = Palette.CREAM
+		sub_color = Color(Palette.CREAM, 0.8)
 	var lines: Array[Dictionary] = []
 	if not title.is_empty():
 		lines.append({"text": title, "size": title_size, "color": title_color})
@@ -129,9 +153,18 @@ func _draw_copy() -> void:
 	if progress >= 0.0:
 		stack_h += bar_gap + bar_h
 	var cx := size.x * 0.5
-	if geo == Geo.SLASH:
-		cx += shear * 0.1
+	if _is_flag():
+		var flag_s := minf(shear, size.x * 0.35)
+		cx = (flag_s + size.x) * 0.47
+	elif geo == Geo.SLASH or geo == Geo.BANNER:
+		cx = shear + 28.0
+		for i in lines.size():
+			var line: Dictionary = lines[i]
+			var sz: Vector2 = _font.get_string_size(str(line["text"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(line["size"]))
+			cx = maxf(cx, shear + 28.0 + sz.x * 0.5)
 	var y := size.y * 0.5 - stack_h * 0.5
+	if _is_flag():
+		y = size.y * 0.38 - stack_h * 0.5
 	for i in lines.size():
 		var line: Dictionary = lines[i]
 		var font_size: int = int(line["size"])
@@ -150,7 +183,10 @@ func _draw_copy() -> void:
 func _blit_line(text: String, font_size: int, color: Color, cx: float, top: float) -> float:
 	var sz := _font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 	var baseline := top + _font.get_ascent(font_size)
-	draw_string(_font, Vector2(cx - sz.x * 0.5, baseline), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+	var pos := Vector2(cx - sz.x * 0.5, baseline)
+	if _is_flag():
+		draw_string(_font, pos + Vector2(2.0, 2.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(Palette.DEEP_SPACE, 0.7))
+	draw_string(_font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
 	return _font.get_height(font_size)
 
 
@@ -158,6 +194,18 @@ func _rebuild_poly() -> void:
 	var w := size.x
 	var h := size.y
 	var s := minf(shear, w * 0.35)
+	if _is_flag():
+		var mid := h * 0.5
+		var right_s := maxf(h, 56.0)
+		right_s = minf(right_s, w * 0.45)
+		_poly = PackedVector2Array([
+			Vector2(0.0, mid),
+			Vector2(s, 0.0),
+			Vector2(w - right_s, 0.0),
+			Vector2(w, h),
+			Vector2(s, h),
+		])
+		return
 	match geo:
 		Geo.DIAMOND:
 			_poly = PackedVector2Array([
@@ -189,7 +237,6 @@ func _rebuild_poly() -> void:
 				Vector2(w - s, h),                # Bottom-right corner
 				Vector2(s, h)                     # Bottom-left corner
 			])
-			
 		_: # <--- DEFAULT CATCH-ALL MUST BE AT THE VERY BOTTOM
 			_poly = PackedVector2Array([
 				Vector2(s, 0.0),
@@ -207,6 +254,50 @@ func _hex_poly(w: float, h: float) -> PackedVector2Array:
 		var angle: float = deg_to_rad(60.0 * float(i) - 30.0)
 		pts.append(center + Vector2(cos(angle), sin(angle)) * radius)
 	return pts
+
+
+func _draw_flag_texture() -> void:
+	if _story_tex == null or _poly.size() < 3:
+		return
+	var w := maxf(size.x, 1.0)
+	var h := maxf(size.y, 1.0)
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	for i in _poly.size():
+		uvs.append(Vector2(_poly[i].x / w, _poly[i].y / h))
+		cols.append(Color(1.0, 1.0, 1.0, 0.22))
+	draw_polygon(_poly, cols, uvs, _story_tex)
+
+
+func _draw_flag_band() -> void:
+	var w := size.x
+	var h := size.y
+	if w < 8.0 or h < 8.0:
+		return
+	var s := minf(shear, w * 0.35)
+	var right_s := maxf(h, 56.0)
+	right_s = minf(right_s, w * 0.45)
+	var inset := 3.5
+	var band_h := h * 0.22
+	var y_top := h - band_h
+	var y_bot := h - inset
+	var left_top := _x_on_segment(Vector2(0.0, h * 0.5), Vector2(s, h), y_top)
+	var right_top := _x_on_segment(Vector2(w - right_s, 0.0), Vector2(w, h), y_top)
+	var right_bot := _x_on_segment(Vector2(w - right_s, 0.0), Vector2(w, h), y_bot)
+	var band := PackedVector2Array([
+		Vector2(left_top + 1.0, y_top),
+		Vector2(right_top - 1.0, y_top),
+		Vector2(right_bot - inset, y_bot),
+		Vector2(s + 1.0, y_bot),
+	])
+	draw_colored_polygon(band, Palette.CREAM)
+
+
+func _x_on_segment(a: Vector2, b: Vector2, y: float) -> float:
+	if is_equal_approx(a.y, b.y):
+		return a.x
+	var t := (y - a.y) / (b.y - a.y)
+	return lerpf(a.x, b.x, clampf(t, 0.0, 1.0))
 
 
 func _fill_color() -> Color:
@@ -243,5 +334,7 @@ func _border_color() -> Color:
 			return Palette.PRIMARY_BLUE
 		"muted":
 			return Palette.NAVY_700
+		"cream":
+			return Palette.CREAM
 		_:
 			return Palette.CYAN_400

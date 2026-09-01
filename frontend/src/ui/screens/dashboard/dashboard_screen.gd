@@ -31,9 +31,12 @@ const UNREAD_NOTIFICATIONS := 2
 @onready var _world_button: HudGeoButton = %WorldButton
 @onready var _mode_selector: HudGeoButton = %ModeSelector
 @onready var _deploy_button: HudGeoButton = %DeployButton
+@onready var _lessons_button: HudGeoButton = %LessonsButton
+@onready var _codex_button: HudGeoButton = %CodexButton
 @onready var _store_button: HudGeoButton = %StoreButton
-@onready var _intel_button: HudGeoButton = %IntelButton
 @onready var _progress_button: HudGeoButton = %ProgressButton
+@onready var _updates_title: Label = %UpdatesTitle
+@onready var _updates_body: Label = %UpdatesBody
 @onready var _mode_modal: DashboardModeModal = %ModeModal
 @onready var _lock_window: PanelContainer = %LockWindow
 @onready var _lock_title_bar: PanelContainer = %LockTitleBar
@@ -53,7 +56,8 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	_store_button.pressed.connect(func() -> void: Router.push(&"store"))
-	_intel_button.pressed.connect(func() -> void: Router.push(&"intel_hub"))
+	_lessons_button.pressed.connect(func() -> void: Router.push(&"lessons"))
+	_codex_button.pressed.connect(func() -> void: Router.push(&"codex"))
 	_progress_button.pressed.connect(func() -> void: Router.push(&"progress"))
 	_inbox_button.pressed.connect(func() -> void: push_warning("Inbox screen not built yet"))
 	_settings_button.pressed.connect(func() -> void: Router.push(&"settings"))
@@ -104,6 +108,8 @@ func _style_chrome() -> void:
 	_apply_label(_at_risk_title, Palette.CREAM, 13)
 	_apply_label(_at_risk_sub, Palette.CREAM, 11)
 	_apply_label(_at_risk_pill, Palette.CREAM, 16)
+	_apply_label(_updates_title, Palette.CREAM, 10)
+	_apply_label(_updates_body, Palette.CREAM, 9)
 	_apply_label(%LockTitle, Palette.CREAM, 16)
 	_apply_label(%LockBody, Palette.CREAM, 12)
 	var lock_file: Label = _lock_title_bar.find_child("LockFile", true, false) as Label
@@ -131,19 +137,28 @@ func _refresh_data() -> void:
 	_threat_points = AuthService.wallet_threat_points()
 	_materials = AuthService.materials() if AuthService.materials() >= 0 else DEFAULT_MATERIALS
 	_current_stage = AuthService.current_stage()
-	_player_name.text = "< %s >" % AuthService.display_name().to_upper()
+	_player_name.text = AuthService.display_name().to_upper()
 	_threat_value.text = str(_threat_points)
 	_materials_value.text = str(_materials)
 	_rank.text = AuthService.rank_title().to_upper()
+	_deploy_button.title = "DEPLOY"
+	_deploy_button.subtitle = ""
+	_lessons_button.title = "LESSONS"
+	_lessons_button.subtitle = ""
+	_codex_button.title = "CODEX"
+	_codex_button.subtitle = ""
 	_store_button.title = tr("DASH_STORE").to_upper()
-	_intel_button.title = tr("DASH_INTEL").to_upper()
 	_progress_button.title = tr("DASH_PROGRESS").to_upper()
 	_progress_button.subtitle = ""
-	_world_button.title = "MISSION"
-	_refresh_mission_progress()
+	_world_button.title = "WORLD"
+	_world_button.subtitle = "CONTINUE"
+	_world_button.detail = ""
+	_world_button.progress = -1.0
 	_world_button.queue_redraw()
+	_deploy_button.queue_redraw()
+	_lessons_button.queue_redraw()
+	_codex_button.queue_redraw()
 	_store_button.queue_redraw()
-	_intel_button.queue_redraw()
 	_progress_button.queue_redraw()
 	_at_risk_title.text = tr("DASH_AT_RISK_TITLE")
 	_inbox_badge.visible = UNREAD_NOTIFICATIONS > 0
@@ -152,6 +167,7 @@ func _refresh_data() -> void:
 	if not AuthService.has_pre_test_completed():
 		_at_risk.visible = false
 	_refresh_world()
+	_refresh_updates()
 
 
 func _refresh_at_risk() -> void:
@@ -170,11 +186,20 @@ func _refresh_at_risk() -> void:
 
 
 func _refresh_world() -> void:
-	var show_mission := _selected_mode == &"SOLO"
-	_world_button.visible = show_mission
-	if show_mission:
-		_refresh_mission_progress()
-		_world_button.queue_redraw()
+	_world_button.visible = true
+	_world_button.title = "WORLD"
+	_world_button.subtitle = "CONTINUE"
+	_world_button.detail = ""
+	_world_button.progress = -1.0
+	_world_button.queue_redraw()
+
+
+func _refresh_updates() -> void:
+	_updates_title.text = "UPDATES"
+	var stage_cleared: int = clampi(PlayerManager.mock_max_stage_cleared, 0, STAGE_TOTAL)
+	var lesson_done: int = LessonCatalog.completed_units()
+	var lesson_total: int = LessonCatalog.total_units()
+	_updates_body.text = "STAGE %d/%d\n%d/%d LESSONS" % [stage_cleared, STAGE_TOTAL, lesson_done, lesson_total]
 
 
 func _open_mode_modal() -> void:
@@ -187,34 +212,19 @@ func _on_mode_confirmed(mode: StringName) -> void:
 	_update_mode_ui()
 
 
-func _refresh_mission_progress() -> void:
-	var stage_cleared: int = clampi(PlayerManager.mock_max_stage_cleared, 0, STAGE_TOTAL)
-	var lesson_total: int = LessonCatalog.total_units()
-	var lesson_done: int = LessonCatalog.completed_units()
-	if PlayerManager.module_1_complete:
-		_world_button.subtitle = "CERTIFIED"
-	else:
-		_world_button.subtitle = tr("DASH_MODULE_NUM") % 1
-	_world_button.detail = "STAGE %d/%d\n%d/%d LESSONS" % [stage_cleared, STAGE_TOTAL, lesson_done, lesson_total]
-	var stage_frac: float = float(stage_cleared) / float(STAGE_TOTAL)
-	var lesson_frac: float = 0.0
-	if lesson_total > 0:
-		lesson_frac = float(lesson_done) / float(lesson_total)
-	_world_button.progress = clampf((stage_frac + lesson_frac) * 0.5, 0.0, 1.0)
-
-
 func _update_mode_ui() -> void:
 	var is_solo := _selected_mode == &"SOLO"
 	_mode_selector.title = "SOLO" if is_solo else "PVP"
 	_mode_selector.border_key = "cyan" if is_solo else "red"
 	_mode_selector.fill_key = "frost"
 	_mode_selector.queue_redraw()
-	_deploy_button.title = tr("DASH_DEPLOY") if is_solo else tr("DASH_DEFEND")
-	_deploy_button.subtitle = "SOLO" if is_solo else "PVP"
+	_deploy_button.title = "DEPLOY"
+	_deploy_button.subtitle = ""
 	_deploy_button.fill_key = "frost"
-	_deploy_button.border_key = "cyan" if is_solo else "red"
+	_deploy_button.border_key = "cream"
 	_deploy_button.queue_redraw()
-	_world_button.border_key = "cyan" if is_solo else "red"
+	_world_button.fill_key = "frost"
+	_world_button.border_key = "cream"
 	_refresh_world()
 
 
@@ -268,11 +278,12 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 
 func _style_top_bar() -> void:
 	var style := _pixel_box(Palette.CREAM, Palette.CREAM, 0, 0)
-	style.content_margin_left = 14.0
-	style.content_margin_right = 12.0
-	style.content_margin_top = 4.0
-	style.content_margin_bottom = 4.0
+	style.content_margin_left = 18.0
+	style.content_margin_right = 16.0
+	style.content_margin_top = 6.0
+	style.content_margin_bottom = 6.0
 	_top_bar_panel.add_theme_stylebox_override("panel", style)
+	_style_updates()
 
 
 func _style_avatar() -> void:
@@ -299,6 +310,16 @@ func _style_badge() -> void:
 	box.content_margin_top = 2.0
 	box.content_margin_bottom = 2.0
 	_inbox_badge.add_theme_stylebox_override("panel", box)
+
+
+func _style_updates() -> void:
+	var card: PanelContainer = %UpdatesCard
+	var box := _pixel_box(Color(Palette.NAVY_900, 0.88), Palette.CREAM, 0, 2)
+	box.content_margin_left = 10.0
+	box.content_margin_right = 10.0
+	box.content_margin_top = 8.0
+	box.content_margin_bottom = 8.0
+	card.add_theme_stylebox_override("panel", box)
 
 
 func _style_at_risk() -> void:
