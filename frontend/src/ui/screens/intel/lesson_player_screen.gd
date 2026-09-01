@@ -544,7 +544,7 @@ func _show_triage() -> void:
 			b.text = action.to_upper()
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			b.custom_minimum_size = Vector2(0, 36)
-			if _pixel_font != null:
+		if _pixel_font != null:
 				b.add_theme_font_override("font", _pixel_font)
 			b.add_theme_font_size_override("font_size", 8)
 			_style_choice(b, pick == action)
@@ -753,7 +753,7 @@ func _on_suspicion(index: int) -> void:
 	_clear_choices()
 	if index == need:
 		_status_label.text = "Yes. That's the kick-in."
-		_status_label.add_theme_color_override("font_color", Palette.GREEN)
+	_status_label.add_theme_color_override("font_color", Palette.GREEN)
 	else:
 		_status_label.text = "Close. The stop line is earlier than that."
 		_status_label.add_theme_color_override("font_color", Palette.GOLD)

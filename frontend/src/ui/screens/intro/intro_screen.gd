@@ -230,14 +230,7 @@ func _on_start_pressed() -> void:
 	_start_button.disabled = true
 	_kill_tweens()
 	await TransitionManager.fade_to_black()
-	var has_session: bool = await AuthService.restore_session()
-	if has_session:
-		await Router.open_splash_screen()
-	else:
-		await SettingsService.load_local()
-		await SaveService.load_local()
-		await ContentDB.load_all()
-		await Router.open_login_screen()
+	await Router.open_splash_screen()
 
 
 func _tween_fade(node: CanvasItem, alpha: float, duration: float) -> void:

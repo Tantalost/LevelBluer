@@ -16,6 +16,7 @@ signal screen_changed(screen_id: StringName)
 
 const SCREENS: Dictionary = {
 	&"splash":       "res://src/ui/screens/intro/splash_screen.tscn",
+	&"asset_loading": "res://src/ui/screens/intro/splash_screen.tscn",
 	&"intro":        "res://src/ui/screens/intro/intro_screen.tscn",
 	&"login":        "res://src/ui/screens/login/login_screen.tscn",
 	&"dashboard":    "res://src/ui/screens/dashboard/dashboard_screen.tscn",
@@ -69,6 +70,28 @@ func start_level(stage_index: int) -> void:
 		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
 		return
 	await _navigate(true, func() -> void: _begin_gameplay(stage_index))
+
+
+func enter_gameplay(stage_index: int) -> void:
+	if _host == null:
+		push_error("Router: cannot enter gameplay (host not registered)")
+		return
+	var tree: SceneTree = get_tree()
+	while _busy:
+		if tree == null:
+			return
+		await tree.process_frame
+	if not AssetManager.has_required_gameplay_assets():
+		push_error("Router: required gameplay assets are not available locally")
+		return
+	if _gameplay != null and is_instance_valid(_gameplay):
+		push_warning("Router: a level is already running")
+		return
+	await _navigate(true, func() -> void:
+		if current_screen_id() == &"asset_loading":
+			_pop_now()
+		_begin_gameplay(stage_index)
+	)
 
 
 func return_to_stage_select() -> void:
@@ -371,6 +394,10 @@ func _pop_now() -> void:
 
 
 func _begin_gameplay(stage_index: int) -> void:
+	if not AssetManager.has_required_gameplay_assets():
+		push_error("Router: required gameplay assets are not available locally")
+		_set_ui_stack_active(true)
+		return
 	active_stage_index = stage_index
 	if _gameplay != null and is_instance_valid(_gameplay):
 		push_warning("Router: a level is already running")

@@ -30,6 +30,11 @@ LOADING_TITLE,Loading,Naglo-load
 LOADING_SETTINGS,Loading settings,Nilo-load ang settings
 LOADING_PROFILE,Loading profile,Nilo-load ang profile
 LOADING_CONTENT,Loading briefings,Nilo-load ang briefings
+LOADING_ASSETS,Syncing sprites,Sini-sync ang mga sprite
+LOADING_GAME_ASSETS,Loading Game Assets...,Nilo-load ang mga asset ng laro
+LOADING_ASSETS_CHECK,Checking cached sprites,Sinusuri ang naka-cache na sprites
+LOADING_ASSETS_MISSING,"No Internet. Download game assets once while online.","Walang koneksyon. I-download muna ang mga asset habang online."
+LOADING_ASSETS_RETRY,Retry,Subukan ulit
 LOADING_SESSION,Checking session,Sinusuri ang session
 LOADING_READY,Ready,Handa na
 TIP_UPGRADE_DEFENSES,Tip: Keep your defenses upgraded!,Tip: I-upgrade ang iyong depensa!
@@ -62,11 +67,6 @@ LOGOUT,Log Out,Mag-log Out
 INTRO_TAGLINE,DEFEND • DETECT • DISRUPT,DEPENDA • DETECT • DISRUPT
 INTRO_START_GAME,START GAME,MAGSIMULA
 INTRO_PRESS_HINT,PRESS TO INITIALIZE,PINDUTIN PARA MAG-INITIALIZE
-INTRO_STORY_1,THE GRID NEVER SLEEPS.,HINDI NATUTULOG ANG GRID.
-INTRO_STORY_2,SIGNALS CROSS THE CITY.,MGA SIGNAL ANG TUMATAWID SA LUNGSOD.
-INTRO_STORY_3,NOT ALL OF THEM ARE FRIENDLY.,HINDI LAHAT AY KAIBIGAN.
-INTRO_STORY_4,YOU HOLD THE LAST LINE.,IKAW ANG HULING LINYA.
-INTRO_STORY_5,WELCOME TO LEVEL BLUE.,MALIGAYANG PAGDATING SA LEVEL BLUE.
 SETT_TITLE,SETTINGS,SETTINGS
 SETT_BACK,< BACK,< BUMALIK
 SETT_SEC_AUDIO,AUDIO,AUDIO

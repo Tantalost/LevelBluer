@@ -1,6 +1,6 @@
 extends BaseScreen
-## Intro / loading screen — full-bleed loading art with a bottom progress group,
-## matching the React Native prototype layout.
+## Loading screen after START GAME: settings, save, content, then Cloudinary
+## asset sync into user://assets/. BREACH does not use this screen.
 
 const MIN_DISPLAY_SECONDS := 1.8
 const FADE_IN_SECONDS := 0.45
@@ -16,23 +16,35 @@ const TIP_KEYS: Array[String] = [
 @onready var _progress: ProgressBar = %ProgressBar
 @onready var _status: Label = %StatusLabel
 @onready var _tip: Label = %TipLabel
+@onready var _retry: Button = %RetryButton
 @onready var _loading_panel: Control = $SafeAreaContainer/Layout/LoadingGroup/Panel
 
 var _tween: Tween
+var _boot_token: int = 0
+
+
+func _ready() -> void:
+	_retry.pressed.connect(_on_retry_pressed)
 
 
 func on_enter(_args: Dictionary) -> void:
 	modulate.a = 0.0
+	_retry.visible = false
+	_retry.disabled = true
+	_retry.text = tr("LOADING_ASSETS_RETRY")
 	_tip.text = tr(TIP_KEYS.pick_random())
 	_status.text = tr("LOADING_TITLE")
 	_progress.value = 0.0
 	_scale_loading_ui()
-	get_tree().root.size_changed.connect(_scale_loading_ui)
+	if not get_tree().root.size_changed.is_connected(_scale_loading_ui):
+		get_tree().root.size_changed.connect(_scale_loading_ui)
 	_fade_in()
 	_boot()
 
 
 func on_exit() -> void:
+	_boot_token += 1
+	_disconnect_progress()
 	if get_tree().root.size_changed.is_connected(_scale_loading_ui):
 		get_tree().root.size_changed.disconnect(_scale_loading_ui)
 
@@ -56,19 +68,46 @@ func _scale_loading_ui() -> void:
 
 
 func _boot() -> void:
+	_boot_token += 1
+	var token: int = _boot_token
 	var started_at := Time.get_ticks_msec()
+	_retry.visible = false
+	_retry.disabled = true
 
 	_set_status("LOADING_SETTINGS", 0.15)
 	await SettingsService.load_local()
+	if not _still(token):
+		return
 
 	_set_status("LOADING_PROFILE", 0.40)
 	await SaveService.load_local()
+	if not _still(token):
+		return
 
 	_set_status("LOADING_CONTENT", 0.70)
 	await ContentDB.load_all()
+	if not _still(token):
+		return
+
+	_set_status("LOADING_GAME_ASSETS", 0.82)
+	if not AssetManager.sync_progress.is_connected(_on_asset_progress):
+		AssetManager.sync_progress.connect(_on_asset_progress)
+	await AssetManager.ensure_ready()
+	_disconnect_progress()
+	if not _still(token):
+		return
+	if not AssetManager.has_required_gameplay_assets():
+		_retry.visible = true
+		_retry.disabled = false
+		_status.text = tr("LOADING_ASSETS_MISSING")
+		_tip.text = tr("LOADING_ASSETS_MISSING")
+		_progress.value = 0.0
+		return
 
 	_set_status("LOADING_SESSION", 0.90)
 	var has_session: bool = await AuthService.restore_session()
+	if not _still(token):
+		return
 	if has_session:
 		AuthService.start_background_refresh()
 		SaveService.fetch_cloud_save()
@@ -78,8 +117,30 @@ func _boot() -> void:
 	var elapsed := (Time.get_ticks_msec() - started_at) / 1000.0
 	if elapsed < MIN_DISPLAY_SECONDS:
 		await get_tree().create_timer(MIN_DISPLAY_SECONDS - elapsed).timeout
+	if not _still(token):
+		return
 
 	Router.replace_all(&"dashboard" if has_session else &"login")
+
+
+func _on_retry_pressed() -> void:
+	_boot()
+
+
+func _on_asset_progress(done: int, total: int, _status_text: String) -> void:
+	_status.text = tr("LOADING_GAME_ASSETS")
+	if total <= 0:
+		return
+	_progress.value = 82.0 + 8.0 * float(done) / float(total)
+
+
+func _disconnect_progress() -> void:
+	if AssetManager.sync_progress.is_connected(_on_asset_progress):
+		AssetManager.sync_progress.disconnect(_on_asset_progress)
+
+
+func _still(token: int) -> bool:
+	return token == _boot_token and is_inside_tree()
 
 
 func _set_status(key: String, target: float) -> void:

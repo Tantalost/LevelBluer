@@ -11,11 +11,9 @@ const UNREAD_NOTIFICATIONS := 2
 
 @onready var _game_title: Label = %GameTitle
 @onready var _profile_button: HudGeoButton = %ProfileButton
-@onready var _avatar_diamond: HudGeoButton = %AvatarDiamond
 @onready var _avatar_box: PanelContainer = %AvatarBox
 @onready var _player_name: Label = %PlayerName
 @onready var _rank: Label = %RankLabel
-@onready var _potential: Label = %PotentialLabel
 @onready var _threat_value: Label = %ThreatValue
 @onready var _materials_value: Label = %MaterialsValue
 @onready var _threat_caption: Label = %ThreatCaption
@@ -64,7 +62,6 @@ func _ready() -> void:
 	_inbox_button.pressed.connect(func() -> void: push_warning("Inbox screen not built yet"))
 	_settings_button.pressed.connect(func() -> void: Router.push(&"settings"))
 	_profile_button.pressed.connect(func() -> void: Router.push(&"profile"))
-	_avatar_diamond.pressed.connect(func() -> void: Router.push(&"profile"))
 	_world_button.pressed.connect(_on_mission_pressed)
 	_mode_selector.pressed.connect(_open_mode_modal)
 	_deploy_button.pressed.connect(_on_deploy_pressed)
@@ -100,15 +97,13 @@ func _style_chrome() -> void:
 	_style_title_bar(_lock_title_bar, Palette.NAVY_700)
 	_style_well(_lock_well, Palette.TEAL_800)
 	_style_cta(%PreTestButton, Palette.PRIMARY_BLUE, Palette.CREAM)
-	_apply_label(_game_title, Palette.INK, 13)
-	_apply_label(_player_name, Palette.CREAM, 11)
-	_apply_label(_rank, Palette.CREAM, 7)
-	_apply_label(_potential, Palette.CREAM, 5)
-	_apply_label(_threat_caption, Palette.INK, 10)
-	_apply_label(_materials_caption, Palette.INK, 10)
-	_apply_label(_threat_value, Palette.CREAM, 12)
-	_apply_label(_materials_value, Palette.CREAM, 12)
-	_apply_label(%SettingsLabel, Palette.CREAM, 10)
+	_apply_label(_game_title, Palette.INK, 14)
+	_apply_label(_player_name, Palette.INK, 11)
+	_apply_label(_rank, Palette.CYAN_400, 8)
+	_apply_label(_threat_caption, Palette.INK, 8)
+	_apply_label(_materials_caption, Palette.INK, 8)
+	_apply_label(_threat_value, Palette.CREAM, 10)
+	_apply_label(_materials_value, Palette.CREAM, 10)
 	_apply_label(_inbox_count, Palette.CREAM, 10)
 	_apply_label(_at_risk_title, Palette.CREAM, 13)
 	_apply_label(_at_risk_sub, Palette.CREAM, 11)
@@ -145,13 +140,7 @@ func _refresh_data() -> void:
 	_player_name.text = AuthService.display_name().to_upper()
 	_threat_value.text = str(_threat_points)
 	_materials_value.text = str(_materials)
-	var rank_title := AuthService.rank_title().to_upper()
-	var rank_parts := rank_title.split(" ", false)
-	var rank_suffix := rank_parts[rank_parts.size() - 1] if rank_parts.size() > 0 else rank_title
-	_rank.text = "# %s" % rank_suffix
-	var mastery := AuthService.average_mastery()
-	var potential := clampf(mastery, 0.0, 1.0) * 10.0 if mastery >= 0.0 else 0.0
-	_potential.text = "%.2f" % potential
+	_rank.text = AuthService.rank_title().to_upper()
 	_deploy_button.title = "DEPLOY"
 	_deploy_button.subtitle = ""
 	_lessons_button.title = "LESSONS"
@@ -289,16 +278,16 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 
 func _style_top_bar() -> void:
 	var style := _pixel_box(Palette.CREAM, Palette.CREAM, 0, 0)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	style.content_margin_top = 4.0
-	style.content_margin_bottom = 4.0
+	style.content_margin_left = 18.0
+	style.content_margin_right = 16.0
+	style.content_margin_top = 6.0
+	style.content_margin_bottom = 6.0
 	_top_bar_panel.add_theme_stylebox_override("panel", style)
 	_style_updates()
 
 
 func _style_avatar() -> void:
-	var box := _pixel_box(Palette.TEAL_900, Palette.CREAM, 0, 1)
+	var box := _pixel_box(Palette.TEAL_900, Palette.CYAN_400, 0, 2)
 	_avatar_box.add_theme_stylebox_override("panel", box)
 
 

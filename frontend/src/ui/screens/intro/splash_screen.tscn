@@ -122,3 +122,11 @@ theme_override_font_sizes/font_size = 12
 text = "Tip"
 horizontal_alignment = 1
 autowrap_mode = 2
+
+[node name="RetryButton" type="Button" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 14
+text = "Retry"

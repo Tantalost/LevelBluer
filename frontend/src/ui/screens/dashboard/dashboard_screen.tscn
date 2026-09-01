@@ -14,66 +14,54 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vig")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4pcyk"]
-content_margin_left = 8.0
-content_margin_top = 4.0
-content_margin_right = 8.0
-content_margin_bottom = 4.0
-bg_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-border_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wsgdw"]
-bg_color = Color(0.05490196, 0.16470589, 0.15686275, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+content_margin_left = 14.0
+content_margin_top = 4.0
+content_margin_right = 12.0
+content_margin_bottom = 4.0
+bg_color = Color(0.9490196, 0.9411765, 0.9137255, 1)
+border_color = Color(0.9490196, 0.9411765, 0.9137255, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3rpt0"]
+bg_color = Color(0.10980392, 0.30980393, 0.2901961, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.30588236, 0.7647059, 0.96862745, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_81xhe"]
 content_margin_left = 12.0
 content_margin_top = 10.0
 content_margin_right = 12.0
 content_margin_bottom = 10.0
-bg_color = Color(1, 0.36078432, 0.36078432, 0.92)
+bg_color = Color(0.36862746, 0.101960786, 0.101960786, 0.92)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(1, 0.36078432, 0.36078432, 1)
+border_color = Color(0.7882353, 0.29411766, 0.29411766, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_81xhe"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rbeag"]
 content_margin_left = 4.0
 content_margin_top = 2.0
 content_margin_right = 4.0
 content_margin_bottom = 2.0
-bg_color = Color(1, 0.36078432, 0.36078432, 1)
+bg_color = Color(0.7882353, 0.29411766, 0.29411766, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(1, 0.36078432, 0.36078432, 1)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rbeag"]
-content_margin_left = 10.0
-content_margin_top = 8.0
-content_margin_right = 10.0
-content_margin_bottom = 8.0
-bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.88)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+border_color = Color(0.36862746, 0.101960786, 0.101960786, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uuhf3"]
-bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
+bg_color = Color(0.043137256, 0.08235294, 0.14117648, 0.94)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
-border_color = Color(0.18039216, 0.41960785, 1, 1)
-shadow_color = Color(0.18039216, 0.41960785, 1, 0.28)
+border_color = Color(0.9411765, 0.69803923, 0.23529412, 1)
+shadow_color = Color(0.9411765, 0.69803923, 0.23529412, 0.28)
 shadow_size = 2
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_72ws0"]
@@ -81,56 +69,56 @@ content_margin_left = 10.0
 content_margin_top = 6.0
 content_margin_right = 8.0
 content_margin_bottom = 6.0
-bg_color = Color(0.09019608, 0.1882353, 0.34509805, 1)
-border_color = Color(0.09019608, 0.1882353, 0.34509805, 1)
+bg_color = Color(0.8509804, 0.47843137, 0.16470589, 1)
+border_color = Color(0.8509804, 0.47843137, 0.16470589, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mbmj1"]
 content_margin_left = 12.0
 content_margin_top = 10.0
 content_margin_right = 12.0
 content_margin_bottom = 10.0
-bg_color = Color(0.08235294, 0.23137255, 0.21568628, 1)
+bg_color = Color(0.8509804, 0.47843137, 0.16470589, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.9529412, 0.9254902, 0.8392157, 0.16)
+border_color = Color(0.9490196, 0.9607843, 0.972549, 0.16)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r4o7e"]
 content_margin_left = 18.0
 content_margin_top = 18.0
 content_margin_right = 18.0
 content_margin_bottom = 18.0
-bg_color = Color(0.18039216, 0.41960785, 1, 1)
+bg_color = Color(0.9411765, 0.69803923, 0.23529412, 1)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.019607844, 0.043137256, 0.09411765, 1)
+border_color = Color(0.03137255, 0.050980393, 0.09411765, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rvo0r"]
-bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
+bg_color = Color(0.043137256, 0.08235294, 0.14117648, 0.94)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.30980393, 0.8784314, 0.83137256, 1)
+border_color = Color(0.30588236, 0.7647059, 0.96862745, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_632kq"]
-bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
+bg_color = Color(0.043137256, 0.08235294, 0.14117648, 0.94)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.18039216, 0.41960785, 1, 1)
+border_color = Color(0.9411765, 0.69803923, 0.23529412, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yq2kc"]
-bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
+bg_color = Color(0.043137256, 0.08235294, 0.14117648, 0.94)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.30980393, 0.54901963, 1, 1)
+border_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 
 [node name="DashboardScreen" type="Control" unique_id=137686468]
 layout_mode = 3
@@ -173,7 +161,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.019607844, 0.043137256, 0.09411765, 0.18)
+color = Color(0.03137255, 0.050980393, 0.09411765, 0.18)
 
 [node name="HeroArt" type="TextureRect" parent="." unique_id=1525455950]
 layout_mode = 1
@@ -204,13 +192,13 @@ unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 72.0
+offset_bottom = 68.0
 grow_horizontal = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_4pcyk")
+theme_override_styles/panel = SubResource("StyleBoxFlat_wsgdw")
 
 [node name="HeaderLayer" type="Control" parent="HeaderBand" unique_id=1520040144]
-custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+custom_minimum_size = Vector2(0, 52)
 
 [node name="HeaderInner" type="MarginContainer" parent="HeaderBand/HeaderLayer" unique_id=1520040143]
 layout_mode = 1
@@ -219,271 +207,151 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 0
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 8
 
 [node name="TopBar" type="HBoxContainer" parent="HeaderBand/HeaderLayer/HeaderInner" unique_id=597850184]
 layout_mode = 2
-theme_override_constants/separation = 8
-alignment = 1
+theme_override_constants/separation = 12
 
 [node name="GameTitle" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=7277200]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.0627451, 0.08627451, 0.13725491, 1)
+theme_override_colors/font_color = Color(0.101960786, 0.13725491, 0.2, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 13
+theme_override_font_sizes/font_size = 14
 text = "LEVEL BLUE"
 vertical_alignment = 1
-
-[node name="ProfileCluster" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=1480205212]
-custom_minimum_size = Vector2(238, 64)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-
-[node name="ProfileButton" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster" unique_id=1480205213]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 0
-offset_top = 16.0
-offset_right = 154.0
-offset_bottom = 48.0
-mouse_default_cursor_shape = 2
-script = ExtResource("10_geo")
-geo = 6
-fill_key = "indigo"
-border_key = "cream"
-shear = 16.0
-
-[node name="PlayerName" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster/ProfileButton" unique_id=1119905456]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 18.0
-offset_right = -36.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 11
-text = "COMMANDER"
-vertical_alignment = 1
-clip_text = true
-
-[node name="AvatarDiamond" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster" unique_id=937298646]
-unique_name_in_owner = true
-z_index = 3
-layout_mode = 1
-anchors_preset = 0
-offset_left = 126.0
-offset_right = 190.0
-offset_bottom = 64.0
-mouse_default_cursor_shape = 2
-script = ExtResource("10_geo")
-geo = 1
-fill_key = "panel"
-border_key = "magenta"
-
-[node name="AvatarBox" type="PanelContainer" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster/AvatarDiamond" unique_id=937298647]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_wsgdw")
-
-[node name="AvatarImage" type="TextureRect" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster/AvatarDiamond" unique_id=850708457]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = ExtResource("4_pfp")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="RankBadge" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster/AvatarDiamond" unique_id=1662280914]
-z_index = 4
-layout_mode = 1
-anchors_preset = 0
-offset_left = 38.0
-offset_top = 38.0
-offset_right = 66.0
-offset_bottom = 66.0
-mouse_filter = 2
-script = ExtResource("10_geo")
-geo = 1
-fill_key = "indigo"
-border_key = "cream"
-
-[node name="PotentialLabel" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster/AvatarDiamond/RankBadge" unique_id=1662280915]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 5
-text = "0.00"
-horizontal_alignment = 1
-vertical_alignment = 1
-clip_text = true
-
-[node name="RankTab" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster" unique_id=1662280916]
-z_index = 2
-layout_mode = 1
-anchors_preset = 0
-offset_left = 176.0
-offset_top = 6.0
-offset_right = 234.0
-offset_bottom = 24.0
-mouse_filter = 2
-script = ExtResource("10_geo")
-geo = 2
-fill_key = "cyan"
-border_key = "cream"
-shear = 10.0
-
-[node name="RankLabel" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ProfileCluster/RankTab" unique_id=1662280913]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 10.0
-offset_right = -4.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 7
-text = "# 1"
-horizontal_alignment = 1
-vertical_alignment = 1
-clip_text = true
 
 [node name="TopSpacer" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=1549348701]
 layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="ThreatCluster" type="HBoxContainer" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=674205226]
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="ThreatCaption" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ThreatCluster" unique_id=597588117]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.0627451, 0.08627451, 0.13725491, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 10
-text = "THREAT"
-vertical_alignment = 1
-
-[node name="ThreatBox" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ThreatCluster" unique_id=674205227]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-script = ExtResource("10_geo")
-geo = 1
-fill_key = "indigo"
-border_key = "cream"
-
-[node name="ThreatValue" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ThreatCluster/ThreatBox" unique_id=200370179]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 12
-text = "1000"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="MaterialsCluster" type="HBoxContainer" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=182662043]
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="MaterialsCaption" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/MaterialsCluster" unique_id=294009589]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0.0627451, 0.08627451, 0.13725491, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 10
-text = "MATS"
-vertical_alignment = 1
-
-[node name="MaterialsBox" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/MaterialsCluster" unique_id=182662044]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(64, 64)
-layout_mode = 2
-size_flags_vertical = 4
-mouse_filter = 2
-script = ExtResource("10_geo")
-geo = 1
-fill_key = "violet"
-border_key = "cream"
-
-[node name="MaterialsValue" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/MaterialsCluster/MaterialsBox" unique_id=1799234761]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 12
-text = "200"
-horizontal_alignment = 1
-vertical_alignment = 1
-
 [node name="SettingsButton" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=1362255541]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(156, 40)
+custom_minimum_size = Vector2(64, 44)
 layout_mode = 2
-size_flags_vertical = 4
 mouse_default_cursor_shape = 2
 script = ExtResource("10_geo")
 geo = 2
 fill_key = "violet"
-border_key = "cream"
-shear = 14.0
+shear = 12.0
 
-[node name="SettingsStack" type="HBoxContainer" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/SettingsButton" unique_id=818418157]
+[node name="SettingsIcon" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/SettingsButton" unique_id=818418156]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -11.0
+offset_top = -11.0
+offset_right = 11.0
+offset_bottom = 11.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("7_icon")
+kind = 10
+monochrome = true
+
+[node name="ThreatCaption" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=597588117]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.101960786, 0.13725491, 0.2, 1)
+theme_override_fonts/font = ExtResource("5_4pcyk")
+theme_override_font_sizes/font_size = 8
+text = "THREAT"
+vertical_alignment = 1
+
+[node name="ThreatBox" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=674205227]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 48)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+script = ExtResource("10_geo")
+geo = 3
+fill_key = "indigo"
+
+[node name="ThreatValue" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/ThreatBox" unique_id=200370179]
+unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
+theme_override_fonts/font = ExtResource("5_4pcyk")
+theme_override_font_sizes/font_size = 10
+text = "1000"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MaterialsCaption" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=294009589]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.101960786, 0.13725491, 0.2, 1)
+theme_override_fonts/font = ExtResource("5_4pcyk")
+theme_override_font_sizes/font_size = 8
+text = "MATS"
+vertical_alignment = 1
+
+[node name="MaterialsBox" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=182662044]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 48)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+script = ExtResource("10_geo")
+geo = 3
+fill_key = "violet"
+
+[node name="MaterialsValue" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/MaterialsBox" unique_id=1799234761]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
+theme_override_fonts/font = ExtResource("5_4pcyk")
+theme_override_font_sizes/font_size = 10
+text = "200"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ProfileButton" type="Control" parent="HeaderBand/HeaderLayer" unique_id=1480205213]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(280, 52)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -26.0
+offset_right = 140.0
+offset_bottom = 26.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_default_cursor_shape = 2
+script = ExtResource("10_geo")
+geo = 2
+fill_key = "frost"
+border_key = "cream"
+shear = 10.0
+
+[node name="ProfileRow" type="HBoxContainer" parent="HeaderBand/HeaderLayer/ProfileButton" unique_id=1658352681]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
 offset_right = -12.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -491,30 +359,53 @@ mouse_filter = 2
 theme_override_constants/separation = 8
 alignment = 1
 
-[node name="SettingsIcon" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/SettingsButton/SettingsStack" unique_id=818418156]
-custom_minimum_size = Vector2(16, 16)
+[node name="ProfileInfo" type="VBoxContainer" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow" unique_id=1946006032]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="PlayerName" type="Label" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow/ProfileInfo" unique_id=1119905456]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.101960786, 0.13725491, 0.2, 1)
+theme_override_fonts/font = ExtResource("5_4pcyk")
+theme_override_font_sizes/font_size = 11
+text = "COMMANDER"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="RankLabel" type="Label" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow/ProfileInfo" unique_id=1662280913]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.10980392, 0.30980393, 0.2901961, 1)
+theme_override_fonts/font = ExtResource("5_4pcyk")
+theme_override_font_sizes/font_size = 8
+text = "RECRUIT I"
+horizontal_alignment = 1
+
+[node name="AvatarBox" type="PanelContainer" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow" unique_id=937298647]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
-script = ExtResource("7_icon")
-kind = 10
-monochrome = true
+theme_override_styles/panel = SubResource("StyleBoxFlat_3rpt0")
 
-[node name="SettingsLabel" type="Label" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar/SettingsButton/SettingsStack" unique_id=818418158]
-unique_name_in_owner = true
+[node name="AvatarImage" type="TextureRect" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow/AvatarBox" unique_id=850708457]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_fonts/font = ExtResource("5_4pcyk")
-theme_override_font_sizes/font_size = 10
-text = "SETTINGS"
-vertical_alignment = 1
+mouse_filter = 2
+texture = ExtResource("4_pfp")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="SafeAreaContainer" type="MarginContainer" parent="." unique_id=1357020216]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 72.0
+offset_top = 68.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 16
@@ -531,7 +422,7 @@ theme_override_constants/separation = 10
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_3rpt0")
+theme_override_styles/panel = SubResource("StyleBoxFlat_81xhe")
 
 [node name="AtRiskRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner" unique_id=651046476]
 layout_mode = 2
@@ -545,7 +436,7 @@ theme_override_constants/separation = 4
 [node name="AtRiskTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow/AtRiskBody" unique_id=1005692228]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 13
 text = "PERFORMANCE ALERT"
@@ -553,7 +444,7 @@ text = "PERFORMANCE ALERT"
 [node name="AtRiskSub" type="Label" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow/AtRiskBody" unique_id=795008765]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 11
 text = "Alert body"
@@ -562,7 +453,7 @@ autowrap_mode = 3
 [node name="AtRiskPill" type="Label" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner/AtRiskRow" unique_id=1894837745]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 16
 text = "35%"
@@ -576,19 +467,19 @@ mouse_filter = 2
 [node name="DeployButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow" unique_id=1870788701]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 4
+anchors_preset = -1
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 234.0
-offset_top = -209.0
-offset_right = 634.0
-offset_bottom = -129.0
+offset_left = 24.0
+offset_top = -176.0
+offset_right = 424.0
+offset_bottom = -96.0
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 script = ExtResource("10_geo")
 geo = 4
 title = "DEPLOY"
-fill_key = "panel"
+fill_key = "frost"
 border_key = "cream"
 title_size = 22
 shear = 48.0
@@ -596,13 +487,13 @@ shear = 48.0
 [node name="LessonsButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow" unique_id=471222959]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 4
+anchors_preset = -1
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 170.0
-offset_top = -106.0
-offset_right = 570.0
-offset_bottom = -26.0
+offset_left = 24.0
+offset_top = -80.0
+offset_right = 424.0
+offset_bottom = 0.0
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 script = ExtResource("10_geo")
@@ -616,33 +507,33 @@ shear = 42.0
 [node name="CodexButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow" unique_id=471222960]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 4
+anchors_preset = -1
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 154.0
-offset_top = 11.0
-offset_right = 554.0
-offset_bottom = 91.0
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 424.0
+offset_bottom = 96.0
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 script = ExtResource("10_geo")
-geo = 7
+geo = 4
 title = "CODEX"
-fill_key = "panel"
+fill_key = "frost"
 border_key = "cream"
-title_size = 20
-shear = 42.0
+title_size = 22
+shear = 48.0
 
 [node name="StoreButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow" unique_id=1525659819]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 4
+anchors_preset = -1
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 222.0
-offset_top = 117.0
-offset_right = 418.0
-offset_bottom = 181.0
+offset_left = 24.0
+offset_top = 112.0
+offset_right = 220.0
+offset_bottom = 176.0
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 script = ExtResource("10_geo")
@@ -656,19 +547,19 @@ shear = 28.0
 [node name="ProgressButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow" unique_id=816479243]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 4
+anchors_preset = -1
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 437.0
-offset_top = 116.0
-offset_right = 633.0
-offset_bottom = 180.0
+offset_left = 232.0
+offset_top = 112.0
+offset_right = 424.0
+offset_bottom = 176.0
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 script = ExtResource("10_geo")
-geo = 7
+geo = 4
 title = "PROGRESS"
-fill_key = "panel"
+fill_key = "frost"
 border_key = "cream"
 title_size = 14
 shear = 28.0
@@ -676,12 +567,12 @@ shear = 28.0
 [node name="WorldButton" type="Control" parent="SafeAreaContainer/ScreenLayout/MainRow" unique_id=1096763517]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 4
+anchors_preset = -1
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 488.0
+offset_left = 456.0
 offset_top = -180.0
-offset_right = 848.0
+offset_right = 816.0
 offset_bottom = 180.0
 grow_vertical = 2
 mouse_default_cursor_shape = 2
@@ -692,21 +583,23 @@ subtitle = "CONTINUE"
 fill_key = "frost"
 border_key = "cream"
 title_size = 26
+subtitle_size = 12
+progress = -1.0
 
 [node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/MainRow/WorldButton" unique_id=831447254]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 195.0
-offset_top = -5.0
-offset_right = 239.0
-offset_bottom = 31.0
+offset_left = 312.0
+offset_top = 28.0
+offset_right = 356.0
+offset_bottom = 64.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_81xhe")
+theme_override_styles/panel = SubResource("StyleBoxFlat_rbeag")
 
 [node name="InboxCount" type="Label" parent="SafeAreaContainer/ScreenLayout/MainRow/WorldButton/InboxBadge" unique_id=1716642964]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 10
 text = "2"
@@ -731,7 +624,7 @@ theme_override_constants/separation = 8
 [node name="UpdatesTitle" type="Label" parent="SafeAreaContainer/ScreenLayout/MainRow/UpdatesPanel" unique_id=1120312114]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9411765, 0.8392157, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 10
 text = "UPDATES"
@@ -742,12 +635,11 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_rbeag")
 
 [node name="UpdatesBody" type="Label" parent="SafeAreaContainer/ScreenLayout/MainRow/UpdatesPanel/UpdatesCard" unique_id=1120312116]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9411765, 0.8392157, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 9
 text = "STAGE 1/10"
@@ -884,7 +776,7 @@ layout_mode = 2
 [node name="LockFile" type="Label" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockTitleBar/LockBarRow" unique_id=856622779]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 11
 text = "LOCK.DAT"
@@ -901,7 +793,7 @@ theme_override_constants/separation = 14
 [node name="LockTitle" type="Label" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockWell/LockWellBox" unique_id=2056919073]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 16
 text = "PRE-TEST REQUIRED"
@@ -911,7 +803,7 @@ autowrap_mode = 2
 [node name="LockBody" type="Label" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockWell/LockWellBox" unique_id=42971596]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 12
 text = "Complete your baseline assessment before the command centre unlocks."
@@ -923,7 +815,7 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 focus_mode = 0
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.101960786, 0.07058824, 0.023529412, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 18
 theme_override_styles/normal = SubResource("StyleBoxFlat_r4o7e")
@@ -942,7 +834,7 @@ offset_top = 12.0
 offset_right = -16.0
 offset_bottom = 56.0
 focus_mode = 0
-theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
+theme_override_colors/font_color = Color(0.9490196, 0.9607843, 0.972549, 1)
 theme_override_styles/normal = SubResource("StyleBoxFlat_rvo0r")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_632kq")
 theme_override_styles/hover = SubResource("StyleBoxFlat_yq2kc")

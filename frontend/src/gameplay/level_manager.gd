@@ -321,6 +321,9 @@ func _find_tower_placer(root: Node) -> TowerPlacer:
 
 
 func _spawn_enemy(type_id: String, hp_mult: float) -> void:
+	if not AssetManager.has_required_gameplay_assets():
+		push_error("LevelManager: no cached enemy sprites; spawn skipped")
+		return
 	if enemy_scene == null:
 		push_error("LevelManager: enemy_scene is not assigned")
 		return
