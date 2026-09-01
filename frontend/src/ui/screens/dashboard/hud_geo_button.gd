@@ -5,7 +5,7 @@ extends Control
 
 signal pressed
 
-enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER, FLAG }
+enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER, FLAG, BACK, FLAG_REV }
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const STORY_TEX_PATH := "res://assets/ui/dashboard.png"
@@ -35,8 +35,9 @@ var _poly: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_STOP
-	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	if mouse_filter != Control.MOUSE_FILTER_IGNORE:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	if ResourceLoader.exists(FONT_PATH):
 		var file: FontFile = load(FONT_PATH) as FontFile
 		if file != null:
@@ -67,8 +68,12 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+func _is_flag_rev() -> bool:
+	return geo == Geo.FLAG_REV or int(geo) == 7
+
+
 func _is_flag() -> bool:
-	return geo == Geo.FLAG or int(geo) == 5
+	return geo == Geo.FLAG or int(geo) == 5 or _is_flag_rev()
 
 
 func _has_point(point: Vector2) -> bool:
@@ -93,17 +98,19 @@ func _draw() -> void:
 			shadow.append(_poly[i] + Vector2(4.0, 5.0))
 		draw_colored_polygon(shadow, Color(Palette.DEEP_SPACE, 0.5))
 	draw_colored_polygon(_poly, fill)
+	if geo == Geo.DIAMOND:
+		_draw_diamond_face()
 	if _is_flag():
 		_draw_flag_texture()
 		_draw_flag_band()
-	if geo == Geo.SLASH or geo == Geo.CHIP:
+	if geo == Geo.SLASH or geo == Geo.CHIP or geo == Geo.BACK:
 		var hi := PackedVector2Array([_poly[0], _poly[1]])
 		var lo := PackedVector2Array([_poly[2], _poly[3]])
 		draw_polyline(hi, Color(Palette.CREAM, 0.28), 2.0)
 		draw_polyline(lo, Color(Palette.DEEP_SPACE, 0.7), 2.0)
 	var closed := PackedVector2Array(_poly)
 	closed.append(_poly[0])
-	var border_w := 3.5 if _is_flag() else 2.5
+	var border_w := 3.5 if _is_flag() or geo == Geo.DIAMOND else 2.5
 	draw_polyline(closed, border, border_w)
 	_draw_copy()
 
@@ -141,7 +148,7 @@ func _draw_copy() -> void:
 				lines.append({"text": part, "size": detail_size, "color": title_color})
 	if lines.is_empty() and progress < 0.0:
 		return
-	var gap := 14.0 if geo == Geo.DIAMOND else 10.0
+	var gap := 18.0 if geo == Geo.DIAMOND else 8.0
 	var bar_h := 8.0
 	var bar_gap := 16.0 if geo == Geo.DIAMOND else 12.0
 	var stack_h := 0.0
@@ -155,13 +162,13 @@ func _draw_copy() -> void:
 	var cx := size.x * 0.5
 	if _is_flag():
 		var flag_s := minf(shear, size.x * 0.35)
-		cx = (flag_s + size.x) * 0.47
+		cx = (flag_s + size.x) * 0.48
 	elif geo == Geo.SLASH or geo == Geo.BANNER:
-		cx = shear + 28.0
+		cx = shear + 36.0
 		for i in lines.size():
 			var line: Dictionary = lines[i]
 			var sz: Vector2 = _font.get_string_size(str(line["text"]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(line["size"]))
-			cx = maxf(cx, shear + 28.0 + sz.x * 0.5)
+			cx = maxf(cx, shear + 36.0 + sz.x * 0.5)
 	var y := size.y * 0.5 - stack_h * 0.5
 	if _is_flag():
 		y = size.y * 0.38 - stack_h * 0.5
@@ -196,15 +203,25 @@ func _rebuild_poly() -> void:
 	var s := minf(shear, w * 0.35)
 	if _is_flag():
 		var mid := h * 0.5
-		var right_s := maxf(h, 56.0)
-		right_s = minf(right_s, w * 0.45)
-		_poly = PackedVector2Array([
-			Vector2(0.0, mid),
-			Vector2(s, 0.0),
-			Vector2(w - right_s, 0.0),
-			Vector2(w, h),
-			Vector2(s, h),
-		])
+		var tip_s := maxf(h, 56.0)
+		tip_s = minf(tip_s, w * 0.45)
+		if _is_flag_rev():
+			# Same left chevron as FLAG; only the right slant is mirrored.
+			_poly = PackedVector2Array([
+				Vector2(0.0, mid),
+				Vector2(s, 0.0),
+				Vector2(w - tip_s, 0.0),
+				Vector2(w, h),
+				Vector2(s, h),
+			])
+		else:
+			_poly = PackedVector2Array([
+				Vector2(0.0, mid),
+				Vector2(s, 0.0),
+				Vector2(w, 0.0),
+				Vector2(w - tip_s, h),
+				Vector2(s, h),
+			])
 		return
 	match geo:
 		Geo.DIAMOND:
@@ -222,6 +239,13 @@ func _rebuild_poly() -> void:
 				Vector2(w, 0.0),
 				Vector2(w - s, h),
 				Vector2(0.0, h),
+			])
+		Geo.BACK:
+			_poly = PackedVector2Array([
+				Vector2(0.0, 0.0),
+				Vector2(w - s, 0.0),
+				Vector2(w, h),
+				Vector2(s, h),
 			])
 		Geo.BANNER: 
 			# Asymmetrical Banner:
@@ -256,6 +280,21 @@ func _hex_poly(w: float, h: float) -> PackedVector2Array:
 	return pts
 
 
+func _draw_diamond_face() -> void:
+	var face := find_child("AvatarImage", false) as TextureRect
+	if face == null or face.texture == null or _poly.size() < 3:
+		return
+	face.visible = false
+	var w := maxf(size.x, 1.0)
+	var h := maxf(size.y, 1.0)
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	for i in _poly.size():
+		uvs.append(Vector2(_poly[i].x / w, _poly[i].y / h))
+		cols.append(Color.WHITE)
+	draw_polygon(_poly, cols, uvs, face.texture)
+
+
 func _draw_flag_texture() -> void:
 	if _story_tex == null or _poly.size() < 3:
 		return
@@ -272,25 +311,39 @@ func _draw_flag_texture() -> void:
 func _draw_flag_band() -> void:
 	var w := size.x
 	var h := size.y
-	if w < 8.0 or h < 8.0:
+	if w < 8.0 or h < 8.0 or _poly.size() < 3:
 		return
-	var s := minf(shear, w * 0.35)
-	var right_s := maxf(h, 56.0)
-	right_s = minf(right_s, w * 0.45)
 	var inset := 3.5
 	var band_h := h * 0.22
 	var y_top := h - band_h
 	var y_bot := h - inset
-	var left_top := _x_on_segment(Vector2(0.0, h * 0.5), Vector2(s, h), y_top)
-	var right_top := _x_on_segment(Vector2(w - right_s, 0.0), Vector2(w, h), y_top)
-	var right_bot := _x_on_segment(Vector2(w - right_s, 0.0), Vector2(w, h), y_bot)
+	var top_span := _poly_x_range(y_top)
+	var bot_span := _poly_x_range(y_bot)
+	if top_span.x >= top_span.y or bot_span.x >= bot_span.y:
+		return
 	var band := PackedVector2Array([
-		Vector2(left_top + 1.0, y_top),
-		Vector2(right_top - 1.0, y_top),
-		Vector2(right_bot - inset, y_bot),
-		Vector2(s + 1.0, y_bot),
+		Vector2(top_span.x + 1.0, y_top),
+		Vector2(top_span.y - 1.0, y_top),
+		Vector2(bot_span.y - inset, y_bot),
+		Vector2(bot_span.x + inset, y_bot),
 	])
 	draw_colored_polygon(band, Palette.CREAM)
+
+
+func _poly_x_range(y: float) -> Vector2:
+	var lo := INF
+	var hi := -INF
+	var count := _poly.size()
+	for i in count:
+		var a := _poly[i]
+		var b := _poly[(i + 1) % count]
+		var crosses := (a.y <= y and b.y >= y) or (b.y <= y and a.y >= y)
+		if not crosses:
+			continue
+		var x := _x_on_segment(a, b, y)
+		lo = minf(lo, x)
+		hi = maxf(hi, x)
+	return Vector2(lo, hi)
 
 
 func _x_on_segment(a: Vector2, b: Vector2, y: float) -> float:

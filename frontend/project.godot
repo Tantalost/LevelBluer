@@ -39,6 +39,10 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg")
+
 [input]
 
 ui_cancel={
@@ -50,10 +54,6 @@ ui_cancel={
 [internationalization]
 
 locale/translations=PackedStringArray("res://content/ui_strings.en.translation", "res://content/ui_strings.tl.translation")
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/godot-sqlite/plugin.cfg")
 
 [levelblue]
 

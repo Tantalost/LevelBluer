@@ -1,6 +1,6 @@
-[gd_resource type="TileSet" load_steps=3 format=3 uid="uid://cgridtileset01"]
+[gd_resource type="TileSet" format=3 uid="uid://bcqtmf4l2j7mi"]
 
-[ext_resource type="Texture2D" path="res://assets/gameplay/grid_atlas.svg" id="1_atlas"]
+[ext_resource type="Texture2D" uid="uid://hw7ksxda4det" path="res://assets/gameplay/grid_atlas.svg" id="1_atlas"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_grid"]
 texture = ExtResource("1_atlas")
@@ -8,7 +8,6 @@ texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 0:0/0/custom_data_0 = true
 1:0/0 = 0
-1:0/0/custom_data_0 = false
 
 [resource]
 tile_size = Vector2i(32, 32)

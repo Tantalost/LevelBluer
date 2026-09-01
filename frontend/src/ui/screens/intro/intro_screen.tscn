@@ -1,38 +1,38 @@
 [gd_scene format=3 uid="uid://uqgyno2heho0"]
 
 [ext_resource type="Script" uid="uid://c7introscreen01" path="res://src/ui/screens/intro/intro_screen.gd" id="1_intro"]
-[ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
-[ext_resource type="Texture2D" path="res://assets/ui/background.png" id="3_bg"]
-[ext_resource type="Texture2D" path="res://assets/ui/logo.png" id="4_logo"]
-[ext_resource type="Script" uid="uid://c7scanlineoverlay1" path="res://src/ui/screens/intro/scanline_overlay.gd" id="5_scan"]
+[ext_resource type="Texture2D" path="res://assets/ui/dashboard.png" id="2_art"]
+[ext_resource type="Texture2D" path="res://assets/ui/logo.png" id="3_logo"]
+[ext_resource type="Script" uid="uid://c7scanlineoverlay1" path="res://src/ui/screens/intro/scanline_overlay.gd" id="4_scan"]
+[ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="5_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_story"]
+content_margin_left = 16.0
+content_margin_top = 14.0
+content_margin_right = 16.0
+content_margin_bottom = 14.0
+bg_color = Color(0.0392157, 0.0901961, 0.188235, 0.82)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.952941, 0.92549, 0.839216, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_btn"]
-bg_color = Color(0, 0.0392157, 0.0980392, 0.85)
+bg_color = Color(0.0392157, 0.0901961, 0.188235, 0.92)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 0.831373, 1, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-shadow_color = Color(0, 0.831373, 1, 0.4)
-shadow_size = 12
+border_color = Color(0.180392, 0.419608, 1, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_btn_hover"]
-bg_color = Color(0, 0.0392157, 0.0980392, 0.92)
+bg_color = Color(0.0627451, 0.12549, 0.25098, 0.96)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0, 0.831373, 1, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-shadow_color = Color(0, 0.831373, 1, 0.55)
-shadow_size = 14
+border_color = Color(0.309804, 0.54902, 1, 1)
 
 [node name="IntroScreen" type="Control"]
 layout_mode = 3
@@ -43,19 +43,9 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_intro")
 
-[node name="Background" type="TextureRect" parent="."]
+[node name="ArtClip" type="Control" parent="."]
 unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = ExtResource("3_bg")
-expand_mode = 1
-stretch_mode = 6
-
-[node name="DarkOverlay" type="ColorRect" parent="."]
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -63,7 +53,26 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.0196078, 0.0313726, 0.0784314, 0.55)
+
+[node name="Art" type="TextureRect" parent="ArtClip"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 1280.0
+offset_bottom = 1872.0
+mouse_filter = 2
+texture = ExtResource("2_art")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Dim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0196078, 0.0431373, 0.0941176, 0.28)
 
 [node name="ScanlineOverlay" type="Control" parent="."]
 layout_mode = 1
@@ -73,31 +82,9 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-script = ExtResource("5_scan")
+script = ExtResource("4_scan")
 
-[node name="EdgeLineLeft" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_left = 18.0
-offset_right = 19.0
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0, 0.831373, 1, 0.12)
-
-[node name="EdgeLineRight" type="ColorRect" parent="."]
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -19.0
-offset_right = -18.0
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0, 0.831373, 1, 0.12)
-
-[node name="Particles" type="Control" parent="."]
+[node name="StoryLayer" type="Control" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -107,38 +94,110 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="SafeAreaContainer" type="MarginContainer" parent="."]
+[node name="StoryBox1" type="PanelContainer" parent="StoryLayer"]
+visible = false
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-script = ExtResource("2_safe")
+offset_left = 48.0
+offset_top = 48.0
+offset_right = 588.0
+offset_bottom = 124.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_story")
 
-[node name="Content" type="VBoxContainer" parent="SafeAreaContainer"]
+[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox1"]
 layout_mode = 2
-theme_override_constants/separation = 0
+theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
 
-[node name="LogoArea" type="Control" parent="SafeAreaContainer/Content"]
-custom_minimum_size = Vector2(0, 280)
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="LogoCenter" type="CenterContainer" parent="SafeAreaContainer/Content/LogoArea"]
+[node name="StoryBox2" type="PanelContainer" parent="StoryLayer"]
+visible = false
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
+offset_left = 720.0
+offset_top = 196.0
+offset_right = 1232.0
+offset_bottom = 272.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_story")
 
-[node name="LogoBob" type="Control" parent="SafeAreaContainer/Content/LogoArea/LogoCenter"]
+[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox2"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+
+[node name="StoryBox3" type="PanelContainer" parent="StoryLayer"]
+visible = false
+layout_mode = 1
+offset_left = 72.0
+offset_top = 344.0
+offset_right = 572.0
+offset_bottom = 420.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_story")
+
+[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox3"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+
+[node name="StoryBox4" type="PanelContainer" parent="StoryLayer"]
+visible = false
+layout_mode = 1
+offset_left = 760.0
+offset_top = 492.0
+offset_right = 1240.0
+offset_bottom = 568.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_story")
+
+[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox4"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+
+[node name="StoryBox5" type="PanelContainer" parent="StoryLayer"]
+visible = false
+layout_mode = 1
+offset_left = 160.0
+offset_top = 640.0
+offset_right = 720.0
+offset_bottom = 716.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_story")
+
+[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox5"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 11
+autowrap_mode = 3
+
+[node name="LogoLayer" type="Control" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(720, 292)
-layout_mode = 2
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -210.0
+offset_right = 360.0
+offset_bottom = 40.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
 
-[node name="Logo" type="TextureRect" parent="SafeAreaContainer/Content/LogoArea/LogoCenter/LogoBob"]
+[node name="LogoBob" type="Control" parent="LogoLayer"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -146,52 +205,72 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("4_logo")
+mouse_filter = 2
+
+[node name="Logo" type="TextureRect" parent="LogoLayer/LogoBob"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("3_logo")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="TaglineRow" type="HBoxContainer" parent="SafeAreaContainer/Content"]
-layout_mode = 2
-theme_override_constants/separation = 10
+[node name="CtaLayer" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -150.0
+offset_right = 180.0
+offset_bottom = -36.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = 16
 alignment = 1
 
-[node name="TaglineLineLeft" type="ColorRect" parent="SafeAreaContainer/Content/TaglineRow"]
-custom_minimum_size = Vector2(0, 1)
-layout_mode = 2
-size_flags_horizontal = 3
-color = Color(0, 0.831373, 1, 0.25)
-
-[node name="TaglineLabel" type="Label" parent="SafeAreaContainer/Content/TaglineRow"]
+[node name="TaglineLabel" type="Label" parent="CtaLayer"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.831373, 1, 0.6)
+theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 1)
+theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 11
 text = "DEFEND • DETECT • DISRUPT"
 horizontal_alignment = 1
 
-[node name="TaglineLineRight" type="ColorRect" parent="SafeAreaContainer/Content/TaglineRow"]
-custom_minimum_size = Vector2(0, 1)
-layout_mode = 2
-size_flags_horizontal = 3
-color = Color(0, 0.831373, 1, 0.25)
-
-[node name="Spacer" type="Control" parent="SafeAreaContainer/Content"]
-custom_minimum_size = Vector2(0, 28)
-layout_mode = 2
-
-[node name="ButtonArea" type="VBoxContainer" parent="SafeAreaContainer/Content"]
-layout_mode = 2
-theme_override_constants/separation = 24
-alignment = 1
-
-[node name="StartButtonWrap" type="CenterContainer" parent="SafeAreaContainer/Content/ButtonArea"]
-layout_mode = 2
-
-[node name="StartButtonRoot" type="Control" parent="SafeAreaContainer/Content/ButtonArea/StartButtonWrap"]
+[node name="StartButton" type="Button" parent="CtaLayer"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(280, 52)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 16
+theme_override_styles/normal = SubResource("StyleBoxFlat_start_btn")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_start_btn_hover")
+theme_override_styles/hover = SubResource("StyleBoxFlat_start_btn_hover")
+text = "START GAME"
 
-[node name="ButtonGlow" type="ColorRect" parent="SafeAreaContainer/Content/ButtonArea/StartButtonWrap/StartButtonRoot"]
+[node name="PressHintLabel" type="Label" parent="CtaLayer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 0.45)
+theme_override_fonts/font = ExtResource("5_font")
+theme_override_font_sizes/font_size = 11
+text = "PRESS TO INITIALIZE"
+horizontal_alignment = 1
+
+[node name="Blackout" type="ColorRect" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -200,34 +279,4 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 0.831373, 1, 0.07)
-
-[node name="StartButton" type="Button" parent="SafeAreaContainer/Content/ButtonArea/StartButtonWrap/StartButtonRoot"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_colors/font_color = Color(0.941176, 0.807843, 0.596078, 1)
-theme_override_colors/font_hover_color = Color(0.941176, 0.807843, 0.596078, 1)
-theme_override_colors/font_pressed_color = Color(0.941176, 0.807843, 0.596078, 1)
-theme_override_font_sizes/font_size = 16
-theme_override_styles/normal = SubResource("StyleBoxFlat_start_btn")
-theme_override_styles/hover = SubResource("StyleBoxFlat_start_btn_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_start_btn_hover")
-text = "START GAME"
-flat = false
-
-[node name="PressHintLabel" type="Label" parent="SafeAreaContainer/Content/ButtonArea"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_colors/font_color = Color(0, 0.831373, 1, 0.35)
-theme_override_font_sizes/font_size = 11
-text = "PRESS TO INITIALIZE"
-horizontal_alignment = 1
-
-[node name="BottomPad" type="Control" parent="SafeAreaContainer/Content"]
-custom_minimum_size = Vector2(0, 24)
-layout_mode = 2
+color = Color(0.0196078, 0.0431373, 0.0941176, 1)
