@@ -619,15 +619,17 @@ func _sheet_to_frame_textures(texture: Texture2D, bottom_align: bool) -> Array[T
 	var height: int = image.get_height()
 	if width <= 0 or height <= 0:
 		return result
+	var col_counts: Array[int] = []
+	col_counts.resize(width)
 	var occupied: Array[bool] = []
 	occupied.resize(width)
 	for x in width:
-		var hit: bool = false
+		var count: int = 0
 		for y in height:
 			if image.get_pixel(x, y).a > 0.06:
-				hit = true
-				break
-		occupied[x] = hit
+				count += 1
+		col_counts[x] = count
+		occupied[x] = count > 0
 	var runs: Array[Vector2i] = []
 	var run_start: int = -1
 	for x in width:
@@ -641,6 +643,7 @@ func _sheet_to_frame_textures(texture: Texture2D, bottom_align: bool) -> Array[T
 	if runs.is_empty():
 		result.append(texture)
 		return result
+	runs = _split_connected_frame_runs(col_counts, runs, width)
 	var crops: Array[Image] = []
 	var max_w: int = 1
 	var max_h: int = 1
@@ -669,6 +672,91 @@ func _sheet_to_frame_textures(texture: Texture2D, bottom_align: bool) -> Array[T
 		canvas.blit_rect(crop, Rect2i(Vector2i.ZERO, crop.get_size()), Vector2i(ox, oy))
 		result.append(ImageTexture.create_from_image(canvas))
 	return result
+
+
+func _split_connected_frame_runs(col_counts: Array[int], runs: Array[Vector2i], sheet_width: int) -> Array[Vector2i]:
+	## Fishing rods / overlapping poses can glue several frames into one opaque run.
+	## Split those wide runs at occupancy valleys so each pose is its own crop.
+	var max_reasonable: int = maxi(108, sheet_width / 5)
+	var out: Array[Vector2i] = []
+	for i in runs.size():
+		var run: Vector2i = runs[i]
+		var run_w: int = run.y - run.x + 1
+		if run_w >= max_reasonable:
+			var parts: Array[Vector2i] = _split_wide_run(col_counts, run.x, run.y)
+			if parts.size() >= 2:
+				out.append_array(parts)
+				continue
+		out.append(run)
+	return out
+
+
+func _split_wide_run(col_counts: Array[int], x0: int, x1: int) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var run_w: int = x1 - x0 + 1
+	var min_dist: int = maxi(40, run_w / 10)
+	var peaks: Array[int] = _occupancy_peaks(col_counts, x0, x1, min_dist)
+	if peaks.size() < 2:
+		var n: int = clampi(int(round(float(run_w) / 85.0)), 2, 8)
+		for i in n:
+			var a: int = x0 + int(round(float(i * run_w) / float(n)))
+			var b: int = x0 + int(round(float((i + 1) * run_w) / float(n))) - 1
+			if i == n - 1:
+				b = x1
+			result.append(Vector2i(a, b))
+		return result
+	var start: int = x0
+	for i in range(peaks.size() - 1):
+		var p0: int = peaks[i]
+		var p1: int = peaks[i + 1]
+		var mid: int = int(floor(float(p0 + p1) * 0.5))
+		var best_x: int = mid
+		var best_c: int = col_counts[mid]
+		for x in range(mid, p1):
+			if col_counts[x] < best_c:
+				best_c = col_counts[x]
+				best_x = x
+		result.append(Vector2i(start, best_x))
+		start = best_x + 1
+	result.append(Vector2i(start, x1))
+	return result
+
+
+func _occupancy_peaks(col_counts: Array[int], x0: int, x1: int, min_dist: int) -> Array[int]:
+	var mx: int = 0
+	for x in range(x0, x1 + 1):
+		mx = maxi(mx, col_counts[x])
+	if mx <= 0:
+		return []
+	var thresh: float = float(mx) * 0.45
+	var sm: Array[float] = []
+	sm.resize(col_counts.size())
+	for x in range(x0, x1 + 1):
+		var a: int = maxi(x0, x - 2)
+		var b: int = mini(x1, x + 2)
+		var acc: float = 0.0
+		for i in range(a, b + 1):
+			acc += float(col_counts[i])
+		sm[x] = acc / float(b - a + 1)
+	var candidates: Array[int] = []
+	for x in range(x0 + 1, x1):
+		if sm[x] < thresh:
+			continue
+		if sm[x] >= sm[x - 1] and sm[x] >= sm[x + 1] and (sm[x] > sm[x - 1] or sm[x] > sm[x + 1]):
+			candidates.append(x)
+	candidates.sort_custom(func(a: int, b: int) -> bool: return sm[a] > sm[b])
+	var peaks: Array[int] = []
+	for i in candidates.size():
+		var x: int = candidates[i]
+		var far: bool = true
+		for j in peaks.size():
+			if absi(x - peaks[j]) < min_dist:
+				far = false
+				break
+		if far:
+			peaks.append(x)
+	peaks.sort()
+	return peaks
 
 
 func _opaque_rect_in_columns(image: Image, x0: int, x1: int) -> Rect2i:
