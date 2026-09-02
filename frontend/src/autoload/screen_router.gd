@@ -29,6 +29,7 @@ const SCREENS: Dictionary = {
 	&"upgrades":     "res://src/ui/screens/deploy/upgrade_screen.tscn",
 	&"missions":     "res://src/ui/screens/deploy/missions_screen.tscn",
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
+	&"module_intro": "res://src/ui/screens/deploy/module_intro_screen.tscn",
 	&"module_stages": "res://src/ui/screens/deploy/module_stage_screen.tscn",
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
@@ -299,6 +300,12 @@ func replace_all(screen_id: StringName, args: Dictionary = {}) -> void:
 	await _navigate(not _is_overlay(screen_id), func() -> void: _replace_all_now(screen_id, args))
 
 
+## Drops the current screen and opens `screen_id` in its place. Back then
+## returns to whatever was under the current screen, not to this one.
+func replace(screen_id: StringName, args: Dictionary = {}) -> void:
+	await _navigate(not _is_overlay(screen_id), func() -> void: _replace_now(screen_id, args))
+
+
 func pop() -> void:
 	if _stack.size() <= 1:
 		return
@@ -358,6 +365,22 @@ func _push_now(screen_id: StringName, args: Dictionary = {}) -> void:
 		return
 	if not _stack.is_empty():
 		_stack.back().on_exit()
+	_host.add_child(screen)
+	_stack.push_back(screen)
+	screen.on_enter(args)
+	screen_changed.emit(screen_id)
+
+
+func _replace_now(screen_id: StringName, args: Dictionary = {}) -> void:
+	var screen: BaseScreen = _instantiate(screen_id)
+	if screen == null:
+		return
+	if not _stack.is_empty():
+		var leaving: BaseScreen = _stack.pop_back()
+		leaving.on_exit()
+		if leaving.get_parent() == _host:
+			_host.remove_child(leaving)
+		leaving.queue_free()
 	_host.add_child(screen)
 	_stack.push_back(screen)
 	screen.on_enter(args)

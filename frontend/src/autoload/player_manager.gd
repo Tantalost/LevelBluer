@@ -22,6 +22,7 @@ var unlocked_towers: Array[String] = ["base"]
 var mock_max_stage_cleared: int = 1
 var credits: int = 0
 var module_1_complete: bool = false
+var seen_module_intros: Array[String] = []
 var _session_hydrated: bool = false
 
 
@@ -124,6 +125,7 @@ func reset_to_defaults() -> void:
 	unlocked_skills.clear()
 	unlocked_towers = ["base"]
 	module_1_complete = false
+	seen_module_intros.clear()
 	mastery_matrix = {
 		"ports": DEFAULT_MASTERY,
 		"firewalls": DEFAULT_MASTERY,
@@ -203,6 +205,17 @@ func has_completed_lesson(lesson_id: String) -> bool:
 	return completed_lessons.has(lesson_id)
 
 
+func has_seen_module_intro(module_id: String) -> bool:
+	return not module_id.is_empty() and seen_module_intros.has(module_id)
+
+
+func mark_module_intro_seen(module_id: String) -> void:
+	if module_id.is_empty() or seen_module_intros.has(module_id):
+		return
+	seen_module_intros.append(module_id)
+	SaveService.save_game()
+
+
 func mark_stage_cleared(stage_id: int) -> void:
 	if stage_id <= 0:
 		return
@@ -272,6 +285,7 @@ func get_save_data() -> Dictionary:
 		"lesson_progress": lesson_progress.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
+		"seen_module_intros": seen_module_intros.duplicate(),
 	}
 
 
@@ -351,3 +365,11 @@ func apply_save_data(data: Dictionary) -> void:
 			module_1_complete = complete_raw
 		elif complete_type == TYPE_INT or complete_type == TYPE_FLOAT:
 			module_1_complete = int(complete_raw) != 0
+
+	if data.has("seen_module_intros") and typeof(data["seen_module_intros"]) == TYPE_ARRAY:
+		var saved_intros: Array = data["seen_module_intros"] as Array
+		seen_module_intros.clear()
+		for i in saved_intros.size():
+			var intro_id: String = str(saved_intros[i])
+			if not intro_id.is_empty() and not seen_module_intros.has(intro_id):
+				seen_module_intros.append(intro_id)

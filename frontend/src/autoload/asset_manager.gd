@@ -243,6 +243,7 @@ func _ui_catalog() -> Array[Dictionary]:
 	return [
 		_catalog_entry("ui_intro", "Intro cinematic art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338103/Gemini_Generated_Image_3bwb7g3bwb7g3bwb.jpg"),
 		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
+		_catalog_entry("ui_module1_intro", "Module 1 comic intro", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788339918/Gemini_Generated_Image_fhsnvyfhsnvyfhsn.jpg"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
 		_catalog_entry("ui_background", "Login background", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/background.png"),
 		_catalog_entry("ui_logo", "Brand logo", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336656/logo.png"),
@@ -622,6 +623,8 @@ func _bundled_path(asset_id: String) -> String:
 		"ui_intro":
 			return ""
 		"ui_intro_preview":
+			return ""
+		"ui_module1_intro":
 			return ""
 		"ui_dashboard":
 			return "res://assets/ui/dashboard.png"

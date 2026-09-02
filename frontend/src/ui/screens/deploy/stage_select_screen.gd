@@ -281,6 +281,9 @@ func _on_breach_pressed() -> void:
 func _open_module(index: int) -> void:
 	if not _is_unlocked(index):
 		return
+	if index == 0:
+		Router.push(&"module_intro", {"module_index": index})
+		return
 	Router.push(&"module_stages", {"module_index": index})
 
 
