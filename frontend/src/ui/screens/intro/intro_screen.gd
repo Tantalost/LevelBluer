@@ -1,29 +1,35 @@
 extends BaseScreen
-## Cinematic intro: black hold, art reveal, Ken Burns pan with story cards, then logo.
+## Cinematic intro: pan with story lines, logo lockup, then flash into the title card.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const ART_PATH := "res://assets/ui/intro_art.png"
-const ART_FALLBACK := "res://assets/ui/dashboard.png"
 
 const BLACK_HOLD_SEC := 2.0
 const FADE_IN_SEC := 0.35
+const REVEAL_HOLD_SEC := 0.3
 const PAN_SEC := 5.0
-const ART_HEIGHT_MUL := 2.6
-const LOGO_FADE_SEC := 0.85
+const LINE_FADE_SEC := 0.22
+const CTA_SLIDE_SEC := 1.15
+const CTA_SLIDE_PX := 90.0
+const HOLD_BEFORE_FLASH_SEC := 0.35
+const FLASH_IN_SEC := 0.12
+const FLASH_HOLD_SEC := 0.08
+const FLASH_OUT_SEC := 0.55
 const LOGO_BOB_PX := 14.0
 const LOGO_BOB_SEC := 2.0
+const PREVIEW_DIM_A := 0.14
 const STORY_KEYS: PackedStringArray = [
 	"INTRO_STORY_1",
 	"INTRO_STORY_2",
 	"INTRO_STORY_3",
-	"INTRO_STORY_4",
-	"INTRO_STORY_5",
 ]
 
 @onready var _art_clip: Control = %ArtClip
 @onready var _art: TextureRect = %Art
+@onready var _dim: ColorRect = $Dim
 @onready var _blackout: ColorRect = %Blackout
+@onready var _flash: ColorRect = %WhiteFlash
 @onready var _story_layer: Control = %StoryLayer
+@onready var _story_text: Label = %StoryText
 @onready var _logo_layer: Control = %LogoLayer
 @onready var _logo_bob: Control = %LogoBob
 @onready var _cta_layer: Control = %CtaLayer
@@ -36,15 +42,11 @@ var _pixel_font: Font
 var _seq: int = 0
 var _start_locked: bool = false
 var _tweens: Array[Tween] = []
-var _story_boxes: Array[PanelContainer] = []
-var _story_labels: Array[Label] = []
 
 
 func _ready() -> void:
 	_load_font()
 	_start_button.pressed.connect(_on_start_pressed)
-	_collect_story_nodes()
-	_style_story_boxes()
 	_load_art()
 
 
@@ -56,7 +58,7 @@ func on_enter(_args: Dictionary) -> void:
 	_apply_copy()
 	_reset_visuals()
 	_load_art()
-	if _art.texture == null or _logo.texture == null:
+	if not _intro_assets_ready():
 		await AssetManager.ensure_ready()
 		if not _still(token):
 			return
@@ -64,7 +66,7 @@ func on_enter(_args: Dictionary) -> void:
 	await get_tree().process_frame
 	if not _still(token):
 		return
-	_layout_art()
+	_layout_cinematic_art()
 	await _play_sequence(token)
 
 
@@ -84,6 +86,9 @@ func _play_sequence(token: int) -> void:
 	await _tween_fade(_blackout, 0.0, FADE_IN_SEC)
 	if not _still(token):
 		return
+	await get_tree().create_timer(REVEAL_HOLD_SEC).timeout
+	if not _still(token):
+		return
 	var pan: Tween = _start_art_pan()
 	await _play_story(token)
 	if not _still(token):
@@ -92,53 +97,81 @@ func _play_sequence(token: int) -> void:
 		await pan.finished
 	if not _still(token):
 		return
-	await _tween_fade(_story_layer, 0.0, 0.35)
+	await get_tree().create_timer(HOLD_BEFORE_FLASH_SEC).timeout
 	if not _still(token):
 		return
-	_logo_layer.visible = true
-	await _tween_fade(_logo_layer, 1.0, LOGO_FADE_SEC)
+	await _play_title_flash(token)
 	if not _still(token):
 		return
-	_start_logo_bob()
-	_cta_layer.visible = true
+	await _play_cta_slide(token)
+	if not _still(token):
+		return
 	_start_locked = false
 	_start_button.disabled = false
-	await _tween_fade(_cta_layer, 1.0, 0.4)
 
 
 func _play_story(token: int) -> void:
-	var slot: float = PAN_SEC / float(STORY_KEYS.size())
-	for i in _story_boxes.size():
-		if not _still(token):
-			return
-		var box: PanelContainer = _story_boxes[i]
-		box.visible = true
-		box.modulate.a = 0.0
-		var appear: Tween = _make_tween()
-		appear.tween_property(box, "modulate:a", 1.0, 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		await appear.finished
-		if not _still(token):
-			return
-		var line: String = tr(STORY_KEYS[i])
-		var type_sec: float = maxf(slot - 0.28, 0.45)
-		await _typewrite(_story_labels[i], line, type_sec, token)
-
-
-func _typewrite(label: Label, full: String, duration: float, token: int) -> void:
-	label.text = ""
-	if full.is_empty():
+	var count: int = STORY_KEYS.size()
+	if count <= 0:
 		return
-	var chars: int = full.length()
-	var step: float = duration / float(chars)
-	for i in chars:
+	var slot: float = PAN_SEC / float(count)
+	var hold: float = maxf(slot - LINE_FADE_SEC * 2.0, 0.4)
+	for i in count:
 		if not _still(token):
 			return
-		label.text = full.substr(0, i + 1)
-		await get_tree().create_timer(step).timeout
+		_story_text.text = tr(STORY_KEYS[i])
+		_story_text.modulate.a = 0.0
+		await _tween_fade(_story_text, 1.0, LINE_FADE_SEC)
+		if not _still(token):
+			return
+		await get_tree().create_timer(hold).timeout
+		if not _still(token):
+			return
+		if i < count - 1:
+			await _tween_fade(_story_text, 0.0, LINE_FADE_SEC)
+
+
+func _play_cta_slide(token: int) -> void:
+	await get_tree().process_frame
+	if not _still(token):
+		return
+	var height: float = maxf(_cta_layer.size.y, 150.0)
+	_cta_layer.visible = true
+	_cta_layer.modulate.a = 0.0
+	_cta_layer.offset_top = -CTA_SLIDE_PX
+	_cta_layer.offset_bottom = height - CTA_SLIDE_PX
+	var slide: Tween = _make_tween()
+	slide.set_parallel(true)
+	slide.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	slide.tween_property(_cta_layer, "modulate:a", 1.0, CTA_SLIDE_SEC)
+	slide.tween_property(_cta_layer, "offset_top", 0.0, CTA_SLIDE_SEC)
+	slide.tween_property(_cta_layer, "offset_bottom", height, CTA_SLIDE_SEC)
+	await slide.finished
+
+
+func _play_title_flash(token: int) -> void:
+	_flash.color = Color(1.0, 1.0, 1.0, 0.0)
+	await _tween_color_alpha(_flash, 1.0, FLASH_IN_SEC)
+	if not _still(token):
+		return
+	_apply_preview_art()
+	_story_layer.modulate.a = 0.0
+	_logo_layer.visible = true
+	_logo_layer.modulate.a = 1.0
+	_cta_layer.modulate.a = 0.0
+	await get_tree().create_timer(FLASH_HOLD_SEC).timeout
+	if not _still(token):
+		return
+	await _tween_color_alpha(_flash, 0.0, FLASH_OUT_SEC)
+	if not _still(token):
+		return
+	_start_logo_bob()
 
 
 func _start_art_pan() -> Tween:
-	var view_h: float = get_viewport_rect().size.y
+	var view_h: float = _art_clip.size.y
+	if view_h < 1.0:
+		view_h = get_viewport_rect().size.y
 	var travel: float = maxf(_art.size.y - view_h, 0.0)
 	_art.position.y = 0.0
 	var pan: Tween = _make_tween()
@@ -146,43 +179,73 @@ func _start_art_pan() -> Tween:
 	return pan
 
 
-func _layout_art() -> void:
+func _layout_cinematic_art() -> void:
+	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var view := _clip_size()
+	var aspect: float = _texture_aspect(_art.texture)
+	var art_w: float = view.x
+	var art_h: float = art_w * aspect
+	if art_h < view.y * 1.15:
+		art_h = view.y * 1.4
+		art_w = art_h / aspect if aspect > 0.001 else view.x
+	_art.position = Vector2((view.x - art_w) * 0.5, 0.0)
+	_art.size = Vector2(art_w, art_h)
+
+
+func _apply_preview_art() -> void:
+	AssetManager.bind_texture(_art, "ui_intro_preview")
+	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	var view := _clip_size()
+	_art.position = Vector2.ZERO
+	_art.size = view
+	_dim.color = Color(Palette.BG_DEEP, PREVIEW_DIM_A)
+
+
+func _clip_size() -> Vector2:
 	var view := _art_clip.size
 	if view.x < 1.0 or view.y < 1.0:
-		view = get_viewport_rect().size
-	_art.position = Vector2.ZERO
-	_art.size = Vector2(view.x, view.y * ART_HEIGHT_MUL)
+		return get_viewport_rect().size
+	return view
+
+
+func _texture_aspect(tex: Texture2D) -> float:
+	if tex == null or tex.get_width() <= 0:
+		return 1.0
+	return float(tex.get_height()) / float(tex.get_width())
+
+
+func _intro_assets_ready() -> bool:
+	return (
+		AssetManager.get_texture("ui_intro") != null
+		and AssetManager.get_texture("ui_logo") != null
+		and AssetManager.get_texture("ui_intro_preview") != null
+	)
 
 
 func _load_art() -> void:
-	AssetManager.bind_texture(_art, "ui_dashboard")
+	AssetManager.bind_texture(_art, "ui_intro")
 	AssetManager.bind_texture(_logo, "ui_logo")
-	if _art.texture != null:
-		return
-	var path := ART_PATH if ResourceLoader.exists(ART_PATH) else ART_FALLBACK
-	if not ResourceLoader.exists(path):
-		return
-	var tex: Texture2D = load(path) as Texture2D
-	if tex != null:
-		_art.texture = tex
 
 
 func _reset_visuals() -> void:
 	_kill_tweens()
+	_blackout.color = Color(Palette.BG_DEEP, 1.0)
 	_blackout.modulate.a = 1.0
 	_blackout.visible = true
+	_flash.color = Color(1.0, 1.0, 1.0, 0.0)
+	_dim.color = Color(Palette.BG_DEEP, 0.28)
 	_story_layer.modulate.a = 1.0
+	_story_text.text = ""
+	_story_text.modulate.a = 0.0
 	_logo_layer.modulate.a = 0.0
 	_logo_layer.visible = true
 	_logo_bob.offset_top = 0.0
 	_logo_bob.offset_bottom = 0.0
 	_cta_layer.modulate.a = 0.0
 	_cta_layer.visible = true
+	_cta_layer.offset_top = -CTA_SLIDE_PX
 	_art.position.y = 0.0
-	for i in _story_boxes.size():
-		_story_boxes[i].visible = false
-		_story_boxes[i].modulate.a = 0.0
-		_story_labels[i].text = ""
+	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 
 
 func _apply_copy() -> void:
@@ -191,35 +254,13 @@ func _apply_copy() -> void:
 	_press_hint.text = tr("INTRO_PRESS_HINT")
 	_apply_label(_tagline, Palette.CYAN_400, 14)
 	_apply_label(_press_hint, Color(Palette.CYAN_400, 0.72), 13)
+	_apply_label(_story_text, Palette.CREAM, 22)
+	_story_text.add_theme_color_override("font_outline_color", Palette.BG_DEEP)
+	_story_text.add_theme_constant_override("outline_size", 10)
 	if _pixel_font != null:
 		_start_button.add_theme_font_override("font", _pixel_font)
 	_start_button.add_theme_font_size_override("font_size", 20)
 	_start_button.add_theme_color_override("font_color", Palette.CREAM)
-
-
-func _collect_story_nodes() -> void:
-	_story_boxes.clear()
-	_story_labels.clear()
-	for i in STORY_KEYS.size():
-		var box: PanelContainer = _story_layer.get_node("StoryBox%d" % (i + 1)) as PanelContainer
-		var label: Label = box.get_node("StoryLabel") as Label
-		_story_boxes.append(box)
-		_story_labels.append(label)
-
-
-func _style_story_boxes() -> void:
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color(Palette.NAVY_900, 0.82)
-	panel.border_color = Palette.CREAM
-	panel.set_border_width_all(2)
-	panel.content_margin_left = 16.0
-	panel.content_margin_right = 16.0
-	panel.content_margin_top = 14.0
-	panel.content_margin_bottom = 14.0
-	for i in _story_labels.size():
-		_story_boxes[i].add_theme_stylebox_override("panel", panel)
-		_story_labels[i].text = ""
-		_apply_label(_story_labels[i], Palette.CREAM, 11)
 
 
 func _start_logo_bob() -> void:
@@ -246,6 +287,12 @@ func _on_start_pressed() -> void:
 func _tween_fade(node: CanvasItem, alpha: float, duration: float) -> void:
 	var fade: Tween = _make_tween()
 	fade.tween_property(node, "modulate:a", alpha, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	await fade.finished
+
+
+func _tween_color_alpha(rect: ColorRect, alpha: float, duration: float) -> void:
+	var fade: Tween = _make_tween()
+	fade.tween_property(rect, "color:a", alpha, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	await fade.finished
 
 

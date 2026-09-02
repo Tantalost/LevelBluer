@@ -4,18 +4,6 @@
 [ext_resource type="Script" uid="uid://c7scanlineoverlay1" path="res://src/ui/screens/intro/scanline_overlay.gd" id="4_scan"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="5_font"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_story"]
-content_margin_left = 16.0
-content_margin_top = 14.0
-content_margin_right = 16.0
-content_margin_bottom = 14.0
-bg_color = Color(0.0392157, 0.0901961, 0.188235, 0.82)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.952941, 0.92549, 0.839216, 1)
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_start_btn"]
 bg_color = Color(0.0392157, 0.0901961, 0.188235, 0.92)
 border_width_left = 2
@@ -59,7 +47,7 @@ offset_right = 1280.0
 offset_bottom = 1872.0
 mouse_filter = 2
 expand_mode = 1
-stretch_mode = 6
+stretch_mode = 5
 
 [node name="Dim" type="ColorRect" parent="."]
 layout_mode = 1
@@ -81,7 +69,7 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("4_scan")
 
-[node name="StoryLayer" type="Control" parent="."]
+[node name="StoryLayer" type="CenterContainer" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -91,89 +79,17 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="StoryBox1" type="PanelContainer" parent="StoryLayer"]
-visible = false
-layout_mode = 1
-offset_left = 48.0
-offset_top = 48.0
-offset_right = 588.0
-offset_bottom = 124.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_story")
-
-[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox1"]
+[node name="StoryText" type="Label" parent="StoryLayer"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(920, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
+theme_override_colors/font_outline_color = Color(0.0196078, 0.0431373, 0.0941176, 1)
+theme_override_constants/outline_size = 10
 theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
-autowrap_mode = 3
-
-[node name="StoryBox2" type="PanelContainer" parent="StoryLayer"]
-visible = false
-layout_mode = 1
-offset_left = 720.0
-offset_top = 196.0
-offset_right = 1232.0
-offset_bottom = 272.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_story")
-
-[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox2"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
-autowrap_mode = 3
-
-[node name="StoryBox3" type="PanelContainer" parent="StoryLayer"]
-visible = false
-layout_mode = 1
-offset_left = 72.0
-offset_top = 344.0
-offset_right = 572.0
-offset_bottom = 420.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_story")
-
-[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox3"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
-autowrap_mode = 3
-
-[node name="StoryBox4" type="PanelContainer" parent="StoryLayer"]
-visible = false
-layout_mode = 1
-offset_left = 760.0
-offset_top = 492.0
-offset_right = 1240.0
-offset_bottom = 568.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_story")
-
-[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox4"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
-autowrap_mode = 3
-
-[node name="StoryBox5" type="PanelContainer" parent="StoryLayer"]
-visible = false
-layout_mode = 1
-offset_left = 160.0
-offset_top = 640.0
-offset_right = 720.0
-offset_bottom = 716.0
-mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_story")
-
-[node name="StoryLabel" type="Label" parent="StoryLayer/StoryBox5"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
-theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
 autowrap_mode = 3
 
 [node name="BrandCenter" type="CenterContainer" parent="."]
@@ -220,16 +136,24 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CtaLayer" type="VBoxContainer" parent="BrandCenter/BrandStack"]
+[node name="CtaSlot" type="Control" parent="BrandCenter/BrandStack"]
+custom_minimum_size = Vector2(520, 150)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="CtaLayer" type="VBoxContainer" parent="BrandCenter/BrandStack/CtaSlot"]
 unique_name_in_owner = true
 modulate = Color(1, 1, 1, 0)
-custom_minimum_size = Vector2(520, 0)
-layout_mode = 2
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 150.0
+grow_horizontal = 2
 mouse_filter = 2
 theme_override_constants/separation = 18
 alignment = 1
 
-[node name="TaglineLabel" type="Label" parent="BrandCenter/BrandStack/CtaLayer"]
+[node name="TaglineLabel" type="Label" parent="BrandCenter/BrandStack/CtaSlot/CtaLayer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 1)
@@ -238,7 +162,7 @@ theme_override_font_sizes/font_size = 14
 text = "DEFEND • DETECT • DISRUPT"
 horizontal_alignment = 1
 
-[node name="StartButton" type="Button" parent="BrandCenter/BrandStack/CtaLayer"]
+[node name="StartButton" type="Button" parent="BrandCenter/BrandStack/CtaSlot/CtaLayer"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(340, 60)
 layout_mode = 2
@@ -251,7 +175,7 @@ theme_override_styles/pressed = SubResource("StyleBoxFlat_start_btn_hover")
 theme_override_styles/hover = SubResource("StyleBoxFlat_start_btn_hover")
 text = "START GAME"
 
-[node name="PressHintLabel" type="Label" parent="BrandCenter/BrandStack/CtaLayer"]
+[node name="PressHintLabel" type="Label" parent="BrandCenter/BrandStack/CtaSlot/CtaLayer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 0.72)
@@ -270,3 +194,14 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0.0196078, 0.0431373, 0.0941176, 1)
+
+[node name="WhiteFlash" type="ColorRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 1, 1, 0)

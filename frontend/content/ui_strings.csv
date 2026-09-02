@@ -64,6 +64,9 @@ DASH_MODE_CONFIRM,CONFIRM,KUMPIRMAHIN
 DASH_MODE_CANCEL,✕  CANCEL,✕  KANSELAHIN
 DASHBOARD_PLACEHOLDER,Full dashboard coming soon.,Malapit na ang buong dashboard.
 LOGOUT,Log Out,Mag-log Out
+INTRO_STORY_1,The city is breached.,Nabutas na ang lungsod.
+INTRO_STORY_2,Threats move in shadows.,Gumagapang ang mga banta.
+INTRO_STORY_3,You are the last defense.,Ikaw ang huling depensa.
 INTRO_TAGLINE,DEFEND • DETECT • DISRUPT,DEPENDA • DETECT • DISRUPT
 INTRO_START_GAME,START GAME,MAGSIMULA
 INTRO_PRESS_HINT,PRESS TO INITIALIZE,PINDUTIN PARA MAG-INITIALIZE

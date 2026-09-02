@@ -241,6 +241,8 @@ func _gameplay_catalog() -> Array[Dictionary]:
 
 func _ui_catalog() -> Array[Dictionary]:
 	return [
+		_catalog_entry("ui_intro", "Intro cinematic art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338103/Gemini_Generated_Image_3bwb7g3bwb7g3bwb.jpg"),
+		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
 		_catalog_entry("ui_background", "Login background", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/background.png"),
 		_catalog_entry("ui_logo", "Brand logo", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336656/logo.png"),
@@ -603,6 +605,8 @@ func _seed_from_bundle() -> void:
 		if asset_id.is_empty() or FileAccess.file_exists(local_path):
 			continue
 		var bundled_path: String = _bundled_path(asset_id)
+		if bundled_path.is_empty():
+			continue
 		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(bundled_path)
 		if bytes.is_empty():
 			continue
@@ -615,6 +619,10 @@ func _seed_from_bundle() -> void:
 
 func _bundled_path(asset_id: String) -> String:
 	match asset_id:
+		"ui_intro":
+			return ""
+		"ui_intro_preview":
+			return ""
 		"ui_dashboard":
 			return "res://assets/ui/dashboard.png"
 		"ui_background":
@@ -646,7 +654,7 @@ func _bundled_path(asset_id: String) -> String:
 
 func _load_bundled_texture(asset_id: String) -> Texture2D:
 	var path: String = _bundled_path(asset_id)
-	if not ResourceLoader.exists(path):
+	if path.is_empty() or not ResourceLoader.exists(path):
 		return null
 	var loaded: Resource = ResourceLoader.load(path)
 	return loaded as Texture2D
