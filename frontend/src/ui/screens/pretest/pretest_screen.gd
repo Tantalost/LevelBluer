@@ -25,6 +25,7 @@ func _ready() -> void:
 
 
 func on_enter(_args: Dictionary) -> void:
+	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_dashboard")
 	_apply_copy()
 	_hide_error()
 	_index = 0

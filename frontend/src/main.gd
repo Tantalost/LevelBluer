@@ -10,7 +10,7 @@ func _ready() -> void:
 	Router.register_host(_screen_host)
 	Router.quit_requested.connect(_on_quit_requested)
 	_quit_dialog.confirmed.connect(_on_quit_confirmed)
-
+	AssetManager.sync_catalog()
 	Router.replace_all(&"intro")
 
 

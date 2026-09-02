@@ -55,6 +55,12 @@ func on_enter(_args: Dictionary) -> void:
 	_start_button.disabled = true
 	_apply_copy()
 	_reset_visuals()
+	_load_art()
+	if _art.texture == null or _logo.texture == null:
+		await AssetManager.ensure_ready()
+		if not _still(token):
+			return
+		_load_art()
 	await get_tree().process_frame
 	if not _still(token):
 		return
@@ -149,6 +155,10 @@ func _layout_art() -> void:
 
 
 func _load_art() -> void:
+	AssetManager.bind_texture(_art, "ui_dashboard")
+	AssetManager.bind_texture(_logo, "ui_logo")
+	if _art.texture != null:
+		return
 	var path := ART_PATH if ResourceLoader.exists(ART_PATH) else ART_FALLBACK
 	if not ResourceLoader.exists(path):
 		return
@@ -163,11 +173,11 @@ func _reset_visuals() -> void:
 	_blackout.visible = true
 	_story_layer.modulate.a = 1.0
 	_logo_layer.modulate.a = 0.0
-	_logo_layer.visible = false
+	_logo_layer.visible = true
 	_logo_bob.offset_top = 0.0
 	_logo_bob.offset_bottom = 0.0
 	_cta_layer.modulate.a = 0.0
-	_cta_layer.visible = false
+	_cta_layer.visible = true
 	_art.position.y = 0.0
 	for i in _story_boxes.size():
 		_story_boxes[i].visible = false
@@ -179,11 +189,11 @@ func _apply_copy() -> void:
 	_tagline.text = tr("INTRO_TAGLINE")
 	_start_button.text = tr("INTRO_START_GAME")
 	_press_hint.text = tr("INTRO_PRESS_HINT")
-	_apply_label(_tagline, Palette.CYAN_400, 11)
-	_apply_label(_press_hint, Color(Palette.CYAN_400, 0.45), 11)
+	_apply_label(_tagline, Palette.CYAN_400, 14)
+	_apply_label(_press_hint, Color(Palette.CYAN_400, 0.72), 13)
 	if _pixel_font != null:
 		_start_button.add_theme_font_override("font", _pixel_font)
-	_start_button.add_theme_font_size_override("font_size", 16)
+	_start_button.add_theme_font_size_override("font_size", 20)
 	_start_button.add_theme_color_override("font_color", Palette.CREAM)
 
 

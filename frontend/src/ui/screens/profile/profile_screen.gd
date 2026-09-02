@@ -63,6 +63,8 @@ func _process(delta: float) -> void:
 
 func on_enter(_args: Dictionary) -> void:
 	set_process(true)
+	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_dashboard")
+	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
 	_apply_copy()
 	_bind_profile()
 	_refresh_from_server()

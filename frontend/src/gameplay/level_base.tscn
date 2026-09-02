@@ -63,10 +63,12 @@ shape = SubResource("CircleShape2D_base")
 
 [node name="HeartLabel" type="Label" parent="Environment/PlayerBase"]
 unique_name_in_owner = true
+visible = false
 offset_left = -36.0
 offset_top = -118.0
 offset_right = 36.0
 offset_bottom = -98.0
+mouse_filter = 2
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 10
 text = "5"
@@ -159,16 +161,60 @@ theme_override_font_sizes/font_size = 9
 text = "QUIZ"
 horizontal_alignment = 2
 
-[node name="BaseHealthLabel" type="Label" parent="GameplayCanvas/HUD"]
+[node name="HeartHud" type="HBoxContainer" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 28.0
-offset_top = 52.0
-offset_right = 220.0
-offset_bottom = 72.0
-theme_override_fonts/font = ExtResource("6_font")
-theme_override_font_sizes/font_size = 10
-text = "HP  5"
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -148.0
+offset_top = 14.0
+offset_right = 148.0
+offset_bottom = 58.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Heart0" type="TextureRect" parent="GameplayCanvas/HUD/HeartHud"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Heart1" type="TextureRect" parent="GameplayCanvas/HUD/HeartHud"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Heart2" type="TextureRect" parent="GameplayCanvas/HUD/HeartHud"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Heart3" type="TextureRect" parent="GameplayCanvas/HUD/HeartHud"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
+[node name="Heart4" type="TextureRect" parent="GameplayCanvas/HUD/HeartHud"]
+custom_minimum_size = Vector2(52, 40)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
 
 [node name="StartCluster" type="VBoxContainer" parent="GameplayCanvas/HUD"]
 layout_mode = 1
@@ -204,64 +250,76 @@ theme_override_font_sizes/font_size = 8
 text = "TAP TO START"
 horizontal_alignment = 1
 
+[node name="BtnSpeed" type="Control" parent="GameplayCanvas/HUD"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -196.0
+offset_top = 72.0
+offset_right = -116.0
+offset_bottom = 128.0
+grow_horizontal = 0
+script = ExtResource("11_geo")
+geo = 2
+fill_key = "header"
+border_key = "cyan"
+shear = 18.0
+
+[node name="Icon" type="TextureRect" parent="GameplayCanvas/HUD/BtnSpeed"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -18.0
+offset_top = -18.0
+offset_right = 18.0
+offset_bottom = 18.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
+
 [node name="BtnPause" type="Control" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -300.0
-offset_top = 72.0
-offset_right = -220.0
-offset_bottom = 128.0
-grow_horizontal = 0
-script = ExtResource("11_geo")
-geo = 2
-title = "II"
-fill_key = "header"
-border_key = "cyan"
-title_size = 16
-shear = 18.0
-
-[node name="BtnSpeed1x" type="Control" parent="GameplayCanvas/HUD"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -212.0
-offset_top = 72.0
-offset_right = -132.0
-offset_bottom = 128.0
-grow_horizontal = 0
-script = ExtResource("11_geo")
-geo = 2
-title = "1x"
-fill_key = "gold"
-border_key = "gold"
-title_size = 16
-shear = 18.0
-
-[node name="BtnSpeed2x" type="Control" parent="GameplayCanvas/HUD"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -124.0
+offset_left = -108.0
 offset_top = 72.0
 offset_right = -28.0
 offset_bottom = 128.0
 grow_horizontal = 0
 script = ExtResource("11_geo")
 geo = 2
-title = "2x"
 fill_key = "header"
-border_key = "gold"
-title_size = 16
+border_key = "cyan"
 shear = 18.0
+
+[node name="Icon" type="TextureRect" parent="GameplayCanvas/HUD/BtnPause"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -18.0
+offset_top = -18.0
+offset_right = 18.0
+offset_bottom = 18.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+texture_filter = 1
 
 [node name="TowerCard" type="Control" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true

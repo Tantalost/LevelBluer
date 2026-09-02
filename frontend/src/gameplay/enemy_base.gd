@@ -8,6 +8,11 @@ signal enemy_died(bounty_amount: int)
 signal reached_base
 
 const TARGET_SPRITE_HEIGHT := 28.0
+const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
+const BAR_WIDTH := 28.0
+const BAR_HEIGHT := 3.0
+const BAR_Y := -22.0
+const POPUP_LIFE := 0.55
 
 @export var move_speed: float = 150.0
 var max_health: int = 3
@@ -24,6 +29,10 @@ var _uses_character_sheets: bool = false
 var _playing_death: bool = false
 var _is_side_facing: bool = true
 var _visual_id: String = ""
+var _pixel_font: Font
+var _sprite_base_scale: Vector2 = Vector2.ONE
+var _displayed_health: float = 3.0
+var _bar_tween: Tween = null
 
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
@@ -38,6 +47,8 @@ func initialize_stats(type_id: String, hp_mult: float) -> void:
 		hp = int(health_stored)
 	max_health = maxi(1, int(round(float(hp) * hp_mult)))
 	current_health = max_health
+	_displayed_health = float(max_health)
+	queue_redraw()
 	var speed: float = 50.0
 	if typeof(speed_stored) == TYPE_INT or typeof(speed_stored) == TYPE_FLOAT:
 		speed = float(speed_stored)
@@ -56,6 +67,8 @@ func initialize_stats(type_id: String, hp_mult: float) -> void:
 func _ready() -> void:
 	loop = false
 	add_to_group("enemies")
+	_load_font()
+	queue_redraw()
 	if _uses_character_sheets:
 		_play_walk()
 
@@ -83,6 +96,7 @@ func mark_leaked() -> bool:
 	_leaked = true
 	is_dead = true
 	_kill_hit_tween()
+	_kill_bar_tween()
 	_clear_slow_timer()
 	_disconnect_death_anim()
 	return true
@@ -91,11 +105,11 @@ func mark_leaked() -> bool:
 func take_damage(amount: int) -> void:
 	if is_dead or _leaked or is_queued_for_deletion():
 		return
-	current_health -= amount
+	var dealt: int = mini(amount, current_health)
+	current_health = maxi(0, current_health - amount)
+	_show_hit(dealt)
 	if current_health <= 0:
 		_begin_death()
-		return
-	_flash_hit()
 
 
 func apply_slow(factor: float, duration: float) -> void:
@@ -127,6 +141,15 @@ func _clear_slow_timer() -> void:
 	_slow_timer = null
 
 
+func _show_hit(dealt: int) -> void:
+	if dealt <= 0:
+		return
+	_spawn_damage_popup(dealt)
+	_tween_health_bar()
+	_flash_hit()
+	queue_redraw()
+
+
 func _flash_hit() -> void:
 	var sprite: AnimatedSprite2D = _character_sprite()
 	if sprite == null:
@@ -134,8 +157,11 @@ func _flash_hit() -> void:
 	var target_color: Color = Palette.CYAN if _slow_timer != null else _idle_modulate()
 	_kill_hit_tween()
 	sprite.modulate = Color.WHITE
+	sprite.scale = _sprite_base_scale * 1.18
 	_hit_tween = create_tween()
-	_hit_tween.tween_property(sprite, "modulate", target_color, 0.1)
+	_hit_tween.set_parallel(true)
+	_hit_tween.tween_property(sprite, "modulate", target_color, 0.12)
+	_hit_tween.tween_property(sprite, "scale", _sprite_base_scale, 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _kill_hit_tween() -> void:
@@ -193,7 +219,8 @@ func _fit_sprite_scale(sprite: AnimatedSprite2D) -> void:
 	if tex == null or tex.get_height() <= 0:
 		return
 	var scale_f: float = TARGET_SPRITE_HEIGHT / float(tex.get_height())
-	sprite.scale = Vector2(scale_f, scale_f)
+	_sprite_base_scale = Vector2(scale_f, scale_f)
+	sprite.scale = _sprite_base_scale
 
 
 func _update_character_facing() -> void:
@@ -226,6 +253,9 @@ func _play_walk() -> void:
 func _begin_death() -> void:
 	is_dead = true
 	_kill_hit_tween()
+	_kill_bar_tween()
+	_displayed_health = 0.0
+	queue_redraw()
 	_clear_slow_timer()
 	_disable_hitbox()
 	VfxManager.spawn_vfx("death", global_position)
@@ -275,6 +305,74 @@ func _disable_hitbox() -> void:
 	hitbox.set_deferred("monitorable", false)
 	hitbox.set_deferred("monitoring", false)
 	hitbox.collision_layer = 0
+
+
+func _draw() -> void:
+	if _leaked or max_health <= 0:
+		return
+	var origin := Vector2(-BAR_WIDTH * 0.5, BAR_Y)
+	var ratio: float = clampf(_displayed_health / float(max_health), 0.0, 1.0)
+	var fill_w: float = BAR_WIDTH * ratio
+	var fill: Color = Palette.SUCCESS
+	if ratio <= 0.33:
+		fill = Palette.DANGER
+	elif ratio <= 0.66:
+		fill = Palette.WARNING
+	draw_rect(Rect2(origin, Vector2(BAR_WIDTH, BAR_HEIGHT)), Palette.DEEP_SPACE, true)
+	if fill_w > 0.5:
+		draw_rect(Rect2(origin, Vector2(fill_w, BAR_HEIGHT)), fill, true)
+	draw_rect(Rect2(origin, Vector2(BAR_WIDTH, BAR_HEIGHT)), Palette.CREAM, false, 1.0)
+
+
+func _spawn_damage_popup(dealt: int) -> void:
+	var host: Node = get_parent()
+	if host == null:
+		return
+	var marker := Node2D.new()
+	marker.z_index = 24
+	host.add_child(marker)
+	marker.global_position = global_position + Vector2(0.0, BAR_Y - 6.0)
+	var label := Label.new()
+	label.text = str(dealt)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Palette.CREAM)
+	label.add_theme_font_size_override("font_size", 10)
+	if _pixel_font != null:
+		label.add_theme_font_override("font", _pixel_font)
+	label.position = Vector2(-12.0, -8.0)
+	label.size = Vector2(24.0, 16.0)
+	marker.add_child(label)
+	var rise: Tween = marker.create_tween()
+	rise.set_parallel(true)
+	rise.tween_property(marker, "position:y", marker.position.y - 20.0, POPUP_LIFE).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	rise.tween_property(marker, "modulate:a", 0.0, POPUP_LIFE)
+	rise.set_parallel(false)
+	rise.tween_callback(marker.queue_free)
+
+
+func _tween_health_bar() -> void:
+	_kill_bar_tween()
+	_bar_tween = create_tween()
+	_bar_tween.tween_method(_set_displayed_health, _displayed_health, float(current_health), 0.18).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+
+func _set_displayed_health(value: float) -> void:
+	_displayed_health = value
+	queue_redraw()
+
+
+func _kill_bar_tween() -> void:
+	if _bar_tween != null and _bar_tween.is_valid():
+		_bar_tween.kill()
+	_bar_tween = null
+
+
+func _load_font() -> void:
+	if not ResourceLoader.exists(FONT_PATH):
+		return
+	var file: FontFile = load(FONT_PATH) as FontFile
+	if file != null:
+		_pixel_font = file
 
 
 func _path_tangent() -> Vector2:

@@ -1,14 +1,12 @@
-[gd_scene load_steps=11 format=3 uid="uid://bvictoryscr0001"]
+[gd_scene load_steps=9 format=3 uid="uid://bvictoryscr0001"]
 
 [ext_resource type="Script" path="res://src/ui/screens/victory/victory_screen.gd" id="1_victory"]
 [ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="2_stars"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="3_safe"]
-[ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
 [ext_resource type="Shader" uid="uid://c232k5rpb823v" path="res://src/gameplay/vignette.gdshader" id="5_vig"]
 [ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="6_scan"]
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="7_geo"]
 [ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="8_icon"]
-[ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="9_bg"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("5_vig")
@@ -43,7 +41,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 modulate = Color(0.72, 0.82, 1, 0.7)
-texture = ExtResource("9_bg")
 expand_mode = 1
 stretch_mode = 6
 
@@ -67,7 +64,6 @@ grow_horizontal = 0
 grow_vertical = 2
 mouse_filter = 2
 modulate = Color(0.82, 0.92, 1, 0.92)
-texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 
@@ -150,7 +146,6 @@ mouse_filter = 2
 [node name="AvatarImage" type="TextureRect" parent="SafeArea/ScreenLayout/TopBar/ProfileButton/ProfileRow/AvatarBox"]
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 

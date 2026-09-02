@@ -119,8 +119,10 @@ func _style_header() -> void:
 
 
 func _apply_backdrop() -> void:
-	if ResourceLoader.exists(BG_CITY):
+	AssetManager.bind_texture(%CityArt, "ui_dashboard")
+	if %CityArt.texture == null and ResourceLoader.exists(BG_CITY):
 		%CityArt.texture = load(BG_CITY) as Texture2D
+	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
 	_hero_art.modulate = Color(0.82, 0.92, 1.0, 0.92) if _won else Color(1.0, 0.72, 0.72, 0.88)
 
 

@@ -72,9 +72,18 @@ func _ready() -> void:
 
 func on_enter(_args: Dictionary) -> void:
 	SaveService.push_pending_sync()
+	_bind_remote_art()
 	_refresh_data()
 	_apply_lock_state()
 	_update_mode_ui()
+
+
+func _bind_remote_art() -> void:
+	AssetManager.bind_texture($Background as CanvasItem, "ui_dashboard")
+	AssetManager.bind_texture($HeroArt as CanvasItem, "ui_dashboard")
+	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
+	AssetManager.bind_texture(find_child("SettingsIcon", true, false) as CanvasItem, "ui_setting")
+	AssetManager.bind_texture(find_child("LockSettingsIcon", true, false) as CanvasItem, "ui_setting")
 
 
 func on_resume() -> void:

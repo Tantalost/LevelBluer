@@ -1,9 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://bprofilescr001"]
+[gd_scene load_steps=5 format=3 uid="uid://bprofilescr001"]
 
 [ext_resource type="Script" path="res://src/ui/screens/profile/profile_screen.gd" id="1_prof"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
-[ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="3_bg"]
-[ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="5_font"]
 [ext_resource type="Script" path="res://src/ui/screens/intel/intel_pixel_icon.gd" id="6_icon"]
 
@@ -34,7 +32,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("3_bg")
 expand_mode = 1
 stretch_mode = 6
 
@@ -134,7 +131,6 @@ size_flags_vertical = 4
 [node name="AvatarImage" type="TextureRect" parent="SafeAreaContainer/ScreenLayout/HeroCard/HeroPad/HeroRow/AvatarBox"]
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 

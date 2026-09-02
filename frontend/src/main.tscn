@@ -11,6 +11,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_gh0ne")
+mouse_filter = 2
 script = ExtResource("2_5q4o7")
 
 [node name="Background" type="ColorRect" parent="." unique_id=312877211]
@@ -20,6 +21,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 color = Color(0.03137255, 0.050980393, 0.09411765, 1)
 
 [node name="ScreenHost" type="Control" parent="." unique_id=420832790]

@@ -35,6 +35,8 @@ func _ready() -> void:
 	_password.text_submitted.connect(func(_t): _attempt_login())
 	_submit.pressed.connect(_attempt_login)
 	_password_modal.completed.connect(_on_password_changed)
+	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_background")
+	AssetManager.bind_texture(find_child("Logo", true, false) as CanvasItem, "ui_logo")
 
 	for field in [_email, _password]:
 		field.focus_entered.connect(_on_field_focus_entered)

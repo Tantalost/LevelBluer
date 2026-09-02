@@ -48,6 +48,7 @@ func _ready() -> void:
 
 func on_enter(_args: Dictionary) -> void:
 	visible = true
+	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
 	_modules = LessonCatalog.modules()
 	_selected = _first_unlocked()
 	current_selected_stage = _td_index_for(_selected)

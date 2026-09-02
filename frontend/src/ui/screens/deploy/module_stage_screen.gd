@@ -59,6 +59,7 @@ func _ready() -> void:
 func on_enter(args: Dictionary) -> void:
 	visible = true
 	set_process(true)
+	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
 	_modules = LessonCatalog.modules()
 	_module_index = clampi(int(args.get("module_index", 0)), 0, maxi(0, _modules.size() - 1))
 	_selected = _first_playable()
@@ -151,9 +152,12 @@ func _apply_spacing() -> void:
 
 
 func _apply_backdrop() -> void:
-	var path := BG_CITY if _module_index == 0 else BG_ALT
-	if ResourceLoader.exists(path):
-		_hero_art.texture = load(path) as Texture2D
+	var asset_id: String = "ui_dashboard" if _module_index == 0 else "ui_background"
+	AssetManager.bind_texture(_hero_art, asset_id)
+	if _hero_art.texture == null:
+		var path := BG_CITY if _module_index == 0 else BG_ALT
+		if ResourceLoader.exists(path):
+			_hero_art.texture = load(path) as Texture2D
 	var accent: Color = _module_accent()
 	_hero_art.modulate = Color(accent.lightened(0.35), 0.72)
 	%MapDim.color = Color(Palette.BG_DEEP, 0.48)

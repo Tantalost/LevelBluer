@@ -29,6 +29,7 @@ var _buff_fire_scale: float = 1.0
 
 func _ready() -> void:
 	add_to_group("towers")
+	input_pickable = false
 	area_entered.connect(_on_area_entered)
 	area_exited.connect(_on_area_exited)
 	_sprite.visible = _sprite.texture != null
@@ -39,12 +40,12 @@ func _ready() -> void:
 func _draw() -> void:
 	if _sprite.texture != null:
 		return
-	draw_circle(Vector2.ZERO, 22.0, Palette.BG_HEADER)
-	draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 28, Palette.CYAN, 2.0, true)
-	draw_rect(Rect2(-11.0, -12.0, 22.0, 24.0), Palette.CYAN_DIM, true)
-	draw_rect(Rect2(-11.0, -12.0, 22.0, 24.0), Palette.CYAN, false, 2.0)
-	draw_rect(Rect2(8.0, -6.0, 20.0, 12.0), Palette.CYAN, true)
-	draw_circle(Vector2.ZERO, 6.0, Palette.GOLD)
+	draw_circle(Vector2.ZERO, 40.0, Palette.BG_HEADER)
+	draw_arc(Vector2.ZERO, 40.0, 0.0, TAU, 36, Palette.CYAN, 3.0, true)
+	draw_rect(Rect2(-20.0, -22.0, 40.0, 44.0), Palette.CYAN_DIM, true)
+	draw_rect(Rect2(-20.0, -22.0, 40.0, 44.0), Palette.CYAN, false, 3.0)
+	draw_rect(Rect2(14.0, -11.0, 36.0, 22.0), Palette.CYAN, true)
+	draw_circle(Vector2.ZERO, 11.0, Palette.GOLD)
 
 
 func apply_stats(type_id: String) -> void:

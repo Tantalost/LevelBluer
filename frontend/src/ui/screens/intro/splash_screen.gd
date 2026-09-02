@@ -28,6 +28,7 @@ func _ready() -> void:
 
 
 func on_enter(_args: Dictionary) -> void:
+	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_loading")
 	modulate.a = 0.0
 	_retry.visible = false
 	_retry.disabled = true

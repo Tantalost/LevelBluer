@@ -1,8 +1,6 @@
 [gd_scene format=3 uid="uid://uqgyno2heho0"]
 
 [ext_resource type="Script" uid="uid://c7introscreen01" path="res://src/ui/screens/intro/intro_screen.gd" id="1_intro"]
-[ext_resource type="Texture2D" path="res://assets/ui/dashboard.png" id="2_art"]
-[ext_resource type="Texture2D" path="res://assets/ui/logo.png" id="3_logo"]
 [ext_resource type="Script" uid="uid://c7scanlineoverlay1" path="res://src/ui/screens/intro/scanline_overlay.gd" id="4_scan"]
 [ext_resource type="FontFile" path="res://assets/fonts/PressStart2P-Regular.ttf" id="5_font"]
 
@@ -60,7 +58,6 @@ layout_mode = 0
 offset_right = 1280.0
 offset_bottom = 1872.0
 mouse_filter = 2
-texture = ExtResource("2_art")
 expand_mode = 1
 stretch_mode = 6
 
@@ -179,25 +176,29 @@ theme_override_fonts/font = ExtResource("5_font")
 theme_override_font_sizes/font_size = 11
 autowrap_mode = 3
 
-[node name="LogoLayer" type="Control" parent="."]
+[node name="BrandCenter" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BrandStack" type="VBoxContainer" parent="BrandCenter"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="LogoLayer" type="Control" parent="BrandCenter/BrandStack"]
 unique_name_in_owner = true
-visible = false
 modulate = Color(1, 1, 1, 0)
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -360.0
-offset_top = -210.0
-offset_right = 360.0
-offset_bottom = 40.0
-grow_horizontal = 2
-grow_vertical = 2
+custom_minimum_size = Vector2(960, 320)
+layout_mode = 2
 mouse_filter = 2
 
-[node name="LogoBob" type="Control" parent="LogoLayer"]
+[node name="LogoBob" type="Control" parent="BrandCenter/BrandStack/LogoLayer"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -207,7 +208,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="Logo" type="TextureRect" parent="LogoLayer/LogoBob"]
+[node name="Logo" type="TextureRect" parent="BrandCenter/BrandStack/LogoLayer/LogoBob"]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
@@ -216,57 +217,46 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("3_logo")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CtaLayer" type="VBoxContainer" parent="."]
+[node name="CtaLayer" type="VBoxContainer" parent="BrandCenter/BrandStack"]
 unique_name_in_owner = true
-visible = false
 modulate = Color(1, 1, 1, 0)
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -180.0
-offset_top = -150.0
-offset_right = 180.0
-offset_bottom = -36.0
-grow_horizontal = 2
-grow_vertical = 0
+custom_minimum_size = Vector2(520, 0)
+layout_mode = 2
 mouse_filter = 2
-theme_override_constants/separation = 16
+theme_override_constants/separation = 18
 alignment = 1
 
-[node name="TaglineLabel" type="Label" parent="CtaLayer"]
+[node name="TaglineLabel" type="Label" parent="BrandCenter/BrandStack/CtaLayer"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 1)
 theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 14
 text = "DEFEND • DETECT • DISRUPT"
 horizontal_alignment = 1
 
-[node name="StartButton" type="Button" parent="CtaLayer"]
+[node name="StartButton" type="Button" parent="BrandCenter/BrandStack/CtaLayer"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(280, 52)
+custom_minimum_size = Vector2(340, 60)
 layout_mode = 2
+size_flags_horizontal = 4
 theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)
 theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 20
 theme_override_styles/normal = SubResource("StyleBoxFlat_start_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_start_btn_hover")
 theme_override_styles/hover = SubResource("StyleBoxFlat_start_btn_hover")
 text = "START GAME"
 
-[node name="PressHintLabel" type="Label" parent="CtaLayer"]
+[node name="PressHintLabel" type="Label" parent="BrandCenter/BrandStack/CtaLayer"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 0.45)
+theme_override_colors/font_color = Color(0.309804, 0.878431, 0.831373, 0.72)
 theme_override_fonts/font = ExtResource("5_font")
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 13
 text = "PRESS TO INITIALIZE"
 horizontal_alignment = 1
 

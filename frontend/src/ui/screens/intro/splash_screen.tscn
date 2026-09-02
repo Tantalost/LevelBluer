@@ -1,9 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://dlfiwm5qp15wh"]
+[gd_scene load_steps=5 format=3 uid="uid://dlfiwm5qp15wh"]
 
 [ext_resource type="Script" uid="uid://b3gr4m5mws5nj" path="res://src/ui/screens/intro/splash_screen.gd" id="1_63qxy"]
 [ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_p78g7"]
 [ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="3_theme"]
-[ext_resource type="Texture2D" path="res://assets/ui/loading.png" id="4_loading"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
 bg_color = Color(0.176471, 0.184314, 0.2, 0.95)
@@ -41,7 +40,6 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("4_loading")
 expand_mode = 1
 stretch_mode = 6
 

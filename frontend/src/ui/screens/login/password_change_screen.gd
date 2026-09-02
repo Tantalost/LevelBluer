@@ -9,6 +9,7 @@ extends BaseScreen
 
 func _ready() -> void:
 	_modal.completed.connect(_on_password_changed)
+	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_background")
 
 
 func on_enter(_args: Dictionary) -> void:

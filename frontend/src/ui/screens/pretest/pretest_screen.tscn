@@ -1,8 +1,7 @@
-[gd_scene load_steps=8 format=3 uid="uid://cpretestscreen01"]
+[gd_scene load_steps=7 format=3 uid="uid://cpretestscreen01"]
 
 [ext_resource type="Script" path="res://src/ui/screens/pretest/pretest_screen.gd" id="1_pre"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="2_safe"]
-[ext_resource type="Texture2D" uid="uid://ckjf6j4myovqm" path="res://assets/ui/dashboard.png" id="3_bg"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
 bg_color = Color(0.0588235, 0.117647, 0.207843, 0.94)
@@ -86,7 +85,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("3_bg")
 expand_mode = 1
 stretch_mode = 6
 modulate = Color(1, 1, 1, 0.35)

@@ -36,12 +36,11 @@ var _track: Path2D
 @onready var _player_base: Area2D = %PlayerBase
 @onready var _phase_label: Label = %PhaseLabel
 @onready var _gold_label: Label = %GoldLabel
-@onready var _base_health_label: Label = %BaseHealthLabel
+@onready var _heart_hud: HBoxContainer = %HeartHud
 @onready var _start_wave_button: Button = %StartWaveButton
 @onready var _start_hint_label: Label = %StartHintLabel
 @onready var _wave_label: Label = %WaveLabel
 @onready var _map_label: Label = %MapLabel
-@onready var _heart_label: Label = %HeartLabel
 @onready var _quiz_modal: ColorRect = %QuizModal
 @onready var _quiz_window: PanelContainer = %QuizWindow
 @onready var _quiz_title_bar: PanelContainer = %QuizTitleBar
@@ -69,8 +68,7 @@ var _tower_placer: TowerPlacer
 @onready var _upgrade_options: HBoxContainer = %UpgradeOptionsContainer
 @onready var _btn_close: Button = %BtnClose
 @onready var _level_background: ColorRect = %Background
-@onready var _btn_speed_1x: HudGeoButton = %BtnSpeed1x
-@onready var _btn_speed_2x: HudGeoButton = %BtnSpeed2x
+@onready var _btn_speed: HudGeoButton = %BtnSpeed
 @onready var _btn_pause: HudGeoButton = %BtnPause
 @onready var _pause_menu: PauseMenu = %PauseMenu
 @onready var _tower_card: HudGeoButton = %TowerCard
@@ -87,6 +85,11 @@ var _quiz_correct_text: String = ""
 var _quiz_led_t: float = 0.0
 var _speed_mult: float = 1.0
 var _shake_intensity: float = 0.0
+var _heart_icons: Array[TextureRect] = []
+var _tex_heart_full: Texture2D
+var _tex_heart_half: Texture2D
+var _tex_heart_empty: Texture2D
+var _heart_tween: Tween
 
 @onready var _camera: Camera2D = %Camera2D
 
@@ -100,11 +103,11 @@ func _ready() -> void:
 	_btn_wrong.pressed.connect(_on_quiz_wrong_pressed)
 	_start_wave_button.pressed.connect(_on_start_wave_pressed)
 	_btn_close.pressed.connect(_on_upgrade_close_pressed)
-	_btn_speed_1x.pressed.connect(_on_speed_1x_pressed)
-	_btn_speed_2x.pressed.connect(_on_speed_2x_pressed)
+	_btn_speed.pressed.connect(_on_speed_pressed)
 	_btn_pause.pressed.connect(toggle_pause)
 	_btn_incident_a.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_a))
 	_btn_incident_b.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_b))
+	_tower_card.pressed.connect(_on_tower_card_pressed)
 	_upgrade_panel.visible = false
 	_end_game_modal.visible = false
 	_quiz_modal.visible = false
@@ -116,13 +119,12 @@ func _ready() -> void:
 	_fit_level_background()
 	_phase_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_gold_label.add_theme_color_override("font_color", Palette.GOLD)
-	_base_health_label.add_theme_color_override("font_color", Palette.HEART)
 	_wave_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_map_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	_heart_label.add_theme_color_override("font_color", Palette.HEART)
 	_start_hint_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_style_start_button()
 	_load_pixel_font()
+	_bind_heart_hud()
 	_style_quiz_ui()
 	_style_incident_ui()
 	_modal_title_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
@@ -242,10 +244,60 @@ func update_hud() -> void:
 	else:
 		_phase_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_gold_label.text = "GOLD  " + str(current_gold)
-	_base_health_label.text = "HP  " + str(base_health)
-	_heart_label.text = str(base_health)
 	_wave_label.text = str(_wave_kills) + "/" + str(_wave_total_enemies)
 	_map_label.text = "MAP A" + str(Router.active_stage_index + 1)
+
+
+func _bind_heart_hud() -> void:
+	_tex_heart_full = AssetManager.get_texture("ui_heart_full")
+	_tex_heart_half = AssetManager.get_texture("ui_heart_half")
+	_tex_heart_empty = AssetManager.get_texture("ui_heart_empty")
+	AssetManager.bind_texture(_btn_speed.get_node_or_null("Icon") as CanvasItem, "ui_speedup")
+	AssetManager.bind_texture(_btn_pause.get_node_or_null("Icon") as CanvasItem, "ui_pause")
+	_heart_icons.clear()
+	var kids: Array = _heart_hud.get_children()
+	for i in kids.size():
+		var icon: TextureRect = kids[i] as TextureRect
+		if icon == null:
+			continue
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.pivot_offset = icon.custom_minimum_size * 0.5
+		_heart_icons.append(icon)
+	_sync_hearts()
+
+
+func _sync_hearts() -> void:
+	for i in _heart_icons.size():
+		var icon: TextureRect = _heart_icons[i]
+		icon.texture = _tex_heart_full if base_health > i else _tex_heart_empty
+		icon.scale = Vector2.ONE
+		icon.modulate = Color.WHITE
+
+
+func _play_heart_hit() -> void:
+	var lost_index: int = base_health
+	if _heart_tween != null and _heart_tween.is_valid():
+		_heart_tween.kill()
+	_sync_hearts()
+	if lost_index < 0 or lost_index >= _heart_icons.size():
+		return
+	var icon: TextureRect = _heart_icons[lost_index]
+	icon.texture = _tex_heart_half
+	icon.pivot_offset = icon.size * 0.5 if icon.size.x > 1.0 else icon.custom_minimum_size * 0.5
+	icon.scale = Vector2(1.45, 1.45)
+	icon.modulate = Palette.CREAM
+	_heart_tween = create_tween()
+	_heart_tween.tween_property(icon, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_heart_tween.parallel().tween_property(icon, "modulate", Color.WHITE, 0.28)
+	_heart_tween.chain().tween_callback(_finish_heart_hit.bind(icon))
+
+
+func _finish_heart_hit(icon: TextureRect) -> void:
+	if icon == null or not is_instance_valid(icon):
+		return
+	icon.texture = _tex_heart_empty
+	icon.scale = Vector2.ONE
+	icon.modulate = Color.WHITE
 
 
 func _fit_level_background() -> void:
@@ -564,23 +616,21 @@ func _exit_tree() -> void:
 	_hide_incident()
 
 
-func _on_speed_1x_pressed() -> void:
-	_speed_mult = 1.0
-	_apply_speed()
-
-
-func _on_speed_2x_pressed() -> void:
-	_speed_mult = 2.0
+func _on_speed_pressed() -> void:
+	_speed_mult = 2.0 if _speed_mult <= 1.5 else 1.0
 	_apply_speed()
 
 
 func _apply_speed() -> void:
 	var quiz_open: bool = _quiz_modal.visible or current_phase == GamePhase.PHASE_1_QUIZ
 	Engine.time_scale = 1.0 if quiz_open else _speed_mult
-	_btn_speed_1x.fill_key = "gold" if _speed_mult <= 1.5 else "header"
-	_btn_speed_2x.fill_key = "gold" if _speed_mult > 1.5 else "header"
-	_btn_speed_1x.queue_redraw()
-	_btn_speed_2x.queue_redraw()
+	var fast: bool = _speed_mult > 1.5
+	_btn_speed.fill_key = "gold" if fast else "header"
+	_btn_speed.border_key = "gold" if fast else "cyan"
+	_btn_speed.queue_redraw()
+	var icon := _btn_speed.get_node_or_null("Icon") as TextureRect
+	if icon != null:
+		icon.modulate = Palette.CYAN_400 if fast else Palette.CREAM
 
 
 func _sync_phase_chrome() -> void:
@@ -589,8 +639,7 @@ func _sync_phase_chrome() -> void:
 	if _tower_placer != null:
 		_tower_placer.set_build_preview(building)
 	_tower_card.visible = building
-	_btn_speed_1x.visible = live
-	_btn_speed_2x.visible = live
+	_btn_speed.visible = live
 	_apply_speed()
 
 
@@ -978,6 +1027,7 @@ func _apply_base_breach() -> void:
 	active_enemies = maxi(0, active_enemies - 1)
 	add_camera_shake(15.0)
 	print("[Enemy] Base breached!")
+	_play_heart_hit()
 	update_hud()
 	if base_health <= 0:
 		change_phase(GamePhase.GAME_OVER)
@@ -1034,6 +1084,12 @@ func _check_wave_cleared() -> void:
 	change_phase(GamePhase.VICTORY)
 
 
+func _on_tower_card_pressed() -> void:
+	if _tower_placer == null:
+		return
+	_tower_placer.begin_place_drag()
+
+
 func _on_tower_selected(tower_node: TowerBase) -> void:
 	if tower_node == null or not is_instance_valid(tower_node):
 		_selected_tower = null
@@ -1048,7 +1104,12 @@ func _refresh_upgrade_panel() -> void:
 	if _selected_tower == null or not is_instance_valid(_selected_tower):
 		_upgrade_panel.visible = false
 		return
-	_stats_label.text = TowerBase.display_name_for(_selected_tower.current_type) + " | Dmg: " + str(_selected_tower.base_damage)
+	var move_gold: int = _tower_placer.move_cost if _tower_placer != null else 1
+	_stats_label.text = (
+		TowerBase.display_name_for(_selected_tower.current_type)
+		+ " | Dmg: " + str(_selected_tower.base_damage)
+		+ " | MOVE " + str(move_gold) + "G"
+	)
 	_rebuild_upgrade_buttons(_selected_tower)
 
 

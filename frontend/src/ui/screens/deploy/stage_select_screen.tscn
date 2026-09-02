@@ -1,9 +1,8 @@
-[gd_scene load_steps=11 format=3 uid="uid://dq8k2stage0sel"]
+[gd_scene load_steps=10 format=3 uid="uid://dq8k2stage0sel"]
 
 [ext_resource type="Script" path="res://src/ui/screens/deploy/stage_select_screen.gd" id="1_screen"]
 [ext_resource type="Script" path="res://src/ui/screens/deploy/starfield_background.gd" id="2_stars"]
 [ext_resource type="Script" path="res://src/ui/components/safe_area_container.gd" id="3_safe"]
-[ext_resource type="Texture2D" uid="uid://pkgtookenwig" path="res://assets/ui/tempo_pfp.jpg" id="4_pfp"]
 [ext_resource type="Shader" uid="uid://c232k5rpb823v" path="res://src/gameplay/vignette.gdshader" id="5_vig"]
 [ext_resource type="Script" path="res://src/ui/screens/intro/scanline_overlay.gd" id="6_scan"]
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="7_geo"]
@@ -129,7 +128,6 @@ mouse_filter = 2
 [node name="AvatarImage" type="TextureRect" parent="SafeArea/ScreenLayout/TopBar/ProfileButton/ProfileRow/AvatarBox"]
 layout_mode = 2
 mouse_filter = 2
-texture = ExtResource("4_pfp")
 expand_mode = 1
 stretch_mode = 5
 

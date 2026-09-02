@@ -42,7 +42,11 @@ func _ready() -> void:
 		var file: FontFile = load(FONT_PATH) as FontFile
 		if file != null:
 			_font = file
-	if ResourceLoader.exists(STORY_TEX_PATH):
+	if not Engine.is_editor_hint():
+		var remote_story: Texture2D = AssetManager.get_texture("ui_dashboard")
+		if remote_story != null:
+			_story_tex = remote_story
+	if _story_tex == null and ResourceLoader.exists(STORY_TEX_PATH):
 		_story_tex = load(STORY_TEX_PATH) as Texture2D
 	queue_redraw()
 

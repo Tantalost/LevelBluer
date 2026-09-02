@@ -8,6 +8,8 @@ signal sync_progress(done: int, total: int, status: String)
 const DB_PATH := "user://levelblue_assets"
 const ASSETS_DIR := "user://assets"
 const BUNDLED_DIR := "res://assets/enemies"
+const CLOUD_ROOT := "https://res.cloudinary.com/nfd5bhkz/image/upload"
+const CATALOG_REV := "ui-urls-1"
 const DOWNLOAD_TIMEOUT_SEC := 15.0
 const BODY_SIZE_LIMIT := 8 * 1024 * 1024
 const WALK_FPS := 8.0
@@ -112,6 +114,21 @@ func get_texture(asset_id: String) -> Texture2D:
 	return texture
 
 
+func bind_texture(target: CanvasItem, asset_id: String) -> void:
+	if target == null or asset_id.is_empty():
+		return
+	var texture: Texture2D = get_texture(asset_id)
+	if texture == null:
+		return
+	var rect: TextureRect = target as TextureRect
+	if rect != null:
+		rect.texture = texture
+		return
+	var sprite: Sprite2D = target as Sprite2D
+	if sprite != null:
+		sprite.texture = texture
+
+
 func has_hacker_sprites() -> bool:
 	return has_character_sprites("hacker")
 
@@ -195,58 +212,83 @@ func get_character_sprite_frames(character_id: String) -> SpriteFrames:
 
 
 func _hacker_catalog() -> Array[Dictionary]:
-	return _character_sheet_catalog("hacker", [
-		["walk_side", "HACKER side-walking", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788266228/image-removebg-preview_1.png"],
-		["walk_top", "HACKER top-down walking", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788249853/image-removebg-preview.png"],
-		["death_side", "HACKER side-death", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788266370/image-removebg-preview_2.png"],
-		["death_top", "HACKER top-down death", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788266476/image-removebg-preview_3.png"],
+	return _character_sheet_catalog("hacker", "assets/enemies/hacker", [
+		["walk_side", "HACKER side-walking"],
+		["walk_top", "HACKER top-down walking"],
+		["death_side", "HACKER side-death"],
+		["death_top", "HACKER top-down death"],
 	])
 
 
 func _gameplay_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
 	catalog.append_array(_hacker_catalog())
-	catalog.append_array(_character_sheet_catalog("ransomware", [
-		["walk_side", "RANSOMWARE side-walking", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788270675/image-removebg-preview_5.png"],
-		["walk_top", "RANSOMWARE top-down walking", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788270537/image-removebg-preview_4.png"],
-		["death_side", "RANSOMWARE side-death", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788270739/image-removebg-preview_6.png"],
-		["death_top", "RANSOMWARE top-down death", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788270828/image-removebg-preview_7.png"],
+	catalog.append_array(_character_sheet_catalog("ransomware", "assets/enemies/Ransomware", [
+		["walk_side", "RANSOMWARE side-walking"],
+		["walk_top", "RANSOMWARE top-down walking"],
+		["death_side", "RANSOMWARE side-death"],
+		["death_top", "RANSOMWARE top-down death"],
 	]))
-	catalog.append_array(_character_sheet_catalog("phisherman", [
-		["walk_side", "PHISHERMAN side-walking", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788271898/image-removebg-preview_8.png"],
-		["walk_top", "PHISHERMAN top-down walking", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788271945/image-removebg-preview_9.png"],
-		["death_side", "PHISHERMAN side-death", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788272041/image-removebg-preview_11.png"],
-		["death_top", "PHISHERMAN top-down death", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788271990/image-removebg-preview_10.png"],
+	catalog.append_array(_character_sheet_catalog("phisherman", "assets/enemies/phisherman", [
+		["walk_side", "PHISHERMAN side-walking"],
+		["walk_top", "PHISHERMAN top-down walking"],
+		["death_side", "PHISHERMAN side-death"],
+		["death_top", "PHISHERMAN top-down death"],
 	]))
+	catalog.append_array(_ui_catalog())
 	return catalog
 
 
-func _character_sheet_catalog(character_id: String, rows: Array) -> Array[Dictionary]:
+func _ui_catalog() -> Array[Dictionary]:
+	return [
+		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
+		_catalog_entry("ui_background", "Login background", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/background.png"),
+		_catalog_entry("ui_logo", "Brand logo", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336656/logo.png"),
+		_catalog_entry("ui_loading", "Loading mark", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336655/loading.png"),
+		_catalog_entry("ui_pfp", "Profile portrait", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336662/tempo_pfp.jpg"),
+		_catalog_entry("ui_setting", "Settings icon", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336659/setting.png"),
+		_catalog_entry("ui_pause", "Pause icon", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336657/pause.png"),
+		_catalog_entry("ui_speedup", "Speed icon", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336660/speedup.png"),
+		_catalog_entry("ui_heart_full", "HP full", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336650/fullheart.png"),
+		_catalog_entry("ui_heart_half", "HP half", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336652/halfheart.png"),
+		_catalog_entry("ui_heart_empty", "HP empty", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/emptyheart.png"),
+	]
+
+
+func _character_sheet_catalog(character_id: String, folder: String, rows: Array) -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
 	for i in rows.size():
 		var row: Variant = rows[i]
 		if typeof(row) != TYPE_ARRAY:
 			continue
 		var parts: Array = row
-		if parts.size() < 3:
+		if parts.size() < 2:
 			continue
 		var sheet_id: String = str(parts[0])
 		catalog.append(_catalog_entry(
 			"%s_%s" % [character_id, sheet_id],
 			str(parts[1]),
 			"sprite_sheet",
-			str(parts[2]),
+			"%s/%s_%s.png" % [folder, character_id, sheet_id],
 		))
 	return catalog
 
 
-func _catalog_entry(asset_id: String, asset_name: String, asset_type: String, url: String) -> Dictionary:
+func _cloud_url(public_id: String) -> String:
+	return "%s/%s" % [CLOUD_ROOT, public_id]
+
+
+func _catalog_entry(asset_id: String, asset_name: String, asset_type: String, source: String) -> Dictionary:
+	var url: String = source if source.begins_with("http") else _cloud_url(source)
+	var version: String = _version_from_cloudinary_url(url)
+	if version.is_empty():
+		version = CATALOG_REV
 	return {
 		"asset_id": asset_id,
 		"asset_name": asset_name,
 		"asset_type": asset_type,
 		"cloudinary_url": url,
-		"version": _version_from_cloudinary_url(url),
+		"version": version,
 		"local_path": _local_path_for(asset_id),
 	}
 
@@ -313,10 +355,13 @@ func _download_and_store(entry: Dictionary) -> bool:
 	if image == null or image.is_empty():
 		push_warning("AssetManager: invalid image payload for '%s'." % asset_id)
 		return _use_local_fallback(asset_id, local_path, false)
-	if not _write_bytes(local_path, body):
+	var png: PackedByteArray = image.save_png_to_buffer()
+	if png.is_empty():
+		png = body
+	if not _write_bytes(local_path, png):
 		push_warning("AssetManager: could not write '%s'." % local_path)
 		return _use_local_fallback(asset_id, local_path, false)
-	var file_hash: String = _sha256(body)
+	var file_hash: String = _sha256(png)
 	if not _upsert_meta(entry, file_hash):
 		push_warning("AssetManager: SQLite metadata write failed for '%s'; file is still cached." % asset_id)
 	var texture: ImageTexture = ImageTexture.create_from_image(image)
@@ -569,10 +614,34 @@ func _seed_from_bundle() -> void:
 
 
 func _bundled_path(asset_id: String) -> String:
-	var character_id: String = asset_id.get_slice("_", 0)
-	if character_id.is_empty():
-		character_id = "hacker"
-	return "%s/%s/%s.png" % [BUNDLED_DIR, character_id, asset_id]
+	match asset_id:
+		"ui_dashboard":
+			return "res://assets/ui/dashboard.png"
+		"ui_background":
+			return "res://assets/ui/background.png"
+		"ui_logo":
+			return "res://assets/ui/logo.png"
+		"ui_loading":
+			return "res://assets/ui/loading.png"
+		"ui_pfp":
+			return "res://assets/ui/tempo_pfp.jpg"
+		"ui_setting":
+			return "res://assets/ui/setting.png"
+		"ui_pause":
+			return "res://assets/ui/pause.png"
+		"ui_speedup":
+			return "res://assets/ui/speedup.png"
+		"ui_heart_full":
+			return "res://assets/ui/fullheart.png"
+		"ui_heart_half":
+			return "res://assets/ui/halfheart.png"
+		"ui_heart_empty":
+			return "res://assets/ui/emptyheart.png"
+		_:
+			var character_id: String = asset_id.get_slice("_", 0)
+			if character_id.is_empty():
+				character_id = "hacker"
+			return "%s/%s/%s.png" % [BUNDLED_DIR, character_id, asset_id]
 
 
 func _load_bundled_texture(asset_id: String) -> Texture2D:
