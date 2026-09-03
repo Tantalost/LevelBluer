@@ -436,7 +436,7 @@ mouse_filter = 2
 
 [node name="QuizWindow" type="PanelContainer" parent="GameplayCanvas/QuizModal/QuizCenter"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(680, 0)
+custom_minimum_size = Vector2(760, 0)
 layout_mode = 2
 
 [node name="QuizBody" type="VBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow"]
@@ -508,12 +508,28 @@ theme_override_font_sizes/font_size = 9
 text = "TRACE  1 / 5"
 horizontal_alignment = 1
 
+[node name="ScenarioScroll" type="ScrollContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 132)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ScenarioLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox/ScenarioScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 10
+text = ""
+autowrap_mode = 3
+
 [node name="QuestionLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_fonts/font = ExtResource("6_font")
-theme_override_font_sizes/font_size = 13
-text = "Which port is used for HTTPS?"
+theme_override_font_sizes/font_size = 12
+text = "PHISHING OR LEGITIMATE?"
 horizontal_alignment = 1
 autowrap_mode = 3
 
@@ -525,13 +541,20 @@ theme_override_font_sizes/font_size = 8
 text = "SECURE +5G     MISS +2G"
 horizontal_alignment = 1
 
+[node name="AnswerList" type="VBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
 [node name="AnswerRow" type="HBoxContainer" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+visible = false
 layout_mode = 2
 theme_override_constants/separation = 16
 alignment = 1
 
 [node name="BtnCorrect" type="Button" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox/AnswerRow"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -542,12 +565,32 @@ autowrap_mode = 3
 
 [node name="BtnWrong" type="Button" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox/AnswerRow"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_fonts/font = ExtResource("6_font")
 theme_override_font_sizes/font_size = 12
 text = "80"
+autowrap_mode = 3
+
+[node name="QuizConfirmButton" type="Button" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 11
+text = "CONFIRM"
+
+[node name="QuizFeedbackLabel" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_font_sizes/font_size = 9
+text = ""
+horizontal_alignment = 1
 autowrap_mode = 3
 
 [node name="QuizTapHint" type="Label" parent="GameplayCanvas/QuizModal/QuizCenter/QuizWindow/QuizBody/QuizWell/WellMargin/WellBox"]

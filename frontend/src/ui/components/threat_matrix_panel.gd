@@ -3,7 +3,7 @@ extends PanelContainer
 ## Open learner model: BKT mastery bars for Ports, Firewalls, and Crypto.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const SKILL_ORDER: PackedStringArray = ["ports", "firewalls", "crypto"]
+const SKILL_ORDER: PackedStringArray = ["phishing"]
 
 @onready var _header: Label = %HeaderLabel
 @onready var _skills: VBoxContainer = %SkillsContainer

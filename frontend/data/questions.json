@@ -1,38 +1,1698 @@
 {
-	"ports": [
-		{"text": "Which port is used for HTTPS?", "correct": "443", "wrong": "80"},
-		{"text": "Which port handles SSH traffic?", "correct": "22", "wrong": "21"},
-		{"text": "Which port does DNS typically use?", "correct": "53", "wrong": "25"},
-		{"text": "Which port serves unencrypted HTTP?", "correct": "80", "wrong": "443"},
-		{"text": "Which port is commonly used for RDP?", "correct": "3389", "wrong": "445"},
-		{"text": "Which port is the default for SMTP?", "correct": "25", "wrong": "110"},
-		{"text": "Which port is used for FTP control?", "correct": "21", "wrong": "23"},
-		{"text": "Which port is associated with SMB file shares?", "correct": "445", "wrong": "389"},
-		{"text": "Which port is the default for MySQL?", "correct": "3306", "wrong": "1433"},
-		{"text": "Which port is commonly used for SNMP?", "correct": "161", "wrong": "514"}
-	],
-	"firewalls": [
-		{"text": "Which rule blocks all incoming traffic by default?", "correct": "Implicit Deny", "wrong": "Port Forwarding"},
-		{"text": "A firewall operates primarily at which OSI layer?", "correct": "Network (Layer 3)", "wrong": "Application (Layer 7)"},
-		{"text": "What does a stateful firewall track?", "correct": "Active connections", "wrong": "File hashes"},
-		{"text": "Which placement exposes public services safely?", "correct": "DMZ", "wrong": "Domain Controller"},
-		{"text": "Which action drops traffic without a reply?", "correct": "Drop", "wrong": "Redirect"},
-		{"text": "What does NAT primarily hide?", "correct": "Internal IP addresses", "wrong": "MAC vendor IDs"},
-		{"text": "Which list decides allow or deny by address and port?", "correct": "ACL", "wrong": "ARP cache"},
-		{"text": "A host-based firewall inspects traffic where?", "correct": "On the endpoint", "wrong": "Only at the ISP"},
-		{"text": "Which design exposes the fewest inbound services?", "correct": "Default deny inbound", "wrong": "Any-any allow"},
-		{"text": "What does egress filtering control?", "correct": "Outbound traffic", "wrong": "DHCP leases"}
-	],
-	"crypto": [
-		{"text": "Which algorithm is asymmetric?", "correct": "RSA", "wrong": "AES"},
-		{"text": "What is the primary purpose of a hash?", "correct": "Integrity", "wrong": "Encryption"},
-		{"text": "Which protocol encrypts web traffic?", "correct": "TLS", "wrong": "FTP"},
-		{"text": "What must stay private in public-key crypto?", "correct": "Private key", "wrong": "Certificate"},
-		{"text": "Which function is one-way by design?", "correct": "SHA-256", "wrong": "Caesar cipher"},
-		{"text": "Which algorithm is symmetric?", "correct": "AES", "wrong": "RSA"},
-		{"text": "What does a digital signature prove?", "correct": "Origin and integrity", "wrong": "Bandwidth"},
-		{"text": "What is Diffie-Hellman used to establish?", "correct": "A shared secret", "wrong": "A MAC address"},
-		{"text": "What does a nonce help prevent?", "correct": "Replay attacks", "wrong": "Packet loss"},
-		{"text": "Perfect forward secrecy protects which keys?", "correct": "Past session keys", "wrong": "DNS records"}
-	]
+  "module_id": "mod_01",
+  "module_title": "Email Tricks",
+  "topic": "Phishing",
+  "question_types": [
+    {
+      "type_id": "trust_verdict",
+      "type_label": "Phishing or Legitimate?",
+      "delivery": "binary_ab",
+      "description": "Player sees one full email and chooses Phishing or Legitimate.",
+      "questions": [
+        {
+          "id": "mod01_tv_01",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "Registrar's Office <registrar@westfield.edu>",
+            "subject": "Reminder: Grade Encoding Period Ends Friday",
+            "body": "Hi students, this is a reminder that the grade encoding period for this semester closes this Friday at 5 PM. If you notice a missing grade after that, visit the Registrar's window in person. No action is needed from you right now."
+          },
+          "correct_answer": "legitimate",
+          "checklist_hits": [
+            1,
+            2
+          ],
+          "tell": "Real school domain, no link, no request for personal info, and no urgency trick.",
+          "correct_feedback": "Nice catch — a plain notice with no ask is usually safe.",
+          "incorrect_feedback": "Check the sender's domain and what it actually asks you to do — nothing here.",
+          "explanation": "The address matches the real school domain and the email doesn't ask you to click, download, or share anything. It's just information.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_02",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "Campus Wifi Support <wifi@westfie1d.edu>",
+            "subject": "URGENT: Wifi Access Expiring Today",
+            "body": "Your campus wifi account will be disabled in 2 hours. Re-enter your student ID and password now to keep your access: westfie1d.edu/wifi-fix"
+          },
+          "correct_answer": "phishing",
+          "checklist_hits": [
+            1,
+            2,
+            3
+          ],
+          "tell": "The domain uses the numeral 1 instead of the letter l — westfie1d.edu, not westfield.edu.",
+          "correct_feedback": "Exactly — that's a lookalike domain built to fool a quick glance.",
+          "incorrect_feedback": "Look closely at the domain spelling — one letter is swapped for a number.",
+          "explanation": "Real wifi accounts don't get disabled with a 2-hour countdown, and no legitimate IT team asks you to type your password into a link like this. The domain is also a lookalike.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_03",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Klaris Library <fines@klaris-lib.net>",
+            "subject": "Overdue Fine Notice - ₱350",
+            "body": "You have an unpaid library fine of ₱350. Open the attached FINE_NOTICE.PDF.exe and log in with your student credentials today to avoid a hold on your enrollment."
+          },
+          "correct_answer": "phishing",
+          "checklist_hits": [
+            1,
+            2,
+            4
+          ],
+          "tell": "The attachment is disguised as a PDF but ends in .exe, a program file, not a document.",
+          "correct_feedback": "Right — a real fine notice is never a program pretending to be a PDF.",
+          "incorrect_feedback": "Look at the attachment name closely — it isn't really a PDF.",
+          "explanation": "The .PDF.exe extension is a classic disguise for a malicious program. Combined with an outside domain and a credential login request, this is a clear phishing attempt.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_04",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "Student Activities Office <activities@westfield.edu>",
+            "subject": "Club Fair Booth Sign-Up Closes Monday",
+            "body": "If your organization wants a booth at next month's club fair, submit the sign-up form at the Student Activities office by Monday. Questions can be directed to our office during business hours."
+          },
+          "correct_answer": "legitimate",
+          "checklist_hits": [
+            1,
+            2
+          ],
+          "tell": "Real domain, no link to click, and the action happens in person, not online.",
+          "correct_feedback": "Correct — informational, real domain, nothing risky requested.",
+          "incorrect_feedback": "Re-check the sender address and what action is actually being asked for.",
+          "explanation": "This email matches the real school domain and asks students to submit a form in person rather than click a link or share credentials.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_05",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Registrar's Office <registrar.help99@gmail.com>",
+            "subject": "Confirm Your Enrollment Record",
+            "body": "Reply to this email with your full student number and portal password so we can confirm your enrollment record before the deadline tomorrow."
+          },
+          "correct_answer": "phishing",
+          "checklist_hits": [
+            1,
+            2,
+            3
+          ],
+          "tell": "The display name says Registrar's Office, but the actual address is a free gmail.com account.",
+          "correct_feedback": "Exactly — a real office never emails from a personal gmail account.",
+          "incorrect_feedback": "Look past the display name — check the actual email address after the @.",
+          "explanation": "A legitimate registrar's office uses the official school domain, not a personal gmail address. Asking you to reply with your password by email is also a hard red flag.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_06",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "IT Services <it@westfield.edu>",
+            "subject": "Scheduled Maintenance This Saturday",
+            "body": "The student portal will be briefly unavailable this Saturday from 1 AM to 3 AM for scheduled maintenance. No action is required. Service will resume automatically."
+          },
+          "correct_answer": "legitimate",
+          "checklist_hits": [
+            1,
+            3
+          ],
+          "tell": "Real domain, calm tone, and explicitly says no action is required.",
+          "correct_feedback": "Right — no ask, no urgency, real domain.",
+          "incorrect_feedback": "This email doesn't ask you to do anything at all — that's a good sign, not a bad one.",
+          "explanation": "This is a routine maintenance notice from the correct school domain. It doesn't request any action, which is typical of legitimate IT announcements.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_07",
+          "difficulty": "hard",
+          "scenario": {
+            "channel": "email",
+            "from": "Northline Credit Union <rewards@northline-credit.com>",
+            "subject": "Claim Your ₱1,500 Student Stipend - Expires in 24 Hours",
+            "body": "You've been selected for a ₱1,500 student stipend. Click below to claim it before your slot expires in 24 hours: northline-credit.com/claim-stipend. You will need to confirm your account number and PIN."
+          },
+          "correct_answer": "phishing",
+          "checklist_hits": [
+            1,
+            2,
+            3
+          ],
+          "tell": "The real credit union uses northlinecu.edu, not northline-credit.com, and no legitimate stipend program asks for your PIN.",
+          "correct_feedback": "Correct — free money plus a countdown plus a PIN request is a classic combo.",
+          "incorrect_feedback": "Would a real stipend program ever need your account PIN to give you money? That's the tell.",
+          "explanation": "This message stacks three tricks: an unexpected reward, a false deadline, and a request for sensitive account details on an unfamiliar domain.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_08",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Campus Health Portal <appointments@westfield.edu>",
+            "subject": "Your Checkup Reminder for Next Week",
+            "body": "This is a reminder of your scheduled checkup next Tuesday at 10 AM. To reschedule, call the clinic front desk at the number on your student ID. No online action is needed."
+          },
+          "correct_answer": "legitimate",
+          "checklist_hits": [
+            1,
+            2
+          ],
+          "tell": "Real domain and the only requested action is a phone call, not a link or login.",
+          "correct_feedback": "Nice — a real domain and an offline way to respond.",
+          "incorrect_feedback": "Notice there's no link and no request for a password — that points to legitimate.",
+          "explanation": "The domain matches the school, and rescheduling happens by phone rather than through a link or login, which fits normal clinic communication.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_09",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Shared Drive Notice <no-reply@drive-share-alert.com>",
+            "subject": "Sharing Error on 'Class 10 Notes' Folder",
+            "body": "A sharing error occurred on your class folder. Sign in here with your school email and password to restore access: drive-share-alert.com/fix-access"
+          },
+          "correct_answer": "phishing",
+          "checklist_hits": [
+            1,
+            2,
+            3
+          ],
+          "tell": "The domain has nothing to do with the school or a known drive provider, and it asks for your school password on that outside site.",
+          "correct_feedback": "Correct — an unrelated domain asking for your school password is a big red flag.",
+          "incorrect_feedback": "Check where the sign-in link actually points — is that domain connected to your school at all?",
+          "explanation": "Legitimate shared drive tools don't route password logins through unrelated third-party domains. This is built to steal your school credentials.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tv_10",
+          "difficulty": "hard",
+          "scenario": {
+            "channel": "email",
+            "from": "IT Security Team <alerts@westfield-it-secure.net>",
+            "subject": "Unusual Sign-In Detected - Account Will Be Locked",
+            "body": "We detected a sign-in from a new device. If this wasn't you, your account will be permanently locked in 1 hour unless you verify your identity here: westfield-it-secure.net/verify. Enter your username and password to cancel the lock."
+          },
+          "correct_answer": "phishing",
+          "checklist_hits": [
+            1,
+            2,
+            3
+          ],
+          "tell": "The real school domain is westfield.edu — 'westfield-it-secure.net' is a different, unrelated domain designed to look official.",
+          "correct_feedback": "Exactly — fear of a locked account is the pressure tactic here.",
+          "incorrect_feedback": "Compare this domain letter-by-letter with the real westfield.edu address.",
+          "explanation": "This combines a scary consequence (permanent lock), a tight deadline, and a lookalike domain that isn't the actual school domain — all designed to make you act before you think.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "spot_the_tell",
+      "type_label": "Spot the Tell",
+      "delivery": "multiple_choice_4",
+      "questions": [
+        {
+          "id": "mod01_st_01",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "Registrar <registrar@westfie1d.edu>",
+            "subject": "Confirm Enrollment Now",
+            "body": "Click here to confirm your enrollment before it's cancelled: westfie1d.edu/confirm"
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "The subject line is in all caps",
+            "The domain has a 1 instead of an l",
+            "It was sent in the morning",
+            "It mentions enrollment"
+          ],
+          "answer_index": 1,
+          "explanation": "westfie1d.edu is a lookalike of the real westfield.edu domain — that's the strongest tell here.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_02",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "Klaris Library <fines@klaris-lib.net>",
+            "subject": "Pay Now to Avoid Hold",
+            "body": "Open FINE_NOTICE.PDF.exe and log in with your student ID and password within the hour."
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It mentions a fine amount",
+            "The attachment is disguised as a PDF but is really a program (.exe)",
+            "It's from the library",
+            "The subject is short"
+          ],
+          "answer_index": 1,
+          "explanation": "A file ending in .PDF.exe is actually an executable program, not a document — a common malware disguise.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_03",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Registrar's Office <registrar.help99@gmail.com>",
+            "subject": "Confirm Your Record",
+            "body": "Reply with your full student number and portal password so we can confirm your record before tomorrow's deadline."
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It has a deadline",
+            "It's asking you to reply with your password",
+            "The subject mentions your record",
+            "It's addressed to students"
+          ],
+          "answer_index": 1,
+          "explanation": "No legitimate office ever needs you to send your password by email — that request alone is disqualifying.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_04",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Northline Credit Union <rewards@northline-credit.com>",
+            "subject": "Claim ₱1,500 Now",
+            "body": "You've been selected for a stipend. Confirm your account number and PIN within 24 hours to claim it: northline-credit.com/claim"
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It offers money",
+            "It asks for your account PIN to receive a reward",
+            "The subject has an emoji-free tone",
+            "It uses the word 'stipend'"
+          ],
+          "answer_index": 1,
+          "explanation": "A real reward or stipend never requires your PIN — that's specifically used to steal account access.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_05",
+          "difficulty": "hard",
+          "scenario": {
+            "channel": "email",
+            "from": "IT Security Team <alerts@westfield-it-secure.net>",
+            "subject": "Account Will Be Locked in 1 Hour",
+            "body": "Verify your identity now or your account will be permanently locked: westfield-it-secure.net/verify. Enter your username and password."
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It mentions security",
+            "The domain is not the real westfield.edu, and it asks for your password to 'verify'",
+            "It has a subject line",
+            "It says 'Team' instead of 'Office'"
+          ],
+          "answer_index": 1,
+          "explanation": "westfield-it-secure.net is a different domain from the real westfield.edu, built to look official while harvesting your password.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_06",
+          "difficulty": "easy",
+          "scenario": {
+            "channel": "email",
+            "from": "Campus Wifi <wifi@westfie1d.edu>",
+            "subject": "Wifi Expiring in 2 Hours",
+            "body": "Re-enter your password now to keep access: westfie1d.edu/wifi-fix"
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It talks about wifi",
+            "It combines a false urgent deadline with a password request on a lookalike domain",
+            "It's short",
+            "It has a link"
+          ],
+          "answer_index": 1,
+          "explanation": "The urgency plus the password request plus the lookalike domain together are the tell, but the domain and password ask are the core issue.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_07",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Shared Drive Notice <no-reply@drive-share-alert.com>",
+            "subject": "Sharing Error",
+            "body": "Sign in with your school email and password here to restore access: drive-share-alert.com/fix-access"
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It's about a class folder",
+            "The sign-in page is on an unrelated outside domain, not your school's system",
+            "It says 'error'",
+            "It has no attachment"
+          ],
+          "answer_index": 1,
+          "explanation": "Your school's drive tools would never route a password login through an unrelated third-party domain like this one.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_08",
+          "difficulty": "hard",
+          "scenario": {
+            "channel": "email",
+            "from": "Campus Health Portal <clinic.westfield.care@proton.me>",
+            "subject": "Upload ID Within 30 Minutes",
+            "body": "Upload a photo of your ID and your portal password within 30 minutes or a hold will be placed on your enrollment."
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "The display name looks official but the actual address is a free proton.me account, and it asks for your password",
+            "It mentions your enrollment",
+            "It's about health",
+            "It uses the word 'portal'"
+          ],
+          "answer_index": 0,
+          "explanation": "The display name is designed to look like the school's clinic, but the real address is a personal proton.me account — and no clinic needs your portal password.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_09",
+          "difficulty": "medium",
+          "scenario": {
+            "channel": "email",
+            "from": "Student Council <council@westfield.edu.form-reply.com>",
+            "subject": "Vote Now Before Polls Close",
+            "body": "Polls close in 15 minutes. Log in with your student credentials to cast your vote: westfield.edu.form-reply.com/vote"
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It's asking students to vote",
+            "The domain only looks like westfield.edu but is actually 'form-reply.com'",
+            "The subject has urgency",
+            "It comes from the student council"
+          ],
+          "answer_index": 1,
+          "explanation": "westfield.edu.form-reply.com is not a subdomain of westfield.edu — the real domain is form-reply.com, with 'westfield.edu' added to trick the eye.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_st_10",
+          "difficulty": "hard",
+          "scenario": {
+            "channel": "email",
+            "from": "Harbor Civic Youth Program <grants@harb0r-civic.net>",
+            "subject": "You Qualify for a Youth Grant",
+            "body": "Congratulations, you qualify for a ₱2,000 youth grant. Reply with your full name, birthdate, and a copy of your school ID to claim it within 48 hours."
+          },
+          "question": "What is the strongest sign this email is fake?",
+          "options": [
+            "It offers a grant",
+            "The domain uses a zero instead of the letter o, and it requests personal ID details by reply",
+            "It mentions youth programs",
+            "It has a 48-hour window"
+          ],
+          "answer_index": 1,
+          "explanation": "harb0r-civic.net swaps a zero for the letter o, and legitimate grant programs don't collect ID copies through a simple email reply.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "sender_audit",
+      "type_label": "Sender Audit",
+      "delivery": "multiple_choice_4",
+      "questions": [
+        {
+          "id": "mod01_sa_01",
+          "scenario": {
+            "from_line": "IT Helpdesk <it.help@gmail.com>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The display name 'IT Helpdesk'",
+            "The address uses a public mailbox (gmail.com)",
+            "The @ symbol",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "A real school IT office uses the school's own domain, not a free public email service like gmail.com.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_02",
+          "scenario": {
+            "from_line": "Registrar's Office <registrar@westfie1d.edu>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The display name 'Registrar's Office'",
+            "The domain 'westfie1d.edu' uses a 1 instead of an l",
+            "The word 'Office'",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "This is a lookalike domain, one character off from the real westfield.edu.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_03",
+          "scenario": {
+            "from_line": "Klaris Library <fines@klaris-lib.net>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The word 'fines'",
+            "The domain 'klaris-lib.net' doesn't match the real library's domain",
+            "The display name 'Klaris Library'",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "The real library uses its own school-affiliated domain — 'klaris-lib.net' is an outside domain pretending to be the library.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_04",
+          "scenario": {
+            "from_line": "Northline Credit Union <rewards@northline-credit.com>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The word 'rewards'",
+            "The domain doesn't match the credit union's real domain (northlinecu.edu)",
+            "The display name",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "northline-credit.com is not the same as the institution's actual domain, even though the display name looks official.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_05",
+          "scenario": {
+            "from_line": "Campus Health <clinic.westfield.care@proton.me>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The words 'Campus Health'",
+            "The actual address is on proton.me, a free personal email service, not the school domain",
+            "The word 'clinic'",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "Despite mentioning the school in the address, the real domain after the @ is proton.me, not westfield.edu.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_06",
+          "scenario": {
+            "from_line": "Student Council <council@westfield.edu.form-reply.com>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The display name 'Student Council'",
+            "The true domain is 'form-reply.com' — 'westfield.edu' is just added text, not a real subdomain",
+            "The word 'council'",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "The actual domain is whatever comes right before the final slash-free part — here that's form-reply.com, not westfield.edu.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_07",
+          "scenario": {
+            "from_line": "Harbor Civic Youth Program <grants@harb0r-civic.net>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The word 'grants'",
+            "The domain uses a zero (0) instead of the letter o in 'harbor'",
+            "The word 'Youth'",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "harb0r-civic.net swaps a zero for the letter o — a classic lookalike trick.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_08",
+          "scenario": {
+            "from_line": "Registrar <registrar@westfield.edu>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "There is no red flag — this matches the real school domain",
+            "The display name is too short",
+            "The word 'Registrar'",
+            "The lack of a title after the name"
+          ],
+          "answer_index": 0,
+          "explanation": "This sender line actually matches the legitimate school domain with no lookalike tricks — it's a safe example.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_09",
+          "scenario": {
+            "from_line": "Scholarship Office <scholarships@westfield-scholars.org>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "The word 'Scholarship'",
+            "The domain 'westfield-scholars.org' is not the school's actual domain (westfield.edu)",
+            "The word 'Office'",
+            "There is no red flag"
+          ],
+          "answer_index": 1,
+          "explanation": "Even though it mentions the school's name, '.org' with a different structure than westfield.edu means it's a separate, unverified domain.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_sa_10",
+          "scenario": {
+            "from_line": "IT Services <it@westfield.edu>"
+          },
+          "question": "Which part of this sender line is the red flag?",
+          "options": [
+            "There is no red flag — this is the real school IT domain",
+            "The word 'Services'",
+            "The lowercase 'it'",
+            "The lack of a phone number"
+          ],
+          "answer_index": 0,
+          "explanation": "This address matches the legitimate school domain exactly, with no lookalike substitution.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "url_spoof",
+      "type_label": "Link & Domain Spoof",
+      "delivery": "multiple_choice_4",
+      "questions": [
+        {
+          "id": "mod01_us_01",
+          "prompt": "Which link would you NOT trust for a campus wifi fix?",
+          "options": [
+            "https://wifi.westfield.edu/status",
+            "https://westfie1d.edu/wifi-fix",
+            "https://portal.westfield.edu",
+            "https://westfield.edu/help"
+          ],
+          "answer_index": 1,
+          "explanation": "Note the 1 instead of l in westfield — this is a lookalike domain.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_02",
+          "prompt": "Which link would you NOT trust for a library fine payment?",
+          "options": [
+            "https://klaris.westfield.edu/fines",
+            "https://klaris-lib.net/pay-now",
+            "https://library.westfield.edu",
+            "https://westfield.edu/library/fines"
+          ],
+          "answer_index": 1,
+          "explanation": "klaris-lib.net is an outside domain unrelated to the school's real domain structure.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_03",
+          "prompt": "Which link would you NOT trust for claiming a student stipend?",
+          "options": [
+            "https://northlinecu.edu/stipend",
+            "https://northline-credit.com/claim-stipend",
+            "https://northlinecu.edu/students/stipend",
+            "https://portal.northlinecu.edu"
+          ],
+          "answer_index": 1,
+          "explanation": "northline-credit.com does not match the credit union's real domain, northlinecu.edu.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_04",
+          "prompt": "Which link would you NOT trust for verifying your account?",
+          "options": [
+            "https://westfield.edu/account/verify",
+            "https://westfield-it-secure.net/verify",
+            "https://portal.westfield.edu/verify",
+            "https://westfield.edu/help/security"
+          ],
+          "answer_index": 1,
+          "explanation": "westfield-it-secure.net is a completely different domain from the real westfield.edu, despite sounding official.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_05",
+          "prompt": "Which link would you NOT trust to access a shared class folder?",
+          "options": [
+            "https://drive.westfield.edu/class10",
+            "https://drive-share-alert.com/fix-access",
+            "https://westfield.edu/drive/class10",
+            "https://portal.westfield.edu/files"
+          ],
+          "answer_index": 1,
+          "explanation": "drive-share-alert.com has no relationship to the school's actual domain.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_06",
+          "prompt": "Which link would you NOT trust for casting a student council vote?",
+          "options": [
+            "https://westfield.edu/vote",
+            "https://westfield.edu.form-reply.com/vote",
+            "https://council.westfield.edu/vote",
+            "https://portal.westfield.edu/vote"
+          ],
+          "answer_index": 1,
+          "explanation": "The real domain here is form-reply.com — 'westfield.edu' was inserted before it just to look convincing.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_07",
+          "prompt": "Which link would you NOT trust for claiming a youth grant?",
+          "options": [
+            "https://harborcivic.gov/youth-grant",
+            "https://harb0r-civic.net/claim",
+            "https://harborcivic.gov/programs/youth",
+            "https://harborcivic.gov"
+          ],
+          "answer_index": 1,
+          "explanation": "harb0r-civic.net swaps a zero for the letter o and is not the real Harbor Civic domain.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_08",
+          "prompt": "Which link would you NOT trust for a health portal ID upload?",
+          "options": [
+            "https://health.westfield.edu/portal",
+            "https://clinic.westfield.care-secure.me/upload",
+            "https://westfield.edu/health",
+            "https://portal.westfield.edu/health"
+          ],
+          "answer_index": 1,
+          "explanation": "westfield.care-secure.me is an unrelated domain, not a real part of westfield.edu.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_09",
+          "prompt": "Which link would you NOT trust for scholarship applications?",
+          "options": [
+            "https://westfield.edu/scholarships",
+            "https://westfield-scholars.org/apply",
+            "https://scholarships.westfield.edu",
+            "https://portal.westfield.edu/scholarships"
+          ],
+          "answer_index": 1,
+          "explanation": "westfield-scholars.org is a separate, unverified domain that only borrows the school's name.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_us_10",
+          "prompt": "Which link would you NOT trust for checking your grades?",
+          "options": [
+            "https://portal.westfield.edu/grades",
+            "https://westfield.edu-gradecheck.info/login",
+            "https://westfield.edu/grades",
+            "https://grades.westfield.edu"
+          ],
+          "answer_index": 1,
+          "explanation": "westfield.edu-gradecheck.info is a lookalike — the real domain is 'gradecheck.info', with 'westfield.edu' used as a decoy prefix.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "tap_trap_lines",
+      "type_label": "Tap the Trap Lines",
+      "delivery": "multi_select",
+      "questions": [
+        {
+          "id": "mod01_tt_01",
+          "email_lines": [
+            "From: Klaris Library <fines@klaris-lib.net>",
+            "Subject: Overdue fine ₱350",
+            "Open FINE_NOTICE.PDF.exe and log in today",
+            "Avoid a hold on your account"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            2,
+            3
+          ],
+          "trap_indices": [
+            1
+          ],
+          "explanations": {
+            "0": "Wrong library domain.",
+            "1": "A fine amount alone is not proof of a trap.",
+            "2": "Program disguised as PDF.",
+            "3": "Urgency to skip thinking."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_02",
+          "email_lines": [
+            "From: Campus Wifi <wifi@westfie1d.edu>",
+            "Subject: Wifi access expiring today",
+            "Wifi coverage is strongest near the library",
+            "Re-enter your password within 2 hours: westfie1d.edu/wifi-fix"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Lookalike domain (1 instead of l).",
+            "2": "True but irrelevant detail — a decoy.",
+            "3": "Password request with a false deadline."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_03",
+          "email_lines": [
+            "From: Registrar's Office <registrar.help99@gmail.com>",
+            "Subject: Confirm your enrollment record",
+            "The registrar's office is located in the main building",
+            "Reply with your full student number and portal password"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Real office would not use a personal gmail address.",
+            "2": "Location info is true but not part of the scam mechanics — a decoy.",
+            "3": "Never send your password by email reply."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_04",
+          "email_lines": [
+            "From: Northline Credit Union <rewards@northline-credit.com>",
+            "Subject: Claim your ₱1,500 stipend - 24 hours left",
+            "The credit union has branches in three cities",
+            "Confirm your account number and PIN to claim"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            1,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Domain doesn't match the real credit union.",
+            "1": "False urgency deadline.",
+            "2": "Branch locations are true but irrelevant — a decoy.",
+            "3": "PIN requests are never legitimate for claiming a reward."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_05",
+          "email_lines": [
+            "From: IT Security Team <alerts@westfield-it-secure.net>",
+            "Subject: Unusual sign-in detected",
+            "Strong passwords use a mix of letters and numbers",
+            "Verify now or your account will be locked in 1 hour: enter username and password"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Lookalike domain, not the real westfield.edu.",
+            "2": "General password advice, true but unrelated to the scam mechanics — a decoy.",
+            "3": "Fear of lockout plus a password request is the actual trick."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_06",
+          "email_lines": [
+            "From: Shared Drive Notice <no-reply@drive-share-alert.com>",
+            "Subject: Sharing error on your class folder",
+            "Class 10 notes were shared last week by your teacher",
+            "Sign in with your school email and password here to restore access"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Domain is unrelated to the school or any known drive provider.",
+            "2": "True background detail, but not part of the scam mechanism — a decoy.",
+            "3": "Credential login on an unrelated outside domain."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_07",
+          "email_lines": [
+            "From: Student Council <council@westfield.edu.form-reply.com>",
+            "Subject: Polls close in 15 minutes",
+            "This year's council has five elected officers",
+            "Log in with your student credentials to cast your vote"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            1,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "form-reply.com is the real domain, not westfield.edu.",
+            "1": "Manufactured urgency.",
+            "2": "True fact about the council, but irrelevant — a decoy.",
+            "3": "Credential login for something that shouldn't need one."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_08",
+          "email_lines": [
+            "From: Harbor Civic Youth Program <grants@harb0r-civic.net>",
+            "Subject: You qualify for a ₱2,000 youth grant",
+            "Harbor Civic has run youth programs for over a decade",
+            "Reply with your full name, birthdate, and a copy of your school ID within 48 hours"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Zero used instead of letter o in the domain.",
+            "2": "Background credibility claim, true-sounding but a decoy.",
+            "3": "Collecting ID and personal details through a simple reply is the trick."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_09",
+          "email_lines": [
+            "From: Campus Health <clinic.westfield.care@proton.me>",
+            "Subject: Upload ID within 30 minutes",
+            "The clinic is open Monday through Friday",
+            "Upload a photo of your ID and your portal password or a hold will be placed on enrollment"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            1,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Real address is a personal proton.me account, not the school domain.",
+            "1": "Artificial short deadline.",
+            "2": "True clinic hours, but a decoy unrelated to the trick.",
+            "3": "No clinic ever needs your portal password."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tt_10",
+          "email_lines": [
+            "From: Scholarship Office <scholarships@westfield-scholars.org>",
+            "Subject: Final step to receive your award",
+            "Scholarships are announced every semester",
+            "Send your bank account number to process the deposit today"
+          ],
+          "question": "Tap every line that is part of the trick (not the decoy).",
+          "correct_indices": [
+            0,
+            3
+          ],
+          "trap_indices": [
+            2
+          ],
+          "explanations": {
+            "0": "Domain doesn't match the real school domain.",
+            "2": "General true fact, but a decoy not tied to the scam mechanics.",
+            "3": "Requesting a bank account number by email reply is a major red flag."
+          },
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "inbox_triage",
+      "type_label": "Inbox Triage",
+      "delivery": "multiple_choice_3",
+      "questions": [
+        {
+          "id": "mod01_it_01",
+          "preview": "Health / 30 min hold",
+          "content": "From: Campus Health <clinic.westfield.care@proton.me>\nUpload ID and password in 30 minutes or a hold hits enrollment.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "A password request plus a fake urgent deadline from a non-school domain is a clear phishing pattern worth reporting.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_02",
+          "preview": "Registrar / grade reminder",
+          "content": "From: Registrar's Office <registrar@westfield.edu>\nGrade encoding closes Friday at 5 PM. No action needed if your grades look correct.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — read and move on",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 0,
+          "explanation": "Real domain, no link, no request for credentials — this is safe to simply read.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_03",
+          "preview": "Wifi / password re-entry",
+          "content": "From: Campus Wifi <wifi@westfie1d.edu>\nRe-enter your password within 2 hours to keep access: westfie1d.edu/wifi-fix",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "Lookalike domain plus a password request under time pressure — report it rather than click or ignore.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_04",
+          "preview": "Stipend / 24-hour claim",
+          "content": "From: Northline Credit Union <rewards@northline-credit.com>\nConfirm your account number and PIN within 24 hours to claim ₱1,500.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "An unexpected reward that asks for your PIN on a mismatched domain should be reported, not acted on or quietly ignored.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_05",
+          "preview": "IT Services / maintenance",
+          "content": "From: IT Services <it@westfield.edu>\nThe student portal will be briefly unavailable Saturday 1-3 AM for maintenance. No action required.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — read and move on",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 0,
+          "explanation": "Legitimate domain, informational only, nothing to click or provide — safe to just note and move on.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_06",
+          "preview": "Shared drive / sharing error",
+          "content": "From: Shared Drive Notice <no-reply@drive-share-alert.com>\nSign in with your school email and password to restore access: drive-share-alert.com/fix-access",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "A password login routed through an unrelated outside domain is a credential-theft attempt worth flagging.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_07",
+          "preview": "Club fair / booth sign-up",
+          "content": "From: Student Activities Office <activities@westfield.edu>\nSubmit your club's booth sign-up form at our office by Monday.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — read and follow if relevant",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 0,
+          "explanation": "Real domain, in-person action, no credential request — a normal, safe announcement.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_08",
+          "preview": "Council vote / polls closing",
+          "content": "From: Student Council <council@westfield.edu.form-reply.com>\nPolls close in 15 minutes. Log in with your student credentials to vote: westfield.edu.form-reply.com/vote",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "The real domain here is form-reply.com, not westfield.edu — combined with a credential login, this should be reported.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_09",
+          "preview": "Youth grant / 48-hour claim",
+          "content": "From: Harbor Civic Youth Program <grants@harb0r-civic.net>\nReply with your name, birthdate, and school ID within 48 hours to claim ₱2,000.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "A lookalike domain requesting personal ID details by simple reply is a phishing pattern worth reporting.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_it_10",
+          "preview": "Scholarship / bank deposit",
+          "content": "From: Scholarship Office <scholarships@westfield-scholars.org>\nSend your bank account number today to process your award deposit.",
+          "question": "What should you do?",
+          "options": [
+            "Safe — act on it",
+            "Report — likely phishing",
+            "Ignore — not my problem"
+          ],
+          "answer_index": 1,
+          "explanation": "A mismatched domain requesting your bank account number by email is a serious red flag to report.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "consequence_choice",
+      "type_label": "Before You Click",
+      "delivery": "multiple_choice_3",
+      "questions": [
+        {
+          "id": "mod01_cc_01",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Campus Wifi <wifi@westfie1d.edu>\nYour wifi drops at noon. Re-enter your password: westfie1d.edu/wifi-fix"
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Click the link and sign in quickly",
+            "Ignore it and hope wifi stays on",
+            "Type the real school address yourself or ask IT through a known channel"
+          ],
+          "answer_index": 2,
+          "click_debrief": "That click would hand a lookalike site your password.",
+          "ignore_debrief": "Ignoring avoids the trap, but verifying through official channels is better.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_02",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Klaris Library <fines@klaris-lib.net>\nOpen FINE_NOTICE.PDF.exe and log in today to avoid a hold."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Open the attachment to check the fine amount",
+            "Delete without checking, and separately confirm your fine status through the library's real site",
+            "Forward it to a friend to open first"
+          ],
+          "answer_index": 1,
+          "click_debrief": "Opening that attachment could run a malicious program on your device.",
+          "ignore_debrief": "Deleting alone is fine, but confirming through the real library site closes the loop.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_03",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Registrar's Office <registrar.help99@gmail.com>\nReply with your student number and password to confirm enrollment."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Reply with the requested info to avoid delay",
+            "Do nothing at all",
+            "Report the email and confirm enrollment status by visiting the registrar's office or official portal directly"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Replying with your password hands your account straight to whoever sent this.",
+          "ignore_debrief": "Doing nothing leaves the phishing attempt unreported for other students.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_04",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Northline Credit Union <rewards@northline-credit.com>\nConfirm your account number and PIN within 24 hours to claim ₱1,500."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Click the link and enter your PIN before the deadline",
+            "Assume it's fake and forward it to friends to warn them without reporting it",
+            "Report it and, if concerned, contact the credit union directly using the number on your card"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Entering your PIN on that page would give an attacker direct access to your account.",
+          "ignore_debrief": "Warning friends is good, but reporting through proper channels helps stop the campaign.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_05",
+          "scenario": {
+            "channel": "email",
+            "body": "From: IT Security Team <alerts@westfield-it-secure.net>\nVerify your identity now or your account will be locked in 1 hour. Enter your username and password."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Enter your credentials quickly to prevent the lock",
+            "Panic and change your password on the same link",
+            "Go directly to the real school portal yourself to check your account status"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Entering credentials on that lookalike domain sends them straight to an attacker.",
+          "ignore_debrief": "Changing your password on the same fake link doesn't help — it still exposes your new password.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_06",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Shared Drive Notice <no-reply@drive-share-alert.com>\nSign in with your school email and password here to restore access."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Sign in on the link to fix access quickly",
+            "Ignore it completely, even if the folder is actually needed for class",
+            "Check the real shared drive directly through your school portal instead of this link"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Signing in there would send your school password to an unrelated outside site.",
+          "ignore_debrief": "If the folder really is needed, checking through the official portal solves it safely instead of just ignoring the issue.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_07",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Student Council <council@westfield.edu.form-reply.com>\nPolls close in 15 minutes. Log in with your student credentials to vote."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Log in quickly so your vote counts",
+            "Skip voting entirely without checking anything",
+            "Go to the official council voting page you already know, rather than this link"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Logging in through that link would send your credentials to an unrelated domain.",
+          "ignore_debrief": "You can still vote safely by using the real, known voting page instead of skipping it.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_08",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Harbor Civic Youth Program <grants@harb0r-civic.net>\nReply with your name, birthdate, and school ID within 48 hours to claim your grant."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Reply with the requested details to secure the grant",
+            "Delete it and never think about it again",
+            "Report it and verify any real grant opportunity through Harbor Civic's official, known website"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Sending your ID and birthdate by reply hands over data that can be used for identity theft.",
+          "ignore_debrief": "Deleting alone works, but checking the organization's real site confirms whether any real grant exists.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_09",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Campus Health <clinic.westfield.care@proton.me>\nUpload a photo of your ID and your portal password within 30 minutes or a hold will be placed."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Upload the ID and password quickly to avoid the hold",
+            "Assume it's fake and ignore, without checking if there's a real hold",
+            "Report it and call the clinic directly using the number on your student ID to check for any real hold"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Uploading your ID and password there gives an attacker both your identity documents and account access.",
+          "ignore_debrief": "If there's ever doubt about a real hold, a direct phone call confirms it safely — ignoring alone doesn't resolve that.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_cc_10",
+          "scenario": {
+            "channel": "email",
+            "body": "From: Scholarship Office <scholarships@westfield-scholars.org>\nSend your bank account number today to process your award deposit."
+          },
+          "question": "What is the safest next move?",
+          "options": [
+            "Send the bank account number to receive the award faster",
+            "Do nothing and hope it resolves itself",
+            "Report it and confirm any real scholarship award through the school's official financial aid office"
+          ],
+          "answer_index": 2,
+          "click_debrief": "Sending your bank account number to an unverified domain risks direct financial theft.",
+          "ignore_debrief": "If a real scholarship is involved, the financial aid office can confirm it — silently doing nothing leaves that unresolved.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    },
+    {
+      "type_id": "safety_rule_tf",
+      "type_label": "Safety Rule Check",
+      "delivery": "true_false",
+      "questions": [
+        {
+          "id": "mod01_tf_01",
+          "text": "A legitimate school office will never ask for your password by email.",
+          "answer": true,
+          "explanation": "Real offices don't need your password sent to them — they use secure logins, not email requests.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_02",
+          "text": "If a display name looks official, the email is automatically safe.",
+          "answer": false,
+          "explanation": "Display names can be set to anything by the sender — always check the actual address after the @.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_03",
+          "text": "A file named 'notice.PDF.exe' is a real PDF document.",
+          "answer": false,
+          "explanation": "The .exe ending means it's a program, not a document, no matter what comes before it.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_04",
+          "text": "Urgent deadlines and threats of account lockout are common pressure tactics in phishing emails.",
+          "answer": true,
+          "explanation": "Creating panic makes people act before they think carefully — a common phishing tactic.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_05",
+          "text": "It's safer to type a known website address yourself than to click a link in an unexpected email.",
+          "answer": true,
+          "explanation": "Typing the address yourself avoids lookalike domains hidden behind a clickable link.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_06",
+          "text": "A domain like 'westfie1d.edu' is exactly the same as 'westfield.edu'.",
+          "answer": false,
+          "explanation": "Swapping a letter for a similar-looking number creates a completely different, unrelated domain.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_07",
+          "text": "If an email offers unexpected free money or a reward, it's worth being extra cautious.",
+          "answer": true,
+          "explanation": "Unexpected rewards are a common lure used to get people to click links or share information.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_08",
+          "text": "Reporting a suspicious email is only useful if you're completely certain it's phishing.",
+          "answer": false,
+          "explanation": "It's fine to report anything suspicious — school IT or admins can verify it, even if you're unsure.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_09",
+          "text": "An email that asks you to reply with your ID number and birthdate to 'claim a grant' is safe as long as it mentions a real-sounding organization.",
+          "answer": false,
+          "explanation": "Mentioning a real-sounding name doesn't verify the sender — the domain and the request itself matter more.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        },
+        {
+          "id": "mod01_tf_10",
+          "text": "A calm email from your school's real domain that asks for no action and no personal information is generally safe to read.",
+          "answer": true,
+          "explanation": "Legitimate, informational emails from a verified domain that request nothing risky are normal and safe.",
+          "bkt": {
+            "p_g": 0.2,
+            "p_s": 0.1,
+            "p_t": 0.15
+          }
+        }
+      ]
+    }
+  ]
 }

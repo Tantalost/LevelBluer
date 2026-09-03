@@ -49,11 +49,16 @@ var _track: Path2D
 @onready var _quiz_led: ColorRect = %QuizLed
 @onready var _quiz_well: PanelContainer = %QuizWell
 @onready var _exam_progress_label: Label = %ExamProgressLabel
+@onready var _scenario_scroll: ScrollContainer = %ScenarioScroll
+@onready var _scenario_label: Label = %ScenarioLabel
 @onready var _question_label: Label = %QuestionLabel
 @onready var _quiz_reward_hint: Label = %QuizRewardHint
 @onready var _quiz_tap_hint: Label = %QuizTapHint
+@onready var _answer_list: VBoxContainer = %AnswerList
 @onready var _btn_correct: Button = %BtnCorrect
 @onready var _btn_wrong: Button = %BtnWrong
+@onready var _quiz_confirm: Button = %QuizConfirmButton
+@onready var _quiz_feedback: Label = %QuizFeedbackLabel
 @onready var _end_game_modal: ColorRect = %EndGameModal
 @onready var _modal_title_label: Label = %TitleLabel
 @onready var _items_label: Label = %ItemsLabel
@@ -82,6 +87,10 @@ var _current_incident_correct_btn: Button = null
 var _incident_timeout_timer: SceneTreeTimer = null
 var _pixel_font: Font
 var _quiz_correct_text: String = ""
+var _quiz_locked: bool = false
+var _quiz_multi_select: bool = false
+var _quiz_selected: Dictionary = {}
+var _quiz_option_buttons: Array[Button] = []
 var _quiz_led_t: float = 0.0
 var _speed_mult: float = 1.0
 var _shake_intensity: float = 0.0
@@ -101,6 +110,7 @@ func _ready() -> void:
 	_restart_button.pressed.connect(_on_restart_pressed)
 	_btn_correct.pressed.connect(_on_quiz_correct_pressed)
 	_btn_wrong.pressed.connect(_on_quiz_wrong_pressed)
+	_quiz_confirm.pressed.connect(_on_quiz_confirm_pressed)
 	_start_wave_button.pressed.connect(_on_start_wave_pressed)
 	_btn_close.pressed.connect(_on_upgrade_close_pressed)
 	_btn_speed.pressed.connect(_on_speed_pressed)
@@ -167,8 +177,7 @@ func change_phase(new_phase: GamePhase) -> void:
 				exam_questions_asked = 0
 				exam_questions_correct = 0
 				exam_history.clear()
-			_btn_correct.disabled = false
-			_btn_wrong.disabled = false
+			_set_quiz_locked(false)
 			_load_next_question()
 			_quiz_modal.visible = true
 			print("[LevelManager] Entering Phase 1: QUIZ. Loading mock questions...")
@@ -455,16 +464,19 @@ func _phase_display_name() -> String:
 
 
 func _on_quiz_correct_pressed() -> void:
-	_resolve_quiz_choice(_btn_correct.text)
+	_submit_quiz_choice(_btn_correct.text)
 
 
 func _on_quiz_wrong_pressed() -> void:
-	_resolve_quiz_choice(_btn_wrong.text)
+	_submit_quiz_choice(_btn_wrong.text)
 
 
-func _resolve_quiz_choice(picked: String) -> void:
-	var is_correct: bool = picked == _quiz_correct_text
-	_resolve_quiz(5 if is_correct else 2, is_correct)
+func _submit_quiz_choice(picked: Variant) -> void:
+	if _quiz_locked:
+		return
+	var is_correct: bool = _is_quiz_correct(picked)
+	_show_quiz_feedback(is_correct, picked)
+	_finish_quiz_answer(is_correct)
 
 
 func _load_next_question() -> void:
@@ -487,7 +499,7 @@ func _load_next_question() -> void:
 		else:
 			target_skill = str(all_skills[randi() % all_skills.size()])
 		if not question_bank.has(target_skill):
-			target_skill = "ports"
+			target_skill = "phishing"
 		var bank_stored: Variant = question_bank[target_skill]
 		var skill_questions: Array = bank_stored as Array
 		if skill_questions.is_empty():
@@ -495,20 +507,12 @@ func _load_next_question() -> void:
 			return
 		var q_stored: Variant = skill_questions[randi() % skill_questions.size()]
 		var selected_q: Dictionary = q_stored as Dictionary
-		current_question = selected_q.duplicate()
-		current_question["skill_id"] = target_skill
+		current_question = selected_q.duplicate(true)
+		current_question["skill_id"] = str(current_question.get("skill_id", target_skill))
 	if current_question.is_empty():
 		push_error("LevelManager: failed to load a question")
 		return
-	_question_label.text = str(current_question.get("text", ""))
-	_quiz_correct_text = str(current_question.get("correct", ""))
-	var wrong_text: String = str(current_question.get("wrong", ""))
-	if randi() % 2 == 0:
-		_btn_correct.text = _quiz_correct_text
-		_btn_wrong.text = wrong_text
-	else:
-		_btn_correct.text = wrong_text
-		_btn_wrong.text = _quiz_correct_text
+	_present_current_question()
 	_refresh_quiz_copy()
 
 
@@ -522,8 +526,11 @@ func _pick_summative_question() -> Dictionary:
 		var q_list: Array = list_stored as Array
 		for j in q_list.size():
 			var q_stored: Variant = q_list[j]
-			var q_dict: Dictionary = (q_stored as Dictionary).duplicate()
-			q_dict["skill_id"] = skill_id
+			if typeof(q_stored) != TYPE_DICTIONARY:
+				continue
+			var q_dict: Dictionary = (q_stored as Dictionary).duplicate(true)
+			if str(q_dict.get("skill_id", "")).is_empty():
+				q_dict["skill_id"] = skill_id
 			all_questions.append(q_dict)
 	if all_questions.is_empty():
 		push_error("LevelManager: question bank has no questions")
@@ -531,27 +538,292 @@ func _pick_summative_question() -> Dictionary:
 	var valid_questions: Array[Dictionary] = []
 	for i in all_questions.size():
 		var q: Dictionary = all_questions[i]
-		var text: String = str(q.get("text", ""))
-		if not exam_history.has(text):
+		var qid: String = _question_key(q)
+		if not exam_history.has(qid):
 			valid_questions.append(q)
 	if valid_questions.is_empty():
 		exam_history.clear()
 		valid_questions = all_questions
 	var selected_q: Dictionary = valid_questions[randi() % valid_questions.size()]
-	exam_history.append(str(selected_q.get("text", "")))
+	exam_history.append(_question_key(selected_q))
 	return selected_q
+
+
+func _question_key(q: Dictionary) -> String:
+	var qid: String = str(q.get("id", "")).strip_edges()
+	if not qid.is_empty():
+		return qid
+	return str(q.get("text", q.get("question", "")))
+
+
+func _present_current_question() -> void:
+	_quiz_selected.clear()
+	_quiz_option_buttons.clear()
+	_quiz_multi_select = false
+	_set_quiz_locked(false)
+	_quiz_feedback.visible = false
+	_quiz_feedback.text = ""
+	_clear_answer_list()
+	var delivery: String = str(current_question.get("delivery", ""))
+	var type_id: String = str(current_question.get("type_id", ""))
+	var scenario_text: String = _format_scenario(current_question)
+	_scenario_label.text = scenario_text
+	_scenario_scroll.visible = not scenario_text.is_empty()
+	_question_label.text = _format_prompt(current_question)
+	if delivery == "multi_select" or type_id == "tap_trap_lines":
+		_quiz_multi_select = true
+		var lines_stored: Variant = current_question.get("email_lines", [])
+		if typeof(lines_stored) == TYPE_ARRAY:
+			var lines: Array = lines_stored as Array
+			for i in lines.size():
+				_add_quiz_option(str(lines[i]), i, true)
+		_quiz_confirm.visible = true
+		_refresh_confirm_state()
+		return
+	_quiz_confirm.visible = false
+	if delivery == "binary_ab" or type_id == "trust_verdict":
+		_add_quiz_option("PHISHING", "phishing", false)
+		_add_quiz_option("LEGITIMATE", "legitimate", false)
+		return
+	if delivery == "true_false" or type_id == "safety_rule_tf":
+		_add_quiz_option("TRUE", true, false)
+		_add_quiz_option("FALSE", false, false)
+		return
+	var options_stored: Variant = current_question.get("options", [])
+	if typeof(options_stored) == TYPE_ARRAY:
+		var options: Array = options_stored as Array
+		for i in options.size():
+			_add_quiz_option(str(options[i]), i, false)
+		return
+	push_error("LevelManager: unsupported question delivery '%s'" % delivery)
+
+
+func _format_scenario(q: Dictionary) -> String:
+	var scene: Dictionary = {}
+	var scene_stored: Variant = q.get("scenario", {})
+	if typeof(scene_stored) == TYPE_DICTIONARY:
+		scene = scene_stored as Dictionary
+	# Sender Audit ships the address inside "scenario", triage ships it top level.
+	var from_line: String = _first_text([q.get("from_line", ""), scene.get("from_line", "")])
+	if not from_line.is_empty():
+		return "FROM  %s" % from_line
+	var preview: String = _first_text([q.get("preview", ""), scene.get("preview", "")])
+	var content: String = _first_text([q.get("content", ""), scene.get("content", "")])
+	if not preview.is_empty() or not content.is_empty():
+		var parts: PackedStringArray = PackedStringArray()
+		if not preview.is_empty():
+			parts.append(preview.to_upper())
+		if not content.is_empty():
+			parts.append(content)
+		return "\n".join(parts)
+	var lines: PackedStringArray = PackedStringArray()
+	var sender: String = str(scene.get("from", "")).strip_edges()
+	var subject: String = str(scene.get("subject", "")).strip_edges()
+	var body: String = str(scene.get("body", "")).strip_edges()
+	if not sender.is_empty():
+		lines.append("FROM  %s" % sender)
+	if not subject.is_empty():
+		lines.append("SUBJ  %s" % subject)
+	if not body.is_empty():
+		if not lines.is_empty():
+			lines.append("")
+		lines.append(body)
+	return "\n".join(lines)
+
+
+func _first_text(candidates: Array) -> String:
+	for i in candidates.size():
+		var value: String = str(candidates[i]).strip_edges()
+		if not value.is_empty():
+			return value
+	return ""
+
+
+func _format_prompt(q: Dictionary) -> String:
+	var prompt: String = str(q.get("question", "")).strip_edges()
+	if not prompt.is_empty():
+		return prompt
+	var delivery: String = str(q.get("delivery", ""))
+	if delivery == "binary_ab":
+		return "Phishing or legitimate?"
+	if delivery == "true_false":
+		return str(q.get("text", "")).strip_edges()
+	return str(q.get("prompt", q.get("text", ""))).strip_edges()
+
+
+func _clear_answer_list() -> void:
+	if _answer_list == null:
+		return
+	var kids: Array = _answer_list.get_children()
+	for i in kids.size():
+		var child: Node = kids[i] as Node
+		if child == null:
+			continue
+		_answer_list.remove_child(child)
+		child.queue_free()
+
+
+func _add_quiz_option(label: String, value: Variant, toggle: bool) -> void:
+	var button := Button.new()
+	button.text = label
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_style_quiz_choice(button)
+	button.custom_minimum_size = Vector2(0, 48)
+	button.add_theme_font_size_override("font_size", 10)
+	if toggle:
+		button.pressed.connect(_on_quiz_toggle_pressed.bind(button, value))
+	else:
+		button.pressed.connect(_on_quiz_option_pressed.bind(value))
+	_answer_list.add_child(button)
+	_quiz_option_buttons.append(button)
+
+
+func _on_quiz_option_pressed(value: Variant) -> void:
+	_submit_quiz_choice(value)
+
+
+func _on_quiz_toggle_pressed(button: Button, value: Variant) -> void:
+	if _quiz_locked:
+		return
+	var key: String = str(value)
+	if _quiz_selected.has(key):
+		_quiz_selected.erase(key)
+	else:
+		_quiz_selected[key] = value
+	_paint_toggle_button(button, _quiz_selected.has(key))
+	_refresh_confirm_state()
+
+
+func _refresh_confirm_state() -> void:
+	if not _quiz_multi_select:
+		return
+	var picked: int = _quiz_selected.size()
+	if picked <= 0:
+		_quiz_confirm.text = "TAP THE TRAP LINES FIRST"
+		_quiz_confirm.disabled = true
+		return
+	_quiz_confirm.text = "SUBMIT  %d SELECTED" % picked
+	_quiz_confirm.disabled = _quiz_locked
+
+
+func _on_quiz_confirm_pressed() -> void:
+	if _quiz_locked or not _quiz_multi_select:
+		return
+	var picked: Array = []
+	var keys: Array = _quiz_selected.keys()
+	for i in keys.size():
+		picked.append(_quiz_selected[keys[i]])
+	_submit_quiz_choice(picked)
+
+
+func _paint_toggle_button(button: Button, selected: bool) -> void:
+	var box: StyleBoxFlat = _pixel_box(
+		Palette.GOLD if selected else Color(Palette.BG_PANEL_ALT, 0.96),
+		Palette.TEXT_PRIMARY if selected else Palette.CYAN,
+		0,
+		2
+	)
+	box.border_width_left = 4
+	box.content_margin_left = 12.0
+	box.content_margin_right = 12.0
+	box.content_margin_top = 12.0
+	box.content_margin_bottom = 12.0
+	button.add_theme_stylebox_override("normal", box)
+	button.add_theme_stylebox_override("hover", box)
+	button.add_theme_stylebox_override("pressed", box)
+	button.add_theme_color_override("font_color", Palette.TEXT_ON_GOLD if selected else Palette.TEXT_PRIMARY)
+
+
+func _is_quiz_correct(picked: Variant) -> bool:
+	var delivery: String = str(current_question.get("delivery", ""))
+	var type_id: String = str(current_question.get("type_id", ""))
+	if delivery == "multi_select" or type_id == "tap_trap_lines":
+		var expected: Array[int] = _int_list(current_question.get("correct_indices", []))
+		var got: Array[int] = []
+		if typeof(picked) == TYPE_ARRAY:
+			got = _int_list(picked)
+		expected.sort()
+		got.sort()
+		if expected.size() != got.size():
+			return false
+		for i in expected.size():
+			if expected[i] != got[i]:
+				return false
+		return true
+	if delivery == "binary_ab" or type_id == "trust_verdict":
+		return str(picked).to_lower() == str(current_question.get("correct_answer", "")).to_lower()
+	if delivery == "true_false" or type_id == "safety_rule_tf":
+		return bool(picked) == bool(current_question.get("answer", false))
+	if current_question.has("answer_index"):
+		return int(picked) == int(current_question.get("answer_index", -1))
+	return str(picked) == _quiz_correct_text
+
+
+func _int_list(raw: Variant) -> Array[int]:
+	var out: Array[int] = []
+	if typeof(raw) != TYPE_ARRAY:
+		return out
+	var rows: Array = raw as Array
+	for i in rows.size():
+		out.append(int(rows[i]))
+	return out
+
+
+func _show_quiz_feedback(is_correct: bool, picked: Variant) -> void:
+	var note: String = ""
+	if is_correct:
+		note = str(current_question.get("correct_feedback", "")).strip_edges()
+	else:
+		note = str(current_question.get("incorrect_feedback", "")).strip_edges()
+		var type_id: String = str(current_question.get("type_id", ""))
+		if type_id == "consequence_choice" and typeof(picked) == TYPE_INT:
+			if int(picked) == 0:
+				note = str(current_question.get("click_debrief", note)).strip_edges()
+			elif int(picked) == 1:
+				note = str(current_question.get("ignore_debrief", note)).strip_edges()
+	if note.is_empty():
+		note = str(current_question.get("explanation", "")).strip_edges()
+	if note.is_empty():
+		note = "SECURE" if is_correct else "MISS"
+	_quiz_feedback.text = note
+	_quiz_feedback.visible = true
+	_apply_quiz_label(_quiz_feedback, Palette.GREEN if is_correct else Palette.HEART, 9)
+
+
+func _finish_quiz_answer(is_correct: bool) -> void:
+	_set_quiz_locked(true)
+	_resolve_quiz(5 if is_correct else 2, is_correct)
+
+
+func _set_quiz_locked(locked: bool) -> void:
+	_quiz_locked = locked
+	_btn_correct.disabled = locked
+	_btn_wrong.disabled = locked
+	_quiz_confirm.disabled = locked
+	for i in _quiz_option_buttons.size():
+		var button: Button = _quiz_option_buttons[i]
+		if button != null and is_instance_valid(button):
+			button.disabled = locked
+	if not locked:
+		_refresh_confirm_state()
 
 
 func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	if current_phase != GamePhase.PHASE_1_QUIZ:
 		return
-	_btn_correct.disabled = true
-	_btn_wrong.disabled = true
+	_set_quiz_locked(true)
 	exam_questions_asked += 1
 	if is_correct:
 		exam_questions_correct += 1
-	var skill_id: String = str(current_question.get("skill_id", ""))
+	var skill_id: String = str(current_question.get("skill_id", "phishing"))
+	if skill_id.is_empty():
+		skill_id = "phishing"
 	PlayerManager.update_mastery(skill_id, is_correct)
+	if is_inside_tree():
+		await get_tree().create_timer(1.05).timeout
+	if current_phase != GamePhase.PHASE_1_QUIZ:
+		return
 	if not _is_summative():
 		current_gold += reward
 		print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
@@ -561,9 +833,8 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		return
 	var exam_count: int = _exam_question_count()
 	if exam_questions_asked < exam_count:
+		_set_quiz_locked(false)
 		_load_next_question()
-		_btn_correct.disabled = false
-		_btn_wrong.disabled = false
 		update_hud()
 		return
 	var accuracy: float = float(exam_questions_correct) / float(exam_count)
@@ -646,7 +917,11 @@ func _sync_phase_chrome() -> void:
 func _refresh_quiz_copy() -> void:
 	var exam := _is_summative()
 	_quiz_file_label.text = "EXAM.DAT" if exam else "QTE.DAT"
-	_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
+	var type_label: String = str(current_question.get("type_label", "")).strip_edges()
+	if type_label.is_empty():
+		_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
+	else:
+		_quiz_event_label.text = type_label.to_upper()
 	_quiz_reward_hint.visible = not exam
 	_quiz_tap_hint.text = "TAP TO PASS" if exam else "TAP FAST"
 	if exam:
@@ -825,11 +1100,14 @@ func _style_quiz_ui() -> void:
 	_apply_quiz_label(_quiz_file_label, Palette.TEXT_ON_GOLD, 10)
 	_apply_quiz_label(_quiz_event_label, Palette.TEXT_ON_GOLD, 10)
 	_apply_quiz_label(_exam_progress_label, Palette.GOLD, 9)
-	_apply_quiz_label(_question_label, Palette.TEXT_PRIMARY, 13)
+	_apply_quiz_label(_scenario_label, Palette.TEXT_SECONDARY, 10)
+	_apply_quiz_label(_question_label, Palette.TEXT_PRIMARY, 12)
 	_apply_quiz_label(_quiz_reward_hint, Palette.CYAN, 8)
 	_apply_quiz_label(_quiz_tap_hint, Palette.TEXT_MUTED, 8)
+	_apply_quiz_label(_quiz_feedback, Palette.CYAN, 9)
 	_style_quiz_choice(_btn_correct)
 	_style_quiz_choice(_btn_wrong)
+	_style_quiz_submit(_quiz_confirm)
 	var wave_frame := _wave_label.get_parent() as PanelContainer
 	if wave_frame != null:
 		var chip := _pixel_box(Color(Palette.BG_HEADER, 0.9), Palette.CYAN_DIM, 0, 2)
@@ -838,6 +1116,32 @@ func _style_quiz_ui() -> void:
 		chip.content_margin_top = 8.0
 		chip.content_margin_bottom = 8.0
 		wave_frame.add_theme_stylebox_override("panel", chip)
+
+
+## Submit action, not an answer card. Solid gold and half width so players do not
+## read it as one more tappable email line.
+func _style_quiz_submit(button: Button) -> void:
+	var normal := _pixel_box(Palette.GOLD, Palette.TEXT_ON_GOLD, 0, 2)
+	var hover := _pixel_box(Palette.CYAN, Palette.TEXT_ON_GOLD, 0, 2)
+	var disabled := _pixel_box(Color(Palette.BG_PANEL_ALT, 0.85), Palette.TEXT_MUTED, 0, 2)
+	for box in [normal, hover, disabled]:
+		box.content_margin_left = 22.0
+		box.content_margin_right = 22.0
+		box.content_margin_top = 10.0
+		box.content_margin_bottom = 10.0
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", hover)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_color_override("font_color", Palette.TEXT_ON_GOLD)
+	button.add_theme_color_override("font_hover_color", Palette.TEXT_ON_GOLD)
+	button.add_theme_color_override("font_pressed_color", Palette.TEXT_ON_GOLD)
+	button.add_theme_color_override("font_disabled_color", Palette.TEXT_MUTED)
+	button.add_theme_font_size_override("font_size", 10)
+	if _pixel_font != null:
+		button.add_theme_font_override("font", _pixel_font)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.custom_minimum_size = Vector2(300, 44)
 
 
 func _style_quiz_choice(button: Button) -> void:

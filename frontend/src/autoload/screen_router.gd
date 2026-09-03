@@ -156,7 +156,7 @@ func open_codex(skill_id: String) -> void:
 	if _host == null:
 		push_error("Router: cannot open Codex (host not registered)")
 		return
-	var topic: String = skill_id if not skill_id.is_empty() else "ports"
+	var topic: String = skill_id if not skill_id.is_empty() else "phishing"
 	await _navigate(true, func() -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)

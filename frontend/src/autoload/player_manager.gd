@@ -9,9 +9,7 @@ const DEFAULT_MASTERY: float = 0.25
 const ALL_MODULES_LESSON := "mod1_all"
 
 var mastery_matrix: Dictionary = {
-	"ports": DEFAULT_MASTERY,
-	"firewalls": DEFAULT_MASTERY,
-	"crypto": DEFAULT_MASTERY,
+	"phishing": DEFAULT_MASTERY,
 }
 var unlocked_skills: Array[String] = []
 var locked_stages: Dictionary = {}
@@ -127,9 +125,7 @@ func reset_to_defaults() -> void:
 	module_1_complete = false
 	seen_module_intros.clear()
 	mastery_matrix = {
-		"ports": DEFAULT_MASTERY,
-		"firewalls": DEFAULT_MASTERY,
-		"crypto": DEFAULT_MASTERY,
+		"phishing": DEFAULT_MASTERY,
 	}
 
 
@@ -225,7 +221,7 @@ func mark_stage_cleared(stage_id: int) -> void:
 
 func get_weakest_skill() -> String:
 	if mastery_matrix.is_empty():
-		return "ports"
+		return "phishing"
 	var weakest_skill: String = ""
 	var lowest_score: float = 1.0
 	var skill_ids: Array = mastery_matrix.keys()
@@ -237,7 +233,7 @@ func get_weakest_skill() -> String:
 			lowest_score = score
 			weakest_skill = skill_id
 	if weakest_skill.is_empty():
-		return "ports"
+		return "phishing"
 	return weakest_skill
 
 
@@ -373,3 +369,13 @@ func apply_save_data(data: Dictionary) -> void:
 			var intro_id: String = str(saved_intros[i])
 			if not intro_id.is_empty() and not seen_module_intros.has(intro_id):
 				seen_module_intros.append(intro_id)
+	_normalize_mastery_keys()
+
+
+func _normalize_mastery_keys() -> void:
+	var phishing: float = DEFAULT_MASTERY
+	if mastery_matrix.has("phishing"):
+		phishing = float(mastery_matrix["phishing"])
+	mastery_matrix = {
+		"phishing": phishing,
+	}

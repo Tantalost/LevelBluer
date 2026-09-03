@@ -8,13 +8,15 @@ var enemies: Dictionary = {}
 var towers: Dictionary = {}
 var incidents: Array = []
 var lessons: Dictionary = {}
+var _module_question_ids: Dictionary = {}
 
 const CORE_LESSON_IDS: PackedStringArray = ["ports_basics", "firewalls_intro", "crypto_101"]
 const MODULE_UNLOCK_LESSON := "mod1_all"
+const DEFAULT_SKILL_ID := "phishing"
 
 
 func _ready() -> void:
-	_load_json_dict("res://data/questions.json", questions)
+	_load_question_bank()
 	_load_json_dict("res://data/stages.json", stages)
 	_load_json_dict("res://data/enemies.json", enemies)
 	_load_json_dict("res://data/towers.json", towers)
@@ -22,6 +24,7 @@ func _ready() -> void:
 	_load_json_dict("res://data/lessons.json", lessons)
 	print(
 		"[ContentDB] Parsed skills=", questions.size(),
+		" questions=", _question_count(),
 		" stages=", stages.size(),
 		" enemies=", enemies.size(),
 		" towers=", towers.size(),
@@ -32,7 +35,7 @@ func _ready() -> void:
 
 func load_all() -> void:
 	if questions.is_empty():
-		_load_json_dict("res://data/questions.json", questions)
+		_load_question_bank()
 	if stages.is_empty():
 		_load_json_dict("res://data/stages.json", stages)
 	if enemies.is_empty():
@@ -48,6 +51,18 @@ func load_all() -> void:
 
 func get_questions() -> Dictionary:
 	return questions.duplicate(true)
+
+
+func get_module_questions(module_id: String) -> Array:
+	var skill_id: String = str(_module_question_ids.get(module_id, DEFAULT_SKILL_ID))
+	if skill_id.is_empty() or not questions.has(skill_id):
+		skill_id = DEFAULT_SKILL_ID
+	if not questions.has(skill_id):
+		return []
+	var stored: Variant = questions[skill_id]
+	if typeof(stored) != TYPE_ARRAY:
+		return []
+	return (stored as Array).duplicate(true)
 
 
 func get_stage(stage_id: String) -> Dictionary:
@@ -218,6 +233,72 @@ func _palette_color(color_name: String, fallback: Color) -> Color:
 			return Palette.GOLD
 		_:
 			return fallback
+
+
+func _load_question_bank() -> void:
+	questions.clear()
+	_module_question_ids.clear()
+	var data: Variant = _parse_json_file("res://data/questions.json")
+	if data == null:
+		return
+	if typeof(data) != TYPE_DICTIONARY:
+		push_error("ContentDB: Root is not a Dictionary in res://data/questions.json")
+		return
+	var raw: Dictionary = data as Dictionary
+	if raw.has("question_types"):
+		_ingest_module_bank(raw)
+		return
+	questions.merge(raw, true)
+
+
+func _ingest_module_bank(raw: Dictionary) -> void:
+	var module_id: String = str(raw.get("module_id", "mod_01"))
+	var skill_id: String = str(raw.get("topic", DEFAULT_SKILL_ID)).strip_edges().to_lower()
+	if skill_id.is_empty():
+		skill_id = DEFAULT_SKILL_ID
+	var types_stored: Variant = raw.get("question_types", [])
+	if typeof(types_stored) != TYPE_ARRAY:
+		push_error("ContentDB: question_types is not an Array")
+		return
+	var flat: Array = []
+	var types: Array = types_stored as Array
+	for i in types.size():
+		var type_row: Variant = types[i]
+		if typeof(type_row) != TYPE_DICTIONARY:
+			continue
+		var type_dict: Dictionary = type_row as Dictionary
+		var type_id: String = str(type_dict.get("type_id", ""))
+		var type_label: String = str(type_dict.get("type_label", type_id))
+		var delivery: String = str(type_dict.get("delivery", ""))
+		var list_stored: Variant = type_dict.get("questions", [])
+		if typeof(list_stored) != TYPE_ARRAY:
+			continue
+		var list: Array = list_stored as Array
+		for j in list.size():
+			var q_stored: Variant = list[j]
+			if typeof(q_stored) != TYPE_DICTIONARY:
+				continue
+			var item: Dictionary = (q_stored as Dictionary).duplicate(true)
+			item["type_id"] = type_id
+			item["type_label"] = type_label
+			item["delivery"] = delivery
+			item["skill_id"] = skill_id
+			item["module_id"] = module_id
+			flat.append(item)
+	questions[skill_id] = flat
+	if not module_id.is_empty():
+		_module_question_ids[module_id] = skill_id
+	print("[ContentDB] Flattened module ", module_id, " -> ", skill_id, " (", flat.size(), " items)")
+
+
+func _question_count() -> int:
+	var total: int = 0
+	var keys: Array = questions.keys()
+	for i in keys.size():
+		var stored: Variant = questions[keys[i]]
+		if typeof(stored) == TYPE_ARRAY:
+			total += (stored as Array).size()
+	return total
 
 
 func _load_json_dict(file_path: String, target_dict: Dictionary) -> void:
