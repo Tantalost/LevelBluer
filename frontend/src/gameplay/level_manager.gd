@@ -70,7 +70,7 @@ var _track: Path2D
 var _tower_placer: TowerPlacer
 @onready var _upgrade_panel: PanelContainer = %TowerUpgradePanel
 @onready var _stats_label: Label = %StatsLabel
-@onready var _upgrade_options: HBoxContainer = %UpgradeOptionsContainer
+@onready var _upgrade_options: VBoxContainer = %UpgradeOptionsContainer
 @onready var _btn_close: Button = %BtnClose
 @onready var _level_background: ColorRect = %Background
 @onready var _btn_speed: HudGeoButton = %BtnSpeed
@@ -254,7 +254,12 @@ func update_hud() -> void:
 		_phase_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_gold_label.text = "GOLD  " + str(current_gold)
 	_wave_label.text = str(_wave_kills) + "/" + str(_wave_total_enemies)
-	_map_label.text = "MAP A" + str(Router.active_stage_index + 1)
+	var wave_n: int = current_wave_index + 1
+	var waves: int = maxi(1, _wave_count())
+	if str(_current_wave_data().get("enemy_type", "")) == "boss":
+		_map_label.text = "MAP A%d  BOSS" % (Router.active_stage_index + 1)
+	else:
+		_map_label.text = "MAP A%d  W%d/%d" % [Router.active_stage_index + 1, wave_n, waves]
 
 
 func _bind_heart_hud() -> void:
@@ -1409,9 +1414,11 @@ func _refresh_upgrade_panel() -> void:
 		_upgrade_panel.visible = false
 		return
 	var move_gold: int = _tower_placer.move_cost if _tower_placer != null else 1
+	var level: int = _selected_tower.upgrade_level
 	_stats_label.text = (
 		TowerBase.display_name_for(_selected_tower.current_type)
-		+ " | Dmg: " + str(_selected_tower.base_damage)
+		+ "  LV %d/%d" % [level, TowerBase.MAX_UPGRADE_LEVEL]
+		+ " | DMG " + str(_selected_tower.base_damage)
 		+ " | MOVE " + str(move_gold) + "G"
 	)
 	_rebuild_upgrade_buttons(_selected_tower)
@@ -1419,16 +1426,13 @@ func _refresh_upgrade_panel() -> void:
 
 func _rebuild_upgrade_buttons(tower_node: TowerBase) -> void:
 	_clear_upgrade_options()
+	_upgrade_options.add_child(_make_power_upgrade_button(tower_node))
 	var paths: Array[String] = TowerBase.paths_for(tower_node.current_type)
 	if paths.is_empty():
-		var max_label := Label.new()
-		max_label.text = "MAX LEVEL"
-		max_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		max_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		max_label.add_theme_color_override("font_color", Palette.GOLD)
-		_apply_panel_font(max_label, 10)
-		_upgrade_options.add_child(max_label)
 		return
+	var path_row := HBoxContainer.new()
+	path_row.add_theme_constant_override("separation", 12)
+	path_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for path_id: String in paths:
 		var btn := Button.new()
 		var is_unlocked: bool = PlayerManager.is_tower_unlocked(path_id)
@@ -1440,7 +1444,50 @@ func _rebuild_upgrade_buttons(tower_node: TowerBase) -> void:
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_apply_panel_font(btn, 10)
 		btn.pressed.connect(_on_upgrade_purchased.bind(tower_node, path_id))
-		_upgrade_options.add_child(btn)
+		path_row.add_child(btn)
+	_upgrade_options.add_child(path_row)
+
+
+func _make_power_upgrade_button(tower_node: TowerBase) -> Button:
+	var btn := Button.new()
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(0, 40)
+	_apply_panel_font(btn, 10)
+	if not tower_node.can_upgrade():
+		btn.text = "MAX LV %d" % TowerBase.MAX_UPGRADE_LEVEL
+		btn.disabled = true
+		return btn
+	var cost: int = tower_node.next_upgrade_cost()
+	var next_dmg: int = TowerBase.damage_at(tower_node.current_type, tower_node.upgrade_level + 1)
+	btn.text = "UPGRADE LV %d  %dG  DMG %d>%d" % [
+		tower_node.upgrade_level + 1,
+		cost,
+		tower_node.base_damage,
+		next_dmg,
+	]
+	btn.pressed.connect(_on_power_upgrade_pressed.bind(tower_node))
+	return btn
+
+
+func _on_power_upgrade_pressed(tower_node: TowerBase) -> void:
+	if tower_node == null or not is_instance_valid(tower_node):
+		_hide_upgrade_ui()
+		return
+	if not tower_node.can_upgrade():
+		print("[Upgrade] Tower is already at max level.")
+		return
+	var cost: int = tower_node.next_upgrade_cost()
+	if current_gold < cost:
+		print("[Economy] Insufficient gold. Need: " + str(cost))
+		return
+	current_gold -= cost
+	tower_node.apply_power_upgrade()
+	print(
+		"[Economy] Tower LV %d. Damage %d. Remaining Gold: %d"
+		% [tower_node.upgrade_level, tower_node.base_damage, current_gold]
+	)
+	update_hud()
+	_on_tower_selected(tower_node)
 
 
 func _apply_panel_font(control: Control, size_px: int) -> void:

@@ -8,11 +8,14 @@ const UPGRADE_PATHS: Dictionary = {
 	"crypto": [],
 }
 
+const MAX_UPGRADE_LEVEL: int = 7
+const UPGRADE_MULT: float = 1.5
 const BUFF_DURATION: float = 6.0
 const BUFF_FIRE_SCALE: float = 1.6
 
 @export var projectile_scene: PackedScene
 var current_type: String = "base"
+var upgrade_level: int = 0
 var fire_rate: float = 1.0
 var fire_timer: float = 0.0
 var base_damage: int = 1
@@ -54,7 +57,7 @@ func apply_stats(type_id: String) -> void:
 		push_warning("[Tower] Unknown type '%s'" % type_id)
 		return
 	current_type = type_id
-	base_damage = int(entry.get("damage", 1))
+	base_damage = damage_at(type_id, upgrade_level)
 	fire_rate = float(entry.get("fire_rate", 1.0))
 	current_explosion_radius = splash_radius_for(type_id)
 	current_slow_factor = slow_factor_for(type_id)
@@ -71,6 +74,43 @@ static func entry_for(type_id: String) -> Dictionary:
 
 static func cost_for(type_id: String) -> int:
 	return int(entry_for(type_id).get("cost", 0))
+
+
+static func scale_up(value: int) -> int:
+	return maxi(1, int(ceil(float(maxi(1, value)) * UPGRADE_MULT)))
+
+
+static func upgrade_cost_at(type_id: String, current_level: int) -> int:
+	if current_level < 0 or current_level >= MAX_UPGRADE_LEVEL:
+		return 0
+	var cost: int = scale_up(maxi(1, cost_for(type_id)))
+	for _i in current_level:
+		cost = scale_up(cost)
+	return cost
+
+
+static func damage_at(type_id: String, level: int) -> int:
+	var damage: int = maxi(1, int(entry_for(type_id).get("damage", 1)))
+	var steps: int = clampi(level, 0, MAX_UPGRADE_LEVEL)
+	for _i in steps:
+		damage = scale_up(damage)
+	return damage
+
+
+func can_upgrade() -> bool:
+	return upgrade_level < MAX_UPGRADE_LEVEL
+
+
+func next_upgrade_cost() -> int:
+	return upgrade_cost_at(current_type, upgrade_level)
+
+
+func apply_power_upgrade() -> bool:
+	if not can_upgrade():
+		return false
+	upgrade_level += 1
+	base_damage = damage_at(current_type, upgrade_level)
+	return true
 
 
 static func display_name_for(type_id: String) -> String:

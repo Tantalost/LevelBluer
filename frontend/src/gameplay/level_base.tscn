@@ -610,9 +610,9 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -280.0
-offset_top = -176.0
-offset_right = 280.0
+offset_left = -300.0
+offset_top = -220.0
+offset_right = 300.0
 offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
@@ -638,10 +638,10 @@ theme_override_font_sizes/font_size = 11
 text = "Basic Node | Dmg: 1"
 horizontal_alignment = 1
 
-[node name="UpgradeOptionsContainer" type="HBoxContainer" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer/VBoxContainer"]
+[node name="UpgradeOptionsContainer" type="VBoxContainer" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 10
 alignment = 1
 
 [node name="BtnClose" type="Button" parent="GameplayCanvas/TowerUpgradePanel/MarginContainer/VBoxContainer"]

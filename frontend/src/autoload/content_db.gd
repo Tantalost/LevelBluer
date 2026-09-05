@@ -167,12 +167,17 @@ func _normalize_enemy(raw: Dictionary) -> Dictionary:
 	var bounty: int = 1
 	if typeof(bounty_raw) == TYPE_INT or typeof(bounty_raw) == TYPE_FLOAT:
 		bounty = maxi(0, int(bounty_raw))
+	var scale_raw: Variant = raw.get("scale", 1.0)
+	var visual_scale: float = 1.0
+	if typeof(scale_raw) == TYPE_INT or typeof(scale_raw) == TYPE_FLOAT:
+		visual_scale = maxf(0.5, float(scale_raw))
 	return {
 		"hp": hp,
 		"base_health": hp,
 		"speed": speed,
 		"color": _palette_color(str(raw.get("color", "RED")), Palette.RED),
 		"bounty": bounty,
+		"scale": visual_scale,
 	}
 
 

@@ -1,20 +1,27 @@
 {
 	"basic": {
-		"hp": 3,
+		"hp": 6,
 		"speed": 50.0,
 		"color": "RED",
 		"bounty": 1
 	},
 	"fast": {
-		"hp": 2,
+		"hp": 5,
 		"speed": 90.0,
 		"color": "YELLOW",
 		"bounty": 1
 	},
 	"heavy": {
-		"hp": 8,
+		"hp": 18,
 		"speed": 35.0,
 		"color": "ORANGE",
 		"bounty": 2
+	},
+	"boss": {
+		"hp": 51,
+		"speed": 26.0,
+		"color": "ORANGE",
+		"bounty": 8,
+		"scale": 1.9
 	}
 }

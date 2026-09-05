@@ -12,6 +12,7 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const BAR_WIDTH := 28.0
 const BAR_HEIGHT := 3.0
 const BAR_Y := -22.0
+const HITBOX_SIZE := Vector2(40, 40)
 const POPUP_LIFE := 0.55
 
 @export var move_speed: float = 150.0
@@ -33,6 +34,9 @@ var _pixel_font: Font
 var _sprite_base_scale: Vector2 = Vector2.ONE
 var _displayed_health: float = 3.0
 var _bar_tween: Tween = null
+var _visual_scale: float = 1.0
+var _bar_width: float = BAR_WIDTH
+var _bar_y: float = BAR_Y
 
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
@@ -60,7 +64,14 @@ func initialize_stats(type_id: String, hp_mult: float) -> void:
 		_base_color = Palette.RED
 	if typeof(bounty_stored) == TYPE_INT or typeof(bounty_stored) == TYPE_FLOAT:
 		bounty = maxi(0, int(bounty_stored))
+	var scale_stored: Variant = stats.get("scale", 1.0)
+	_visual_scale = 1.0
+	if typeof(scale_stored) == TYPE_INT or typeof(scale_stored) == TYPE_FLOAT:
+		_visual_scale = maxf(0.5, float(scale_stored))
+	_bar_width = BAR_WIDTH * _visual_scale
+	_bar_y = BAR_Y * _visual_scale
 	_bind_character_visuals()
+	_apply_hitbox_scale()
 	_apply_tint(_base_color)
 
 
@@ -218,9 +229,23 @@ func _fit_sprite_scale(sprite: AnimatedSprite2D) -> void:
 	var tex: Texture2D = frames.get_frame_texture(anim, 0)
 	if tex == null or tex.get_height() <= 0:
 		return
-	var scale_f: float = TARGET_SPRITE_HEIGHT / float(tex.get_height())
+	var scale_f: float = (TARGET_SPRITE_HEIGHT * _visual_scale) / float(tex.get_height())
 	_sprite_base_scale = Vector2(scale_f, scale_f)
 	sprite.scale = _sprite_base_scale
+
+
+func _apply_hitbox_scale() -> void:
+	var collider: CollisionShape2D = get_node_or_null("Hitbox/CollisionShape2D") as CollisionShape2D
+	if collider == null:
+		return
+	var source: RectangleShape2D = collider.shape as RectangleShape2D
+	if source == null:
+		return
+	var shaped := source.duplicate() as RectangleShape2D
+	if shaped == null:
+		return
+	shaped.size = HITBOX_SIZE * _visual_scale
+	collider.shape = shaped
 
 
 func _update_character_facing() -> void:
@@ -310,18 +335,18 @@ func _disable_hitbox() -> void:
 func _draw() -> void:
 	if _leaked or max_health <= 0:
 		return
-	var origin := Vector2(-BAR_WIDTH * 0.5, BAR_Y)
+	var origin := Vector2(-_bar_width * 0.5, _bar_y)
 	var ratio: float = clampf(_displayed_health / float(max_health), 0.0, 1.0)
-	var fill_w: float = BAR_WIDTH * ratio
+	var fill_w: float = _bar_width * ratio
 	var fill: Color = Palette.SUCCESS
 	if ratio <= 0.33:
 		fill = Palette.DANGER
 	elif ratio <= 0.66:
 		fill = Palette.WARNING
-	draw_rect(Rect2(origin, Vector2(BAR_WIDTH, BAR_HEIGHT)), Palette.DEEP_SPACE, true)
+	draw_rect(Rect2(origin, Vector2(_bar_width, BAR_HEIGHT)), Palette.DEEP_SPACE, true)
 	if fill_w > 0.5:
 		draw_rect(Rect2(origin, Vector2(fill_w, BAR_HEIGHT)), fill, true)
-	draw_rect(Rect2(origin, Vector2(BAR_WIDTH, BAR_HEIGHT)), Palette.CREAM, false, 1.0)
+	draw_rect(Rect2(origin, Vector2(_bar_width, BAR_HEIGHT)), Palette.CREAM, false, 1.0)
 
 
 func _spawn_damage_popup(dealt: int) -> void:
@@ -331,7 +356,7 @@ func _spawn_damage_popup(dealt: int) -> void:
 	var marker := Node2D.new()
 	marker.z_index = 24
 	host.add_child(marker)
-	marker.global_position = global_position + Vector2(0.0, BAR_Y - 6.0)
+	marker.global_position = global_position + Vector2(0.0, _bar_y - 6.0)
 	var label := Label.new()
 	label.text = str(dealt)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
