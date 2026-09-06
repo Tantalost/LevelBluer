@@ -4,8 +4,14 @@ from app.schemas.progress import ProgressSyncRequest, ProgressSyncResponse
 from app.services.auth_service import _supabase_error, fetch_student_by_id
 from app.supabase_client import supabase
 
-# Pretest BKT lives on students.mastery_phishing / etc. Never write game skills there.
-GAME_BKT_TOPICS = ("ports", "firewalls", "crypto")
+# Official P(L) is written by pretest + /api/bkt/assess, not by the Godot save blob.
+GAME_TOPIC_MAP = {
+    "phishing": "Phishing",
+    "smishing": "Smishing",
+    "vishing": "Vishing",
+    "pretexting": "Pretexting",
+    "baiting": "Baiting",
+}
 STUDENT_SYNC_KEYS = (
     "threat_points",
     "upgrade_materials",
@@ -14,11 +20,6 @@ STUDENT_SYNC_KEYS = (
     "tower_level",
     "glade_level",
     "forge_level",
-    "mastery_phishing",
-    "mastery_smishing",
-    "mastery_vishing",
-    "mastery_pretexting",
-    "mastery_baiting",
     "pre",
     "post",
 )
@@ -77,15 +78,17 @@ def fetch_student_progress(student_id: str) -> dict | None:
 
 
 def _upsert_game_bkt(student_id: str, matrix: dict[str, float]) -> None:
-    rows = [
-        {
-            "student_id": student_id,
-            "topic": topic,
-            "probability_known": float(matrix[topic]),
-        }
-        for topic in GAME_BKT_TOPICS
-        if topic in matrix
-    ]
+    rows = []
+    for skill_id, topic in GAME_TOPIC_MAP.items():
+        if skill_id not in matrix:
+            continue
+        rows.append(
+            {
+                "student_id": student_id,
+                "topic": topic,
+                "probability_known": float(matrix[skill_id]),
+            }
+        )
     if not rows:
         return
     try:

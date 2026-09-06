@@ -16,6 +16,15 @@ MASTERY_COLUMNS = {
     "Baiting": "mastery_baiting",
 }
 
+# Godot gameplay skills → official bkt_records / students columns.
+SKILL_TO_TOPIC = {
+    "phishing": "Phishing",
+    "smishing": "Smishing",
+    "vishing": "Vishing",
+    "pretexting": "Pretexting",
+    "baiting": "Baiting",
+}
+
 
 def clamp_pl(value: float) -> float:
     return min(0.99, max(0.01, float(value)))
@@ -52,3 +61,14 @@ def average_pl(mastery: dict[str, float]) -> float:
     if not mastery:
         return 0.0
     return sum(mastery.values()) / len(mastery)
+
+
+def official_topic(skill_id: str) -> str:
+    raw = (skill_id or "phishing").strip()
+    if raw in TOPICS:
+        return raw
+    return SKILL_TO_TOPIC.get(raw.lower(), "Phishing")
+
+
+def gameplay_skill(topic: str) -> str:
+    return str(topic or "Phishing").strip().lower() or "phishing"

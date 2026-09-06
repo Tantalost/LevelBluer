@@ -30,7 +30,10 @@ var _current_stage: int = 1
 var _mastery: Dictionary = {}
 var _pre_test_completed: bool = false
 var _http: HTTPRequest
+var _bkt_http: HTTPRequest
 var _request_seq: int = 0
+var _bkt_queue: Array[Dictionary] = []
+var _bkt_busy: bool = false
 var _user: Dictionary = {}
 var _points: int = 0
 var _section: String = ""
@@ -51,6 +54,10 @@ func _ready() -> void:
 	_http.timeout = REQUEST_TIMEOUT_SEC
 	_http.use_threads = true
 	add_child(_http)
+	_bkt_http = HTTPRequest.new()
+	_bkt_http.timeout = REQUEST_TIMEOUT_SEC
+	_bkt_http.use_threads = true
+	add_child(_bkt_http)
 
 
 func is_signed_in() -> bool:
@@ -384,6 +391,7 @@ func submit_pretest(answers: Array) -> Result:
 	_pre_test_completed = bool(parsed.get("preTestCompleted", true))
 	_persist(_signed_in, false, true)
 	session_changed.emit(_signed_in)
+	PlayerManager.seed_from_official_mastery()
 	return Result.OK
 
 
@@ -399,6 +407,111 @@ func refresh_profile() -> bool:
 		return _signed_in and not _participant_code.is_empty()
 	_apply_user_profile(parsed)
 	_persist(_signed_in, false, false)
+	return true
+
+
+func enqueue_bkt_assess(skill_id: String, is_correct: bool, params: Dictionary = {}) -> void:
+	if not _signed_in or _token.is_empty():
+		return
+	var job := {
+		"skill_id": skill_id if not skill_id.is_empty() else "phishing",
+		"is_correct": is_correct,
+	}
+	for key in ["p_g", "p_s", "p_t"]:
+		if not params.has(key):
+			continue
+		var stored: Variant = params[key]
+		if typeof(stored) == TYPE_INT or typeof(stored) == TYPE_FLOAT:
+			job[key] = float(stored)
+	_bkt_queue.append(job)
+	if not _bkt_busy:
+		_pump_bkt_queue()
+
+
+func fetch_bkt_state() -> Dictionary:
+	if _token.is_empty():
+		return {}
+	var parsed: Variant = await _request_json("/api/bkt/state", HTTPClient.METHOD_GET, {}, true)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	var payload: Dictionary = parsed as Dictionary
+	if payload.has("error") or payload.has("detail"):
+		return {}
+	var mastery_data: Variant = payload.get("mastery", {})
+	if typeof(mastery_data) == TYPE_DICTIONARY:
+		var incoming: Dictionary = mastery_data as Dictionary
+		var keys: Array = incoming.keys()
+		for i in keys.size():
+			_mastery[str(keys[i])] = float(incoming[keys[i]])
+		_persist(_signed_in, false, false)
+	var gameplay_data: Variant = payload.get("gameplay", {})
+	if typeof(gameplay_data) != TYPE_DICTIONARY:
+		return {}
+	return gameplay_data as Dictionary
+
+
+func apply_topic_mastery(topic: String, probability_known: float) -> void:
+	var key: String = topic if not topic.is_empty() else "Phishing"
+	_mastery[key] = clampf(probability_known, 0.01, 0.99)
+	if _user.has("mastery") and typeof(_user["mastery"]) == TYPE_DICTIONARY:
+		var user_mastery: Dictionary = _user["mastery"]
+		user_mastery[key] = _mastery[key]
+		_user["mastery"] = user_mastery
+	_persist(_signed_in, false, false)
+
+
+func _pump_bkt_queue() -> void:
+	if _bkt_busy:
+		return
+	_bkt_busy = true
+	while not _bkt_queue.is_empty():
+		var job: Dictionary = _bkt_queue[0]
+		var ok: bool = await _post_bkt_assess(job)
+		if not ok:
+			break
+		_bkt_queue.pop_front()
+	_bkt_busy = false
+
+
+func _post_bkt_assess(job: Dictionary) -> bool:
+	if _bkt_http == null or _token.is_empty():
+		return false
+	var body := {
+		"skill_id": str(job.get("skill_id", "phishing")),
+		"is_correct": bool(job.get("is_correct", false)),
+	}
+	for key in ["p_g", "p_s", "p_t"]:
+		if job.has(key):
+			body[key] = float(job[key])
+	var url := "%s/api/bkt/assess" % _api_base().trim_suffix("/")
+	var headers := PackedStringArray([
+		"Content-Type: application/json",
+		"Accept: application/json",
+		"Authorization: Bearer %s" % _token,
+	])
+	if _bkt_http.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		_bkt_http.cancel_request()
+		await get_tree().process_frame
+	var err := _bkt_http.request(url, headers, HTTPClient.METHOD_POST, JSON.stringify(body))
+	if err != OK:
+		push_warning("[BKT] assess request failed to start: %s" % err)
+		return false
+	var completed: Array = await _bkt_http.request_completed
+	var result_code: int = int(completed[0])
+	var response_code: int = int(completed[1])
+	var response_body: PackedByteArray = completed[3]
+	if result_code != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
+		push_warning("[BKT] assess failed. result=%s http=%s" % [result_code, response_code])
+		return false
+	var parsed: Variant = JSON.parse_string(response_body.get_string_from_utf8())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return true
+	var payload: Dictionary = parsed as Dictionary
+	var topic: String = str(payload.get("topic", "Phishing"))
+	var pl: float = float(payload.get("probability_known", 0.0))
+	if pl > 0.0:
+		apply_topic_mastery(topic, pl)
+		print("[BKT] official %s P(L)=%.3f" % [topic, pl])
 	return true
 
 

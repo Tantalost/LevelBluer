@@ -127,7 +127,9 @@ func _attempt_login() -> void:
 	_set_busy(true)
 	var result: AuthService.Result = await AuthService.sign_in(email, password)
 	if result == AuthService.Result.OK:
+		SaveService.fetch_cloud_save()
 		await SaveService.wait_for_cloud_fetch()
+		await PlayerManager.pull_official_bkt()
 	_set_busy(false)
 
 	match result:

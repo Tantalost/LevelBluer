@@ -5,7 +5,7 @@ extends Node
 const P_GUESS: float = 0.2
 const P_SLIP: float = 0.1
 const P_TRANSIT: float = 0.1
-const DEFAULT_MASTERY: float = 0.25
+const DEFAULT_MASTERY: float = 0.10
 const MIN_MASTERY: float = 0.01
 const MAX_MASTERY: float = 0.99
 const AT_RISK_MASTERY: float = 0.40
@@ -292,9 +292,47 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 	var new_mastery: float = clampf(p_post + ((1.0 - p_post) * p_transit), MIN_MASTERY, MAX_MASTERY)
 	mastery_matrix[key] = new_mastery
 	print(
-		"[BKT] %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"
+		"[BKT] local %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"
 		% [key, "hit" if is_correct else "miss", p_learned, new_mastery, p_guess, p_slip, p_transit]
 	)
+	SaveService.save_game()
+	AuthService.enqueue_bkt_assess(key, is_correct, {
+		"p_g": p_guess,
+		"p_s": p_slip,
+		"p_t": p_transit,
+	})
+
+
+func apply_official_mastery(skill_id: String, probability_known: float) -> void:
+	var key: String = skill_id if not skill_id.is_empty() else "phishing"
+	mastery_matrix[key] = clampf(probability_known, MIN_MASTERY, MAX_MASTERY)
+
+
+func seed_from_official_mastery() -> void:
+	var official: Dictionary = AuthService.mastery()
+	var phishing: float = float(official.get("Phishing", official.get("phishing", 0.0)))
+	if phishing <= 0.0:
+		return
+	mastery_matrix["phishing"] = clampf(phishing, MIN_MASTERY, MAX_MASTERY)
+	print("[BKT] seeded phishing from official P(L)=%.3f" % phishing)
+	SaveService.save_game()
+
+
+func pull_official_bkt() -> void:
+	if not AuthService.is_signed_in():
+		seed_from_official_mastery()
+		return
+	var gameplay: Dictionary = await AuthService.fetch_bkt_state()
+	if gameplay.is_empty():
+		seed_from_official_mastery()
+		return
+	var keys: Array = gameplay.keys()
+	for i in keys.size():
+		var skill_id: String = str(keys[i]).strip_edges().to_lower()
+		if skill_id.is_empty():
+			continue
+		apply_official_mastery(skill_id, float(gameplay[keys[i]]))
+	print("[BKT] pulled official gameplay matrix ", gameplay)
 	SaveService.save_game()
 
 

@@ -112,6 +112,7 @@ func _boot() -> void:
 	if has_session:
 		AuthService.start_background_refresh()
 		SaveService.fetch_cloud_save()
+		await PlayerManager.pull_official_bkt()
 
 	_set_status("LOADING_READY", 1.0)
 
