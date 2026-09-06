@@ -35,6 +35,8 @@ func _on_resized() -> void:
 
 
 func _process(delta: float) -> void:
+	if Router.is_tutorial:
+		return
 	if _canvas == null or not is_visible_in_tree():
 		return
 	var dir := Vector2.ZERO
@@ -51,6 +53,8 @@ func _process(delta: float) -> void:
 
 
 func _gui_input(event: InputEvent) -> void:
+	if Router.is_tutorial:
+		return
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
 		if mouse.button_index == MOUSE_BUTTON_RIGHT:

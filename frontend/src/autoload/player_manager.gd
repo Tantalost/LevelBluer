@@ -26,6 +26,7 @@ var mock_max_stage_cleared: int = 1
 var credits: int = 0
 var module_1_complete: bool = false
 var seen_module_intros: Array[String] = []
+var tutorial_complete: bool = false
 var _session_hydrated: bool = false
 
 
@@ -130,6 +131,7 @@ func reset_to_defaults() -> void:
 	unlocked_towers = ["base"]
 	module_1_complete = false
 	seen_module_intros.clear()
+	tutorial_complete = false
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
@@ -140,6 +142,14 @@ func add_credits(amount: int) -> void:
 		return
 	credits += amount
 	SaveService.save_game()
+
+
+func ensure_tutorial_upgrade_funds() -> void:
+	if has_skill("firewall_1") or is_tower_unlocked("network"):
+		return
+	if credits >= 200:
+		return
+	add_credits(200 - credits)
 
 
 func spend_credits(amount: int) -> bool:
@@ -215,6 +225,17 @@ func mark_module_intro_seen(module_id: String) -> void:
 	if module_id.is_empty() or seen_module_intros.has(module_id):
 		return
 	seen_module_intros.append(module_id)
+	SaveService.save_game()
+
+
+func needs_tutorial() -> bool:
+	return not tutorial_complete
+
+
+func mark_tutorial_complete() -> void:
+	if tutorial_complete:
+		return
+	tutorial_complete = true
 	SaveService.save_game()
 
 
@@ -381,6 +402,7 @@ func get_save_data() -> Dictionary:
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
 		"seen_module_intros": seen_module_intros.duplicate(),
+		"tutorial_complete": tutorial_complete,
 	}
 
 
@@ -475,6 +497,15 @@ func apply_save_data(data: Dictionary) -> void:
 			var intro_id: String = str(saved_intros[i])
 			if not intro_id.is_empty() and not seen_module_intros.has(intro_id):
 				seen_module_intros.append(intro_id)
+
+	if data.has("tutorial_complete"):
+		var tutorial_raw: Variant = data["tutorial_complete"]
+		var tutorial_type: int = typeof(tutorial_raw)
+		if tutorial_type == TYPE_BOOL:
+			tutorial_complete = tutorial_raw
+		elif tutorial_type == TYPE_INT or tutorial_type == TYPE_FLOAT:
+			tutorial_complete = int(tutorial_raw) != 0
+
 	if module_1_complete:
 		cleared_stages[10] = true
 	_normalize_mastery_keys()

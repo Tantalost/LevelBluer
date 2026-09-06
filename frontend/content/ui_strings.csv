@@ -75,6 +75,38 @@ MODULE_INTRO_SKIP,SKIP,LAKTAWAN
 MODULE_INTRO_LINE_1,A fake email just landed.,May pekeng email na dumating.
 MODULE_INTRO_LINE_2,One click opens the gate.,Isang click, bukas na ang gate.
 MODULE_INTRO_LINE_3,The city network is exposed.,Nakalantad na ang network.
+TUTORIAL_NPC_NAME,HANDLER,HANDLER
+TUTORIAL_NEXT,NEXT,SUNOD
+TUTORIAL_CHOICE_DEPLOY,DEPLOY,DEPLOY
+TUTORIAL_DASH_LINE,I'll walk you through a live match. Pick DEPLOY when you're ready.,Tutulungan kitang maunawaan ang laban. Piliin ang DEPLOY kung handa ka na.
+TUTORIAL_INTRO_1,This floor is training. It is not Stage 1. Nothing here locks your real stages.,Pagsasanay ito. Hindi ito ang Stage 1. Walang naka-lock dito.
+TUTORIAL_INTRO_2,Every real stage has three beats. Quiz. Build. Defend.,Bawat stage ay may tatlong bahagi. Quiz. Build. Defend.
+TUTORIAL_PHASE_QUIZ,Quiz first. Correct answers pay gold. Misses spawn more enemies.,Quiz muna. Tama = ginto. Mali = dagdag na kaaway.
+TUTORIAL_PHASE_BUILD,Build next. Gold buys towers. You can move a tower for 1G.,Build. Ang ginto ay pambili ng tower. Pwede mo itong ilipat sa halagang 1G.
+TUTORIAL_PHASE_DEFEND,Defend last. Enemies walk the path. Hearts are your base. Empty hearts and you fail.,Defend. Dumadaan ang kaaway sa path. Hearts ang base mo. Kapag ubos, talo.
+TUTORIAL_PHASE_HOLD,That's the loop. Next we run a live quiz on this floor.,Iyan ang loop. Sunod ay live quiz dito sa floor.
+TUTORIAL_CHOICE_QUIZ,START QUIZ,SIMULAN ANG QUIZ
+TUTORIAL_Q1_RETRY,That's the trap. Pick the safe call.,Bitag iyon. Piliin ang ligtas.
+TUTORIAL_Q2_FORCE_MISS,Miss this one. Extra packets join the wave.,Palampasin ito. Dadagdag ang packet sa wave.
+TUTORIAL_QUIZ_DONE,That's quiz. Gold for hits. Extra packets for misses. Next we build.,Iyan ang quiz. Tama = ginto. Mali = dagdag na packet. Build ang susunod.
+TUTORIAL_CHOICE_BUILD,START BUILD,SIMULAN ANG BUILD
+TUTORIAL_BUILD_GO,Drag NODE onto a pad. Two towers. 3G each. Move costs 1G.,I-drag ang NODE sa pad. Dalawang tower. 3G bawat isa. Lipat = 1G.
+TUTORIAL_BUILD_ONE,One down. Place the second firewall.,Isa na. Ilagay ang pangalawang firewall.
+TUTORIAL_BUILD_DONE,Two up. Tap a tower then a pad to move it for 1G. Defend comes next.,Dalawa na. I-tap ang tower tapos ang pad para ilipat (1G). Defend ang susunod.
+TUTORIAL_CHOICE_DEFEND,START DEFEND,SIMULAN ANG DEFEND
+TUTORIAL_DEFEND_DONE,That's defend. Empty hearts fail a live stage. Training still moves on.,Iyan ang defend. Ubos na hearts = talo sa totoong stage. Dito, tuloy pa rin.
+TUTORIAL_RESULTS,Take 200 materials. Buy Basic Firewall. It stays unlocked for Module 1.,Kumuha ng 200 materials. Bilhin ang Basic Firewall. Permanenteng unlock iyon.
+TUTORIAL_CHOICE_UPGRADE,OPEN UPGRADES,BUKSAN ANG UPGRADES
+TUTORIAL_UPGRADE_BUY,Tap Basic Firewall. 200 materials. This one is yours for good.,I-tap ang Basic Firewall. 200 materials. Sa iyo na ito.
+TUTORIAL_UPGRADE_DONE,Firewall is live. Fail a real stage and it locks until you train.,Live na ang firewall. Kapag natalo sa totoong stage, magla-lock hanggang mag-train ka.
+TUTORIAL_FAIL_LOCK,This is the lock. Intel opens it. Finish one Module 1 file.,Ito ang lock. Intel ang bumubukas. Tapusin ang isang Module 1 file.
+TUTORIAL_CHOICE_LESSON,OPEN LESSON,BUKSAN ANG LESSON
+TUTORIAL_LESSON_GO,Real Module 1 file. Finish the drill. That is how a lock clears.,Totoong Module 1 file. Tapusin ang drill. Ganito nabubuksan ang lock.
+TUTORIAL_CHOICE_START_FILE,START FILE,SIMULAN ANG FILE
+TUTORIAL_LESSON_DONE,Lock cleared. Training is over. The floor is yours.,Bukas na ang lock. Tapos na ang training. Sa iyo na ang floor.
+TUTORIAL_CHOICE_DASH,TO DASHBOARD,SA DASHBOARD
+TUTORIAL_DASH_DONE,Explore the floor. Deploy when you want a real stage. Have fun.,I-explore ang floor. Deploy kung gusto mo ng totoong stage. Enjoy.
+TUTORIAL_CHOICE_EXPLORE,GOT IT,OKAY
 SETT_TITLE,SETTINGS,SETTINGS
 SETT_BACK,< BACK,< BUMALIK
 SETT_SEC_AUDIO,AUDIO,AUDIO

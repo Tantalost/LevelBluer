@@ -9,7 +9,7 @@ const DB_PATH := "user://levelblue_assets"
 const ASSETS_DIR := "user://assets"
 const BUNDLED_DIR := "res://assets/enemies"
 const CLOUD_ROOT := "https://res.cloudinary.com/nfd5bhkz/image/upload"
-const CATALOG_REV := "ui-urls-1"
+const CATALOG_REV := "npc-expr-1"
 const DOWNLOAD_TIMEOUT_SEC := 15.0
 const BODY_SIZE_LIMIT := 8 * 1024 * 1024
 const WALK_FPS := 8.0
@@ -255,6 +255,24 @@ func _ui_catalog() -> Array[Dictionary]:
 		_catalog_entry("ui_heart_full", "HP full", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336650/fullheart.png"),
 		_catalog_entry("ui_heart_half", "HP half", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336652/halfheart.png"),
 		_catalog_entry("ui_heart_empty", "HP empty", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/emptyheart.png"),
+		_catalog_entry("npc_thoughtfulness", "NPC thoughtfulness", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689630/Thoughtfulness.png"),
+		_catalog_entry("npc_talk", "NPC talk", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689629/Talk.png"),
+		_catalog_entry("npc_smile", "NPC smile", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689629/Smile.png"),
+		_catalog_entry("npc_skepticism", "NPC skepticism", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689629/Skepticism.png"),
+		_catalog_entry("npc_scream", "NPC scream", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689628/Scream.png"),
+		_catalog_entry("npc_sadness", "NPC sadness", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689627/Sadness.png"),
+		_catalog_entry("npc_laughter", "NPC laughter", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689627/laughter.png"),
+		_catalog_entry("npc_fear", "NPC fear", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689626/Fear.png"),
+		_catalog_entry("npc_eye_rolling", "NPC eye rolling", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689626/Eye_rolling.png"),
+		_catalog_entry("npc_calm", "NPC calm", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Calm.png"),
+		_catalog_entry("npc_cry", "NPC cry", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689626/Cry.png"),
+		_catalog_entry("npc_discomfort", "NPC discomfort", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689626/Dscomfort.png"),
+		_catalog_entry("npc_embarrassment", "NPC embarrassment", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689626/Embarrassment.png"),
+		_catalog_entry("npc_doubt", "NPC doubt", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689626/Doubt.png"),
+		_catalog_entry("npc_awkwardness", "NPC awkwardness", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Awkwardness.png"),
+		_catalog_entry("npc_disgust", "NPC disgust", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Disgust.png"),
+		_catalog_entry("npc_aggression", "NPC aggression", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Aggression.png"),
+		_catalog_entry("npc_astonishment", "NPC astonishment", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Astonishment.png"),
 	]
 
 
@@ -619,6 +637,8 @@ func _seed_from_bundle() -> void:
 
 
 func _bundled_path(asset_id: String) -> String:
+	if asset_id.begins_with("npc_"):
+		return ""
 	match asset_id:
 		"ui_intro":
 			return ""

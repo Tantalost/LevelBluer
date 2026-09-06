@@ -101,6 +101,8 @@ var _tex_heart_full: Texture2D
 var _tex_heart_half: Texture2D
 var _tex_heart_empty: Texture2D
 var _heart_tween: Tween
+var _tutorial_overlay: TutorialOverlay = null
+var _tutorial_defend_done: bool = false
 
 @onready var _camera: Camera2D = %Camera2D
 
@@ -149,8 +151,176 @@ func _ready() -> void:
 	_mount_map()
 	update_hud()
 	print("[LevelManager] Initializing Level for Stage Index: ", Router.active_stage_index)
-	change_phase(GamePhase.PHASE_1_QUIZ)
+	if Router.is_tutorial:
+		_begin_tutorial_shell()
+	else:
+		change_phase(GamePhase.PHASE_1_QUIZ)
 	AudioManager.play_bgm(AudioManager.level_track)
+
+
+func _begin_tutorial_shell() -> void:
+	change_phase(GamePhase.PRE_MATCH)
+	_btn_pause.visible = false
+	_btn_speed.visible = false
+	_quiz_modal.visible = false
+	_set_start_controls_visible(false)
+	update_hud()
+	var packed: PackedScene = load("res://src/gameplay/tutorial/tutorial_overlay.tscn") as PackedScene
+	if packed == null:
+		push_error("LevelManager: tutorial overlay missing")
+		return
+	var overlay: TutorialOverlay = packed.instantiate() as TutorialOverlay
+	if overlay == null:
+		return
+	var canvas: Node = get_parent().get_node_or_null("GameplayCanvas")
+	if canvas == null:
+		overlay.queue_free()
+		return
+	canvas.add_child(overlay)
+	_tutorial_overlay = overlay
+	if not overlay.quiz_requested.is_connected(_on_tutorial_quiz_requested):
+		overlay.quiz_requested.connect(_on_tutorial_quiz_requested)
+	if not overlay.build_requested.is_connected(_on_tutorial_build_requested):
+		overlay.build_requested.connect(_on_tutorial_build_requested)
+	if not overlay.defend_requested.is_connected(_on_tutorial_defend_requested):
+		overlay.defend_requested.connect(_on_tutorial_defend_requested)
+	if not overlay.upgrades_requested.is_connected(_on_tutorial_upgrades_requested):
+		overlay.upgrades_requested.connect(_on_tutorial_upgrades_requested)
+	overlay.setup_match()
+
+
+func _on_tutorial_quiz_requested() -> void:
+	if not Router.is_tutorial:
+		return
+	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay.visible = false
+		_tutorial_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	change_phase(GamePhase.PHASE_1_QUIZ)
+
+
+func _tutorial_gate_copy(is_correct: bool) -> String:
+	if exam_questions_asked == 0 and not is_correct:
+		return tr("TUTORIAL_Q1_RETRY")
+	if exam_questions_asked == 1 and is_correct:
+		return tr("TUTORIAL_Q2_FORCE_MISS")
+	return ""
+
+
+func _resolve_tutorial_quiz(reward: int, is_correct: bool) -> void:
+	current_gold += reward
+	if not is_correct:
+		_tutorial_add_miss_enemies(2)
+	update_hud()
+	if exam_questions_asked < 5:
+		_set_quiz_locked(false)
+		_load_next_question()
+		return
+	_quiz_modal.visible = false
+	change_phase(GamePhase.PRE_MATCH)
+	_show_tutorial_post_quiz()
+
+
+func _tutorial_add_miss_enemies(count: int) -> void:
+	var waves_stored: Variant = current_stage_config.get("waves", [])
+	if typeof(waves_stored) != TYPE_ARRAY:
+		return
+	var waves: Array = waves_stored as Array
+	if waves.is_empty():
+		return
+	var row: Variant = waves[0]
+	if typeof(row) != TYPE_DICTIONARY:
+		return
+	var wave: Dictionary = row as Dictionary
+	var next_count: int = int(wave.get("enemy_count", 0)) + maxi(0, count)
+	wave["enemy_count"] = next_count
+	waves[0] = wave
+	current_stage_config["waves"] = waves
+	_wave_total_enemies = next_count
+
+
+func _show_tutorial_post_quiz() -> void:
+	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
+		return
+	_tutorial_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_tutorial_overlay.show_post_quiz()
+
+
+func _on_tutorial_build_requested() -> void:
+	if not Router.is_tutorial:
+		return
+	if _tower_placer != null:
+		_tower_placer.tower_cost = 3
+		_tower_placer.move_cost = 1
+		_tower_placer.max_towers = 2
+	current_gold = maxi(current_gold, 7)
+	if _tower_card != null:
+		_tower_card.subtitle = "3G"
+		_tower_card.queue_redraw()
+	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay.start_build_coach()
+	update_hud()
+	change_phase(GamePhase.PHASE_2_BUILD)
+
+
+func _on_tutorial_tower_placed(_tower: TowerBase) -> void:
+	if not Router.is_tutorial or _tower_placer == null:
+		return
+	var placed: int = _tower_placer.placed_count()
+	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
+		return
+	if placed < 2:
+		_tutorial_overlay.coach_build_progress(placed)
+		return
+	_tutorial_overlay.show_post_build()
+
+
+func _on_tutorial_defend_requested() -> void:
+	if not Router.is_tutorial:
+		return
+	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay.visible = false
+		_tutorial_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tutorial_defend_done = false
+	change_phase(GamePhase.PHASE_3_DEFEND)
+
+
+func _on_tutorial_upgrades_requested() -> void:
+	if not Router.is_tutorial:
+		return
+	PlayerManager.ensure_tutorial_upgrade_funds()
+	Router.open_tutorial_upgrades()
+
+
+func _finish_tutorial_defend() -> void:
+	if _tutorial_defend_done:
+		return
+	_tutorial_defend_done = true
+	_wave_token += 1
+	_clear_track_enemies()
+	if current_phase != GamePhase.PRE_MATCH:
+		change_phase(GamePhase.PRE_MATCH)
+	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
+		return
+	_tutorial_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_tutorial_overlay.show_post_defend()
+
+
+func _clear_track_enemies() -> void:
+	if _track == null or not is_instance_valid(_track):
+		return
+	var kids: Array = _track.get_children()
+	for i in kids.size():
+		var enemy: EnemyBase = kids[i] as EnemyBase
+		if enemy == null:
+			continue
+		if enemy.enemy_died.is_connected(_on_enemy_died):
+			enemy.enemy_died.disconnect(_on_enemy_died)
+		if enemy.reached_base.is_connected(_on_enemy_reached_base):
+			enemy.reached_base.disconnect(_on_enemy_reached_base)
+		_track.remove_child(enemy)
+		enemy.queue_free()
+	active_enemies = 0
+	_wave_finished_spawning = true
 
 
 func _process(delta: float) -> void:
@@ -186,7 +356,7 @@ func change_phase(new_phase: GamePhase) -> void:
 		GamePhase.PHASE_2_BUILD:
 			_quiz_modal.visible = false
 			_end_game_modal.visible = false
-			_set_start_controls_visible(true)
+			_set_start_controls_visible(not Router.is_tutorial)
 			print("[LevelManager] Entering Phase 2: BUILD. Generating mock gold...")
 		GamePhase.PHASE_3_DEFEND:
 			_quiz_modal.visible = false
@@ -196,6 +366,9 @@ func change_phase(new_phase: GamePhase) -> void:
 			_hide_incident()
 			print("[LevelManager] Entering Phase 3: DEFEND. Spawning wave " + str(current_wave_index + 1) + "...")
 		GamePhase.GAME_OVER:
+			if Router.is_tutorial:
+				_finish_tutorial_defend()
+				return
 			Engine.time_scale = 1.0
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
@@ -214,6 +387,9 @@ func change_phase(new_phase: GamePhase) -> void:
 			print("[LevelManager] Entering GAME_OVER. Match lost.")
 			Router.open_defeat(tip, weak_skill)
 		GamePhase.VICTORY:
+			if Router.is_tutorial:
+				_finish_tutorial_defend()
+				return
 			Engine.time_scale = 1.0
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
@@ -256,6 +432,9 @@ func update_hud() -> void:
 		_phase_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_gold_label.text = "GOLD  " + str(current_gold)
 	_wave_label.text = str(_wave_kills) + "/" + str(_wave_total_enemies)
+	if Router.is_tutorial:
+		_map_label.text = "TRAINING"
+		return
 	var wave_n: int = current_wave_index + 1
 	var waves: int = maxi(1, _wave_count())
 	if str(_current_wave_data().get("enemy_type", "")) == "boss":
@@ -323,6 +502,27 @@ func _fit_level_background() -> void:
 
 
 func _load_stage_config() -> void:
+	if Router.is_tutorial:
+		current_stage_config = {
+			"name": "Handler Briefing",
+			"type": "tutorial",
+			"map_scene": "res://src/gameplay/maps/map_tutorial.tscn",
+			"starting_gold": 0,
+			"incident_chance": 0.0,
+			"waves": [
+				{"enemy_count": 3, "spawn_delay": 1.4, "health_multiplier": 1.0, "enemy_type": "basic"},
+			],
+		}
+		current_wave_index = 0
+		exam_questions_asked = 0
+		exam_questions_correct = 0
+		exam_history.clear()
+		_asked_question_ids.clear()
+		current_gold = 0
+		_wave_total_enemies = _current_wave_enemy_count()
+		_bkt_frozen = true
+		print("[Stage] Loaded tutorial briefing map")
+		return
 	# Stage select is 0-based. ContentDB stage keys are 1-based string IDs.
 	var stage_id: int = Router.active_stage_index + 1
 	current_stage_config = StageManager.get_stage_config(stage_id)
@@ -370,6 +570,8 @@ func _mount_map() -> void:
 		_tower_placer.bind_level_manager(self)
 		if not _tower_placer.tower_selected.is_connected(_on_tower_selected):
 			_tower_placer.tower_selected.connect(_on_tower_selected)
+		if not _tower_placer.tower_placed.is_connected(_on_tutorial_tower_placed):
+			_tower_placer.tower_placed.connect(_on_tutorial_tower_placed)
 	var builder := map_root as MapBuilder
 	if builder != null:
 		var end_pos: Vector2 = builder.get_end_global_position()
@@ -471,7 +673,7 @@ func _exam_required_score() -> float:
 func _phase_display_name() -> String:
 	match current_phase:
 		GamePhase.PRE_MATCH:
-			return "PRE-MATCH"
+			return "BRIEFING" if Router.is_tutorial else "PRE-MATCH"
 		GamePhase.PHASE_1_QUIZ:
 			return "TRACE"
 		GamePhase.PHASE_2_BUILD:
@@ -497,6 +699,13 @@ func _submit_quiz_choice(picked: Variant) -> void:
 	if _quiz_locked:
 		return
 	var is_correct: bool = _is_quiz_correct(picked)
+	if Router.is_tutorial:
+		var gate: String = _tutorial_gate_copy(is_correct)
+		if not gate.is_empty():
+			_quiz_feedback.text = gate
+			_quiz_feedback.visible = true
+			_apply_quiz_label(_quiz_feedback, Palette.GOLD, 9)
+			return
 	_show_quiz_feedback(is_correct, picked)
 	_finish_quiz_answer(is_correct)
 
@@ -964,6 +1173,9 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		await get_tree().create_timer(1.05).timeout
 	if current_phase != GamePhase.PHASE_1_QUIZ:
 		return
+	if Router.is_tutorial:
+		_resolve_tutorial_quiz(reward, is_correct)
+		return
 	if not _is_summative():
 		current_gold += reward
 		print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
@@ -995,6 +1207,8 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 
 func _on_start_wave_pressed() -> void:
 	if current_phase != GamePhase.PHASE_2_BUILD:
+		return
+	if Router.is_tutorial:
 		return
 	_set_start_controls_visible(false)
 	change_phase(GamePhase.PHASE_3_DEFEND)
@@ -1050,7 +1264,9 @@ func _sync_phase_chrome() -> void:
 	if _tower_placer != null:
 		_tower_placer.set_build_preview(building)
 	_tower_card.visible = building
-	_btn_speed.visible = live
+	_btn_speed.visible = live and not Router.is_tutorial
+	if Router.is_tutorial:
+		_btn_pause.visible = false
 	_apply_speed()
 
 
@@ -1073,9 +1289,9 @@ func _refresh_quiz_copy() -> void:
 		else:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%%" % [hit_gold, miss_gold, mastery_pct]
 	_quiz_tap_hint.text = "TAP TO PASS" if exam else "TAP FAST"
-	if exam:
+	if exam or Router.is_tutorial:
 		var current_q: int = exam_questions_asked + 1
-		var total_q: int = _exam_question_count()
+		var total_q: int = 5 if Router.is_tutorial else _exam_question_count()
 		_exam_progress_label.text = "TRACE  " + str(current_q) + " / " + str(total_q)
 		_exam_progress_label.visible = true
 	else:
@@ -1486,6 +1702,11 @@ func _apply_base_breach() -> void:
 	_play_heart_hit()
 	update_hud()
 	if base_health <= 0:
+		if Router.is_tutorial:
+			base_health = 0
+			update_hud()
+			_finish_tutorial_defend()
+			return
 		change_phase(GamePhase.GAME_OVER)
 		return
 	_check_wave_cleared()
@@ -1516,6 +1737,14 @@ func _check_wave_cleared() -> void:
 	if _incident_modal.visible:
 		return
 	if _is_wave_intermission:
+		return
+	if Router.is_tutorial:
+		if base_health <= 0:
+			_finish_tutorial_defend()
+			return
+		if active_enemies != 0 or not _wave_finished_spawning:
+			return
+		_finish_tutorial_defend()
 		return
 	if base_health <= 0:
 		change_phase(GamePhase.GAME_OVER)
@@ -1706,11 +1935,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not key.pressed or key.echo:
 			return
 		if key.keycode == KEY_SPACE and current_phase == GamePhase.PHASE_2_BUILD:
+			if Router.is_tutorial:
+				get_viewport().set_input_as_handled()
+				return
 			_on_start_wave_pressed()
 			get_viewport().set_input_as_handled()
 
 
 func toggle_pause() -> void:
+	if Router.is_tutorial:
+		return
 	if current_phase == GamePhase.GAME_OVER or current_phase == GamePhase.VICTORY:
 		return
 	if _pause_menu.visible:

@@ -45,6 +45,7 @@ var _branch_id: String = "start"
 var _log: PackedStringArray = []
 var _time_left: float = 0.0
 var _timer_on: bool = false
+var _tutorial_overlay: TutorialOverlay = null
 
 
 func _ready() -> void:
@@ -100,15 +101,27 @@ func _process(delta: float) -> void:
 func on_enter(args: Dictionary) -> void:
 	_module_id = str(args.get("module_id", ""))
 	_review_mode = bool(args.get("review", false))
+	var tutorial: bool = Router.is_tutorial and (Router.tutorial_beat == &"lesson" or bool(args.get("tutorial", false)))
+	if tutorial:
+		_module_id = "mod_01"
+		_review_mode = false
 	_lessons = LessonCatalog.lessons_for(_module_id)
 	if _lessons.is_empty():
-		Router.request_back()
+		if tutorial:
+			Router.open_tutorial_dashboard()
+		else:
+			Router.request_back()
 		return
-	if _review_mode:
+	if tutorial:
+		_lesson_index = 0
+	elif _review_mode:
 		_lesson_index = 0
 	else:
 		_lesson_index = clampi(PlayerManager.get_lesson_progress(_module_id), 0, _lessons.size() - 1)
+	_close_button.visible = not tutorial
 	_start_lesson()
+	if tutorial:
+		_begin_tutorial_coach()
 
 
 func _start_lesson() -> void:
@@ -820,6 +833,14 @@ func _on_continue() -> void:
 func _finish_lesson() -> void:
 	_timer_on = false
 	set_process(false)
+	if Router.is_tutorial and Router.tutorial_beat == &"lesson":
+		if _busy:
+			return
+		_busy = true
+		if PlayerManager.get_lesson_progress(_module_id) == 0:
+			PlayerManager.complete_lesson_unit(_module_id, _lessons.size(), LessonCatalog.module_ids())
+		_show_tutorial_lesson_done()
+		return
 	if _review_mode:
 		Router.request_back()
 		return
@@ -836,6 +857,36 @@ func _finish_lesson() -> void:
 		return
 	_lesson_index = next
 	_start_lesson()
+
+
+func _begin_tutorial_coach() -> void:
+	_tutorial_overlay = TutorialOverlay.mount_on(self)
+	if _tutorial_overlay == null:
+		return
+	if not _tutorial_overlay.file_requested.is_connected(_on_tutorial_file_requested):
+		_tutorial_overlay.file_requested.connect(_on_tutorial_file_requested)
+	if not _tutorial_overlay.dashboard_requested.is_connected(_on_tutorial_dashboard_requested):
+		_tutorial_overlay.dashboard_requested.connect(_on_tutorial_dashboard_requested)
+	_tutorial_overlay.setup_lesson()
+
+
+func _on_tutorial_file_requested() -> void:
+	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay.visible = false
+		_tutorial_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _on_tutorial_dashboard_requested() -> void:
+	Router.open_tutorial_dashboard()
+
+
+func _show_tutorial_lesson_done() -> void:
+	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay = TutorialOverlay.mount_on(self)
+	if _tutorial_overlay == null:
+		Router.open_tutorial_dashboard()
+		return
+	_tutorial_overlay.show_lesson_done()
 
 
 func _browse_lesson(delta: int) -> void:

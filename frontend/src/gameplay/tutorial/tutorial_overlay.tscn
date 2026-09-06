@@ -1,0 +1,312 @@
+[gd_scene format=3 uid="uid://c87dblpwf5b5"]
+
+[ext_resource type="Script" uid="uid://c7i0tbgduy45p" path="res://src/gameplay/tutorial/tutorial_overlay.gd" id="1_script"]
+[ext_resource type="FontFile" uid="uid://br3y2n13s7ijl" path="res://assets/fonts/DigitalDisco.ttf" id="2_font"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+content_margin_left = 14.0
+content_margin_top = 16.0
+content_margin_right = 14.0
+content_margin_bottom = 16.0
+bg_color = Color(0.101961, 0.235294, 0.427451, 0.94)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.933333, 0.94902, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_dialogue"]
+content_margin_left = 8.0
+content_margin_top = 8.0
+content_margin_right = 8.0
+content_margin_bottom = 8.0
+bg_color = Color(0.101961, 0.235294, 0.427451, 1)
+border_width_left = 6
+border_width_top = 6
+border_width_right = 6
+border_width_bottom = 6
+border_color = Color(0.933333, 0.94902, 1, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_inner"]
+content_margin_left = 18.0
+content_margin_top = 14.0
+content_margin_right = 18.0
+content_margin_bottom = 14.0
+bg_color = Color(0.101961, 0.235294, 0.427451, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.784314, 0.847059, 1, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_tag"]
+content_margin_left = 14.0
+content_margin_top = 8.0
+content_margin_right = 14.0
+content_margin_bottom = 8.0
+bg_color = Color(0.760784, 0.760784, 0.760784, 1)
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.933333, 0.94902, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="TutorialOverlay" type="Control" unique_id=408025724]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+script = ExtResource("1_script")
+
+[node name="Dim" type="ColorRect" parent="." unique_id=2125020243]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0196078, 0.0431373, 0.0941176, 0.55)
+
+[node name="TapCatch" type="Control" parent="." unique_id=1264242242]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PhaseCards" type="HBoxContainer" parent="." unique_id=1231622199]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -510.0
+offset_top = -210.0
+offset_right = 510.0
+offset_bottom = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 24
+alignment = 1
+
+[node name="CardQuiz" type="PanelContainer" parent="PhaseCards" unique_id=1758656924]
+custom_minimum_size = Vector2(300, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="QuizCol" type="VBoxContainer" parent="PhaseCards/CardQuiz" unique_id=363396695]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="QuizNum" type="Label" parent="PhaseCards/CardQuiz/QuizCol" unique_id=858357919]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "PHASE 1"
+horizontal_alignment = 1
+
+[node name="QuizTitle" type="Label" parent="PhaseCards/CardQuiz/QuizCol" unique_id=1292593565]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "QUIZ"
+horizontal_alignment = 1
+
+[node name="QuizBody" type="Label" parent="PhaseCards/CardQuiz/QuizCol" unique_id=1320489917]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 0.85)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "Answer to earn gold."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CardBuild" type="PanelContainer" parent="PhaseCards" unique_id=2078785835]
+custom_minimum_size = Vector2(300, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="BuildCol" type="VBoxContainer" parent="PhaseCards/CardBuild" unique_id=586510678]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="BuildNum" type="Label" parent="PhaseCards/CardBuild/BuildCol" unique_id=1041208778]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "PHASE 2"
+horizontal_alignment = 1
+
+[node name="BuildTitle" type="Label" parent="PhaseCards/CardBuild/BuildCol" unique_id=1868318755]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "BUILD"
+horizontal_alignment = 1
+
+[node name="BuildBody" type="Label" parent="PhaseCards/CardBuild/BuildCol" unique_id=1314838446]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 0.85)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "Spend gold to place towers."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CardDefend" type="PanelContainer" parent="PhaseCards" unique_id=546530574]
+custom_minimum_size = Vector2(300, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="DefendCol" type="VBoxContainer" parent="PhaseCards/CardDefend" unique_id=375932652]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="DefendNum" type="Label" parent="PhaseCards/CardDefend/DefendCol" unique_id=889970776]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 12
+text = "PHASE 3"
+horizontal_alignment = 1
+
+[node name="DefendTitle" type="Label" parent="PhaseCards/CardDefend/DefendCol" unique_id=599720406]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 22
+text = "DEFEND"
+horizontal_alignment = 1
+
+[node name="DefendBody" type="Label" parent="PhaseCards/CardDefend/DefendCol" unique_id=1682199173]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 0.85)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 14
+text = "Stop enemies. Guard hearts."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="FaceArt" type="TextureRect" parent="." unique_id=1970083949]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -522.0
+offset_right = 352.0
+offset_bottom = -70.0
+grow_vertical = 0
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="DialogueBox" type="PanelContainer" parent="." unique_id=1613558265]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 3.0
+offset_top = -135.0
+offset_right = -24.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_dialogue")
+
+[node name="DialogueInner" type="PanelContainer" parent="DialogueBox" unique_id=1087322078]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_inner")
+
+[node name="NpcBody" type="Label" parent="DialogueBox/DialogueInner" unique_id=6197238]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.933333, 0.94902, 1, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 3
+
+[node name="NameTag" type="PanelContainer" parent="." unique_id=102686773]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 44.0
+offset_top = -180.0
+offset_right = 276.0
+offset_bottom = -130.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_tag")
+
+[node name="NpcName" type="Label" parent="NameTag" unique_id=1513430414]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.0627451, 0.0862745, 0.137255, 1)
+theme_override_fonts/font = ExtResource("2_font")
+theme_override_font_sizes/font_size = 16
+text = "ERIC"
+vertical_alignment = 1
+
+[node name="ChoiceList" type="VBoxContainer" parent="." unique_id=104594679]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -415.0
+offset_top = -381.0
+offset_right = -31.0
+offset_bottom = -139.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 10
+alignment = 2

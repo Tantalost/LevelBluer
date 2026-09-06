@@ -12,7 +12,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vignette"]
 shader = ExtResource("8_vig")
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wsgdw"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mp6jf"]
 content_margin_left = 18.0
 content_margin_top = 6.0
 content_margin_right = 16.0
@@ -20,7 +20,7 @@ content_margin_bottom = 6.0
 bg_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
 border_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3rpt0"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_1sns8"]
 bg_color = Color(0.05490196, 0.16470589, 0.15686275, 1)
 border_width_left = 2
 border_width_top = 2
@@ -28,7 +28,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.30980393, 0.8784314, 0.83137256, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_81xhe"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_4pcyk"]
 content_margin_left = 12.0
 content_margin_top = 10.0
 content_margin_right = 12.0
@@ -40,7 +40,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(1, 0.36078432, 0.36078432, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rbeag"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_wsgdw"]
 content_margin_left = 4.0
 content_margin_top = 2.0
 content_margin_right = 4.0
@@ -52,7 +52,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(1, 0.36078432, 0.36078432, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uuhf3"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_3rpt0"]
 content_margin_left = 10.0
 content_margin_top = 8.0
 content_margin_right = 10.0
@@ -64,7 +64,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_72ws0"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_81xhe"]
 bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
 border_width_left = 3
 border_width_top = 3
@@ -74,7 +74,7 @@ border_color = Color(0.18039216, 0.41960785, 1, 1)
 shadow_color = Color(0.18039216, 0.41960785, 1, 0.28)
 shadow_size = 2
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mbmj1"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rbeag"]
 content_margin_left = 10.0
 content_margin_top = 6.0
 content_margin_right = 8.0
@@ -82,7 +82,7 @@ content_margin_bottom = 6.0
 bg_color = Color(0.09019608, 0.1882353, 0.34509805, 1)
 border_color = Color(0.09019608, 0.1882353, 0.34509805, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r4o7e"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_uuhf3"]
 content_margin_left = 12.0
 content_margin_top = 10.0
 content_margin_right = 12.0
@@ -94,7 +94,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.9529412, 0.9254902, 0.8392157, 0.16)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rvo0r"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_72ws0"]
 content_margin_left = 18.0
 content_margin_top = 18.0
 content_margin_right = 18.0
@@ -106,7 +106,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.019607844, 0.043137256, 0.09411765, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_632kq"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_mbmj1"]
 bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
 border_width_left = 2
 border_width_top = 2
@@ -114,7 +114,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.30980393, 0.8784314, 0.83137256, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yq2kc"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_r4o7e"]
 bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
 border_width_left = 2
 border_width_top = 2
@@ -122,7 +122,7 @@ border_width_right = 2
 border_width_bottom = 2
 border_color = Color(0.18039216, 0.41960785, 1, 1)
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bgegn"]
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rvo0r"]
 bg_color = Color(0.039215688, 0.09019608, 0.1882353, 0.94)
 border_width_left = 2
 border_width_top = 2
@@ -202,7 +202,7 @@ anchors_preset = 10
 anchor_right = 1.0
 offset_bottom = 68.0
 grow_horizontal = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_wsgdw")
+theme_override_styles/panel = SubResource("StyleBoxFlat_mp6jf")
 
 [node name="HeaderLayer" type="Control" parent="HeaderBand" unique_id=1520040144]
 custom_minimum_size = Vector2(0, 52)
@@ -399,7 +399,7 @@ custom_minimum_size = Vector2(36, 36)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_3rpt0")
+theme_override_styles/panel = SubResource("StyleBoxFlat_1sns8")
 
 [node name="AvatarImage" type="TextureRect" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow/AvatarBox" unique_id=850708457]
 layout_mode = 2
@@ -429,7 +429,7 @@ theme_override_constants/separation = 10
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_81xhe")
+theme_override_styles/panel = SubResource("StyleBoxFlat_4pcyk")
 
 [node name="AtRiskRow" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout/AtRiskBanner" unique_id=651046476]
 layout_mode = 2
@@ -594,12 +594,12 @@ title_size = 26
 [node name="InboxBadge" type="PanelContainer" parent="SafeAreaContainer/ScreenLayout/MainRow/WorldButton" unique_id=831447254]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 275.0
-offset_top = 293.0
-offset_right = 319.0
-offset_bottom = 329.0
+offset_left = 203.0
+offset_top = 16.0
+offset_right = 247.0
+offset_bottom = 52.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_rbeag")
+theme_override_styles/panel = SubResource("StyleBoxFlat_wsgdw")
 
 [node name="InboxCount" type="Label" parent="SafeAreaContainer/ScreenLayout/MainRow/WorldButton/InboxBadge" unique_id=1716642964]
 unique_name_in_owner = true
@@ -640,7 +640,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_uuhf3")
+theme_override_styles/panel = SubResource("StyleBoxFlat_3rpt0")
 
 [node name="UpdatesBody" type="Label" parent="SafeAreaContainer/ScreenLayout/MainRow/UpdatesPanel/UpdatesCard" unique_id=1120312116]
 unique_name_in_owner = true
@@ -765,7 +765,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_72ws0")
+theme_override_styles/panel = SubResource("StyleBoxFlat_81xhe")
 
 [node name="LockVBox" type="VBoxContainer" parent="PreTestLock/LockCenter/LockWindow" unique_id=913111564]
 layout_mode = 2
@@ -774,7 +774,7 @@ theme_override_constants/separation = 0
 [node name="LockTitleBar" type="PanelContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox" unique_id=1003646949]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_mbmj1")
+theme_override_styles/panel = SubResource("StyleBoxFlat_rbeag")
 
 [node name="LockBarRow" type="HBoxContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockTitleBar" unique_id=1081927373]
 layout_mode = 2
@@ -790,7 +790,7 @@ text = "LOCK.DAT"
 [node name="LockWell" type="PanelContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox" unique_id=2049554457]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_r4o7e")
+theme_override_styles/panel = SubResource("StyleBoxFlat_uuhf3")
 
 [node name="LockWellBox" type="VBoxContainer" parent="PreTestLock/LockCenter/LockWindow/LockVBox/LockWell" unique_id=490351918]
 layout_mode = 2
@@ -824,9 +824,9 @@ focus_mode = 0
 theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 18
-theme_override_styles/normal = SubResource("StyleBoxFlat_rvo0r")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_rvo0r")
-theme_override_styles/hover = SubResource("StyleBoxFlat_rvo0r")
+theme_override_styles/normal = SubResource("StyleBoxFlat_72ws0")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_72ws0")
+theme_override_styles/hover = SubResource("StyleBoxFlat_72ws0")
 text = "PRE-TEST  >"
 
 [node name="LockSettingsButton" type="Button" parent="PreTestLock" unique_id=1428866262]
@@ -841,9 +841,9 @@ offset_right = -16.0
 offset_bottom = 56.0
 focus_mode = 0
 theme_override_colors/font_color = Color(0.9529412, 0.9254902, 0.8392157, 1)
-theme_override_styles/normal = SubResource("StyleBoxFlat_632kq")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_yq2kc")
-theme_override_styles/hover = SubResource("StyleBoxFlat_bgegn")
+theme_override_styles/normal = SubResource("StyleBoxFlat_mbmj1")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_r4o7e")
+theme_override_styles/hover = SubResource("StyleBoxFlat_rvo0r")
 
 [node name="LockSettingsIcon" type="TextureRect" parent="PreTestLock/LockSettingsButton" unique_id=2144567580]
 texture_filter = 1

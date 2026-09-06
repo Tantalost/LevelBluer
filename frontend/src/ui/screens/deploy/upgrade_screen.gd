@@ -42,6 +42,7 @@ const MOCK_SKILL_DB: Dictionary = {
 @onready var _coins_value: Label = %CoinsValue
 
 var _pixel_font: Font
+var _tutorial_overlay: TutorialOverlay = null
 
 
 func _ready() -> void:
@@ -60,6 +61,7 @@ func on_enter(_args: Dictionary) -> void:
 	_generate_skill_tree()
 	_apply_scale()
 	_pan_zoom.reset_view.call_deferred()
+	_apply_tutorial_coach()
 
 
 func on_resume() -> void:
@@ -68,6 +70,7 @@ func on_resume() -> void:
 	_refresh_coins_label()
 	_generate_skill_tree()
 	_apply_scale()
+	_apply_tutorial_coach()
 
 
 func on_exit() -> void:
@@ -184,6 +187,8 @@ func _skill_center(node: Control) -> Vector2:
 
 
 func _on_skill_pressed(skill_id: String) -> void:
+	if Router.is_tutorial and skill_id != "firewall_1":
+		return
 	_attempt_purchase(skill_id)
 
 
@@ -204,6 +209,7 @@ func _attempt_purchase(skill_id: String) -> void:
 		PlayerManager.unlock_skill(skill_id)
 		_refresh_coins_label()
 		_generate_skill_tree()
+		_on_tutorial_firewall_bought(skill_id)
 		return
 	if PlayerManager.spend_credits(node_cost):
 		PlayerManager.unlock_skill(skill_id)
@@ -214,8 +220,58 @@ func _attempt_purchase(skill_id: String) -> void:
 			print("[SkillTree] Successfully unlocked: " + skill_id)
 		_refresh_coins_label()
 		_generate_skill_tree()
+		_on_tutorial_firewall_bought(skill_id)
 	else:
 		print("[SkillTree] Insufficient credits for upgrade.")
+
+
+func _on_tutorial_firewall_bought(skill_id: String) -> void:
+	if not Router.is_tutorial or skill_id != "firewall_1":
+		return
+	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
+		_tutorial_overlay.show_upgrade_owned()
+
+
+func _apply_tutorial_coach() -> void:
+	var coaching: bool = Router.is_tutorial and Router.tutorial_beat == &"upgrade"
+	_back_button.visible = not coaching
+	_pan_zoom.set_process(not coaching)
+	if not coaching:
+		if _tutorial_overlay != null:
+			_tutorial_overlay.visible = false
+		return
+	PlayerManager.ensure_tutorial_upgrade_funds()
+	_refresh_coins_label()
+	_tutorial_overlay = TutorialOverlay.mount_on(self, 20)
+	if _tutorial_overlay == null:
+		return
+	if not _tutorial_overlay.lesson_requested.is_connected(_on_tutorial_lesson_requested):
+		_tutorial_overlay.lesson_requested.connect(_on_tutorial_lesson_requested)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	if PlayerManager.has_skill("firewall_1") or PlayerManager.is_tower_unlocked("network"):
+		_tutorial_overlay.show_upgrade_owned()
+		return
+	var node: SkillNodeUI = _firewall_node()
+	var glow := Rect2()
+	if node != null:
+		glow = node.get_global_rect()
+	_tutorial_overlay.setup_upgrade(glow)
+
+
+func _on_tutorial_lesson_requested() -> void:
+	Router.open_tutorial_lesson()
+
+
+func _firewall_node() -> SkillNodeUI:
+	var kids: Array = _node_layer.get_children()
+	for i in kids.size():
+		var node: SkillNodeUI = kids[i] as SkillNodeUI
+		if node != null and node.skill_id == "firewall_1":
+			return node
+	return null
 
 
 func _refresh_coins_label() -> void:

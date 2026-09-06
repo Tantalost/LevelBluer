@@ -3,6 +3,7 @@ extends TileMapLayer
 ## BUILD-phase grid: drag from the shop to place; tap a tower, then a pad, to move.
 
 signal tower_selected(tower_node: TowerBase)
+signal tower_placed(tower_node: TowerBase)
 
 const TILE_BUILDABLE := Vector2i(0, 0)
 const TILE_BLOCKED := Vector2i(1, 0)
@@ -20,6 +21,7 @@ enum DragKind { NONE, PLACE, MOVE }
 var occupied_cells: Dictionary = {}
 var tower_cost: int = 2
 var move_cost: int = 1
+var max_towers: int = 0
 var selected_tower: TowerBase = null
 var _show_pads: bool = false
 var _pad_overlay: Node2D
@@ -65,6 +67,9 @@ func set_build_preview(active: bool) -> void:
 
 func begin_place_drag() -> void:
 	if not _is_build_phase():
+		return
+	if _at_tower_cap():
+		print("[TowerPlacer] Tower cap reached.")
 		return
 	if _level_manager.current_gold < tower_cost:
 		print("[Economy] Insufficient gold. Need: " + str(tower_cost))
@@ -373,9 +378,27 @@ func _vacate(center: Vector2i) -> void:
 		occupied_cells.erase(cells[i])
 
 
+func placed_count() -> int:
+	var seen: Dictionary = {}
+	var keys: Array = occupied_cells.keys()
+	for i in keys.size():
+		var tower: Variant = occupied_cells[keys[i]]
+		if typeof(tower) != TYPE_OBJECT or tower == null:
+			continue
+		seen[tower] = true
+	return seen.size()
+
+
+func _at_tower_cap() -> bool:
+	return max_towers > 0 and placed_count() >= max_towers
+
+
 func _try_place(map_pos: Vector2i) -> void:
 	if tower_scene == null:
 		push_error("TowerPlacer: tower_scene is not assigned")
+		return
+	if _at_tower_cap():
+		print("[TowerPlacer] Tower cap reached.")
 		return
 	if _level_manager.current_gold < tower_cost:
 		print("[Economy] Insufficient gold. Need: " + str(tower_cost))
@@ -392,6 +415,7 @@ func _try_place(map_pos: Vector2i) -> void:
 	tower.position = map_to_local(map_pos)
 	_occupy(map_pos, tower)
 	print("[TowerPlacer] Placed at %s" % str(map_pos))
+	tower_placed.emit(tower)
 
 
 func _event_local_pos(event: InputEvent) -> Vector2:

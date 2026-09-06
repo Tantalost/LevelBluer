@@ -44,6 +44,7 @@ const UNREAD_NOTIFICATIONS := 2
 @onready var _lock_settings: Button = %LockSettingsButton
 
 var _pixel_font: Font
+var _tutorial_gate: Control = null
 var _selected_mode: StringName = &"SOLO"
 var _materials: int = DEFAULT_MATERIALS
 var _threat_points: int = DEFAULT_THREAT_POINTS
@@ -76,6 +77,7 @@ func on_enter(_args: Dictionary) -> void:
 	_refresh_data()
 	_apply_lock_state()
 	_update_mode_ui()
+	_apply_tutorial_gate()
 
 
 func _bind_remote_art() -> void:
@@ -89,6 +91,7 @@ func _bind_remote_art() -> void:
 func on_resume() -> void:
 	_refresh_data()
 	_apply_lock_state()
+	_apply_tutorial_gate()
 
 
 func on_exit() -> void:
@@ -212,6 +215,8 @@ func _refresh_updates() -> void:
 
 
 func _open_mode_modal() -> void:
+	if PlayerManager.needs_tutorial() and AuthService.has_pre_test_completed():
+		return
 	var mode := DashboardModeModal.Mode.SOLO if _selected_mode == &"SOLO" else DashboardModeModal.Mode.PVP
 	_mode_modal.open(mode, get_viewport().get_visible_rect().size.x)
 
@@ -238,6 +243,8 @@ func _update_mode_ui() -> void:
 
 
 func _on_mission_pressed() -> void:
+	if PlayerManager.needs_tutorial() and AuthService.has_pre_test_completed():
+		return
 	if _selected_mode == &"PVP":
 		push_warning("PvP Hub screen not built yet")
 	else:
@@ -247,8 +254,88 @@ func _on_mission_pressed() -> void:
 func _on_deploy_pressed() -> void:
 	if _selected_mode == &"PVP":
 		push_warning("PvP Hub screen not built yet")
-	else:
-		Router.open_module_select_screen()
+		return
+	if PlayerManager.needs_tutorial():
+		Router.start_tutorial()
+		return
+	Router.open_module_select_screen()
+
+
+func _apply_tutorial_gate() -> void:
+	var gated: bool = AuthService.has_pre_test_completed() and PlayerManager.needs_tutorial()
+	if not gated:
+		_lock_chrome(false)
+		if _tutorial_gate != null:
+			_tutorial_gate.visible = false
+		return
+	if Router.tutorial_beat == &"dash":
+		_lock_chrome(false)
+		_show_explore_overlay()
+		return
+	if Router.tutorial_beat != &"" and Router.tutorial_beat != &"match":
+		_lock_chrome(true)
+		if _tutorial_gate != null:
+			_tutorial_gate.visible = false
+		return
+	_lock_chrome(true)
+	if _tutorial_gate == null:
+		_tutorial_gate = TutorialOverlay.mount_on(self)
+		var overlay: TutorialOverlay = _tutorial_gate as TutorialOverlay
+		if overlay != null:
+			overlay.deploy_requested.connect(_on_deploy_pressed)
+	if _tutorial_gate != null:
+		_tutorial_gate.visible = true
+	await get_tree().process_frame
+	if _tutorial_gate == null or not is_instance_valid(_tutorial_gate):
+		return
+	var coach: TutorialOverlay = _tutorial_gate as TutorialOverlay
+	if coach != null:
+		coach.setup_dashboard(_deploy_button.get_global_rect())
+
+
+func _show_explore_overlay() -> void:
+	if _tutorial_gate == null:
+		_tutorial_gate = TutorialOverlay.mount_on(self)
+	if _tutorial_gate == null:
+		Router.finish_tutorial()
+		_lock_chrome(false)
+		return
+	_tutorial_gate.visible = true
+	var overlay: TutorialOverlay = _tutorial_gate as TutorialOverlay
+	if overlay == null:
+		Router.finish_tutorial()
+		_lock_chrome(false)
+		return
+	if not overlay.dismiss_requested.is_connected(_on_tutorial_dismissed):
+		overlay.dismiss_requested.connect(_on_tutorial_dismissed)
+	overlay.setup_explore()
+
+
+func _on_tutorial_dismissed() -> void:
+	Router.finish_tutorial()
+	if _tutorial_gate != null:
+		_tutorial_gate.visible = false
+	_lock_chrome(false)
+
+
+func _lock_chrome(locked: bool) -> void:
+	var locked_nodes: Array[Control] = [
+		_store_button,
+		_lessons_button,
+		_codex_button,
+		_progress_button,
+		_world_button,
+		_mode_selector,
+		_inbox_button,
+		_settings_button,
+		_profile_button,
+	]
+	for i in locked_nodes.size():
+		var node: Control = locked_nodes[i]
+		if node == null:
+			continue
+		node.modulate = Color(1.0, 1.0, 1.0, 0.38) if locked else Color.WHITE
+		node.mouse_filter = Control.MOUSE_FILTER_IGNORE if locked else Control.MOUSE_FILTER_STOP
 
 
 func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:

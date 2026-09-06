@@ -14,6 +14,9 @@ extends Node
 
 signal screen_changed(screen_id: StringName)
 
+var is_tutorial: bool = false
+var tutorial_beat: StringName = &""
+
 const SCREENS: Dictionary = {
 	&"splash":       "res://src/ui/screens/intro/splash_screen.tscn",
 	&"asset_loading": "res://src/ui/screens/intro/splash_screen.tscn",
@@ -71,6 +74,18 @@ func start_level(stage_index: int) -> void:
 		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
 		return
 	await _navigate(true, func() -> void: _begin_gameplay(stage_index))
+
+
+func start_tutorial() -> void:
+	if not PlayerManager.needs_tutorial():
+		open_module_select_screen()
+		return
+	is_tutorial = true
+	tutorial_beat = &"match"
+	await start_level(0)
+	if _gameplay == null or not is_instance_valid(_gameplay):
+		is_tutorial = false
+		tutorial_beat = &""
 
 
 func enter_gameplay(stage_index: int) -> void:
@@ -150,6 +165,53 @@ func open_lessons() -> void:
 		_push_now(&"intel_hub")
 		_push_now(&"lessons")
 	)
+
+
+func open_tutorial_upgrades() -> void:
+	if _host == null:
+		push_error("Router: cannot open tutorial upgrades (host not registered)")
+		return
+	is_tutorial = true
+	tutorial_beat = &"upgrade"
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		_set_ui_stack_active(true)
+		_replace_all_now(&"dashboard")
+		_push_now(&"upgrades")
+	)
+
+
+func open_tutorial_lesson() -> void:
+	if _host == null:
+		push_error("Router: cannot open tutorial lesson (host not registered)")
+		return
+	is_tutorial = true
+	tutorial_beat = &"lesson"
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		_set_ui_stack_active(true)
+		_replace_all_now(&"dashboard")
+		_push_now(&"lesson_player", {"module_id": "mod_01", "tutorial": true})
+	)
+
+
+func open_tutorial_dashboard() -> void:
+	if _host == null:
+		push_error("Router: cannot open tutorial dashboard (host not registered)")
+		return
+	is_tutorial = true
+	tutorial_beat = &"dash"
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		_set_ui_stack_active(true)
+		_replace_all_now(&"dashboard")
+	)
+
+
+func finish_tutorial() -> void:
+	PlayerManager.mark_tutorial_complete()
+	is_tutorial = false
+	tutorial_beat = &""
 
 
 func open_codex(skill_id: String) -> void:
@@ -284,6 +346,9 @@ func _teardown_gameplay() -> void:
 			parent.remove_child(_gameplay)
 		_gameplay.queue_free()
 	_gameplay = null
+	if not PlayerManager.needs_tutorial():
+		is_tutorial = false
+		tutorial_beat = &""
 	Engine.time_scale = 1.0
 	var tree: SceneTree = get_tree()
 	if tree != null:
@@ -316,6 +381,8 @@ func pop() -> void:
 ## back arrows to this, not to pop(), so screens that must not be dismissed
 ## (the forced password change) can refuse in one place.
 func request_back() -> void:
+	if is_tutorial:
+		return
 	if _gameplay != null and is_instance_valid(_gameplay):
 		var manager: Node = _gameplay.get_node_or_null("LevelManager")
 		if manager is LevelManager:
