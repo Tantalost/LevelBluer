@@ -1,6 +1,6 @@
 class_name ThreatMatrixPanel
 extends PanelContainer
-## Open learner model: BKT mastery bars for Ports, Firewalls, and Crypto.
+## Open learner model: BKT mastery bars updated from TRACE answers.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const SKILL_ORDER: PackedStringArray = ["phishing"]

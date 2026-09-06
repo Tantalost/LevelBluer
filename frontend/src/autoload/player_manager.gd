@@ -6,6 +6,10 @@ const P_GUESS: float = 0.2
 const P_SLIP: float = 0.1
 const P_TRANSIT: float = 0.1
 const DEFAULT_MASTERY: float = 0.25
+const MIN_MASTERY: float = 0.01
+const MAX_MASTERY: float = 0.99
+const AT_RISK_MASTERY: float = 0.40
+const PROFICIENT_MASTERY: float = 0.70
 const ALL_MODULES_LESSON := "mod1_all"
 
 var mastery_matrix: Dictionary = {
@@ -13,6 +17,7 @@ var mastery_matrix: Dictionary = {
 }
 var unlocked_skills: Array[String] = []
 var locked_stages: Dictionary = {}
+var cleared_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
 var purchased_items: Array[String] = []
@@ -117,6 +122,7 @@ func reset_to_defaults() -> void:
 	mock_max_stage_cleared = 1
 	credits = 0
 	locked_stages.clear()
+	cleared_stages.clear()
 	completed_lessons.clear()
 	lesson_progress.clear()
 	purchased_items.clear()
@@ -216,7 +222,14 @@ func mark_stage_cleared(stage_id: int) -> void:
 	if stage_id <= 0:
 		return
 	mock_max_stage_cleared = maxi(mock_max_stage_cleared, stage_id)
+	cleared_stages[stage_id] = true
 	SaveService.save_game()
+
+
+func has_cleared_stage(stage_id: int) -> bool:
+	if stage_id <= 0:
+		return false
+	return cleared_stages.has(stage_id)
 
 
 func get_weakest_skill() -> String:
@@ -237,15 +250,51 @@ func get_weakest_skill() -> String:
 	return weakest_skill
 
 
-func update_mastery(skill_id: String, is_correct: bool) -> void:
-	if skill_id.is_empty():
-		push_warning("PlayerManager: empty skill_id")
-		return
-	var p_learned: float = _mastery_of(skill_id)
-	var p_post: float = _posterior(p_learned, is_correct)
-	var new_mastery: float = p_post + ((1.0 - p_post) * P_TRANSIT)
-	mastery_matrix[skill_id] = new_mastery
-	print("[BKT] " + skill_id + " updated: " + str(p_learned) + " -> " + str(new_mastery))
+func get_mastery(skill_id: String = "phishing") -> float:
+	var key: String = skill_id if not skill_id.is_empty() else "phishing"
+	return clampf(_mastery_of(key), 0.0, 1.0)
+
+
+func preferred_difficulty(skill_id: String = "phishing") -> String:
+	var p_learned: float = get_mastery(skill_id)
+	if p_learned < AT_RISK_MASTERY:
+		return "easy"
+	if p_learned < PROFICIENT_MASTERY:
+		return "medium"
+	return "hard"
+
+
+func quiz_gold_reward(is_correct: bool, skill_id: String = "phishing") -> int:
+	var base_gold: int = 5 if is_correct else 2
+	var p_learned: float = get_mastery(skill_id)
+	var mult: float = 1.0
+	if p_learned >= PROFICIENT_MASTERY:
+		mult = 1.5
+	elif p_learned >= AT_RISK_MASTERY:
+		mult = 1.25
+	return maxi(1, int(ceil(float(base_gold) * mult)))
+
+
+func bkt_params_from(question: Dictionary) -> Dictionary:
+	var stored: Variant = question.get("bkt", {})
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}) -> void:
+	var key: String = skill_id if not skill_id.is_empty() else "phishing"
+	var p_guess: float = _bkt_param(params, ["p_g", "p_guess"], P_GUESS)
+	var p_slip: float = _bkt_param(params, ["p_s", "p_slip"], P_SLIP)
+	var p_transit: float = _bkt_param(params, ["p_t", "p_transit"], P_TRANSIT)
+	var p_learned: float = _mastery_of(key)
+	var p_post: float = _posterior(p_learned, is_correct, p_guess, p_slip)
+	var new_mastery: float = clampf(p_post + ((1.0 - p_post) * p_transit), MIN_MASTERY, MAX_MASTERY)
+	mastery_matrix[key] = new_mastery
+	print(
+		"[BKT] %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"
+		% [key, "hit" if is_correct else "miss", p_learned, new_mastery, p_guess, p_slip, p_transit]
+	)
 	SaveService.save_game()
 
 
@@ -255,15 +304,26 @@ func _mastery_of(skill_id: String) -> float:
 	return float(mastery_matrix[skill_id])
 
 
-func _posterior(p_learned: float, is_correct: bool) -> float:
+func _bkt_param(params: Dictionary, keys: Array, fallback: float) -> float:
+	for i in keys.size():
+		var key: String = str(keys[i])
+		if not params.has(key):
+			continue
+		var stored: Variant = params[key]
+		if typeof(stored) == TYPE_INT or typeof(stored) == TYPE_FLOAT:
+			return clampf(float(stored), 0.01, 0.5)
+	return fallback
+
+
+func _posterior(p_learned: float, is_correct: bool, p_guess: float = P_GUESS, p_slip: float = P_SLIP) -> float:
 	if is_correct:
-		var numer: float = p_learned * (1.0 - P_SLIP)
-		var denom: float = numer + ((1.0 - p_learned) * P_GUESS)
+		var numer: float = p_learned * (1.0 - p_slip)
+		var denom: float = numer + ((1.0 - p_learned) * p_guess)
 		if denom <= 0.0:
 			return p_learned
 		return numer / denom
-	var numer_wrong: float = p_learned * P_SLIP
-	var denom_wrong: float = numer_wrong + ((1.0 - p_learned) * (1.0 - P_GUESS))
+	var numer_wrong: float = p_learned * p_slip
+	var denom_wrong: float = numer_wrong + ((1.0 - p_learned) * (1.0 - p_guess))
 	if denom_wrong <= 0.0:
 		return p_learned
 	return numer_wrong / denom_wrong
@@ -274,6 +334,7 @@ func get_save_data() -> Dictionary:
 		"mock_max_stage_cleared": mock_max_stage_cleared,
 		"mastery_matrix": mastery_matrix.duplicate(true),
 		"locked_stages": locked_stages.duplicate(true),
+		"cleared_stages": cleared_stages.keys(),
 		"completed_lessons": completed_lessons.duplicate(),
 		"credits": credits,
 		"unlocked_towers": unlocked_towers.duplicate(),
@@ -304,6 +365,13 @@ func apply_save_data(data: Dictionary) -> void:
 		var lock_keys: Array = saved_locks.keys()
 		for i in lock_keys.size():
 			locked_stages[int(lock_keys[i])] = true
+
+	cleared_stages.clear()
+	if data.has("cleared_stages"):
+		_ingest_cleared_stages(data["cleared_stages"])
+	elif mock_max_stage_cleared > 1:
+		for stage_n in range(1, mock_max_stage_cleared + 1):
+			cleared_stages[stage_n] = true
 
 	if data.has("completed_lessons") and typeof(data["completed_lessons"]) == TYPE_ARRAY:
 		var saved_lessons: Array = data["completed_lessons"] as Array
@@ -369,7 +437,27 @@ func apply_save_data(data: Dictionary) -> void:
 			var intro_id: String = str(saved_intros[i])
 			if not intro_id.is_empty() and not seen_module_intros.has(intro_id):
 				seen_module_intros.append(intro_id)
+	if module_1_complete:
+		cleared_stages[10] = true
 	_normalize_mastery_keys()
+
+
+func _ingest_cleared_stages(raw: Variant) -> void:
+	if typeof(raw) == TYPE_ARRAY:
+		var rows: Array = raw as Array
+		for i in rows.size():
+			var stage_id: int = int(rows[i])
+			if stage_id > 0:
+				cleared_stages[stage_id] = true
+		return
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
+	var stored: Dictionary = raw as Dictionary
+	var keys: Array = stored.keys()
+	for i in keys.size():
+		var stage_id: int = int(keys[i])
+		if stage_id > 0:
+			cleared_stages[stage_id] = true
 
 
 func _normalize_mastery_keys() -> void:

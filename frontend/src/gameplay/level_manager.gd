@@ -25,6 +25,8 @@ var current_stage_config: Dictionary = {}
 var exam_questions_asked: int = 0
 var exam_questions_correct: int = 0
 var exam_history: Array[String] = []
+var _asked_question_ids: Array[String] = []
+var _bkt_frozen: bool = false
 var _wave_token: int = 0
 var _wave_finished_spawning: bool = true
 var _wave_kills: int = 0
@@ -329,12 +331,17 @@ func _load_stage_config() -> void:
 	current_wave_index = 0
 	exam_questions_asked = 0
 	exam_questions_correct = 0
+	exam_history.clear()
+	_asked_question_ids.clear()
 	if _is_summative():
 		# Pass reward only. Granting this here would double-pay on exam success.
 		current_gold = 0
 	else:
 		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
 		current_gold = int(gold_stored)
+	_bkt_frozen = PlayerManager.has_cleared_stage(stage_id)
+	if _bkt_frozen:
+		print("[BKT] Stage ", stage_id, " already cleared. P(L) frozen for this replay.")
 	print("[Stage] Loaded " + str(current_stage_config.get("name", "Unknown")) + " (id " + str(stage_id) + ")")
 
 
@@ -435,6 +442,16 @@ func _is_summative() -> bool:
 	return str(type_stored) == "summative"
 
 
+func _is_diagnostic() -> bool:
+	var type_stored: Variant = current_stage_config.get("type", "")
+	return str(type_stored) == "diagnostic"
+
+
+func _is_formative() -> bool:
+	var type_stored: Variant = current_stage_config.get("type", "")
+	return str(type_stored) == "formative"
+
+
 func _is_module_final() -> bool:
 	# Router.active_stage_index is 0-based. Stage 10 is index 9.
 	var stage_id: int = Router.active_stage_index + 1
@@ -489,36 +506,141 @@ func _load_next_question() -> void:
 	if question_bank.is_empty():
 		push_error("LevelManager: question bank is empty")
 		return
-	var type_stored: Variant = current_stage_config.get("type", "")
-	var is_formative: bool = str(type_stored) == "formative"
-	if not is_formative:
+	if _is_summative() and exam_questions_asked < _exam_question_count():
 		current_question = _pick_summative_question()
+	elif _is_formative():
+		current_question = _pick_adaptive_question(true)
 	else:
-		var target_skill: String = ""
-		var all_skills: Array = question_bank.keys()
-		if all_skills.is_empty():
-			push_error("LevelManager: question bank has no skills")
-			return
-		if randf() <= 0.8:
-			target_skill = PlayerManager.get_weakest_skill()
-		else:
-			target_skill = str(all_skills[randi() % all_skills.size()])
-		if not question_bank.has(target_skill):
-			target_skill = "phishing"
-		var bank_stored: Variant = question_bank[target_skill]
-		var skill_questions: Array = bank_stored as Array
-		if skill_questions.is_empty():
-			push_error("LevelManager: no questions for skill " + target_skill)
-			return
-		var q_stored: Variant = skill_questions[randi() % skill_questions.size()]
-		var selected_q: Dictionary = q_stored as Dictionary
-		current_question = selected_q.duplicate(true)
-		current_question["skill_id"] = str(current_question.get("skill_id", target_skill))
+		current_question = _pick_adaptive_question(false)
 	if current_question.is_empty():
 		push_error("LevelManager: failed to load a question")
 		return
 	_present_current_question()
 	_refresh_quiz_copy()
+
+
+func _pick_adaptive_question(chase_weak: bool) -> Dictionary:
+	var pool: Array[Dictionary] = _current_stage_question_pool()
+	if pool.is_empty():
+		push_error("LevelManager: stage question pool is empty")
+		return {}
+	var target_skill: String = str(pool[0].get("skill_id", "phishing"))
+	if chase_weak:
+		target_skill = PlayerManager.get_weakest_skill()
+	var preferred: String = PlayerManager.preferred_difficulty(target_skill)
+	if not chase_weak and randf() > 0.5:
+		preferred = ""
+	var selected: Dictionary = _select_from_pool(pool, preferred, _asked_question_ids)
+	if selected.is_empty():
+		return {}
+	selected["skill_id"] = str(selected.get("skill_id", target_skill))
+	_remember_question(selected, _asked_question_ids)
+	print(
+		"[BKT] TRACE stage=%d id=%s type=%s diff=%s P(L)=%.2f"
+		% [
+			_current_stage_id(),
+			_question_key(selected),
+			str(selected.get("type_id", "?")),
+			str(selected.get("difficulty", "?")),
+			PlayerManager.get_mastery(str(selected["skill_id"])),
+		]
+	)
+	return selected
+
+
+func _current_stage_id() -> int:
+	return Router.active_stage_index + 1
+
+
+func _current_stage_question_pool() -> Array[Dictionary]:
+	var raw: Array = ContentDB.get_stage_question_pool(_current_stage_id())
+	var pool: Array[Dictionary] = []
+	for i in raw.size():
+		var row: Variant = raw[i]
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		pool.append((row as Dictionary).duplicate(true))
+	if not pool.is_empty():
+		return pool
+	return _skill_question_pool(ContentDB.get_questions(), "phishing")
+
+
+func _skill_question_pool(question_bank: Dictionary, skill_id: String) -> Array[Dictionary]:
+	var pool: Array[Dictionary] = []
+	if not question_bank.has(skill_id):
+		return pool
+	var list_stored: Variant = question_bank[skill_id]
+	if typeof(list_stored) != TYPE_ARRAY:
+		return pool
+	var q_list: Array = list_stored as Array
+	for i in q_list.size():
+		var q_stored: Variant = q_list[i]
+		if typeof(q_stored) != TYPE_DICTIONARY:
+			continue
+		var q_dict: Dictionary = (q_stored as Dictionary).duplicate(true)
+		if str(q_dict.get("skill_id", "")).is_empty():
+			q_dict["skill_id"] = skill_id
+		pool.append(q_dict)
+	return pool
+
+
+func _select_from_pool(pool: Array[Dictionary], preferred: String, seen: Array[String]) -> Dictionary:
+	var unseen: Array[Dictionary] = _questions_not_in(pool, seen)
+	var working: Array[Dictionary] = unseen if not unseen.is_empty() else pool
+	if working.is_empty():
+		return {}
+	var ranked: PackedStringArray = PackedStringArray()
+	if not preferred.is_empty():
+		ranked.append(preferred)
+		ranked.append_array(_adjacent_difficulties(preferred))
+	for i in ranked.size():
+		var matched: Array[Dictionary] = _questions_with_difficulty(working, ranked[i])
+		if not matched.is_empty():
+			return matched[randi() % matched.size()]
+	return working[randi() % working.size()]
+
+
+func _questions_not_in(pool: Array[Dictionary], seen: Array[String]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for i in pool.size():
+		if seen.has(_question_key(pool[i])):
+			continue
+		result.append(pool[i])
+	return result
+
+
+func _questions_with_difficulty(pool: Array[Dictionary], difficulty: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for i in pool.size():
+		if _question_difficulty(pool[i]) == difficulty:
+			result.append(pool[i])
+	return result
+
+
+func _question_difficulty(q: Dictionary) -> String:
+	var value: String = str(q.get("difficulty", "")).strip_edges().to_lower()
+	if value == "easy" or value == "medium" or value == "hard":
+		return value
+	return ""
+
+
+func _adjacent_difficulties(preferred: String) -> PackedStringArray:
+	match preferred:
+		"easy":
+			return PackedStringArray(["medium", "hard"])
+		"hard":
+			return PackedStringArray(["medium", "easy"])
+		"medium":
+			return PackedStringArray(["easy", "hard"])
+		_:
+			return PackedStringArray(["easy", "medium", "hard"])
+
+
+func _remember_question(q: Dictionary, history: Array[String]) -> void:
+	var key: String = _question_key(q)
+	if key.is_empty() or history.has(key):
+		return
+	history.append(key)
 
 
 func _pick_summative_question() -> Dictionary:
@@ -551,6 +673,7 @@ func _pick_summative_question() -> Dictionary:
 		valid_questions = all_questions
 	var selected_q: Dictionary = valid_questions[randi() % valid_questions.size()]
 	exam_history.append(_question_key(selected_q))
+	_remember_question(selected_q, _asked_question_ids)
 	return selected_q
 
 
@@ -559,6 +682,20 @@ func _question_key(q: Dictionary) -> String:
 	if not qid.is_empty():
 		return qid
 	return str(q.get("text", q.get("question", "")))
+
+
+func _current_skill_id() -> String:
+	var skill_id: String = str(current_question.get("skill_id", "phishing")).strip_edges()
+	if skill_id.is_empty():
+		return "phishing"
+	return skill_id
+
+
+func _record_bkt(skill_id: String, is_correct: bool, params: Dictionary = {}) -> void:
+	if _bkt_frozen:
+		print("[BKT] Replay — P(L) not updated.")
+		return
+	PlayerManager.update_mastery(skill_id, is_correct, params)
 
 
 func _present_current_question() -> void:
@@ -798,7 +935,8 @@ func _show_quiz_feedback(is_correct: bool, picked: Variant) -> void:
 
 func _finish_quiz_answer(is_correct: bool) -> void:
 	_set_quiz_locked(true)
-	_resolve_quiz(5 if is_correct else 2, is_correct)
+	var skill_id: String = _current_skill_id()
+	_resolve_quiz(PlayerManager.quiz_gold_reward(is_correct, skill_id), is_correct)
 
 
 func _set_quiz_locked(locked: bool) -> void:
@@ -821,10 +959,7 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	exam_questions_asked += 1
 	if is_correct:
 		exam_questions_correct += 1
-	var skill_id: String = str(current_question.get("skill_id", "phishing"))
-	if skill_id.is_empty():
-		skill_id = "phishing"
-	PlayerManager.update_mastery(skill_id, is_correct)
+	_record_bkt(_current_skill_id(), is_correct, PlayerManager.bkt_params_from(current_question))
 	if is_inside_tree():
 		await get_tree().create_timer(1.05).timeout
 	if current_phase != GamePhase.PHASE_1_QUIZ:
@@ -928,6 +1063,15 @@ func _refresh_quiz_copy() -> void:
 	else:
 		_quiz_event_label.text = type_label.to_upper()
 	_quiz_reward_hint.visible = not exam
+	if not exam:
+		var skill_id: String = _current_skill_id()
+		var hit_gold: int = PlayerManager.quiz_gold_reward(true, skill_id)
+		var miss_gold: int = PlayerManager.quiz_gold_reward(false, skill_id)
+		var mastery_pct: int = clampi(int(round(PlayerManager.get_mastery(skill_id) * 100.0)), 0, 100)
+		if _bkt_frozen:
+			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%% LOCKED" % [hit_gold, miss_gold, mastery_pct]
+		else:
+			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%%" % [hit_gold, miss_gold, mastery_pct]
 	_quiz_tap_hint.text = "TAP TO PASS" if exam else "TAP FAST"
 	if exam:
 		var current_q: int = exam_questions_asked + 1
@@ -1060,6 +1204,7 @@ func _on_incident_timeout() -> void:
 	_incident_modal.visible = false
 	_current_incident_correct_btn = null
 	print("[Incident] Ignored! Auto-failing and spawning penalties.")
+	_record_bkt("phishing", false)
 	_spawn_penalty_enemies(3, "fast")
 	_check_wave_cleared()
 
@@ -1069,7 +1214,9 @@ func _on_incident_button_pressed(btn: Button) -> void:
 		return
 	_cancel_incident_timeout()
 	_incident_modal.visible = false
-	if btn == _current_incident_correct_btn:
+	var incident_hit: bool = btn == _current_incident_correct_btn
+	_record_bkt("phishing", incident_hit)
+	if incident_hit:
 		print("[Incident] Correct! Buffing towers.")
 		get_tree().call_group("towers", "apply_incident_buff")
 	else:
