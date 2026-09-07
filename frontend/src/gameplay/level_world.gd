@@ -11,7 +11,9 @@ var _path: PackedVector2Array = PackedVector2Array([
 
 
 func _ready() -> void:
-	z_index = -1
+	# Keep the legacy forest/world fallback behind authored map art. Authored map
+	# renderers use z=-1, while normal TileMaps remain at z=0.
+	z_index = -5
 	_sync_live_path()
 	get_viewport().size_changed.connect(queue_redraw)
 	queue_redraw()

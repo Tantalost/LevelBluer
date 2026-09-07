@@ -1,6 +1,15 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://src/gameplay/maps/map_base.tscn" id="1_base"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/maps/module_1_stage_1_25d_baked.png" id="2_backdrop"]
 
 [node name="MapRoot" instance=ExtResource("1_base")]
 map_id = "map_basic"
+
+[node name="TileMapLayer" parent="." index="0"]
+self_modulate = Color(1, 1, 1, 0)
+
+[node name="StageOneBackdrop" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(512, 208)
+texture = ExtResource("2_backdrop")

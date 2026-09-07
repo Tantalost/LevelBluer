@@ -1,7 +1,18 @@
-[gd_scene load_steps=4 format=3 uid="uid://ctowerbase001"]
+[gd_scene load_steps=8 format=3 uid="uid://ctowerbase001"]
 
 [ext_resource type="Script" path="res://src/gameplay/tower_base.gd" id="1_tower"]
 [ext_resource type="PackedScene" uid="uid://cprojbase001" path="res://src/gameplay/projectile_base.tscn" id="2_proj"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/towers/basic_node_base_v1.png" id="3_base"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/towers/basic_node_head_v2.png" id="4_head"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/towers/basic_node_atlas_v1.png" id="5_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_muzzle"]
+atlas = ExtResource("5_atlas")
+region = Rect2(0, 627, 627, 627)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_deploy"]
+atlas = ExtResource("5_atlas")
+region = Rect2(627, 627, 627, 627)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_range"]
 radius = 100.0
@@ -14,7 +25,34 @@ collision_mask = 2
 monitoring = true
 monitorable = true
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="DeployRing" type="Sprite2D" parent="."]
+visible = false
+texture = SubResource("AtlasTexture_deploy")
+scale = Vector2(0.23, 0.23)
+
+[node name="BaseSprite" type="Sprite2D" parent="."]
+z_index = 1
+texture = ExtResource("3_base")
+scale = Vector2(0.092, 0.092)
+
+[node name="TurretPivot" type="Node2D" parent="."]
+z_index = 2
+rotation = -1.5708
+
+[node name="HeadSprite" type="Sprite2D" parent="TurretPivot"]
+texture = ExtResource("4_head")
+offset = Vector2(239, 0)
+scale = Vector2(0.07, 0.07)
+
+[node name="MuzzleOrigin" type="Marker2D" parent="TurretPivot"]
+position = Vector2(74, 0)
+
+[node name="MuzzleFlash" type="Sprite2D" parent="TurretPivot"]
+visible = false
+z_index = 3
+position = Vector2(74, 0)
+texture = SubResource("AtlasTexture_muzzle")
+scale = Vector2(0.105, 0.105)
 
 [node name="RangeShape" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_range")

@@ -16,6 +16,9 @@ const ORTHO_DIRS: Array[Vector2i] = [
 const HANDLE_FACTOR: float = 0.4
 const HANDLE_CLAMP: float = 0.45
 const GROUP_LEVEL_PATH := "level_path"
+const STAGE_ONE_MAP_ID := "map_basic"
+const STAGE_ONE_MAP_ASSET_ID := "map_module_1_stage_1"
+const STAGE_ONE_ART := preload("res://src/gameplay/maps/stage_one_map_art.gd")
 
 @export var map_id: String = "map_basic"
 @export var tilemap_path: NodePath = NodePath("TileMapLayer")
@@ -29,6 +32,7 @@ const GROUP_LEVEL_PATH := "level_path"
 
 var _end_cell: Vector2i = INVALID_CELL
 var _start_cell: Vector2i = INVALID_CELL
+var _stage_one_art: StageOneMapArt = null
 
 
 func _ready() -> void:
@@ -67,6 +71,7 @@ func _generate_map() -> void:
 	tilemap.clear()
 	path.curve = Curve2D.new()
 	_paint_tiles(tilemap, layout)
+	_sync_stage_art(tilemap, layout)
 	_start_cell = _find_marker(layout, "S")
 	_end_cell = _find_marker(layout, "E")
 	if _start_cell == INVALID_CELL or _end_cell == INVALID_CELL:
@@ -80,6 +85,37 @@ func _generate_map() -> void:
 	path.curve = _build_curve(tilemap, path, corners)
 	if not path.is_in_group(GROUP_LEVEL_PATH):
 		path.add_to_group(GROUP_LEVEL_PATH, true)
+
+
+func _sync_stage_art(tilemap: TileMapLayer, layout: PackedStringArray) -> void:
+	var use_authored_art: bool = map_id == STAGE_ONE_MAP_ID
+	# self_modulate hides only the placeholder atlas; towers and the placement
+	# overlay are children of the TileMapLayer and remain fully visible.
+	tilemap.self_modulate = Color(1.0, 1.0, 1.0, 0.0 if use_authored_art else 1.0)
+	if not use_authored_art:
+		if _stage_one_art != null and is_instance_valid(_stage_one_art):
+			_stage_one_art.queue_free()
+		_stage_one_art = null
+		return
+	# Stage 1 ships with a baked version of the approved 2.5D composition so the
+	# live game does not depend on custom CanvasItem draw ordering. The authored
+	# renderer remains the source for future tileset extraction and fallback.
+	var baked_backdrop := get_node_or_null("StageOneBackdrop") as CanvasItem
+	if baked_backdrop != null:
+		baked_backdrop.visible = true
+		AssetManager.bind_texture(baked_backdrop, STAGE_ONE_MAP_ASSET_ID)
+		if _stage_one_art != null and is_instance_valid(_stage_one_art):
+			_stage_one_art.queue_free()
+		_stage_one_art = null
+		return
+	var scene_art := get_node_or_null("StageOneMapArt") as StageOneMapArt
+	if scene_art != null:
+		_stage_one_art = scene_art
+	if _stage_one_art == null or not is_instance_valid(_stage_one_art):
+		_stage_one_art = STAGE_ONE_ART.new() as StageOneMapArt
+		add_child(_stage_one_art)
+		move_child(_stage_one_art, 0)
+	_stage_one_art.configure(layout)
 
 
 func _center_in_view(layout: PackedStringArray) -> void:

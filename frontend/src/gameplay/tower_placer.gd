@@ -85,16 +85,8 @@ func begin_place_drag() -> void:
 func draw_pads(canvas: CanvasItem) -> void:
 	if not _show_pads:
 		return
-	var cells: Array[Vector2i] = get_used_cells()
-	for i in cells.size():
-		var cell: Vector2i = cells[i]
-		var data: TileData = get_cell_tile_data(cell)
-		if not _cell_is_buildable(cell, data):
-			continue
-		var center: Vector2 = map_to_local(cell)
-		var rect := Rect2(center - Vector2(15, 15), Vector2(30, 30))
-		canvas.draw_rect(rect, Color(Palette.CYAN, 0.12), true)
-		canvas.draw_rect(rect, Color(Palette.CYAN, 0.7), false, 1.5)
+	# Keep the authored map unobstructed during BUILD. Placement feedback is
+	# restricted to the active 3x3 footprint instead of outlining every cell.
 	if _drag_kind == DragKind.NONE or _drag_cell == INVALID_CELL:
 		return
 	var ghost_center: Vector2 = map_to_local(_drag_cell)
@@ -103,7 +95,11 @@ func draw_pads(canvas: CanvasItem) -> void:
 	var fill: Color = Color(Palette.SUCCESS, 0.28) if _hover_valid else Color(Palette.DANGER, 0.28)
 	var edge: Color = Palette.SUCCESS if _hover_valid else Palette.DANGER
 	canvas.draw_rect(ghost, fill, true)
-	canvas.draw_rect(ghost, edge, false, 2.0)
+	canvas.draw_rect(ghost, edge, false, 3.0)
+	for i in range(1, FOOTPRINT):
+		var step: float = TILE_PX * float(i)
+		canvas.draw_line(ghost.position + Vector2(step, 0.0), ghost.position + Vector2(step, span), Color(edge, 0.45), 1.0)
+		canvas.draw_line(ghost.position + Vector2(0.0, step), ghost.position + Vector2(span, step), Color(edge, 0.45), 1.0)
 	canvas.draw_circle(ghost_center, span * 0.28, Color(edge, 0.85))
 
 
@@ -248,6 +244,7 @@ func _try_relocate_to(cell: Vector2i) -> void:
 	_occupy(cell, tower)
 	tower.position = map_to_local(cell)
 	tower.modulate.a = 1.0
+	tower.play_redeploy_animation()
 	_clear_drag_state()
 	selected_tower = tower
 	tower_selected.emit(tower)

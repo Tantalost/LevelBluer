@@ -222,6 +222,30 @@ func _hacker_catalog() -> Array[Dictionary]:
 
 func _gameplay_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	catalog.append(_catalog_entry(
+		"map_module_1_stage_1",
+		"Module 1 Stage 1 map",
+		"image",
+		"https://res.cloudinary.com/nfd5bhkz/image/upload/v1788767750/module_1_stage_1_25d_baked.png",
+	))
+	catalog.append(_catalog_entry(
+		"tower_basic_node_base",
+		"Basic Node armored base",
+		"image",
+		"https://res.cloudinary.com/nfd5bhkz/image/upload/v1788769625/basic_node_base_v1.png",
+	))
+	catalog.append(_catalog_entry(
+		"tower_basic_node_head",
+		"Basic Node rotating head",
+		"image",
+		"https://res.cloudinary.com/nfd5bhkz/image/upload/v1788769626/basic_node_head_v2.png",
+	))
+	catalog.append(_catalog_entry(
+		"tower_basic_node_atlas",
+		"Basic Node effects atlas",
+		"image",
+		"https://res.cloudinary.com/nfd5bhkz/image/upload/v1788769625/basic_node_atlas_v1.png",
+	))
 	catalog.append_array(_hacker_catalog())
 	catalog.append_array(_character_sheet_catalog("ransomware", "assets/enemies/Ransomware", [
 		["walk_side", "RANSOMWARE side-walking"],
@@ -640,6 +664,14 @@ func _bundled_path(asset_id: String) -> String:
 	if asset_id.begins_with("npc_"):
 		return ""
 	match asset_id:
+		"map_module_1_stage_1":
+			return "res://assets/gameplay/maps/module_1_stage_1_25d_baked.png"
+		"tower_basic_node_base":
+			return "res://assets/gameplay/towers/basic_node_base_v1.png"
+		"tower_basic_node_head":
+			return "res://assets/gameplay/towers/basic_node_head_v2.png"
+		"tower_basic_node_atlas":
+			return "res://assets/gameplay/towers/basic_node_atlas_v1.png"
 		"ui_intro":
 			return ""
 		"ui_intro_preview":

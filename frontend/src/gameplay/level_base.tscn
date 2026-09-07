@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://b8levelbase01"]
+[gd_scene load_steps=15 format=3 uid="uid://b8levelbase01"]
 
 [ext_resource type="Script" path="res://src/gameplay/level_manager.gd" id="1_mgr"]
 [ext_resource type="PackedScene" uid="uid://cenemybase001" path="res://src/gameplay/enemy_base.tscn" id="5_enemy"]
@@ -9,6 +9,8 @@
 [ext_resource type="Shader" path="res://src/gameplay/result_vignette.gdshader" id="10_result"]
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="11_geo"]
 [ext_resource type="PackedScene" path="res://src/ui/screens/pause_menu.tscn" id="12_pause"]
+[ext_resource type="Script" path="res://src/gameplay/tower_deploy_card.gd" id="13_card"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/towers/basic_node_base_v1.png" id="14_basic_node"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_base"]
 radius = 36.0
@@ -35,6 +37,7 @@ script = ExtResource("1_mgr")
 enemy_scene = ExtResource("5_enemy")
 
 [node name="Environment" type="Node2D" parent="."]
+z_index = 20
 
 [node name="Background" type="ColorRect" parent="Environment"]
 unique_name_in_owner = true
@@ -328,20 +331,17 @@ layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0
 anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = -148.0
-offset_right = 220.0
-offset_bottom = -24.0
+offset_left = 28.0
+offset_top = -186.0
+offset_right = 158.0
+offset_bottom = -20.0
 grow_vertical = 0
-script = ExtResource("11_geo")
-geo = 0
-title = "NODE"
-subtitle = "2G"
-fill_key = "cyan"
-border_key = "cyan"
-title_size = 14
-subtitle_size = 10
-shear = 22.0
+script = ExtResource("13_card")
+tower_id = "base"
+tower_name = "BASIC NODE"
+role_label = "DPS"
+cost = 2
+portrait = ExtResource("14_basic_node")
 
 [node name="IncidentModal" type="PanelContainer" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true
@@ -740,5 +740,3 @@ text = "RESTART"
 
 [node name="PauseMenu" parent="GameplayCanvas" instance=ExtResource("12_pause")]
 unique_name_in_owner = true
-
-

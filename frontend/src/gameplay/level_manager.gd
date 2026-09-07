@@ -78,7 +78,7 @@ var _tower_placer: TowerPlacer
 @onready var _btn_speed: HudGeoButton = %BtnSpeed
 @onready var _btn_pause: HudGeoButton = %BtnPause
 @onready var _pause_menu: PauseMenu = %PauseMenu
-@onready var _tower_card: HudGeoButton = %TowerCard
+@onready var _tower_card: TowerDeployCard = %TowerCard
 @onready var _incident_modal: PanelContainer = %IncidentModal
 @onready var _incident_text: Label = %IncidentText
 @onready var _btn_incident_a: Button = %BtnIncidentA
@@ -122,6 +122,9 @@ func _ready() -> void:
 	_btn_incident_a.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_a))
 	_btn_incident_b.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_b))
 	_tower_card.pressed.connect(_on_tower_card_pressed)
+	var basic_node_portrait: Texture2D = AssetManager.get_texture("tower_basic_node_base")
+	if basic_node_portrait != null:
+		_tower_card.portrait = basic_node_portrait
 	_upgrade_panel.visible = false
 	_end_game_modal.visible = false
 	_quiz_modal.visible = false
@@ -254,8 +257,7 @@ func _on_tutorial_build_requested() -> void:
 		_tower_placer.max_towers = 2
 	current_gold = maxi(current_gold, 7)
 	if _tower_card != null:
-		_tower_card.subtitle = "3G"
-		_tower_card.queue_redraw()
+		_tower_card.cost = 3
 	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.start_build_coach()
 	update_hud()
