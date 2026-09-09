@@ -1,0 +1,765 @@
+{
+  "mod_01": [
+    {
+      "id": 1,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "Which of the following is the STRONGEST password?",
+      "options": [
+        "password123",
+        "MyBirthday1990",
+        "Tr!8#kL@mp99",
+        "abc123"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 2,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "Using the same password across multiple sites is a best practice.",
+      "answer": false
+    },
+    {
+      "id": 3,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "What is phishing?",
+      "options": [
+        "A virus that only infects USB drives",
+        "A fake message, usually email, that tries to steal a click or a secret",
+        "Official mail from your school's real domain",
+        "A tool that encrypts your inbox"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 4,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "A legitimate bank will email you asking for your full password.",
+      "answer": false
+    },
+    {
+      "id": 5,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "You get an unexpected email saying you won a prize. What is safest?",
+      "options": [
+        "Click the button before the offer expires",
+        "Reply with your student ID to claim it",
+        "Ignore it or check through a website you typed yourself",
+        "Forward it to classmates so they can win too"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 6,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "Hovering over a link in an email can reveal the real destination URL.",
+      "answer": true
+    },
+    {
+      "id": 7,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "Which address is most likely a lookalike phishing domain?",
+      "options": [
+        "support@school.edu.ph",
+        "noreply@paypa1.com",
+        "registrar@your-school.edu.ph",
+        "help@gov.ph"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 8,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "A padlock in the browser means the email sender is definitely who they claim to be.",
+      "answer": false
+    },
+    {
+      "id": 9,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "An email attachment named invoice.exe is most dangerous because:",
+      "options": [
+        "EXE files are always documents",
+        "It may run a program that installs malware",
+        "Schools never send invoices",
+        "Only ZIP files can carry malware"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 10,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "The display name on an email can be faked even when the real address is different.",
+      "answer": true
+    },
+    {
+      "id": 11,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "You get a password-reset email you did not request. What should you do first?",
+      "options": [
+        "Click the reset link to be safe",
+        "Reply with the code so they know it is you",
+        "Do not click; open the site yourself or ignore it",
+        "Send them your current password to cancel it"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 12,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "You should click a link immediately if the email says your account will close in 10 minutes.",
+      "answer": false
+    },
+    {
+      "id": 13,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "The best way to check if an email is real is to:",
+      "options": [
+        "Trust the logo and greeting that uses your name",
+        "Check the actual sender domain and known official channel",
+        "See how urgent the subject line is",
+        "Count how many classmates already clicked"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 14,
+      "topic": "Phishing",
+      "type": "true_false",
+      "text": "Forwarding a suspicious email to friends is a safe way to warn them.",
+      "answer": false
+    },
+    {
+      "id": 15,
+      "topic": "Phishing",
+      "type": "multiple_choice",
+      "text": "An email from “IT Support” asks you to reply with your portal password. You should:",
+      "options": [
+        "Reply so they can fix your account",
+        "Send the password in a new email you typed",
+        "Not send the password and report the message",
+        "Change the password to 123456 first, then send it"
+      ],
+      "answer": 2
+    }
+  ],
+  "mod_02": [
+    {
+      "id": 1,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "What is smishing?",
+      "options": [
+        "Phishing that uses SMS or messaging apps",
+        "A type of antivirus software",
+        "A secure way to share one-time codes",
+        "Voice calls from your real bank"
+      ],
+      "answer": 0
+    },
+    {
+      "id": 2,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "A legitimate bank will ask you to reply to a text with your OTP to verify your account.",
+      "answer": false
+    },
+    {
+      "id": 3,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "A delivery text from an unknown number with a tracking link is always safe to tap.",
+      "answer": false
+    },
+    {
+      "id": 4,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "A text says your SIM will be deactivated unless you tap a link. What is safest?",
+      "options": [
+        "Tap immediately so you keep your number",
+        "Reply STOP and include your PIN",
+        "Do not tap; check with your carrier using a number you already trust",
+        "Forward the text to a group chat for advice"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 5,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "Your real bank will text a link and ask you to type your OTP on that page.",
+      "answer": false
+    },
+    {
+      "id": 6,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "You get “You won ₱50,000 — claim here.” The message is most likely:",
+      "options": [
+        "A government rebate",
+        "A smishing bait to steal a tap or a code",
+        "Proof you entered a raffle",
+        "Safe if it uses your nickname"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 7,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "Shortened links in unexpected texts can hide a fake website.",
+      "answer": true
+    },
+    {
+      "id": 8,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "A text asks you to update payroll details via a link. You should:",
+      "options": [
+        "Tap the link before it expires",
+        "Reply with your bank account so they can help",
+        "Ignore the link and confirm through an official app or person",
+        "Call the number that sent the text and follow their steps"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 9,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "If a text shows your phone number, that proves it came from your bank.",
+      "answer": false
+    },
+    {
+      "id": 10,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "A “missed package” text tells you to scan a QR code. Safest action?",
+      "options": [
+        "Scan it so the parcel is not returned",
+        "Ask a friend to scan it first",
+        "Do not scan; track the parcel on the courier’s official site or app",
+        "Scan it only on school Wi-Fi"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 11,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "You should install an app from a random text link to keep your account active.",
+      "answer": false
+    },
+    {
+      "id": 12,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "How should you verify a text that claims to be from your bank?",
+      "options": [
+        "Reply YES to confirm you are the owner",
+        "Use the bank’s official app or a number printed on your card",
+        "Tap the link and look for a padlock",
+        "Ask the sender to text a selfie of their ID"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 13,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "Smishing only happens on SMS, never on chat apps.",
+      "answer": false
+    },
+    {
+      "id": 14,
+      "topic": "Smishing",
+      "type": "multiple_choice",
+      "text": "A message from an unknown number says “Hi Mom, send load.” This is suspicious because:",
+      "options": [
+        "Parents never buy load",
+        "The sender may be pretending to be family to get money or a code",
+        "Load can only be sent in person",
+        "Unknown numbers cannot send texts"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 15,
+      "topic": "Smishing",
+      "type": "true_false",
+      "text": "You should share an OTP from a text with anyone who asks for it in chat.",
+      "answer": false
+    }
+  ],
+  "mod_03": [
+    {
+      "id": 1,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "Vishing is social engineering that primarily happens through:",
+      "options": [
+        "Email attachments",
+        "Phone or voice calls",
+        "USB drives",
+        "QR codes only"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 2,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "Caller ID is enough proof that the person on the phone is who they claim to be.",
+      "answer": false
+    },
+    {
+      "id": 3,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "A government agency will demand gift-card payment over the phone to stop an arrest.",
+      "answer": false
+    },
+    {
+      "id": 4,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "A “tech support” caller wants remote access to your computer. You should:",
+      "options": [
+        "Allow it so they can remove a virus",
+        "Give them your password so they can log in",
+        "Refuse and hang up; real IT will not cold-call for remote control",
+        "Read your OTP so they can verify you"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 5,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "If a call feels wrong, you can hang up and call back using a number from a trusted source.",
+      "answer": true
+    },
+    {
+      "id": 6,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "A caller who says they are from your bank asks for the CVV on the back of your card. This is:",
+      "options": [
+        "Normal identity confirmation",
+        "A vishing tell — banks do not need you to read that over the phone",
+        "Required if they already know your name",
+        "Safe if they also know your school"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 7,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "Office sounds in the background prove the caller works at a real company.",
+      "answer": false
+    },
+    {
+      "id": 8,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "The caller says this is a secret investigation and you must not tell anyone. That is a sign of:",
+      "options": [
+        "Standard bank policy",
+        "Pressure used in vishing",
+        "Proof the call is official",
+        "A courtesy for VIP customers"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 9,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "You should read a one-time code out loud if the caller asks for it.",
+      "answer": false
+    },
+    {
+      "id": 10,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "Someone claiming to be the school registrar calls and asks for your portal password. You should:",
+      "options": [
+        "Give it so your enrollment is not delayed",
+        "Ask them to wait while you find it",
+        "Not give it; verify through the school’s known office or site",
+        "Text the password so it is not said aloud"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 11,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "You must stay on the line or your account will close in five minutes.",
+      "answer": false
+    },
+    {
+      "id": 12,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "An unknown caller already knows your name. That means:",
+      "options": [
+        "They must be from your bank",
+        "Names can be guessed or leaked; it still does not prove identity",
+        "You should answer every question they ask",
+        "Caller ID plus a name is enough"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 13,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "A rushed, emotional voice on a call can be a tactic to stop you from thinking.",
+      "answer": true
+    },
+    {
+      "id": 14,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "Best way to confirm a bank call about your card:",
+      "options": [
+        "Call back the number on your screen",
+        "Hang up and use the number printed on the card or official app",
+        "Ask them to email a form and click it",
+        "Give a small amount of data to test them"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 15,
+      "topic": "Vishing",
+      "type": "true_false",
+      "text": "Vishing only happens on landline phones, never on mobile.",
+      "answer": false
+    }
+  ],
+  "mod_04": [
+    {
+      "id": 1,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "Social engineering relies heavily on human interaction.",
+      "answer": true
+    },
+    {
+      "id": 2,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "What is pretexting?",
+      "options": [
+        "Encrypting files before sending them",
+        "Inventing a fake scenario to trick someone into giving information",
+        "Scanning a network for open ports",
+        "Resetting a password through official IT"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 3,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "A person in a staff vest says they are from IT and need your password. You should:",
+      "options": [
+        "Give it because of the vest",
+        "Write it down for them",
+        "Not share it; verify through a channel you already trust",
+        "Tell a classmate to give theirs first"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 4,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "Holding the door for someone without a badge is always the polite and safe choice.",
+      "answer": false
+    },
+    {
+      "id": 5,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "Someone claiming to be a parent asks you for a classmate’s LRN and portal password. You should:",
+      "options": [
+        "Share it so the parent can help",
+        "Refuse and direct them to official school staff",
+        "Share only the LRN",
+        "Ask the classmate in a group chat later"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 6,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "A printed ID card is always proof that the person is who they claim to be.",
+      "answer": false
+    },
+    {
+      "id": 7,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "A message says “I’m the principal’s assistant — send the class list now.” This is risky because:",
+      "options": [
+        "Principals never have assistants",
+        "It borrows a trusted role and rushes you for data",
+        "Class lists are public anyway",
+        "Assistants only use paper forms"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 8,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "Urgency plus a borrowed role is a common pretexting tell.",
+      "answer": true
+    },
+    {
+      "id": 9,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "A visitor asks you to let them into a locked computer lab because they “left a USB.” Safest action?",
+      "options": [
+        "Open the door; they sound honest",
+        "Direct them to staff who control access",
+        "Go in with them and watch",
+        "Ask them to prove it by showing the USB"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 10,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "You should verify unexpected requests through a known channel, not through the person who asked.",
+      "answer": true
+    },
+    {
+      "id": 11,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "A “research survey” in person asks for your email password. You should:",
+      "options": [
+        "Fill it out; research is important",
+        "Give a fake password",
+        "Refuse; real surveys do not need your password",
+        "Give the password only if they show a clipboard"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 12,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "Pretexting only happens online, never in person.",
+      "answer": false
+    },
+    {
+      "id": 13,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "A “delivery rider” asks you to enter an OTP from your phone so they can confirm the drop. You should:",
+      "options": [
+        "Enter it so you get the package",
+        "Read the OTP aloud",
+        "Not share OTPs; confirm with the store or a known contact",
+        "Enter it only if they wait outside"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 14,
+      "topic": "Pretexting",
+      "type": "true_false",
+      "text": "It is okay to share a classmate’s private info if someone says they lost their phone.",
+      "answer": false
+    },
+    {
+      "id": 15,
+      "topic": "Pretexting",
+      "type": "multiple_choice",
+      "text": "Best response when a stranger in a trusted role asks for credentials:",
+      "options": [
+        "Comply so you are not rude",
+        "Pause, refuse the secret, and check with a known official source",
+        "Give a hint instead of the full password",
+        "Ask them to message you later with the same story"
+      ],
+      "answer": 1
+    }
+  ],
+  "mod_05": [
+    {
+      "id": 1,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "Malware can be hidden in seemingly harmless file downloads.",
+      "answer": true
+    },
+    {
+      "id": 2,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "You find a USB labeled 'Grades' in a school hallway. What is safest?",
+      "options": [
+        "Plug it in to see who it belongs to",
+        "Open it on a school computer only",
+        "Do not plug it in and turn it in to staff",
+        "Take it home and scan it later"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 3,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "A booth offers free USB sticks to students. The hidden risk is:",
+      "options": [
+        "USBs never work on school PCs",
+        "The drive may be bait that installs malware when plugged in",
+        "Free gifts are illegal",
+        "USB sticks can only store photos"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 4,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "A contest that is too good to be true can be bait to make you click or plug something in.",
+      "answer": true
+    },
+    {
+      "id": 5,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "A site offers “free cracked” school software. Downloading it is risky because:",
+      "options": [
+        "Cracked files are always smaller",
+        "The installer may hide malware as the “free” bait",
+        "Schools block all downloads",
+        "Only paid software can have viruses"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 6,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "Public USB charging kiosks can be used to deliver malware to your phone.",
+      "answer": true
+    },
+    {
+      "id": 7,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "A hallway poster says “Scan for free Wi-Fi / prize.” Safest move?",
+      "options": [
+        "Scan it; posters are official",
+        "Scan it only with a school tablet",
+        "Do not scan unknown QR codes; use a known network login",
+        "Ask a friend to scan it for you"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 8,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "A found USB labeled “Salary” is safer than one labeled “Grades.”",
+      "answer": false
+    },
+    {
+      "id": 9,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "A pop-up says you won a phone and must download a file now. This is:",
+      "options": [
+        "A standard warranty offer",
+        "Baiting that uses a tempting prize",
+        "Proof your device is already secure",
+        "Safe if the pop-up uses your school colors"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 10,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "You should open an “answer key” file from an unknown classmate’s USB.",
+      "answer": false
+    },
+    {
+      "id": 11,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "A stranger gives you a gift flash drive “for school.” You should:",
+      "options": [
+        "Thank them and plug it in at home",
+        "Plug it in once to see the files",
+        "Not plug it in; unexpected media can be bait",
+        "Format it, then use it"
+      ],
+      "answer": 2
+    },
+    {
+      "id": 12,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "Baiting only uses USB drives, never fake downloads or prize offers.",
+      "answer": false
+    },
+    {
+      "id": 13,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "A file named FreeMovie.mp4.exe is dangerous because:",
+      "options": [
+        "Movie files cannot open on PCs",
+        "The .exe ending means it can run a program, not just play a video",
+        "Only .mp4 files carry malware",
+        "Long file names are blocked"
+      ],
+      "answer": 1
+    },
+    {
+      "id": 14,
+      "topic": "Baiting",
+      "type": "true_false",
+      "text": "Testing a found drive on your personal computer is a safe way to check it.",
+      "answer": false
+    },
+    {
+      "id": 15,
+      "topic": "Baiting",
+      "type": "multiple_choice",
+      "text": "What should you do with found USBs, discs, or mystery cables?",
+      "options": [
+        "Keep them as free storage",
+        "Plug in once, then throw away",
+        "Leave them or turn them in to staff without plugging them in",
+        "Sell them if they look new"
+      ],
+      "answer": 2
+    }
+  ]
+}

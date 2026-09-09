@@ -316,6 +316,10 @@ func has_completed_lesson(lesson_id: String) -> bool:
 	return completed_lessons.has(lesson_id)
 
 
+func is_module_deploy_unlocked(module_id: String) -> bool:
+	return has_completed_lesson(module_id)
+
+
 func has_seen_module_intro(module_id: String) -> bool:
 	return not module_id.is_empty() and seen_module_intros.has(module_id)
 

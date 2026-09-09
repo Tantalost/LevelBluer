@@ -66,8 +66,6 @@ func _ready() -> void:
 	_world_button.pressed.connect(_on_mission_pressed)
 	_mode_selector.pressed.connect(_open_mode_modal)
 	_deploy_button.pressed.connect(_on_deploy_pressed)
-	%PreTestButton.pressed.connect(func() -> void: Router.push(&"pretest"))
-	_lock_settings.pressed.connect(func() -> void: Router.push(&"settings"))
 	_mode_modal.mode_confirmed.connect(_on_mode_confirmed)
 
 
@@ -131,19 +129,7 @@ func _style_chrome() -> void:
 
 
 func _apply_lock_state() -> void:
-	var locked := not AuthService.has_pre_test_completed()
-	%PreTestLock.visible = locked
-	if not locked:
-		return
-	_at_risk.visible = false
-	%LockTitle.text = tr("PRETEST_LOCK_TITLE")
-	%LockBody.text = tr("PRETEST_LOCK_BODY")
-	%PreTestButton.text = tr("PRETEST_BUTTON") + "  >"
-	_style_cta(%PreTestButton, Palette.PRIMARY_BLUE, Palette.CREAM)
-	if _pixel_font != null:
-		%LockTitle.add_theme_font_override("font", _pixel_font)
-		%LockBody.add_theme_font_override("font", _pixel_font)
-		%PreTestButton.add_theme_font_override("font", _pixel_font)
+	%PreTestLock.visible = false
 
 
 func _refresh_data() -> void:
@@ -177,8 +163,6 @@ func _refresh_data() -> void:
 	_inbox_badge.visible = UNREAD_NOTIFICATIONS > 0
 	_inbox_count.text = str(UNREAD_NOTIFICATIONS)
 	_refresh_at_risk()
-	if not AuthService.has_pre_test_completed():
-		_at_risk.visible = false
 	_refresh_world()
 	_refresh_updates()
 
@@ -216,7 +200,7 @@ func _refresh_updates() -> void:
 
 
 func _open_mode_modal() -> void:
-	if PlayerManager.needs_tutorial() and AuthService.has_pre_test_completed():
+	if PlayerManager.needs_tutorial():
 		return
 	var mode := DashboardModeModal.Mode.SOLO if _selected_mode == &"SOLO" else DashboardModeModal.Mode.PVP
 	_mode_modal.open(mode, get_viewport().get_visible_rect().size.x)
@@ -244,7 +228,7 @@ func _update_mode_ui() -> void:
 
 
 func _on_mission_pressed() -> void:
-	if PlayerManager.needs_tutorial() and AuthService.has_pre_test_completed():
+	if PlayerManager.needs_tutorial():
 		return
 	if _selected_mode == &"PVP":
 		push_warning("PvP Hub screen not built yet")
@@ -263,7 +247,7 @@ func _on_deploy_pressed() -> void:
 
 
 func _apply_tutorial_gate() -> void:
-	var gated: bool = AuthService.has_pre_test_completed() and PlayerManager.needs_tutorial()
+	var gated: bool = PlayerManager.needs_tutorial()
 	if not gated:
 		_lock_chrome(false)
 		if _tutorial_gate != null:

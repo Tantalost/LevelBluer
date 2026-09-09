@@ -95,8 +95,13 @@ func _on_open_pressed() -> void:
 	var module_id: String = _module_id(_selected_index)
 	if module_id.is_empty():
 		return
-	var review: bool = _is_complete(_selected_index)
-	Router.push(&"lesson_player", {"module_id": module_id, "review": review})
+	if _is_complete(_selected_index):
+		Router.push(&"lesson_player", {"module_id": module_id, "review": true})
+		return
+	if _needs_pretest(_selected_index):
+		Router.push(&"pretest", {"module_id": module_id})
+		return
+	Router.push(&"lesson_player", {"module_id": module_id, "review": false})
 
 
 func _refresh_list_ui() -> void:
@@ -120,7 +125,7 @@ func _refresh_list_ui() -> void:
 		_reader_body.text = "LessonCatalog has no packs."
 		_reader_file.text = "EMPTY.DAT"
 		_counter_label.text = "00/00"
-		_style_open(true, false, false)
+		_style_open(true, false, false, false)
 		return
 	_selected_index = select_index
 	_lesson_list.select(_selected_index)
@@ -135,6 +140,7 @@ func _show_module(index: int) -> void:
 	var total: int = maxi(1, LessonCatalog.lesson_count(module_id))
 	var done: int = clampi(PlayerManager.get_lesson_progress(module_id), 0, total)
 	var locked: bool = not _is_unlocked(index)
+	var needs_pretest: bool = _needs_pretest(index)
 	var complete: bool = _is_complete(index)
 	_reader_title.text = str(entry.get("title", module_id)).to_upper()
 	_tag_label.text = _stage_tag(index)
@@ -145,14 +151,16 @@ func _show_module(index: int) -> void:
 	body += "\n\nLeft pane is the case. Right pane is the drill. The unit is not cleared until that drill is finished."
 	if locked:
 		body += "\n\nLocked until the previous module is cleared."
+	elif needs_pretest:
+		body += "\n\nLocked until you finish this module's pre-test."
 	elif complete:
-		body += "\n\nCleared. Open in review to replay the files."
+		body += "\n\nCleared. Open in review to replay the files. Module gameplay is unlocked."
 	_reader_body.text = body
-	_style_open(locked, complete, done > 0)
+	_style_open(locked, needs_pretest, complete, done > 0)
 
 
 func _row_mark(index: int) -> String:
-	if not _is_unlocked(index):
+	if not _is_unlocked(index) or _needs_pretest(index):
 		return "[ ]"
 	if _is_complete(index):
 		return "[X]"
@@ -188,14 +196,22 @@ func _is_complete(index: int) -> bool:
 	return PlayerManager.get_lesson_progress(module_id) >= LessonCatalog.lesson_count(module_id)
 
 
+func _needs_pretest(index: int) -> bool:
+	if not _is_unlocked(index) or _is_complete(index):
+		return false
+	return not AuthService.has_module_pretest(_module_id(index))
+
+
 func _can_open(index: int) -> bool:
 	return index >= 0 and index < _modules.size() and _is_unlocked(index)
 
 
-func _style_open(locked: bool, complete: bool, in_progress: bool) -> void:
+func _style_open(locked: bool, needs_pretest: bool, complete: bool, in_progress: bool) -> void:
 	_complete_button.disabled = locked
 	if locked:
 		_complete_button.text = "LOCKED"
+	elif needs_pretest:
+		_complete_button.text = "PRETEST  >"
 	elif complete:
 		_complete_button.text = "REVIEW  >"
 	elif in_progress:
@@ -207,6 +223,9 @@ func _style_open(locked: bool, complete: bool, in_progress: bool) -> void:
 	if locked:
 		fill = Palette.TEXT_MUTED
 		text = Palette.TEXT_PRIMARY
+	elif needs_pretest:
+		fill = Palette.CYAN
+		text = Palette.BG_DEEP
 	elif complete:
 		fill = Palette.GOLD
 		text = Palette.TEXT_ON_GOLD

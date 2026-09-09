@@ -199,7 +199,10 @@ func _make_module_card(index: int) -> Button:
 	glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	center.add_child(glyph)
 	if locked:
-		body.add_child(_card_label("LOCKED", Palette.TEXT_MUTED, 11, true))
+		if index == 0:
+			body.add_child(_card_label("CLEAR LESSON 1", Palette.TEXT_MUTED, 11, true))
+		else:
+			body.add_child(_card_label("LOCKED", Palette.TEXT_MUTED, 11, true))
 	elif _td_index_for(index) < 0:
 		body.add_child(_card_label("SOON", Palette.GOLD, 11, true))
 	var captured: int = index
@@ -237,8 +240,10 @@ func _first_unlocked() -> int:
 
 
 func _is_unlocked(index: int) -> bool:
+	if index < 0 or index >= _modules.size():
+		return false
 	if index <= 0:
-		return true
+		return PlayerManager.is_module_deploy_unlocked(str(_modules[index].get("id", "")))
 	return _is_complete(index - 1)
 
 

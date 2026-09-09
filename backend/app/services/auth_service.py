@@ -8,6 +8,7 @@ import jwt
 from fastapi import HTTPException, status
 
 from app.config import settings
+from app.data.pretest_questions import completed_module_ids, parse_module_pretests
 from app.schemas.auth import (
     BuildingLevelsPayload,
     LoginResponse,
@@ -32,10 +33,37 @@ def _supabase_error(exc: Exception) -> HTTPException:
     )
 
 
+def _completed_module_ids(row: dict) -> list[str]:
+    completed = parse_module_pretests(row.get("module_pretests"))
+    if completed:
+        return completed_module_ids(completed)
+    student_id = str(row.get("id") or "")
+    if not student_id:
+        return []
+    try:
+        response = (
+            supabase.table("player_saves")
+            .select("payload")
+            .eq("student_id", student_id)
+            .limit(1)
+            .execute()
+        )
+    except Exception:
+        return []
+    rows = response.data or []
+    if not rows:
+        return []
+    payload = rows[0].get("payload")
+    if not isinstance(payload, dict):
+        return []
+    return completed_module_ids(payload.get("module_pretests"))
+
+
 def _map_student(row: dict) -> StudentUserPayload:
     name = row.get("name") or " ".join(
         part for part in [row.get("first_name"), row.get("last_name")] if part
     ).strip()
+    completed_ids = _completed_module_ids(row)
 
     return StudentUserPayload(
         id=str(row["id"]),
@@ -67,7 +95,8 @@ def _map_student(row: dict) -> StudentUserPayload:
             Pretexting=float(row.get("mastery_pretexting") or 0),
             Baiting=float(row.get("mastery_baiting") or 0),
         ),
-        preTestCompleted=int(row.get("sessions") or 0) > 0,
+        preTestCompleted=bool(completed_ids),
+        completedModuleIds=completed_ids,
     )
 
 

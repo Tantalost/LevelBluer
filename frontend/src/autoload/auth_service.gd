@@ -29,6 +29,9 @@ var _threat_points: int = -1
 var _current_stage: int = 1
 var _mastery: Dictionary = {}
 var _pre_test_completed: bool = false
+var _completed_module_ids: Array = []
+var _pending_pretest: Dictionary = {}
+var _flushing_pretest: bool = false
 var _http: HTTPRequest
 var _bkt_http: HTTPRequest
 var _request_seq: int = 0
@@ -195,7 +198,15 @@ func exp_rank_span() -> int:
 
 
 func has_pre_test_completed() -> bool:
-	return _pre_test_completed
+	return _pre_test_completed or not _completed_module_ids.is_empty()
+
+
+func has_module_pretest(module_id: String) -> bool:
+	return _completed_module_ids.has(module_id)
+
+
+func completed_module_pretest_ids() -> Array:
+	return _completed_module_ids.duplicate()
 
 
 func average_mastery() -> float:
@@ -250,6 +261,8 @@ func restore_session() -> bool:
 	var mastery_data: Variant = data.get("mastery", {})
 	_mastery = mastery_data if typeof(mastery_data) == TYPE_DICTIONARY else {}
 	_pre_test_completed = bool(data.get("pre_test_completed", false))
+	_set_completed_modules(data.get("completed_module_ids", data.get("completedModuleIds", [])))
+	_set_pending_pretest(data.get("pending_pretest_submits", {}))
 	var user_data: Variant = data.get("user", {})
 	if typeof(user_data) == TYPE_DICTIONARY and not user_data.is_empty():
 		_apply_user_profile(user_data, false)
@@ -349,6 +362,8 @@ func sign_out() -> void:
 	_current_stage = 1
 	_mastery = {}
 	_pre_test_completed = false
+	_completed_module_ids.clear()
+	_pending_pretest.clear()
 	_user = {}
 	_points = 0
 	_section = ""
@@ -367,32 +382,69 @@ func sign_out() -> void:
 	session_changed.emit(false)
 
 
-func fetch_pretest_questions() -> Variant:
-	return await _request_json("/api/pretest/questions", HTTPClient.METHOD_GET, {}, true)
+func fetch_pretest_questions(module_id: String) -> Variant:
+	if has_module_pretest(module_id):
+		return {
+			"alreadyCompleted": true,
+			"questions": [],
+			"moduleId": module_id,
+			"completedModuleIds": _completed_module_ids.duplicate(),
+		}
+	var questions: Array = PretestBank.public_questions(module_id)
+	if questions.is_empty():
+		return null
+	return {
+		"alreadyCompleted": false,
+		"questions": questions,
+		"moduleId": module_id,
+		"completedModuleIds": _completed_module_ids.duplicate(),
+	}
 
 
-func submit_pretest(answers: Array) -> Result:
-	var parsed: Variant = await _request_json(
-		"/api/pretest/submit",
-		HTTPClient.METHOD_POST,
-		{"answers": answers},
-		true,
-	)
-	if parsed == null:
-		return Result.NETWORK_ERROR
-	if typeof(parsed) != TYPE_DICTIONARY:
+func submit_pretest(module_id: String, answers: Array) -> Result:
+	if module_id.is_empty() or answers.is_empty():
 		return Result.UNKNOWN
-	if parsed.has("error") or parsed.has("detail"):
+	if has_module_pretest(module_id):
+		return Result.OK
+	if not _apply_local_pretest(module_id, answers):
 		return Result.UNKNOWN
-
-	var mastery_data: Variant = parsed.get("mastery", {})
-	if typeof(mastery_data) == TYPE_DICTIONARY:
-		_mastery = mastery_data
-	_pre_test_completed = bool(parsed.get("preTestCompleted", true))
+	_pending_pretest[module_id] = answers
 	_persist(_signed_in, false, true)
 	session_changed.emit(_signed_in)
 	PlayerManager.seed_from_official_mastery()
+	flush_pending_pretests()
 	return Result.OK
+
+
+func flush_pending_pretests() -> void:
+	if _flushing_pretest or _pending_pretest.is_empty() or _token.is_empty():
+		return
+	_flushing_pretest = true
+	var module_ids: Array = _pending_pretest.keys()
+	for i in module_ids.size():
+		var module_id := str(module_ids[i])
+		if not _pending_pretest.has(module_id):
+			continue
+		var answers: Array = _pending_pretest[module_id]
+		var parsed: Variant = await _request_json(
+			"/api/pretest/submit",
+			HTTPClient.METHOD_POST,
+			{"moduleId": module_id, "answers": answers},
+			true,
+		)
+		if parsed == null:
+			break
+		if typeof(parsed) != TYPE_DICTIONARY:
+			break
+		var payload: Dictionary = parsed
+		if payload.has("error") or payload.has("detail"):
+			if not _is_already_completed_error(payload):
+				break
+		else:
+			_apply_remote_pretest(payload, module_id)
+		_pending_pretest.erase(module_id)
+		_persist(_signed_in, false, true)
+	_flushing_pretest = false
 
 
 func refresh_profile() -> bool:
@@ -617,7 +669,8 @@ func _apply_user_profile(user: Dictionary, overwrite_name: bool = true) -> void:
 	var mastery_data: Variant = user.get("mastery", {})
 	if typeof(mastery_data) == TYPE_DICTIONARY:
 		_mastery = mastery_data
-	_pre_test_completed = bool(user.get("preTestCompleted", _pre_test_completed))
+	_set_completed_modules(user.get("completedModuleIds", user.get("completed_module_ids", _completed_module_ids)))
+	_pre_test_completed = bool(user.get("preTestCompleted", not _completed_module_ids.is_empty()))
 
 
 func _apply_student_row(row: Dictionary) -> void:
@@ -642,6 +695,10 @@ func _apply_student_row(row: Dictionary) -> void:
 	_glade_level = int(row.get("glade_level", 1))
 	_forge_level = int(row.get("forge_level", 1))
 	_pre_test_completed = int(row.get("pre_test_completed", 0)) == 1
+	_set_completed_modules(row.get("module_pretests", row.get("completed_module_ids", [])))
+	_set_pending_pretest(row.get("pending_pretest_submits", {}))
+	if not _completed_module_ids.is_empty():
+		_pre_test_completed = true
 	_mastery = {
 		"Phishing": float(row.get("mastery_phishing", 0.0)),
 		"Smishing": float(row.get("mastery_smishing", 0.0)),
@@ -674,6 +731,7 @@ func _apply_student_row(row: Dictionary) -> void:
 		"interventionStatus": str(row.get("intervention_status", "NORMAL")),
 		"mastery": _mastery.duplicate(),
 		"preTestCompleted": _pre_test_completed,
+		"completedModuleIds": _completed_module_ids.duplicate(),
 	}
 
 
@@ -723,6 +781,8 @@ func _persist(signed_in: bool, pending_password_change: bool, mark_dirty: bool =
 		"current_stage": _current_stage,
 		"mastery": _mastery,
 		"pre_test_completed": _pre_test_completed,
+		"completed_module_ids": _completed_module_ids.duplicate(),
+		"pending_pretest_submits": _pending_pretest.duplicate(true),
 		"user": _user,
 		"points": _points,
 		"section": _section,
@@ -776,6 +836,8 @@ func _persist(signed_in: bool, pending_password_change: bool, mark_dirty: bool =
 		"auth_token": _token,
 		"signed_in": signed_in,
 		"pre_test_completed": _pre_test_completed,
+		"module_pretests": JSON.stringify(_completed_module_ids),
+		"pending_pretest_submits": JSON.stringify(_pending_pretest),
 		"pending_password_change": pending_password_change,
 		"display_name": _display_name,
 		"needs_cloud_sync": mark_dirty,
@@ -783,3 +845,95 @@ func _persist(signed_in: bool, pending_password_change: bool, mark_dirty: bool =
 	StudentDatabase.upsert_student(sqlite_row)
 	if signed_in and mark_dirty:
 		SaveService.push_pending_sync()
+
+
+func _apply_local_pretest(module_id: String, answers: Array) -> bool:
+	var current_pl: float = float(_mastery.get(_topic_for_module(module_id), 0.0))
+	var graded: Dictionary = PretestBank.grade(module_id, answers, current_pl)
+	if not bool(graded.get("ok", false)):
+		return false
+	var topic := str(graded.get("topic", ""))
+	if not topic.is_empty():
+		_mastery[topic] = float(graded.get("p_l", current_pl))
+		if _user.has("mastery") and typeof(_user["mastery"]) == TYPE_DICTIONARY:
+			var user_mastery: Dictionary = _user["mastery"]
+			user_mastery[topic] = _mastery[topic]
+			_user["mastery"] = user_mastery
+	if module_id == PretestBank.MODULE_1_ID:
+		_pre_score = int(graded.get("pre_score", _pre_score))
+	if not has_module_pretest(module_id):
+		_completed_module_ids.append(module_id)
+	_pre_test_completed = not _completed_module_ids.is_empty()
+	if _user.has("completedModuleIds"):
+		_user["completedModuleIds"] = _completed_module_ids.duplicate()
+	_user["preTestCompleted"] = _pre_test_completed
+	return true
+
+
+func _apply_remote_pretest(parsed: Dictionary, module_id: String) -> void:
+	var mastery_data: Variant = parsed.get("mastery", {})
+	if typeof(mastery_data) == TYPE_DICTIONARY:
+		_mastery = mastery_data
+	_set_completed_modules(parsed.get("completedModuleIds", _completed_module_ids))
+	if not has_module_pretest(module_id):
+		_completed_module_ids.append(module_id)
+	_pre_test_completed = not _completed_module_ids.is_empty()
+	if parsed.has("pre"):
+		_pre_score = int(parsed.get("pre", _pre_score))
+	PlayerManager.seed_from_official_mastery()
+
+
+func _topic_for_module(module_id: String) -> String:
+	match module_id:
+		"mod_02":
+			return "Smishing"
+		"mod_03":
+			return "Vishing"
+		"mod_04":
+			return "Pretexting"
+		"mod_05":
+			return "Baiting"
+		_:
+			return "Phishing"
+
+
+static func _is_already_completed_error(payload: Dictionary) -> bool:
+	var detail := str(payload.get("detail", payload.get("error", ""))).to_lower()
+	return detail.find("already") >= 0
+
+
+func _set_pending_pretest(value: Variant) -> void:
+	var parsed: Variant = value
+	if typeof(value) == TYPE_STRING:
+		var text := str(value).strip_edges()
+		if text.is_empty():
+			_pending_pretest = {}
+			return
+		parsed = JSON.parse_string(text)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		_pending_pretest = {}
+		return
+	_pending_pretest = (parsed as Dictionary).duplicate(true)
+
+
+func _set_completed_modules(value: Variant) -> void:
+	var next: Array = []
+	var parsed: Variant = value
+	if typeof(value) == TYPE_STRING:
+		var text := str(value).strip_edges()
+		if text.is_empty():
+			_completed_module_ids = []
+			return
+		parsed = JSON.parse_string(text)
+	if typeof(parsed) == TYPE_ARRAY:
+		for item in parsed:
+			var module_id := str(item)
+			if not module_id.is_empty() and not next.has(module_id):
+				next.append(module_id)
+	elif typeof(parsed) == TYPE_DICTIONARY:
+		for key in parsed.keys():
+			if bool(parsed[key]):
+				var module_id := str(key)
+				if not module_id.is_empty() and not next.has(module_id):
+					next.append(module_id)
+	_completed_module_ids = next

@@ -203,6 +203,7 @@ func _finish_fetch(success: bool) -> void:
 
 
 func push_pending_sync() -> void:
+	AuthService.flush_pending_pretests()
 	_sync_to_cloud()
 
 
@@ -220,6 +221,7 @@ func _sync_to_cloud() -> void:
 
 	var data: Dictionary = PlayerManager.get_save_data()
 	data["student"] = AuthService.cloud_sync_payload()
+	data["module_pretests"] = AuthService.completed_module_pretest_ids()
 	var json_string: String = JSON.stringify(data)
 	var url: String = _api_base() + SYNC_PATH
 	var headers: PackedStringArray = [
