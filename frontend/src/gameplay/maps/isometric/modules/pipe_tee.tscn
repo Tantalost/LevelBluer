@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_0dkjp"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_gmtvl"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0okct"]
+atlas = ExtResource("2_gmtvl")
+region = Rect2(458, 1585, 256, 256)
+filter_clip = true
+
+[node name="PipeTee" type="Node2D" unique_id=1614804376]
+y_sort_enabled = true
+script = ExtResource("1_0dkjp")
+module_id = &"pipe_tee"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=928278467]
+texture_filter = 2
+position = Vector2(0, 96)
+texture = SubResource("AtlasTexture_0okct")
+offset = Vector2(0, -128)

@@ -4,3 +4,10 @@
 
 [node name="MapRoot" instance=ExtResource("1_base")]
 map_id = "map_spiral"
+
+[node name="TileMapLayer" parent="." index="0"]
+self_modulate = Color(1, 1, 1, 0)
+
+[node name="StageBackdrop" type="Sprite2D" parent="."]
+z_index = -1
+position = Vector2(512, 208)

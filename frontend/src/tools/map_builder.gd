@@ -17,8 +17,11 @@ const HANDLE_FACTOR: float = 0.4
 const HANDLE_CLAMP: float = 0.45
 const GROUP_LEVEL_PATH := "level_path"
 const STAGE_ONE_MAP_ID := "map_basic"
+const STAGE_TWO_MAP_ID := "map_switchback"
+const STAGE_THREE_MAP_ID := "map_spiral"
 const STAGE_ONE_MAP_ASSET_ID := "map_module_1_stage_1"
 const STAGE_ONE_ART := preload("res://src/gameplay/maps/stage_one_map_art.gd")
+const ENDPOINT_VISUALS := preload("res://src/gameplay/maps/map_endpoint_visuals.gd")
 
 @export var map_id: String = "map_basic"
 @export var tilemap_path: NodePath = NodePath("TileMapLayer")
@@ -81,6 +84,7 @@ func _generate_map() -> void:
 	if raw_path.is_empty() or raw_path[raw_path.size() - 1] != _end_cell:
 		push_error("MapBuilder: failed to walk S→E on '%s'" % map_id)
 		return
+	_sync_endpoint_visuals(tilemap)
 	var corners: Array[Vector2i] = _extract_corners(raw_path)
 	path.curve = _build_curve(tilemap, path, corners)
 	if not path.is_in_group(GROUP_LEVEL_PATH):
@@ -88,7 +92,11 @@ func _generate_map() -> void:
 
 
 func _sync_stage_art(tilemap: TileMapLayer, layout: PackedStringArray) -> void:
-	var use_authored_art: bool = map_id == STAGE_ONE_MAP_ID
+	var use_authored_art: bool = (
+		map_id == STAGE_ONE_MAP_ID
+		or map_id == STAGE_TWO_MAP_ID
+		or map_id == STAGE_THREE_MAP_ID
+	)
 	# self_modulate hides only the placeholder atlas; towers and the placement
 	# overlay are children of the TileMapLayer and remain fully visible.
 	tilemap.self_modulate = Color(1.0, 1.0, 1.0, 0.0 if use_authored_art else 1.0)
@@ -100,10 +108,18 @@ func _sync_stage_art(tilemap: TileMapLayer, layout: PackedStringArray) -> void:
 	# Stage 1 ships with a baked version of the approved 2.5D composition so the
 	# live game does not depend on custom CanvasItem draw ordering. The authored
 	# renderer remains the source for future tileset extraction and fallback.
-	var baked_backdrop := get_node_or_null("StageOneBackdrop") as CanvasItem
+	var baked_backdrop := get_node_or_null("StageBackdrop") as CanvasItem
+	if baked_backdrop == null:
+		baked_backdrop = get_node_or_null("StageOneBackdrop") as CanvasItem
 	if baked_backdrop != null:
 		baked_backdrop.visible = true
-		AssetManager.bind_texture(baked_backdrop, STAGE_ONE_MAP_ASSET_ID)
+		if not Engine.is_editor_hint():
+			var asset_ids := {
+				STAGE_ONE_MAP_ID: STAGE_ONE_MAP_ASSET_ID,
+				STAGE_TWO_MAP_ID: "map_module_1_stage_2",
+				STAGE_THREE_MAP_ID: "map_module_1_stage_3",
+			}
+			AssetManager.bind_texture(baked_backdrop, asset_ids[map_id])
 		if _stage_one_art != null and is_instance_valid(_stage_one_art):
 			_stage_one_art.queue_free()
 		_stage_one_art = null
@@ -116,6 +132,15 @@ func _sync_stage_art(tilemap: TileMapLayer, layout: PackedStringArray) -> void:
 		add_child(_stage_one_art)
 		move_child(_stage_one_art, 0)
 	_stage_one_art.configure(layout)
+
+
+func _sync_endpoint_visuals(tilemap: TileMapLayer) -> void:
+	var endpoints := get_node_or_null("MapEndpointVisuals") as Node2D
+	if endpoints == null:
+		endpoints = ENDPOINT_VISUALS.new() as Node2D
+		endpoints.name = "MapEndpointVisuals"
+		add_child(endpoints)
+	endpoints.call("configure", tilemap.map_to_local(_start_cell), tilemap.map_to_local(_end_cell))
 
 
 func _center_in_view(layout: PackedStringArray) -> void:

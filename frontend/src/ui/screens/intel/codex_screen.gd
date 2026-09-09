@@ -201,6 +201,7 @@ func _show_tower(unit_id: String) -> void:
 		"slow_factor",
 		"slow_duration",
 		"cost",
+		"role",
 		"req_skill",
 		"color",
 	])
@@ -379,9 +380,9 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 
 func _refresh_resources() -> void:
 	var threat: int = AuthService.threat_points()
-	var materials: int = AuthService.materials()
+	var materials: int = PlayerManager.credits
 	_threat_value.text = str(threat if threat >= 0 else FALLBACK_THREAT)
-	_materials_value.text = str(materials if materials >= 0 else FALLBACK_MATERIALS)
+	_materials_value.text = str(maxi(0, materials))
 
 
 func _apply_label(label: Label, color: Color, font_size: int) -> void:

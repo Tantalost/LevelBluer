@@ -33,6 +33,18 @@ const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 	set(value):
 		available = value
 		queue_redraw()
+@export var cap_reached: bool = false:
+	set(value):
+		cap_reached = value
+		queue_redraw()
+@export var slots_remaining: int = 2:
+	set(value):
+		slots_remaining = maxi(0, value)
+		queue_redraw()
+@export var slots_max: int = 2:
+	set(value):
+		slots_max = maxi(0, value)
+		queue_redraw()
 
 var _font: Font
 var _hover: bool = false
@@ -78,7 +90,7 @@ func _gui_input(event: InputEvent) -> void:
 	var mouse := event as InputEventMouseButton
 	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
 		return
-	if not available:
+	if not available or slots_remaining <= 0 or cap_reached:
 		accept_event()
 		return
 	AudioManager.play_sfx("ui_click")
@@ -91,7 +103,7 @@ func _draw() -> void:
 		return
 	var card := Rect2(Vector2(3.0, 3.0), size - Vector2(6.0, 6.0))
 	var active_accent: Color = accent.lightened(0.16) if _hover else accent
-	if not available:
+	if not available or slots_remaining <= 0:
 		active_accent = Color("59636a")
 	# Offset shadow and clipped-corner silhouette match the compact operator card.
 	draw_colored_polygon(_card_polygon(card, Vector2(5.0, 6.0)), Color(0.01, 0.02, 0.035, 0.72))
@@ -113,12 +125,37 @@ func _draw() -> void:
 	var footer := Rect2(Vector2(card.position.x + 4.0, card.end.y - 27.0), Vector2(card.size.x - 8.0, 23.0))
 	draw_rect(footer, Color("0d1218"), true)
 	_draw_label(tower_name, footer.position + Vector2(7.0, 15.0), 7, Color("e6e8e5"))
+	_draw_footer_slots(footer)
 	draw_line(Vector2(card.position.x + 2.0, card.end.y - 2.0), Vector2(card.end.x - 9.0, card.end.y - 2.0), Color("f1f0e9"), 4.0)
 	# Outer border: subdued normally, cyan focus when interactive/hovered.
 	var outline := _card_polygon(card)
 	outline.append(outline[0])
 	draw_polyline(outline, active_accent if _hover else Color("6c777d"), 2.0)
 	draw_line(Vector2(card.position.x + 2.0, card.end.y - 2.0), Vector2(card.end.x - 9.0, card.end.y - 2.0), active_accent if _hover else Color("f1f0e9"), 3.0)
+	if cap_reached or slots_remaining <= 0:
+		draw_rect(portrait_rect, Color(0.02, 0.04, 0.08, 0.72), true)
+		_draw_label("CAPACITY", portrait_rect.position + Vector2(8.0, portrait_rect.size.y * 0.52), 8, Palette.WARNING)
+		_draw_label("REACHED", portrait_rect.position + Vector2(8.0, portrait_rect.size.y * 0.66), 8, Palette.WARNING)
+
+
+func _draw_footer_slots(footer: Rect2) -> void:
+	if _font == null or slots_max <= 0:
+		return
+	var copy: String = _slot_copy()
+	var text_size: Vector2 = _font.get_string_size(copy, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 8)
+	_draw_label(copy, Vector2(footer.end.x - text_size.x - 5.0, footer.position.y + 15.0), 8, _slot_color())
+
+
+func _slot_copy() -> String:
+	return "%d/%d" % [slots_remaining, slots_max]
+
+
+func _slot_color() -> Color:
+	if slots_remaining <= 0:
+		return Palette.DANGER
+	if slots_remaining == 1:
+		return Palette.WARNING
+	return Palette.CYAN_400
 
 
 func _card_polygon(rect: Rect2, offset: Vector2 = Vector2.ZERO) -> PackedVector2Array:

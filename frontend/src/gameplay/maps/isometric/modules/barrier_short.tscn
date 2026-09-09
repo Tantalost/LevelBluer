@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_b3hxk"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_2onwl"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_d1yrv"]
+atlas = ExtResource("2_2onwl")
+region = Rect2(458, 1268, 128, 119)
+filter_clip = true
+
+[node name="BarrierShort" type="Node2D" unique_id=1698990838]
+y_sort_enabled = true
+script = ExtResource("1_b3hxk")
+module_id = &"barrier_short"
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1777610011]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_d1yrv")
+offset = Vector2(0, -59.5)
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=27317571]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@94" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=1366546168]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

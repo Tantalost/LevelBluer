@@ -1,0 +1,1698 @@
+{
+	"air_conditioner": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 6,
+		"source": 14
+	},
+	"air_conditioner_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 7,
+		"source": 14
+	},
+	"barrier_broken": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 4,
+		"source": 16
+	},
+	"barrier_long": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 16
+	},
+	"barrier_long_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 2,
+		"source": 16
+	},
+	"barrier_short": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 3,
+		"source": 16
+	},
+	"cable_bend": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 14,
+		"source": 17
+	},
+	"cable_straight": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 12,
+		"source": 17
+	},
+	"cable_straight_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 13,
+		"source": 17
+	},
+	"concrete_chips": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 6,
+		"source": 18
+	},
+	"container": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				2,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 16
+	},
+	"container_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				0,
+				2
+			]
+		],
+		"scene": 10,
+		"source": 16
+	},
+	"crate_metal": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 8,
+		"source": 16
+	},
+	"crate_wood": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 16
+	},
+	"curb_cap": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 10,
+		"source": 10
+	},
+	"curb_corner": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 11,
+		"source": 10
+	},
+	"curb_end": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 10
+	},
+	"curb_inner": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 7,
+		"source": 10
+	},
+	"curb_join": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 8,
+		"source": 10
+	},
+	"curb_long": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 10
+	},
+	"curb_long_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 2,
+		"source": 10
+	},
+	"curb_medium": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 3,
+		"source": 10
+	},
+	"curb_medium_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 4,
+		"source": 10
+	},
+	"curb_outer": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 6,
+		"source": 10
+	},
+	"curb_short": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 5,
+		"source": 10
+	},
+	"door_double": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 12
+	},
+	"door_double_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 2,
+		"source": 12
+	},
+	"door_frame": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 3,
+		"source": 12
+	},
+	"door_frame_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 4,
+		"source": 12
+	},
+	"door_open": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 11,
+		"source": 12
+	},
+	"door_open_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 12,
+		"source": 12
+	},
+	"door_open_wide": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				2,
+				0
+			]
+		],
+		"scene": 13,
+		"source": 12
+	},
+	"door_open_wide_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				0,
+				2
+			]
+		],
+		"scene": 14,
+		"source": 12
+	},
+	"door_service": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 6,
+		"source": 12
+	},
+	"door_service_lit": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 5,
+		"source": 12
+	},
+	"door_shutter": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 12
+	},
+	"door_shutter_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 8,
+		"source": 12
+	},
+	"drain_raised": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 12,
+		"source": 10
+	},
+	"dumpster": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 8,
+		"source": 18
+	},
+	"electrical_cabinet": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 2,
+		"source": 15
+	},
+	"electrical_cabinet_tall": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 3,
+		"source": 15
+	},
+	"fan_array": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 3,
+		"source": 14
+	},
+	"fan_small": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 14
+	},
+	"fan_worn": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 2,
+		"source": 14
+	},
+	"fence_long": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 14,
+		"source": 16
+	},
+	"fence_long_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 15,
+		"source": 16
+	},
+	"fence_short": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 16,
+		"source": 16
+	},
+	"generator": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 15
+	},
+	"hvac_duct": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 14
+	},
+	"hvac_duct_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 10,
+		"source": 14
+	},
+	"hvac_rooftop": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 11,
+		"source": 14
+	},
+	"hydrant": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 10,
+		"source": 18
+	},
+	"industrial_machine": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 4,
+		"source": 15
+	},
+	"light_bollard": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 11,
+		"source": 18
+	},
+	"loose_grate": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 3,
+		"source": 18
+	},
+	"low_panel": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 13,
+		"source": 10
+	},
+	"low_panel_return": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 14,
+		"source": 10
+	},
+	"neon_fixture": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 12,
+		"source": 18
+	},
+	"pipe_cluster": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 17
+	},
+	"pipe_cluster_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 8,
+		"source": 17
+	},
+	"pipe_cross": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 5,
+		"source": 17
+	},
+	"pipe_elbow": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 3,
+		"source": 17
+	},
+	"pipe_riser": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 6,
+		"source": 17
+	},
+	"pipe_straight": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 17
+	},
+	"pipe_straight_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 2,
+		"source": 17
+	},
+	"pipe_tee": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 4,
+		"source": 17
+	},
+	"pipe_valve": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 17
+	},
+	"pipe_valve_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 10,
+		"source": 17
+	},
+	"platform_concrete": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 1,
+		"source": 13
+	},
+	"platform_corner": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 2,
+		"source": 13
+	},
+	"platform_metal": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 13
+	},
+	"platform_metal_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 8,
+		"source": 13
+	},
+	"platform_rounded": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				2,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			],
+			[
+				2,
+				1
+			]
+		],
+		"scene": 5,
+		"source": 13
+	},
+	"platform_rounded_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				0,
+				2
+			],
+			[
+				1,
+				0
+			],
+			[
+				1,
+				1
+			],
+			[
+				1,
+				2
+			]
+		],
+		"scene": 6,
+		"source": 13
+	},
+	"railing_corner": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 13,
+		"source": 16
+	},
+	"railing_long": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 11,
+		"source": 16
+	},
+	"railing_long_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 12,
+		"source": 16
+	},
+	"railing_short": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 5,
+		"source": 16
+	},
+	"railing_short_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 6,
+		"source": 16
+	},
+	"ramp": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 13
+	},
+	"ramp_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 10,
+		"source": 13
+	},
+	"rubble": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 5,
+		"source": 18
+	},
+	"scrap_metal": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 18
+	},
+	"stairs": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 3,
+		"source": 13
+	},
+	"stairs_mirrored": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 4,
+		"source": 13
+	},
+	"street_lamp": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 18
+	},
+	"tank_horizontal": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 5,
+		"source": 15
+	},
+	"tank_vertical": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 6,
+		"source": 15
+	},
+	"tire": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 18
+	},
+	"tires_stacked": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 2,
+		"source": 18
+	},
+	"transformer": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			],
+			[
+				1,
+				1
+			]
+		],
+		"scene": 8,
+		"source": 15
+	},
+	"trash_bags": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 4,
+		"source": 18
+	},
+	"utility_box": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 15
+	},
+	"utility_pole": {
+		"blocks_movement": false,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 11,
+		"source": 17
+	},
+	"vent_box": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 8,
+		"source": 14
+	},
+	"vent_large": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 4,
+		"source": 14
+	},
+	"vent_large_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 5,
+		"source": 14
+	},
+	"wall_end": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 12,
+		"source": 11
+	},
+	"wall_inner_corner": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 10,
+		"source": 11
+	},
+	"wall_long": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 2,
+		"source": 11
+	},
+	"wall_long_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 3,
+		"source": 11
+	},
+	"wall_outer_corner": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 9,
+		"source": 11
+	},
+	"wall_pipe": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 4,
+		"source": 11
+	},
+	"wall_post": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 13,
+		"source": 11
+	},
+	"wall_short": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			]
+		],
+		"scene": 1,
+		"source": 11
+	},
+	"wall_t_junction": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 11,
+		"source": 11
+	},
+	"wall_vent": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 5,
+		"source": 11
+	},
+	"wall_vent_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 6,
+		"source": 11
+	},
+	"wall_window": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 7,
+		"source": 11
+	},
+	"wall_window_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 8,
+		"source": 11
+	},
+	"window_large": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				1,
+				0
+			]
+		],
+		"scene": 9,
+		"source": 12
+	},
+	"window_large_mirrored": {
+		"blocks_movement": true,
+		"footprint": [
+			[
+				0,
+				0
+			],
+			[
+				0,
+				1
+			]
+		],
+		"scene": 10,
+		"source": 12
+	}
+}

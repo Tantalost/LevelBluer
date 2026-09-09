@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_sdgwg"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_238ss"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3sx4n"]
+atlas = ExtResource("2_238ss")
+region = Rect2(1142, 278, 80, 58)
+filter_clip = true
+
+[node name="DrainRaised" type="Node2D" unique_id=17106994]
+y_sort_enabled = true
+script = ExtResource("1_sdgwg")
+module_id = &"drain_raised"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=766112727]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_3sx4n")
+offset = Vector2(0, -29)

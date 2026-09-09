@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_61dl8"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_bbc66"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_oeixl"]
+atlas = ExtResource("2_bbc66")
+region = Rect2(1506, 976, 192, 176)
+filter_clip = true
+
+[node name="TankHorizontal" type="Node2D" unique_id=741111101]
+y_sort_enabled = true
+script = ExtResource("1_61dl8")
+module_id = &"tank_horizontal"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=84403782]
+texture_filter = 2
+position = Vector2(32, 64)
+texture = SubResource("AtlasTexture_oeixl")
+offset = Vector2(0, -88)
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=1526611251]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@82" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=1375900511]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+
+[node name="@CollisionPolygon2D@83" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=1763870476]
+position = Vector2(64, 32)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

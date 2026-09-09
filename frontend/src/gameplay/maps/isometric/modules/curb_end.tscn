@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_ol6qi"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_4ed02"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dv23c"]
+atlas = ExtResource("2_4ed02")
+region = Rect2(826, 278, 80, 66)
+filter_clip = true
+
+[node name="CurbEnd" type="Node2D" unique_id=922330484]
+y_sort_enabled = true
+script = ExtResource("1_ol6qi")
+module_id = &"curb_end"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1088636036]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_dv23c")
+offset = Vector2(0, -33)

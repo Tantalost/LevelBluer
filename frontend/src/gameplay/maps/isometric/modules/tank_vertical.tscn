@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_p2pbk"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_3oyvv"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aes76"]
+atlas = ExtResource("2_3oyvv")
+region = Rect2(1702, 976, 82, 178)
+filter_clip = true
+
+[node name="TankVertical" type="Node2D" unique_id=1404142321]
+y_sort_enabled = true
+script = ExtResource("1_p2pbk")
+module_id = &"tank_vertical"
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1172929115]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_aes76")
+offset = Vector2(0, -89)
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=739403457]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@84" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=205805398]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

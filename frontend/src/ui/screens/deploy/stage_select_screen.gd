@@ -72,9 +72,9 @@ func _refresh_header() -> void:
 	_title_label.text = "SELECT A MODULE"
 	_player_name.text = "<%s>" % AuthService.display_name().to_upper()
 	var threat: int = AuthService.wallet_threat_points()
-	var mats: int = AuthService.materials()
+	var mats: int = PlayerManager.credits
 	_threat_value.text = str(threat if threat >= 0 else 0)
-	_materials_value.text = str(mats if mats >= 0 else 0)
+	_materials_value.text = str(maxi(0, mats))
 	_tab_fill.color = Palette.GOLD
 	_modules_tab_label.text = "M\nO\nD\nU\nL\nE\nS"
 	_apply_label(_title_label, Palette.TEXT_PRIMARY, 14)

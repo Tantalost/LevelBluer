@@ -12,6 +12,8 @@ enum GamePhase {
 }
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
+const GLOBAL_PATCH_CHANCE: float = 0.4
+const LOSS_CREDIT_PAYOUT: int = 10
 
 @export var enemy_scene: PackedScene
 
@@ -35,6 +37,7 @@ var _is_wave_intermission: bool = false
 
 @onready var _map_mount: Node2D = %MapMount
 var _track: Path2D
+var _map_endpoint_visuals: Node2D
 @onready var _player_base: Area2D = %PlayerBase
 @onready var _phase_label: Label = %PhaseLabel
 @onready var _gold_label: Label = %GoldLabel
@@ -78,7 +81,10 @@ var _tower_placer: TowerPlacer
 @onready var _btn_speed: HudGeoButton = %BtnSpeed
 @onready var _btn_pause: HudGeoButton = %BtnPause
 @onready var _pause_menu: PauseMenu = %PauseMenu
+@onready var _shop_row: HBoxContainer = %ShopRow
 @onready var _tower_card: TowerDeployCard = %TowerCard
+@onready var _scanner_card: TowerDeployCard = %ScannerCard
+@onready var _sandbox_card: TowerDeployCard = %SandboxCard
 @onready var _incident_modal: PanelContainer = %IncidentModal
 @onready var _incident_text: Label = %IncidentText
 @onready var _btn_incident_a: Button = %BtnIncidentA
@@ -103,6 +109,11 @@ var _tex_heart_empty: Texture2D
 var _heart_tween: Tween
 var _tutorial_overlay: TutorialOverlay = null
 var _tutorial_defend_done: bool = false
+var _wave_intel_hidden: bool = false
+var _global_patch_active: bool = false
+var _defeat_started := false
+var _match_kills := 0
+var _defeat_overlay: CanvasLayer
 
 @onready var _camera: Camera2D = %Camera2D
 
@@ -121,10 +132,15 @@ func _ready() -> void:
 	_btn_pause.pressed.connect(toggle_pause)
 	_btn_incident_a.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_a))
 	_btn_incident_b.pressed.connect(_on_incident_button_pressed.bind(_btn_incident_b))
-	_tower_card.pressed.connect(_on_tower_card_pressed)
+	_tower_card.pressed.connect(_on_shop_card_pressed.bind(_tower_card))
+	_scanner_card.pressed.connect(_on_shop_card_pressed.bind(_scanner_card))
+	_sandbox_card.pressed.connect(_on_shop_card_pressed.bind(_sandbox_card))
 	var basic_node_portrait: Texture2D = AssetManager.get_texture("tower_basic_node_base")
 	if basic_node_portrait != null:
 		_tower_card.portrait = basic_node_portrait
+	_configure_shop_card(_tower_card, "base")
+	_configure_shop_card(_scanner_card, "scanner")
+	_configure_shop_card(_sandbox_card, "sandbox")
 	_upgrade_panel.visible = false
 	_end_game_modal.visible = false
 	_quiz_modal.visible = false
@@ -151,7 +167,7 @@ func _ready() -> void:
 	_style_result_buttons()
 	_stats_label.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
 	_load_stage_config()
-	_mount_map()
+	await _mount_map()
 	update_hud()
 	print("[LevelManager] Initializing Level for Stage Index: ", Router.active_stage_index)
 	if Router.is_tutorial:
@@ -252,22 +268,29 @@ func _on_tutorial_build_requested() -> void:
 	if not Router.is_tutorial:
 		return
 	if _tower_placer != null:
-		_tower_placer.tower_cost = 3
 		_tower_placer.move_cost = 1
-		_tower_placer.max_towers = 2
-	current_gold = maxi(current_gold, 7)
-	if _tower_card != null:
-		_tower_card.cost = 3
+	current_gold = maxi(current_gold, 6)
+	_refresh_shop_cards()
 	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.start_build_coach()
 	update_hud()
 	change_phase(GamePhase.PHASE_2_BUILD)
 
 
+func _on_tower_placed(tower: TowerBase) -> void:
+	if _global_patch_active and tower != null and is_instance_valid(tower):
+		tower.apply_global_patch()
+	_refresh_shop_cards()
+	_on_tutorial_tower_placed(tower)
+
+
 func _on_tutorial_tower_placed(_tower: TowerBase) -> void:
 	if not Router.is_tutorial or _tower_placer == null:
 		return
 	var placed: int = _tower_placer.placed_count()
+	if placed == 1:
+		PlayerManager.grant_tutorial_capacity_rank()
+		_refresh_shop_cards()
 	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
 		return
 	if placed < 2:
@@ -289,7 +312,7 @@ func _on_tutorial_defend_requested() -> void:
 func _on_tutorial_upgrades_requested() -> void:
 	if not Router.is_tutorial:
 		return
-	PlayerManager.ensure_tutorial_upgrade_funds()
+	PlayerManager.grant_tutorial_capacity_rank()
 	Router.open_tutorial_upgrades()
 
 
@@ -334,6 +357,9 @@ func _process(delta: float) -> void:
 
 
 func change_phase(new_phase: GamePhase) -> void:
+	# Terminal events can arrive together from a leak, collider, or wave callback.
+	if _defeat_started or current_phase == GamePhase.VICTORY:
+		return
 	if new_phase != GamePhase.PHASE_3_DEFEND:
 		_hide_incident()
 	match new_phase:
@@ -371,6 +397,9 @@ func change_phase(new_phase: GamePhase) -> void:
 			if Router.is_tutorial:
 				_finish_tutorial_defend()
 				return
+			_defeat_started = true
+			current_phase = GamePhase.GAME_OVER
+			_wave_token += 1
 			Engine.time_scale = 1.0
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
@@ -383,11 +412,16 @@ func change_phase(new_phase: GamePhase) -> void:
 				if exam_count > 0:
 					accuracy = float(exam_questions_correct) / float(exam_count)
 				var accuracy_pct: int = int(round(accuracy * 100.0))
-				tip = "Exam score %d%%. Review the missed topics in Codex, then retry." % accuracy_pct
+				tip = "Exam score %d%%. Review the missed topics in Lessons, then retry." % accuracy_pct
 			elif not weak_skill.is_empty():
-				tip = "Critical weakness: %s. Train it in Codex before you deploy again." % weak_skill.capitalize()
+				tip = "Critical weakness: %s. Train it in Lessons before you deploy again." % weak_skill.capitalize()
 			print("[LevelManager] Entering GAME_OVER. Match lost.")
-			Router.open_defeat(tip, weak_skill)
+			_award_loss_credits()
+			if base_health <= 0:
+				_present_base_defeat(tip)
+			else:
+				# A failed exam is not a destroyed base; retain its advisory result.
+				Router.open_defeat(tip, weak_skill, LOSS_CREDIT_PAYOUT)
 		GamePhase.VICTORY:
 			if Router.is_tutorial:
 				_finish_tutorial_defend()
@@ -426,6 +460,47 @@ func change_phase(new_phase: GamePhase) -> void:
 		_wave_token += 1
 
 
+func _award_loss_credits() -> void:
+	PlayerManager.add_credits(LOSS_CREDIT_PAYOUT)
+
+
+func _present_base_defeat(tip: String) -> void:
+	get_tree().paused = false
+	Engine.time_scale = 1.0
+	_pause_menu.hide()
+	if _tower_placer != null:
+		_tower_placer.clear_selection()
+		_tower_placer.set_build_preview(false)
+	# Freeze actors and deployment while the map remains mounted behind results.
+	get_parent().get_node("Environment").process_mode = Node.PROCESS_MODE_DISABLED
+	get_parent().get_node("GameplayCanvas").visible = false
+	_player_base.set_deferred("monitoring", false)
+	if is_instance_valid(_map_endpoint_visuals):
+		_map_endpoint_visuals.call("play_home_destruction")
+	add_camera_shake(20)
+	AudioManager.play_sfx("explosion")
+	_defeat_overlay = preload("res://src/ui/screens/victory/base_defeat_overlay.gd").new()
+	_defeat_overlay.name = "BaseDefeatOverlay"
+	get_parent().add_child(_defeat_overlay)
+	_defeat_overlay.configure({
+		"stage": Router.active_stage_index + 1,
+		"credits": LOSS_CREDIT_PAYOUT,
+		"wave": current_wave_index + 1,
+		"waves": maxi(1, _wave_count()),
+		"kills": _match_kills,
+		"tip": tip,
+	})
+	_defeat_overlay.action_requested.connect(_on_defeat_action)
+
+
+func _on_defeat_action(action: StringName) -> void:
+	match action:
+		&"upgrade": Router.open_defeat_upgrades()
+		&"restart": Router.restart_level()
+		&"lessons": Router.open_lessons()
+		&"back": Router.return_to_stage_select()
+
+
 func update_hud() -> void:
 	_phase_label.text = _phase_display_name()
 	if current_phase == GamePhase.PHASE_1_QUIZ:
@@ -433,16 +508,18 @@ func update_hud() -> void:
 	else:
 		_phase_label.add_theme_color_override("font_color", Palette.TEXT_SECONDARY)
 	_gold_label.text = "GOLD  " + str(current_gold)
+	_refresh_shop_cards()
 	_wave_label.text = str(_wave_kills) + "/" + str(_wave_total_enemies)
 	if Router.is_tutorial:
 		_map_label.text = "TRAINING"
 		return
 	var wave_n: int = current_wave_index + 1
 	var waves: int = maxi(1, _wave_count())
+	var types: String = _wave_intel_text()
 	if str(_current_wave_data().get("enemy_type", "")) == "boss":
-		_map_label.text = "MAP A%d  BOSS" % (Router.active_stage_index + 1)
+		_map_label.text = "MAP A%d  BOSS  %s" % [Router.active_stage_index + 1, types]
 	else:
-		_map_label.text = "MAP A%d  W%d/%d" % [Router.active_stage_index + 1, wave_n, waves]
+		_map_label.text = "MAP A%d  W%d/%d  %s" % [Router.active_stage_index + 1, wave_n, waves, types]
 
 
 func _bind_heart_hud() -> void:
@@ -469,6 +546,14 @@ func _sync_hearts() -> void:
 		icon.texture = _tex_heart_full if base_health > i else _tex_heart_empty
 		icon.scale = Vector2.ONE
 		icon.modulate = Color.WHITE
+	_sync_base_visual()
+
+
+func _sync_base_visual() -> void:
+	if _map_endpoint_visuals == null or not is_instance_valid(_map_endpoint_visuals):
+		return
+	var max_health: int = _heart_icons.size() if not _heart_icons.is_empty() else 5
+	_map_endpoint_visuals.call("set_health", base_health, max_health)
 
 
 func _play_heart_hit() -> void:
@@ -522,6 +607,8 @@ func _load_stage_config() -> void:
 		_asked_question_ids.clear()
 		current_gold = 0
 		_wave_total_enemies = _current_wave_enemy_count()
+		_wave_intel_hidden = false
+		_global_patch_active = false
 		_bkt_frozen = true
 		print("[Stage] Loaded tutorial briefing map")
 		return
@@ -540,7 +627,9 @@ func _load_stage_config() -> void:
 		current_gold = 0
 	else:
 		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
-		current_gold = int(gold_stored)
+		current_gold = _apply_intel_bonus_gold(int(gold_stored))
+	_wave_intel_hidden = false
+	_global_patch_active = false
 	_bkt_frozen = PlayerManager.has_cleared_stage(stage_id)
 	if _bkt_frozen:
 		print("[BKT] Stage ", stage_id, " already cleared. P(L) frozen for this replay.")
@@ -566,19 +655,29 @@ func _mount_map() -> void:
 		stale[i].queue_free()
 	var map_root: Node = packed.instantiate()
 	_map_mount.add_child(map_root)
+	# LevelManager readies before Environment in this scene. Wait for the map
+	# builder before reading its endpoints and presentation flags.
+	if not map_root.is_node_ready():
+		await map_root.ready
+	var fallback_world := get_parent().get_node_or_null("Environment/LevelWorld") as CanvasItem
+	if fallback_world != null:
+		fallback_world.visible = not bool(map_root.get_meta("authored_environment", false))
 	_track = _resolve_track()
 	_tower_placer = _find_tower_placer(map_root)
 	if _tower_placer != null:
 		_tower_placer.bind_level_manager(self)
 		if not _tower_placer.tower_selected.is_connected(_on_tower_selected):
 			_tower_placer.tower_selected.connect(_on_tower_selected)
-		if not _tower_placer.tower_placed.is_connected(_on_tutorial_tower_placed):
-			_tower_placer.tower_placed.connect(_on_tutorial_tower_placed)
+		if not _tower_placer.tower_placed.is_connected(_on_tower_placed):
+			_tower_placer.tower_placed.connect(_on_tower_placed)
 	var builder := map_root as MapBuilder
 	if builder != null:
 		var end_pos: Vector2 = builder.get_end_global_position()
 		if end_pos != Vector2.ZERO:
 			_player_base.global_position = end_pos
+	_player_base.scale = map_root.call("get_gameplay_scale") if map_root.has_method("get_gameplay_scale") else Vector2.ONE
+	_map_endpoint_visuals = map_root.get_node_or_null("MapEndpointVisuals") as Node2D
+	_sync_base_visual()
 
 
 func _resolve_track() -> Path2D:
@@ -1178,6 +1277,12 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	if Router.is_tutorial:
 		_resolve_tutorial_quiz(reward, is_correct)
 		return
+	if is_correct:
+		_wave_intel_hidden = false
+		_try_grant_global_patch()
+	else:
+		_wave_intel_hidden = true
+	update_hud()
 	if not _is_summative():
 		current_gold += reward
 		print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
@@ -1196,7 +1301,7 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	if accuracy >= _exam_required_score():
 		print("[Exam] Passed with accuracy: " + str(accuracy))
 		var gold_stored: Variant = current_stage_config.get("starting_gold", 20)
-		current_gold = int(gold_stored)
+		current_gold = _apply_intel_bonus_gold(int(gold_stored))
 		update_hud()
 		change_phase(GamePhase.PHASE_2_BUILD)
 		return
@@ -1265,7 +1370,8 @@ func _sync_phase_chrome() -> void:
 	var live: bool = building or current_phase == GamePhase.PHASE_3_DEFEND
 	if _tower_placer != null:
 		_tower_placer.set_build_preview(building)
-	_tower_card.visible = building
+	_shop_row.visible = building
+	_refresh_shop_cards()
 	_btn_speed.visible = live and not Router.is_tutorial
 	if Router.is_tutorial:
 		_btn_pause.visible = false
@@ -1421,9 +1527,9 @@ func _on_incident_timeout() -> void:
 		return
 	_incident_modal.visible = false
 	_current_incident_correct_btn = null
-	print("[Incident] Ignored! Auto-failing and spawning penalties.")
+	print("[Incident] Ignored! Auto-failing with System Lag.")
 	_record_bkt("phishing", false)
-	_spawn_penalty_enemies(3, "fast")
+	_apply_system_lag()
 	_check_wave_cleared()
 
 
@@ -1438,24 +1544,54 @@ func _on_incident_button_pressed(btn: Button) -> void:
 		print("[Incident] Correct! Buffing towers.")
 		get_tree().call_group("towers", "apply_incident_buff")
 	else:
-		print("[Incident] Wrong! Spawning penalty enemies.")
-		_spawn_penalty_enemies(3, "fast")
+		print("[Incident] Wrong! Applying System Lag.")
+		_apply_system_lag()
 	_current_incident_correct_btn = null
 	_check_wave_cleared()
 
 
-func _spawn_penalty_enemies(count: int, type_id: String) -> void:
-	if current_phase != GamePhase.PHASE_3_DEFEND or not is_inside_tree():
+func _apply_intel_bonus_gold(base_gold: int) -> int:
+	var module_id: String = PlayerManager.intel_module_for_stage(Router.active_stage_index + 1)
+	return PlayerManager.consume_intel_bonus_gold(base_gold, module_id)
+
+
+func _try_grant_global_patch() -> void:
+	if _global_patch_active:
 		return
-	_is_wave_intermission = false
-	var wave_data: Dictionary = _current_wave_data()
-	var hp_mult: float = float(wave_data.get("health_multiplier", 1.0))
-	var resolved_type: String = type_id if not type_id.is_empty() else "fast"
-	var spawn_count: int = maxi(0, count)
-	_wave_total_enemies += spawn_count
-	update_hud()
-	for i in spawn_count:
-		_spawn_enemy(resolved_type, hp_mult)
+	if randf() > GLOBAL_PATCH_CHANCE:
+		return
+	_global_patch_active = true
+	get_tree().call_group("towers", "apply_global_patch")
+	if _quiz_feedback.visible:
+		_quiz_feedback.text = str(_quiz_feedback.text) + "  GLOBAL PATCH"
+	print("[Patch] Global Patch applied for this match.")
+
+
+func _apply_system_lag() -> void:
+	get_tree().call_group("towers", "apply_incident_lag")
+
+
+func _wave_intel_text() -> String:
+	if _wave_intel_hidden:
+		return "? ? ?"
+	var wave: Dictionary = _current_wave_data()
+	var tokens: PackedStringArray = PackedStringArray()
+	var seen: Dictionary = {}
+	var mix_stored: Variant = wave.get("enemy_mix", [])
+	if typeof(mix_stored) == TYPE_ARRAY:
+		var mix: Array = mix_stored as Array
+		for i in mix.size():
+			var token: String = str(mix[i]).strip_edges().to_upper()
+			if token.is_empty() or seen.has(token):
+				continue
+			seen[token] = true
+			tokens.append(token)
+	if tokens.size() == 0:
+		var enemy_type: String = str(wave.get("enemy_type", "basic")).strip_edges().to_upper()
+		if enemy_type.is_empty():
+			enemy_type = "BASIC"
+		tokens.append(enemy_type)
+	return " ".join(tokens)
 
 
 func _style_quiz_ui() -> void:
@@ -1664,6 +1800,9 @@ func _spawn_wave(token: int) -> void:
 
 
 func _on_enemy_died(bounty_amount: int) -> void:
+	if _defeat_started or current_phase == GamePhase.VICTORY:
+		return
+	_match_kills += 1
 	current_gold += bounty_amount
 	active_enemies = maxi(0, active_enemies - 1)
 	_wave_kills += 1
@@ -1697,6 +1836,8 @@ func _enemy_from_hitbox(area: Area2D) -> EnemyBase:
 
 
 func _apply_base_breach() -> void:
+	if _defeat_started or current_phase == GamePhase.VICTORY or base_health <= 0:
+		return
 	base_health -= 1
 	active_enemies = maxi(0, active_enemies - 1)
 	add_camera_shake(15.0)
@@ -1771,10 +1912,52 @@ func _check_wave_cleared() -> void:
 	change_phase(GamePhase.VICTORY)
 
 
-func _on_tower_card_pressed() -> void:
-	if _tower_placer == null:
+func _on_shop_card_pressed(card: TowerDeployCard) -> void:
+	if _tower_placer == null or card == null:
 		return
-	_tower_placer.begin_place_drag()
+	_tower_placer.begin_place_drag_for(card.tower_id)
+
+
+func _configure_shop_card(card: TowerDeployCard, type_id: String) -> void:
+	if card == null:
+		return
+	card.configure(
+		type_id,
+		TowerBase.display_name_for(type_id).to_upper(),
+		TowerBase.role_for(type_id),
+		TowerBase.cost_for(type_id),
+		card.portrait,
+		TowerBase.accent_for(type_id),
+	)
+
+
+func _refresh_shop_cards() -> void:
+	if _shop_row == null:
+		return
+	var building: bool = current_phase == GamePhase.PHASE_2_BUILD
+	_refresh_one_shop_card(_tower_card, "base", building)
+	_refresh_one_shop_card(_scanner_card, "scanner", building)
+	_refresh_one_shop_card(_sandbox_card, "sandbox", building)
+
+
+func _refresh_one_shop_card(card: TowerDeployCard, type_id: String, building: bool) -> void:
+	if card == null:
+		return
+	var unlocked: bool = PlayerManager.is_tower_unlocked(type_id)
+	if Router.is_tutorial:
+		unlocked = type_id == "base"
+	card.visible = building and unlocked
+	card.cost = TowerBase.cost_for(type_id)
+	var cap_max: int = 0
+	var remaining: int = 0
+	if _tower_placer != null:
+		cap_max = _tower_placer.type_capacity(type_id)
+		remaining = maxi(0, cap_max - _tower_placer.placed_count_of(type_id))
+	card.slots_max = cap_max
+	card.slots_remaining = remaining
+	var at_cap: bool = remaining <= 0
+	card.cap_reached = at_cap
+	card.available = building and unlocked and not at_cap and current_gold >= card.cost
 
 
 func _on_tower_selected(tower_node: TowerBase) -> void:
@@ -1804,26 +1987,13 @@ func _refresh_upgrade_panel() -> void:
 
 func _rebuild_upgrade_buttons(tower_node: TowerBase) -> void:
 	_clear_upgrade_options()
-	_upgrade_options.add_child(_make_power_upgrade_button(tower_node))
-	var paths: Array[String] = TowerBase.paths_for(tower_node.current_type)
-	if paths.is_empty():
+	if tower_node.current_type == "sandbox":
+		var note := Label.new()
+		note.text = "ZONE SLOW  x0.6"
+		_apply_panel_font(note, 10)
+		_upgrade_options.add_child(note)
 		return
-	var path_row := HBoxContainer.new()
-	path_row.add_theme_constant_override("separation", 12)
-	path_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for path_id: String in paths:
-		var btn := Button.new()
-		var is_unlocked: bool = PlayerManager.is_tower_unlocked(path_id)
-		if is_unlocked:
-			btn.text = TowerBase.display_name_for(path_id) + " (" + str(TowerBase.cost_for(path_id)) + "G)"
-		else:
-			btn.disabled = true
-			btn.text = "[LOCKED] " + TowerBase.display_name_for(path_id)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		_apply_panel_font(btn, 10)
-		btn.pressed.connect(_on_upgrade_purchased.bind(tower_node, path_id))
-		path_row.add_child(btn)
-	_upgrade_options.add_child(path_row)
+	_upgrade_options.add_child(_make_power_upgrade_button(tower_node))
 
 
 func _make_power_upgrade_button(tower_node: TowerBase) -> Button:
@@ -1883,24 +2053,6 @@ func _clear_upgrade_options() -> void:
 			continue
 		_upgrade_options.remove_child(child)
 		child.queue_free()
-
-
-func _on_upgrade_purchased(tower_node: TowerBase, target_type: String) -> void:
-	if tower_node == null or not is_instance_valid(tower_node):
-		_hide_upgrade_ui()
-		return
-	if not PlayerManager.is_tower_unlocked(target_type):
-		print("[Upgrade] Locked. Unlock this node in the skill tree first: " + target_type)
-		return
-	var cost: int = TowerBase.cost_for(target_type)
-	if current_gold < cost:
-		print("[Economy] Insufficient gold. Need: " + str(cost))
-		return
-	current_gold -= cost
-	tower_node.apply_stats(target_type)
-	print("[Economy] Upgraded to " + TowerBase.display_name_for(target_type) + ". Remaining Gold: " + str(current_gold))
-	update_hud()
-	_on_tower_selected(tower_node)
 
 
 func _on_upgrade_close_pressed() -> void:

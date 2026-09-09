@@ -839,9 +839,12 @@ func _finish_lesson() -> void:
 		_busy = true
 		if PlayerManager.get_lesson_progress(_module_id) == 0:
 			PlayerManager.complete_lesson_unit(_module_id, _lessons.size(), LessonCatalog.module_ids())
+		else:
+			PlayerManager.grant_intel_bonus(_module_id)
 		_show_tutorial_lesson_done()
 		return
 	if _review_mode:
+		PlayerManager.grant_intel_bonus(_module_id)
 		Router.request_back()
 		return
 	if _busy:

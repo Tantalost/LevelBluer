@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_6aart"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_ixdje"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_v40u7"]
+atlas = ExtResource("2_ixdje")
+region = Rect2(1542, 1585, 192, 112)
+filter_clip = true
+
+[node name="CableStraightMirrored" type="Node2D" unique_id=1155817960]
+y_sort_enabled = true
+script = ExtResource("1_6aart")
+module_id = &"cable_straight_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=897007497]
+texture_filter = 2
+position = Vector2(-32, 64)
+texture = SubResource("AtlasTexture_v40u7")
+offset = Vector2(0, -56)
+flip_h = true

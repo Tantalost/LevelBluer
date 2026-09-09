@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_jiilx"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_opg51"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lcnyh"]
+atlas = ExtResource("2_opg51")
+region = Rect2(2, 278, 144, 102)
+filter_clip = true
+
+[node name="CurbLongMirrored" type="Node2D" unique_id=791521521]
+y_sort_enabled = true
+script = ExtResource("1_jiilx")
+module_id = &"curb_long_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=538076434]
+texture_filter = 2
+position = Vector2(-32, 64)
+texture = SubResource("AtlasTexture_lcnyh")
+offset = Vector2(0, -51)
+flip_h = true

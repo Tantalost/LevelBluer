@@ -277,7 +277,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.0627451, 0.08627451, 0.13725491, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 8
-text = "MATS"
+text = "CREDITS"
 vertical_alignment = 1
 
 [node name="MaterialsBox" type="Control" parent="HeaderBand/HeaderLayer/HeaderInner/TopBar" unique_id=182662044]

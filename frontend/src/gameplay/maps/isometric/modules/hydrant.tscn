@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_m7mls"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_wa72x"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ij5j6"]
+atlas = ExtResource("2_wa72x")
+region = Rect2(844, 1862, 51, 106)
+filter_clip = true
+
+[node name="Hydrant" type="Node2D" unique_id=1204334906]
+y_sort_enabled = true
+script = ExtResource("1_m7mls")
+module_id = &"hydrant"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=116476652]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_ij5j6")
+offset = Vector2(0, -53)

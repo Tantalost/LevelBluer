@@ -1,0 +1,3411 @@
+{
+	"atlas_size": [
+		2048,
+		2048
+	],
+	"floors": [
+		{
+			"coords": [
+				0,
+				0
+			],
+			"id": "concrete",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				1,
+				0
+			],
+			"id": "concrete_alt",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				2,
+				0
+			],
+			"id": "cracked",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				3,
+				0
+			],
+			"id": "oil_stained",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				4,
+				0
+			],
+			"id": "worn",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				5,
+				0
+			],
+			"id": "metal",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				6,
+				0
+			],
+			"id": "grate",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				7,
+				0
+			],
+			"id": "hazard",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				8,
+				0
+			],
+			"id": "access_cover",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				9,
+				0
+			],
+			"id": "technical",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				10,
+				0
+			],
+			"id": "concrete_rotated",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				11,
+				0
+			],
+			"id": "concrete_alt_rotated",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				0,
+				1
+			],
+			"id": "cracked_rotated",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				1,
+				1
+			],
+			"id": "oil_stained_rotated",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				2,
+				1
+			],
+			"id": "worn_rotated",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				3,
+				1
+			],
+			"id": "metal_rotated",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				4,
+				1
+			],
+			"id": "concrete_metal_e",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				5,
+				1
+			],
+			"id": "concrete_metal_s",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				6,
+				1
+			],
+			"id": "concrete_metal_w",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				7,
+				1
+			],
+			"id": "concrete_metal_n",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				8,
+				1
+			],
+			"id": "concrete_grate_e",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				9,
+				1
+			],
+			"id": "concrete_grate_s",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				10,
+				1
+			],
+			"id": "concrete_grate_w",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				11,
+				1
+			],
+			"id": "concrete_grate_n",
+			"kind": "ground"
+		},
+		{
+			"coords": [
+				0,
+				2
+			],
+			"id": "edge_mask_01",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				1,
+				2
+			],
+			"id": "edge_mask_02",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				2,
+				2
+			],
+			"id": "edge_mask_03",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				3,
+				2
+			],
+			"id": "edge_mask_04",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				4,
+				2
+			],
+			"id": "edge_mask_05",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				5,
+				2
+			],
+			"id": "edge_mask_06",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				6,
+				2
+			],
+			"id": "edge_mask_07",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				7,
+				2
+			],
+			"id": "edge_mask_08",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				8,
+				2
+			],
+			"id": "edge_mask_09",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				9,
+				2
+			],
+			"id": "edge_mask_10",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				10,
+				2
+			],
+			"id": "edge_mask_11",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				11,
+				2
+			],
+			"id": "edge_mask_12",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				0,
+				3
+			],
+			"id": "edge_mask_13",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				1,
+				3
+			],
+			"id": "edge_mask_14",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				2,
+				3
+			],
+			"id": "edge_mask_15",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				3,
+				3
+			],
+			"id": "inner_corner_0",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				4,
+				3
+			],
+			"id": "inner_corner_1",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				5,
+				3
+			],
+			"id": "inner_corner_2",
+			"kind": "overlay"
+		},
+		{
+			"coords": [
+				6,
+				3
+			],
+			"id": "inner_corner_3",
+			"kind": "overlay"
+		}
+	],
+	"props": [
+		{
+			"atlas_rect": [
+				2,
+				278,
+				144,
+				102
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "curb_long",
+			"mirror": true,
+			"rect": [
+				12.0,
+				150.0,
+				95.0,
+				84.0
+			],
+			"source_trim": [
+				8,
+				11,
+				85,
+				60
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				150,
+				278,
+				144,
+				107
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "curb_medium",
+			"mirror": true,
+			"rect": [
+				111.0,
+				150.0,
+				88.0,
+				84.0
+			],
+			"source_trim": [
+				0,
+				9,
+				85,
+				63
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				298,
+				278,
+				80,
+				68
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "curb_short",
+			"mirror": false,
+			"rect": [
+				211.0,
+				150.0,
+				61.0,
+				84.0
+			],
+			"source_trim": [
+				0,
+				17,
+				60,
+				51
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				382,
+				278,
+				144,
+				74
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "curb_outer",
+			"mirror": false,
+			"rect": [
+				286.0,
+				150.0,
+				107.0,
+				84.0
+			],
+			"source_trim": [
+				5,
+				16,
+				99,
+				51
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				530,
+				278,
+				144,
+				77
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "curb_inner",
+			"mirror": false,
+			"rect": [
+				403.0,
+				150.0,
+				106.0,
+				84.0
+			],
+			"source_trim": [
+				5,
+				13,
+				99,
+				53
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				678,
+				278,
+				144,
+				66
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "curb_join",
+			"mirror": false,
+			"rect": [
+				519.0,
+				150.0,
+				101.0,
+				84.0
+			],
+			"source_trim": [
+				9,
+				13,
+				90,
+				41
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				826,
+				278,
+				80,
+				66
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "curb_end",
+			"mirror": false,
+			"rect": [
+				624.0,
+				150.0,
+				61.0,
+				84.0
+			],
+			"source_trim": [
+				5,
+				15,
+				53,
+				44
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				910,
+				278,
+				80,
+				74
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "curb_cap",
+			"mirror": false,
+			"rect": [
+				690.0,
+				150.0,
+				48.0,
+				84.0
+			],
+			"source_trim": [
+				5,
+				14,
+				38,
+				35
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				994,
+				278,
+				144,
+				77
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "curb_corner",
+			"mirror": false,
+			"rect": [
+				744.0,
+				150.0,
+				89.0,
+				84.0
+			],
+			"source_trim": [
+				3,
+				11,
+				82,
+				44
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1142,
+				278,
+				80,
+				58
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "drain_raised",
+			"mirror": false,
+			"rect": [
+				843.0,
+				150.0,
+				102.0,
+				84.0
+			],
+			"source_trim": [
+				0,
+				5,
+				99,
+				72
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1226,
+				278,
+				80,
+				101
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "low_panel",
+			"mirror": false,
+			"rect": [
+				959.0,
+				150.0,
+				63.0,
+				84.0
+			],
+			"source_trim": [
+				0,
+				13,
+				49,
+				62
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1310,
+				278,
+				80,
+				110
+			],
+			"blocks_movement": false,
+			"category": "edges",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "low_panel_return",
+			"mirror": false,
+			"rect": [
+				1023.0,
+				150.0,
+				60.0,
+				84.0
+			],
+			"source_trim": [
+				0,
+				11,
+				45,
+				62
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1394,
+				278,
+				80,
+				183
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "wall_short",
+			"mirror": false,
+			"rect": [
+				12.0,
+				235.0,
+				74.0,
+				166.0
+			],
+			"source_trim": [
+				9,
+				12,
+				59,
+				135
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1478,
+				278,
+				144,
+				192
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "wall_long",
+			"mirror": true,
+			"rect": [
+				91.0,
+				235.0,
+				129.0,
+				166.0
+			],
+			"source_trim": [
+				8,
+				11,
+				116,
+				155
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1626,
+				278,
+				80,
+				139
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "wall_pipe",
+			"mirror": false,
+			"rect": [
+				238.0,
+				235.0,
+				93.0,
+				166.0
+			],
+			"source_trim": [
+				0,
+				18,
+				83,
+				144
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1710,
+				278,
+				144,
+				206
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "wall_vent",
+			"mirror": true,
+			"rect": [
+				337.0,
+				235.0,
+				117.0,
+				166.0
+			],
+			"source_trim": [
+				7,
+				16,
+				105,
+				150
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1858,
+				278,
+				144,
+				217
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "wall_window",
+			"mirror": true,
+			"rect": [
+				464.0,
+				235.0,
+				119.0,
+				166.0
+			],
+			"source_trim": [
+				6,
+				9,
+				104,
+				157
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				2,
+				499,
+				144,
+				211
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "wall_outer_corner",
+			"mirror": false,
+			"rect": [
+				589.0,
+				235.0,
+				114.0,
+				166.0
+			],
+			"source_trim": [
+				12,
+				11,
+				94,
+				138
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				150,
+				499,
+				144,
+				195
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "wall_inner_corner",
+			"mirror": false,
+			"rect": [
+				709.0,
+				235.0,
+				114.0,
+				166.0
+			],
+			"source_trim": [
+				6,
+				12,
+				102,
+				138
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				298,
+				499,
+				144,
+				203
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "wall_t_junction",
+			"mirror": false,
+			"rect": [
+				834.0,
+				235.0,
+				119.0,
+				166.0
+			],
+			"source_trim": [
+				4,
+				13,
+				103,
+				145
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				446,
+				499,
+				45,
+				147
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "wall_end",
+			"mirror": false,
+			"rect": [
+				962.0,
+				235.0,
+				47.0,
+				166.0
+			],
+			"source_trim": [
+				6,
+				37,
+				35,
+				114
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				495,
+				499,
+				41,
+				154
+			],
+			"blocks_movement": true,
+			"category": "walls",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "wall_post",
+			"mirror": false,
+			"rect": [
+				1024.0,
+				235.0,
+				43.0,
+				166.0
+			],
+			"source_trim": [
+				5,
+				24,
+				32,
+				120
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				540,
+				499,
+				144,
+				189
+			],
+			"blocks_movement": true,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "door_double",
+			"mirror": true,
+			"rect": [
+				14.0,
+				400.0,
+				141.0,
+				169.0
+			],
+			"source_trim": [
+				10,
+				4,
+				122,
+				160
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				688,
+				499,
+				144,
+				227
+			],
+			"blocks_movement": false,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "door_frame",
+			"mirror": true,
+			"rect": [
+				163.0,
+				400.0,
+				110.0,
+				169.0
+			],
+			"source_trim": [
+				4,
+				4,
+				97,
+				153
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				836,
+				499,
+				80,
+				139
+			],
+			"blocks_movement": true,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "door_service_lit",
+			"mirror": false,
+			"rect": [
+				301.0,
+				400.0,
+				92.0,
+				169.0
+			],
+			"source_trim": [
+				5,
+				4,
+				82,
+				142
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				920,
+				499,
+				80,
+				155
+			],
+			"blocks_movement": true,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "door_service",
+			"mirror": false,
+			"rect": [
+				408.0,
+				400.0,
+				81.0,
+				169.0
+			],
+			"source_trim": [
+				6,
+				15,
+				71,
+				138
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1004,
+				499,
+				144,
+				226
+			],
+			"blocks_movement": true,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "door_shutter",
+			"mirror": true,
+			"rect": [
+				498.0,
+				400.0,
+				109.0,
+				169.0
+			],
+			"source_trim": [
+				11,
+				4,
+				97,
+				152
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1152,
+				499,
+				144,
+				205
+			],
+			"blocks_movement": true,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "window_large",
+			"mirror": true,
+			"rect": [
+				625.0,
+				400.0,
+				126.0,
+				169.0
+			],
+			"source_trim": [
+				6,
+				0,
+				111,
+				158
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1300,
+				499,
+				144,
+				188
+			],
+			"blocks_movement": false,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "door_open",
+			"mirror": true,
+			"rect": [
+				754.0,
+				400.0,
+				141.0,
+				169.0
+			],
+			"source_trim": [
+				11,
+				0,
+				120,
+				157
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1448,
+				499,
+				208,
+				240
+			],
+			"blocks_movement": false,
+			"category": "doors",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					2.0,
+					0.0
+				]
+			],
+			"ground_front": 96,
+			"id": "door_open_wide",
+			"mirror": true,
+			"rect": [
+				906.0,
+				400.0,
+				159.0,
+				169.0
+			],
+			"source_trim": [
+				10,
+				0,
+				141,
+				163
+			],
+			"visual_center_x": 64
+		},
+		{
+			"atlas_rect": [
+				1660,
+				499,
+				256,
+				202
+			],
+			"blocks_movement": false,
+			"category": "platforms",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "platform_concrete",
+			"mirror": false,
+			"rect": [
+				6.0,
+				563.0,
+				208.0,
+				161.0
+			],
+			"source_trim": [
+				9,
+				6,
+				193,
+				152
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				2,
+				743,
+				256,
+				229
+			],
+			"blocks_movement": false,
+			"category": "platforms",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "platform_corner",
+			"mirror": false,
+			"rect": [
+				216.0,
+				563.0,
+				176.0,
+				161.0
+			],
+			"source_trim": [
+				1,
+				5,
+				173,
+				155
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				262,
+				743,
+				192,
+				221
+			],
+			"blocks_movement": false,
+			"category": "platforms",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "stairs",
+			"mirror": true,
+			"rect": [
+				392.0,
+				563.0,
+				123.0,
+				161.0
+			],
+			"source_trim": [
+				9,
+				19,
+				111,
+				128
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				458,
+				743,
+				320,
+				205
+			],
+			"blocks_movement": false,
+			"category": "platforms",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					2.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				],
+				[
+					2.0,
+					1.0
+				]
+			],
+			"ground_front": 128,
+			"id": "platform_rounded",
+			"mirror": true,
+			"rect": [
+				524.0,
+				563.0,
+				226.0,
+				161.0
+			],
+			"source_trim": [
+				7,
+				23,
+				214,
+				137
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				782,
+				743,
+				192,
+				164
+			],
+			"blocks_movement": false,
+			"category": "platforms",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "platform_metal",
+			"mirror": true,
+			"rect": [
+				748.0,
+				563.0,
+				153.0,
+				161.0
+			],
+			"source_trim": [
+				6,
+				12,
+				143,
+				122
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				978,
+				743,
+				192,
+				185
+			],
+			"blocks_movement": false,
+			"category": "platforms",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "ramp",
+			"mirror": true,
+			"rect": [
+				902.0,
+				563.0,
+				176.0,
+				161.0
+			],
+			"source_trim": [
+				6,
+				6,
+				157,
+				151
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1174,
+				743,
+				128,
+				106
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "fan_small",
+			"mirror": false,
+			"rect": [
+				3.0,
+				720.0,
+				121.0,
+				144.0
+			],
+			"source_trim": [
+				8,
+				44,
+				109,
+				90
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1306,
+				743,
+				128,
+				107
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "fan_worn",
+			"mirror": false,
+			"rect": [
+				125.0,
+				720.0,
+				122.0,
+				144.0
+			],
+			"source_trim": [
+				7,
+				43,
+				110,
+				92
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1438,
+				743,
+				256,
+				185
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "fan_array",
+			"mirror": false,
+			"rect": [
+				249.0,
+				720.0,
+				211.0,
+				144.0
+			],
+			"source_trim": [
+				5,
+				0,
+				199,
+				144
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1698,
+				743,
+				192,
+				158
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "vent_large",
+			"mirror": true,
+			"rect": [
+				459.0,
+				720.0,
+				137.0,
+				144.0
+			],
+			"source_trim": [
+				5,
+				26,
+				125,
+				103
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				2,
+				976,
+				192,
+				180
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "air_conditioner",
+			"mirror": true,
+			"rect": [
+				599.0,
+				720.0,
+				128.0,
+				144.0
+			],
+			"source_trim": [
+				7,
+				36,
+				113,
+				106
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				198,
+				976,
+				128,
+				171
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "vent_box",
+			"mirror": false,
+			"rect": [
+				732.0,
+				720.0,
+				79.0,
+				144.0
+			],
+			"source_trim": [
+				9,
+				45,
+				62,
+				83
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				330,
+				976,
+				192,
+				180
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "hvac_duct",
+			"mirror": true,
+			"rect": [
+				808.0,
+				720.0,
+				136.0,
+				144.0
+			],
+			"source_trim": [
+				14,
+				24,
+				114,
+				107
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				526,
+				976,
+				256,
+				288
+			],
+			"blocks_movement": true,
+			"category": "ventilation",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "hvac_rooftop",
+			"mirror": false,
+			"rect": [
+				955.0,
+				720.0,
+				124.0,
+				144.0
+			],
+			"source_trim": [
+				7,
+				15,
+				112,
+				126
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				786,
+				976,
+				192,
+				211
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "generator",
+			"mirror": false,
+			"rect": [
+				4.0,
+				865.0,
+				159.0,
+				175.0
+			],
+			"source_trim": [
+				12,
+				24,
+				133,
+				146
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				982,
+				976,
+				128,
+				208
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "electrical_cabinet",
+			"mirror": false,
+			"rect": [
+				162.0,
+				865.0,
+				98.0,
+				175.0
+			],
+			"source_trim": [
+				10,
+				30,
+				77,
+				125
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1114,
+				976,
+				128,
+				226
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "electrical_cabinet_tall",
+			"mirror": false,
+			"rect": [
+				266.0,
+				865.0,
+				97.0,
+				175.0
+			],
+			"source_trim": [
+				13,
+				23,
+				78,
+				138
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1246,
+				976,
+				256,
+				284
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "industrial_machine",
+			"mirror": false,
+			"rect": [
+				374.0,
+				865.0,
+				167.0,
+				175.0
+			],
+			"source_trim": [
+				10,
+				11,
+				147,
+				163
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1506,
+				976,
+				192,
+				176
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "tank_horizontal",
+			"mirror": false,
+			"rect": [
+				546.0,
+				865.0,
+				158.0,
+				175.0
+			],
+			"source_trim": [
+				11,
+				43,
+				140,
+				128
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1702,
+				976,
+				82,
+				178
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "tank_vertical",
+			"mirror": false,
+			"rect": [
+				716.0,
+				865.0,
+				87.0,
+				175.0
+			],
+			"source_trim": [
+				14,
+				21,
+				64,
+				139
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1788,
+				976,
+				128,
+				179
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "utility_box",
+			"mirror": false,
+			"rect": [
+				817.0,
+				865.0,
+				101.0,
+				175.0
+			],
+			"source_trim": [
+				12,
+				44,
+				80,
+				112
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				2,
+				1268,
+				256,
+				313
+			],
+			"blocks_movement": true,
+			"category": "machinery",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "transformer",
+			"mirror": false,
+			"rect": [
+				927.0,
+				865.0,
+				153.0,
+				175.0
+			],
+			"source_trim": [
+				14,
+				5,
+				130,
+				159
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				262,
+				1268,
+				192,
+				163
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "barrier_long",
+			"mirror": true,
+			"rect": [
+				6.0,
+				1039.0,
+				132.0,
+				125.0
+			],
+			"source_trim": [
+				9,
+				24,
+				112,
+				95
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				458,
+				1268,
+				128,
+				119
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "barrier_short",
+			"mirror": false,
+			"rect": [
+				141.0,
+				1039.0,
+				98.0,
+				125.0
+			],
+			"source_trim": [
+				0,
+				26,
+				89,
+				83
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				590,
+				1268,
+				128,
+				114
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "barrier_broken",
+			"mirror": false,
+			"rect": [
+				238.0,
+				1039.0,
+				99.0,
+				125.0
+			],
+			"source_trim": [
+				0,
+				25,
+				90,
+				80
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				722,
+				1268,
+				144,
+				155
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "railing_short",
+			"mirror": true,
+			"rect": [
+				338.0,
+				1039.0,
+				88.0,
+				125.0
+			],
+			"source_trim": [
+				0,
+				20,
+				82,
+				88
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				870,
+				1268,
+				128,
+				147
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "crate_wood",
+			"mirror": false,
+			"rect": [
+				423.0,
+				1039.0,
+				86.0,
+				125.0
+			],
+			"source_trim": [
+				5,
+				29,
+				69,
+				79
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1002,
+				1268,
+				128,
+				149
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "crate_metal",
+			"mirror": false,
+			"rect": [
+				508.0,
+				1039.0,
+				89.0,
+				125.0
+			],
+			"source_trim": [
+				3,
+				20,
+				73,
+				85
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1134,
+				1268,
+				256,
+				225
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					2.0,
+					0.0
+				]
+			],
+			"ground_front": 96,
+			"id": "container",
+			"mirror": true,
+			"rect": [
+				594.0,
+				1039.0,
+				149.0,
+				125.0
+			],
+			"source_trim": [
+				7,
+				0,
+				133,
+				117
+			],
+			"visual_center_x": 64
+		},
+		{
+			"atlas_rect": [
+				1394,
+				1268,
+				144,
+				119
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "railing_long",
+			"mirror": true,
+			"rect": [
+				741.0,
+				1039.0,
+				84.0,
+				125.0
+			],
+			"source_trim": [
+				0,
+				35,
+				76,
+				63
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1542,
+				1268,
+				144,
+				131
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "railing_corner",
+			"mirror": false,
+			"rect": [
+				825.0,
+				1039.0,
+				80.0,
+				125.0
+			],
+			"source_trim": [
+				2,
+				38,
+				78,
+				71
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1690,
+				1268,
+				144,
+				186
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "fence_long",
+			"mirror": true,
+			"rect": [
+				894.0,
+				1039.0,
+				126.0,
+				125.0
+			],
+			"source_trim": [
+				20,
+				0,
+				96,
+				124
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1838,
+				1268,
+				80,
+				164
+			],
+			"blocks_movement": true,
+			"category": "cover",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "fence_short",
+			"mirror": false,
+			"rect": [
+				1013.0,
+				1039.0,
+				68.0,
+				125.0
+			],
+			"source_trim": [
+				0,
+				10,
+				56,
+				115
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				2,
+				1585,
+				192,
+				146
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "pipe_straight",
+			"mirror": true,
+			"rect": [
+				5.0,
+				1160.0,
+				111.0,
+				138.0
+			],
+			"source_trim": [
+				7,
+				31,
+				95,
+				72
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				198,
+				1585,
+				256,
+				142
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "pipe_elbow",
+			"mirror": false,
+			"rect": [
+				113.0,
+				1160.0,
+				112.0,
+				138.0
+			],
+			"source_trim": [
+				1,
+				34,
+				108,
+				60
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				458,
+				1585,
+				256,
+				256
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "pipe_tee",
+			"mirror": false,
+			"rect": [
+				216.0,
+				1160.0,
+				94.0,
+				138.0
+			],
+			"source_trim": [
+				4,
+				28,
+				90,
+				90
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				718,
+				1585,
+				256,
+				205
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "pipe_cross",
+			"mirror": false,
+			"rect": [
+				309.0,
+				1160.0,
+				125.0,
+				138.0
+			],
+			"source_trim": [
+				3,
+				23,
+				121,
+				97
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				978,
+				1585,
+				36,
+				147
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "pipe_riser",
+			"mirror": false,
+			"rect": [
+				452.0,
+				1160.0,
+				51.0,
+				138.0
+			],
+			"source_trim": [
+				11,
+				15,
+				28,
+				114
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1018,
+				1585,
+				192,
+				222
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "pipe_cluster",
+			"mirror": true,
+			"rect": [
+				509.0,
+				1160.0,
+				113.0,
+				138.0
+			],
+			"source_trim": [
+				9,
+				21,
+				95,
+				110
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1214,
+				1585,
+				192,
+				171
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "pipe_valve",
+			"mirror": true,
+			"rect": [
+				610.0,
+				1160.0,
+				100.0,
+				138.0
+			],
+			"source_trim": [
+				4,
+				34,
+				90,
+				80
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1410,
+				1585,
+				128,
+				122
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "utility_pole",
+			"mirror": false,
+			"rect": [
+				709.0,
+				1160.0,
+				144.0,
+				138.0
+			],
+			"source_trim": [
+				13,
+				6,
+				131,
+				125
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				1542,
+				1585,
+				192,
+				112
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "cable_straight",
+			"mirror": true,
+			"rect": [
+				848.0,
+				1160.0,
+				133.0,
+				138.0
+			],
+			"source_trim": [
+				9,
+				52,
+				117,
+				68
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				1738,
+				1585,
+				256,
+				273
+			],
+			"blocks_movement": false,
+			"category": "pipes",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				],
+				[
+					0.0,
+					1.0
+				],
+				[
+					1.0,
+					1.0
+				]
+			],
+			"ground_front": 96,
+			"id": "cable_bend",
+			"mirror": false,
+			"rect": [
+				978.0,
+				1160.0,
+				100.0,
+				138.0
+			],
+			"source_trim": [
+				3,
+				29,
+				89,
+				95
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				2,
+				1862,
+				82,
+				74
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "tire",
+			"mirror": false,
+			"rect": [
+				6.0,
+				1296.0,
+				79.0,
+				152.0
+			],
+			"source_trim": [
+				12,
+				36,
+				63,
+				57
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				88,
+				1862,
+				82,
+				85
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "tires_stacked",
+			"mirror": false,
+			"rect": [
+				84.0,
+				1296.0,
+				87.0,
+				152.0
+			],
+			"source_trim": [
+				9,
+				29,
+				71,
+				74
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				174,
+				1862,
+				82,
+				68
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "loose_grate",
+			"mirror": false,
+			"rect": [
+				170.0,
+				1296.0,
+				96.0,
+				152.0
+			],
+			"source_trim": [
+				8,
+				32,
+				85,
+				70
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				260,
+				1862,
+				82,
+				82
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "trash_bags",
+			"mirror": false,
+			"rect": [
+				266.0,
+				1296.0,
+				101.0,
+				152.0
+			],
+			"source_trim": [
+				7,
+				22,
+				85,
+				85
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				346,
+				1862,
+				82,
+				71
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "rubble",
+			"mirror": false,
+			"rect": [
+				362.0,
+				1296.0,
+				93.0,
+				152.0
+			],
+			"source_trim": [
+				8,
+				40,
+				66,
+				57
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				432,
+				1862,
+				82,
+				69
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "concrete_chips",
+			"mirror": false,
+			"rect": [
+				452.0,
+				1296.0,
+				71.0,
+				152.0
+			],
+			"source_trim": [
+				0,
+				43,
+				64,
+				54
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				518,
+				1862,
+				82,
+				64
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "scrap_metal",
+			"mirror": false,
+			"rect": [
+				520.0,
+				1296.0,
+				87.0,
+				152.0
+			],
+			"source_trim": [
+				7,
+				39,
+				80,
+				62
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				604,
+				1862,
+				150,
+				172
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "dumpster",
+			"mirror": false,
+			"rect": [
+				607.0,
+				1296.0,
+				110.0,
+				152.0
+			],
+			"source_trim": [
+				8,
+				8,
+				94,
+				108
+			],
+			"visual_center_x": 32
+		},
+		{
+			"atlas_rect": [
+				758,
+				1862,
+				82,
+				152
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "street_lamp",
+			"mirror": false,
+			"rect": [
+				720.0,
+				1296.0,
+				88.0,
+				152.0
+			],
+			"source_trim": [
+				3,
+				2,
+				69,
+				128
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				844,
+				1862,
+				51,
+				106
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "hydrant",
+			"mirror": false,
+			"rect": [
+				812.0,
+				1296.0,
+				63.0,
+				152.0
+			],
+			"source_trim": [
+				10,
+				22,
+				40,
+				83
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				899,
+				1862,
+				46,
+				102
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				]
+			],
+			"ground_front": 32,
+			"id": "light_bollard",
+			"mirror": false,
+			"rect": [
+				879.0,
+				1296.0,
+				56.0,
+				152.0
+			],
+			"source_trim": [
+				14,
+				27,
+				36,
+				80
+			],
+			"visual_center_x": 0
+		},
+		{
+			"atlas_rect": [
+				949,
+				1862,
+				150,
+				106
+			],
+			"blocks_movement": false,
+			"category": "decoration",
+			"footprint": [
+				[
+					0.0,
+					0.0
+				],
+				[
+					1.0,
+					0.0
+				]
+			],
+			"ground_front": 64,
+			"id": "neon_fixture",
+			"mirror": false,
+			"rect": [
+				933.0,
+				1296.0,
+				142.0,
+				152.0
+			],
+			"source_trim": [
+				28,
+				33,
+				103,
+				73
+			],
+			"visual_center_x": 32
+		}
+	],
+	"texture": "res://assets/gameplay/isometric/industrial_atlas.png",
+	"tile_size": [
+		128,
+		64
+	]
+}

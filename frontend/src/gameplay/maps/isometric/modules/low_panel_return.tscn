@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_gt4w4"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_tlu0c"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nh5q4"]
+atlas = ExtResource("2_tlu0c")
+region = Rect2(1310, 278, 80, 110)
+filter_clip = true
+
+[node name="LowPanelReturn" type="Node2D" unique_id=579148654]
+y_sort_enabled = true
+script = ExtResource("1_gt4w4")
+module_id = &"low_panel_return"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=983629002]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_nh5q4")
+offset = Vector2(0, -55)

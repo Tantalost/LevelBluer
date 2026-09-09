@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_rc8rl"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_hx7w8"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y78f5"]
+atlas = ExtResource("2_hx7w8")
+region = Rect2(978, 743, 192, 185)
+filter_clip = true
+
+[node name="Ramp" type="Node2D" unique_id=1866111640]
+y_sort_enabled = true
+script = ExtResource("1_rc8rl")
+module_id = &"ramp"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=598025162]
+texture_filter = 2
+position = Vector2(32, 64)
+texture = SubResource("AtlasTexture_y78f5")
+offset = Vector2(0, -92.5)

@@ -46,7 +46,7 @@ QUIT_CONFIRM_BODY,Quit Level Blue? Your progress this session is saved.,I-quit a
 DASH_RANK,ELITE I,ELITE I
 DASH_EXP,1450 / 2000 EXP,1450 / 2000 EXP
 DASH_THREAT_POINTS,Threat Points,Threat Points
-DASH_MATERIALS,Upgrade Materials,Upgrade Materials
+DASH_MATERIALS,Credits,Credits
 DASH_STORE,Store,Store
 DASH_INTEL,Intel,Intel
 DASH_PROGRESS,Progress,Progress
@@ -90,15 +90,15 @@ TUTORIAL_Q1_RETRY,That's the trap. Pick the safe call.,Bitag iyon. Piliin ang li
 TUTORIAL_Q2_FORCE_MISS,Miss this one. Extra packets join the wave.,Palampasin ito. Dadagdag ang packet sa wave.
 TUTORIAL_QUIZ_DONE,That's quiz. Gold for hits. Extra packets for misses. Next we build.,Iyan ang quiz. Tama = ginto. Mali = dagdag na packet. Build ang susunod.
 TUTORIAL_CHOICE_BUILD,START BUILD,SIMULAN ANG BUILD
-TUTORIAL_BUILD_GO,Drag NODE onto a pad. Two towers. 3G each. Move costs 1G.,I-drag ang NODE sa pad. Dalawang tower. 3G bawat isa. Lipat = 1G.
-TUTORIAL_BUILD_ONE,One down. Place the second firewall.,Isa na. Ilagay ang pangalawang firewall.
+TUTORIAL_BUILD_GO,Drag NODE onto a pad. Cap 2/2. 2G each. Move costs 1G.,I-drag ang NODE sa pad. Cap 2/2. 2G bawat isa. Lipat = 1G.
+TUTORIAL_BUILD_ONE,Capacity rank 1 is live. Place the second node.,Live na ang Capacity rank 1. Ilagay ang pangalawang node.
 TUTORIAL_BUILD_DONE,Two up. Tap a tower then a pad to move it for 1G. Defend comes next.,Dalawa na. I-tap ang tower tapos ang pad para ilipat (1G). Defend ang susunod.
 TUTORIAL_CHOICE_DEFEND,START DEFEND,SIMULAN ANG DEFEND
 TUTORIAL_DEFEND_DONE,That's defend. Empty hearts fail a live stage. Training still moves on.,Iyan ang defend. Ubos na hearts = talo sa totoong stage. Dito, tuloy pa rin.
-TUTORIAL_RESULTS,Take 200 materials. Buy Basic Firewall. It stays unlocked for Module 1.,Kumuha ng 200 materials. Bilhin ang Basic Firewall. Permanenteng unlock iyon.
+TUTORIAL_RESULTS,Capacity Rank 1 is yours. Open Upgrades to see the four Basic Node tracks.,Sa iyo na ang Capacity Rank 1. Buksan ang Upgrades para sa apat na track ng Basic Node.
 TUTORIAL_CHOICE_UPGRADE,OPEN UPGRADES,BUKSAN ANG UPGRADES
-TUTORIAL_UPGRADE_BUY,Tap Basic Firewall. 200 materials. This one is yours for good.,I-tap ang Basic Firewall. 200 materials. Sa iyo na ito.
-TUTORIAL_UPGRADE_DONE,Firewall is live. Fail a real stage and it locks until you train.,Live na ang firewall. Kapag natalo sa totoong stage, magla-lock hanggang mag-train ka.
+TUTORIAL_UPGRADE_BUY,Tap Capacity Rank 1. Already owned. That's your first Basic Node track.,I-tap ang Capacity Rank 1. Owned na. Unang track iyan ng Basic Node.
+TUTORIAL_UPGRADE_DONE,Tracks stay with you. Fail a real stage and it locks until you train.,Mananatili ang tracks. Kapag natalo sa totoong stage, magla-lock hanggang mag-train ka.
 TUTORIAL_FAIL_LOCK,This is the lock. Intel opens it. Finish one Module 1 file.,Ito ang lock. Intel ang bumubukas. Tapusin ang isang Module 1 file.
 TUTORIAL_CHOICE_LESSON,OPEN LESSON,BUKSAN ANG LESSON
 TUTORIAL_LESSON_GO,Real Module 1 file. Finish the drill. That is how a lock clears.,Totoong Module 1 file. Tapusin ang drill. Ganito nabubuksan ang lock.
@@ -170,7 +170,7 @@ PROFILE_GLADE,GLADE,GLADE
 PROFILE_FORGE,FORGE,FORGE
 PROFILE_THREAT,Threat points,Threat points
 PROFILE_THREAT_SHORT,Threat Pts,Threat Pts
-PROFILE_MATERIALS,Materials,Materials
+PROFILE_MATERIALS,Credits,Credits
 PROFILE_STAGE_SHORT,Highest Stage,Highest Stage
 PROFILE_LV,LV.%d,LV.%d
 PROFILE_TOWER_XP,TOWER LV.%d - XP,TOWER LV.%d - XP

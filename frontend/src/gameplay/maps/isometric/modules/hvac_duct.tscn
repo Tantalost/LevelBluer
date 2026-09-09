@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_5ubpq"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_1436i"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_62m0i"]
+atlas = ExtResource("2_1436i")
+region = Rect2(330, 976, 192, 180)
+filter_clip = true
+
+[node name="HvacDuct" type="Node2D" unique_id=1398385886]
+y_sort_enabled = true
+script = ExtResource("1_5ubpq")
+module_id = &"hvac_duct"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=589660506]
+texture_filter = 2
+position = Vector2(32, 64)
+texture = SubResource("AtlasTexture_62m0i")
+offset = Vector2(0, -90)
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=1866940211]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@66" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=164917150]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+
+[node name="@CollisionPolygon2D@67" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=1181472627]
+position = Vector2(64, 32)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

@@ -140,9 +140,9 @@ func _make_card_click_through(card: PanelContainer) -> void:
 
 func _refresh_resources() -> void:
 	var threat: int = AuthService.threat_points()
-	var materials: int = AuthService.materials()
+	var materials: int = PlayerManager.credits
 	_threat_value.text = str(threat if threat >= 0 else FALLBACK_THREAT)
-	_materials_value.text = str(materials if materials >= 0 else FALLBACK_MATERIALS)
+	_materials_value.text = str(maxi(0, materials))
 
 
 func _refresh_certified_chrome() -> void:

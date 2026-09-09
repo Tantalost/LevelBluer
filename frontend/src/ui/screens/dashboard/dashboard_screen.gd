@@ -114,6 +114,7 @@ func _style_chrome() -> void:
 	_apply_label(_rank, Palette.CYAN_400, 8)
 	_apply_label(_threat_caption, Palette.INK, 8)
 	_apply_label(_materials_caption, Palette.INK, 8)
+	_materials_caption.text = "CREDITS"
 	_apply_label(_threat_value, Palette.CREAM, 10)
 	_apply_label(_materials_value, Palette.CREAM, 10)
 	_apply_label(_inbox_count, Palette.CREAM, 10)
@@ -147,7 +148,7 @@ func _apply_lock_state() -> void:
 
 func _refresh_data() -> void:
 	_threat_points = AuthService.wallet_threat_points()
-	_materials = AuthService.materials() if AuthService.materials() >= 0 else DEFAULT_MATERIALS
+	_materials = PlayerManager.credits
 	_current_stage = AuthService.current_stage()
 	_player_name.text = AuthService.display_name().to_upper()
 	_threat_value.text = str(_threat_points)

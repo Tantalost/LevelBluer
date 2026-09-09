@@ -1,8 +1,8 @@
 class_name EnemyBase
 extends PathFollow2D
 ## Path-following packet with a health pool. Economy payout is signaled, not applied here.
-## Visual is an AnimatedSprite2D. Character art (Hacker / Ransomware / Phisherman)
-## is chosen at random from locally cached AssetManager sheets.
+## Visual is an AnimatedSprite2D. Wave type maps to character and threat_profile:
+## basic → Hacker/stealth, fast → Phisherman/swarm, heavy|boss → Ransomware/heavy.
 
 signal enemy_died(bounty_amount: int)
 signal reached_base
@@ -13,9 +13,10 @@ const BAR_WIDTH := 28.0
 const BAR_HEIGHT := 3.0
 const BAR_Y := -22.0
 const HITBOX_SIZE := Vector2(40, 40)
-const POPUP_LIFE := 0.55
+const POPUP_LIFE := 0.5
 
 @export var move_speed: float = 150.0
+@export var threat_profile: String = "stealth"
 var max_health: int = 3
 var current_health: int = 3
 var bounty: int = 1
@@ -25,6 +26,9 @@ var _base_move_speed: float = 50.0
 var _base_color: Color = Palette.RED
 var _type_id: String = ""
 var _slow_timer: SceneTreeTimer = null
+var _timed_slow_factor: float = 1.0
+var _zone_slow_count: int = 0
+var _zone_slow_factor: float = 1.0
 var _hit_tween: Tween = null
 var _uses_character_sheets: bool = false
 var _playing_death: bool = false
@@ -37,6 +41,7 @@ var _bar_tween: Tween = null
 var _visual_scale: float = 1.0
 var _bar_width: float = BAR_WIDTH
 var _bar_y: float = BAR_Y
+var _path_unit_scale: float = 1.0
 
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
@@ -71,11 +76,14 @@ func initialize_stats(type_id: String, hp_mult: float) -> void:
 	_bar_width = BAR_WIDTH * _visual_scale
 	_bar_y = BAR_Y * _visual_scale
 	_bind_character_visuals()
+	threat_profile = profile_for_character(_visual_id)
 	_apply_hitbox_scale()
 	_apply_tint(_base_color)
 
 
 func _ready() -> void:
+	_path_unit_scale = float(get_parent().get_meta("path_unit_scale", 1.0))
+	scale *= float(get_parent().get_meta("actor_unit_scale", 1.0))
 	loop = false
 	add_to_group("enemies")
 	_load_font()
@@ -89,7 +97,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_dead:
 		return
-	progress += move_speed * delta
+	progress += move_speed * _path_unit_scale * delta
 	_update_character_facing()
 	if loop:
 		return
@@ -113,12 +121,12 @@ func mark_leaked() -> bool:
 	return true
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, matchup: StringName = &"neutral") -> void:
 	if is_dead or _leaked or is_queued_for_deletion():
 		return
 	var dealt: int = mini(amount, current_health)
 	current_health = maxi(0, current_health - amount)
-	_show_hit(dealt)
+	_show_hit(dealt, matchup)
 	if current_health <= 0:
 		_begin_death()
 
@@ -128,7 +136,8 @@ func apply_slow(factor: float, duration: float) -> void:
 		return
 	if factor >= 1.0 or factor <= 0.0 or duration <= 0.0:
 		return
-	move_speed = _base_move_speed * factor
+	_timed_slow_factor = factor
+	_recompute_move_speed()
 	_apply_tint(Palette.CYAN)
 	_clear_slow_timer()
 	var tree: SceneTree = get_tree()
@@ -138,12 +147,45 @@ func apply_slow(factor: float, duration: float) -> void:
 	_slow_timer.timeout.connect(_on_slow_expired)
 
 
+func add_zone_slow(factor: float, show_feedback: bool = false) -> void:
+	if is_dead or is_queued_for_deletion():
+		return
+	if factor >= 1.0 or factor <= 0.0:
+		return
+	var first_stack: bool = _zone_slow_count <= 0
+	_zone_slow_count += 1
+	_zone_slow_factor = factor
+	_recompute_move_speed()
+	if show_feedback and first_stack:
+		var tier: StringName = _slow_matchup_tier(factor)
+		if tier != &"neutral":
+			_spawn_matchup_popup("SLOW", tier)
+
+
+func remove_zone_slow() -> void:
+	_zone_slow_count = maxi(0, _zone_slow_count - 1)
+	if _zone_slow_count <= 0:
+		_zone_slow_factor = 1.0
+	_recompute_move_speed()
+
+
+func _recompute_move_speed() -> void:
+	if is_dead or _leaked:
+		return
+	var speed: float = _base_move_speed * _timed_slow_factor
+	if _zone_slow_count > 0:
+		speed *= _zone_slow_factor
+	move_speed = speed
+
+
 func _on_slow_expired() -> void:
 	_slow_timer = null
 	if is_dead or not is_instance_valid(self) or is_queued_for_deletion():
 		return
-	move_speed = _base_move_speed
-	_apply_tint(_base_color)
+	_timed_slow_factor = 1.0
+	_recompute_move_speed()
+	if _zone_slow_count <= 0:
+		_apply_tint(_base_color)
 
 
 func _clear_slow_timer() -> void:
@@ -152,13 +194,16 @@ func _clear_slow_timer() -> void:
 	_slow_timer = null
 
 
-func _show_hit(dealt: int) -> void:
-	if dealt <= 0:
+func _show_hit(dealt: int, matchup: StringName = &"neutral") -> void:
+	if dealt <= 0 and matchup == &"neutral":
 		return
-	_spawn_damage_popup(dealt)
-	_tween_health_bar()
-	_flash_hit()
-	queue_redraw()
+	if dealt > 0:
+		_tween_health_bar()
+		_flash_hit()
+		queue_redraw()
+		_spawn_damage_popup(dealt, matchup)
+	elif matchup != &"neutral":
+		_spawn_damage_popup(0, matchup)
 
 
 func _flash_hit() -> void:
@@ -202,7 +247,9 @@ func _character_sprite() -> AnimatedSprite2D:
 
 func _bind_character_visuals() -> void:
 	var sprite: AnimatedSprite2D = _character_sprite()
-	_visual_id = AssetManager.pick_random_character()
+	_visual_id = character_for_wave(_type_id)
+	if _visual_id.is_empty():
+		_visual_id = AssetManager.pick_random_character()
 	var frames: SpriteFrames = AssetManager.get_character_sprite_frames(_visual_id)
 	if sprite == null or frames == null:
 		_uses_character_sheets = false
@@ -349,7 +396,16 @@ func _draw() -> void:
 	draw_rect(Rect2(origin, Vector2(_bar_width, BAR_HEIGHT)), Palette.CREAM, false, 1.0)
 
 
-func _spawn_damage_popup(dealt: int) -> void:
+func _spawn_damage_popup(dealt: int, matchup: StringName = &"neutral") -> void:
+	if matchup == &"neutral":
+		_spawn_matchup_popup(str(dealt), &"neutral")
+		return
+	_spawn_matchup_popup(str(dealt), matchup)
+
+
+func _spawn_matchup_popup(copy: String, matchup: StringName) -> void:
+	if matchup == &"neutral" and copy.is_empty():
+		return
 	var host: Node = get_parent()
 	if host == null:
 		return
@@ -358,14 +414,23 @@ func _spawn_damage_popup(dealt: int) -> void:
 	host.add_child(marker)
 	marker.global_position = global_position + Vector2(0.0, _bar_y - 6.0)
 	var label := Label.new()
-	label.text = str(dealt)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = copy
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Palette.CREAM)
-	label.add_theme_font_size_override("font_size", 10)
+	var font_size: int = 10
+	var color: Color = Palette.CREAM
+	if matchup == &"strong":
+		font_size = 14
+		color = Palette.SUCCESS
+	elif matchup == &"weak":
+		font_size = 7
+		color = Palette.NAVY_700.lerp(Palette.CREAM, 0.55)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_font_size_override("font_size", font_size)
 	if _pixel_font != null:
 		label.add_theme_font_override("font", _pixel_font)
-	label.position = Vector2(-12.0, -8.0)
-	label.size = Vector2(24.0, 16.0)
+	label.position = Vector2(-18.0, -10.0)
+	label.size = Vector2(36.0, 18.0)
 	marker.add_child(label)
 	var rise: Tween = marker.create_tween()
 	rise.set_parallel(true)
@@ -373,6 +438,62 @@ func _spawn_damage_popup(dealt: int) -> void:
 	rise.tween_property(marker, "modulate:a", 0.0, POPUP_LIFE)
 	rise.set_parallel(false)
 	rise.tween_callback(marker.queue_free)
+
+
+static func character_for_wave(type_id: String) -> String:
+	match type_id:
+		"fast":
+			return "phisherman"
+		"heavy", "boss":
+			return "ransomware"
+		_:
+			return "hacker"
+
+
+static func profile_for_character(character_id: String) -> String:
+	match character_id:
+		"phisherman":
+			return "swarm"
+		"ransomware":
+			return "heavy"
+		_:
+			return "stealth"
+
+
+func damage_multiplier_vs(tower_type: String) -> float:
+	if tower_type == "base":
+		if threat_profile == "heavy":
+			return 1.5
+		if threat_profile == "swarm":
+			return 0.5
+		return 1.0
+	if tower_type == "scanner":
+		if threat_profile == "swarm":
+			return 1.5
+		if threat_profile == "heavy":
+			return 0.5
+		return 1.0
+	return 1.0
+
+
+func sandbox_slow_factor() -> float:
+	if threat_profile == "stealth":
+		return 0.4
+	if threat_profile == "swarm" or threat_profile == "heavy":
+		return 0.8
+	return 0.6
+
+
+static func matchup_tier(multiplier: float, strong_at: float, weak_at: float) -> StringName:
+	if is_equal_approx(multiplier, strong_at):
+		return &"strong"
+	if is_equal_approx(multiplier, weak_at):
+		return &"weak"
+	return &"neutral"
+
+
+func _slow_matchup_tier(factor: float) -> StringName:
+	return matchup_tier(factor, 0.4, 0.8)
 
 
 func _tween_health_bar() -> void:

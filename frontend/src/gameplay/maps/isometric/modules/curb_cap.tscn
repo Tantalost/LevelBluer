@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_fw6vf"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_yo7fv"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_87ma6"]
+atlas = ExtResource("2_yo7fv")
+region = Rect2(910, 278, 80, 74)
+filter_clip = true
+
+[node name="CurbCap" type="Node2D" unique_id=2098830953]
+y_sort_enabled = true
+script = ExtResource("1_fw6vf")
+module_id = &"curb_cap"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1426761498]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_87ma6")
+offset = Vector2(0, -37)

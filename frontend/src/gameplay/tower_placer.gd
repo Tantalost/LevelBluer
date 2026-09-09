@@ -18,10 +18,17 @@ enum DragKind { NONE, PLACE, MOVE }
 @export var tower_scene: PackedScene
 @export var level_manager_path: NodePath = NodePath("../../LevelManager")
 
+const TOWER_SCENES: Dictionary = {
+	"base": preload("res://src/gameplay/tower_base.tscn"),
+	"scanner": preload("res://src/gameplay/scanner_node.tscn"),
+	"sandbox": preload("res://src/gameplay/sandbox_node.tscn"),
+}
+
 var occupied_cells: Dictionary = {}
 var tower_cost: int = 2
 var move_cost: int = 1
 var max_towers: int = 0
+var pending_type: String = "base"
 var selected_tower: TowerBase = null
 var _show_pads: bool = false
 var _pad_overlay: Node2D
@@ -66,16 +73,24 @@ func set_build_preview(active: bool) -> void:
 
 
 func begin_place_drag() -> void:
+	begin_place_drag_for("base")
+
+
+func begin_place_drag_for(type_id: String) -> void:
 	if not _is_build_phase():
 		return
-	if _at_tower_cap():
-		print("[TowerPlacer] Tower cap reached.")
+	var next_type: String = type_id if not type_id.is_empty() else "base"
+	if at_type_cap(next_type):
+		print("[TowerPlacer] Capacity Reached")
 		return
-	if _level_manager.current_gold < tower_cost:
-		print("[Economy] Insufficient gold. Need: " + str(tower_cost))
+	var cost: int = TowerBase.cost_for(next_type)
+	if _level_manager.current_gold < cost:
+		print("[Economy] Insufficient gold. Need: " + str(cost))
 		return
 	_cancel_drag()
 	clear_selection()
+	pending_type = next_type
+	tower_cost = cost
 	_drag_kind = DragKind.PLACE
 	_drag_moved = true
 	_drag_press_local = get_local_mouse_position()
@@ -90,6 +105,16 @@ func draw_pads(canvas: CanvasItem) -> void:
 	if _drag_kind == DragKind.NONE or _drag_cell == INVALID_CELL:
 		return
 	var ghost_center: Vector2 = map_to_local(_drag_cell)
+	if tile_set.tile_shape == TileSet.TILE_SHAPE_ISOMETRIC:
+		var color: Color = Palette.SUCCESS if _hover_valid else Palette.DANGER
+		var half := Vector2(tile_set.tile_size) * 0.5
+		for cell in _footprint(_drag_cell):
+			var center := map_to_local(cell)
+			var polygon := PackedVector2Array([center + Vector2(0,-half.y), center + Vector2(half.x,0), center + Vector2(0,half.y), center + Vector2(-half.x,0)])
+			canvas.draw_colored_polygon(polygon, Color(color, 0.28))
+			polygon.append(polygon[0])
+			canvas.draw_polyline(polygon, color, 3.0)
+		return
 	var span: float = TILE_PX * float(FOOTPRINT)
 	var ghost := Rect2(ghost_center - Vector2(span, span) * 0.5, Vector2(span, span))
 	var fill: Color = Color(Palette.SUCCESS, 0.28) if _hover_valid else Color(Palette.DANGER, 0.28)
@@ -193,6 +218,9 @@ func _begin_grid_press(local_mouse: Vector2) -> void:
 	if not _can_drop(map_pos):
 		print("Invalid placement")
 		clear_selection()
+		return
+	if at_type_cap(pending_type):
+		print("[TowerPlacer] Capacity Reached")
 		return
 	_try_place(map_pos)
 
@@ -311,8 +339,9 @@ func _is_build_phase() -> bool:
 
 
 func _cell_is_buildable(cell: Vector2i, tile_data: TileData) -> bool:
-	if get_cell_atlas_coords(cell) == TILE_BUILDABLE:
-		return true
+	if get_parent().has_method("is_scenery_cell") and get_parent().call("is_scenery_cell", cell):
+		return false
+	# Atlas coordinates are not gameplay flags: different sources can use (0,0).
 	if tile_data != null and tile_data.get_custom_data("is_buildable") == true:
 		return true
 	return false
@@ -321,6 +350,8 @@ func _cell_is_buildable(cell: Vector2i, tile_data: TileData) -> bool:
 func _nearest_tower(local_mouse: Vector2) -> TowerBase:
 	var best: TowerBase = null
 	var best_d: float = PICK_RADIUS
+	if tile_set.tile_shape == TileSet.TILE_SHAPE_ISOMETRIC:
+		best_d *= Vector2(tile_set.tile_size.x * 0.5, tile_set.tile_size.y * 0.5).length() / TILE_PX
 	var seen: Dictionary = {}
 	var keys: Array = occupied_cells.keys()
 	for i in keys.size():
@@ -376,43 +407,84 @@ func _vacate(center: Vector2i) -> void:
 
 
 func placed_count() -> int:
+	return _unique_towers().size()
+
+
+func placed_count_of(type_id: String) -> int:
+	var count: int = 0
+	var towers: Array[TowerBase] = _unique_towers()
+	for i in towers.size():
+		if towers[i].current_type == type_id:
+			count += 1
+	return count
+
+
+func type_capacity(type_id: String) -> int:
+	return PlayerManager.tower_capacity(type_id)
+
+
+func at_type_cap(type_id: String) -> bool:
+	return placed_count_of(type_id) >= type_capacity(type_id)
+
+
+func _unique_towers() -> Array[TowerBase]:
 	var seen: Dictionary = {}
+	var towers: Array[TowerBase] = []
 	var keys: Array = occupied_cells.keys()
 	for i in keys.size():
-		var tower: Variant = occupied_cells[keys[i]]
-		if typeof(tower) != TYPE_OBJECT or tower == null:
+		var tower: TowerBase = _tower_at(keys[i] as Vector2i)
+		if tower == null:
 			continue
-		seen[tower] = true
-	return seen.size()
+		var tower_id: int = tower.get_instance_id()
+		if seen.has(tower_id):
+			continue
+		seen[tower_id] = true
+		towers.append(tower)
+	return towers
 
 
 func _at_tower_cap() -> bool:
-	return max_towers > 0 and placed_count() >= max_towers
+	return at_type_cap(pending_type)
 
 
 func _try_place(map_pos: Vector2i) -> void:
-	if tower_scene == null:
-		push_error("TowerPlacer: tower_scene is not assigned")
+	var type_id: String = pending_type if not pending_type.is_empty() else "base"
+	var scene: PackedScene = _scene_for(type_id)
+	if scene == null:
+		push_error("TowerPlacer: tower scene is not assigned")
 		return
-	if _at_tower_cap():
-		print("[TowerPlacer] Tower cap reached.")
+	if at_type_cap(type_id):
+		print("[TowerPlacer] Capacity Reached")
 		return
-	if _level_manager.current_gold < tower_cost:
-		print("[Economy] Insufficient gold. Need: " + str(tower_cost))
+	var cost: int = TowerBase.cost_for(type_id)
+	if _level_manager.current_gold < cost:
+		print("[Economy] Insufficient gold. Need: " + str(cost))
 		return
-	var instance: Node = tower_scene.instantiate()
+	var instance: Node = scene.instantiate()
 	var tower: TowerBase = instance as TowerBase
 	if tower == null:
-		push_error("TowerPlacer: tower_scene is not a TowerBase")
+		push_error("TowerPlacer: tower scene is not a TowerBase")
 		return
-	_level_manager.current_gold -= tower_cost
+	_level_manager.current_gold -= cost
 	print("[Economy] Tower built. Remaining Gold: " + str(_level_manager.current_gold))
-	_level_manager.update_hud()
+	if get_parent().has_method("configure_tower"):
+		get_parent().call("configure_tower", tower)
 	add_child(tower)
 	tower.position = map_to_local(map_pos)
+	if tower.current_type != type_id:
+		tower.apply_stats(type_id)
 	_occupy(map_pos, tower)
+	_level_manager.update_hud()
 	print("[TowerPlacer] Placed at %s" % str(map_pos))
 	tower_placed.emit(tower)
+
+
+func _scene_for(type_id: String) -> PackedScene:
+	if TOWER_SCENES.has(type_id):
+		var stored: Variant = TOWER_SCENES[type_id]
+		if stored is PackedScene:
+			return stored as PackedScene
+	return tower_scene
 
 
 func _event_local_pos(event: InputEvent) -> Vector2:

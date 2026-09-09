@@ -13,6 +13,7 @@ const CATALOG_REV := "npc-expr-1"
 const DOWNLOAD_TIMEOUT_SEC := 15.0
 const BODY_SIZE_LIMIT := 8 * 1024 * 1024
 const WALK_FPS := 8.0
+const INDUSTRIAL_ATLAS_RESOURCE := "res://assets/gameplay/isometric/industrial_atlas_texture.tres"
 const DEATH_FPS := 10.0
 
 const CREATE_ASSETS_SQL := """
@@ -106,6 +107,11 @@ func get_texture(asset_id: String) -> Texture2D:
 		var cached: Variant = _textures[asset_id]
 		return cached as Texture2D
 	var local_path: String = _local_path_for(asset_id)
+	if asset_id == "map_industrial_atlas" and FileAccess.file_exists(local_path):
+		var shared: Texture2D = load(INDUSTRIAL_ATLAS_RESOURCE)
+		shared.call("refresh_from_cache")
+		_textures[asset_id] = shared
+		return shared
 	var texture: Texture2D = _load_texture_from_disk(local_path)
 	if texture == null:
 		texture = _load_bundled_texture(asset_id)
@@ -222,6 +228,7 @@ func _hacker_catalog() -> Array[Dictionary]:
 
 func _gameplay_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	catalog.append_array(_map_environment_catalog())
 	catalog.append(_catalog_entry(
 		"map_module_1_stage_1",
 		"Module 1 Stage 1 map",
@@ -261,6 +268,19 @@ func _gameplay_catalog() -> Array[Dictionary]:
 	]))
 	catalog.append_array(_ui_catalog())
 	return catalog
+
+
+func _map_environment_catalog() -> Array[Dictionary]:
+	# Only the packed runtime atlas is valid for these fixed tile crop coordinates.
+	return [
+		_catalog_entry("map_industrial_atlas", "Industrial isometric runtime atlas", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788939071/industrial_atlas.png"),
+		_catalog_entry("home_base_clean", "Home base / full health", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788938897/home_base_clean_v1.png"),
+		_catalog_entry("home_base_cracked", "Home base / damaged", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788938898/home_base_cracked_v1.png"),
+		_catalog_entry("home_base_critical", "Home base / critical and destruction", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788938907/home_base_critical_v1.png"),
+		_catalog_entry("enemy_spawn_broken_pc", "Enemy spawn / broken PC", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788938897/enemy_spawn_broken_pc_v1.png"),
+		_catalog_entry("map_module_1_stage_2", "Module 1 Stage 2 map", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788938879/module_1_stage_2_25d_baked.png"),
+		_catalog_entry("map_module_1_stage_3", "Module 1 Stage 3 map", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788938879/module_1_stage_3_25d_baked.png"),
+	]
 
 
 func _ui_catalog() -> Array[Dictionary]:
@@ -400,6 +420,9 @@ func _download_and_store(entry: Dictionary) -> bool:
 	if image == null or image.is_empty():
 		push_warning("AssetManager: invalid image payload for '%s'." % asset_id)
 		return _use_local_fallback(asset_id, local_path, false)
+	if asset_id == "map_industrial_atlas" and image.get_size() != Vector2i(2048, 2048):
+		push_warning("AssetManager: industrial atlas must be the packed 2048x2048 runtime texture.")
+		return _use_local_fallback(asset_id, local_path, false)
 	var png: PackedByteArray = image.save_png_to_buffer()
 	if png.is_empty():
 		png = body
@@ -410,6 +433,9 @@ func _download_and_store(entry: Dictionary) -> bool:
 	if not _upsert_meta(entry, file_hash):
 		push_warning("AssetManager: SQLite metadata write failed for '%s'; file is still cached." % asset_id)
 	var texture: ImageTexture = ImageTexture.create_from_image(image)
+	if asset_id == "map_industrial_atlas":
+		texture = load(INDUSTRIAL_ATLAS_RESOURCE) as ImageTexture
+		texture.set_image(image)
 	_textures[asset_id] = texture
 	_character_frames.clear()
 	_online = true
@@ -648,7 +674,7 @@ func _seed_from_bundle() -> void:
 		if asset_id.is_empty() or FileAccess.file_exists(local_path):
 			continue
 		var bundled_path: String = _bundled_path(asset_id)
-		if bundled_path.is_empty():
+		if bundled_path.is_empty() or not FileAccess.file_exists(bundled_path):
 			continue
 		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(bundled_path)
 		if bytes.is_empty():
@@ -664,6 +690,20 @@ func _bundled_path(asset_id: String) -> String:
 	if asset_id.begins_with("npc_"):
 		return ""
 	match asset_id:
+		"map_industrial_atlas":
+			return ""
+		"home_base_clean":
+			return "res://assets/gameplay/map_endpoints/home_base_clean_v1.png"
+		"home_base_cracked":
+			return "res://assets/gameplay/map_endpoints/home_base_cracked_v1.png"
+		"home_base_critical":
+			return "res://assets/gameplay/map_endpoints/home_base_critical_v1.png"
+		"enemy_spawn_broken_pc":
+			return "res://assets/gameplay/map_endpoints/enemy_spawn_broken_pc_v1.png"
+		"map_module_1_stage_2":
+			return "res://assets/gameplay/maps/module_1_stage_2_25d_baked.png"
+		"map_module_1_stage_3":
+			return "res://assets/gameplay/maps/module_1_stage_3_25d_baked.png"
 		"map_module_1_stage_1":
 			return "res://assets/gameplay/maps/module_1_stage_1_25d_baked.png"
 		"tower_basic_node_base":

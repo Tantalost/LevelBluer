@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_avnya"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_y6u24"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yntt4"]
+atlas = ExtResource("2_y6u24")
+region = Rect2(604, 1862, 150, 172)
+filter_clip = true
+
+[node name="Dumpster" type="Node2D" unique_id=1719984950]
+y_sort_enabled = true
+script = ExtResource("1_avnya")
+module_id = &"dumpster"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1859553006]
+texture_filter = 2
+position = Vector2(32, 64)
+texture = SubResource("AtlasTexture_yntt4")
+offset = Vector2(0, -86)

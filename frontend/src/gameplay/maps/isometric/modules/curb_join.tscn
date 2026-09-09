@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_n0r02"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_o00rl"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_56jgx"]
+atlas = ExtResource("2_o00rl")
+region = Rect2(678, 278, 144, 66)
+filter_clip = true
+
+[node name="CurbJoin" type="Node2D" unique_id=808948844]
+y_sort_enabled = true
+script = ExtResource("1_n0r02")
+module_id = &"curb_join"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=765745700]
+texture_filter = 2
+position = Vector2(0, 96)
+texture = SubResource("AtlasTexture_56jgx")
+offset = Vector2(0, -33)

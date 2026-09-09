@@ -127,12 +127,9 @@ func _draw_copy() -> void:
 	if fill_key == "gold":
 		title_color = Palette.CREAM
 		sub_color = Palette.CYAN_300
-	elif fill_key == "orange":
+	elif fill_key == "orange" or fill_key == "warning" or fill_key == "cream" or fill_key == "frost" or fill_key == "glow":
 		title_color = Palette.INK
 		sub_color = Palette.INK
-	elif fill_key == "frost":
-		title_color = Palette.INK
-		sub_color = Palette.CYAN_400
 	if geo == Geo.DIAMOND:
 		title_color = Palette.INK if fill_key == "frost" else Palette.CREAM
 		sub_color = Color(title_color, 0.72)
@@ -363,12 +360,20 @@ func _fill_color() -> Color:
 			return Palette.PRIMARY_BLUE
 		"orange":
 			return Palette.WARNING
+		"warning":
+			return Palette.WARNING
 		"red":
 			return Palette.DANGER
 		"cyan":
 			return Palette.PRIMARY_BLUE
+		"glow":
+			return Palette.CYAN_400
+		"cream":
+			return Palette.CREAM
 		"frost":
 			return Color(Palette.CREAM, 0.94)
+		"teal":
+			return Palette.TEAL_900
 		"violet":
 			return Palette.TEAL_900
 		"indigo":

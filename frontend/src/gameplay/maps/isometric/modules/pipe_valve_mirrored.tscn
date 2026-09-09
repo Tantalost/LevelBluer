@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_4hdcf"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_exghh"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gdkv6"]
+atlas = ExtResource("2_exghh")
+region = Rect2(1214, 1585, 192, 171)
+filter_clip = true
+
+[node name="PipeValveMirrored" type="Node2D" unique_id=2041297159]
+y_sort_enabled = true
+script = ExtResource("1_4hdcf")
+module_id = &"pipe_valve_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=2085245488]
+texture_filter = 2
+position = Vector2(-32, 64)
+texture = SubResource("AtlasTexture_gdkv6")
+offset = Vector2(0, -85.5)
+flip_h = true

@@ -1,17 +1,14 @@
 class_name TowerBase
 extends Area2D
-## Branching discipline upgrades. Combat stats come from ContentDB JSON.
-
-const UPGRADE_PATHS: Dictionary = {
-	"base": ["network", "crypto"],
-	"network": [],
-	"crypto": [],
-}
+## Combat stats come from ContentDB. Meta ranks from PlayerManager.
 
 const MAX_UPGRADE_LEVEL: int = 7
 const UPGRADE_MULT: float = 1.5
 const BUFF_DURATION: float = 6.0
 const BUFF_FIRE_SCALE: float = 1.6
+const LAG_DURATION: float = 6.0
+const LAG_FIRE_SCALE: float = 0.55
+const GLOBAL_PATCH_DAMAGE: float = 1.15
 const AIM_TURN_SPEED: float = 9.0
 const IDLE_ANGLE: float = -PI * 0.5
 const FIRE_ALIGNMENT_RADIANS: float = 0.3
@@ -22,6 +19,7 @@ const BASIC_NODE_ATLAS_ASSET_ID := "tower_basic_node_atlas"
 const ATLAS_CELL_SIZE := 627.0
 
 @export var projectile_scene: PackedScene
+@export var starting_type: String = "base"
 var current_type: String = "base"
 var upgrade_level: int = 0
 var fire_rate: float = 1.0
@@ -30,15 +28,22 @@ var base_damage: int = 1
 var current_explosion_radius: float = 0.0
 var current_slow_factor: float = 1.0
 var current_slow_duration: float = 0.0
+var current_zone_slow: float = 1.0
 var targets_in_range: Array[Area2D] = []
 var current_target: Node2D = null
 var _buff_time_left: float = 0.0
 var _buff_fire_scale: float = 1.0
+var _buff_is_lag: bool = false
+var _match_damage_scale: float = 1.0
 var _desired_aim_angle: float = IDLE_ANGLE
 var _deploy_tween: Tween = null
 var _ring_tween: Tween = null
 var _recoil_tween: Tween = null
 var _flash_tween: Tween = null
+var deployment_scale := Vector2.ONE
+var ground_range_scale := Vector2.ONE
+var combat_map: Node2D = null
+var _ground_radius: float = -1.0
 
 @onready var _base_sprite: Sprite2D = $BaseSprite
 @onready var _turret_pivot: Node2D = $TurretPivot
@@ -49,20 +54,37 @@ var _flash_tween: Tween = null
 
 
 func _ready() -> void:
+	scale = deployment_scale
+	if ground_range_scale != Vector2.ONE:
+		_ground_radius = _range_radius()
+		var points := PackedVector2Array()
+		for i in 64:
+			points.append(Vector2.from_angle(TAU * i / 64.0) * _ground_radius * ground_range_scale)
+		var range_polygon := ConvexPolygonShape2D.new()
+		range_polygon.points = points
+		$RangeShape.shape = range_polygon
+	current_type = starting_type
 	add_to_group("towers")
 	input_pickable = false
 	area_entered.connect(_on_area_entered)
 	area_exited.connect(_on_area_exited)
 	_bind_runtime_art()
-	_base_sprite.visible = _base_sprite.texture != null
-	_head_sprite.visible = _head_sprite.texture != null
+	if starting_type == "base":
+		_base_sprite.visible = _base_sprite.texture != null
+		_head_sprite.visible = _head_sprite.texture != null
 	_turret_pivot.rotation = IDLE_ANGLE
-	apply_stats("base")
+	apply_stats(starting_type)
 	queue_redraw()
 	call_deferred("play_deploy_animation")
 
 
 func _bind_runtime_art() -> void:
+	if starting_type != "base":
+		_base_sprite.visible = false
+		_head_sprite.visible = false
+		_muzzle_flash.visible = false
+		_deploy_ring.visible = false
+		return
 	var base_texture: Texture2D = AssetManager.get_texture(BASIC_NODE_BASE_ASSET_ID)
 	if base_texture != null:
 		_base_sprite.texture = base_texture
@@ -83,14 +105,48 @@ func _bind_runtime_art() -> void:
 
 
 func _draw() -> void:
-	if _base_sprite.texture != null and _head_sprite.texture != null:
+	if current_type == "sandbox":
+		var radius: float = _range_radius()
+		draw_set_transform(Vector2.ZERO, 0.0, ground_range_scale)
+		draw_circle(Vector2.ZERO, radius, Color(Palette.PURPLE, 0.22))
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 48, Color(Palette.PURPLE, 0.7), 2.5, true)
+		draw_set_transform(Vector2.ZERO)
+	if current_type == "base" and _base_sprite.texture != null and _head_sprite.texture != null:
 		return
-	draw_circle(Vector2.ZERO, 40.0, Palette.BG_HEADER)
-	draw_arc(Vector2.ZERO, 40.0, 0.0, TAU, 36, Palette.CYAN, 3.0, true)
-	draw_rect(Rect2(-20.0, -22.0, 40.0, 44.0), Palette.CYAN_DIM, true)
-	draw_rect(Rect2(-20.0, -22.0, 40.0, 44.0), Palette.CYAN, false, 3.0)
-	draw_rect(Rect2(14.0, -11.0, 36.0, 22.0), Palette.CYAN, true)
-	draw_circle(Vector2.ZERO, 11.0, Palette.GOLD)
+	match current_type:
+		"scanner":
+			_draw_scanner_placeholder()
+		"sandbox":
+			_draw_sandbox_placeholder()
+		_:
+			draw_circle(Vector2.ZERO, 40.0, Palette.BG_HEADER)
+			draw_arc(Vector2.ZERO, 40.0, 0.0, TAU, 36, Palette.CYAN, 3.0, true)
+			draw_rect(Rect2(-20.0, -22.0, 40.0, 44.0), Palette.CYAN_DIM, true)
+			draw_rect(Rect2(-20.0, -22.0, 40.0, 44.0), Palette.CYAN, false, 3.0)
+			draw_rect(Rect2(14.0, -11.0, 36.0, 22.0), Palette.CYAN, true)
+			draw_circle(Vector2.ZERO, 11.0, Palette.GOLD)
+
+
+func _draw_scanner_placeholder() -> void:
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0.0, -36.0),
+		Vector2(28.0, 0.0),
+		Vector2(0.0, 36.0),
+		Vector2(-28.0, 0.0),
+	]), Palette.BLUE_400)
+	draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 24, Palette.CYAN_300, 2.0, true)
+
+
+func _draw_sandbox_placeholder() -> void:
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(0.0, -28.0),
+		Vector2(24.0, -14.0),
+		Vector2(24.0, 14.0),
+		Vector2(0.0, 28.0),
+		Vector2(-24.0, 14.0),
+		Vector2(-24.0, -14.0),
+	]), Palette.PURPLE)
+	draw_rect(Rect2(-10.0, -10.0, 20.0, 20.0), Palette.NAVY_900, true)
 
 
 func apply_stats(type_id: String) -> void:
@@ -104,8 +160,13 @@ func apply_stats(type_id: String) -> void:
 	current_explosion_radius = splash_radius_for(type_id)
 	current_slow_factor = slow_factor_for(type_id)
 	current_slow_duration = slow_duration_for(type_id)
+	current_zone_slow = zone_slow_for(type_id)
+	_apply_meta_stats()
+	if current_type == "base":
+		fire_rate += float(PlayerManager.stats_bonus_for("base").get("fire_rate", 0.0))
+	queue_redraw()
 	if _buff_time_left > 0.0:
-		modulate = Palette.YELLOW
+		modulate = Palette.CYAN_DIM if _buff_is_lag else Palette.YELLOW
 	else:
 		_restore_modulate()
 
@@ -132,7 +193,9 @@ static func upgrade_cost_at(type_id: String, current_level: int) -> int:
 
 
 static func damage_at(type_id: String, level: int) -> int:
-	var damage: int = maxi(1, int(entry_for(type_id).get("damage", 1)))
+	var damage: int = maxi(0, int(entry_for(type_id).get("damage", 1)))
+	if damage <= 0:
+		return 0
 	var steps: int = clampi(level, 0, MAX_UPGRADE_LEVEL)
 	for _i in steps:
 		damage = scale_up(damage)
@@ -152,6 +215,7 @@ func apply_power_upgrade() -> bool:
 		return false
 	upgrade_level += 1
 	base_damage = damage_at(current_type, upgrade_level)
+	_apply_meta_stats()
 	return true
 
 
@@ -159,17 +223,15 @@ static func display_name_for(type_id: String) -> String:
 	return str(entry_for(type_id).get("name", type_id))
 
 
-static func paths_for(type_id: String) -> Array[String]:
-	var result: Array[String] = []
-	if not UPGRADE_PATHS.has(type_id):
-		return result
-	var stored: Variant = UPGRADE_PATHS[type_id]
-	if typeof(stored) != TYPE_ARRAY:
-		return result
-	var raw: Array = stored
-	for i in raw.size():
-		result.append(str(raw[i]))
-	return result
+static func role_for(type_id: String) -> String:
+	return str(entry_for(type_id).get("role", "DPS"))
+
+
+static func accent_for(type_id: String) -> Color:
+	var stored: Variant = entry_for(type_id).get("color", Palette.CYAN)
+	if typeof(stored) == TYPE_COLOR:
+		return stored as Color
+	return Palette.CYAN
 
 
 static func req_skill_for(type_id: String) -> String:
@@ -195,17 +257,53 @@ static func slow_duration_for(type_id: String) -> float:
 	return float(entry_for(type_id).get("slow_duration", 0.0))
 
 
+static func zone_slow_for(type_id: String) -> float:
+	return float(entry_for(type_id).get("zone_slow", 1.0))
+
+
+func _apply_meta_stats() -> void:
+	if current_type != "base":
+		return
+	var bonus: Dictionary = PlayerManager.stats_bonus_for("base")
+	base_damage += int(bonus.get("damage", 0))
+
+
 func _on_area_entered(area: Area2D) -> void:
 	if not targets_in_range.has(area):
 		targets_in_range.append(area)
+	_apply_zone_to(area, true)
 
 
 func _on_area_exited(area: Area2D) -> void:
 	targets_in_range.erase(area)
+	_apply_zone_to(area, false)
+
+
+func _apply_zone_to(area: Area2D, entering: bool) -> void:
+	if current_type != "sandbox":
+		return
+	var enemy: EnemyBase = area.get_parent() as EnemyBase
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	if entering:
+		enemy.add_zone_slow(enemy.sandbox_slow_factor(), true)
+	else:
+		enemy.remove_zone_slow()
 
 
 func _process(delta: float) -> void:
 	_prune_invalid_targets()
+	if current_type == "sandbox" or fire_rate <= 0.0:
+		current_target = null
+		_desired_aim_angle = IDLE_ANGLE
+		if _buff_time_left > 0.0:
+			_buff_time_left -= delta
+			if _buff_time_left <= 0.0:
+				_buff_time_left = 0.0
+				_buff_fire_scale = 1.0
+				_buff_is_lag = false
+				_restore_modulate()
+		return
 	if targets_in_range.is_empty():
 		current_target = null
 		_desired_aim_angle = IDLE_ANGLE
@@ -222,6 +320,7 @@ func _process(delta: float) -> void:
 		if _buff_time_left <= 0.0:
 			_buff_time_left = 0.0
 			_buff_fire_scale = 1.0
+			_buff_is_lag = false
 			_restore_modulate()
 
 	fire_timer -= delta
@@ -235,8 +334,21 @@ func _process(delta: float) -> void:
 func apply_incident_buff() -> void:
 	_buff_time_left = BUFF_DURATION
 	_buff_fire_scale = BUFF_FIRE_SCALE
+	_buff_is_lag = false
 	modulate = Palette.YELLOW
 	print("Tower Buffed!")
+
+
+func apply_incident_lag() -> void:
+	_buff_time_left = LAG_DURATION
+	_buff_fire_scale = LAG_FIRE_SCALE
+	_buff_is_lag = true
+	modulate = Palette.CYAN_DIM
+	print("Tower Lagged!")
+
+
+func apply_global_patch() -> void:
+	_match_damage_scale = GLOBAL_PATCH_DAMAGE
 
 
 func _restore_modulate() -> void:
@@ -245,6 +357,26 @@ func _restore_modulate() -> void:
 	modulate = Color.WHITE
 	var accent: Color = stored_color as Color
 	_head_sprite.modulate = Color.WHITE.lerp(accent, 0.2) if current_type != "base" else Color.WHITE
+
+
+func _pierce_extra() -> int:
+	if current_type != "base":
+		return 0
+	if PlayerManager.has_stateful_inspection:
+		return 1
+	return 0
+
+
+func _range_radius() -> float:
+	if _ground_radius > 0.0:
+		return _ground_radius
+	var shape_node: CollisionShape2D = $RangeShape as CollisionShape2D
+	if shape_node == null:
+		return 100.0
+	var circle: CircleShape2D = shape_node.shape as CircleShape2D
+	if circle == null:
+		return 100.0
+	return circle.radius
 
 
 func _fire() -> void:
@@ -258,15 +390,19 @@ func _fire() -> void:
 		return
 	projectile.initialize(
 		current_target,
-		base_damage,
+		maxi(0, int(round(float(base_damage) * _match_damage_scale))),
 		current_explosion_radius,
 		current_slow_factor,
 		current_slow_duration,
+		_pierce_extra(),
+		current_type,
 	)
 	var parent_node: Node = get_parent()
 	if parent_node == null:
 		return
 	parent_node.add_child(projectile)
+	projectile.combat_map = combat_map
+	projectile.scale = deployment_scale
 	projectile.global_position = _muzzle_origin.global_position
 	AudioManager.play_sfx("shoot")
 
@@ -278,16 +414,16 @@ func play_deploy_animation() -> void:
 		_deploy_tween.kill()
 	if _ring_tween != null and _ring_tween.is_valid():
 		_ring_tween.kill()
-	scale = Vector2(0.28, 0.28)
+	scale = deployment_scale * 0.28
 	modulate.a = 0.0
 	_deploy_ring.visible = true
 	_deploy_ring.scale = DEPLOY_RING_SCALE * 0.55
 	_deploy_ring.modulate = Color(1.0, 1.0, 1.0, 0.9)
 	_deploy_tween = create_tween()
 	_deploy_tween.set_parallel(true)
-	_deploy_tween.tween_property(self, "scale", Vector2(1.08, 1.08), 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_deploy_tween.tween_property(self, "scale", deployment_scale * 1.08, 0.24).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_deploy_tween.tween_property(self, "modulate:a", 1.0, 0.14)
-	_deploy_tween.chain().tween_property(self, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_deploy_tween.chain().tween_property(self, "scale", deployment_scale, 0.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_ring_tween = create_tween()
 	_ring_tween.set_parallel(true)
 	_ring_tween.tween_property(_deploy_ring, "scale", DEPLOY_RING_SCALE * 1.18, 0.3).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)

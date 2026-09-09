@@ -6,12 +6,12 @@
 	},
 	"firewalls_intro": {
 		"title": "Firewall Fundamentals",
-		"body": "[b]A firewall is a policy enforcement point.[/b]\n\nIt sits on a trust boundary and allows, denies, or rate-limits packets using rules: source, destination, port, and protocol. Default-deny is safer than default-allow. Stateful inspection tracks whether a packet belongs to an established session.\n\nThe Firewall tower is that control in miniature: high fire rate, low damage, and a slow effect — it buys time for stronger nodes to finish the job.\n\n[b]Remember:[/b] a firewall is only as good as its rules. An allow-any rule is an open gate with extra paperwork.",
+		"body": "[b]A firewall is a policy enforcement point.[/b]\n\nIt sits on a trust boundary and allows, denies, or rate-limits packets using rules: source, destination, port, and protocol. Default-deny is safer than default-allow. Stateful inspection tracks whether a packet belongs to an established session.\n\nThe Scanner is that control in miniature: high fire rate, low damage — it inspects packets fast and buys time for stronger nodes to finish the job.\n\n[b]Remember:[/b] a firewall is only as good as its rules. An allow-any rule is an open gate with extra paperwork.",
 		"skill_tag": "firewalls"
 	},
 	"crypto_101": {
 		"title": "Encryption Basics",
-		"body": "[b]Cryptography protects confidentiality and integrity in transit and at rest.[/b]\n\nSymmetric ciphers (AES) use one shared secret. Asymmetric crypto (RSA, ECC) uses a key pair so you can publish a public key. TLS wraps HTTP so port 443 is not plaintext 80.\n\nHashing is not encryption: SHA-256 fingerprints data; you cannot reverse it to recover the original. The Decryptor tower is the combat metaphor — high damage and splash, because a broken cipher collapses many packets at once.\n\n[b]Remember:[/b] never invent your own crypto. Use vetted libraries, rotate keys, and keep plaintext off the wire.",
+		"body": "[b]Cryptography protects confidentiality and integrity in transit and at rest.[/b]\n\nSymmetric ciphers (AES) use one shared secret. Asymmetric crypto (RSA, ECC) uses a key pair so you can publish a public key. TLS wraps HTTP so port 443 is not plaintext 80.\n\nHashing is not encryption: SHA-256 fingerprints data; you cannot reverse it to recover the original. The Sandbox is the combat metaphor — it contains traffic and slows it, because an isolated payload cannot sprint to the keep.\n\n[b]Remember:[/b] never invent your own crypto. Use vetted libraries, rotate keys, and keep plaintext off the wire.",
 		"skill_tag": "crypto"
 	}
 }

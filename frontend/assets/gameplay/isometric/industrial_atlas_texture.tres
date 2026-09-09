@@ -1,0 +1,6 @@
+[gd_resource type="ImageTexture" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/cached_industrial_atlas.gd" id="1_cache"]
+
+[resource]
+script = ExtResource("1_cache")

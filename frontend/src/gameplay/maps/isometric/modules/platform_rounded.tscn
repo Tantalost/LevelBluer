@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_cna7x"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_3x3ru"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_g31f8"]
+atlas = ExtResource("2_3x3ru")
+region = Rect2(458, 743, 320, 205)
+filter_clip = true
+
+[node name="PlatformRounded" type="Node2D" unique_id=2105501319]
+y_sort_enabled = true
+script = ExtResource("1_cna7x")
+module_id = &"platform_rounded"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(2, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=2086902333]
+texture_filter = 2
+position = Vector2(32, 128)
+texture = SubResource("AtlasTexture_g31f8")
+offset = Vector2(0, -102.5)

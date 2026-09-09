@@ -108,7 +108,7 @@ func _style_header() -> void:
 	_result_label.text = "RESULT"
 	_player_name.text = "<%s>" % AuthService.display_name().to_upper()
 	_materials_value.text = str(PlayerManager.credits)
-	_materials_delta.visible = _won and _materials_gained > 0
+	_materials_delta.visible = _materials_gained > 0
 	_materials_delta.text = "+%d" % _materials_gained if _materials_delta.visible else ""
 	_apply_label(_result_label, Palette.CYAN, 13)
 	_apply_label(_player_name, Palette.TEXT_PRIMARY, 11)

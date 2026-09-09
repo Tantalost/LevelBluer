@@ -1,0 +1,1930 @@
+{
+  "version": 1,
+  "source": "docs/map-designs/module_1_isometric_kit_source_v1.png",
+  "floor_rects": [
+    [
+      16,
+      65,
+      105,
+      62
+    ],
+    [
+      130,
+      63,
+      101,
+      62
+    ],
+    [
+      235,
+      64,
+      110,
+      62
+    ],
+    [
+      350,
+      64,
+      105,
+      62
+    ],
+    [
+      460,
+      62,
+      100,
+      63
+    ],
+    [
+      565,
+      63,
+      105,
+      63
+    ],
+    [
+      674,
+      63,
+      100,
+      63
+    ],
+    [
+      774,
+      63,
+      92,
+      63
+    ],
+    [
+      868,
+      64,
+      98,
+      62
+    ],
+    [
+      966,
+      62,
+      110,
+      63
+    ]
+  ],
+  "props": [
+    {
+      "id": "curb_long",
+      "category": "edges",
+      "rect": [
+        12,
+        150,
+        95,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "curb_medium",
+      "category": "edges",
+      "rect": [
+        111,
+        150,
+        88,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "curb_short",
+      "category": "edges",
+      "rect": [
+        211,
+        150,
+        61,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "curb_outer",
+      "category": "edges",
+      "rect": [
+        286,
+        150,
+        107,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "curb_inner",
+      "category": "edges",
+      "rect": [
+        403,
+        150,
+        106,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "curb_join",
+      "category": "edges",
+      "rect": [
+        519,
+        150,
+        101,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "curb_end",
+      "category": "edges",
+      "rect": [
+        624,
+        150,
+        61,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "curb_cap",
+      "category": "edges",
+      "rect": [
+        690,
+        150,
+        48,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "curb_corner",
+      "category": "edges",
+      "rect": [
+        744,
+        150,
+        89,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "drain_raised",
+      "category": "edges",
+      "rect": [
+        843,
+        150,
+        102,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "low_panel",
+      "category": "edges",
+      "rect": [
+        959,
+        150,
+        63,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "low_panel_return",
+      "category": "edges",
+      "rect": [
+        1023,
+        150,
+        60,
+        84
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "wall_short",
+      "category": "walls",
+      "rect": [
+        12,
+        235,
+        74,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "wall_long",
+      "category": "walls",
+      "rect": [
+        91,
+        235,
+        129,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "wall_pipe",
+      "category": "walls",
+      "rect": [
+        238,
+        235,
+        93,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "wall_vent",
+      "category": "walls",
+      "rect": [
+        337,
+        235,
+        117,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "wall_window",
+      "category": "walls",
+      "rect": [
+        464,
+        235,
+        119,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "wall_outer_corner",
+      "category": "walls",
+      "rect": [
+        589,
+        235,
+        114,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "wall_inner_corner",
+      "category": "walls",
+      "rect": [
+        709,
+        235,
+        114,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "wall_t_junction",
+      "category": "walls",
+      "rect": [
+        834,
+        235,
+        119,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "wall_end",
+      "category": "walls",
+      "rect": [
+        962,
+        235,
+        47,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "wall_post",
+      "category": "walls",
+      "rect": [
+        1024,
+        235,
+        43,
+        166
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "door_double",
+      "category": "doors",
+      "rect": [
+        14,
+        400,
+        141,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "door_frame",
+      "category": "doors",
+      "rect": [
+        163,
+        400,
+        110,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "door_service_lit",
+      "category": "doors",
+      "rect": [
+        301,
+        400,
+        92,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "door_service",
+      "category": "doors",
+      "rect": [
+        408,
+        400,
+        81,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "door_shutter",
+      "category": "doors",
+      "rect": [
+        498,
+        400,
+        109,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "window_large",
+      "category": "doors",
+      "rect": [
+        625,
+        400,
+        126,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "door_open",
+      "category": "doors",
+      "rect": [
+        754,
+        400,
+        141,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "door_open_wide",
+      "category": "doors",
+      "rect": [
+        906,
+        400,
+        159,
+        169
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "platform_concrete",
+      "category": "platforms",
+      "rect": [
+        6,
+        563,
+        208,
+        161
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "platform_corner",
+      "category": "platforms",
+      "rect": [
+        216,
+        563,
+        176,
+        161
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "stairs",
+      "category": "platforms",
+      "rect": [
+        392,
+        563,
+        123,
+        161
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "platform_rounded",
+      "category": "platforms",
+      "rect": [
+        524,
+        563,
+        226,
+        161
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "platform_metal",
+      "category": "platforms",
+      "rect": [
+        748,
+        563,
+        153,
+        161
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "ramp",
+      "category": "platforms",
+      "rect": [
+        902,
+        563,
+        176,
+        161
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "fan_small",
+      "category": "ventilation",
+      "rect": [
+        3,
+        720,
+        121,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "fan_worn",
+      "category": "ventilation",
+      "rect": [
+        125,
+        720,
+        122,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "fan_array",
+      "category": "ventilation",
+      "rect": [
+        249,
+        720,
+        211,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "vent_large",
+      "category": "ventilation",
+      "rect": [
+        459,
+        720,
+        137,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "air_conditioner",
+      "category": "ventilation",
+      "rect": [
+        599,
+        720,
+        128,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "vent_box",
+      "category": "ventilation",
+      "rect": [
+        732,
+        720,
+        79,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "hvac_duct",
+      "category": "ventilation",
+      "rect": [
+        808,
+        720,
+        136,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "hvac_rooftop",
+      "category": "ventilation",
+      "rect": [
+        955,
+        720,
+        124,
+        144
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "generator",
+      "category": "machinery",
+      "rect": [
+        4,
+        865,
+        159,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "electrical_cabinet",
+      "category": "machinery",
+      "rect": [
+        162,
+        865,
+        98,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "electrical_cabinet_tall",
+      "category": "machinery",
+      "rect": [
+        266,
+        865,
+        97,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "industrial_machine",
+      "category": "machinery",
+      "rect": [
+        374,
+        865,
+        167,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "tank_horizontal",
+      "category": "machinery",
+      "rect": [
+        546,
+        865,
+        158,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "tank_vertical",
+      "category": "machinery",
+      "rect": [
+        716,
+        865,
+        87,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "utility_box",
+      "category": "machinery",
+      "rect": [
+        817,
+        865,
+        101,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "transformer",
+      "category": "machinery",
+      "rect": [
+        927,
+        865,
+        153,
+        175
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "barrier_long",
+      "category": "cover",
+      "rect": [
+        6,
+        1039,
+        132,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "barrier_short",
+      "category": "cover",
+      "rect": [
+        141,
+        1039,
+        98,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "barrier_broken",
+      "category": "cover",
+      "rect": [
+        238,
+        1039,
+        99,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "railing_short",
+      "category": "cover",
+      "rect": [
+        338,
+        1039,
+        88,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "crate_wood",
+      "category": "cover",
+      "rect": [
+        423,
+        1039,
+        86,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "crate_metal",
+      "category": "cover",
+      "rect": [
+        508,
+        1039,
+        89,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "container",
+      "category": "cover",
+      "rect": [
+        594,
+        1039,
+        149,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          2,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "railing_long",
+      "category": "cover",
+      "rect": [
+        741,
+        1039,
+        84,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "railing_corner",
+      "category": "cover",
+      "rect": [
+        825,
+        1039,
+        80,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "fence_long",
+      "category": "cover",
+      "rect": [
+        894,
+        1039,
+        126,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": true
+    },
+    {
+      "id": "fence_short",
+      "category": "cover",
+      "rect": [
+        1013,
+        1039,
+        68,
+        125
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": true,
+      "mirror": false
+    },
+    {
+      "id": "pipe_straight",
+      "category": "pipes",
+      "rect": [
+        5,
+        1160,
+        111,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "pipe_elbow",
+      "category": "pipes",
+      "rect": [
+        113,
+        1160,
+        112,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "pipe_tee",
+      "category": "pipes",
+      "rect": [
+        216,
+        1160,
+        94,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "pipe_cross",
+      "category": "pipes",
+      "rect": [
+        309,
+        1160,
+        125,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "pipe_riser",
+      "category": "pipes",
+      "rect": [
+        452,
+        1160,
+        51,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "pipe_cluster",
+      "category": "pipes",
+      "rect": [
+        509,
+        1160,
+        113,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "pipe_valve",
+      "category": "pipes",
+      "rect": [
+        610,
+        1160,
+        100,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "utility_pole",
+      "category": "pipes",
+      "rect": [
+        709,
+        1160,
+        144,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "cable_straight",
+      "category": "pipes",
+      "rect": [
+        848,
+        1160,
+        133,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": true
+    },
+    {
+      "id": "cable_bend",
+      "category": "pipes",
+      "rect": [
+        978,
+        1160,
+        100,
+        138
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          1
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "tire",
+      "category": "decoration",
+      "rect": [
+        6,
+        1296,
+        79,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "tires_stacked",
+      "category": "decoration",
+      "rect": [
+        84,
+        1296,
+        87,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "loose_grate",
+      "category": "decoration",
+      "rect": [
+        170,
+        1296,
+        96,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "trash_bags",
+      "category": "decoration",
+      "rect": [
+        266,
+        1296,
+        101,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "rubble",
+      "category": "decoration",
+      "rect": [
+        362,
+        1296,
+        93,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "concrete_chips",
+      "category": "decoration",
+      "rect": [
+        452,
+        1296,
+        71,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "scrap_metal",
+      "category": "decoration",
+      "rect": [
+        520,
+        1296,
+        87,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "dumpster",
+      "category": "decoration",
+      "rect": [
+        607,
+        1296,
+        110,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "street_lamp",
+      "category": "decoration",
+      "rect": [
+        720,
+        1296,
+        88,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "hydrant",
+      "category": "decoration",
+      "rect": [
+        812,
+        1296,
+        63,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "light_bollard",
+      "category": "decoration",
+      "rect": [
+        879,
+        1296,
+        56,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    },
+    {
+      "id": "neon_fixture",
+      "category": "decoration",
+      "rect": [
+        933,
+        1296,
+        142,
+        152
+      ],
+      "footprint": [
+        [
+          0,
+          0
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "blocks_movement": false,
+      "mirror": false
+    }
+  ]
+}

@@ -159,7 +159,7 @@
 		"starting_gold": 20,
 		"exam_question_count": 15,
 		"exam_required_score": 0.75,
-		"req_lesson": "mod1_all",
+		"req_lesson": "mod_01",
 		"incident_chance": 0.55,
 		"waves": [
 			{"enemy_count": 10, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "fast"},

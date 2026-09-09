@@ -18,6 +18,7 @@ const PRIMARY_BLUE := Color("#2E6BFF") # Primary CTA
 const BLUE_400 := Color("#4F8CFF")     # Hover state
 const CYAN_400 := Color("#4FE0D4")     # Active/glow
 const CYAN_300 := Color("#8FF0E6")     # Icon tint
+const PURPLE := Color("#9B59FF")       # Sandbox placeholder
 
 # Light Elements & Text
 const CREAM := Color("#F3ECD6")      # HUD panels

@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_yfyfp"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_i45ai"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_50g8p"]
+atlas = ExtResource("2_i45ai")
+region = Rect2(722, 1268, 144, 155)
+filter_clip = true
+
+[node name="RailingShortMirrored" type="Node2D" unique_id=673071887]
+y_sort_enabled = true
+script = ExtResource("1_yfyfp")
+module_id = &"railing_short_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1901553867]
+texture_filter = 2
+position = Vector2(-32, 64)
+texture = SubResource("AtlasTexture_50g8p")
+offset = Vector2(0, -77.5)
+flip_h = true
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=1037982657]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@98" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=1486677876]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+
+[node name="@CollisionPolygon2D@99" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=556797597]
+position = Vector2(-64, 32)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

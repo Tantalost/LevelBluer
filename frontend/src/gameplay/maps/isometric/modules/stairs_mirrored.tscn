@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_ocbav"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_uritb"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_n0h8t"]
+atlas = ExtResource("2_uritb")
+region = Rect2(262, 743, 192, 221)
+filter_clip = true
+
+[node name="StairsMirrored" type="Node2D" unique_id=1694047537]
+y_sort_enabled = true
+script = ExtResource("1_ocbav")
+module_id = &"stairs_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1499030525]
+texture_filter = 2
+position = Vector2(-32, 64)
+texture = SubResource("AtlasTexture_n0h8t")
+offset = Vector2(0, -110.5)
+flip_h = true

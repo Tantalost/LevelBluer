@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://b8levelbase01"]
+[gd_scene load_steps=14 format=3 uid="uid://b8levelbase01"]
 
 [ext_resource type="Script" path="res://src/gameplay/level_manager.gd" id="1_mgr"]
 [ext_resource type="PackedScene" uid="uid://cenemybase001" path="res://src/gameplay/enemy_base.tscn" id="5_enemy"]
@@ -10,7 +10,6 @@
 [ext_resource type="Script" path="res://src/ui/screens/dashboard/hud_geo_button.gd" id="11_geo"]
 [ext_resource type="PackedScene" path="res://src/ui/screens/pause_menu.tscn" id="12_pause"]
 [ext_resource type="Script" path="res://src/gameplay/tower_deploy_card.gd" id="13_card"]
-[ext_resource type="Texture2D" path="res://assets/gameplay/towers/basic_node_base_v1.png" id="14_basic_node"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_base"]
 radius = 36.0
@@ -324,7 +323,7 @@ expand_mode = 1
 stretch_mode = 5
 texture_filter = 1
 
-[node name="TowerCard" type="Control" parent="GameplayCanvas/HUD"]
+[node name="ShopRow" type="HBoxContainer" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 1
@@ -333,15 +332,47 @@ anchor_top = 1.0
 anchor_bottom = 1.0
 offset_left = 28.0
 offset_top = -186.0
-offset_right = 158.0
+offset_right = 470.0
 offset_bottom = -20.0
 grow_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="TowerCard" type="Control" parent="GameplayCanvas/HUD/ShopRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 166)
+layout_mode = 2
+size_flags_vertical = 3
 script = ExtResource("13_card")
 tower_id = "base"
 tower_name = "BASIC NODE"
 role_label = "DPS"
 cost = 2
-portrait = ExtResource("14_basic_node")
+
+[node name="ScannerCard" type="Control" parent="GameplayCanvas/HUD/ShopRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(130, 166)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("13_card")
+tower_id = "scanner"
+tower_name = "SCANNER"
+role_label = "SCAN"
+cost = 3
+accent = Color(0.309804, 0.54902, 1, 1)
+
+[node name="SandboxCard" type="Control" parent="GameplayCanvas/HUD/ShopRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(130, 166)
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("13_card")
+tower_id = "sandbox"
+tower_name = "SANDBOX"
+role_label = "SLOW"
+cost = 4
+accent = Color(0.607843, 0.34902, 1, 1)
 
 [node name="IncidentModal" type="PanelContainer" parent="GameplayCanvas/HUD"]
 unique_name_in_owner = true

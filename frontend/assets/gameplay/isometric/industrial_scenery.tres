@@ -1,0 +1,268 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_long.tscn" id="1_2xk8b"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_cap.tscn" id="2_a2vm5"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_corner.tscn" id="3_75la7"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/drain_raised.tscn" id="4_llj6c"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/low_panel.tscn" id="5_wmk5l"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/low_panel_return.tscn" id="6_6sn8h"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_long_mirrored.tscn" id="7_4pyeb"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_medium.tscn" id="8_261s2"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_medium_mirrored.tscn" id="9_pu1l0"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_short.tscn" id="10_bge2d"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_outer.tscn" id="11_evdql"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_inner.tscn" id="12_y2gpf"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_join.tscn" id="13_qfgds"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_end.tscn" id="14_i05yq"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_short.tscn" id="15_npg8y"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_inner_corner.tscn" id="16_t7ty6"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_t_junction.tscn" id="17_hgsij"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_end.tscn" id="18_cw7vs"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_post.tscn" id="19_kym3e"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_long.tscn" id="20_rxats"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_long_mirrored.tscn" id="21_46u8y"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_pipe.tscn" id="22_qxd0d"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_vent.tscn" id="23_rtaaw"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_vent_mirrored.tscn" id="24_d08co"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_window.tscn" id="25_y2srf"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_window_mirrored.tscn" id="26_5shtd"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/wall_outer_corner.tscn" id="27_hvv16"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_double.tscn" id="28_8w2bx"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/window_large_mirrored.tscn" id="29_b6ovv"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_open.tscn" id="30_bbr3n"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_open_mirrored.tscn" id="31_3rois"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_open_wide.tscn" id="32_nb0b8"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_open_wide_mirrored.tscn" id="33_2afqr"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_double_mirrored.tscn" id="34_5mkqd"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_frame.tscn" id="35_022ma"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_frame_mirrored.tscn" id="36_rqwxi"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_service_lit.tscn" id="37_pnja4"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_service.tscn" id="38_s2w4j"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_shutter.tscn" id="39_33hdf"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/door_shutter_mirrored.tscn" id="40_rs18o"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/window_large.tscn" id="41_ful05"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/platform_concrete.tscn" id="42_854mh"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/ramp_mirrored.tscn" id="43_eafde"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/platform_corner.tscn" id="44_hgh4m"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/stairs.tscn" id="45_qlf2u"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/stairs_mirrored.tscn" id="46_ynext"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/platform_rounded.tscn" id="47_r7ds4"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/platform_rounded_mirrored.tscn" id="48_s3j2k"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/platform_metal.tscn" id="49_0ajmt"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/platform_metal_mirrored.tscn" id="50_11vw2"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/ramp.tscn" id="51_rcgum"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/fan_small.tscn" id="52_h7pqs"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/hvac_duct_mirrored.tscn" id="53_24whx"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/hvac_rooftop.tscn" id="54_0tp05"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/fan_worn.tscn" id="55_ssqcc"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/fan_array.tscn" id="56_6dotf"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/vent_large.tscn" id="57_2i8gl"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/vent_large_mirrored.tscn" id="58_s6vjm"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/air_conditioner.tscn" id="59_jjvij"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/air_conditioner_mirrored.tscn" id="60_6yota"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/vent_box.tscn" id="61_tqx0b"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/hvac_duct.tscn" id="62_0wdow"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/generator.tscn" id="63_flrq2"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/electrical_cabinet.tscn" id="64_6akkv"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/electrical_cabinet_tall.tscn" id="65_8n302"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/industrial_machine.tscn" id="66_gw1xs"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/tank_horizontal.tscn" id="67_yllex"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/tank_vertical.tscn" id="68_f0q4x"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/utility_box.tscn" id="69_njsdg"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/transformer.tscn" id="70_qcxpw"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/barrier_long.tscn" id="71_f816d"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/container_mirrored.tscn" id="72_r6ngy"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/railing_long.tscn" id="73_emkm5"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/railing_long_mirrored.tscn" id="74_sxpfr"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/railing_corner.tscn" id="75_0yr02"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/fence_long.tscn" id="76_i1qys"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/fence_long_mirrored.tscn" id="77_bm562"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/fence_short.tscn" id="78_y0ter"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/barrier_long_mirrored.tscn" id="79_51bpp"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/barrier_short.tscn" id="80_vemy4"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/barrier_broken.tscn" id="81_0yxqk"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/railing_short.tscn" id="82_emv6p"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/railing_short_mirrored.tscn" id="83_vy28m"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/crate_wood.tscn" id="84_li2sb"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/crate_metal.tscn" id="85_evci2"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/container.tscn" id="86_eaqgu"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_straight.tscn" id="87_jd4r4"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_valve_mirrored.tscn" id="88_mufw3"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/utility_pole.tscn" id="89_iuwjk"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/cable_straight.tscn" id="90_8a55u"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/cable_straight_mirrored.tscn" id="91_84xes"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/cable_bend.tscn" id="92_p7q0x"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_straight_mirrored.tscn" id="93_fx8o7"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_elbow.tscn" id="94_e8ns5"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_tee.tscn" id="95_1svoa"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_cross.tscn" id="96_8npud"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_riser.tscn" id="97_c100n"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_cluster.tscn" id="98_tcrcj"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_cluster_mirrored.tscn" id="99_0ii04"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/pipe_valve.tscn" id="100_sy2vl"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/tire.tscn" id="101_nkk27"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/hydrant.tscn" id="102_d0rrh"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/light_bollard.tscn" id="103_k53j3"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/neon_fixture.tscn" id="104_el3wj"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/tires_stacked.tscn" id="105_qd3mv"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/loose_grate.tscn" id="106_ns675"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/trash_bags.tscn" id="107_g75i7"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/rubble.tscn" id="108_126ce"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/concrete_chips.tscn" id="109_3yvtf"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/scrap_metal.tscn" id="110_i8s4e"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/dumpster.tscn" id="111_dfwlk"]
+[ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/street_lamp.tscn" id="112_p8y0f"]
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_lb2gh"]
+resource_name = "Edges"
+scenes/1/scene = ExtResource("1_2xk8b")
+scenes/2/scene = ExtResource("7_4pyeb")
+scenes/3/scene = ExtResource("8_261s2")
+scenes/4/scene = ExtResource("9_pu1l0")
+scenes/5/scene = ExtResource("10_bge2d")
+scenes/6/scene = ExtResource("11_evdql")
+scenes/7/scene = ExtResource("12_y2gpf")
+scenes/8/scene = ExtResource("13_qfgds")
+scenes/9/scene = ExtResource("14_i05yq")
+scenes/10/scene = ExtResource("2_a2vm5")
+scenes/11/scene = ExtResource("3_75la7")
+scenes/12/scene = ExtResource("4_llj6c")
+scenes/13/scene = ExtResource("5_wmk5l")
+scenes/14/scene = ExtResource("6_6sn8h")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_ofb0x"]
+resource_name = "Walls"
+scenes/1/scene = ExtResource("15_npg8y")
+scenes/2/scene = ExtResource("20_rxats")
+scenes/3/scene = ExtResource("21_46u8y")
+scenes/4/scene = ExtResource("22_qxd0d")
+scenes/5/scene = ExtResource("23_rtaaw")
+scenes/6/scene = ExtResource("24_d08co")
+scenes/7/scene = ExtResource("25_y2srf")
+scenes/8/scene = ExtResource("26_5shtd")
+scenes/9/scene = ExtResource("27_hvv16")
+scenes/10/scene = ExtResource("16_t7ty6")
+scenes/11/scene = ExtResource("17_hgsij")
+scenes/12/scene = ExtResource("18_cw7vs")
+scenes/13/scene = ExtResource("19_kym3e")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_5s0oo"]
+resource_name = "Doors"
+scenes/1/scene = ExtResource("28_8w2bx")
+scenes/2/scene = ExtResource("34_5mkqd")
+scenes/3/scene = ExtResource("35_022ma")
+scenes/4/scene = ExtResource("36_rqwxi")
+scenes/5/scene = ExtResource("37_pnja4")
+scenes/6/scene = ExtResource("38_s2w4j")
+scenes/7/scene = ExtResource("39_33hdf")
+scenes/8/scene = ExtResource("40_rs18o")
+scenes/9/scene = ExtResource("41_ful05")
+scenes/10/scene = ExtResource("29_b6ovv")
+scenes/11/scene = ExtResource("30_bbr3n")
+scenes/12/scene = ExtResource("31_3rois")
+scenes/13/scene = ExtResource("32_nb0b8")
+scenes/14/scene = ExtResource("33_2afqr")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_aubl4"]
+resource_name = "Platforms"
+scenes/1/scene = ExtResource("42_854mh")
+scenes/2/scene = ExtResource("44_hgh4m")
+scenes/3/scene = ExtResource("45_qlf2u")
+scenes/4/scene = ExtResource("46_ynext")
+scenes/5/scene = ExtResource("47_r7ds4")
+scenes/6/scene = ExtResource("48_s3j2k")
+scenes/7/scene = ExtResource("49_0ajmt")
+scenes/8/scene = ExtResource("50_11vw2")
+scenes/9/scene = ExtResource("51_rcgum")
+scenes/10/scene = ExtResource("43_eafde")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_dk6rs"]
+resource_name = "Ventilation"
+scenes/1/scene = ExtResource("52_h7pqs")
+scenes/2/scene = ExtResource("55_ssqcc")
+scenes/3/scene = ExtResource("56_6dotf")
+scenes/4/scene = ExtResource("57_2i8gl")
+scenes/5/scene = ExtResource("58_s6vjm")
+scenes/6/scene = ExtResource("59_jjvij")
+scenes/7/scene = ExtResource("60_6yota")
+scenes/8/scene = ExtResource("61_tqx0b")
+scenes/9/scene = ExtResource("62_0wdow")
+scenes/10/scene = ExtResource("53_24whx")
+scenes/11/scene = ExtResource("54_0tp05")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_yrb4t"]
+resource_name = "Machinery"
+scenes/1/scene = ExtResource("63_flrq2")
+scenes/2/scene = ExtResource("64_6akkv")
+scenes/3/scene = ExtResource("65_8n302")
+scenes/4/scene = ExtResource("66_gw1xs")
+scenes/5/scene = ExtResource("67_yllex")
+scenes/6/scene = ExtResource("68_f0q4x")
+scenes/7/scene = ExtResource("69_njsdg")
+scenes/8/scene = ExtResource("70_qcxpw")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_ybp1t"]
+resource_name = "Cover"
+scenes/1/scene = ExtResource("71_f816d")
+scenes/2/scene = ExtResource("79_51bpp")
+scenes/3/scene = ExtResource("80_vemy4")
+scenes/4/scene = ExtResource("81_0yxqk")
+scenes/5/scene = ExtResource("82_emv6p")
+scenes/6/scene = ExtResource("83_vy28m")
+scenes/7/scene = ExtResource("84_li2sb")
+scenes/8/scene = ExtResource("85_evci2")
+scenes/9/scene = ExtResource("86_eaqgu")
+scenes/10/scene = ExtResource("72_r6ngy")
+scenes/11/scene = ExtResource("73_emkm5")
+scenes/12/scene = ExtResource("74_sxpfr")
+scenes/13/scene = ExtResource("75_0yr02")
+scenes/14/scene = ExtResource("76_i1qys")
+scenes/15/scene = ExtResource("77_bm562")
+scenes/16/scene = ExtResource("78_y0ter")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_5vnul"]
+resource_name = "Pipes"
+scenes/1/scene = ExtResource("87_jd4r4")
+scenes/2/scene = ExtResource("93_fx8o7")
+scenes/3/scene = ExtResource("94_e8ns5")
+scenes/4/scene = ExtResource("95_1svoa")
+scenes/5/scene = ExtResource("96_8npud")
+scenes/6/scene = ExtResource("97_c100n")
+scenes/7/scene = ExtResource("98_tcrcj")
+scenes/8/scene = ExtResource("99_0ii04")
+scenes/9/scene = ExtResource("100_sy2vl")
+scenes/10/scene = ExtResource("88_mufw3")
+scenes/11/scene = ExtResource("89_iuwjk")
+scenes/12/scene = ExtResource("90_8a55u")
+scenes/13/scene = ExtResource("91_84xes")
+scenes/14/scene = ExtResource("92_p7q0x")
+
+[sub_resource type="TileSetScenesCollectionSource" id="TileSetScenesCollectionSource_s0hd7"]
+resource_name = "Decoration"
+scenes/1/scene = ExtResource("101_nkk27")
+scenes/2/scene = ExtResource("105_qd3mv")
+scenes/3/scene = ExtResource("106_ns675")
+scenes/4/scene = ExtResource("107_g75i7")
+scenes/5/scene = ExtResource("108_126ce")
+scenes/6/scene = ExtResource("109_3yvtf")
+scenes/7/scene = ExtResource("110_i8s4e")
+scenes/8/scene = ExtResource("111_dfwlk")
+scenes/9/scene = ExtResource("112_p8y0f")
+scenes/10/scene = ExtResource("102_d0rrh")
+scenes/11/scene = ExtResource("103_k53j3")
+scenes/12/scene = ExtResource("104_el3wj")
+
+[resource]
+resource_name = "Industrial Scenery — Multi-cell Modules"
+tile_shape = 1
+tile_layout = 5
+tile_size = Vector2i(128, 64)
+sources/10 = SubResource("TileSetScenesCollectionSource_lb2gh")
+sources/11 = SubResource("TileSetScenesCollectionSource_ofb0x")
+sources/12 = SubResource("TileSetScenesCollectionSource_5s0oo")
+sources/13 = SubResource("TileSetScenesCollectionSource_aubl4")
+sources/14 = SubResource("TileSetScenesCollectionSource_dk6rs")
+sources/15 = SubResource("TileSetScenesCollectionSource_yrb4t")
+sources/16 = SubResource("TileSetScenesCollectionSource_ybp1t")
+sources/17 = SubResource("TileSetScenesCollectionSource_5vnul")
+sources/18 = SubResource("TileSetScenesCollectionSource_s0hd7")

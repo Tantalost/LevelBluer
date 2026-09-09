@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_a2sjp"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_qfneq"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nk821"]
+atlas = ExtResource("2_qfneq")
+region = Rect2(432, 1862, 82, 69)
+filter_clip = true
+
+[node name="ConcreteChips" type="Node2D" unique_id=674075113]
+y_sort_enabled = true
+script = ExtResource("1_a2sjp")
+module_id = &"concrete_chips"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1309049289]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_nk821")
+offset = Vector2(0, -34.5)

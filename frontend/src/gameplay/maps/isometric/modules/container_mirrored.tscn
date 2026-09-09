@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_h7jmd"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_rxqr7"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_r0smb"]
+atlas = ExtResource("2_rxqr7")
+region = Rect2(1134, 1268, 256, 225)
+filter_clip = true
+
+[node name="ContainerMirrored" type="Node2D" unique_id=1784091434]
+y_sort_enabled = true
+script = ExtResource("1_h7jmd")
+module_id = &"container_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 2)])
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=481546387]
+texture_filter = 2
+position = Vector2(-64, 96)
+texture = SubResource("AtlasTexture_r0smb")
+offset = Vector2(0, -112.5)
+flip_h = true
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=1660412132]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@105" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=914612225]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+
+[node name="@CollisionPolygon2D@106" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=1648913003]
+position = Vector2(-64, 32)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+
+[node name="@CollisionPolygon2D@107" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=33621835]
+position = Vector2(-128, 64)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

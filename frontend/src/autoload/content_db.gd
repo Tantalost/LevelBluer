@@ -6,6 +6,7 @@ var questions: Dictionary = {}
 var stages: Dictionary = {}
 var enemies: Dictionary = {}
 var towers: Dictionary = {}
+var tech_tree: Dictionary = {}
 var incidents: Array = []
 var lessons: Dictionary = {}
 var _module_question_ids: Dictionary = {}
@@ -22,6 +23,7 @@ func _ready() -> void:
 	_load_json_dict("res://data/stages.json", stages)
 	_load_json_dict("res://data/enemies.json", enemies)
 	_load_json_dict("res://data/towers.json", towers)
+	_load_json_dict("res://data/tech_tree.json", tech_tree)
 	_load_json_array("res://data/incidents.json", incidents)
 	_load_json_dict("res://data/lessons.json", lessons)
 	_assign_stage_pools()
@@ -31,6 +33,7 @@ func _ready() -> void:
 		" stages=", stages.size(),
 		" enemies=", enemies.size(),
 		" towers=", towers.size(),
+		" tech=", tech_tree.size(),
 		" incidents=", incidents.size(),
 		" lessons=", lessons.size()
 	)
@@ -45,6 +48,8 @@ func load_all() -> void:
 		_load_json_dict("res://data/enemies.json", enemies)
 	if towers.is_empty():
 		_load_json_dict("res://data/towers.json", towers)
+	if tech_tree.is_empty():
+		_load_json_dict("res://data/tech_tree.json", tech_tree)
 	if incidents.is_empty():
 		_load_json_array("res://data/incidents.json", incidents)
 	if lessons.is_empty():
@@ -110,6 +115,111 @@ func get_tower(type_id: String) -> Dictionary:
 	if typeof(stored) != TYPE_DICTIONARY:
 		return {}
 	return _normalize_tower(stored as Dictionary)
+
+
+func get_tech_tower(tower_id: String) -> Dictionary:
+	if tower_id.is_empty() or not tech_tree.has(tower_id):
+		return {}
+	var stored: Variant = tech_tree[tower_id]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+func default_capacity(tower_id: String) -> int:
+	var entry: Dictionary = get_tech_tower(tower_id)
+	var stored: Variant = entry.get("default_capacity", 1)
+	if typeof(stored) == TYPE_INT or typeof(stored) == TYPE_FLOAT:
+		return maxi(0, int(stored))
+	return 1
+
+
+func tech_track_ids(tower_id: String) -> Array[String]:
+	var ids: Array[String] = []
+	var tracks: Dictionary = _tech_tracks(tower_id)
+	var keys: Array = tracks.keys()
+	keys.sort()
+	var preferred: Array[String] = ["stats", "capacity", "skill", "evolution"]
+	for i in preferred.size():
+		var track_id: String = preferred[i]
+		if tracks.has(track_id):
+			ids.append(track_id)
+	for i in keys.size():
+		var track_id: String = str(keys[i])
+		if track_id.is_empty() or ids.has(track_id):
+			continue
+		ids.append(track_id)
+	return ids
+
+
+func tech_track(tower_id: String, track_id: String) -> Dictionary:
+	if track_id.is_empty():
+		return {}
+	var tracks: Dictionary = _tech_tracks(tower_id)
+	if not tracks.has(track_id):
+		return {}
+	var stored: Variant = tracks[track_id]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+func tech_max_rank(tower_id: String, track_id: String) -> int:
+	var track: Dictionary = tech_track(tower_id, track_id)
+	var stored: Variant = track.get("max_rank", 0)
+	if typeof(stored) == TYPE_INT or typeof(stored) == TYPE_FLOAT:
+		return maxi(0, int(stored))
+	return _tech_ranks(tower_id, track_id).size()
+
+
+func tech_rank_entry(tower_id: String, track_id: String, rank: int) -> Dictionary:
+	if rank <= 0:
+		return {}
+	var ranks: Array = _tech_ranks(tower_id, track_id)
+	var index: int = rank - 1
+	if index < 0 or index >= ranks.size():
+		return {}
+	var stored: Variant = ranks[index]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+func tech_rank_cost(tower_id: String, track_id: String, rank: int) -> int:
+	var entry: Dictionary = tech_rank_entry(tower_id, track_id, rank)
+	if entry.is_empty():
+		return -1
+	return maxi(0, int(entry.get("cost", 0)))
+
+
+func tech_stats_bonus(tower_id: String, ranks: int) -> Dictionary:
+	var damage_bonus: int = 0
+	var fire_rate_bonus: float = 0.0
+	var clamped: int = clampi(ranks, 0, tech_max_rank(tower_id, "stats"))
+	for rank in range(1, clamped + 1):
+		var entry: Dictionary = tech_rank_entry(tower_id, "stats", rank)
+		damage_bonus += int(entry.get("damage", 0))
+		fire_rate_bonus += float(entry.get("fire_rate", 0.0))
+	return {
+		"damage": damage_bonus,
+		"fire_rate": fire_rate_bonus,
+	}
+
+
+func _tech_tracks(tower_id: String) -> Dictionary:
+	var entry: Dictionary = get_tech_tower(tower_id)
+	var stored: Variant = entry.get("tracks", {})
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+func _tech_ranks(tower_id: String, track_id: String) -> Array:
+	var track: Dictionary = tech_track(tower_id, track_id)
+	var stored: Variant = track.get("ranks", [])
+	if typeof(stored) != TYPE_ARRAY:
+		return []
+	return stored as Array
 
 
 func get_incidents() -> Array:
@@ -218,12 +328,17 @@ func _normalize_tower(raw: Dictionary) -> Dictionary:
 	var slow_duration: float = 0.0
 	if typeof(slow_duration_raw) == TYPE_INT or typeof(slow_duration_raw) == TYPE_FLOAT:
 		slow_duration = float(slow_duration_raw)
+	var zone_slow_raw: Variant = raw.get("zone_slow", 1.0)
+	var zone_slow: float = 1.0
+	if typeof(zone_slow_raw) == TYPE_INT or typeof(zone_slow_raw) == TYPE_FLOAT:
+		zone_slow = float(zone_slow_raw)
 	var cost_raw: Variant = raw.get("cost", 0)
 	var cost: int = 0
 	if typeof(cost_raw) == TYPE_INT or typeof(cost_raw) == TYPE_FLOAT:
 		cost = maxi(0, int(cost_raw))
 	return {
 		"name": str(raw.get("name", "")),
+		"role": str(raw.get("role", "DPS")),
 		"damage": damage,
 		"fire_rate": fire_rate,
 		"color": _palette_color(str(raw.get("color", "CYAN")), Palette.CYAN),
@@ -233,6 +348,7 @@ func _normalize_tower(raw: Dictionary) -> Dictionary:
 		"explosion_radius": splash_radius,
 		"slow_factor": slow_factor,
 		"slow_duration": slow_duration,
+		"zone_slow": zone_slow,
 	}
 
 
@@ -248,6 +364,10 @@ func _palette_color(color_name: String, fallback: Color) -> Color:
 			return Palette.GREEN
 		"CYAN":
 			return Palette.CYAN
+		"BLUE":
+			return Palette.BLUE_400
+		"PURPLE":
+			return Palette.PURPLE
 		"MAGENTA":
 			return Palette.MAGENTA
 		"GOLD":

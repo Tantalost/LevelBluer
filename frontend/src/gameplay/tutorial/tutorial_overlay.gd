@@ -168,7 +168,7 @@ func show_post_defend() -> void:
 
 
 func show_results() -> void:
-	PlayerManager.ensure_tutorial_upgrade_funds()
+	PlayerManager.grant_tutorial_capacity_rank()
 	_glow_rect = Rect2()
 	_prime_coach(103, tr("TUTORIAL_RESULTS"), 0.28, true, false)
 

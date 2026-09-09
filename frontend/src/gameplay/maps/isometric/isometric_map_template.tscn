@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_map.gd" id="1_n1vno"]
+[ext_resource type="TileSet" path="res://assets/gameplay/isometric/industrial_floors.tres" id="2_c4eqe"]
+[ext_resource type="TileSet" path="res://assets/gameplay/isometric/industrial_scenery.tres" id="3_dfvdk"]
+
+[node name="IsometricMap" type="Node2D" unique_id=842140586]
+y_sort_enabled = true
+script = ExtResource("1_n1vno")
+
+[node name="Ground" type="TileMapLayer" parent="." unique_id=350915073]
+z_index = -2
+texture_filter = 1
+tile_set = ExtResource("2_c4eqe")
+
+[node name="FloorDetails" type="TileMapLayer" parent="." unique_id=1666470981]
+z_index = -1
+texture_filter = 1
+tile_set = ExtResource("2_c4eqe")
+
+[node name="Scenery" type="TileMapLayer" parent="." unique_id=1685130059]
+y_sort_enabled = true
+tile_set = ExtResource("3_dfvdk")

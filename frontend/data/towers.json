@@ -1,35 +1,41 @@
 {
 	"base": {
 		"name": "Basic Node",
+		"role": "DPS",
 		"damage": 1,
-		"fire_rate": 1.0,
+		"fire_rate": 0.55,
 		"color": "CYAN",
-		"cost": 0,
+		"cost": 2,
 		"req_skill": "",
 		"splash_radius": 0.0,
 		"slow_factor": 1.0,
-		"slow_duration": 0.0
+		"slow_duration": 0.0,
+		"zone_slow": 1.0
 	},
-	"network": {
-		"name": "Firewall",
+	"scanner": {
+		"name": "Scanner",
+		"role": "SCAN",
 		"damage": 1,
-		"fire_rate": 2.5,
-		"color": "GREEN",
+		"fire_rate": 3.5,
+		"color": "BLUE",
 		"cost": 3,
-		"req_skill": "firewall_1",
+		"req_skill": "",
 		"splash_radius": 0.0,
-		"slow_factor": 0.5,
-		"slow_duration": 1.5
-	},
-	"crypto": {
-		"name": "Decryptor",
-		"damage": 3,
-		"fire_rate": 0.8,
-		"color": "MAGENTA",
-		"cost": 4,
-		"req_skill": "crypto_1",
-		"splash_radius": 64.0,
 		"slow_factor": 1.0,
-		"slow_duration": 0.0
+		"slow_duration": 0.0,
+		"zone_slow": 1.0
+	},
+	"sandbox": {
+		"name": "Sandbox",
+		"role": "SLOW",
+		"damage": 0,
+		"fire_rate": 0.0,
+		"color": "PURPLE",
+		"cost": 4,
+		"req_skill": "",
+		"splash_radius": 0.0,
+		"slow_factor": 1.0,
+		"slow_duration": 0.0,
+		"zone_slow": 0.6
 	}
 }

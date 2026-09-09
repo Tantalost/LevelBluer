@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://8n7cgp38v5c7"]
+
+[ext_resource type="PackedScene" uid="uid://ctowerbase001" path="res://src/gameplay/tower_base.tscn" id="1_base"]
+
+[node name="SandboxNode" instance=ExtResource("1_base")]
+starting_type = "sandbox"

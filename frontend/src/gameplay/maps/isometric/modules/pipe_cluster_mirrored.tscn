@@ -1,0 +1,23 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_5gdne"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_l1wxv"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_el4pd"]
+atlas = ExtResource("2_l1wxv")
+region = Rect2(1018, 1585, 192, 222)
+filter_clip = true
+
+[node name="PipeClusterMirrored" type="Node2D" unique_id=1508621866]
+y_sort_enabled = true
+script = ExtResource("1_5gdne")
+module_id = &"pipe_cluster_mirrored"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1487169709]
+texture_filter = 2
+position = Vector2(-32, 64)
+texture = SubResource("AtlasTexture_el4pd")
+offset = Vector2(0, -111)
+flip_h = true

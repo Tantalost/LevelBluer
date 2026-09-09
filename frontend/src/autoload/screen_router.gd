@@ -130,6 +130,17 @@ func restart_level() -> void:
 	)
 
 
+func open_defeat_upgrades() -> void:
+	if _host == null:
+		return
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		_set_ui_stack_active(true)
+		_replace_all_now(&"dashboard")
+		_push_now(&"upgrades")
+	)
+
+
 func open_intel_hub() -> void:
 	if _host == null:
 		push_error("Router: cannot open Intel Hub (host not registered)")
@@ -310,10 +321,12 @@ func open_victory(accuracy: float, gold: int) -> void:
 	})
 
 
-func open_defeat(tip: String, weak_skill: String) -> void:
+func open_defeat(tip: String, weak_skill: String, credits: int = 0) -> void:
+	var payout: int = maxi(0, credits)
 	open_results({
 		"won": false,
-		"materials": 0,
+		"credits": payout,
+		"materials": payout,
 		"tip": tip,
 		"weak_skill": weak_skill,
 	})

@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_ibunm"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_nkjup"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yptmu"]
+atlas = ExtResource("2_nkjup")
+region = Rect2(1448, 499, 208, 240)
+filter_clip = true
+
+[node name="DoorOpenWide" type="Node2D" unique_id=31675773]
+y_sort_enabled = true
+script = ExtResource("1_ibunm")
+module_id = &"door_open_wide"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=403104535]
+texture_filter = 2
+position = Vector2(64, 96)
+texture = SubResource("AtlasTexture_yptmu")
+offset = Vector2(0, -120)

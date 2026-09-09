@@ -76,8 +76,7 @@ func _draw() -> void:
 	_draw_raised_platforms()
 	_draw_route_details()
 	_draw_deck_frame()
-	_draw_spawn_gate()
-	_draw_core_gate()
+	# Entry and base sprites are reusable runtime nodes, not baked map pixels.
 	_draw_light_wash()
 
 

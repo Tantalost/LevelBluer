@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_vts1i"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_4gqs6"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_uwwfg"]
+atlas = ExtResource("2_4gqs6")
+region = Rect2(2, 1862, 82, 74)
+filter_clip = true
+
+[node name="Tire" type="Node2D" unique_id=591132874]
+y_sort_enabled = true
+script = ExtResource("1_vts1i")
+module_id = &"tire"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1263188826]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_uwwfg")
+offset = Vector2(0, -37)

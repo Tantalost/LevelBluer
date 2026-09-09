@@ -1,0 +1,21 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_kfmdc"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_ng7eo"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7368j"]
+atlas = ExtResource("2_ng7eo")
+region = Rect2(978, 1585, 36, 147)
+filter_clip = true
+
+[node name="PipeRiser" type="Node2D" unique_id=133906152]
+y_sort_enabled = true
+script = ExtResource("1_kfmdc")
+module_id = &"pipe_riser"
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=486899556]
+texture_filter = 2
+position = Vector2(0, 32)
+texture = SubResource("AtlasTexture_7368j")
+offset = Vector2(0, -73.5)

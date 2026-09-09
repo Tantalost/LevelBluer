@@ -1,6 +1,6 @@
 class_name ProjectileBase
 extends Area2D
-## Homing bolt. Decryptor blasts; Firewall snares. No HP math lives here.
+## Homing bolt. Stateful Inspection lets a Basic Node shot pierce one extra target.
 
 var speed: float = 400.0
 var target: Node2D = null
@@ -8,6 +8,23 @@ var damage: int = 1
 var blast_radius: float = 0.0
 var slow_factor: float = 1.0
 var slow_duration: float = 0.0
+var pierce_remaining: int = 0
+var source_type: String = "base"
+var _hit_ids: Dictionary = {}
+var _last_dir: Vector2 = Vector2.RIGHT
+var _orphan_life: float = 0.0
+var combat_map: Node2D = null
+
+
+func _combat_distance(a: Vector2, b: Vector2) -> float:
+	if is_instance_valid(combat_map):
+		return combat_map.call("ground_distance", a, b)
+	return a.distance_to(b)
+
+
+func _advance_toward(destination: Vector2, travel: float) -> void:
+	var distance := _combat_distance(global_position, destination)
+	global_position = global_position.lerp(destination, minf(1.0, travel / maxf(distance, 0.001)))
 
 
 func _ready() -> void:
@@ -20,36 +37,82 @@ func initialize(
 	blast: float = 0.0,
 	slow_pct: float = 1.0,
 	slow_time: float = 0.0,
+	pierce_extra: int = 0,
+	tower_type: String = "base",
 ) -> void:
 	target = target_node
 	damage = damage_amount
 	blast_radius = blast
 	slow_factor = slow_pct
 	slow_duration = slow_time
+	pierce_remaining = maxi(0, pierce_extra)
+	source_type = tower_type
 
 
 func _process(delta: float) -> void:
-	if not is_instance_valid(target) or target.is_queued_for_deletion():
-		queue_free()
+	if is_instance_valid(target) and not target.is_queued_for_deletion():
+		_last_dir = (target.global_position - global_position).normalized()
+		look_at(target.global_position)
+		_advance_toward(target.global_position, speed * delta)
 		return
-	look_at(target.global_position)
-	global_position = global_position.move_toward(target.global_position, speed * delta)
-
-
-func _on_area_entered(area: Area2D) -> void:
-	if blast_radius > 0.0:
-		VfxManager.spawn_vfx("aoe", global_position)
-		_apply_aoe()
-	else:
-		VfxManager.spawn_vfx("impact", global_position)
-		_apply_single(area)
+	if pierce_remaining >= 0 and not _hit_ids.is_empty():
+		_orphan_life -= delta
+		if _last_dir == Vector2.ZERO:
+			_last_dir = Vector2.RIGHT
+		_advance_toward(global_position + _last_dir * 10000.0, speed * delta)
+		if _orphan_life <= 0.0:
+			queue_free()
+		return
 	queue_free()
 
 
-func _apply_single(area: Area2D) -> void:
+func _on_area_entered(area: Area2D) -> void:
 	var enemy: EnemyBase = area.get_parent() as EnemyBase
+	if enemy == null or enemy.is_dead:
+		return
+	var enemy_id: int = enemy.get_instance_id()
+	if _hit_ids.has(enemy_id):
+		return
+	if blast_radius > 0.0:
+		VfxManager.spawn_vfx("aoe", global_position)
+		_apply_aoe()
+		queue_free()
+		return
+	VfxManager.spawn_vfx("impact", global_position)
 	if _hit_enemy(enemy):
 		print("[Combat] Dealt " + str(damage) + " damage!")
+	_hit_ids[enemy_id] = true
+	if pierce_remaining > 0:
+		pierce_remaining -= 1
+		_retarget()
+		return
+	queue_free()
+
+
+func _retarget() -> void:
+	target = null
+	var tree: SceneTree = get_tree()
+	if tree == null:
+		_orphan_life = 0.45
+		return
+	var best: EnemyBase = null
+	var best_d: float = INF
+	var nodes: Array[Node] = tree.get_nodes_in_group("enemies")
+	for i in nodes.size():
+		var enemy: EnemyBase = nodes[i] as EnemyBase
+		if enemy == null or not is_instance_valid(enemy) or enemy.is_dead or enemy.is_queued_for_deletion():
+			continue
+		if _hit_ids.has(enemy.get_instance_id()):
+			continue
+		var dist: float = _combat_distance(global_position, enemy.global_position)
+		if dist < best_d:
+			best_d = dist
+			best = enemy
+	if best == null:
+		_orphan_life = 0.45
+		return
+	target = best
+	_orphan_life = 0.0
 
 
 func _apply_aoe() -> void:
@@ -62,7 +125,7 @@ func _apply_aoe() -> void:
 		var enemy: EnemyBase = nodes[i] as EnemyBase
 		if enemy == null or not is_instance_valid(enemy) or enemy.is_dead or enemy.is_queued_for_deletion():
 			continue
-		if global_position.distance_to(enemy.global_position) > blast_radius:
+		if _combat_distance(global_position, enemy.global_position) > blast_radius:
 			continue
 		if _hit_enemy(enemy):
 			hit_count += 1
@@ -72,6 +135,9 @@ func _apply_aoe() -> void:
 func _hit_enemy(enemy: EnemyBase) -> bool:
 	if enemy == null or enemy.is_dead:
 		return false
-	enemy.take_damage(damage)
+	var multiplier: float = enemy.damage_multiplier_vs(source_type)
+	var scaled: int = maxi(0, int(round(float(damage) * multiplier)))
+	var tier: StringName = EnemyBase.matchup_tier(multiplier, 1.5, 0.5)
+	enemy.take_damage(scaled, tier)
 	enemy.apply_slow(slow_factor, slow_duration)
 	return true

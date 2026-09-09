@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_puhay"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_o5eyy"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c7tln"]
+atlas = ExtResource("2_o5eyy")
+region = Rect2(530, 278, 144, 77)
+filter_clip = true
+
+[node name="CurbInner" type="Node2D" unique_id=1257665346]
+y_sort_enabled = true
+script = ExtResource("1_puhay")
+module_id = &"curb_inner"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=143111837]
+texture_filter = 2
+position = Vector2(0, 96)
+texture = SubResource("AtlasTexture_c7tln")
+offset = Vector2(0, -38.5)

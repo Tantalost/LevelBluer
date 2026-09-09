@@ -102,9 +102,9 @@ func _refresh_header() -> void:
 	_title_label.text = "SELECT A STAGE"
 	_player_name.text = "<%s>" % AuthService.display_name().to_upper()
 	var threat: int = AuthService.wallet_threat_points()
-	var mats: int = AuthService.materials()
+	var mats: int = PlayerManager.credits
 	_threat_value.text = str(threat if threat >= 0 else 0)
-	_materials_value.text = str(mats if mats >= 0 else 0)
+	_materials_value.text = str(maxi(0, mats))
 	_apply_label(_title_label, Palette.TEXT_PRIMARY, 14)
 	_apply_label(_player_name, Palette.TEXT_PRIMARY, 11)
 	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 12)

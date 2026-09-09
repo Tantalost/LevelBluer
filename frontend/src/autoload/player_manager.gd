@@ -22,11 +22,15 @@ var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
 var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
+var tech_ranks: Dictionary = {}
+var has_stateful_inspection: bool = false
 var mock_max_stage_cleared: int = 1
 var credits: int = 0
 var module_1_complete: bool = false
 var seen_module_intros: Array[String] = []
 var tutorial_complete: bool = false
+var has_intel_bonus: bool = false
+var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
 
 
@@ -52,6 +56,75 @@ func is_tower_unlocked(tower_id: String) -> bool:
 	if tower_id.is_empty():
 		return false
 	return unlocked_towers.has(tower_id)
+
+
+func tech_rank(tower_id: String, track_id: String) -> int:
+	if tower_id.is_empty() or track_id.is_empty():
+		return 0
+	if not tech_ranks.has(tower_id):
+		return 0
+	var stored: Variant = tech_ranks[tower_id]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return 0
+	var tracks: Dictionary = stored as Dictionary
+	return maxi(0, int(tracks.get(track_id, 0)))
+
+
+func tower_capacity(tower_id: String) -> int:
+	var base_cap: int = ContentDB.default_capacity(tower_id)
+	var ranks: int = tech_rank(tower_id, "capacity")
+	# Rank 1 is the default allotment (Basic starts at 2). Later ranks add slots.
+	var extra: int = maxi(0, ranks - 1)
+	return maxi(0, base_cap + extra)
+
+
+func stats_bonus_for(tower_id: String) -> Dictionary:
+	return ContentDB.tech_stats_bonus(tower_id, tech_rank(tower_id, "stats"))
+
+
+func grant_tutorial_capacity_rank() -> void:
+	if tech_rank("base", "capacity") >= 1:
+		return
+	_set_tech_rank("base", "capacity", 1)
+	SaveService.save_game()
+
+
+func purchase_tech_rank(tower_id: String, track_id: String) -> bool:
+	var next_rank: int = tech_rank(tower_id, track_id) + 1
+	var max_rank: int = ContentDB.tech_max_rank(tower_id, track_id)
+	if next_rank <= 0 or next_rank > max_rank:
+		return false
+	var cost: int = ContentDB.tech_rank_cost(tower_id, track_id, next_rank)
+	if cost < 0:
+		return false
+	if not spend_credits(cost):
+		return false
+	_set_tech_rank(tower_id, track_id, next_rank)
+	_apply_rank_effects(tower_id, track_id, next_rank)
+	SaveService.save_game()
+	return true
+
+
+func _set_tech_rank(tower_id: String, track_id: String, rank: int) -> void:
+	if tower_id.is_empty() or track_id.is_empty():
+		return
+	var tracks: Dictionary = {}
+	if tech_ranks.has(tower_id) and typeof(tech_ranks[tower_id]) == TYPE_DICTIONARY:
+		tracks = (tech_ranks[tower_id] as Dictionary).duplicate(true)
+	tracks[track_id] = maxi(0, rank)
+	tech_ranks[tower_id] = tracks
+
+
+func _apply_rank_effects(tower_id: String, track_id: String, rank: int) -> void:
+	var entry: Dictionary = ContentDB.tech_rank_entry(tower_id, track_id, rank)
+	if entry.is_empty():
+		return
+	var flag: String = str(entry.get("flag", ""))
+	if flag == "has_stateful_inspection":
+		has_stateful_inspection = true
+	var unlock_id: String = str(entry.get("unlock_tower", ""))
+	if not unlock_id.is_empty():
+		unlock_tower(unlock_id)
 
 
 func _ready() -> void:
@@ -92,6 +165,7 @@ func complete_lesson_unit(module_id: String, total: int, all_module_ids: Array[S
 		return
 	done += 1
 	lesson_progress[module_id] = done
+	grant_intel_bonus(module_id)
 	if done >= clamped_total:
 		complete_lesson(module_id)
 		if _all_modules_complete(all_module_ids):
@@ -129,9 +203,14 @@ func reset_to_defaults() -> void:
 	purchased_items.clear()
 	unlocked_skills.clear()
 	unlocked_towers = ["base"]
+	tech_ranks.clear()
+	_ensure_default_capacity_rank()
+	has_stateful_inspection = false
 	module_1_complete = false
 	seen_module_intros.clear()
 	tutorial_complete = false
+	has_intel_bonus = false
+	intel_bonus_module = ""
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
@@ -144,12 +223,32 @@ func add_credits(amount: int) -> void:
 	SaveService.save_game()
 
 
-func ensure_tutorial_upgrade_funds() -> void:
-	if has_skill("firewall_1") or is_tower_unlocked("network"):
+func grant_intel_bonus(module_id: String) -> void:
+	if module_id.is_empty():
 		return
-	if credits >= 200:
-		return
-	add_credits(200 - credits)
+	has_intel_bonus = true
+	intel_bonus_module = module_id
+	SaveService.save_game()
+
+
+func consume_intel_bonus_gold(base_gold: int, module_id: String) -> int:
+	var gold: int = maxi(0, base_gold)
+	if not has_intel_bonus:
+		return gold
+	if not intel_bonus_module.is_empty() and intel_bonus_module != module_id:
+		return gold
+	has_intel_bonus = false
+	intel_bonus_module = ""
+	SaveService.save_game()
+	var boosted: int = int(ceil(float(gold) * 1.15))
+	print("[Intel] Threat Intel Bonus +15%% gold. %d -> %d" % [gold, boosted])
+	return boosted
+
+
+func intel_module_for_stage(stage_id: int) -> String:
+	if stage_id >= 1 and stage_id <= 10:
+		return "mod_01"
+	return ""
 
 
 func spend_credits(amount: int) -> bool:
@@ -398,11 +497,15 @@ func get_save_data() -> Dictionary:
 		"credits": credits,
 		"unlocked_towers": unlocked_towers.duplicate(),
 		"unlocked_skills": unlocked_skills.duplicate(),
+		"tech_ranks": tech_ranks.duplicate(true),
+		"has_stateful_inspection": has_stateful_inspection,
 		"lesson_progress": lesson_progress.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
 		"seen_module_intros": seen_module_intros.duplicate(),
 		"tutorial_complete": tutorial_complete,
+		"has_intel_bonus": has_intel_bonus,
+		"intel_bonus_module": intel_bonus_module,
 	}
 
 
@@ -471,8 +574,27 @@ func apply_save_data(data: Dictionary) -> void:
 		unlocked_towers.append("base")
 		for i in saved_towers.size():
 			var tower_id: String = str(saved_towers[i])
-			if not tower_id.is_empty() and not unlocked_towers.has(tower_id):
+			if tower_id.is_empty() or tower_id == "network" or tower_id == "crypto":
+				continue
+			if not unlocked_towers.has(tower_id):
 				unlocked_towers.append(tower_id)
+
+	if data.has("tech_ranks") and typeof(data["tech_ranks"]) == TYPE_DICTIONARY:
+		tech_ranks = (data["tech_ranks"] as Dictionary).duplicate(true)
+	else:
+		tech_ranks.clear()
+	_sanitize_tech_ranks()
+	_ensure_default_capacity_rank()
+
+	if data.has("has_stateful_inspection"):
+		var flag_raw: Variant = data["has_stateful_inspection"]
+		var flag_type: int = typeof(flag_raw)
+		if flag_type == TYPE_BOOL:
+			has_stateful_inspection = flag_raw
+		elif flag_type == TYPE_INT or flag_type == TYPE_FLOAT:
+			has_stateful_inspection = int(flag_raw) != 0
+	has_stateful_inspection = has_stateful_inspection or tech_rank("base", "skill") >= 1
+	_sync_evolution_unlocks()
 
 	if data.has("unlocked_skills") and typeof(data["unlocked_skills"]) == TYPE_ARRAY:
 		var saved_skills: Array = data["unlocked_skills"] as Array
@@ -506,6 +628,16 @@ func apply_save_data(data: Dictionary) -> void:
 		elif tutorial_type == TYPE_INT or tutorial_type == TYPE_FLOAT:
 			tutorial_complete = int(tutorial_raw) != 0
 
+	if data.has("has_intel_bonus"):
+		var bonus_raw: Variant = data["has_intel_bonus"]
+		var bonus_type: int = typeof(bonus_raw)
+		if bonus_type == TYPE_BOOL:
+			has_intel_bonus = bonus_raw
+		elif bonus_type == TYPE_INT or bonus_type == TYPE_FLOAT:
+			has_intel_bonus = int(bonus_raw) != 0
+	if data.has("intel_bonus_module"):
+		intel_bonus_module = str(data["intel_bonus_module"])
+
 	if module_1_complete:
 		cleared_stages[10] = true
 	_normalize_mastery_keys()
@@ -536,3 +668,36 @@ func _normalize_mastery_keys() -> void:
 	mastery_matrix = {
 		"phishing": phishing,
 	}
+
+
+func _ensure_default_capacity_rank() -> void:
+	if tech_rank("base", "capacity") >= 1:
+		return
+	_set_tech_rank("base", "capacity", 1)
+
+
+func _sanitize_tech_ranks() -> void:
+	var clean: Dictionary = {}
+	var tower_keys: Array = tech_ranks.keys()
+	for i in tower_keys.size():
+		var tower_id: String = str(tower_keys[i])
+		if tower_id.is_empty() or typeof(tech_ranks[tower_keys[i]]) != TYPE_DICTIONARY:
+			continue
+		var tracks: Dictionary = tech_ranks[tower_keys[i]] as Dictionary
+		var next_tracks: Dictionary = {}
+		var track_keys: Array = tracks.keys()
+		for j in track_keys.size():
+			var track_id: String = str(track_keys[j])
+			if track_id.is_empty():
+				continue
+			next_tracks[track_id] = maxi(0, int(tracks[track_keys[j]]))
+		clean[tower_id] = next_tracks
+	tech_ranks = clean
+
+
+func _sync_evolution_unlocks() -> void:
+	var evo: int = tech_rank("base", "evolution")
+	if evo >= 1 and not unlocked_towers.has("scanner"):
+		unlocked_towers.append("scanner")
+	if evo >= 2 and not unlocked_towers.has("sandbox"):
+		unlocked_towers.append("sandbox")

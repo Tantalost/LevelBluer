@@ -1,0 +1,31 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_xqqjl"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_hjxqg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_cah67"]
+atlas = ExtResource("2_hjxqg")
+region = Rect2(1478, 278, 144, 192)
+filter_clip = true
+
+[node name="WallLong" type="Node2D" unique_id=897648296]
+y_sort_enabled = true
+script = ExtResource("1_xqqjl")
+module_id = &"wall_long"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0)])
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=425073070]
+texture_filter = 2
+position = Vector2(32, 64)
+texture = SubResource("AtlasTexture_cah67")
+offset = Vector2(0, -96)
+
+[node name="FootprintCollision" type="StaticBody2D" parent="." unique_id=356893376]
+collision_mask = 0
+
+[node name="@CollisionPolygon2D@13" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=249427475]
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)
+
+[node name="@CollisionPolygon2D@14" type="CollisionPolygon2D" parent="FootprintCollision" unique_id=494424210]
+position = Vector2(64, 32)
+polygon = PackedVector2Array(0, -32, 64, 0, 0, 32, -64, 0)

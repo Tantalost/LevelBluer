@@ -132,7 +132,7 @@ func _bind_profile() -> void:
 	_apply_label(_pre, _band_color(float(pre) / 100.0), 12)
 	_apply_label(_post, _band_color(float(post) / 100.0), 12)
 	_threat.text = str(maxi(AuthService.threat_points(), 0))
-	_materials.text = str(maxi(AuthService.materials(), 0))
+	_materials.text = str(maxi(PlayerManager.credits, 0))
 	_tower.text = tr("PROFILE_LV") % AuthService.tower_level()
 	_glade.text = tr("PROFILE_LV") % AuthService.glade_level()
 	_forge.text = tr("PROFILE_LV") % AuthService.forge_level()

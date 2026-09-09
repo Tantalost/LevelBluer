@@ -1,0 +1,22 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/maps/isometric/isometric_module.gd" id="1_70wad"]
+[ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="2_tjqrj"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7si0a"]
+atlas = ExtResource("2_tjqrj")
+region = Rect2(198, 1585, 256, 142)
+filter_clip = true
+
+[node name="PipeElbow" type="Node2D" unique_id=670923874]
+y_sort_enabled = true
+script = ExtResource("1_70wad")
+module_id = &"pipe_elbow"
+occupied_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)])
+blocks_movement = false
+
+[node name="Artwork" type="Sprite2D" parent="." unique_id=1266302383]
+texture_filter = 2
+position = Vector2(0, 96)
+texture = SubResource("AtlasTexture_7si0a")
+offset = Vector2(0, -71)
