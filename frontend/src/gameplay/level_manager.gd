@@ -14,6 +14,9 @@ enum GamePhase {
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const GLOBAL_PATCH_CHANCE: float = 0.4
 const LOSS_CREDIT_PAYOUT: int = 10
+const QUESTION_TIME_SEC: float = 20.0
+const MULTI_SELECT_TIME_SEC: float = 30.0
+const OPTION_KEYS: PackedStringArray = ["A", "B", "C", "D", "E", "F"]
 
 @export var enemy_scene: PackedScene
 
@@ -28,6 +31,10 @@ var exam_questions_asked: int = 0
 var exam_questions_correct: int = 0
 var exam_history: Array[String] = []
 var _asked_question_ids: Array[String] = []
+var _wave_questions_asked: int = 0
+var _quiz_time_left: float = 0.0
+var _quiz_time_limit: float = QUESTION_TIME_SEC
+var _quiz_timer_running: bool = false
 var _bkt_frozen: bool = false
 var _wave_token: int = 0
 var _wave_finished_spawning: bool = true
@@ -54,12 +61,16 @@ var _map_endpoint_visuals: Node2D
 @onready var _quiz_led: ColorRect = %QuizLed
 @onready var _quiz_well: PanelContainer = %QuizWell
 @onready var _exam_progress_label: Label = %ExamProgressLabel
+@onready var _quiz_timer_row: HBoxContainer = %QuizTimerRow
+@onready var _quiz_timer_label: Label = %QuizTimerLabel
+@onready var _quiz_timer_bar: ProgressBar = %QuizTimerBar
+@onready var _quiz_timer_value: Label = %QuizTimerValue
 @onready var _scenario_scroll: ScrollContainer = %ScenarioScroll
 @onready var _scenario_label: Label = %ScenarioLabel
 @onready var _question_label: Label = %QuestionLabel
 @onready var _quiz_reward_hint: Label = %QuizRewardHint
 @onready var _quiz_tap_hint: Label = %QuizTapHint
-@onready var _answer_list: VBoxContainer = %AnswerList
+@onready var _answer_list: GridContainer = %AnswerList
 @onready var _btn_correct: Button = %BtnCorrect
 @onready var _btn_wrong: Button = %BtnWrong
 @onready var _quiz_confirm: Button = %QuizConfirmButton
@@ -354,6 +365,12 @@ func _process(delta: float) -> void:
 		return
 	_quiz_led_t += delta
 	_quiz_led.color = Palette.GOLD if fmod(_quiz_led_t, 0.85) < 0.48 else Palette.CYAN
+	if not _quiz_timer_running or _quiz_locked:
+		return
+	_quiz_time_left = maxf(0.0, _quiz_time_left - delta)
+	_update_quiz_timer_visual()
+	if _quiz_time_left <= 0.0:
+		_on_quiz_time_expired()
 
 
 func change_phase(new_phase: GamePhase) -> void:
@@ -362,6 +379,8 @@ func change_phase(new_phase: GamePhase) -> void:
 		return
 	if new_phase != GamePhase.PHASE_3_DEFEND:
 		_hide_incident()
+	if new_phase != GamePhase.PHASE_1_QUIZ:
+		_stop_question_timer()
 	match new_phase:
 		GamePhase.PRE_MATCH:
 			_quiz_modal.visible = false
@@ -373,6 +392,8 @@ func change_phase(new_phase: GamePhase) -> void:
 			_end_game_modal.visible = false
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
+			_wave_questions_asked = 0
+			_wave_intel_hidden = false
 			if current_wave_index == 0:
 				exam_questions_asked = 0
 				exam_questions_correct = 0
@@ -445,9 +466,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			if _is_module_final():
 				PlayerManager.module_1_complete = true
 				SaveService.save_game()
-				Router.open_certificate_screen()
-			else:
-				Router.open_victory(accuracy, credit_payout)
+			_present_stage_clear(accuracy, credit_payout)
 			print("[LevelManager] Entering VICTORY. Match won.")
 	current_phase = new_phase
 	_sync_phase_chrome()
@@ -462,6 +481,32 @@ func change_phase(new_phase: GamePhase) -> void:
 
 func _award_loss_credits() -> void:
 	PlayerManager.add_credits(LOSS_CREDIT_PAYOUT)
+
+
+func _present_stage_clear(accuracy: float, credits: int) -> void:
+	get_tree().paused = false
+	Engine.time_scale = 1.0
+	_pause_menu.hide()
+	if _tower_placer != null:
+		_tower_placer.clear_selection()
+		_tower_placer.set_build_preview(false)
+	# Match the defeat presentation: preserve the completed map, freeze actors,
+	# hide gameplay chrome, then reveal results over the battlefield.
+	get_parent().get_node("Environment").process_mode = Node.PROCESS_MODE_DISABLED
+	get_parent().get_node("GameplayCanvas").visible = false
+	_player_base.set_deferred("monitoring", false)
+	_defeat_overlay = preload("res://src/ui/screens/victory/base_defeat_overlay.gd").new()
+	_defeat_overlay.name = "StageClearOverlay"
+	get_parent().add_child(_defeat_overlay)
+	_defeat_overlay.configure({
+		"won": true,
+		"stage": Router.active_stage_index + 1,
+		"credits": credits,
+		"kills": _match_kills,
+		"accuracy": accuracy,
+		"final_stage": _is_module_final(),
+	})
+	_defeat_overlay.action_requested.connect(_on_defeat_action)
 
 
 func _present_base_defeat(tip: String) -> void:
@@ -497,6 +542,8 @@ func _on_defeat_action(action: StringName) -> void:
 	match action:
 		&"upgrade": Router.open_defeat_upgrades()
 		&"restart": Router.restart_level()
+		&"next": Router.advance_level()
+		&"certificate": Router.open_certificate_screen()
 		&"lessons": Router.open_lessons()
 		&"back": Router.return_to_stage_select()
 
@@ -603,6 +650,7 @@ func _load_stage_config() -> void:
 		current_wave_index = 0
 		exam_questions_asked = 0
 		exam_questions_correct = 0
+		_wave_questions_asked = 0
 		exam_history.clear()
 		_asked_question_ids.clear()
 		current_gold = 0
@@ -620,14 +668,11 @@ func _load_stage_config() -> void:
 	current_wave_index = 0
 	exam_questions_asked = 0
 	exam_questions_correct = 0
+	_wave_questions_asked = 0
 	exam_history.clear()
 	_asked_question_ids.clear()
-	if _is_summative():
-		# Pass reward only. Granting this here would double-pay on exam success.
-		current_gold = 0
-	else:
-		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
-		current_gold = _apply_intel_bonus_gold(int(gold_stored))
+	var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
+	current_gold = _apply_intel_bonus_gold(int(gold_stored))
 	_wave_intel_hidden = false
 	_global_patch_active = false
 	_bkt_frozen = PlayerManager.has_cleared_stage(stage_id)
@@ -766,6 +811,14 @@ func _exam_question_count() -> int:
 	return maxi(1, int(stored))
 
 
+func _questions_per_wave() -> int:
+	var fallback: int = 3
+	if _is_summative():
+		fallback = maxi(1, int(ceil(float(_exam_question_count()) / float(maxi(1, _wave_count())))))
+	var stored: Variant = current_stage_config.get("questions_per_wave", fallback)
+	return maxi(1, int(stored))
+
+
 func _exam_required_score() -> float:
 	var stored: Variant = current_stage_config.get("exam_required_score", 0.75)
 	return float(stored)
@@ -827,6 +880,44 @@ func _load_next_question() -> void:
 		return
 	_present_current_question()
 	_refresh_quiz_copy()
+	_start_question_timer()
+
+
+func _start_question_timer() -> void:
+	if Router.is_tutorial:
+		_quiz_timer_row.hide()
+		_quiz_timer_running = false
+		return
+	_quiz_timer_row.show()
+	var configured: float = float(current_stage_config.get("question_time_sec", QUESTION_TIME_SEC))
+	_quiz_time_limit = MULTI_SELECT_TIME_SEC if _quiz_multi_select else maxf(5.0, configured)
+	_quiz_time_left = _quiz_time_limit
+	_quiz_timer_bar.max_value = _quiz_time_limit
+	_quiz_timer_running = true
+	_update_quiz_timer_visual()
+
+
+func _stop_question_timer() -> void:
+	_quiz_timer_running = false
+
+
+func _update_quiz_timer_visual() -> void:
+	_quiz_timer_bar.value = _quiz_time_left
+	_quiz_timer_value.text = "%.1f" % _quiz_time_left
+	var urgent: bool = _quiz_time_left <= 5.0
+	_quiz_timer_bar.modulate = Palette.DANGER if urgent else Color.WHITE
+	_quiz_timer_value.add_theme_color_override("font_color", Palette.DANGER if urgent else Palette.CYAN_300)
+	_quiz_timer_label.text = "HURRY" if urgent else "TRACE"
+
+
+func _on_quiz_time_expired() -> void:
+	if current_phase != GamePhase.PHASE_1_QUIZ or _quiz_locked:
+		return
+	_quiz_timer_running = false
+	_quiz_feedback.text = "TRACE EXPIRED — COUNTED AS A MISS"
+	_quiz_feedback.visible = true
+	_apply_quiz_label(_quiz_feedback, Palette.DANGER, 10)
+	_finish_quiz_answer(false)
 
 
 func _pick_adaptive_question(chase_weak: bool) -> Dictionary:
@@ -1116,13 +1207,16 @@ func _clear_answer_list() -> void:
 
 
 func _add_quiz_option(label: String, value: Variant, toggle: bool) -> void:
-	var button := Button.new()
-	button.text = label
+	var button: Button = Button.new()
+	var option_index: int = _quiz_option_buttons.size()
+	var option_key: String = OPTION_KEYS[option_index] if option_index < OPTION_KEYS.size() else str(option_index + 1)
+	button.text = "%s   %s" % [option_key, label]
 	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_style_quiz_choice(button)
-	button.custom_minimum_size = Vector2(0, 48)
-	button.add_theme_font_size_override("font_size", 10)
+	button.custom_minimum_size = Vector2(0, 74)
+	button.add_theme_font_size_override("font_size", 12)
 	if toggle:
 		button.pressed.connect(_on_quiz_toggle_pressed.bind(button, value))
 	else:
@@ -1171,20 +1265,20 @@ func _on_quiz_confirm_pressed() -> void:
 
 func _paint_toggle_button(button: Button, selected: bool) -> void:
 	var box: StyleBoxFlat = _pixel_box(
-		Palette.GOLD if selected else Color(Palette.BG_PANEL_ALT, 0.96),
-		Palette.TEXT_PRIMARY if selected else Palette.CYAN,
+		Palette.PRIMARY_BLUE if selected else Palette.NAVY_900,
+		Palette.CYAN_300 if selected else Palette.CYAN_400,
 		0,
 		2
 	)
-	box.border_width_left = 4
-	box.content_margin_left = 12.0
-	box.content_margin_right = 12.0
-	box.content_margin_top = 12.0
-	box.content_margin_bottom = 12.0
+	box.border_width_left = 6
+	box.content_margin_left = 20.0
+	box.content_margin_right = 20.0
+	box.content_margin_top = 18.0
+	box.content_margin_bottom = 18.0
 	button.add_theme_stylebox_override("normal", box)
 	button.add_theme_stylebox_override("hover", box)
 	button.add_theme_stylebox_override("pressed", box)
-	button.add_theme_color_override("font_color", Palette.TEXT_ON_GOLD if selected else Palette.TEXT_PRIMARY)
+	button.add_theme_color_override("font_color", Palette.CREAM)
 
 
 func _is_quiz_correct(picked: Variant) -> bool:
@@ -1244,6 +1338,7 @@ func _show_quiz_feedback(is_correct: bool, picked: Variant) -> void:
 
 
 func _finish_quiz_answer(is_correct: bool) -> void:
+	_stop_question_timer()
 	_set_quiz_locked(true)
 	var skill_id: String = _current_skill_id()
 	_resolve_quiz(PlayerManager.quiz_gold_reward(is_correct, skill_id), is_correct)
@@ -1267,6 +1362,7 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		return
 	_set_quiz_locked(true)
 	exam_questions_asked += 1
+	_wave_questions_asked += 1
 	if is_correct:
 		exam_questions_correct += 1
 	_record_bkt(_current_skill_id(), is_correct, PlayerManager.bkt_params_from(current_question))
@@ -1278,38 +1374,29 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		_resolve_tutorial_quiz(reward, is_correct)
 		return
 	if is_correct:
-		_wave_intel_hidden = false
 		_try_grant_global_patch()
 	else:
 		_wave_intel_hidden = true
-	update_hud()
 	if not _is_summative():
 		current_gold += reward
 		print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
-		_quiz_modal.visible = false
-		update_hud()
-		change_phase(GamePhase.PHASE_2_BUILD)
-		return
+	update_hud()
 	var exam_count: int = _exam_question_count()
-	if exam_questions_asked < exam_count:
+	var more_in_wave: bool = _wave_questions_asked < _questions_per_wave()
+	var more_in_exam: bool = not _is_summative() or exam_questions_asked < exam_count
+	if more_in_wave and more_in_exam:
 		_set_quiz_locked(false)
 		_load_next_question()
 		update_hud()
 		return
-	var accuracy: float = float(exam_questions_correct) / float(exam_count)
 	_quiz_modal.visible = false
-	if accuracy >= _exam_required_score():
-		print("[Exam] Passed with accuracy: " + str(accuracy))
-		var gold_stored: Variant = current_stage_config.get("starting_gold", 20)
-		current_gold = _apply_intel_bonus_gold(int(gold_stored))
-		update_hud()
-		change_phase(GamePhase.PHASE_2_BUILD)
-		return
-	print("[Exam] Failed with accuracy: " + str(accuracy))
-	var stage_id: int = Router.active_stage_index + 1
-	PlayerManager.lock_stage(stage_id)
-	print("[Exam] Failed. Locking Stage ", stage_id, " for remediation.")
-	change_phase(GamePhase.GAME_OVER)
+	if _is_summative() and exam_questions_asked >= exam_count:
+		var accuracy: float = float(exam_questions_correct) / float(exam_count)
+		if accuracy < _exam_required_score():
+			print("[Exam] Score below target. Final result follows wave 3: " + str(accuracy))
+		else:
+			print("[Exam] Passing score secured: " + str(accuracy))
+	change_phase(GamePhase.PHASE_2_BUILD)
 
 
 func _on_start_wave_pressed() -> void:
@@ -1379,7 +1466,7 @@ func _sync_phase_chrome() -> void:
 
 
 func _refresh_quiz_copy() -> void:
-	var exam := _is_summative()
+	var exam: bool = _is_summative()
 	_quiz_file_label.text = "EXAM.DAT" if exam else "QTE.DAT"
 	var type_label: String = str(current_question.get("type_label", "")).strip_edges()
 	if type_label.is_empty():
@@ -1396,14 +1483,24 @@ func _refresh_quiz_copy() -> void:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%% LOCKED" % [hit_gold, miss_gold, mastery_pct]
 		else:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%%" % [hit_gold, miss_gold, mastery_pct]
-	_quiz_tap_hint.text = "TAP TO PASS" if exam else "TAP FAST"
-	if exam or Router.is_tutorial:
-		var current_q: int = exam_questions_asked + 1
-		var total_q: int = 5 if Router.is_tutorial else _exam_question_count()
-		_exam_progress_label.text = "TRACE  " + str(current_q) + " / " + str(total_q)
-		_exam_progress_label.visible = true
+	_quiz_tap_hint.text = "TAKE YOUR TIME — FOLLOW THE HANDLER" if Router.is_tutorial else "SELECT BEFORE THE TRACE EXPIRES"
+	if Router.is_tutorial:
+		_exam_progress_label.text = "TRACE  %d / 5" % (exam_questions_asked + 1)
+	elif exam:
+		_exam_progress_label.text = "EXAM  %d / %d     WAVE  %d / %d" % [
+			exam_questions_asked + 1,
+			_exam_question_count(),
+			current_wave_index + 1,
+			_wave_count(),
+		]
 	else:
-		_exam_progress_label.visible = false
+		_exam_progress_label.text = "WAVE  %d / %d     TRACE  %d / %d" % [
+			current_wave_index + 1,
+			_wave_count(),
+			_wave_questions_asked + 1,
+			_questions_per_wave(),
+		]
+	_exam_progress_label.visible = true
 
 
 func _load_pixel_font() -> void:
@@ -1595,28 +1692,34 @@ func _wave_intel_text() -> String:
 
 
 func _style_quiz_ui() -> void:
-	var window := _pixel_box(Palette.BG_HEADER, Palette.CYAN, 0, 2)
-	window.shadow_color = Color(Palette.BG_DEEP, 0.72)
-	window.shadow_size = 2
-	window.shadow_offset = Vector2(6, 6)
+	var window: StyleBoxFlat = _pixel_box(Palette.NAVY_900, Palette.CYAN_400, 0, 3)
+	window.shadow_color = Color(Palette.DEEP_SPACE, 0.82)
+	window.shadow_size = 5
+	window.shadow_offset = Vector2(8, 8)
 	_quiz_window.add_theme_stylebox_override("panel", window)
-	_quiz_title_bar.add_theme_stylebox_override("panel", _pixel_box(Palette.GOLD, Palette.GOLD, 0, 0))
-	_quiz_well.add_theme_stylebox_override("panel", _pixel_box(Color(Palette.BG_PANEL, 0.94), Palette.CYAN_DIM, 0, 0))
+	_quiz_title_bar.add_theme_stylebox_override("panel", _pixel_box(Palette.PRIMARY_BLUE, Palette.CYAN_300, 0, 0))
+	_quiz_well.add_theme_stylebox_override("panel", _pixel_box(Color(Palette.NAVY_800, 0.98), Palette.NAVY_700, 0, 0))
 	_quiz_led.color = Palette.GOLD
-	_apply_quiz_label(_quiz_file_label, Palette.TEXT_ON_GOLD, 10)
-	_apply_quiz_label(_quiz_event_label, Palette.TEXT_ON_GOLD, 10)
-	_apply_quiz_label(_exam_progress_label, Palette.GOLD, 9)
-	_apply_quiz_label(_scenario_label, Palette.TEXT_SECONDARY, 10)
-	_apply_quiz_label(_question_label, Palette.TEXT_PRIMARY, 12)
-	_apply_quiz_label(_quiz_reward_hint, Palette.CYAN, 8)
-	_apply_quiz_label(_quiz_tap_hint, Palette.TEXT_MUTED, 8)
-	_apply_quiz_label(_quiz_feedback, Palette.CYAN, 9)
+	_apply_quiz_label(_quiz_file_label, Palette.CREAM, 11)
+	_apply_quiz_label(_quiz_event_label, Palette.CREAM, 11)
+	_apply_quiz_label(_exam_progress_label, Palette.CYAN_300, 10)
+	_apply_quiz_label(_quiz_timer_label, Palette.CYAN_300, 9)
+	_apply_quiz_label(_quiz_timer_value, Palette.CYAN_300, 10)
+	_apply_quiz_label(_scenario_label, Palette.CYAN_300, 11)
+	_apply_quiz_label(_question_label, Palette.CREAM, 14)
+	_apply_quiz_label(_quiz_reward_hint, Palette.SUCCESS, 9)
+	_apply_quiz_label(_quiz_tap_hint, Palette.CYAN_300, 8)
+	_apply_quiz_label(_quiz_feedback, Palette.CYAN_400, 10)
+	var timer_bg: StyleBoxFlat = _pixel_box(Palette.DEEP_SPACE, Palette.NAVY_700, 0, 1)
+	var timer_fill: StyleBoxFlat = _pixel_box(Palette.CYAN_400, Palette.CYAN_300, 0, 0)
+	_quiz_timer_bar.add_theme_stylebox_override("background", timer_bg)
+	_quiz_timer_bar.add_theme_stylebox_override("fill", timer_fill)
 	_style_quiz_choice(_btn_correct)
 	_style_quiz_choice(_btn_wrong)
 	_style_quiz_submit(_quiz_confirm)
-	var wave_frame := _wave_label.get_parent() as PanelContainer
+	var wave_frame: PanelContainer = _wave_label.get_parent() as PanelContainer
 	if wave_frame != null:
-		var chip := _pixel_box(Color(Palette.BG_HEADER, 0.9), Palette.CYAN_DIM, 0, 2)
+		var chip: StyleBoxFlat = _pixel_box(Color(Palette.BG_HEADER, 0.9), Palette.CYAN_DIM, 0, 2)
 		chip.content_margin_left = 12.0
 		chip.content_margin_right = 12.0
 		chip.content_margin_top = 8.0
@@ -1627,9 +1730,9 @@ func _style_quiz_ui() -> void:
 ## Submit action, not an answer card. Solid gold and half width so players do not
 ## read it as one more tappable email line.
 func _style_quiz_submit(button: Button) -> void:
-	var normal := _pixel_box(Palette.GOLD, Palette.TEXT_ON_GOLD, 0, 2)
-	var hover := _pixel_box(Palette.CYAN, Palette.TEXT_ON_GOLD, 0, 2)
-	var disabled := _pixel_box(Color(Palette.BG_PANEL_ALT, 0.85), Palette.TEXT_MUTED, 0, 2)
+	var normal: StyleBoxFlat = _pixel_box(Palette.GOLD, Palette.TEXT_ON_GOLD, 0, 2)
+	var hover: StyleBoxFlat = _pixel_box(Palette.CYAN, Palette.TEXT_ON_GOLD, 0, 2)
+	var disabled: StyleBoxFlat = _pixel_box(Color(Palette.BG_PANEL_ALT, 0.85), Palette.TEXT_MUTED, 0, 2)
 	for box in [normal, hover, disabled]:
 		box.content_margin_left = 22.0
 		box.content_margin_right = 22.0
@@ -1643,43 +1746,43 @@ func _style_quiz_submit(button: Button) -> void:
 	button.add_theme_color_override("font_hover_color", Palette.TEXT_ON_GOLD)
 	button.add_theme_color_override("font_pressed_color", Palette.TEXT_ON_GOLD)
 	button.add_theme_color_override("font_disabled_color", Palette.TEXT_MUTED)
-	button.add_theme_font_size_override("font_size", 10)
+	button.add_theme_font_size_override("font_size", 12)
 	if _pixel_font != null:
 		button.add_theme_font_override("font", _pixel_font)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	button.custom_minimum_size = Vector2(300, 44)
+	button.custom_minimum_size = Vector2(360, 56)
 
 
 func _style_quiz_choice(button: Button) -> void:
-	var normal := _pixel_box(Color(Palette.BG_PANEL_ALT, 0.96), Palette.CYAN, 0, 2)
-	normal.border_width_left = 4
-	normal.content_margin_left = 12.0
-	normal.content_margin_right = 12.0
-	normal.content_margin_top = 14.0
-	normal.content_margin_bottom = 14.0
-	var hover := _pixel_box(Palette.GOLD, Palette.TEXT_PRIMARY, 0, 2)
-	hover.border_width_left = 4
-	hover.content_margin_left = 12.0
-	hover.content_margin_right = 12.0
-	hover.content_margin_top = 14.0
-	hover.content_margin_bottom = 14.0
-	var disabled := _pixel_box(Color(Palette.BG_PANEL_ALT, 0.7), Palette.CYAN_DIM, 0, 2)
-	disabled.content_margin_left = 12.0
-	disabled.content_margin_right = 12.0
-	disabled.content_margin_top = 14.0
-	disabled.content_margin_bottom = 14.0
+	var normal: StyleBoxFlat = _pixel_box(Palette.NAVY_900, Palette.CYAN_400, 0, 2)
+	normal.border_width_left = 6
+	normal.content_margin_left = 20.0
+	normal.content_margin_right = 20.0
+	normal.content_margin_top = 18.0
+	normal.content_margin_bottom = 18.0
+	var hover: StyleBoxFlat = _pixel_box(Palette.PRIMARY_BLUE, Palette.CYAN_300, 0, 3)
+	hover.border_width_left = 8
+	hover.content_margin_left = 20.0
+	hover.content_margin_right = 20.0
+	hover.content_margin_top = 18.0
+	hover.content_margin_bottom = 18.0
+	var disabled: StyleBoxFlat = _pixel_box(Color(Palette.NAVY_900, 0.68), Palette.NAVY_700, 0, 2)
+	disabled.content_margin_left = 20.0
+	disabled.content_margin_right = 20.0
+	disabled.content_margin_top = 18.0
+	disabled.content_margin_bottom = 18.0
 	button.add_theme_stylebox_override("normal", normal)
 	button.add_theme_stylebox_override("hover", hover)
 	button.add_theme_stylebox_override("pressed", hover)
 	button.add_theme_stylebox_override("disabled", disabled)
 	button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	button.add_theme_color_override("font_hover_color", Palette.TEXT_ON_GOLD)
-	button.add_theme_color_override("font_pressed_color", Palette.TEXT_ON_GOLD)
-	button.add_theme_color_override("font_disabled_color", Palette.TEXT_MUTED)
+	button.add_theme_color_override("font_hover_color", Palette.CREAM)
+	button.add_theme_color_override("font_pressed_color", Palette.CREAM)
+	button.add_theme_color_override("font_disabled_color", Palette.NAVY_700)
 	button.add_theme_font_size_override("font_size", 12)
 	if _pixel_font != null:
 		button.add_theme_font_override("font", _pixel_font)
-	button.custom_minimum_size = Vector2(0, 56)
+	button.custom_minimum_size = Vector2(0, 74)
 
 
 func _apply_quiz_label(label: Label, color: Color, font_size: int) -> void:
@@ -1909,6 +2012,15 @@ func _check_wave_cleared() -> void:
 		current_wave_index += 1
 		change_phase(GamePhase.PHASE_1_QUIZ)
 		return
+	if _is_summative():
+		var exam_count: int = _exam_question_count()
+		var accuracy: float = float(exam_questions_correct) / float(exam_count)
+		if accuracy < _exam_required_score():
+			var stage_id: int = Router.active_stage_index + 1
+			PlayerManager.lock_stage(stage_id)
+			print("[Exam] Failed after final defense. Locking Stage ", stage_id, " for remediation.")
+			change_phase(GamePhase.GAME_OVER)
+			return
 	change_phase(GamePhase.VICTORY)
 
 

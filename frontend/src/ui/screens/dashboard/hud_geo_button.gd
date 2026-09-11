@@ -5,7 +5,7 @@ extends Control
 
 signal pressed
 
-enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER, FLAG, BACK, FLAG_REV }
+enum Geo { SLASH, DIAMOND, CHIP, HEX, BANNER, FLAG, BACK, FLAG_REV, PAIR_LEFT, PAIR_RIGHT }
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const STORY_TEX_PATH := "res://assets/ui/dashboard.png"
@@ -112,6 +112,17 @@ func _draw() -> void:
 		var lo := PackedVector2Array([_poly[2], _poly[3]])
 		draw_polyline(hi, Color(Palette.CREAM, 0.28), 2.0)
 		draw_polyline(lo, Color(Palette.DEEP_SPACE, 0.7), 2.0)
+	elif geo == Geo.BANNER or geo == Geo.PAIR_LEFT:
+		var hi := PackedVector2Array([_poly[1], _poly[2]])
+		var lo_start: int = _poly.size() - 2
+		var lo := PackedVector2Array([_poly[lo_start], _poly[lo_start + 1]])
+		draw_polyline(hi, Color(Palette.CREAM, 0.35), 2.0)
+		draw_polyline(lo, Color(Palette.DEEP_SPACE, 0.55), 2.0)
+	elif geo == Geo.PAIR_RIGHT:
+		var hi := PackedVector2Array([_poly[0], _poly[1]])
+		var lo := PackedVector2Array([_poly[2], _poly[3]])
+		draw_polyline(hi, Color(Palette.CREAM, 0.35), 2.0)
+		draw_polyline(lo, Color(Palette.DEEP_SPACE, 0.55), 2.0)
 	var closed := PackedVector2Array(_poly)
 	closed.append(_poly[0])
 	var border_w := 3.5 if _is_flag() or geo == Geo.DIAMOND else 2.5
@@ -164,7 +175,7 @@ func _draw_copy() -> void:
 	if _is_flag():
 		var flag_s := minf(shear, size.x * 0.35)
 		cx = (flag_s + size.x) * 0.48
-	elif geo == Geo.SLASH or geo == Geo.BANNER:
+	elif geo == Geo.SLASH:
 		cx = shear + 36.0
 		for i in lines.size():
 			var line: Dictionary = lines[i]
@@ -248,21 +259,33 @@ func _rebuild_poly() -> void:
 				Vector2(w, h),
 				Vector2(s, h),
 			])
-		Geo.BANNER: 
-			# Asymmetrical Banner:
-			# Left point is pushed low. Right point is almost perfectly centered.
-			var left_point_y := h * 0.75   # Pushed 75% down
-			var right_point_y := h * 0.55  # Just slightly off-center (difference of like 1)
-
+		Geo.BANNER:
+			var mid: float = h * 0.5
 			_poly = PackedVector2Array([
-				Vector2(0.0, left_point_y),       # Left point (<)
-				Vector2(s, 0.0),                  # Top-left corner
-				Vector2(w - s, 0.0),              # Top-right corner
-				Vector2(w, right_point_y),        # Right point (>)
-				Vector2(w - s, h),                # Bottom-right corner
-				Vector2(s, h)                     # Bottom-left corner
+				Vector2(0.0, mid),
+				Vector2(s, 0.0),
+				Vector2(w - s, 0.0),
+				Vector2(w, mid),
+				Vector2(w - s, h),
+				Vector2(s, h),
 			])
-		_: # <--- DEFAULT CATCH-ALL MUST BE AT THE VERY BOTTOM
+		Geo.PAIR_LEFT:
+			_poly = PackedVector2Array([
+				Vector2(0.0, h * 0.5),
+				Vector2(s, 0.0),
+				Vector2(w, 0.0),
+				Vector2(w, h),
+				Vector2(s, h),
+			])
+		Geo.PAIR_RIGHT:
+			var end_s: float = minf(maxf(h, 56.0), w * 0.45)
+			_poly = PackedVector2Array([
+				Vector2(0.0, 0.0),
+				Vector2(w - end_s, 0.0),
+				Vector2(w, h),
+				Vector2(0.0, h),
+			])
+		_:
 			_poly = PackedVector2Array([
 				Vector2(s, 0.0),
 				Vector2(w, 0.0),

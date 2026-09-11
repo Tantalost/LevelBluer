@@ -130,6 +130,17 @@ func restart_level() -> void:
 	)
 
 
+func advance_level() -> void:
+	# Stage indices are zero-based; index 9 is the final stage.
+	if active_stage_index >= 9:
+		return
+	var next_stage: int = active_stage_index + 1
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		_begin_gameplay(next_stage)
+	)
+
+
 func open_defeat_upgrades() -> void:
 	if _host == null:
 		return

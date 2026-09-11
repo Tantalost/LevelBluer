@@ -465,6 +465,7 @@ func _assign_stage_pools() -> void:
 		stage_total = maxi(1, stages.size())
 	for stage_n in range(1, stage_total + 1):
 		var pool: Array = []
+		var selected_ids: Dictionary = {}
 		var slot: int = stage_n - 1
 		for t in type_ids.size():
 			var group: Array = by_type[type_ids[t]]
@@ -472,9 +473,53 @@ func _assign_stage_pools() -> void:
 				continue
 			var picked: Variant = group[slot]
 			if typeof(picked) == TYPE_DICTIONARY:
-				pool.append((picked as Dictionary).duplicate(true))
+				var question: Dictionary = picked as Dictionary
+				pool.append(question.duplicate(true))
+				selected_ids[_content_question_key(question)] = true
+		var target_size: int = _stage_question_target(stage_n, pool.size())
+		var offset: int = 1
+		while pool.size() < target_size and offset < stage_total:
+			for t in type_ids.size():
+				var group: Array = by_type[type_ids[t]]
+				if group.is_empty():
+					continue
+				var candidate_index: int = (slot + offset) % group.size()
+				var candidate_stored: Variant = group[candidate_index]
+				if typeof(candidate_stored) != TYPE_DICTIONARY:
+					continue
+				var candidate: Dictionary = candidate_stored as Dictionary
+				var candidate_id: String = _content_question_key(candidate)
+				if selected_ids.has(candidate_id):
+					continue
+				pool.append(candidate.duplicate(true))
+				selected_ids[candidate_id] = true
+				if pool.size() >= target_size:
+					break
+			offset += 1
 		_stage_pools[str(stage_n)] = pool
 		print("[ContentDB] Stage ", stage_n, " TRACE pool: ", pool.size(), " unique items")
+
+
+func _stage_question_target(stage_n: int, baseline: int) -> int:
+	var stored: Variant = stages.get(str(stage_n), {})
+	if typeof(stored) != TYPE_DICTIONARY:
+		return baseline
+	var config: Dictionary = stored as Dictionary
+	if str(config.get("type", "")) == "summative":
+		return baseline
+	var waves_stored: Variant = config.get("waves", [])
+	var wave_count: int = 1
+	if typeof(waves_stored) == TYPE_ARRAY:
+		wave_count = maxi(1, (waves_stored as Array).size())
+	var questions_per_wave: int = maxi(1, int(config.get("questions_per_wave", 1)))
+	return maxi(baseline, wave_count * questions_per_wave)
+
+
+func _content_question_key(question: Dictionary) -> String:
+	var question_id: String = str(question.get("id", "")).strip_edges()
+	if not question_id.is_empty():
+		return question_id
+	return str(question.get("question", question.get("text", ""))).strip_edges()
 
 
 func _sort_stage_questions(a: Dictionary, b: Dictionary) -> bool:

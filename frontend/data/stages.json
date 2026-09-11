@@ -5,14 +5,10 @@
 		"map_scene": "res://src/gameplay/maps/map_basic.tscn",
 		"starting_gold": 2,
 		"incident_chance": 0.25,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 3, "spawn_delay": 1.5, "health_multiplier": 1.0, "enemy_type": "basic"},
-			{"enemy_count": 4, "spawn_delay": 1.35, "health_multiplier": 1.05, "enemy_type": "basic"},
-			{"enemy_count": 5, "spawn_delay": 1.2, "health_multiplier": 1.1, "enemy_type": "fast"},
-			{"enemy_count": 6, "spawn_delay": 1.1, "health_multiplier": 1.15, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 7, "spawn_delay": 1.0, "health_multiplier": 1.2, "enemy_type": "fast"},
-			{"enemy_count": 8, "spawn_delay": 0.95, "health_multiplier": 1.25, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 9, "spawn_delay": 0.9, "health_multiplier": 1.3, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 6, "spawn_delay": 1.15, "health_multiplier": 1.05, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 10, "spawn_delay": 0.9, "health_multiplier": 1.2, "enemy_type": "fast", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.0, "enemy_type": "boss"}
 		]
 	},
@@ -22,14 +18,10 @@
 		"map_scene": "res://src/gameplay/maps/map_switchback.tscn",
 		"starting_gold": 5,
 		"incident_chance": 0.35,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 4, "spawn_delay": 1.2, "health_multiplier": 1.05, "enemy_type": "basic"},
-			{"enemy_count": 5, "spawn_delay": 1.1, "health_multiplier": 1.1, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 6, "spawn_delay": 1.0, "health_multiplier": 1.15, "enemy_type": "fast"},
-			{"enemy_count": 7, "spawn_delay": 0.95, "health_multiplier": 1.2, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 8, "spawn_delay": 0.9, "health_multiplier": 1.25, "enemy_type": "fast", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 9, "spawn_delay": 0.85, "health_multiplier": 1.3, "enemy_type": "fast"},
-			{"enemy_count": 10, "spawn_delay": 0.8, "health_multiplier": 1.35, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 7, "spawn_delay": 1.05, "health_multiplier": 1.1, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 12, "spawn_delay": 0.82, "health_multiplier": 1.3, "enemy_type": "fast", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.15, "enemy_type": "boss"}
 		]
 	},
@@ -39,14 +31,10 @@
 		"map_scene": "res://src/gameplay/maps/map_spiral.tscn",
 		"starting_gold": 6,
 		"incident_chance": 0.45,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 5, "spawn_delay": 1.1, "health_multiplier": 1.1, "enemy_type": "basic"},
-			{"enemy_count": 6, "spawn_delay": 1.0, "health_multiplier": 1.15, "enemy_type": "fast"},
-			{"enemy_count": 7, "spawn_delay": 0.95, "health_multiplier": 1.2, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 8, "spawn_delay": 1.15, "health_multiplier": 1.25, "enemy_type": "heavy"},
-			{"enemy_count": 9, "spawn_delay": 0.9, "health_multiplier": 1.3, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 10, "spawn_delay": 0.85, "health_multiplier": 1.35, "enemy_type": "fast", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 11, "spawn_delay": 0.8, "health_multiplier": 1.4, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 8, "spawn_delay": 1.0, "health_multiplier": 1.15, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 14, "spawn_delay": 0.78, "health_multiplier": 1.35, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.25, "enemy_type": "boss"}
 		]
 	},
@@ -56,14 +44,10 @@
 		"map_scene": "res://src/gameplay/maps/map_choke.tscn",
 		"starting_gold": 7,
 		"incident_chance": 0.55,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 6, "spawn_delay": 1.0, "health_multiplier": 1.15, "enemy_type": "basic"},
-			{"enemy_count": 7, "spawn_delay": 0.9, "health_multiplier": 1.2, "enemy_type": "fast"},
-			{"enemy_count": 8, "spawn_delay": 0.85, "health_multiplier": 1.25, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 9, "spawn_delay": 1.1, "health_multiplier": 1.3, "enemy_type": "heavy"},
-			{"enemy_count": 10, "spawn_delay": 0.8, "health_multiplier": 1.35, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 11, "spawn_delay": 0.75, "health_multiplier": 1.4, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 12, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "heavy"},
+			{"enemy_count": 9, "spawn_delay": 0.95, "health_multiplier": 1.2, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 15, "spawn_delay": 0.74, "health_multiplier": 1.4, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.35, "enemy_type": "boss"}
 		]
 	},
@@ -73,14 +57,10 @@
 		"map_scene": "res://src/gameplay/maps/map_perimeter.tscn",
 		"starting_gold": 8,
 		"incident_chance": 0.6,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 7, "spawn_delay": 0.95, "health_multiplier": 1.2, "enemy_type": "fast"},
-			{"enemy_count": 8, "spawn_delay": 0.85, "health_multiplier": 1.25, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 9, "spawn_delay": 1.05, "health_multiplier": 1.3, "enemy_type": "heavy"},
-			{"enemy_count": 10, "spawn_delay": 0.8, "health_multiplier": 1.35, "enemy_type": "fast"},
-			{"enemy_count": 11, "spawn_delay": 0.75, "health_multiplier": 1.4, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 12, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 13, "spawn_delay": 0.65, "health_multiplier": 1.5, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 10, "spawn_delay": 0.9, "health_multiplier": 1.25, "enemy_type": "fast", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 16, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.45, "enemy_type": "boss"}
 		]
 	},
@@ -90,14 +70,10 @@
 		"map_scene": "res://src/gameplay/maps/map_zigzag.tscn",
 		"starting_gold": 9,
 		"incident_chance": 0.7,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 8, "spawn_delay": 0.9, "health_multiplier": 1.25, "enemy_type": "fast"},
-			{"enemy_count": 9, "spawn_delay": 0.85, "health_multiplier": 1.3, "enemy_type": "basic"},
-			{"enemy_count": 10, "spawn_delay": 0.8, "health_multiplier": 1.35, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 11, "spawn_delay": 1.0, "health_multiplier": 1.4, "enemy_type": "heavy"},
-			{"enemy_count": 12, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "fast", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 13, "spawn_delay": 0.65, "health_multiplier": 1.5, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 14, "spawn_delay": 0.6, "health_multiplier": 1.55, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 11, "spawn_delay": 0.85, "health_multiplier": 1.3, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 18, "spawn_delay": 0.66, "health_multiplier": 1.5, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.55, "enemy_type": "boss"}
 		]
 	},
@@ -107,14 +83,10 @@
 		"map_scene": "res://src/gameplay/maps/map_loop.tscn",
 		"starting_gold": 10,
 		"incident_chance": 0.75,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 9, "spawn_delay": 0.85, "health_multiplier": 1.3, "enemy_type": "basic"},
-			{"enemy_count": 10, "spawn_delay": 0.75, "health_multiplier": 1.35, "enemy_type": "fast"},
-			{"enemy_count": 11, "spawn_delay": 0.7, "health_multiplier": 1.4, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 12, "spawn_delay": 0.95, "health_multiplier": 1.45, "enemy_type": "heavy"},
-			{"enemy_count": 13, "spawn_delay": 0.65, "health_multiplier": 1.5, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 14, "spawn_delay": 0.8, "health_multiplier": 1.55, "enemy_type": "heavy"},
-			{"enemy_count": 15, "spawn_delay": 0.6, "health_multiplier": 1.6, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 12, "spawn_delay": 0.8, "health_multiplier": 1.35, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
+			{"enemy_count": 20, "spawn_delay": 0.62, "health_multiplier": 1.55, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.7, "enemy_type": "boss"}
 		]
 	},
@@ -124,14 +96,10 @@
 		"map_scene": "res://src/gameplay/maps/map_islands.tscn",
 		"starting_gold": 12,
 		"incident_chance": 0.85,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 10, "spawn_delay": 0.75, "health_multiplier": 1.35, "enemy_type": "fast"},
-			{"enemy_count": 11, "spawn_delay": 0.85, "health_multiplier": 1.4, "enemy_type": "heavy"},
-			{"enemy_count": 12, "spawn_delay": 0.65, "health_multiplier": 1.45, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 13, "spawn_delay": 0.75, "health_multiplier": 1.5, "enemy_type": "heavy"},
-			{"enemy_count": 14, "spawn_delay": 0.6, "health_multiplier": 1.55, "enemy_type": "fast"},
-			{"enemy_count": 15, "spawn_delay": 0.6, "health_multiplier": 1.6, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 16, "spawn_delay": 0.55, "health_multiplier": 1.65, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
+			{"enemy_count": 13, "spawn_delay": 0.75, "health_multiplier": 1.4, "enemy_type": "fast", "enemy_mix": ["basic", "fast", "heavy"]},
+			{"enemy_count": 22, "spawn_delay": 0.58, "health_multiplier": 1.6, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.8, "enemy_type": "boss"}
 		]
 	},
@@ -141,14 +109,10 @@
 		"map_scene": "res://src/gameplay/maps/map_gauntlet.tscn",
 		"starting_gold": 14,
 		"incident_chance": 0.9,
+		"questions_per_wave": 3,
 		"waves": [
-			{"enemy_count": 11, "spawn_delay": 0.7, "health_multiplier": 1.4, "enemy_type": "fast"},
-			{"enemy_count": 12, "spawn_delay": 0.8, "health_multiplier": 1.45, "enemy_type": "heavy"},
-			{"enemy_count": 13, "spawn_delay": 0.6, "health_multiplier": 1.5, "enemy_type": "basic", "enemy_mix": ["basic", "fast"]},
-			{"enemy_count": 14, "spawn_delay": 0.75, "health_multiplier": 1.55, "enemy_type": "heavy"},
-			{"enemy_count": 15, "spawn_delay": 0.55, "health_multiplier": 1.6, "enemy_type": "fast", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 16, "spawn_delay": 0.55, "health_multiplier": 1.65, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 17, "spawn_delay": 0.6, "health_multiplier": 1.7, "enemy_type": "heavy"},
+			{"enemy_count": 14, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "fast", "enemy_mix": ["basic", "fast", "heavy"]},
+			{"enemy_count": 24, "spawn_delay": 0.54, "health_multiplier": 1.65, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 1.95, "enemy_type": "boss"}
 		]
 	},
@@ -159,16 +123,12 @@
 		"starting_gold": 20,
 		"exam_question_count": 15,
 		"exam_required_score": 0.75,
+		"questions_per_wave": 5,
 		"req_lesson": "mod_01",
 		"incident_chance": 0.55,
 		"waves": [
-			{"enemy_count": 10, "spawn_delay": 0.7, "health_multiplier": 1.45, "enemy_type": "fast"},
-			{"enemy_count": 11, "spawn_delay": 0.8, "health_multiplier": 1.5, "enemy_type": "heavy"},
-			{"enemy_count": 12, "spawn_delay": 0.65, "health_multiplier": 1.55, "enemy_type": "basic", "enemy_mix": ["basic", "fast", "heavy"]},
-			{"enemy_count": 13, "spawn_delay": 0.6, "health_multiplier": 1.6, "enemy_type": "fast", "enemy_mix": ["basic", "fast", "heavy"]},
-			{"enemy_count": 14, "spawn_delay": 0.55, "health_multiplier": 1.65, "enemy_type": "heavy", "enemy_mix": ["fast", "heavy"]},
-			{"enemy_count": 15, "spawn_delay": 0.55, "health_multiplier": 1.7, "enemy_type": "basic", "enemy_mix": ["basic", "fast", "heavy"]},
-			{"enemy_count": 16, "spawn_delay": 0.5, "health_multiplier": 1.75, "enemy_type": "heavy"},
+			{"enemy_count": 15, "spawn_delay": 0.68, "health_multiplier": 1.5, "enemy_type": "fast", "enemy_mix": ["basic", "fast", "heavy"]},
+			{"enemy_count": 26, "spawn_delay": 0.5, "health_multiplier": 1.7, "enemy_type": "heavy", "enemy_mix": ["basic", "fast", "heavy"]},
 			{"enemy_count": 1, "spawn_delay": 1.0, "health_multiplier": 2.1, "enemy_type": "boss"}
 		]
 	}

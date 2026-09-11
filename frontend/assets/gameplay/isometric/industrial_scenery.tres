@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://d38s7xsmd75xl"]
 
 [ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_long.tscn" id="1_2xk8b"]
 [ext_resource type="PackedScene" path="res://src/gameplay/maps/isometric/modules/curb_cap.tscn" id="2_a2vm5"]

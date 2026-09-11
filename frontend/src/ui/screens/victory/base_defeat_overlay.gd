@@ -1,5 +1,5 @@
 extends CanvasLayer
-## Live-map defeat presentation. It never awards credits or advances progression.
+## Live-map result presentation. It only reports data and emits the selected action.
 signal action_requested(action: StringName)
 const ActionButton = preload("res://src/ui/screens/victory/defeat_action_button.gd")
 const FONT = preload("res://assets/fonts/PressStart2P-Regular.ttf")
@@ -7,6 +7,7 @@ const REVEAL_COMPLETE := 3.6
 var elapsed := 0.0
 var results_ready := false
 var _leaving := false
+var _won := false
 var _root: Control
 var _grade: ShaderMaterial
 var _title: Label
@@ -17,6 +18,7 @@ var _wave: Label
 var _kills: Label
 var _advisory: Label
 var _buttons: Array[Button] = []
+var _button_actions: Array[StringName] = [&"upgrade", &"restart", &"lessons", &"back"]
 var _skip: Button
 
 func _ready() -> void:
@@ -42,12 +44,12 @@ func _ready() -> void:
 	_wave = _label(Color("e3d3e4"))
 	_kills = _label(Color("e3d3e4"))
 	_advisory = _label(Color("c5aabb"))
-	for data in [["UPGRADE", &"upgrade"], ["RESTART", &"restart"], ["LESSONS", &"lessons"], ["BACK", &"back"]]:
+	for caption: String in ["UPGRADE", "RESTART", "LESSONS", "BACK"]:
 		var button := ActionButton.new()
-		button.text = data[0]
-		button.primary = data[1] == &"upgrade"
+		button.text = caption
+		button.primary = _buttons.is_empty()
 		button.disabled = true
-		button.pressed.connect(_choose.bind(data[1]))
+		button.pressed.connect(_choose_button.bind(_buttons.size()))
 		_root.add_child(button)
 		_buttons.append(button)
 	_skip = Button.new()
@@ -62,11 +64,69 @@ func _ready() -> void:
 	_update_reveal()
 
 func configure(data: Dictionary) -> void:
+	_won = bool(data.get("won", false))
+	if _won:
+		_configure_clear(data)
+	else:
+		_configure_defeat(data)
+	for i in _buttons.size():
+		var action_button: Button = _buttons[i]
+		action_button.set("success", _won)
+		action_button.set("primary", i == 0)
+		action_button.queue_redraw()
+	_layout()
+	_update_reveal()
+
+
+func _configure_clear(data: Dictionary) -> void:
+	var stage: int = int(data.get("stage", 1))
+	var final_stage: bool = bool(data.get("final_stage", stage >= 10))
+	_stage.text = "MAP A%d  /  DEFENSE SECURED" % stage
+	_title.text = "STAGE CLEARED"
+	_reward_title.text = "CREDITS ACQUIRED"
+	_credits.text = "+%d CR" % int(data.get("credits", 0))
+	_wave.text = "THREATS CLEARED   %d" % int(data.get("kills", 0))
+	_kills.text = "ACCURACY   %d%%" % int(round(float(data.get("accuracy", 1.0)) * 100.0))
+	_advisory.text = "MODULE COMPLETE" if final_stage else "NEXT STAGE UNLOCKED"
+	_buttons[0].text = "CERTIFICATE" if final_stage else "NEXT STAGE"
+	_buttons[1].text = "REPLAY"
+	_buttons[2].text = "UPGRADES"
+	_buttons[3].text = "BACK"
+	var primary_action: StringName = &"certificate" if final_stage else &"next"
+	_button_actions = [primary_action, &"restart", &"upgrade", &"back"]
+	_set_label_color(_stage, Palette.CYAN_300)
+	_set_label_color(_title, Palette.SUCCESS)
+	_set_label_color(_reward_title, Palette.CREAM)
+	_set_label_color(_credits, Palette.WARNING)
+	_set_label_color(_wave, Palette.CREAM)
+	_set_label_color(_kills, Palette.CREAM)
+	_set_label_color(_advisory, Palette.CYAN_300)
+	_grade.set_shader_parameter("grade_color", _rgb(Palette.SUCCESS))
+	_grade.set_shader_parameter("edge_color", _rgb(Palette.TEAL_900))
+	_grade.set_shader_parameter("impact_color", _rgb(Palette.CYAN_400))
+
+
+func _configure_defeat(data: Dictionary) -> void:
 	_stage.text = "MAP A%d  /  DEFENSE FAILED" % int(data.get("stage", 1))
+	_title.text = "BASE DESTROYED"
+	_reward_title.text = "CREDITS ACQUIRED"
 	_credits.text = "+%d CR" % int(data.get("credits", 0))
 	_wave.text = "WAVE REACHED   %d / %d" % [data.get("wave", 1), data.get("waves", 1)]
 	_kills.text = "THREATS CLEARED   %d" % int(data.get("kills", 0))
 	_advisory.text = str(data.get("tip", "Upgrade your nodes, then redeploy."))
+	_buttons[0].text = "UPGRADE"
+	_buttons[1].text = "RESTART"
+	_buttons[2].text = "LESSONS"
+	_buttons[3].text = "BACK"
+	_button_actions = [&"upgrade", &"restart", &"lessons", &"back"]
+
+
+func _set_label_color(label: Label, color: Color) -> void:
+	label.add_theme_color_override("font_color", color)
+
+
+func _rgb(color: Color) -> Vector3:
+	return Vector3(color.r, color.g, color.b)
 
 func _label(ink: Color) -> Label:
 	var label := Label.new()
@@ -140,6 +200,11 @@ func _fade(start: float) -> float:
 func finish_reveal() -> void:
 	elapsed = maxf(elapsed, REVEAL_COMPLETE)
 	_update_reveal()
+
+func _choose_button(index: int) -> void:
+	if index < 0 or index >= _button_actions.size():
+		return
+	_choose(_button_actions[index])
 
 func _choose(action: StringName) -> void:
 	if not results_ready or _leaving:

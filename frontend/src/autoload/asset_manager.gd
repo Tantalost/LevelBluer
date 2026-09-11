@@ -289,6 +289,7 @@ func _ui_catalog() -> Array[Dictionary]:
 		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
 		_catalog_entry("ui_module1_intro", "Module 1 comic intro", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788339918/Gemini_Generated_Image_fhsnvyfhsnvyfhsn.jpg"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
+		_catalog_entry("ui_dashboard_scenic", "Command outpost dashboard", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1789109666/command_outpost_v1.png"),
 		_catalog_entry("ui_background", "Login background", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/background.png"),
 		_catalog_entry("ui_logo", "Brand logo", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336656/logo.png"),
 		_catalog_entry("ui_loading", "Loading mark", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336655/loading.png"),
