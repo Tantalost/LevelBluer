@@ -1,5 +1,5 @@
 extends BaseScreen
-## Baseline pre-test. Answers are scored on the mobile backend, which updates BKT P(L).
+## Per-module pre-test. Questions are bundled so it works offline; results sync later.
 
 @onready var _topic: Label = %TopicLabel
 @onready var _progress: Label = %ProgressLabel
@@ -17,6 +17,7 @@ var _answers: Dictionary = {}  # id -> selected value
 var _selected: Variant = null
 var _loading: bool = false
 var _pixel_font: Font
+var _module_id: String = ""
 
 
 func _ready() -> void:
@@ -26,11 +27,15 @@ func _ready() -> void:
 
 func on_enter(_args: Dictionary) -> void:
 	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_dashboard")
+	_module_id = str(_args.get("module_id", "")).strip_edges()
 	_apply_copy()
 	_hide_error()
 	_index = 0
 	_answers.clear()
 	_selected = null
+	if _module_id.is_empty():
+		_show_error(tr("PRETEST_ERR_LOAD"))
+		return
 	_load_questions()
 
 
@@ -56,7 +61,7 @@ func _apply_copy() -> void:
 
 func _load_questions() -> void:
 	_set_busy(true)
-	var parsed: Variant = await AuthService.fetch_pretest_questions()
+	var parsed: Variant = await AuthService.fetch_pretest_questions(_module_id)
 	_set_busy(false)
 
 	if typeof(parsed) != TYPE_DICTIONARY:
@@ -64,7 +69,7 @@ func _load_questions() -> void:
 		return
 
 	if bool(parsed.get("alreadyCompleted", false)):
-		Router.replace_all(&"dashboard")
+		_go_to_lesson()
 		return
 
 	var list: Variant = parsed.get("questions", [])
@@ -172,15 +177,19 @@ func _submit() -> void:
 		payload.append({"id": qid, "answer": _answers[qid]})
 
 	_set_busy(true)
-	var result: AuthService.Result = await AuthService.submit_pretest(payload)
+	var result: AuthService.Result = await AuthService.submit_pretest(_module_id, payload)
 	_set_busy(false)
 
 	if result == AuthService.Result.OK:
-		Router.replace_all(&"dashboard")
+		_go_to_lesson()
 	elif result == AuthService.Result.NETWORK_ERROR:
 		_show_error(tr("PRETEST_ERR_NETWORK"))
 	else:
 		_show_error(tr("PRETEST_ERR_SUBMIT"))
+
+
+func _go_to_lesson() -> void:
+	Router.replace(&"lesson_player", {"module_id": _module_id, "review": false})
 
 
 func _set_busy(busy: bool) -> void:

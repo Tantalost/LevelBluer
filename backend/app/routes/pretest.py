@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, Query, status
 
 from app.schemas.pretest import (
     PretestQuestionsResponse,
@@ -27,8 +27,11 @@ def _student_id(authorization: str | None) -> str:
 
 
 @router.get("/questions", response_model=PretestQuestionsResponse)
-def get_questions(authorization: str | None = Header(default=None)) -> PretestQuestionsResponse:
-    return list_pretest_questions(_student_id(authorization))
+def get_questions(
+    module_id: str = Query(..., alias="module_id"),
+    authorization: str | None = Header(default=None),
+) -> PretestQuestionsResponse:
+    return list_pretest_questions(_student_id(authorization), module_id)
 
 
 @router.post("/submit", response_model=PretestSubmitResponse, response_model_by_alias=True)
@@ -36,4 +39,4 @@ def submit(
     payload: PretestSubmitRequest,
     authorization: str | None = Header(default=None),
 ) -> PretestSubmitResponse:
-    return submit_pretest(_student_id(authorization), payload.answers)
+    return submit_pretest(_student_id(authorization), payload.module_id, payload.answers)

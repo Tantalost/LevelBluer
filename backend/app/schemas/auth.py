@@ -49,6 +49,7 @@ class StudentUserPayload(BaseModel):
     interventionStatus: str = "NORMAL"
     mastery: MasteryPayload
     preTestCompleted: bool = False
+    completedModuleIds: list[str] = Field(default_factory=list)
 
 
 class LoginResponse(BaseModel):

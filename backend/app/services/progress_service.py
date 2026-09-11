@@ -98,11 +98,16 @@ def _upsert_game_bkt(student_id: str, matrix: dict[str, float]) -> None:
 
 
 def _upsert_save_blob(student_id: str, payload: dict) -> None:
+    blob = dict(payload)
+    if "module_pretests" not in blob:
+        existing = fetch_student_progress(student_id) or {}
+        if isinstance(existing.get("module_pretests"), (dict, list)):
+            blob["module_pretests"] = existing["module_pretests"]
     try:
         supabase.table("player_saves").upsert(
             {
                 "student_id": student_id,
-                "payload": payload,
+                "payload": blob,
                 "updated_at": datetime.now(UTC).isoformat(),
             }
         ).execute()

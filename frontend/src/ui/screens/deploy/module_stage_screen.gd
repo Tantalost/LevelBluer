@@ -335,6 +335,9 @@ func _first_playable() -> int:
 
 
 func _is_unlocked(index: int) -> bool:
+	var module_id := str(_module_entry().get("id", ""))
+	if not module_id.is_empty() and not PlayerManager.is_module_deploy_unlocked(module_id):
+		return false
 	var stage_id: int = _stage_id(index)
 	if stage_id <= 0:
 		return false

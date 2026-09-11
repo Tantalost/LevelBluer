@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS students (
 	auth_token TEXT DEFAULT '',
 	signed_in INTEGER DEFAULT 0,
 	pre_test_completed INTEGER DEFAULT 0,
+	module_pretests TEXT DEFAULT '',
+	pending_pretest_submits TEXT DEFAULT '',
 	pending_password_change INTEGER DEFAULT 0,
 	display_name TEXT DEFAULT '',
 	needs_cloud_sync INTEGER DEFAULT 0
@@ -69,6 +71,8 @@ func _ready() -> void:
 		push_warning("StudentDatabase: create table failed. %s" % _db.error_message)
 		return
 	_ensure_column("needs_cloud_sync", "INTEGER DEFAULT 0")
+	_ensure_column("module_pretests", "TEXT DEFAULT ''")
+	_ensure_column("pending_pretest_submits", "TEXT DEFAULT ''")
 	_ready_ok = true
 
 
@@ -129,13 +133,13 @@ INSERT INTO students (
 	mastery_phishing, mastery_smishing, mastery_vishing, mastery_pretexting, mastery_baiting,
 	threat_points, upgrade_materials, highest_unlocked_stage, tower_level, glade_level, forge_level,
 	intervention_status, requires_password_change, email, first_name, last_name, middle_initial,
-	auth_token, signed_in, pre_test_completed, pending_password_change, display_name, needs_cloud_sync, updated_at
+	auth_token, signed_in, pre_test_completed, module_pretests, pending_pretest_submits, pending_password_change, display_name, needs_cloud_sync, updated_at
 ) VALUES (
 	?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 	?, ?, ?, ?, ?,
 	?, ?, ?, ?, ?, ?,
 	?, ?, ?, ?, ?, ?,
-	?, ?, ?, ?, ?, ?, datetime('now')
+	?, ?, ?, ?, ?, ?, ?, ?, datetime('now')
 )
 ON CONFLICT(id) DO UPDATE SET
 	name = excluded.name,
@@ -167,6 +171,8 @@ ON CONFLICT(id) DO UPDATE SET
 	auth_token = excluded.auth_token,
 	signed_in = excluded.signed_in,
 	pre_test_completed = excluded.pre_test_completed,
+	module_pretests = excluded.module_pretests,
+	pending_pretest_submits = excluded.pending_pretest_submits,
 	pending_password_change = excluded.pending_password_change,
 	display_name = excluded.display_name,
 	needs_cloud_sync = excluded.needs_cloud_sync,
@@ -203,6 +209,8 @@ ON CONFLICT(id) DO UPDATE SET
 		str(row.get("auth_token", "")),
 		signed_in,
 		1 if bool(row.get("pre_test_completed", false)) else 0,
+		str(row.get("module_pretests", "")),
+		str(row.get("pending_pretest_submits", "")),
 		1 if bool(row.get("pending_password_change", false)) else 0,
 		str(row.get("display_name", "")),
 		1 if bool(row.get("needs_cloud_sync", false)) else 0,
