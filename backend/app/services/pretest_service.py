@@ -120,14 +120,9 @@ def list_pretest_questions(student_id: str, module_id: str) -> PretestQuestionsR
     )
 
 
-def _is_correct(question: dict, submitted: bool | int) -> bool:
-    expected = question["answer"]
-    if question["type"] == "true_false":
-        return bool(submitted) is bool(expected)
-    try:
-        return int(submitted) == int(expected)
-    except (TypeError, ValueError):
-        return False
+def _is_correct(question: dict, submitted: bool | int | str) -> bool:
+    from app.services.pretest_grading import is_correct
+    return is_correct(question, submitted)
 
 
 def submit_pretest(
@@ -151,7 +146,7 @@ def submit_pretest(
     by_id = {q["id"]: q for q in bank}
     submitted_ids = {item.id for item in answers}
     required_ids = set(by_id)
-    if submitted_ids != required_ids:
+    if submitted_ids != required_ids or len(answers) != len(bank):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submit an answer for every pre-test question",

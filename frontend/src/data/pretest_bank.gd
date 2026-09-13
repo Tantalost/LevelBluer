@@ -99,9 +99,51 @@ static func _ensure_loaded() -> void:
 
 static func _is_correct(question: Dictionary, submitted: Variant) -> bool:
 	var expected: Variant = question.get("answer")
-	if str(question.get("type", "")) == "true_false":
-		return bool(submitted) == bool(expected)
-	return int(submitted) == int(expected)
+	var kind := str(question.get("type", "multiple_choice"))
+	if kind == "short_answer":
+		if _is_choice_number(submitted) and question.has("legacy_answer"):
+			return submitted == question.legacy_answer
+		if typeof(submitted) != TYPE_STRING or str(submitted).length() > 96:
+			return false
+		var actual := normalize_recall(str(submitted))
+		if actual.is_empty():
+			return false
+		for accepted in question.get("accepted_answers", [expected]):
+			if actual == normalize_recall(str(accepted)):
+				return true
+		return false
+	if kind == "true_false":
+		return typeof(submitted) == TYPE_BOOL and submitted == expected
+	return _is_choice_number(submitted) and submitted == expected
+
+
+static func _is_choice_number(value: Variant) -> bool:
+	# Godot's JSON parser represents numeric choice indices as floats on reload.
+	return typeof(value) == TYPE_INT or (typeof(value) == TYPE_FLOAT and is_finite(value) and value == floor(value))
+
+
+static func normalize_recall(value: String) -> String:
+	var pattern := RegEx.new()
+	pattern.compile("[^a-z0-9]+")
+	return pattern.sub(value.to_lower(), " ", true).strip_edges()
+
+
+static func review_cards(module_id: String, answers: Dictionary) -> Array[Dictionary]:
+	var cards: Array[Dictionary] = []
+	for question: Dictionary in _bank_for(module_id):
+		var qid := int(question.id)
+		var answer: Variant = answers.get(qid)
+		var expected := str(question.answer)
+		var submitted := str(answer)
+		if question.type == "multiple_choice":
+			expected = str(question.options[int(question.answer)])
+			if _is_choice_number(answer) and answer >= 0 and answer < question.options.size():
+				submitted = str(question.options[int(answer)])
+		elif question.type == "true_false":
+			expected = "True" if question.answer else "False"
+			submitted = "True" if answer else "False"
+		cards.append({"question": question.text, "answer": expected, "submitted": submitted, "correct": _is_correct(question, answer)})
+	return cards
 
 
 static func _initial_pl(stored: float) -> float:

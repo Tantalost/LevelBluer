@@ -1,400 +1,293 @@
 class_name CodexScreen
 extends BaseScreen
-## Unit and enemy reference. Stats are read from ContentDB JSON. No completion.
-
-const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const FALLBACK_THREAT := 1000
-const FALLBACK_MATERIALS := 200
-
-@onready var _os_bar: PanelContainer = %OsBar
-@onready var _os_cursor: Label = %OsCursor
-@onready var _os_led: ColorRect = %OsLed
-@onready var _ground: ColorRect = %Ground
-@onready var _status_line: Label = %StatusLine
-@onready var _back_button: Button = %BackButton
-@onready var _title_label: Label = %TitleLabel
-@onready var _threat_box: PanelContainer = %ThreatBox
-@onready var _materials_box: PanelContainer = %MaterialsBox
-@onready var _threat_value: Label = %ThreatValue
-@onready var _materials_value: Label = %MaterialsValue
-@onready var _catalog_card: PanelContainer = %CatalogCard
-@onready var _catalog_title_bar: PanelContainer = %CatalogTitleBar
-@onready var _catalog_well: PanelContainer = %CatalogWell
-@onready var _catalog_file: Label = %CatalogFile
-@onready var _units_tab: Button = %UnitsTab
-@onready var _enemies_tab: Button = %EnemiesTab
-@onready var _weakness_banner: Label = %WeaknessBanner
-@onready var _unit_list: ItemList = %UnitList
-@onready var _stats_title: Label = %StatsTitle
-@onready var _stats_body: RichTextLabel = %StatsBody
-
-var _pixel_font: Font
+## Read-only field guide. Matchups come from combat; real-world notes are separate.
+const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const Field = preload("res://src/ui/screens/intel/codex_field_data.gd")
+const Specimen = preload("res://src/ui/screens/intel/codex_specimen.gd")
+const GOOD := Color("88e5a2")
+const BAD := Color("ff9295")
 var _tab: StringName = &"units"
-var _focus_skill: String = ""
-var _current_unit_id: String = ""
-var _blink_t: float = 0.0
-
+var _current_unit_id := ""
+var _focus_skill := ""
+var _search: LineEdit
+var _roster: VBoxContainer
+var _detail: VBoxContainer
+var _panes: HBoxContainer
+var _units_tab: Button
+var _enemies_tab: Button
+var _count: Label
+var _banner: Label
+var _resource_label: Label
+var _real_body: VBoxContainer
+var _real_toggle: Button
+var _entry_buttons: Dictionary = {}
+var _visible_ids: Array[String] = []
+var _matchup_rows: Array[Dictionary] = []
+var _preview: Control
 
 func _ready() -> void:
-	_load_font()
-	_ground.color = Palette.FOREST_FLOOR
-	_style_os_bar()
-	_style_close_button()
-	_style_resource_pill(_threat_box)
-	_style_resource_pill(_materials_box)
-	_style_item_list()
-	_style_stats_body()
-	_apply_label(_title_label, Palette.TEXT_PRIMARY, 14)
-	_apply_label(_os_cursor, Palette.GREEN, 14)
-	_apply_label(_status_line, Palette.TEXT_MUTED, 12)
-	_apply_label(_catalog_file, Palette.TEXT_PRIMARY, 11)
-	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_weakness_banner, Palette.TEXT_PRIMARY, 11)
-	_apply_label(_stats_title, Palette.TEXT_PRIMARY, 14)
-	_back_button.pressed.connect(_on_back_pressed)
-	_units_tab.pressed.connect(func() -> void: _set_tab(&"units"))
-	_enemies_tab.pressed.connect(func() -> void: _set_tab(&"enemies"))
-	_unit_list.item_selected.connect(_on_unit_selected)
-	_weakness_banner.visible = false
+	var shell := UI.shell(self, "CODEX / FIELD GUIDE", _on_back_pressed)
+	var layout: VBoxContainer = shell.layout
+	var strip := HBoxContainer.new()
+	layout.add_child(strip)
+	var intro := UI.label("KNOW THE THREAT. BUILD THE COUNTER.", 20, UI.TEAL)
+	intro.size_flags_horizontal = SIZE_EXPAND_FILL
+	strip.add_child(intro)
+	_resource_label = UI.label("", 20, UI.MUTED)
+	_resource_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_resource_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	strip.add_child(_resource_label)
+	_banner = UI.label("", 22, UI.GOLD)
+	_banner.hide()
+	layout.add_child(_banner)
+	_panes = HBoxContainer.new()
+	_panes.add_theme_constant_override("separation", 24)
+	_panes.size_flags_vertical = SIZE_EXPAND_FILL
+	layout.add_child(_panes)
+	var left := UI.panel(_panes)
+	left.size_flags_horizontal = SIZE_EXPAND_FILL
+	left.size_flags_stretch_ratio = 0.29
+	var catalog := UI.column(left, 14)
+	catalog.add_child(UI.label("FIELD INDEX", 16, UI.TEAL, true))
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 8)
+	catalog.add_child(tabs)
+	_units_tab = UI.button("Defenders", _set_tab.bind(&"units"))
+	_enemies_tab = UI.button("Threats", _set_tab.bind(&"enemies"))
+	for button in [_units_tab, _enemies_tab]:
+		button.size_flags_horizontal = SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 22)
+		tabs.add_child(button)
+	_search = LineEdit.new()
+	_search.placeholder_text = "Search name or type..."
+	_search.custom_minimum_size.y = 46
+	_search.add_theme_font_override("font", UI.FONT)
+	_search.add_theme_font_size_override("font_size", 22)
+	_search.add_theme_stylebox_override("normal", UI.box(UI.BG, Color("3b626a"), 10))
+	_search.add_theme_stylebox_override("focus", UI.box(UI.BG, UI.TEAL, 10))
+	_search.add_theme_color_override("font_color", UI.TEXT)
+	_search.text_changed.connect(func(_text: String) -> void: _rebuild_list())
+	catalog.add_child(_search)
+	_count = UI.label("", 19, UI.MUTED)
+	catalog.add_child(_count)
+	_roster = UI.scroll_column(catalog)
+	catalog.add_child(UI.label("Reference entries are always available. Browsing does not unlock towers.", 20, UI.MUTED))
+	var right := UI.panel(_panes, Color("101e28"))
+	right.size_flags_horizontal = SIZE_EXPAND_FILL
+	right.size_flags_stretch_ratio = 0.71
+	_detail = UI.scroll_column(right)
+	_detail.add_theme_constant_override("separation", 18)
+	_refresh_resources()
 	_set_tab(&"units")
 
-
-func _process(delta: float) -> void:
-	_blink_t += delta
-	var on: bool = fmod(_blink_t, 1.05) < 0.58
-	_os_cursor.visible = on
-	_os_led.color = Palette.GREEN if on else Color(Palette.GREEN, 0.28)
-
-
 func on_enter(args: Dictionary) -> void:
-	set_process(true)
 	_refresh_resources()
-	var skill_id: String = str(args.get("skill_id", ""))
-	load_topic(skill_id)
-
+	load_topic(str(args.get("skill_id", "")))
 
 func on_resume() -> void:
-	set_process(true)
 	_refresh_resources()
 
-
-func on_exit() -> void:
-	set_process(false)
-	# Vertical-slice remediation: any Codex visit clears exam locks.
-	PlayerManager.locked_stages.clear()
-
-
-func _on_back_pressed() -> void:
-	PlayerManager.locked_stages.clear()
-	Router.request_back()
-
+func _refresh_resources() -> void:
+	_resource_label.text = "%d CR  /  %d THREAT" % [maxi(0, PlayerManager.credits), maxi(0, AuthService.threat_points())]
 
 func load_topic(skill_id: String) -> void:
 	_focus_skill = skill_id
+	_banner.visible = not skill_id.is_empty()
+	_banner.text = "RECOMMENDED REVIEW / " + skill_id.replace("_", " ").to_upper()
 	if skill_id.is_empty():
-		_weakness_banner.visible = false
 		_set_tab(_tab)
 		return
-	_weakness_banner.visible = true
-	_weakness_banner.text = "CRITICAL WEAKNESS: %s" % skill_id.to_upper()
-	if _tab_has_skill(&"units", skill_id):
-		_set_tab(&"units")
-	elif _tab_has_skill(&"enemies", skill_id):
-		_set_tab(&"enemies")
+	if skill_id.to_lower().contains("phish"):
+		_tab = &"enemies"
+		_current_unit_id = "fast"
 	else:
-		_set_tab(_tab)
-
-
-func _tab_has_skill(tab: StringName, skill_id: String) -> bool:
-	var ids: Array[String] = ContentDB.get_all_tower_ids() if tab == &"units" else ContentDB.get_all_enemy_ids()
-	for i in ids.size():
-		if _unit_matches_skill(tab, ids[i], skill_id):
-			return true
-	return false
-
-
-func _unit_matches_skill(tab: StringName, unit_id: String, skill_id: String) -> bool:
-	if skill_id.is_empty():
-		return false
-	var needle: String = skill_id.to_lower()
-	if tab == &"units":
-		var tower: Dictionary = ContentDB.get_tower(unit_id)
-		var req: String = str(tower.get("req_skill", "")).to_lower()
-		if req == needle or req.begins_with(needle) or needle.begins_with(req):
-			return not req.is_empty()
-		return unit_id.to_lower() == needle
-	return unit_id.to_lower() == needle
-
+		for tab in [&"units", &"enemies"]:
+			for id in Field.ids(tab):
+				var req := str(ContentDB.get_tower(id).get("req_skill", "")) if tab == &"units" else ""
+				if id == skill_id or (not req.is_empty() and (req.begins_with(skill_id) or skill_id.begins_with(req))):
+					_tab = tab
+					_current_unit_id = id
+	_search.text = ""
+	_set_tab(_tab)
 
 func _set_tab(tab: StringName) -> void:
 	_tab = tab
-	var enemies: bool = tab == &"enemies"
-	_catalog_file.text = "ENEMIES.DAT" if enemies else "UNITS.DAT"
-	_status_line.text = "ENEMIES / INTRUDERS" if enemies else "UNITS / DEFENDERS"
-	_style_chip(_units_tab, not enemies, false)
-	_style_chip(_enemies_tab, enemies, true)
-	_style_window(_catalog_card, Palette.RED if enemies else Palette.GOLD)
-	_style_title_bar(_catalog_title_bar, Palette.RED_DEEP if enemies else Palette.ORANGE)
-	_style_well(_catalog_well, Palette.RED if enemies else Palette.ORANGE)
+	_search.text = ""
+	for button in [_units_tab, _enemies_tab]:
+		var selected: bool = (button == _units_tab) == (tab == &"units")
+		button.add_theme_stylebox_override("normal", UI.box(UI.TEAL if selected else UI.BG, UI.TEAL if selected else Color("3b626a"), 10))
+		button.add_theme_color_override("font_color", UI.BG if selected else UI.TEXT)
 	_rebuild_list()
 
-
 func _rebuild_list() -> void:
-	var ids: Array[String] = ContentDB.get_all_enemy_ids() if _tab == &"enemies" else ContentDB.get_all_tower_ids()
-	_unit_list.clear()
-	var select_index: int = 0
-	for i in ids.size():
-		var unit_id: String = ids[i]
-		var label: String = _list_label(_tab, unit_id)
-		_unit_list.add_item(label)
-		_unit_list.set_item_metadata(i, unit_id)
-		if _unit_matches_skill(_tab, unit_id, _focus_skill):
-			select_index = i
-		elif unit_id == _current_unit_id:
-			select_index = i
-	if ids.is_empty():
+	UI.clear(_roster)
+	_entry_buttons.clear()
+	_visible_ids.clear()
+	var all_ids := Field.ids(_tab)
+	var query := _search.text.strip_edges().to_lower()
+	for id in all_ids:
+		var data := Field.entry(_tab, id)
+		if not query.is_empty() and not ("%s %s %s" % [id, data.name, data.type]).to_lower().contains(query):
+			continue
+		_visible_ids.append(id)
+		var button := UI.button("#%03d  %s\n%s" % [all_ids.find(id) + 1, str(data.name).to_upper(), data.type], _show_unit.bind(id))
+		button.custom_minimum_size.y = 78
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.add_theme_font_size_override("font_size", 24)
+		_roster.add_child(button)
+		_entry_buttons[id] = button
+	_count.text = "%02d / %02d ENTRIES" % [_visible_ids.size(), all_ids.size()]
+	if _visible_ids.is_empty():
 		_current_unit_id = ""
-		_stats_title.text = "NO ENTRIES"
-		_stats_body.text = "No authored units in ContentDB."
+		_roster.add_child(UI.label("No matching entries. Try another name or type.", 24, UI.MUTED))
+		UI.clear(_detail)
+		_detail.add_child(UI.label("NO SIGNAL MATCH", 22, UI.GOLD, true))
+		_detail.add_child(UI.label("Clear the search to return to the field index.", 26, UI.MUTED))
+		_preview = null
+		_real_body = null
+		_real_toggle = null
+		_matchup_rows.clear()
 		return
-	_unit_list.select(select_index)
-	_show_unit(str(_unit_list.get_item_metadata(select_index)))
+	if _current_unit_id not in _visible_ids:
+		_current_unit_id = _visible_ids[0]
+	_show_unit(_current_unit_id)
 
-
-func _on_unit_selected(index: int) -> void:
-	if index < 0 or index >= _unit_list.item_count:
+func _show_unit(id: String) -> void:
+	if id not in _visible_ids:
 		return
-	_show_unit(str(_unit_list.get_item_metadata(index)))
+	_current_unit_id = id
+	_reveal_selected.call_deferred()
+	UI.clear(_detail)
+	(_detail.get_parent() as ScrollContainer).scroll_vertical = 0
+	for key in _entry_buttons:
+		var button: Button = _entry_buttons[key]
+		var selected: bool = key == id
+		button.add_theme_stylebox_override("normal", UI.box(Color("234039") if selected else UI.PANEL, UI.TEAL if selected else Color("3b626a"), 10))
+		button.add_theme_color_override("font_color", UI.TEAL if selected else UI.TEXT)
+	var data := Field.entry(_tab, id)
+	var accent := UI.TEAL if _tab == &"units" else UI.GOLD
+	var heading := HBoxContainer.new()
+	heading.add_theme_constant_override("separation", 18)
+	_detail.add_child(heading)
+	_preview = Specimen.new()
+	_preview.tab = _tab
+	_preview.unit_id = id
+	_preview.accent = accent
+	heading.add_child(_preview)
+	var identity := UI.column(heading, 10)
+	identity.size_flags_horizontal = SIZE_EXPAND_FILL
+	identity.add_child(UI.label("%s / #%03d" % ["DEFENDER" if _tab == &"units" else "THREAT", Field.ids(_tab).find(id) + 1], 16, accent, true))
+	identity.add_child(UI.label(str(data.name).to_upper(), 32))
+	identity.add_child(UI.label(str(data.type) + "  /  " + str(data.subtitle), 23, accent))
+	identity.add_child(UI.label(str(data.tactics), 24, UI.MUTED))
+	_add_stats(data.stats)
+	_detail.add_child(UI.label("TYPE MATCHUPS", 16, accent, true))
+	var match_grid := HBoxContainer.new()
+	match_grid.add_theme_constant_override("separation", 10)
+	_detail.add_child(match_grid)
+	_matchup_rows = Field.matchups(_tab, id)
+	for row in _matchup_rows:
+		_add_matchup(match_grid, row)
+	var note := "Multipliers affect damage before whole-number rounding. Base stats shown; upgrades and stage scaling may change combat values."
+	if id == "sandbox" and _tab == &"units":
+		note = "Slow is movement-speed reduction while inside the field, not damage. Pair Sandbox with a damage-dealing tower."
+	elif _tab == &"enemies":
+		note = "Damage values are incoming tower damage multipliers. Slow values are movement-speed reduction, not damage resistance."
+	_detail.add_child(UI.label(note, 20, UI.MUTED))
+	_real_toggle = UI.button("+ REAL-WORLD INTEL / " + str(data.real_title).to_upper(), _toggle_real)
+	_real_toggle.add_theme_font_size_override("font_size", 23)
+	_detail.add_child(_real_toggle)
+	_real_body = UI.column(_detail)
+	_real_body.hide()
+	_real_body.add_child(UI.label("BEYOND THE BATTLEFIELD", 14, UI.GOLD, true))
+	_real_body.add_child(UI.label(str(data.real_body), 25))
+	_real_body.add_child(UI.label("Game types and damage bonuses are teaching metaphors, not real-world cybersecurity classifications.", 21, UI.MUTED))
+	if not str(data.url).is_empty():
+		var source := UI.button("Read source: " + str(data.source) + "  >", _open_source.bind(str(data.url)))
+		source.add_theme_font_size_override("font_size", 21)
+		source.tooltip_text = "Opens the reference in your browser. Requires internet."
+		_real_body.add_child(source)
+	var nav := HBoxContainer.new()
+	nav.add_theme_constant_override("separation", 12)
+	_detail.add_child(nav)
+	var previous := UI.button("< PREVIOUS", _step.bind(-1))
+	var next := UI.button("NEXT ENTRY >", _step.bind(1))
+	previous.disabled = _visible_ids.find(id) <= 0
+	next.disabled = _visible_ids.find(id) >= _visible_ids.size() - 1
+	for button in [previous, next]:
+		button.size_flags_horizontal = SIZE_EXPAND_FILL
+		nav.add_child(button)
 
-
-func _list_label(tab: StringName, unit_id: String) -> String:
-	if tab == &"units":
-		var tower: Dictionary = ContentDB.get_tower(unit_id)
-		var tower_name: String = str(tower.get("name", unit_id))
-		if tower_name.is_empty():
-			tower_name = unit_id
-		return tower_name.to_upper()
-	return unit_id.to_upper()
-
-
-func _show_unit(unit_id: String) -> void:
-	_current_unit_id = unit_id
+func _add_stats(stats: Dictionary) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	_detail.add_child(row)
+	var values: Array
 	if _tab == &"units":
-		_show_tower(unit_id)
+		values = [["DAMAGE", str(stats.get("damage", 0))], ["SHOTS / SEC", "%.2f" % float(stats.get("fire_rate", 0))], ["DEPLOY", "%s G" % str(stats.get("cost", 0))]]
 	else:
-		_show_enemy(unit_id)
+		values = [["BASE HP", str(stats.get("hp", 0))], ["SPEED", "%.0f" % float(stats.get("speed", 0))], ["BOUNTY", "%s G" % str(stats.get("bounty", 0))]]
+	for pair in values:
+		var panel := UI.panel(row, UI.BG)
+		panel.size_flags_horizontal = SIZE_EXPAND_FILL
+		panel.add_theme_stylebox_override("panel", UI.box(UI.BG, Color("29424b"), 10))
+		var col := UI.column(panel, 6)
+		col.add_child(UI.label(pair[0], 17, UI.MUTED))
+		col.add_child(UI.label(pair[1], 28))
 
+func _add_matchup(parent: Control, row: Dictionary) -> void:
+	var ink := UI.MUTED
+	var label := "NEUTRAL"
+	if _tab == &"units":
+		if row.tier == "strong":
+			label = "STRONG AGAINST"
+			ink = GOOD
+		elif row.tier == "weak":
+			label = "LESS EFFECTIVE"
+			ink = BAD
+	else:
+		if row.tier == "strong":
+			label = "VULNERABLE TO"
+			ink = BAD
+		elif row.tier == "weak":
+			label = "RESISTS" if row.kind == "damage" else "REDUCED SLOW"
+			ink = GOOD
+	var panel := UI.panel(parent, UI.BG)
+	panel.size_flags_horizontal = SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", UI.box(UI.BG, Color(ink, 0.6), 10))
+	var col := UI.column(panel, 8)
+	col.add_child(UI.label(label, 17, ink))
+	col.add_child(UI.label(str(row.name), 25))
+	col.add_child(UI.label(str(row.effect), 24, ink))
 
-func _show_tower(unit_id: String) -> void:
-	var raw: Dictionary = _raw_entry(ContentDB.towers, unit_id)
-	var stats: Dictionary = ContentDB.get_tower(unit_id)
-	var display_name: String = str(stats.get("name", unit_id))
-	if display_name.is_empty():
-		display_name = unit_id
-	_stats_title.text = display_name.to_upper()
-	_stats_body.text = _format_stats(raw, [
-		"name",
-		"damage",
-		"fire_rate",
-		"splash_radius",
-		"slow_factor",
-		"slow_duration",
-		"cost",
-		"role",
-		"req_skill",
-		"color",
-	])
-
-
-func _show_enemy(unit_id: String) -> void:
-	var raw: Dictionary = _raw_entry(ContentDB.enemies, unit_id)
-	_stats_title.text = unit_id.to_upper()
-	_stats_body.text = _format_stats(raw, [
-		"hp",
-		"speed",
-		"bounty",
-		"color",
-	])
-
-
-func _raw_entry(source: Dictionary, unit_id: String) -> Dictionary:
-	if unit_id.is_empty() or not source.has(unit_id):
-		return {}
-	var stored: Variant = source[unit_id]
-	if typeof(stored) != TYPE_DICTIONARY:
-		return {}
-	return stored as Dictionary
-
-
-func _format_stats(raw: Dictionary, preferred_order: PackedStringArray) -> String:
-	if raw.is_empty():
-		return "No stats authored for this unit."
-	var lines: PackedStringArray = PackedStringArray()
-	var seen: Dictionary = {}
-	for i in preferred_order.size():
-		var key: String = String(preferred_order[i])
-		if not raw.has(key):
-			continue
-		seen[key] = true
-		lines.append(_stat_line(key, raw[key]))
-	var leftover: Array = raw.keys()
-	leftover.sort()
-	for j in leftover.size():
-		var extra_key: String = str(leftover[j])
-		if seen.has(extra_key):
-			continue
-		lines.append(_stat_line(extra_key, raw[extra_key]))
-	return "\n".join(lines)
-
-
-func _stat_line(key: String, value: Variant) -> String:
-	var label: String = key.to_upper().replace("_", " ")
-	return "[b]%s[/b]: %s" % [label, str(value)]
-
-
-func _style_item_list() -> void:
-	var panel: StyleBoxFlat = _pixel_box(Palette.BG_DEEP, Palette.CYAN_DIM, 0, 2)
-	panel.content_margin_left = 8.0
-	panel.content_margin_right = 8.0
-	panel.content_margin_top = 8.0
-	panel.content_margin_bottom = 8.0
-	var selected: StyleBoxFlat = _pixel_box(Palette.GOLD, Palette.TEXT_PRIMARY, 0, 2)
-	selected.content_margin_left = 8.0
-	selected.content_margin_right = 8.0
-	selected.content_margin_top = 8.0
-	selected.content_margin_bottom = 8.0
-	_unit_list.add_theme_stylebox_override("panel", panel)
-	_unit_list.add_theme_stylebox_override("selected", selected)
-	_unit_list.add_theme_stylebox_override("hovered", selected)
-	_unit_list.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	_unit_list.add_theme_color_override("font_hovered_color", Palette.BG_DEEP)
-	_unit_list.add_theme_color_override("font_selected_color", Palette.BG_DEEP)
-	_unit_list.add_theme_constant_override("v_separation", 8)
-	if _pixel_font != null:
-		_unit_list.add_theme_font_override("font", _pixel_font)
-	_unit_list.add_theme_font_size_override("font_size", 11)
-
-
-func _style_stats_body() -> void:
-	_stats_body.add_theme_color_override("default_color", Palette.TEXT_PRIMARY)
-	if _pixel_font != null:
-		_stats_body.add_theme_font_override("normal_font", _pixel_font)
-		_stats_body.add_theme_font_override("bold_font", _pixel_font)
-	_stats_body.add_theme_font_size_override("normal_font_size", 12)
-	_stats_body.add_theme_font_size_override("bold_font_size", 12)
-
-
-func _style_chip(tab: Button, selected: bool, threat: bool) -> void:
-	var fill: Color = Palette.FOREST_NIGHT
-	var border: Color = Palette.CYAN_DIM
-	var text: Color = Palette.TEXT_PRIMARY
-	if selected:
-		fill = Palette.RED if threat else Palette.GOLD
-		border = Palette.TEXT_PRIMARY
-		text = Palette.TEXT_PRIMARY if threat else Palette.TEXT_ON_GOLD
-	var box: StyleBoxFlat = _pixel_box(fill, border, 0, 2)
-	box.content_margin_left = 12.0
-	box.content_margin_right = 12.0
-	box.content_margin_top = 12.0
-	box.content_margin_bottom = 12.0
-	tab.add_theme_stylebox_override("normal", box)
-	tab.add_theme_stylebox_override("hover", box)
-	tab.add_theme_stylebox_override("pressed", box)
-	tab.add_theme_color_override("font_color", text)
-	if _pixel_font != null:
-		tab.add_theme_font_override("font", _pixel_font)
-	tab.add_theme_font_size_override("font_size", 12)
-	tab.custom_minimum_size = Vector2(0, 48)
-
-
-func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(border_w)
-	box.set_corner_radius_all(radius)
-	return box
-
-
-func _style_os_bar() -> void:
-	var style: StyleBoxFlat = _pixel_box(Color(Palette.BG_HEADER, 0.92), Palette.CYAN_DIM, 0, 2)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 8.0
-	style.content_margin_top = 6.0
-	style.content_margin_bottom = 6.0
-	_os_bar.add_theme_stylebox_override("panel", style)
-
-
-func _style_resource_pill(box: PanelContainer) -> void:
-	var style: StyleBoxFlat = _pixel_box(Color(Palette.FOREST_NIGHT, 0.9), Palette.TEXT_MUTED, 0, 1)
-	style.content_margin_left = 8.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 5.0
-	style.content_margin_bottom = 5.0
-	box.add_theme_stylebox_override("panel", style)
-
-
-func _style_close_button() -> void:
-	_back_button.custom_minimum_size = Vector2(44, 32)
-	var normal: StyleBoxFlat = _pixel_box(Palette.RED, Palette.RED_DEEP, 0, 2)
-	var hover: StyleBoxFlat = _pixel_box(Palette.RED, Palette.TEXT_PRIMARY, 0, 2)
-	_back_button.add_theme_stylebox_override("normal", normal)
-	_back_button.add_theme_stylebox_override("hover", hover)
-	_back_button.add_theme_stylebox_override("pressed", hover)
-	_back_button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	if _pixel_font != null:
-		_back_button.add_theme_font_override("font", _pixel_font)
-	_back_button.add_theme_font_size_override("font_size", 12)
-
-
-func _style_window(card: PanelContainer, accent: Color) -> void:
-	var box: StyleBoxFlat = _pixel_box(Palette.BG_HEADER, accent, 0, 3)
-	box.content_margin_left = 0.0
-	box.content_margin_right = 0.0
-	box.content_margin_top = 0.0
-	box.content_margin_bottom = 0.0
-	box.shadow_color = Color(Palette.BG_DEEP, 0.75)
-	box.shadow_size = 1
-	box.shadow_offset = Vector2(5, 5)
-	card.add_theme_stylebox_override("panel", box)
-
-
-func _style_title_bar(bar: PanelContainer, fill: Color) -> void:
-	var style: StyleBoxFlat = _pixel_box(fill, fill, 0, 0)
-	style.content_margin_left = 10.0
-	style.content_margin_right = 8.0
-	style.content_margin_top = 7.0
-	style.content_margin_bottom = 7.0
-	bar.add_theme_stylebox_override("panel", style)
-
-
-func _style_well(well: PanelContainer, fill: Color) -> void:
-	var style: StyleBoxFlat = _pixel_box(fill, Color(Palette.TEXT_PRIMARY, 0.12), 0, 2)
-	style.content_margin_left = 12.0
-	style.content_margin_right = 12.0
-	style.content_margin_top = 12.0
-	style.content_margin_bottom = 12.0
-	well.add_theme_stylebox_override("panel", style)
-
-
-func _refresh_resources() -> void:
-	var threat: int = AuthService.threat_points()
-	var materials: int = PlayerManager.credits
-	_threat_value.text = str(threat if threat >= 0 else FALLBACK_THREAT)
-	_materials_value.text = str(maxi(0, materials))
-
-
-func _apply_label(label: Label, color: Color, font_size: int) -> void:
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	if _pixel_font != null:
-		label.add_theme_font_override("font", _pixel_font)
-
-
-func _load_font() -> void:
-	if not ResourceLoader.exists(FONT_PATH):
+func _toggle_real() -> void:
+	if not is_instance_valid(_real_body):
 		return
-	var file: FontFile = load(FONT_PATH) as FontFile
-	if file != null:
-		_pixel_font = file
+	_real_body.visible = not _real_body.visible
+	var data := Field.entry(_tab, _current_unit_id)
+	_real_toggle.text = ("- " if _real_body.visible else "+ ") + "REAL-WORLD INTEL / " + str(data.real_title).to_upper()
+
+func _step(direction: int) -> void:
+	var index := _visible_ids.find(_current_unit_id) + direction
+	if index >= 0 and index < _visible_ids.size():
+		_show_unit(_visible_ids[index])
+
+func _reveal_selected() -> void:
+	# Search/tab changes can replace buttons before the deferred layout finishes.
+	var button: Button = _entry_buttons.get(_current_unit_id)
+	var scroll := _roster.get_parent() as ScrollContainer
+	if is_instance_valid(button) and scroll.is_ancestor_of(button):
+		scroll.ensure_control_visible(button)
+
+func _open_source(url: String) -> void:
+	# Only authored public education links; never data-driven arbitrary schemes.
+	if url.begins_with("https://csrc.nist.gov/") or url.begins_with("https://www.cisa.gov/"):
+		OS.shell_open(url)
+
+func _on_back_pressed() -> void:
+	# Preserve existing remediation behavior.
+	PlayerManager.locked_stages.clear()
+	Router.request_back()
+
+func on_exit() -> void:
+	PlayerManager.locked_stages.clear()

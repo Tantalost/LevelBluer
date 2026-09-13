@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Annotated
+
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StringConstraints, field_validator
 
 from app.schemas.auth import MasteryPayload
 
@@ -22,7 +24,15 @@ class PretestQuestionsResponse(BaseModel):
 
 class PretestAnswerPayload(BaseModel):
     id: int
-    answer: bool | int
+    answer: StrictBool | StrictInt | Annotated[str, StringConstraints(max_length=96)]
+
+    @field_validator("answer", mode="before")
+    @classmethod
+    def restore_json_choice_index(cls, value):
+        # Godot may round-trip an integer choice index as 2.0 in its offline queue.
+        if type(value) is float and value.is_integer():
+            return int(value)
+        return value
 
 
 class PretestSubmitRequest(BaseModel):

@@ -23,15 +23,14 @@
     {
       "id": 3,
       "topic": "Phishing",
-      "type": "multiple_choice",
-      "text": "What is phishing?",
-      "options": [
-        "A virus that only infects USB drives",
-        "A fake message, usually email, that tries to steal a click or a secret",
-        "Official mail from your school's real domain",
-        "A tool that encrypts your inbox"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "What is the term for a fake email that tries to steal a click or a secret?",
+      "answer": "phishing",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "phishing",
+        "email phishing"
+      ]
     },
     {
       "id": 4,
@@ -83,15 +82,14 @@
     {
       "id": 9,
       "topic": "Phishing",
-      "type": "multiple_choice",
-      "text": "An email attachment named invoice.exe is most dangerous because:",
-      "options": [
-        "EXE files are always documents",
-        "It may run a program that installs malware",
-        "Schools never send invoices",
-        "Only ZIP files can carry malware"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "An unsafe attachment can install harmful software. What is the general term for harmful software?",
+      "answer": "malware",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "malware",
+        "malicious software"
+      ]
     },
     {
       "id": 10,
@@ -158,15 +156,15 @@
     {
       "id": 1,
       "topic": "Smishing",
-      "type": "multiple_choice",
-      "text": "What is smishing?",
-      "options": [
-        "Phishing that uses SMS or messaging apps",
-        "A type of antivirus software",
-        "A secure way to share one-time codes",
-        "Voice calls from your real bank"
-      ],
-      "answer": 0
+      "type": "short_answer",
+      "text": "What is the term for phishing delivered through SMS text messages?",
+      "answer": "smishing",
+      "legacy_answer": 0,
+      "accepted_answers": [
+        "smishing",
+        "sms phishing",
+        "text phishing"
+      ]
     },
     {
       "id": 2,
@@ -265,15 +263,17 @@
     {
       "id": 12,
       "topic": "Smishing",
-      "type": "multiple_choice",
-      "text": "How should you verify a text that claims to be from your bank?",
-      "options": [
-        "Reply YES to confirm you are the owner",
-        "Use the bank’s official app or a number printed on your card",
-        "Tap the link and look for a padlock",
-        "Ask the sender to text a selfie of their ID"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "To check a bank text safely, open the bank's official mobile ____ instead of the text's link.",
+      "answer": "app",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "app",
+        "application",
+        "mobile app",
+        "bank app",
+        "banking app"
+      ]
     },
     {
       "id": 13,
@@ -307,15 +307,15 @@
     {
       "id": 1,
       "topic": "Vishing",
-      "type": "multiple_choice",
-      "text": "Vishing is social engineering that primarily happens through:",
-      "options": [
-        "Email attachments",
-        "Phone or voice calls",
-        "USB drives",
-        "QR codes only"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "What is the term for social engineering carried out through phone or voice calls?",
+      "answer": "vishing",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "vishing",
+        "voice phishing",
+        "phone phishing"
+      ]
     },
     {
       "id": 2,
@@ -434,15 +434,16 @@
     {
       "id": 14,
       "topic": "Vishing",
-      "type": "multiple_choice",
-      "text": "Best way to confirm a bank call about your card:",
-      "options": [
-        "Call back the number on your screen",
-        "Hang up and use the number printed on the card or official app",
-        "Ask them to email a form and click it",
-        "Give a small amount of data to test them"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "Before calling your bank using the number on your card, what two-word action should you take on the suspicious call?",
+      "answer": "hang up",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "hang up",
+        "hangup",
+        "end call",
+        "end the call"
+      ]
     },
     {
       "id": 15,
@@ -463,15 +464,13 @@
     {
       "id": 2,
       "topic": "Pretexting",
-      "type": "multiple_choice",
-      "text": "What is pretexting?",
-      "options": [
-        "Encrypting files before sending them",
-        "Inventing a fake scenario to trick someone into giving information",
-        "Scanning a network for open ports",
-        "Resetting a password through official IT"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "What is the term for using an invented role or story to trick someone into giving information?",
+      "answer": "pretexting",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "pretexting"
+      ]
     },
     {
       "id": 3,
@@ -576,15 +575,13 @@
     {
       "id": 13,
       "topic": "Pretexting",
-      "type": "multiple_choice",
-      "text": "A “delivery rider” asks you to enter an OTP from your phone so they can confirm the drop. You should:",
-      "options": [
-        "Enter it so you get the package",
-        "Read the OTP aloud",
-        "Not share OTPs; confirm with the store or a known contact",
-        "Enter it only if they wait outside"
-      ],
-      "answer": 2
+      "type": "short_answer",
+      "text": "What three-letter abbreviation means one-time password, a secret you must not share with an unexpected caller or visitor?",
+      "answer": "OTP",
+      "legacy_answer": 2,
+      "accepted_answers": [
+        "otp"
+      ]
     },
     {
       "id": 14,
@@ -691,15 +688,13 @@
     {
       "id": 9,
       "topic": "Baiting",
-      "type": "multiple_choice",
-      "text": "A pop-up says you won a phone and must download a file now. This is:",
-      "options": [
-        "A standard warranty offer",
-        "Baiting that uses a tempting prize",
-        "Proof your device is already secure",
-        "Safe if the pop-up uses your school colors"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "What is the term for using a tempting prize or free item to lure someone into an unsafe action?",
+      "answer": "baiting",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "baiting"
+      ]
     },
     {
       "id": 10,
@@ -731,15 +726,14 @@
     {
       "id": 13,
       "topic": "Baiting",
-      "type": "multiple_choice",
-      "text": "A file named FreeMovie.mp4.exe is dangerous because:",
-      "options": [
-        "Movie files cannot open on PCs",
-        "The .exe ending means it can run a program, not just play a video",
-        "Only .mp4 files carry malware",
-        "Long file names are blocked"
-      ],
-      "answer": 1
+      "type": "short_answer",
+      "text": "In FreeMovie.mp4.exe, which final file extension shows that it can run a Windows program?",
+      "answer": ".exe",
+      "legacy_answer": 1,
+      "accepted_answers": [
+        "exe",
+        ".exe"
+      ]
     },
     {
       "id": 14,
