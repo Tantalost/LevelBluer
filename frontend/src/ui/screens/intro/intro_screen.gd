@@ -1,27 +1,12 @@
 extends BaseScreen
-## Cinematic intro: pan with story lines, logo lockup, then flash into the title card.
+## Original title card, preceded by a separate short intro animation.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 
-const BLACK_HOLD_SEC := 2.0
-const FADE_IN_SEC := 0.35
-const REVEAL_HOLD_SEC := 0.3
-const PAN_SEC := 5.0
-const LINE_FADE_SEC := 0.22
-const CTA_SLIDE_SEC := 1.15
-const CTA_SLIDE_PX := 90.0
-const HOLD_BEFORE_FLASH_SEC := 0.35
-const FLASH_IN_SEC := 0.12
-const FLASH_HOLD_SEC := 0.08
-const FLASH_OUT_SEC := 0.55
+const Cinematic = preload("res://src/ui/screens/intro/signal_intro.tscn")
 const LOGO_BOB_PX := 14.0
 const LOGO_BOB_SEC := 2.0
 const PREVIEW_DIM_A := 0.14
-const STORY_KEYS: PackedStringArray = [
-	"INTRO_STORY_1",
-	"INTRO_STORY_2",
-	"INTRO_STORY_3",
-]
 
 @onready var _art_clip: Control = %ArtClip
 @onready var _art: TextureRect = %Art
@@ -44,153 +29,88 @@ var _start_locked: bool = false
 var _tweens: Array[Tween] = []
 
 
+var _active := false
+var _cinematic: Control
+
 func _ready() -> void:
 	_load_font()
 	_start_button.pressed.connect(_on_start_pressed)
-	_load_art()
-
+	_cinematic = Cinematic.instantiate()
+	add_child(_cinematic)
+	_cinematic.finished.connect(_show_original_title)
+	get_viewport().size_changed.connect(_apply_preview_art)
 
 func on_enter(_args: Dictionary) -> void:
 	_seq += 1
-	var token: int = _seq
+	_active = true
+	_kill_tweens()
 	_start_locked = true
 	_start_button.disabled = true
+	_start_button.focus_mode = Control.FOCUS_NONE
 	_apply_copy()
-	_reset_visuals()
-	_load_art()
-	if not _intro_assets_ready():
-		await AssetManager.ensure_ready()
-		if not _still(token):
-			return
-		_load_art()
-	await get_tree().process_frame
-	if not _still(token):
-		return
-	_layout_cinematic_art()
-	await _play_sequence(token)
+	_apply_preview_art()
+	AssetManager.bind_texture(_logo, "ui_logo")
+	_blackout.visible = false
+	_flash.visible = false
+	_story_layer.visible = false
+	_logo_layer.visible = false
+	_cta_layer.visible = false
+	_cinematic.play()
+	# Original title textures load in parallel, never delaying the cinematic.
+	if AssetManager.get_texture("ui_intro_preview") == null or _logo.texture == null:
+		_refresh_title_assets(_seq)
 
+func _refresh_title_assets(token: int) -> void:
+	await AssetManager.ensure_ready()
+	if not is_inside_tree() or not _active or token != _seq:
+		return
+	_apply_preview_art()
+	AssetManager.bind_texture(_logo, "ui_logo")
+
+func _show_original_title() -> void:
+	if not _active:
+		return
+	_cinematic.stop()
+	_cinematic.hide()
+	_logo_layer.visible = true
+	_logo_layer.modulate.a = 1.0
+	_logo_bob.offset_top = 0.0
+	_logo_bob.offset_bottom = 0.0
+	_cta_layer.visible = true
+	_cta_layer.modulate.a = 1.0
+	_cta_layer.offset_top = 0.0
+	_cta_layer.offset_bottom = 150.0
+	_start_locked = false
+	_start_button.disabled = false
+	_start_button.focus_mode = Control.FOCUS_ALL
+	_start_button.grab_focus()
+	_kill_tweens()
+	_start_logo_bob()
+
+func on_resume() -> void:
+	_active = true
+	_show_original_title()
 
 func on_exit() -> void:
 	_seq += 1
+	_active = false
+	_cinematic.stop()
 	_kill_tweens()
-
 
 func can_go_back() -> bool:
 	return false
 
-
-func _play_sequence(token: int) -> void:
-	await get_tree().create_timer(BLACK_HOLD_SEC).timeout
-	if not _still(token):
+func _on_start_pressed() -> void:
+	if _start_locked or not _active:
 		return
-	await _tween_fade(_blackout, 0.0, FADE_IN_SEC)
-	if not _still(token):
+	_start_locked = true
+	_start_button.disabled = true
+	_kill_tweens()
+	var token := _seq
+	await TransitionManager.fade_to_black()
+	if not is_inside_tree() or not _active or token != _seq:
 		return
-	await get_tree().create_timer(REVEAL_HOLD_SEC).timeout
-	if not _still(token):
-		return
-	var pan: Tween = _start_art_pan()
-	await _play_story(token)
-	if not _still(token):
-		return
-	if pan.is_valid() and pan.is_running():
-		await pan.finished
-	if not _still(token):
-		return
-	await get_tree().create_timer(HOLD_BEFORE_FLASH_SEC).timeout
-	if not _still(token):
-		return
-	await _play_title_flash(token)
-	if not _still(token):
-		return
-	await _play_cta_slide(token)
-	if not _still(token):
-		return
-	_start_locked = false
-	_start_button.disabled = false
-
-
-func _play_story(token: int) -> void:
-	var count: int = STORY_KEYS.size()
-	if count <= 0:
-		return
-	var slot: float = PAN_SEC / float(count)
-	var hold: float = maxf(slot - LINE_FADE_SEC * 2.0, 0.4)
-	for i in count:
-		if not _still(token):
-			return
-		_story_text.text = tr(STORY_KEYS[i])
-		_story_text.modulate.a = 0.0
-		await _tween_fade(_story_text, 1.0, LINE_FADE_SEC)
-		if not _still(token):
-			return
-		await get_tree().create_timer(hold).timeout
-		if not _still(token):
-			return
-		if i < count - 1:
-			await _tween_fade(_story_text, 0.0, LINE_FADE_SEC)
-
-
-func _play_cta_slide(token: int) -> void:
-	await get_tree().process_frame
-	if not _still(token):
-		return
-	var height: float = maxf(_cta_layer.size.y, 150.0)
-	_cta_layer.visible = true
-	_cta_layer.modulate.a = 0.0
-	_cta_layer.offset_top = -CTA_SLIDE_PX
-	_cta_layer.offset_bottom = height - CTA_SLIDE_PX
-	var slide: Tween = _make_tween()
-	slide.set_parallel(true)
-	slide.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	slide.tween_property(_cta_layer, "modulate:a", 1.0, CTA_SLIDE_SEC)
-	slide.tween_property(_cta_layer, "offset_top", 0.0, CTA_SLIDE_SEC)
-	slide.tween_property(_cta_layer, "offset_bottom", height, CTA_SLIDE_SEC)
-	await slide.finished
-
-
-func _play_title_flash(token: int) -> void:
-	_flash.color = Color(1.0, 1.0, 1.0, 0.0)
-	await _tween_color_alpha(_flash, 1.0, FLASH_IN_SEC)
-	if not _still(token):
-		return
-	_apply_preview_art()
-	_story_layer.modulate.a = 0.0
-	_logo_layer.visible = true
-	_logo_layer.modulate.a = 1.0
-	_cta_layer.modulate.a = 0.0
-	await get_tree().create_timer(FLASH_HOLD_SEC).timeout
-	if not _still(token):
-		return
-	await _tween_color_alpha(_flash, 0.0, FLASH_OUT_SEC)
-	if not _still(token):
-		return
-	_start_logo_bob()
-
-
-func _start_art_pan() -> Tween:
-	var view_h: float = _art_clip.size.y
-	if view_h < 1.0:
-		view_h = get_viewport_rect().size.y
-	var travel: float = maxf(_art.size.y - view_h, 0.0)
-	_art.position.y = 0.0
-	var pan: Tween = _make_tween()
-	pan.tween_property(_art, "position:y", -travel, PAN_SEC).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	return pan
-
-
-func _layout_cinematic_art() -> void:
-	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var view := _clip_size()
-	var aspect: float = _texture_aspect(_art.texture)
-	var art_w: float = view.x
-	var art_h: float = art_w * aspect
-	if art_h < view.y * 1.15:
-		art_h = view.y * 1.4
-		art_w = art_h / aspect if aspect > 0.001 else view.x
-	_art.position = Vector2((view.x - art_w) * 0.5, 0.0)
-	_art.size = Vector2(art_w, art_h)
-
+	await Router.open_splash_screen()
 
 func _apply_preview_art() -> void:
 	AssetManager.bind_texture(_art, "ui_intro_preview")
@@ -206,46 +126,6 @@ func _clip_size() -> Vector2:
 	if view.x < 1.0 or view.y < 1.0:
 		return get_viewport_rect().size
 	return view
-
-
-func _texture_aspect(tex: Texture2D) -> float:
-	if tex == null or tex.get_width() <= 0:
-		return 1.0
-	return float(tex.get_height()) / float(tex.get_width())
-
-
-func _intro_assets_ready() -> bool:
-	return (
-		AssetManager.get_texture("ui_intro") != null
-		and AssetManager.get_texture("ui_logo") != null
-		and AssetManager.get_texture("ui_intro_preview") != null
-	)
-
-
-func _load_art() -> void:
-	AssetManager.bind_texture(_art, "ui_intro")
-	AssetManager.bind_texture(_logo, "ui_logo")
-
-
-func _reset_visuals() -> void:
-	_kill_tweens()
-	_blackout.color = Color(Palette.BG_DEEP, 1.0)
-	_blackout.modulate.a = 1.0
-	_blackout.visible = true
-	_flash.color = Color(1.0, 1.0, 1.0, 0.0)
-	_dim.color = Color(Palette.BG_DEEP, 0.28)
-	_story_layer.modulate.a = 1.0
-	_story_text.text = ""
-	_story_text.modulate.a = 0.0
-	_logo_layer.modulate.a = 0.0
-	_logo_layer.visible = true
-	_logo_bob.offset_top = 0.0
-	_logo_bob.offset_bottom = 0.0
-	_cta_layer.modulate.a = 0.0
-	_cta_layer.visible = true
-	_cta_layer.offset_top = -CTA_SLIDE_PX
-	_art.position.y = 0.0
-	_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 
 
 func _apply_copy() -> void:
@@ -274,36 +154,10 @@ func _start_logo_bob() -> void:
 	bob.parallel().tween_property(_logo_bob, "offset_bottom", 0.0, LOGO_BOB_SEC)
 
 
-func _on_start_pressed() -> void:
-	if _start_locked:
-		return
-	_start_locked = true
-	_start_button.disabled = true
-	_kill_tweens()
-	await TransitionManager.fade_to_black()
-	await Router.open_splash_screen()
-
-
-func _tween_fade(node: CanvasItem, alpha: float, duration: float) -> void:
-	var fade: Tween = _make_tween()
-	fade.tween_property(node, "modulate:a", alpha, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	await fade.finished
-
-
-func _tween_color_alpha(rect: ColorRect, alpha: float, duration: float) -> void:
-	var fade: Tween = _make_tween()
-	fade.tween_property(rect, "color:a", alpha, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	await fade.finished
-
-
 func _make_tween() -> Tween:
 	var tween: Tween = create_tween()
 	_tweens.append(tween)
 	return tween
-
-
-func _still(token: int) -> bool:
-	return token == _seq and is_inside_tree()
 
 
 func _kill_tweens() -> void:

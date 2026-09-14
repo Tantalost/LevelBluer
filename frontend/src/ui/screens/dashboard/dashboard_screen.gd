@@ -7,11 +7,12 @@ const DEFAULT_MATERIALS := 200
 const DEFAULT_THREAT_POINTS := 1000
 const DEFAULT_CURRENT_STAGE := 1
 const STAGE_TOTAL := 10
-const UNREAD_NOTIFICATIONS := 2
 const HEADER_FILL := Color("18252bf2")
 const HEADER_TEXT := Color("e8e8da")
 const HEADER_MUTED := Color("a4b8b7")
 const HEADER_ACCENT := Color("8dc9bd")
+const Access = preload("res://src/ui/screens/dashboard/world_access.gd")
+const StudyUI = preload("res://src/ui/screens/intel/study_ui.gd")
 
 @onready var _game_title: Label = %GameTitle
 @onready var _profile_button: HudGeoButton = %ProfileButton
@@ -54,6 +55,16 @@ var _materials: int = DEFAULT_MATERIALS
 var _threat_points: int = DEFAULT_THREAT_POINTS
 var _current_stage: int = DEFAULT_CURRENT_STAGE
 var _menu_rects: Dictionary = {}
+var _world_access: Dictionary = {}
+var _access_modal: Control
+var _access_body: VBoxContainer
+var _access_action: Button
+var _access_title: Label
+var _access_queued := false
+var _access_controls: Array[Button] = []
+var _world_status_copy: VBoxContainer
+var _world_status_heading: Label
+var _world_status_body: Label
 
 
 func _ready() -> void:
@@ -73,6 +84,9 @@ func _ready() -> void:
 	_mode_selector.pressed.connect(_open_mode_modal)
 	_deploy_button.pressed.connect(_on_deploy_pressed)
 	_mode_modal.mode_confirmed.connect(_on_mode_confirmed)
+	AuthService.progress_changed.connect(_queue_access_refresh)
+	AuthService.session_changed.connect(_access_session_changed)
+	get_viewport().size_changed.connect(_queue_access_refresh)
 
 
 func on_enter(_args: Dictionary) -> void:
@@ -100,6 +114,7 @@ func on_resume() -> void:
 
 
 func on_exit() -> void:
+	_close_access()
 	_mode_modal.visible = false
 	%Companion.close_dialogue()
 
@@ -168,8 +183,6 @@ func _refresh_data() -> void:
 	_store_button.queue_redraw()
 	_progress_button.queue_redraw()
 	_at_risk_title.text = tr("DASH_AT_RISK_TITLE")
-	_inbox_badge.visible = UNREAD_NOTIFICATIONS > 0
-	_inbox_count.text = str(UNREAD_NOTIFICATIONS)
 	_refresh_at_risk()
 	_refresh_world()
 	_refresh_updates()
@@ -193,10 +206,147 @@ func _refresh_at_risk() -> void:
 func _refresh_world() -> void:
 	_world_button.visible = true
 	_world_button.title = "WORLD"
-	_world_button.subtitle = "CONTINUE"
-	_world_button.detail = ""
+	if Engine.is_editor_hint():
+		return
+	_world_access = Access.snapshot()
+	_world_button.subtitle = str(_world_access.heading)
+	_world_button.subtitle_size = 12
+	_world_button.detail = str(_world_access.short)
+	_world_button.detail_size = 12
 	_world_button.progress = -1.0
+	if _world_status_copy == null:
+		_world_status_copy = VBoxContainer.new()
+		_world_status_copy.name = "AccessStatus"
+		_world_status_copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_world_status_copy.position = Vector2(60, 108)
+		_world_status_copy.size = Vector2(240, 148)
+		_world_status_copy.alignment = BoxContainer.ALIGNMENT_CENTER
+		_world_status_copy.add_theme_constant_override("separation", 8)
+		_world_button.add_child(_world_status_copy)
+		var title := StudyUI.label("WORLD", 26, Palette.INK, true)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_world_status_copy.add_child(title)
+		_world_status_heading = StudyUI.label("", 24, Palette.INK)
+		_world_status_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_world_status_copy.add_child(_world_status_heading)
+		_world_status_body = StudyUI.label("", 24, Palette.INK)
+		_world_status_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_world_status_copy.add_child(_world_status_body)
+	_world_status_heading.text = str(_world_access.heading)
+	_world_status_body.text = str(_world_access.short)
+	_world_button.title = ""
+	_world_button.subtitle = ""
+	_world_button.detail = ""
+	_world_button.tooltip_text = str(_world_access.explanation)
+	_inbox_badge.visible = true
+	_inbox_count.text = str(_world_access.badge)
+	_inbox_count.add_theme_font_size_override("font_size", 10)
+	var accent := StudyUI.GOLD if _world_access.locked else StudyUI.TEAL
+	_inbox_badge.add_theme_stylebox_override("panel", StudyUI.box(Color("18252b"), accent, 6))
+	_inbox_count.add_theme_color_override("font_color", accent)
 	_world_button.queue_redraw()
+
+func _queue_access_refresh() -> void:
+	if _access_queued:
+		return
+	_access_queued = true
+	_refresh_access.call_deferred()
+
+func _access_session_changed(_signed_in: bool) -> void:
+	_close_access()
+	_queue_access_refresh()
+
+func _refresh_access() -> void:
+	_access_queued = false
+	if not is_inside_tree():
+		return
+	_refresh_world()
+	if is_instance_valid(_access_modal) and _access_modal.visible:
+		_fill_access()
+
+func _close_access() -> void:
+	if is_instance_valid(_access_modal):
+		_access_modal.visible = false
+
+func can_go_back() -> bool:
+	if is_instance_valid(_access_modal) and _access_modal.visible:
+		_close_access()
+		return false
+	return true
+
+func _show_access() -> void:
+	%Companion.close_dialogue()
+	_refresh_world()
+	if not is_instance_valid(_access_modal):
+		_access_modal = Control.new()
+		_access_modal.name = "WorldAccessBriefing"
+		_access_modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_access_modal.mouse_filter = Control.MOUSE_FILTER_STOP
+		add_child(_access_modal)
+		var shade := ColorRect.new()
+		shade.color = Color("08121bef")
+		shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_access_modal.add_child(shade)
+		var safe := SafeAreaContainer.new()
+		safe.extra_margin = 24
+		safe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_access_modal.add_child(safe)
+		var panel := StudyUI.panel(safe)
+		var layout := StudyUI.column(panel, 18)
+		var header := HBoxContainer.new()
+		layout.add_child(header)
+		_access_title = StudyUI.label("WORLD / ACCESS BRIEFING", 30, StudyUI.TEAL)
+		_access_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		header.add_child(_access_title)
+		header.add_child(_access_button("CLOSE", _close_access))
+		_access_body = StudyUI.scroll_column(layout)
+		var actions := HBoxContainer.new()
+		actions.add_theme_constant_override("separation", 18)
+		layout.add_child(actions)
+		_access_action = _access_button("OPEN LESSONS", _access_go, true)
+		_access_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		actions.add_child(_access_action)
+		actions.add_child(_access_button("MISSIONS", _access_missions))
+	_access_modal.visible = true
+	_fill_access()
+	_access_action.grab_focus()
+
+func _access_button(text: String, callback: Callable, primary: bool = false) -> Button:
+	var button := StudyUI.button(text, callback, primary)
+	var ratio := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	button.custom_minimum_size = Vector2(180, maxf(68, ceilf(48 / ratio)))
+	button.add_theme_font_size_override("font_size", maxi(28, ceili(16 / ratio)))
+	_access_controls.append(button)
+	return button
+
+func _fill_access() -> void:
+	var ratio := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	for button in _access_controls:
+		button.custom_minimum_size.y = maxf(68, ceilf(48 / ratio))
+		button.add_theme_font_size_override("font_size", maxi(28, ceili(16 / ratio)))
+	StudyUI.clear(_access_body)
+	_access_body.add_child(StudyUI.label(str(_world_access.heading), 36, StudyUI.GOLD if _world_access.locked else StudyUI.TEAL))
+	_access_body.add_child(StudyUI.label(str(_world_access.explanation), 30))
+	_access_body.add_child(StudyUI.label("MODULE ACCESS", 28, StudyUI.TEAL))
+	for module in _world_access.modules:
+		_access_body.add_child(StudyUI.label("%s / %s\n%s\nLessons: %d / %d" % [module.title, module.status, module.reason, module.done, module.total], 28, StudyUI.MUTED))
+	_access_body.add_child(StudyUI.label("MODULE 1 / STAGE ACCESS", 28, StudyUI.TEAL))
+	for stage in _world_access.stages:
+		var note := str(stage.reason) if stage.status == "LOCKED" else ("Stage cleared. Replay available." if stage.done else "Choose this stage in Deploy.")
+		if stage.status == "LOCKED" and PlayerManager.is_stage_locked(int(stage.id)):
+			note += " Review does not automatically remove the recorded exam lock."
+		_access_body.add_child(StudyUI.label("%s / %s\n%s" % [stage.title, stage.status, note], 28, StudyUI.GOLD if stage.status == "LOCKED" else StudyUI.MUTED))
+	_access_action.text = str(_world_access.action)
+
+func _access_go() -> void:
+	var route: StringName = _world_access.route
+	_close_access()
+	Router.push(route)
+
+func _access_missions() -> void:
+	_close_access()
+	Router.open_missions_screen()
 
 
 func _refresh_updates() -> void:
@@ -241,7 +391,7 @@ func _on_mission_pressed() -> void:
 	if _selected_mode == &"PVP":
 		push_warning("PvP Hub screen not built yet")
 	else:
-		Router.open_missions_screen()
+		_show_access()
 
 
 func _on_deploy_pressed() -> void:
