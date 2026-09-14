@@ -336,22 +336,7 @@ func _first_playable() -> int:
 
 func _is_unlocked(index: int) -> bool:
 	var module_id := str(_module_entry().get("id", ""))
-	if not module_id.is_empty() and not PlayerManager.is_module_deploy_unlocked(module_id):
-		return false
-	var stage_id: int = _stage_id(index)
-	if stage_id <= 0:
-		return false
-	var config: Dictionary = StageManager.get_stage_config(stage_id)
-	if config.is_empty():
-		return false
-	if stage_id > PlayerManager.mock_max_stage_cleared + 1:
-		return false
-	var req := str(config.get("req_lesson", ""))
-	if not req.is_empty() and not PlayerManager.has_completed_lesson(req):
-		return false
-	if PlayerManager.is_stage_locked(stage_id):
-		return false
-	return true
+	return StageManager.access_reason(_stage_id(index), module_id).is_empty()
 
 
 func _can_play(index: int) -> bool:

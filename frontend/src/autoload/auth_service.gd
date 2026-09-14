@@ -5,6 +5,7 @@ extends Node
 ## Student accounts are provisioned by teachers via the web admin console.
 
 signal session_changed(signed_in: bool)
+signal progress_changed
 
 enum Result {
 	OK,
@@ -170,6 +171,30 @@ func forge_level() -> int:
 
 func mastery() -> Dictionary:
 	return _mastery.duplicate()
+
+
+func progress_mastery_snapshot() -> Array[Dictionary]:
+	# Read-only: never seeds the gameplay prior or starts network/persistence work.
+	var result: Array[Dictionary] = []
+	var normalized: Dictionary = {}
+	for key in _mastery:
+		normalized[str(key).strip_edges().to_lower()] = _mastery[key]
+	var topics := ["Phishing", "Smishing", "Vishing", "Pretexting", "Baiting"]
+	for i in topics.size():
+		var topic: String = topics[i]
+		var key := topic.to_lower()
+		var raw: Variant = _mastery.get(topic, normalized.get(key))
+		var pending := false
+		for job in _bkt_queue:
+			if _signed_in and str(job.get("participant_code", "")) == _participant_code and str(job.get("skill_id", "")).to_lower() == key:
+				pending = true
+				if PlayerManager.mastery_matrix.has(key):
+					raw = PlayerManager.mastery_matrix[key]
+		var numeric := (raw is float or raw is int) and is_finite(float(raw))
+		var assessed := numeric and (float(raw) > 0.0 or pending or has_module_pretest("mod_%02d" % (i + 1)))
+		result.append({"id": key, "name": topic, "assessed": assessed,
+			"value": clampf(float(raw), 0.0, 1.0) if assessed else 0.0, "pending": pending and assessed})
+	return result
 
 
 func _rank_index() -> int:
@@ -466,6 +491,7 @@ func enqueue_bkt_assess(skill_id: String, is_correct: bool, params: Dictionary =
 	if not _signed_in or _token.is_empty():
 		return
 	var job := {
+		"participant_code": _participant_code,
 		"skill_id": skill_id if not skill_id.is_empty() else "phishing",
 		"is_correct": is_correct,
 	}
@@ -476,6 +502,7 @@ func enqueue_bkt_assess(skill_id: String, is_correct: bool, params: Dictionary =
 		if typeof(stored) == TYPE_INT or typeof(stored) == TYPE_FLOAT:
 			job[key] = float(stored)
 	_bkt_queue.append(job)
+	progress_changed.emit()
 	if not _bkt_busy:
 		_pump_bkt_queue()
 
@@ -522,6 +549,7 @@ func _pump_bkt_queue() -> void:
 		if not ok:
 			break
 		_bkt_queue.pop_front()
+		progress_changed.emit()
 	_bkt_busy = false
 
 
@@ -770,6 +798,7 @@ func cloud_sync_payload() -> Dictionary:
 
 
 func _persist(signed_in: bool, pending_password_change: bool, mark_dirty: bool = true) -> void:
+	progress_changed.emit()
 	var payload := {
 		"token": _token,
 		"participant_code": _participant_code,
