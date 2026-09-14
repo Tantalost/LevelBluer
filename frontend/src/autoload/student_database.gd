@@ -235,6 +235,16 @@ func has_pending_sync(student_id: String = "") -> bool:
 	return not _db.query_result.is_empty()
 
 
+func mark_needs_sync(student_id: String) -> void:
+	if not is_available() or student_id.is_empty():
+		return
+	if not _db.query_with_bindings(
+		"UPDATE students SET needs_cloud_sync = 1 WHERE id = ?;",
+		[student_id],
+	):
+		push_warning("StudentDatabase: mark needs sync failed. %s" % _db.error_message)
+
+
 func mark_synced(student_id: String) -> void:
 	if not is_available() or student_id.is_empty():
 		return

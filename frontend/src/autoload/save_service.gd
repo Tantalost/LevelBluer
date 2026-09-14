@@ -73,6 +73,8 @@ func save_game() -> void:
 	file.store_string(json_string)
 	file.close()
 	print("[SaveService] Game saved successfully. path=", path)
+	if AuthService.is_signed_in():
+		StudentDatabase.mark_needs_sync(AuthService.participant_code())
 	_sync_to_cloud()
 
 
@@ -234,6 +236,7 @@ func _sync_to_cloud() -> void:
 	if error != OK:
 		_sync_in_flight = false
 		_retry_left = RETRY_SEC
+		StudentDatabase.mark_needs_sync(AuthService.participant_code())
 		push_warning("[SaveService] Failed to initiate cloud sync. error=" + str(error))
 
 
@@ -247,13 +250,16 @@ func _on_sync_completed(
 	var ok: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	if result != HTTPRequest.RESULT_SUCCESS:
 		push_warning("[SaveService] Cloud sync skipped (offline or network error). result=" + str(result))
+		StudentDatabase.mark_needs_sync(AuthService.participant_code())
 		_retry_left = RETRY_SEC
 	elif ok:
 		print("[SaveService] Cloud sync successful.")
-		StudentDatabase.mark_synced(AuthService.participant_code())
+		if not _resync_queued:
+			StudentDatabase.mark_synced(AuthService.participant_code())
 		_retry_left = RETRY_SEC
 	else:
 		push_warning("[SaveService] Cloud sync failed. Code: " + str(response_code))
+		StudentDatabase.mark_needs_sync(AuthService.participant_code())
 		_retry_left = RETRY_SEC
 	cloud_sync_completed.emit(ok)
 

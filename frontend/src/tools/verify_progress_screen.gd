@@ -47,6 +47,23 @@ func _run() -> void:
 	player = root.get_node("PlayerManager")
 	Data = load("res://src/ui/screens/progress/progress_data.gd")
 	fresh()
+	auth._mastery = {
+		"Phishing": 0.42,
+		"Smishing": 0.68,
+		"Vishing": 0.55,
+		"Pretexting": 0.73,
+		"Baiting": 0.31,
+	}
+	player.mastery_matrix = {"phishing": 0.1}
+	player.seed_from_official_mastery()
+	check(is_equal_approx(float(player.mastery_matrix.get("phishing", 0.0)), 0.42), "Seed phishing snapshot")
+	check(is_equal_approx(float(player.mastery_matrix.get("smishing", 0.0)), 0.68), "Seed smishing snapshot")
+	check(is_equal_approx(float(player.mastery_matrix.get("vishing", 0.0)), 0.55), "Seed vishing snapshot")
+	check(is_equal_approx(float(player.mastery_matrix.get("pretexting", 0.0)), 0.73), "Seed pretexting snapshot")
+	check(is_equal_approx(float(player.mastery_matrix.get("baiting", 0.0)), 0.31), "Seed baiting snapshot")
+	player._normalize_mastery_keys()
+	check(is_equal_approx(float(player.mastery_matrix.get("smishing", 0.0)), 0.68), "Normalize keeps non-phishing skills")
+	fresh()
 	var state: Dictionary = Data.snapshot()
 	check(state.stage_done == 0 and state.stage_total == 10, "Fresh account has 0/10 clears, not mock counter")
 	check(state.lesson_done == 0 and state.lesson_total == 30, "Lesson count is 0/30")

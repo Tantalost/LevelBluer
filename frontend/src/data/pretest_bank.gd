@@ -5,7 +5,6 @@ extends RefCounted
 const BANK_PATH := "res://data/pretest_questions.json"
 const MODULE_1_ID := "mod_01"
 const P_L0 := 0.10
-const P_T := 0.10
 const P_G := 0.20
 const P_S := 0.10
 
@@ -59,7 +58,7 @@ static func grade(module_id: String, answers: Array, current_pl: float) -> Dicti
 		var is_correct: bool = _is_correct(question, submitted.get(qid))
 		if is_correct:
 			correct_count += 1
-		p_l = _update_pl(p_l, is_correct)
+		p_l = snappedf(_update_pl_diagnostic(p_l, is_correct), 0.0001)
 	var total: int = bank.size()
 	var pre_score: int = int(round((float(correct_count) / float(total)) * 100.0)) if total > 0 else 0
 	return {
@@ -100,18 +99,6 @@ static func _ensure_loaded() -> void:
 static func _is_correct(question: Dictionary, submitted: Variant) -> bool:
 	var expected: Variant = question.get("answer")
 	var kind := str(question.get("type", "multiple_choice"))
-	if kind == "short_answer":
-		if _is_choice_number(submitted) and question.has("legacy_answer"):
-			return submitted == question.legacy_answer
-		if typeof(submitted) != TYPE_STRING or str(submitted).length() > 96:
-			return false
-		var actual := normalize_recall(str(submitted))
-		if actual.is_empty():
-			return false
-		for accepted in question.get("accepted_answers", [expected]):
-			if actual == normalize_recall(str(accepted)):
-				return true
-		return false
 	if kind == "true_false":
 		return typeof(submitted) == TYPE_BOOL and submitted == expected
 	return _is_choice_number(submitted) and submitted == expected
@@ -120,12 +107,6 @@ static func _is_correct(question: Dictionary, submitted: Variant) -> bool:
 static func _is_choice_number(value: Variant) -> bool:
 	# Godot's JSON parser represents numeric choice indices as floats on reload.
 	return typeof(value) == TYPE_INT or (typeof(value) == TYPE_FLOAT and is_finite(value) and value == floor(value))
-
-
-static func normalize_recall(value: String) -> String:
-	var pattern := RegEx.new()
-	pattern.compile("[^a-z0-9]+")
-	return pattern.sub(value.to_lower(), " ", true).strip_edges()
 
 
 static func review_cards(module_id: String, answers: Dictionary) -> Array[Dictionary]:
@@ -152,7 +133,8 @@ static func _initial_pl(stored: float) -> float:
 	return clampf(stored, 0.01, 0.99)
 
 
-static func _update_pl(p_l: float, is_correct: bool) -> float:
+static func _update_pl_diagnostic(p_l: float, is_correct: bool) -> float:
+	# Pre-test only: Bayesian evidence update. Do not apply the learning transition P(T).
 	p_l = clampf(p_l, 0.01, 0.99)
 	var numer: float
 	var denom: float
@@ -163,4 +145,4 @@ static func _update_pl(p_l: float, is_correct: bool) -> float:
 		numer = p_l * P_S
 		denom = numer + (1.0 - p_l) * (1.0 - P_G)
 	var posterior: float = numer / denom if denom > 0.0 else p_l
-	return clampf(posterior + (1.0 - posterior) * P_T, 0.01, 0.99)
+	return clampf(posterior, 0.01, 0.99)

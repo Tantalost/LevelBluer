@@ -37,10 +37,9 @@ def initial_pl(stored: float | None) -> float:
     return clamp_pl(stored)
 
 
-def update_pl(
+def _evidence_posterior(
     p_l: float,
     is_correct: bool,
-    p_t: float = P_T,
     p_g: float = P_G,
     p_s: float = P_S,
 ) -> float:
@@ -51,10 +50,29 @@ def update_pl(
     else:
         numer = p_l * p_s
         denom = numer + (1.0 - p_l) * (1.0 - p_g)
+    return numer / denom if denom > 0 else p_l
 
-    posterior = numer / denom if denom > 0 else p_l
+
+def update_pl(
+    p_l: float,
+    is_correct: bool,
+    p_t: float = P_T,
+    p_g: float = P_G,
+    p_s: float = P_S,
+) -> float:
+    posterior = _evidence_posterior(p_l, is_correct, p_g=p_g, p_s=p_s)
     learned = posterior + (1.0 - posterior) * p_t
     return clamp_pl(learned)
+
+
+def update_pl_diagnostic(
+    p_l: float,
+    is_correct: bool,
+    p_g: float = P_G,
+    p_s: float = P_S,
+) -> float:
+    """Pre-test only: Bayesian evidence update with no learning transition (P(T)=0)."""
+    return clamp_pl(_evidence_posterior(p_l, is_correct, p_g=p_g, p_s=p_s))
 
 
 def average_pl(mastery: dict[str, float]) -> float:

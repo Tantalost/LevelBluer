@@ -11,7 +11,6 @@ var _format: Label
 var _guide: Label
 var _bar: ProgressBar
 var _back: Button
-var _recall_input: LineEdit
 var _card: VBoxContainer
 var _questions: Array = []
 var _index := 0
@@ -103,7 +102,6 @@ func _load_questions() -> void:
 func _show_question() -> void:
 	_hide_error()
 	_selected = null
-	_recall_input = null
 	var question: Dictionary = _questions[_index]
 	var module := LessonCatalog.module_by_id(_module_id)
 	_topic.text = str(module.get("title", question.get("topic", "")))
@@ -122,24 +120,6 @@ func _show_question() -> void:
 			_guide.text = "Decide whether the statement is true or false. Choose the answer you believe now."
 			_add_option("True", true)
 			_add_option("False", false)
-		"short_answer":
-			_format.text = "SHORT ANSWER  /  RECALL"
-			_guide.text = "Recall the term from memory. Capitalization and punctuation do not matter. Use a short answer, not a sentence."
-			_recall_input = LineEdit.new()
-			_recall_input.name = "RecallInput"
-			_recall_input.max_length = 96
-			_recall_input.placeholder_text = "Type your answer..."
-			_recall_input.custom_minimum_size = Vector2(0, 60)
-			_recall_input.add_theme_font_override("font", UI.FONT)
-			_recall_input.add_theme_font_size_override("font_size", 28)
-			_recall_input.add_theme_color_override("font_color", UI.TEXT)
-			_recall_input.add_theme_color_override("caret_color", UI.TEAL)
-			_recall_input.add_theme_stylebox_override("normal", UI.box(UI.PANEL, UI.TEAL, 14))
-			_recall_input.add_theme_stylebox_override("focus", UI.box(Color.TRANSPARENT, UI.GOLD, 0))
-			_recall_input.text_changed.connect(_on_text_changed)
-			_recall_input.text_submitted.connect(func(_text: String) -> void: _on_next_pressed())
-			_options.add_child(_recall_input)
-			_options.add_child(UI.label("A short term is enough. Never enter a real password or code.", 22, UI.MUTED))
 		"multiple_choice":
 			_format.text = "MULTIPLE CHOICE  /  RECOGNIZE"
 			_guide.text = "Read every option, then choose the single best answer. Your choice is saved when you continue."
@@ -163,12 +143,6 @@ func _select_option(button: Button, value: Variant) -> void:
 	for child in _options.get_children():
 		if child is Button:
 			child.add_theme_stylebox_override("normal", UI.box(Color("29464e") if child == button else UI.PANEL, UI.TEAL if child == button else Color("3b626a"), 10))
-
-func _on_text_changed(text: String) -> void:
-	if _loading or _finished:
-		return
-	_selected = null if PretestBank.normalize_recall(text).is_empty() else text.strip_edges()
-	_next.disabled = _selected == null
 
 func _on_next_pressed() -> void:
 	if _loading or _next.disabled:
@@ -215,7 +189,6 @@ func _submit() -> void:
 
 func _show_results() -> void:
 	_finished = true
-	_recall_input = null
 	_review = PretestBank.review_cards(_module_id, _answers)
 	_review_index = 0
 	_bar.value = _questions.size()
@@ -263,8 +236,6 @@ func _set_busy(busy: bool) -> void:
 	_loading = busy
 	_next.disabled = busy or _selected == null
 	_back.disabled = busy
-	if _recall_input != null and is_instance_valid(_recall_input):
-		_recall_input.editable = not busy
 	for child in _options.get_children():
 		if child is Button:
 			child.disabled = busy

@@ -21,7 +21,7 @@ from app.services.bkt_service import (
     TOPICS,
     average_pl,
     initial_pl,
-    update_pl,
+    update_pl_diagnostic,
 )
 from app.supabase_client import supabase
 from fastapi import HTTPException, status
@@ -165,7 +165,7 @@ def submit_pretest(
             correct_count += 1
         item_topic = question["topic"]
         if item_topic == topic:
-            mastery[topic] = round(update_pl(mastery[topic], is_correct), 4)
+            mastery[topic] = round(update_pl_diagnostic(mastery[topic], is_correct), 4)
 
     total = len(bank)
     pre_score = int(round((correct_count / total) * 100)) if total else 0

@@ -11,6 +11,13 @@ const MAX_MASTERY: float = 0.99
 const AT_RISK_MASTERY: float = 0.40
 const PROFICIENT_MASTERY: float = 0.70
 const ALL_MODULES_LESSON := "mod1_all"
+const _OFFICIAL_SKILLS: PackedStringArray = [
+	"phishing",
+	"smishing",
+	"vishing",
+	"pretexting",
+	"baiting",
+]
 
 var mastery_matrix: Dictionary = {
 	"phishing": DEFAULT_MASTERY,
@@ -420,11 +427,6 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 		% [key, "hit" if is_correct else "miss", p_learned, new_mastery, p_guess, p_slip, p_transit]
 	)
 	SaveService.save_game()
-	AuthService.enqueue_bkt_assess(key, is_correct, {
-		"p_g": p_guess,
-		"p_s": p_slip,
-		"p_t": p_transit,
-	})
 
 
 func apply_official_mastery(skill_id: String, probability_known: float) -> void:
@@ -434,12 +436,18 @@ func apply_official_mastery(skill_id: String, probability_known: float) -> void:
 
 func seed_from_official_mastery() -> void:
 	var official: Dictionary = AuthService.mastery()
-	var phishing: float = float(official.get("Phishing", official.get("phishing", 0.0)))
-	if phishing <= 0.0:
-		return
-	mastery_matrix["phishing"] = clampf(phishing, MIN_MASTERY, MAX_MASTERY)
-	print("[BKT] seeded phishing from official P(L)=%.3f" % phishing)
-	SaveService.save_game()
+	var changed := false
+	for i in _OFFICIAL_SKILLS.size():
+		var skill_id: String = _OFFICIAL_SKILLS[i]
+		var titled: String = skill_id.capitalize()
+		var value: float = float(official.get(titled, official.get(skill_id, 0.0)))
+		if value <= 0.0:
+			continue
+		apply_official_mastery(skill_id, value)
+		changed = true
+		print("[BKT] seeded %s from official P(L)=%.3f" % [skill_id, value])
+	if changed:
+		SaveService.save_game()
 
 
 func pull_official_bkt() -> void:
@@ -666,12 +674,14 @@ func _ingest_cleared_stages(raw: Variant) -> void:
 
 
 func _normalize_mastery_keys() -> void:
-	var phishing: float = DEFAULT_MASTERY
-	if mastery_matrix.has("phishing"):
-		phishing = float(mastery_matrix["phishing"])
-	mastery_matrix = {
-		"phishing": phishing,
-	}
+	var next: Dictionary = {}
+	for i in _OFFICIAL_SKILLS.size():
+		var skill_id: String = _OFFICIAL_SKILLS[i]
+		var value: float = DEFAULT_MASTERY
+		if mastery_matrix.has(skill_id):
+			value = float(mastery_matrix[skill_id])
+		next[skill_id] = value
+	mastery_matrix = next
 
 
 func _ensure_default_capacity_rank() -> void:
