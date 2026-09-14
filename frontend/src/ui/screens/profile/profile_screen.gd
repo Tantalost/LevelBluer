@@ -1,378 +1,276 @@
 extends BaseScreen
-## Student dossier. Pulled from the logged-in `students` row via /api/auth/me.
-
-const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const MASTERY_ORDER := [
-	{"topic": "Phishing", "kind": IntelPixelIcon.Kind.ENVELOPE},
-	{"topic": "Smishing", "kind": IntelPixelIcon.Kind.CHAT},
-	{"topic": "Vishing", "kind": IntelPixelIcon.Kind.PHONE},
-]
-
-@onready var _back_button: Button = %BackButton
-@onready var _header_title: Label = %HeaderTitle
-@onready var _os_cursor: Label = %OsCursor
-@onready var _os_led: ColorRect = %OsLed
-@onready var _os_bar: PanelContainer = %OsBar
-@onready var _callsign: Label = %CallsignLabel
-@onready var _rank: Label = %RankLabel
-@onready var _section_hero: Label = %SectionHero
-@onready var _email_hero: Label = %EmailHero
-@onready var _status_badge: PanelContainer = %StatusBadge
-@onready var _status_badge_label: Label = %StatusBadgeLabel
-@onready var _hero_card: PanelContainer = %HeroCard
-@onready var _identity_card: PanelContainer = %IdentityCard
-@onready var _progress_card: PanelContainer = %ProgressCard
-@onready var _systems_card: PanelContainer = %SystemsCard
-@onready var _mastery_card: PanelContainer = %MasteryCard
-@onready var _identity_bar: PanelContainer = %IdentityTitleBar
-@onready var _progress_bar: PanelContainer = %ProgressTitleBar
-@onready var _systems_bar: PanelContainer = %SystemsTitleBar
-@onready var _mastery_bar: PanelContainer = %MasteryTitleBar
-@onready var _mastery_list: VBoxContainer = %MasteryList
-@onready var _full_name: Label = %FullNameValue
-@onready var _status: Label = %StatusValue
-@onready var _exp_caption: Label = %ExpCaption
-@onready var _exp: Label = %ExpValue
-@onready var _sessions: Label = %SessionsValue
-@onready var _stage: Label = %StageValue
-@onready var _pre: Label = %PreValue
-@onready var _post: Label = %PostValue
-@onready var _threat: Label = %ThreatValue
-@onready var _materials: Label = %MaterialsValue
-@onready var _tower: Label = %TowerLevel
-@onready var _glade: Label = %GladeLevel
-@onready var _forge: Label = %ForgeLevel
-@onready var _exp_fill: ColorRect = %ExpBarFill
-
-var _pixel_font: Font
-var _blink_t: float = 0.0
-
+## Operator dossier: identity, useful next steps and earned service milestones.
+const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const Data = preload("res://src/ui/screens/progress/progress_data.gd")
+const Briefing = preload("res://src/ui/screens/profile/profile_briefing.gd")
+const Badge = preload("res://src/ui/screens/progress/rank_badge.gd")
+var _body: HBoxContainer
+var _identity: VBoxContainer
+var _briefing: VBoxContainer
+var _back: Button
+var _title: Label
+var _sync: Label
+var _snapshot: Dictionary = {}
+var _dossier: Dictionary = {}
+var _details_open := false
+var _details_button: Button
+var _next_button: Button
+var _details_content: VBoxContainer
+var _actions: Array[Button] = []
+var _font := 28
+var _touch := 64.0
+var _active := true
+var _queued := false
+var _server_busy := false
+var _sync_copy := "CACHED PROFILE"
 
 func _ready() -> void:
-	_load_font()
-	_style_chrome()
-	_back_button.pressed.connect(func() -> void: Router.request_back())
-
-
-func _process(delta: float) -> void:
-	_blink_t += delta
-	var on := fmod(_blink_t, 1.05) < 0.58
-	_os_cursor.visible = on
-	_os_led.color = Palette.GREEN if on else Color(Palette.GREEN, 0.28)
-
+	var shell := UI.shell(self, "OPERATOR DOSSIER", func() -> void: Router.request_back())
+	_back = shell.back
+	_title = shell.title
+	_sync = UI.label(_sync_copy, 24, UI.MUTED)
+	_sync.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_title.get_parent().add_child(_sync)
+	_body = HBoxContainer.new()
+	_body.add_theme_constant_override("separation", 22)
+	_body.size_flags_vertical = SIZE_EXPAND_FILL
+	shell.layout.add_child(_body)
+	_identity = UI.scroll_column(_body)
+	_identity.get_parent().size_flags_stretch_ratio = 0.36
+	_briefing = UI.scroll_column(_body)
+	_briefing.get_parent().size_flags_stretch_ratio = 0.64
+	_briefing.add_theme_constant_override("separation", 18)
+	AuthService.progress_changed.connect(_request_refresh)
+	AuthService.session_changed.connect(_session_changed)
+	get_viewport().size_changed.connect(_request_refresh)
+	_refresh()
 
 func on_enter(_args: Dictionary) -> void:
-	set_process(true)
-	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_dashboard")
-	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
-	_apply_copy()
-	_bind_profile()
+	_active = true
+	visible = true
+	_details_open = false
+	_refresh()
 	_refresh_from_server()
-
 
 func on_resume() -> void:
-	_bind_profile()
+	_active = true
+	visible = true
+	_refresh()
 	_refresh_from_server()
 
-
 func on_exit() -> void:
-	set_process(false)
+	_active = false
+	visible = false
 
+func _session_changed(_signed_in: bool) -> void:
+	_details_open = false
+	_sync_copy = "CACHED PROFILE"
+	_request_refresh()
+
+func _request_refresh() -> void:
+	if _queued or not _active:
+		return
+	_queued = true
+	_refresh.call_deferred()
 
 func _refresh_from_server() -> void:
-	await AuthService.refresh_profile()
-	if not is_inside_tree():
+	if _server_busy or not AuthService.is_signed_in() or AuthService.auth_token().is_empty():
 		return
-	_bind_profile()
+	_server_busy = true
+	var account := AuthService.participant_code()
+	var success := await AuthService.refresh_profile()
+	_server_busy = false
+	if not is_inside_tree() or not _active or account != AuthService.participant_code():
+		return
+	_sync_copy = "PROFILE REFRESHED" if success else "CACHED PROFILE"
+	_request_refresh()
 
+func _refresh() -> void:
+	_queued = false
+	if not _active or not is_inside_tree():
+		return
+	var ratio := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_font = maxi(28, ceili(16 / ratio))
+	_touch = maxf(64, ceilf(48 / ratio))
+	_back.custom_minimum_size = Vector2(_font * 5.5, _touch)
+	_back.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_back.add_theme_font_size_override("font_size", _font)
+	_title.add_theme_font_size_override("font_size", maxi(20, ceili(12 / ratio)))
+	_sync.text = _sync_copy
+	var left_scroll := (_identity.get_parent() as ScrollContainer).scroll_vertical
+	var right_scroll := (_briefing.get_parent() as ScrollContainer).scroll_vertical
+	_snapshot = Data.snapshot()
+	_dossier = Briefing.build(_snapshot)
+	UI.clear(_identity)
+	UI.clear(_briefing)
+	_actions.clear()
+	_build_identity()
+	_build_briefing()
+	(_identity.get_parent() as ScrollContainer).set_deferred("scroll_vertical", left_scroll)
+	(_briefing.get_parent() as ScrollContainer).set_deferred("scroll_vertical", right_scroll)
 
-func _apply_copy() -> void:
-	_header_title.text = tr("PROFILE_TITLE")
-	%IdentityFile.text = tr("PROFILE_IDENTITY")
-	%ProgressFile.text = tr("PROFILE_PROGRESS")
-	%SystemsFile.text = tr("PROFILE_SYSTEMS")
-	%MasteryFile.text = tr("PROFILE_MASTERY")
-	%FullNameLabel.text = tr("PROFILE_FULL_NAME")
-	%StatusLabel.text = tr("PROFILE_STATUS")
-	%SessionsLabel.text = tr("PROFILE_SESSIONS")
-	%StageLabel.text = tr("PROFILE_STAGE_SHORT")
-	%PreLabel.text = tr("PROFILE_PRE")
-	%PostLabel.text = tr("PROFILE_POST")
-	%ThreatLabel.text = tr("PROFILE_THREAT_SHORT")
-	%MaterialsLabel.text = tr("PROFILE_MATERIALS")
-	%TowerCaption.text = tr("PROFILE_TOWER")
-	%GladeCaption.text = tr("PROFILE_GLADE")
-	%ForgeCaption.text = tr("PROFILE_FORGE")
-	%LegendLow.text = tr("PROFILE_LEGEND_LOW")
-	%LegendMid.text = tr("PROFILE_LEGEND_MID")
-	%LegendHigh.text = tr("PROFILE_LEGEND_HIGH")
+func _label(text: String, color: Color = UI.TEXT, extra: int = 0) -> Label:
+	return UI.label(text, _font + extra, color)
 
+func _button(text: String, callback: Callable, primary: bool = false) -> Button:
+	var button := UI.button(text, callback, primary)
+	button.custom_minimum_size.y = _touch
+	button.add_theme_font_size_override("font_size", _font)
+	_actions.append(button)
+	return button
 
-func _bind_profile() -> void:
-	_callsign.text = AuthService.display_name()
-	_rank.text = AuthService.rank_title()
-	var section := AuthService.section()
-	var email := AuthService.email()
-	_section_hero.text = "%s: %s" % [tr("PROFILE_SECTION").to_upper(), section if not section.is_empty() else "—"]
-	_email_hero.text = "%s: %s" % [tr("PROFILE_EMAIL").to_upper(), email if not email.is_empty() else "—"]
-	_full_name.text = AuthService.full_name()
-	var status := AuthService.status_label()
-	_status.text = status if not status.is_empty() else "—"
-	_status_badge_label.text = status.to_upper() if not status.is_empty() else "—"
-	_style_status_badge(_is_on_track(status))
-	_apply_label(_status, _band_color(_status_unit(status)), 10)
-	_exp_caption.text = tr("PROFILE_TOWER_XP") % AuthService.tower_level()
-	_exp.text = "%d / %d" % [AuthService.exp_into_rank(), AuthService.exp_rank_span()]
-	_sessions.text = str(AuthService.sessions())
-	_stage.text = str(AuthService.current_stage())
-	var pre := AuthService.pre_score()
-	var post := AuthService.post_score()
-	_pre.text = "%d%%" % pre
-	_post.text = "%d%%" % post
-	_apply_label(_pre, _band_color(float(pre) / 100.0), 12)
-	_apply_label(_post, _band_color(float(post) / 100.0), 12)
-	_threat.text = str(maxi(AuthService.threat_points(), 0))
-	_materials.text = str(maxi(PlayerManager.credits, 0))
-	_tower.text = tr("PROFILE_LV") % AuthService.tower_level()
-	_glade.text = tr("PROFILE_LV") % AuthService.glade_level()
-	_forge.text = tr("PROFILE_LV") % AuthService.forge_level()
-	var span := maxi(AuthService.exp_rank_span(), 1)
-	_exp_fill.anchor_right = clampf(float(AuthService.exp_into_rank()) / float(span), 0.04, 1.0)
-	_exp_fill.offset_right = 0.0
-	_rebuild_mastery()
+func _panel(parent: Node, accent: Color = Color("3b626a"), fill: Color = UI.PANEL) -> VBoxContainer:
+	var panel := UI.panel(parent, fill)
+	panel.add_theme_stylebox_override("panel", UI.box(fill, accent, 20))
+	return UI.column(panel, 14)
 
+func _bar(parent: Node, value: float, total: float) -> void:
+	var bar := ProgressBar.new()
+	bar.max_value = maxf(1, total)
+	bar.value = value
+	bar.show_percentage = false
+	bar.custom_minimum_size.y = 12
+	bar.mouse_filter = MOUSE_FILTER_IGNORE
+	bar.add_theme_stylebox_override("background", UI.box(UI.BG, UI.BG, 0))
+	bar.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
+	parent.add_child(bar)
 
-func _rebuild_mastery() -> void:
-	for child in _mastery_list.get_children():
-		child.queue_free()
-	var mastery := AuthService.mastery()
-	for entry in MASTERY_ORDER:
-		var topic := str(entry["topic"])
-		var p_learn := _as_unit(float(mastery.get(topic, 0.0)))
-		var kind: IntelPixelIcon.Kind = entry["kind"]
-		_mastery_list.add_child(_make_mastery_row(topic, p_learn, kind))
+func _build_identity() -> void:
+	var card := _panel(_identity, UI.TEAL, Color("182c32"))
+	card.add_child(_label("LEVEL BLUE / PERSONNEL", UI.TEAL, -2))
+	var portrait_row := HBoxContainer.new()
+	portrait_row.add_theme_constant_override("separation", 18)
+	card.add_child(portrait_row)
+	var frame := UI.panel(portrait_row, UI.BG)
+	frame.size_flags_horizontal = SIZE_EXPAND_FILL
+	var avatar := TextureRect.new()
+	avatar.name = "AvatarImage"
+	avatar.custom_minimum_size = Vector2(96, 150)
+	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	frame.add_child(avatar)
+	AssetManager.bind_texture(avatar, "ui_pfp")
+	var badge := Badge.new()
+	badge.rank_index = int(_snapshot.rank_index)
+	portrait_row.add_child(badge)
+	card.add_child(_label(AuthService.display_name().to_upper(), UI.TEXT, 10))
+	card.add_child(_label(str(_snapshot.rank), UI.GOLD, 2))
+	card.add_child(_label("SIGNED IN" if AuthService.is_signed_in() else "LOCAL PROFILE", UI.TEAL, -2))
+	card.add_child(_label("%d RANK POINTS" % _snapshot.points, UI.TEXT, 2))
+	_bar(card, _snapshot.rank_value, _snapshot.rank_span)
+	card.add_child(_label("Maximum rank / Commander" if _snapshot.max_rank else "%d points to %s" % [maxi(0, int(_snapshot.next_points) - int(_snapshot.points)), AuthService.RANKS[mini(int(_snapshot.rank_index) + 1, AuthService.RANKS.size() - 1)]], UI.MUTED))
+	_details_button = _button(("HIDE" if _details_open else "VIEW") + " PERSONAL RECORD", _toggle_details)
+	_identity.add_child(_details_button)
+	_details_content = _panel(_identity)
+	_details_content.get_parent().visible = _details_open
+	_details_content.add_child(_label("ACCOUNT RECORD", UI.GOLD))
+	for field in [["Name", AuthService.full_name()], ["Section", AuthService.section()], ["Email", AuthService.email()], ["Reported status", AuthService.status_label()]]:
+		_details_content.add_child(_label(str(field[0]).to_upper(), UI.MUTED, -2))
+		_details_content.add_child(_label(str(field[1]) if not str(field[1]).is_empty() else "Not provided"))
+	_details_content.add_child(_label("Sessions recorded / %d" % AuthService.sessions(), UI.MUTED))
+	_details_content.add_child(_label("Threat points / %d" % maxi(0, AuthService.threat_points()), UI.MUTED))
+	_details_content.add_child(_label("Reported system levels\nTower %d / Glade %d / Forge %d" % [AuthService.tower_level(), AuthService.glade_level(), AuthService.forge_level()], UI.MUTED))
+	# A server's numeric zero alone does not establish that a test was taken.
+	_details_content.add_child(_label("Reported pre-test / %d%%" % AuthService.pre_score() if AuthService.has_pre_test_completed() else "Pre-test / Not assessed", UI.MUTED))
+	if AuthService.post_score() > 0:
+		_details_content.add_child(_label("Reported post-test / %d%%" % AuthService.post_score(), UI.MUTED))
+	else:
+		_details_content.add_child(_label("Post-test / No confirmed result", UI.MUTED))
+	_details_content.add_child(_label("Account records are separate from mastery estimates and stage completion.", UI.MUTED, -2))
 
+func _toggle_details() -> void:
+	_details_open = not _details_open
+	_details_content.get_parent().visible = _details_open
+	_details_button.text = ("HIDE" if _details_open else "VIEW") + " PERSONAL RECORD"
+	if _details_open:
+		_reveal_details.call_deferred()
 
-func _make_mastery_row(topic: String, p_learn: float, kind: IntelPixelIcon.Kind) -> Control:
-	var accent := _band_color(p_learn)
-	var cell := PanelContainer.new()
-	cell.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	cell.add_theme_stylebox_override("panel", _pixel_box(Palette.BG_PANEL_ALT, Palette.CYAN_DIM, 0, 2))
+func _reveal_details() -> void:
+	# A resize/session refresh may replace the button before this deferred call runs.
+	if _active and _details_open and is_instance_valid(_details_button):
+		var scroll := _identity.get_parent() as ScrollContainer
+		if scroll.is_ancestor_of(_details_button):
+			scroll.scroll_vertical = roundi(_details_button.position.y)
+
+func _build_briefing() -> void:
+	var next: Dictionary = _dossier.next
+	var assignment := _panel(_briefing, UI.GOLD, Color("25302f"))
+	assignment.add_child(_label("YOUR NEXT ASSIGNMENT", UI.GOLD, -2))
+	assignment.add_child(_label(str(next.title), UI.TEXT, 8))
+	assignment.add_child(_label(str(next.body), UI.MUTED))
+	_next_button = _button(str(next.action) + "  >", _navigate.bind(next.route), true)
+	assignment.add_child(_next_button)
+	var shortcuts := HBoxContainer.new()
+	shortcuts.add_theme_constant_override("separation", 12)
+	_briefing.add_child(shortcuts)
+	_summary(shortcuts, "FIELD RECORD", "%d / %d STAGES" % [_snapshot.stage_done, _snapshot.stage_total], "%d / %d lesson topics" % [_snapshot.lesson_done, _snapshot.lesson_total], &"progress")
+	_summary(shortcuts, "TOWER ARMORY", "%d CREDITS" % maxi(PlayerManager.credits, 0), "Inspect your tower upgrades", &"upgrades")
+	var intel := _panel(_briefing)
+	intel.add_child(_label("PERSONAL INTELLIGENCE", UI.TEAL))
+	if _dossier.strongest.is_empty():
+		intel.add_child(_label("Your knowledge profile starts with an assessment.", UI.TEXT))
+		intel.add_child(_label("Complete a module pre-test to establish your baseline. Unassessed topics are not counted as zero.", UI.MUTED))
+	else:
+		var strongest: Dictionary = _dossier.strongest
+		intel.add_child(_label("Highest estimate / %s  %d%%%s" % [strongest.name, roundi(float(strongest.value) * 100), " / Awaiting sync" if strongest.pending else ""]))
+		var practice: Dictionary = _dossier.practice
+		var prefix := "Practice focus" if float(practice.value) < PlayerManager.PROFICIENT_MASTERY else "Keep sharp"
+		intel.add_child(_label("%s / %s  %d%%%s" % [prefix, practice.name, roundi(float(practice.value) * 100), " / Awaiting sync" if practice.pending else ""], UI.GOLD))
+		intel.add_child(_label("BKT estimates knowledge from responses; it is not quiz accuracy or lesson completion.", UI.MUTED, -2))
+	intel.add_child(_button("EXPLORE MASTERY & JOURNEY  >", _navigate.bind(&"progress")))
+	_build_milestones()
+	var footer := HBoxContainer.new()
+	footer.add_theme_constant_override("separation", 12)
+	_briefing.add_child(footer)
+	for item in [["LESSONS", &"lessons"], ["CODEX", &"codex"], ["SETTINGS", &"settings"]]:
+		var button := _button(item[0], _navigate.bind(item[1]))
+		button.size_flags_horizontal = SIZE_EXPAND_FILL
+		footer.add_child(button)
+
+func _summary(parent: Node, title: String, value: String, caption: String, route: StringName) -> void:
+	var button := _button("", _navigate.bind(route))
+	button.size_flags_horizontal = SIZE_EXPAND_FILL
+	button.custom_minimum_size.y = 156
+	for state in ["normal", "hover", "pressed"]:
+		button.add_theme_stylebox_override(state, UI.box(Color("203a40") if state == "hover" else UI.PANEL, UI.TEAL, 0))
+	parent.add_child(button)
 	var pad := MarginContainer.new()
-	pad.add_theme_constant_override("margin_left", 12)
-	pad.add_theme_constant_override("margin_right", 12)
-	pad.add_theme_constant_override("margin_top", 10)
-	pad.add_theme_constant_override("margin_bottom", 10)
-	var row := VBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	header.alignment = BoxContainer.ALIGNMENT_CENTER
-	var icon := IntelPixelIcon.new()
-	icon.custom_minimum_size = Vector2(32, 32)
-	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	icon.kind = kind
-	icon.ink_override = accent
-	var name_label := Label.new()
-	name_label.text = topic.to_upper()
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_apply_label(name_label, Palette.TEXT_SECONDARY, 9)
-	var value := Label.new()
-	value.text = "%.0f%%" % (p_learn * 100.0)
-	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_apply_label(value, accent, 10)
-	header.add_child(icon)
-	header.add_child(name_label)
-	header.add_child(value)
-	var track := PanelContainer.new()
-	track.custom_minimum_size = Vector2(0, 12)
-	track.add_theme_stylebox_override("panel", _pixel_box(Palette.BG_DEEP, Palette.CYAN_DIM, 0, 2))
-	var fill := ColorRect.new()
-	fill.color = accent
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fill.set_anchors_preset(Control.PRESET_FULL_RECT)
-	fill.anchor_right = maxf(p_learn, 0.04)
-	fill.offset_right = 0.0
-	track.add_child(fill)
-	row.add_child(header)
-	row.add_child(track)
-	pad.add_child(row)
-	cell.add_child(pad)
-	return cell
+	pad.mouse_filter = MOUSE_FILTER_IGNORE
+	pad.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	for edge in ["left", "right", "top", "bottom"]:
+		pad.add_theme_constant_override("margin_" + edge, 16)
+	button.add_child(pad)
+	var text := UI.column(pad, 10)
+	text.mouse_filter = MOUSE_FILTER_IGNORE
+	text.add_child(_label(title, UI.TEAL, -2))
+	text.add_child(_label(value, UI.TEXT, 4))
+	text.add_child(_label(caption + "  >", UI.MUTED, -2))
 
+func _build_milestones() -> void:
+	var panel := _panel(_briefing)
+	var earned := 0
+	for milestone in _dossier.milestones:
+		if milestone.earned:
+			earned += 1
+	panel.add_child(_label("SERVICE MILESTONES / %d OF 4" % earned, UI.GOLD))
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 14)
+	panel.add_child(grid)
+	for milestone in _dossier.milestones:
+		var entry := _panel(grid, UI.TEAL if milestone.earned else Color("43545b"), UI.BG)
+		entry.get_parent().size_flags_horizontal = SIZE_EXPAND_FILL
+		var icon := IntelPixelIcon.new()
+		icon.kind = IntelPixelIcon.Kind.BADGE if milestone.earned else IntelPixelIcon.Kind.LOCK
+		icon.ink_override = UI.TEAL if milestone.earned else UI.MUTED
+		icon.custom_minimum_size = Vector2(38, 38)
+		icon.size_flags_horizontal = SIZE_SHRINK_BEGIN
+		entry.add_child(icon)
+		entry.add_child(_label("EARNED" if milestone.earned else "IN PROGRESS", UI.TEAL if milestone.earned else UI.MUTED, -2))
+		entry.add_child(_label(milestone.title))
+		entry.add_child(_label(milestone.description, UI.MUTED, -2))
+	panel.add_child(_label("Milestones celebrate recorded progress; they do not award extra credits.", UI.MUTED, -2))
 
-func _style_chrome() -> void:
-	_style_window(_os_bar, Palette.CYAN)
-	_style_window(_hero_card, Palette.CYAN)
-	_style_window(_identity_card, Palette.CYAN)
-	_style_window(_progress_card, Palette.CYAN)
-	_style_window(_systems_card, Palette.CYAN)
-	_style_window(_mastery_card, Palette.CYAN)
-	_style_title_bar(_identity_bar, Palette.ORANGE)
-	_style_title_bar(_progress_bar, Palette.ORANGE)
-	_style_title_bar(_systems_bar, Palette.ORANGE)
-	_style_title_bar(_mastery_bar, Palette.ORANGE)
-	_style_close_button()
-	_style_status_badge(true)
-	var avatar := %AvatarBox as PanelContainer
-	avatar.add_theme_stylebox_override("panel", _pixel_box(Palette.FOREST_NIGHT, Palette.CYAN, 0, 2))
-	%ExpBar.add_theme_stylebox_override("panel", _pixel_box(Palette.BG_DEEP, Palette.CYAN_DIM, 0, 2))
-	%ExpBarFill.color = Palette.CYAN
-	%LegendRed.color = Palette.RED
-	%LegendOrange.color = Palette.ORANGE
-	%LegendGreen.color = Palette.GREEN
-	for cell in [%SessionsCell, %StageCell, %PreCell, %PostCell, %ThreatCell, %MaterialsCell, %TowerCell, %GladeCell, %ForgeCell]:
-		_style_stat_cell(cell)
-	_center_stat_stack(%SessionsLabel, _sessions)
-	_center_stat_stack(%StageLabel, _stage)
-	_center_stat_stack(%PreLabel, _pre)
-	_center_stat_stack(%PostLabel, _post)
-	_center_stat_stack(%ThreatLabel, _threat)
-	_center_stat_stack(%MaterialsLabel, _materials)
-	_apply_label(_header_title, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_os_cursor, Palette.GREEN, 12)
-	_apply_label(_callsign, Palette.TEXT_PRIMARY, 16)
-	_apply_label(_rank, Palette.GREEN, 10)
-	_apply_label(_section_hero, Palette.TEXT_SECONDARY, 9)
-	_apply_label(_email_hero, Palette.TEXT_SECONDARY, 9)
-	_apply_label(_status_badge_label, Palette.GREEN, 10)
-	_apply_label(_full_name, Palette.TEXT_PRIMARY, 10)
-	_apply_label(_status, Palette.GREEN, 10)
-	_apply_label(_exp_caption, Palette.TEXT_SECONDARY, 9)
-	_apply_label(_exp, Palette.TEXT_PRIMARY, 10)
-	_apply_label(_sessions, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_stage, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_pre, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_post, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_threat, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_materials, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_tower, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_glade, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_forge, Palette.TEXT_PRIMARY, 12)
-	for caption in [%FullNameLabel, %StatusLabel, %SessionsLabel, %StageLabel, %PreLabel, %PostLabel, %ThreatLabel, %MaterialsLabel, %TowerCaption, %GladeCaption, %ForgeCaption, %IdentityFile, %ProgressFile, %SystemsFile, %MasteryFile, %LegendLow, %LegendMid, %LegendHigh]:
-		_apply_label(caption, Palette.TEXT_SECONDARY, 9)
-	_style_stat_value(_full_name)
-	_full_name.size_flags_horizontal = Control.SIZE_FILL
-	_apply_label(%IdentityFile, Palette.TEXT_PRIMARY, 9)
-	_apply_label(%ProgressFile, Palette.TEXT_PRIMARY, 9)
-	_apply_label(%SystemsFile, Palette.TEXT_PRIMARY, 9)
-	_apply_label(%MasteryFile, Palette.TEXT_PRIMARY, 9)
-
-
-func _style_stat_cell(cell: PanelContainer) -> void:
-	cell.add_theme_stylebox_override("panel", _pixel_box(Palette.BG_PANEL_ALT, Palette.CYAN_DIM, 0, 2))
-
-
-func _center_stat_stack(caption: Label, value: Label) -> void:
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	value.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	value.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var col := caption.get_parent() as VBoxContainer
-	if col == null:
-		return
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-
-
-func _style_stat_value(label: Label) -> void:
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	label.autowrap_mode = TextServer.AUTOWRAP_OFF
-	label.clip_text = true
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_apply_label(label, Palette.TEXT_PRIMARY, 10)
-
-
-func _style_status_badge(on_track: bool) -> void:
-	var accent := Palette.GREEN if on_track else Palette.ORANGE
-	var box := _pixel_box(Color(Palette.BG_HEADER, 0.94), accent, 0, 2)
-	box.content_margin_left = 12.0
-	box.content_margin_right = 12.0
-	box.content_margin_top = 8.0
-	box.content_margin_bottom = 8.0
-	_status_badge.add_theme_stylebox_override("panel", box)
-	_apply_label(_status_badge_label, accent, 10)
-
-
-func _style_close_button() -> void:
-	var box := _pixel_box(Palette.RED_DEEP, Palette.RED, 0, 2)
-	box.content_margin_left = 10.0
-	box.content_margin_right = 10.0
-	box.content_margin_top = 6.0
-	box.content_margin_bottom = 6.0
-	_back_button.add_theme_stylebox_override("normal", box)
-	_back_button.add_theme_stylebox_override("hover", _pixel_box(Palette.RED, Palette.TEXT_PRIMARY, 0, 2))
-	_back_button.add_theme_stylebox_override("pressed", box)
-	_back_button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	_back_button.text = "X"
-	if _pixel_font != null:
-		_back_button.add_theme_font_override("font", _pixel_font)
-	_back_button.add_theme_font_size_override("font_size", 12)
-
-
-func _style_window(card: PanelContainer, accent: Color) -> void:
-	var box := _pixel_box(Color(Palette.BG_HEADER, 0.94), accent, 0, 2)
-	box.content_margin_left = 0.0
-	box.content_margin_right = 0.0
-	box.content_margin_top = 0.0
-	box.content_margin_bottom = 0.0
-	card.add_theme_stylebox_override("panel", box)
-
-
-func _style_title_bar(bar: PanelContainer, fill: Color) -> void:
-	bar.custom_minimum_size = Vector2(0, 28)
-	var style := _pixel_box(fill, fill, 0, 0)
-	style.content_margin_left = 12.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 8.0
-	style.content_margin_bottom = 8.0
-	bar.add_theme_stylebox_override("panel", style)
-
-
-func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(border_w)
-	box.set_corner_radius_all(radius)
-	return box
-
-
-func _apply_label(label: Label, color: Color, font_size: int) -> void:
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	if _pixel_font != null:
-		label.add_theme_font_override("font", _pixel_font)
-
-
-func _load_font() -> void:
-	if not ResourceLoader.exists(FONT_PATH):
-		return
-	var file: FontFile = load(FONT_PATH) as FontFile
-	if file != null:
-		_pixel_font = file
-
-
-func _band_color(unit: float) -> Color:
-	if unit >= 0.75:
-		return Palette.GREEN
-	if unit >= 0.50:
-		return Palette.ORANGE
-	return Palette.RED
-
-
-func _as_unit(value: float) -> float:
-	if value > 1.0:
-		return clampf(value / 100.0, 0.0, 1.0)
-	return clampf(value, 0.0, 1.0)
-
-
-func _is_on_track(status: String) -> bool:
-	return status.strip_edges().to_lower().contains("track")
-
-
-func _status_unit(status: String) -> float:
-	return 1.0 if _is_on_track(status) else 0.6
+func _navigate(route: StringName) -> void:
+	Router.push(route)
