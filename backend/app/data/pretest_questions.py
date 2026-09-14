@@ -1111,6 +1111,113 @@ MODULE_BANKS: dict[str, list[dict]] = {
 }
 
 
+# Recall cards retain legacy choice keys so already-queued older clients can sync.
+RECALL_CARDS = {
+    "mod_01": {
+        "3": {
+            "text": "What is the term for a fake email that tries to steal a click or a secret?",
+            "answer": "phishing",
+            "accepted_answers": [
+                "phishing",
+                "email phishing"
+            ]
+        },
+        "9": {
+            "text": "An unsafe attachment can install harmful software. What is the general term for harmful software?",
+            "answer": "malware",
+            "accepted_answers": [
+                "malware",
+                "malicious software"
+            ]
+        }
+    },
+    "mod_02": {
+        "1": {
+            "text": "What is the term for phishing delivered through SMS text messages?",
+            "answer": "smishing",
+            "accepted_answers": [
+                "smishing",
+                "sms phishing",
+                "text phishing"
+            ]
+        },
+        "12": {
+            "text": "To check a bank text safely, open the bank's official mobile ____ instead of the text's link.",
+            "answer": "app",
+            "accepted_answers": [
+                "app",
+                "application",
+                "mobile app",
+                "bank app",
+                "banking app"
+            ]
+        }
+    },
+    "mod_03": {
+        "1": {
+            "text": "What is the term for social engineering carried out through phone or voice calls?",
+            "answer": "vishing",
+            "accepted_answers": [
+                "vishing",
+                "voice phishing",
+                "phone phishing"
+            ]
+        },
+        "14": {
+            "text": "Before calling your bank using the number on your card, what two-word action should you take on the suspicious call?",
+            "answer": "hang up",
+            "accepted_answers": [
+                "hang up",
+                "hangup",
+                "end call",
+                "end the call"
+            ]
+        }
+    },
+    "mod_04": {
+        "2": {
+            "text": "What is the term for using an invented role or story to trick someone into giving information?",
+            "answer": "pretexting",
+            "accepted_answers": [
+                "pretexting"
+            ]
+        },
+        "13": {
+            "text": "What three-letter abbreviation means one-time password, a secret you must not share with an unexpected caller or visitor?",
+            "answer": "OTP",
+            "accepted_answers": [
+                "otp"
+            ]
+        }
+    },
+    "mod_05": {
+        "9": {
+            "text": "What is the term for using a tempting prize or free item to lure someone into an unsafe action?",
+            "answer": "baiting",
+            "accepted_answers": [
+                "baiting"
+            ]
+        },
+        "13": {
+            "text": "In FreeMovie.mp4.exe, which final file extension shows that it can run a Windows program?",
+            "answer": ".exe",
+            "accepted_answers": [
+                "exe",
+                ".exe"
+            ]
+        }
+    }
+}
+
+for _module_id, _cards in RECALL_CARDS.items():
+    for _question in MODULE_BANKS[_module_id]:
+        _recall = _cards.get(str(_question["id"]))
+        if _recall:
+            _question["legacy_answer"] = _question["answer"]
+            _question.pop("options", None)
+            _question.update(_recall)
+            _question["type"] = "short_answer"
+
 def questions_for_module(module_id: str) -> list[dict] | None:
     return MODULE_BANKS.get(str(module_id or "").strip())
 

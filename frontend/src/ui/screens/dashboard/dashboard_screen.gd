@@ -1,6 +1,6 @@
 @tool
 extends BaseScreen
-## Command centre: slash menu, mission diamond, hero art. Palette-only chrome.
+## Scenic command outpost. Menu geometry is shared with the original dashboard.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const DEFAULT_MATERIALS := 200
@@ -8,6 +8,10 @@ const DEFAULT_THREAT_POINTS := 1000
 const DEFAULT_CURRENT_STAGE := 1
 const STAGE_TOTAL := 10
 const UNREAD_NOTIFICATIONS := 2
+const HEADER_FILL := Color("18252bf2")
+const HEADER_TEXT := Color("e8e8da")
+const HEADER_MUTED := Color("a4b8b7")
+const HEADER_ACCENT := Color("8dc9bd")
 
 @onready var _game_title: Label = %GameTitle
 @onready var _profile_button: HudGeoButton = %ProfileButton
@@ -49,11 +53,13 @@ var _selected_mode: StringName = &"SOLO"
 var _materials: int = DEFAULT_MATERIALS
 var _threat_points: int = DEFAULT_THREAT_POINTS
 var _current_stage: int = DEFAULT_CURRENT_STAGE
+var _menu_rects: Dictionary = {}
 
 
 func _ready() -> void:
 	_load_font()
 	_style_chrome()
+	_setup_surroundings()
 	if Engine.is_editor_hint():
 		return
 	_store_button.pressed.connect(func() -> void: Router.push(&"store"))
@@ -79,8 +85,9 @@ func on_enter(_args: Dictionary) -> void:
 
 
 func _bind_remote_art() -> void:
-	AssetManager.bind_texture($Background as CanvasItem, "ui_dashboard")
-	AssetManager.bind_texture($HeroArt as CanvasItem, "ui_dashboard")
+	# Separate ID: legacy dashboard art is still used inside the central buttons.
+	# The scenic background is downloaded and cached by AssetManager.
+	AssetManager.bind_texture($Background as CanvasItem, "ui_dashboard_scenic")
 	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
 	AssetManager.bind_texture(find_child("SettingsIcon", true, false) as CanvasItem, "ui_setting")
 	AssetManager.bind_texture(find_child("LockSettingsIcon", true, false) as CanvasItem, "ui_setting")
@@ -94,10 +101,11 @@ func on_resume() -> void:
 
 func on_exit() -> void:
 	_mode_modal.visible = false
+	%Companion.close_dialogue()
 
 
 func _style_chrome() -> void:
-	_map_dim.color = Color(Palette.DEEP_SPACE, 0.18)
+	_map_dim.color = Color("101c262e")
 	_style_top_bar()
 	_style_avatar()
 	_style_badge()
@@ -107,11 +115,11 @@ func _style_chrome() -> void:
 	_style_title_bar(_lock_title_bar, Palette.NAVY_700)
 	_style_well(_lock_well, Palette.TEAL_800)
 	_style_cta(%PreTestButton, Palette.PRIMARY_BLUE, Palette.CREAM)
-	_apply_label(_game_title, Palette.INK, 14)
-	_apply_label(_player_name, Palette.INK, 11)
-	_apply_label(_rank, Palette.CYAN_400, 8)
-	_apply_label(_threat_caption, Palette.INK, 8)
-	_apply_label(_materials_caption, Palette.INK, 8)
+	_apply_label(_game_title, HEADER_TEXT, 14)
+	_apply_label(_player_name, HEADER_TEXT, 11)
+	_apply_label(_rank, HEADER_ACCENT, 8)
+	_apply_label(_threat_caption, HEADER_MUTED, 8)
+	_apply_label(_materials_caption, HEADER_MUTED, 8)
 	_materials_caption.text = "CREDITS"
 	_apply_label(_threat_value, Palette.CREAM, 10)
 	_apply_label(_materials_value, Palette.CREAM, 10)
@@ -119,8 +127,8 @@ func _style_chrome() -> void:
 	_apply_label(_at_risk_title, Palette.CREAM, 13)
 	_apply_label(_at_risk_sub, Palette.CREAM, 11)
 	_apply_label(_at_risk_pill, Palette.CREAM, 16)
-	_apply_label(_updates_title, Palette.CREAM, 10)
-	_apply_label(_updates_body, Palette.CREAM, 9)
+	_apply_label(_updates_title, HEADER_ACCENT, 8)
+	_apply_label(_updates_body, HEADER_TEXT, 9)
 	_apply_label(%LockTitle, Palette.CREAM, 16)
 	_apply_label(%LockBody, Palette.CREAM, 12)
 	var lock_file: Label = _lock_title_bar.find_child("LockFile", true, false) as Label
@@ -192,11 +200,11 @@ func _refresh_world() -> void:
 
 
 func _refresh_updates() -> void:
-	_updates_title.text = "UPDATES"
+	_updates_title.text = "FIELD PROGRESS"
 	var stage_cleared: int = clampi(PlayerManager.mock_max_stage_cleared, 0, STAGE_TOTAL)
 	var lesson_done: int = LessonCatalog.completed_units()
 	var lesson_total: int = LessonCatalog.total_units()
-	_updates_body.text = "STAGE %d/%d\n%d/%d LESSONS" % [stage_cleared, STAGE_TOTAL, lesson_done, lesson_total]
+	_updates_body.text = "STAGE %d/%d    /    LESSONS %d/%d" % [stage_cleared, STAGE_TOTAL, lesson_done, lesson_total]
 
 
 func _open_mode_modal() -> void:
@@ -301,6 +309,7 @@ func _on_tutorial_dismissed() -> void:
 	if _tutorial_gate != null:
 		_tutorial_gate.visible = false
 	_lock_chrome(false)
+	%Companion.set_interaction_enabled(AuthService.has_pre_test_completed())
 
 
 func _lock_chrome(locked: bool) -> void:
@@ -358,7 +367,8 @@ func _style_well(well: PanelContainer, fill: Color) -> void:
 
 
 func _style_top_bar() -> void:
-	var style := _pixel_box(Palette.CREAM, Palette.CREAM, 0, 0)
+	var style := _pixel_box(HEADER_FILL, Color("4c686a"), 0, 0)
+	style.border_width_bottom = 1
 	style.content_margin_left = 18.0
 	style.content_margin_right = 16.0
 	style.content_margin_top = 6.0
@@ -368,7 +378,7 @@ func _style_top_bar() -> void:
 
 
 func _style_avatar() -> void:
-	var box := _pixel_box(Palette.TEAL_900, Palette.CYAN_400, 0, 2)
+	var box := _pixel_box(HEADER_FILL, HEADER_ACCENT, 0, 1)
 	_avatar_box.add_theme_stylebox_override("panel", box)
 
 
@@ -395,12 +405,57 @@ func _style_badge() -> void:
 
 func _style_updates() -> void:
 	var card: PanelContainer = %UpdatesCard
-	var box := _pixel_box(Color(Palette.NAVY_900, 0.88), Palette.CREAM, 0, 2)
+	var box := _pixel_box(Color("18252bca"), Color("4c686a"), 0, 0)
+	box.border_width_left = 2
 	box.content_margin_left = 10.0
 	box.content_margin_right = 10.0
 	box.content_margin_top = 8.0
 	box.content_margin_bottom = 8.0
 	card.add_theme_stylebox_override("panel", box)
+
+
+func _setup_surroundings() -> void:
+	# Preserve all six authored button shapes, relative positions and click targets.
+	for button: Control in [_deploy_button, _lessons_button, _codex_button, _store_button, _progress_button, _world_button]:
+		_menu_rects[button] = Rect2(Vector2(button.offset_left, button.offset_top), button.size)
+	for chip: HudGeoButton in [%ThreatBox, %MaterialsBox, _settings_button]:
+		chip.geo = HudGeoButton.Geo.CHIP
+		chip.fill_key = "header"
+		chip.border_key = "muted"
+		chip.shear = 6
+		chip.queue_redraw()
+	%ThreatBox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	%MaterialsBox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var main: Control = $SafeAreaContainer/ScreenLayout/MainRow
+	# Draw the joined utility pair after World without raising its global
+	# z-index; raised child z-indices leak through screens pushed above Dashboard.
+	main.move_child(_store_button, main.get_child_count() - 1)
+	main.move_child(_progress_button, main.get_child_count() - 1)
+	main.resized.connect(_layout_surroundings)
+	_layout_surroundings.call_deferred()
+
+
+func _layout_surroundings() -> void:
+	var main: Control = $SafeAreaContainer/ScreenLayout/MainRow
+	if main.size.x <= 0 or _menu_rects.is_empty():
+		return
+	# Scale the composition as one unit on compact landscape displays.
+	var layout_scale := minf(1.0, minf(main.size.x / 1248.0, main.size.y / 590.0))
+	for button: Control in _menu_rects:
+		var rect: Rect2 = _menu_rects[button]
+		button.scale = Vector2.ONE * layout_scale
+		button.position = Vector2(rect.position.x * layout_scale, main.size.y * 0.5 + rect.position.y * layout_scale)
+	var companion: Control = %Companion
+	companion.scale = Vector2.ONE * layout_scale
+	companion.size = Vector2(348, 510)
+	companion.position = Vector2(main.size.x - 384 * layout_scale, maxf(24, (main.size.y - 510 * layout_scale) * 0.5))
+	var updates: Control = $SafeAreaContainer/ScreenLayout/MainRow/UpdatesPanel
+	# Keep the outpost/progress block centered beneath the profile, independent
+	# of the menu and companion columns.
+	var profile_center := main.get_global_transform().affine_inverse() * _profile_button.get_global_rect().get_center()
+	var info_width := 499.0
+	updates.scale = Vector2.ONE * layout_scale
+	updates.position = Vector2(profile_center.x - info_width * layout_scale * 0.5, 34 * layout_scale)
 
 
 func _style_at_risk() -> void:

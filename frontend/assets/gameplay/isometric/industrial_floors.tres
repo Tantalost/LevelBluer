@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://cssmlxw83wqrj"]
 
 [ext_resource type="Texture2D" path="res://assets/gameplay/isometric/industrial_atlas_texture.tres" id="1_7rm3b"]
 
