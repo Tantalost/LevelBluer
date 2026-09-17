@@ -70,5 +70,74 @@ class PretestFormatsTest(unittest.TestCase):
         self.assertEqual(mismatches, 0)
 
 
+class Module4PretestCoverageTest(unittest.TestCase):
+    def test_module_4_pretexting_bank(self):
+        path = Path(__file__).resolve().parents[2] / "frontend/data/pretest_questions.json"
+        frontend = json.loads(path.read_text(encoding="utf-8"))
+        bank = MODULE_BANKS["mod_04"]
+        self.assertEqual(frontend["mod_04"], bank)
+        self.assertEqual(len(bank), 15)
+        self.assertEqual([q["id"] for q in bank], list(range(1, 16)))
+        self.assertEqual([q["answer"] for q in bank], [3, 1, 0, 2, 1, 3, 0, 2, 3, 1, 0, 2, 1, 3, 2])
+        self.assertEqual([q["answer"] for q in bank].count(0), 3)
+        self.assertEqual([q["answer"] for q in bank].count(1), 4)
+        self.assertEqual([q["answer"] for q in bank].count(2), 4)
+        self.assertEqual([q["answer"] for q in bank].count(3), 4)
+        self.assertEqual([q["difficulty"] for q in bank].count("easy"), 4)
+        self.assertEqual([q["difficulty"] for q in bank].count("medium"), 7)
+        self.assertEqual([q["difficulty"] for q in bank].count("hard"), 4)
+        for question in bank:
+            self.assertEqual(question["topic"], "Pretexting")
+            self.assertEqual(question["type"], "multiple_choice")
+            self.assertEqual(len(question["options"]), 4)
+            self.assertIn(question["difficulty"], {"easy", "medium", "hard"})
+            self.assertTrue(str(question.get("skill", "")).strip())
+
+
+class Module5PretestCoverageTest(unittest.TestCase):
+    def test_module_5_baiting_bank(self):
+        path = Path(__file__).resolve().parents[2] / "frontend/data/pretest_questions.json"
+        frontend = json.loads(path.read_text(encoding="utf-8"))
+        bank = MODULE_BANKS["mod_05"]
+        self.assertEqual(frontend["mod_05"], bank)
+        self.assertEqual(len(bank), 15)
+        self.assertEqual([q["id"] for q in bank], list(range(1, 16)))
+        self.assertEqual([q["answer"] for q in bank], [2, 0, 3, 1, 2, 1, 0, 3, 2, 1, 0, 3, 1, 2, 3])
+        self.assertEqual([q["answer"] for q in bank].count(0), 3)
+        self.assertEqual([q["answer"] for q in bank].count(1), 4)
+        self.assertEqual([q["answer"] for q in bank].count(2), 4)
+        self.assertEqual([q["answer"] for q in bank].count(3), 4)
+        self.assertEqual([q["difficulty"] for q in bank].count("easy"), 4)
+        self.assertEqual([q["difficulty"] for q in bank].count("medium"), 7)
+        self.assertEqual([q["difficulty"] for q in bank].count("hard"), 4)
+        expected_skills = [
+            "recognition",
+            "unknown_media",
+            "gift_bait",
+            "suspicious_download",
+            "qr_safety",
+            "file_extension",
+            "temptation",
+            "safe_handling",
+            "source_verification",
+            "charging_safety",
+            "attacker_goal",
+            "multi_cue_analysis",
+            "scarcity_bait",
+            "trusted_download",
+            "transfer",
+        ]
+        self.assertEqual([q["skill"] for q in bank], expected_skills)
+        for question in bank:
+            self.assertEqual(question["topic"], "Baiting")
+            self.assertEqual(question["type"], "multiple_choice")
+            self.assertEqual(len(question["options"]), 4)
+            self.assertIn(question["difficulty"], {"easy", "medium", "hard"})
+            public = public_question(question)
+            self.assertNotIn("skill", public)
+            self.assertNotIn("answer", public)
+            self.assertEqual(public["topic"], "Baiting")
+
+
 if __name__ == "__main__":
     unittest.main()

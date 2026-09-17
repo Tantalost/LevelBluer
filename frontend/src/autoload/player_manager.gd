@@ -39,6 +39,9 @@ var tutorial_complete: bool = false
 var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
+const TRACE_MODULE_IDS: PackedStringArray = ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]
+var trace_seen_by_module: Dictionary = {}
+var trace_missed_by_module: Dictionary = {}
 
 
 func has_skill(skill_id: String) -> bool:
@@ -218,6 +221,8 @@ func reset_to_defaults() -> void:
 	tutorial_complete = false
 	has_intel_bonus = false
 	intel_bonus_module = ""
+	trace_seen_by_module = _empty_trace_history()
+	trace_missed_by_module = _empty_trace_history()
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
@@ -253,6 +258,9 @@ func consume_intel_bonus_gold(base_gold: int, module_id: String) -> int:
 
 
 func intel_module_for_stage(stage_id: int) -> String:
+	var active: String = str(Router.active_module_id).strip_edges()
+	if not active.is_empty():
+		return active
 	if stage_id >= 1 and stage_id <= 10:
 		return "mod_01"
 	return ""
@@ -395,6 +403,93 @@ func preferred_difficulty(skill_id: String = "phishing") -> String:
 	return "hard"
 
 
+func get_trace_seen(module_id: String) -> Array[String]:
+	return _trace_id_list(trace_seen_by_module, module_id)
+
+
+func get_trace_missed(module_id: String) -> Array[String]:
+	return _trace_id_list(trace_missed_by_module, module_id)
+
+
+func record_trace_result(module_id: String, question_id: String, is_correct: bool) -> void:
+	var mid: String = module_id.strip_edges()
+	var qid: String = question_id.strip_edges()
+	if mid.is_empty() or qid.is_empty():
+		return
+	_ensure_trace_history()
+	var seen: Array[String] = get_trace_seen(mid)
+	if not seen.has(qid):
+		seen.append(qid)
+	trace_seen_by_module[mid] = seen
+	var missed: Array[String] = get_trace_missed(mid)
+	if is_correct:
+		var missed_index: int = missed.find(qid)
+		if missed_index >= 0:
+			missed.remove_at(missed_index)
+	elif not missed.has(qid):
+		missed.append(qid)
+	trace_missed_by_module[mid] = missed
+	SaveService.save_game()
+
+
+func _empty_trace_history() -> Dictionary:
+	var history: Dictionary = {}
+	for i in TRACE_MODULE_IDS.size():
+		history[str(TRACE_MODULE_IDS[i])] = []
+	return history
+
+
+func _ensure_trace_history() -> void:
+	if trace_seen_by_module.is_empty():
+		trace_seen_by_module = _empty_trace_history()
+	if trace_missed_by_module.is_empty():
+		trace_missed_by_module = _empty_trace_history()
+	for i in TRACE_MODULE_IDS.size():
+		var module_id: String = str(TRACE_MODULE_IDS[i])
+		if not trace_seen_by_module.has(module_id) or typeof(trace_seen_by_module[module_id]) != TYPE_ARRAY:
+			trace_seen_by_module[module_id] = []
+		if not trace_missed_by_module.has(module_id) or typeof(trace_missed_by_module[module_id]) != TYPE_ARRAY:
+			trace_missed_by_module[module_id] = []
+
+
+func _trace_id_list(store: Dictionary, module_id: String) -> Array[String]:
+	_ensure_trace_history()
+	var result: Array[String] = []
+	var mid: String = module_id.strip_edges()
+	if mid.is_empty() or not store.has(mid):
+		return result
+	var stored: Variant = store[mid]
+	if typeof(stored) != TYPE_ARRAY:
+		return result
+	var rows: Array = stored as Array
+	for i in rows.size():
+		var qid: String = str(rows[i]).strip_edges()
+		if qid.is_empty() or result.has(qid):
+			continue
+		result.append(qid)
+	return result
+
+
+func _normalize_trace_history(raw: Variant) -> Dictionary:
+	var history: Dictionary = _empty_trace_history()
+	if typeof(raw) != TYPE_DICTIONARY:
+		return history
+	var saved: Dictionary = raw as Dictionary
+	for i in TRACE_MODULE_IDS.size():
+		var module_id: String = str(TRACE_MODULE_IDS[i])
+		if not saved.has(module_id) or typeof(saved[module_id]) != TYPE_ARRAY:
+			continue
+		var ids: Array[String] = []
+		var rows: Array = saved[module_id] as Array
+		for j in rows.size():
+			var qid: String = str(rows[j]).strip_edges()
+			if qid.is_empty() or ids.has(qid):
+				continue
+			ids.append(qid)
+		history[module_id] = ids
+	return history
+
+
 func quiz_gold_reward(is_correct: bool, skill_id: String = "phishing") -> int:
 	var base_gold: int = 5 if is_correct else 2
 	var p_learned: float = get_mastery(skill_id)
@@ -518,6 +613,8 @@ func get_save_data() -> Dictionary:
 		"tutorial_complete": tutorial_complete,
 		"has_intel_bonus": has_intel_bonus,
 		"intel_bonus_module": intel_bonus_module,
+		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
+		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
 	}
 
 
@@ -649,6 +746,15 @@ func apply_save_data(data: Dictionary) -> void:
 			has_intel_bonus = int(bonus_raw) != 0
 	if data.has("intel_bonus_module"):
 		intel_bonus_module = str(data["intel_bonus_module"])
+
+	if data.has("trace_seen_by_module"):
+		trace_seen_by_module = _normalize_trace_history(data["trace_seen_by_module"])
+	else:
+		trace_seen_by_module = _empty_trace_history()
+	if data.has("trace_missed_by_module"):
+		trace_missed_by_module = _normalize_trace_history(data["trace_missed_by_module"])
+	else:
+		trace_missed_by_module = _empty_trace_history()
 
 	if module_1_complete:
 		cleared_stages[10] = true

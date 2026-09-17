@@ -16,6 +16,8 @@ signal screen_changed(screen_id: StringName)
 
 var is_tutorial: bool = false
 var tutorial_beat: StringName = &""
+var active_stage_index: int = 0
+var active_module_id: String = "mod_01"
 
 const SCREENS: Dictionary = {
 	&"splash":       "res://src/ui/screens/intro/splash_screen.tscn",
@@ -50,7 +52,6 @@ const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
 const PREVIEW_SCENE := "res://src/gameplay/preview/stage_one_preview.tscn"
 var active_match_context: MatchContext = MatchContext.new()
 
-var active_stage_index: int = 0
 var _host: Control = null
 var _stack: Array[BaseScreen] = []
 var _busy: bool = false
@@ -64,7 +65,7 @@ func register_host(host: Control) -> void:
 
 ## Hands off to the TD scene without change_scene_to_file(). Swapping the tree
 ## root would destroy Main.tscn (ScreenHost, quit dialog, the UI stack).
-func start_level(stage_index: int) -> void:
+func start_level(stage_index: int, module_id: String = "") -> void:
 	if _busy or _host == null:
 		push_error("Router: cannot start level (host not registered or busy)")
 		return
@@ -74,6 +75,10 @@ func start_level(stage_index: int) -> void:
 	if not ResourceLoader.exists(LEVEL_SCENE):
 		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
 		return
+	if not module_id.strip_edges().is_empty():
+		active_module_id = module_id.strip_edges()
+	elif active_module_id.strip_edges().is_empty():
+		active_module_id = "mod_01"
 	await _navigate(true, func() -> void: _begin_gameplay(stage_index))
 
 
@@ -91,6 +96,7 @@ func start_tutorial() -> void:
 		return
 	is_tutorial = true
 	tutorial_beat = &"match"
+	active_module_id = "mod_01"
 	await start_level(0)
 	if _gameplay == null or not is_instance_valid(_gameplay):
 		is_tutorial = false

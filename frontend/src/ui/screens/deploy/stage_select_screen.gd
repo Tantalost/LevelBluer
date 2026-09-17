@@ -270,7 +270,7 @@ func _is_complete(index: int) -> bool:
 
 func _td_index_for(module_index: int) -> int:
 	# Compatibility with the existing selection property, not an authored-stage count.
-	return module_index if module_index in [0, 1] else -1
+	return module_index if module_index in [0, 1, 2, 3, 4] else -1
 
 func _can_open() -> bool:
 	return not _modules.is_empty() and _is_unlocked(_selected)
