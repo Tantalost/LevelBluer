@@ -16,6 +16,13 @@ const CORE_LESSON_IDS: PackedStringArray = ["ports_basics", "firewalls_intro", "
 const MODULE_UNLOCK_LESSON := "mod1_all"
 const DEFAULT_SKILL_ID := "phishing"
 const MODULE_STAGE_COUNT := 10
+const MODULE_SKILL_IDS := {
+	"mod_01": "phishing",
+	"mod_02": "smishing",
+	"mod_03": "vishing",
+	"mod_04": "pretexting",
+	"mod_05": "baiting",
+}
 
 
 func _ready() -> void:
@@ -62,28 +69,62 @@ func get_questions() -> Dictionary:
 	return questions.duplicate(true)
 
 
-func get_stage_question_pool(stage_id: int) -> Array:
+func get_stage_question_pool(stage_id: int, module_id: String = "") -> Array:
 	if _stage_pools.is_empty():
 		_assign_stage_pools()
-	var key: String = str(clampi(stage_id, 1, MODULE_STAGE_COUNT))
-	if not _stage_pools.has(key):
+	var mid: String = module_id.strip_edges()
+	if mid.is_empty():
+		mid = "mod_01"
+	if not _stage_pools.has(mid):
 		return []
-	var stored: Variant = _stage_pools[key]
+	var module_pools: Variant = _stage_pools[mid]
+	if typeof(module_pools) != TYPE_DICTIONARY:
+		return []
+	var pools: Dictionary = module_pools as Dictionary
+	var key: String = str(clampi(stage_id, 1, MODULE_STAGE_COUNT))
+	if not pools.has(key):
+		return []
+	var stored: Variant = pools[key]
 	if typeof(stored) != TYPE_ARRAY:
 		return []
 	return (stored as Array).duplicate(true)
 
 
 func get_module_questions(module_id: String) -> Array:
-	var skill_id: String = str(_module_question_ids.get(module_id, DEFAULT_SKILL_ID))
+	var mid: String = module_id.strip_edges()
+	if mid.is_empty():
+		return []
+	var skill_id: String = skill_for_module(mid)
 	if skill_id.is_empty() or not questions.has(skill_id):
-		skill_id = DEFAULT_SKILL_ID
-	if not questions.has(skill_id):
 		return []
 	var stored: Variant = questions[skill_id]
 	if typeof(stored) != TYPE_ARRAY:
 		return []
-	return (stored as Array).duplicate(true)
+	var scoped: Array = []
+	var rows: Array = stored as Array
+	for i in rows.size():
+		var row: Variant = rows[i]
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		var item: Dictionary = (row as Dictionary).duplicate(true)
+		if str(item.get("module_id", mid)).strip_edges() != mid:
+			continue
+		if str(item.get("skill_id", "")).strip_edges().is_empty():
+			item["skill_id"] = skill_id
+		scoped.append(item)
+	return scoped
+
+
+func skill_for_module(module_id: String) -> String:
+	var mid: String = module_id.strip_edges()
+	if mid.is_empty():
+		return DEFAULT_SKILL_ID
+	var skill_id: String = str(_module_question_ids.get(mid, "")).strip_edges().to_lower()
+	if not skill_id.is_empty():
+		return skill_id
+	if MODULE_SKILL_IDS.has(mid):
+		return str(MODULE_SKILL_IDS[mid])
+	return ""
 
 
 func get_stage(stage_id: String) -> Dictionary:
@@ -386,6 +427,14 @@ func _load_question_bank() -> void:
 		push_error("ContentDB: Root is not a Dictionary in res://data/questions.json")
 		return
 	var raw: Dictionary = data as Dictionary
+	var modules_stored: Variant = raw.get("modules", [])
+	if typeof(modules_stored) == TYPE_ARRAY and not (modules_stored as Array).is_empty():
+		var modules: Array = modules_stored as Array
+		for i in modules.size():
+			var row: Variant = modules[i]
+			if typeof(row) == TYPE_DICTIONARY:
+				_ingest_module_bank(row as Dictionary)
+		return
 	if raw.has("question_types"):
 		_ingest_module_bank(raw)
 		return
@@ -434,7 +483,7 @@ func _ingest_module_bank(raw: Dictionary) -> void:
 
 func _assign_stage_pools() -> void:
 	_stage_pools.clear()
-	var by_type: Dictionary = {}
+	var by_module: Dictionary = {}
 	var skill_keys: Array = questions.keys()
 	for i in skill_keys.size():
 		var list_stored: Variant = questions[skill_keys[i]]
@@ -446,20 +495,43 @@ func _assign_stage_pools() -> void:
 			if typeof(row_stored) != TYPE_DICTIONARY:
 				continue
 			var item: Dictionary = (row_stored as Dictionary).duplicate(true)
-			var type_id: String = str(item.get("type_id", "other"))
-			if type_id.is_empty():
-				type_id = "other"
-			if not by_type.has(type_id):
-				by_type[type_id] = []
-			var bucket: Array = by_type[type_id]
-			bucket.append(item)
-			by_type[type_id] = bucket
+			var module_id: String = str(item.get("module_id", "mod_01")).strip_edges()
+			if module_id.is_empty():
+				module_id = "mod_01"
+			if not by_module.has(module_id):
+				by_module[module_id] = []
+			var module_rows: Array = by_module[module_id]
+			module_rows.append(item)
+			by_module[module_id] = module_rows
+	var module_ids: Array = by_module.keys()
+	module_ids.sort()
+	for m in module_ids.size():
+		var module_id: String = str(module_ids[m])
+		_stage_pools[module_id] = _build_module_stage_pools(module_id, by_module[module_id])
+
+
+func _build_module_stage_pools(module_id: String, items: Array) -> Dictionary:
+	var by_type: Dictionary = {}
+	for j in items.size():
+		var row_stored: Variant = items[j]
+		if typeof(row_stored) != TYPE_DICTIONARY:
+			continue
+		var item: Dictionary = row_stored as Dictionary
+		var type_id: String = str(item.get("type_id", "other"))
+		if type_id.is_empty():
+			type_id = "other"
+		if not by_type.has(type_id):
+			by_type[type_id] = []
+		var bucket: Array = by_type[type_id]
+		bucket.append(item)
+		by_type[type_id] = bucket
 	var type_ids: Array = by_type.keys()
 	type_ids.sort()
 	for t in type_ids.size():
 		var group: Array = by_type[type_ids[t]]
 		group.sort_custom(_sort_stage_questions)
 		by_type[type_ids[t]] = group
+	var pools: Dictionary = {}
 	var stage_total: int = MODULE_STAGE_COUNT
 	if stages.size() > 0:
 		stage_total = maxi(1, stages.size())
@@ -496,8 +568,9 @@ func _assign_stage_pools() -> void:
 				if pool.size() >= target_size:
 					break
 			offset += 1
-		_stage_pools[str(stage_n)] = pool
-		print("[ContentDB] Stage ", stage_n, " TRACE pool: ", pool.size(), " unique items")
+		pools[str(stage_n)] = pool
+		print("[ContentDB] ", module_id, " TRACE pool: stage=", stage_n, " size=", pool.size())
+	return pools
 
 
 func _stage_question_target(stage_n: int, baseline: int) -> int:

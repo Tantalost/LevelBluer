@@ -128,12 +128,27 @@ func _run() -> void:
 	screen.on_resume()
 	await settle()
 	check(screen._completion.value == 10 and screen._cleared_count() == 10, "Full completion shown")
-	for module in range(1, 5):
-		screen.on_enter({"module_index": module})
-		await settle()
-		check(screen._authored_count() == 0 and screen._cleared_count() == 0, "Unauthored modules excluded from totals")
-		check(screen._rows.is_empty() and screen._breach_button.disabled, "Coming soon has no fake deployable stages")
-	await capture("coming_soon")
+	screen.on_enter({"module_index": 1})
+	await settle()
+	check(screen._authored_count() == 10, "Ten authored Module 2 stages")
+	for i in 10:
+		check(screen._launch_index(i) == i, "Module 2 uses the same zero-based gameplay route index")
+	screen.on_enter({"module_index": 2})
+	await settle()
+	check(screen._authored_count() == 10, "Ten authored Module 3 stages")
+	for i in 10:
+		check(screen._launch_index(i) == i, "Module 3 uses the same zero-based gameplay route index")
+	screen.on_enter({"module_index": 3})
+	await settle()
+	check(screen._authored_count() == 10, "Ten authored Module 4 stages")
+	for i in 10:
+		check(screen._launch_index(i) == i, "Module 4 uses the same zero-based gameplay route index")
+	screen.on_enter({"module_index": 4})
+	await settle()
+	check(screen._authored_count() == 10, "Ten authored Module 5 stages")
+	for i in 10:
+		check(screen._launch_index(i) == i, "Module 5 uses the same zero-based gameplay route index")
+	await capture("all_authored")
 	screen.on_enter({"module_index": 0})
 	p.lesson_progress.clear()
 	p.completed_lessons.clear()

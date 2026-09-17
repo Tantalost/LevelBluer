@@ -31,6 +31,8 @@ var exam_questions_asked: int = 0
 var exam_questions_correct: int = 0
 var exam_history: Array[String] = []
 var _asked_question_ids: Array[String] = []
+var _exam_deck: Array[Dictionary] = []
+var _exam_deck_index: int = 0
 var _wave_questions_asked: int = 0
 var _quiz_time_left: float = 0.0
 var _quiz_time_limit: float = QUESTION_TIME_SEC
@@ -653,6 +655,8 @@ func _load_stage_config() -> void:
 		_wave_questions_asked = 0
 		exam_history.clear()
 		_asked_question_ids.clear()
+		_exam_deck.clear()
+		_exam_deck_index = 0
 		current_gold = 0
 		_wave_total_enemies = _current_wave_enemy_count()
 		_wave_intel_hidden = false
@@ -671,6 +675,8 @@ func _load_stage_config() -> void:
 	_wave_questions_asked = 0
 	exam_history.clear()
 	_asked_question_ids.clear()
+	_exam_deck.clear()
+	_exam_deck_index = 0
 	var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
 	current_gold = _apply_intel_bonus_gold(int(gold_stored))
 	_wave_intel_hidden = false
@@ -678,6 +684,9 @@ func _load_stage_config() -> void:
 	_bkt_frozen = PlayerManager.has_cleared_stage(stage_id)
 	if _bkt_frozen:
 		print("[BKT] Stage ", stage_id, " already cleared. P(L) frozen for this replay.")
+	if _is_summative():
+		_exam_deck = _build_exam_deck()
+		_exam_deck_index = 0
 	print("[Stage] Loaded " + str(current_stage_config.get("name", "Unknown")) + " (id " + str(stage_id) + ")")
 
 
@@ -871,10 +880,8 @@ func _load_next_question() -> void:
 		return
 	if _is_summative() and exam_questions_asked < _exam_question_count():
 		current_question = _pick_summative_question()
-	elif _is_formative():
-		current_question = _pick_adaptive_question(true)
 	else:
-		current_question = _pick_adaptive_question(false)
+		current_question = _pick_adaptive_question()
 	if current_question.is_empty():
 		push_error("LevelManager: failed to load a question")
 		return
@@ -920,32 +927,79 @@ func _on_quiz_time_expired() -> void:
 	_finish_quiz_answer(false)
 
 
-func _pick_adaptive_question(chase_weak: bool) -> Dictionary:
-	var pool: Array[Dictionary] = _current_stage_question_pool()
-	if pool.is_empty():
-		push_error("LevelManager: stage question pool is empty")
+func _pick_adaptive_question() -> Dictionary:
+	var module_id: String = _current_module_id()
+	var skill_id: String = _current_module_skill()
+	if skill_id.is_empty():
+		push_error("LevelManager: no BKT skill for module %s" % module_id)
 		return {}
-	var target_skill: String = str(pool[0].get("skill_id", "phishing"))
-	if chase_weak:
-		target_skill = PlayerManager.get_weakest_skill()
-	var preferred: String = PlayerManager.preferred_difficulty(target_skill)
-	if not chase_weak and randf() > 0.5:
-		preferred = ""
-	var selected: Dictionary = _select_from_pool(pool, preferred, _asked_question_ids)
+	var pool: Array[Dictionary] = _module_question_pool()
+	if pool.is_empty():
+		push_error("LevelManager: TRACE bank unavailable for %s" % module_id)
+		return {}
+	var seen: Array[String] = PlayerManager.get_trace_seen(module_id)
+	var missed: Array[String] = PlayerManager.get_trace_missed(module_id)
+	var preferred: String = PlayerManager.preferred_difficulty(skill_id)
+	var unseen: Array[Dictionary] = _questions_not_in(pool, seen)
+	var working: Array[Dictionary] = unseen
+	var reason_prefix: String = "preferred_difficulty+least_used_type"
+	if working.is_empty():
+		var review: Array[Dictionary] = _questions_with_ids(pool, missed)
+		review = _questions_not_in(review, _asked_question_ids)
+		if review.is_empty():
+			working = _questions_not_in(pool, _asked_question_ids)
+			reason_prefix = "review_seen"
+		else:
+			working = review
+			reason_prefix = "review_missed"
+		if working.is_empty():
+			working = pool.duplicate()
+	var usage_seen: Array[String] = seen.duplicate()
+	for i in _asked_question_ids.size():
+		var asked_id: String = _asked_question_ids[i]
+		if not usage_seen.has(asked_id):
+			usage_seen.append(asked_id)
+	var selected: Dictionary = {}
+	var ranked: PackedStringArray = _ranked_difficulties(preferred, working, pool, usage_seen)
+	var selected_reason: String = reason_prefix
+	for i in ranked.size():
+		var difficulty: String = ranked[i]
+		var matched: Array[Dictionary] = _questions_with_difficulty(working, difficulty)
+		if matched.is_empty():
+			continue
+		selected = _pick_type_balanced(matched, usage_seen, pool)
+		if selected.is_empty():
+			continue
+		if difficulty != preferred:
+			selected_reason = "no_unseen_%s" % preferred
+			if reason_prefix.begins_with("review"):
+				selected_reason = "%s+%s" % [reason_prefix, selected_reason]
+		elif reason_prefix.begins_with("review"):
+			selected_reason = reason_prefix
+		break
+	if selected.is_empty() and not working.is_empty():
+		selected = _pick_type_balanced(working, usage_seen, pool)
+		selected_reason = "no_unseen_%s" % preferred
 	if selected.is_empty():
 		return {}
-	selected["skill_id"] = str(selected.get("skill_id", target_skill))
+	selected["skill_id"] = str(selected.get("skill_id", skill_id))
 	_remember_question(selected, _asked_question_ids)
-	print(
-		"[BKT] TRACE stage=%d id=%s type=%s diff=%s P(L)=%.2f"
-		% [
-			_current_stage_id(),
-			_question_key(selected),
-			str(selected.get("type_id", "?")),
-			str(selected.get("difficulty", "?")),
-			PlayerManager.get_mastery(str(selected["skill_id"])),
-		]
-	)
+	var unseen_remaining: int = _questions_not_in(pool, seen).size()
+	if not seen.has(_question_key(selected)):
+		unseen_remaining = maxi(0, unseen_remaining - 1)
+	print("[TRACE SELECT]")
+	print("module=%s" % module_id)
+	print("skill=%s" % skill_id)
+	print("stage=%d" % _current_stage_id())
+	print("P(L)=%.2f" % PlayerManager.get_mastery(skill_id))
+	print("preferred=%s" % preferred)
+	print("selected=%s" % _question_key(selected))
+	print("type=%s" % _question_type_id(selected))
+	print("difficulty=%s" % _question_difficulty(selected))
+	print("unseen_remaining=%d" % unseen_remaining)
+	print("reason=%s" % selected_reason)
+	if _question_difficulty(selected) != preferred:
+		print("selected_difficulty=%s" % _question_difficulty(selected))
 	return selected
 
 
@@ -954,16 +1008,78 @@ func _current_stage_id() -> int:
 
 
 func _current_stage_question_pool() -> Array[Dictionary]:
-	var raw: Array = ContentDB.get_stage_question_pool(_current_stage_id())
+	var module_id: String = _current_module_id()
+	var raw: Array = ContentDB.get_stage_question_pool(_current_stage_id(), module_id)
 	var pool: Array[Dictionary] = []
 	for i in raw.size():
 		var row: Variant = raw[i]
 		if typeof(row) != TYPE_DICTIONARY:
 			continue
-		pool.append((row as Dictionary).duplicate(true))
+		var item: Dictionary = (row as Dictionary).duplicate(true)
+		if str(item.get("module_id", module_id)) != module_id:
+			continue
+		pool.append(item)
 	if not pool.is_empty():
 		return pool
-	return _skill_question_pool(ContentDB.get_questions(), "phishing")
+	var skill_id: String = _current_module_skill()
+	if skill_id.is_empty():
+		return []
+	var fallback: Array[Dictionary] = _skill_question_pool(ContentDB.get_questions(), skill_id)
+	var scoped: Array[Dictionary] = []
+	for i in fallback.size():
+		var item: Dictionary = fallback[i]
+		if str(item.get("module_id", module_id)) != module_id:
+			continue
+		scoped.append(item)
+	return scoped
+
+
+func _module_question_pool() -> Array[Dictionary]:
+	var module_id: String = _current_module_id()
+	var skill_id: String = _current_module_skill()
+	if skill_id.is_empty():
+		return []
+	var raw: Array = ContentDB.get_module_questions(module_id)
+	var pool: Array[Dictionary] = []
+	for i in raw.size():
+		var row: Variant = raw[i]
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		var item: Dictionary = (row as Dictionary).duplicate(true)
+		if str(item.get("module_id", module_id)).strip_edges() != module_id:
+			continue
+		if str(item.get("skill_id", "")).strip_edges().is_empty():
+			item["skill_id"] = skill_id
+		if str(item.get("skill_id", "")).strip_edges().to_lower() != skill_id:
+			continue
+		pool.append(item)
+	return pool
+
+
+func _current_module_id() -> String:
+	var module_id: String = str(Router.active_module_id).strip_edges()
+	if module_id.is_empty():
+		return "mod_01"
+	return module_id
+
+
+func _current_module_skill() -> String:
+	var skill_id: String = ContentDB.skill_for_module(_current_module_id())
+	if not skill_id.is_empty():
+		return skill_id
+	match _current_module_id():
+		"mod_01":
+			return "phishing"
+		"mod_02":
+			return "smishing"
+		"mod_03":
+			return "vishing"
+		"mod_04":
+			return "pretexting"
+		"mod_05":
+			return "baiting"
+		_:
+			return ""
 
 
 func _skill_question_pool(question_bank: Dictionary, skill_id: String) -> Array[Dictionary]:
@@ -985,28 +1101,22 @@ func _skill_question_pool(question_bank: Dictionary, skill_id: String) -> Array[
 	return pool
 
 
-func _select_from_pool(pool: Array[Dictionary], preferred: String, seen: Array[String]) -> Dictionary:
-	var unseen: Array[Dictionary] = _questions_not_in(pool, seen)
-	var working: Array[Dictionary] = unseen if not unseen.is_empty() else pool
-	if working.is_empty():
-		return {}
-	var ranked: PackedStringArray = PackedStringArray()
-	if not preferred.is_empty():
-		ranked.append(preferred)
-		ranked.append_array(_adjacent_difficulties(preferred))
-	for i in ranked.size():
-		var matched: Array[Dictionary] = _questions_with_difficulty(working, ranked[i])
-		if not matched.is_empty():
-			return matched[randi() % matched.size()]
-	return working[randi() % working.size()]
-
-
 func _questions_not_in(pool: Array[Dictionary], seen: Array[String]) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	for i in pool.size():
 		if seen.has(_question_key(pool[i])):
 			continue
 		result.append(pool[i])
+	return result
+
+
+func _questions_with_ids(pool: Array[Dictionary], wanted_ids: Array[String]) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if wanted_ids.is_empty():
+		return result
+	for i in pool.size():
+		if wanted_ids.has(_question_key(pool[i])):
+			result.append(pool[i])
 	return result
 
 
@@ -1023,6 +1133,81 @@ func _question_difficulty(q: Dictionary) -> String:
 	if value == "easy" or value == "medium" or value == "hard":
 		return value
 	return ""
+
+
+func _question_type_id(q: Dictionary) -> String:
+	var type_id: String = str(q.get("type_id", "")).strip_edges()
+	if type_id.is_empty():
+		return "other"
+	return type_id
+
+
+func _type_usage_counts(pool: Array[Dictionary], seen: Array[String]) -> Dictionary:
+	var counts: Dictionary = {}
+	for i in pool.size():
+		if not seen.has(_question_key(pool[i])):
+			continue
+		var type_id: String = _question_type_id(pool[i])
+		counts[type_id] = int(counts.get(type_id, 0)) + 1
+	return counts
+
+
+func _pick_type_balanced(candidates: Array[Dictionary], usage_seen: Array[String], pool: Array[Dictionary]) -> Dictionary:
+	if candidates.is_empty():
+		return {}
+	var counts: Dictionary = _type_usage_counts(pool, usage_seen)
+	var min_count: int = 999999
+	for i in candidates.size():
+		var type_id: String = _question_type_id(candidates[i])
+		var used: int = int(counts.get(type_id, 0))
+		if used < min_count:
+			min_count = used
+	var best: Array[Dictionary] = []
+	for i in candidates.size():
+		var type_id: String = _question_type_id(candidates[i])
+		if int(counts.get(type_id, 0)) == min_count:
+			best.append(candidates[i])
+	if best.is_empty():
+		return candidates[randi() % candidates.size()]
+	return best[randi() % best.size()]
+
+
+func _balanced_candidate_count(candidates: Array[Dictionary], usage_seen: Array[String], pool: Array[Dictionary]) -> int:
+	if candidates.is_empty():
+		return 0
+	var counts: Dictionary = _type_usage_counts(pool, usage_seen)
+	var min_count: int = 999999
+	for i in candidates.size():
+		var used: int = int(counts.get(_question_type_id(candidates[i]), 0))
+		if used < min_count:
+			min_count = used
+	var total: int = 0
+	for i in candidates.size():
+		if int(counts.get(_question_type_id(candidates[i]), 0)) == min_count:
+			total += 1
+	return total
+
+
+func _ranked_difficulties(preferred: String, working: Array[Dictionary], pool: Array[Dictionary], usage_seen: Array[String]) -> PackedStringArray:
+	match preferred:
+		"easy":
+			return PackedStringArray(["easy", "medium", "hard"])
+		"hard":
+			return PackedStringArray(["hard", "medium", "easy"])
+		"medium":
+			if not _questions_with_difficulty(working, "medium").is_empty():
+				return PackedStringArray(["medium", "easy", "hard"])
+			var easy_best: int = _balanced_candidate_count(_questions_with_difficulty(working, "easy"), usage_seen, pool)
+			var hard_best: int = _balanced_candidate_count(_questions_with_difficulty(working, "hard"), usage_seen, pool)
+			if hard_best > easy_best:
+				return PackedStringArray(["hard", "easy"])
+			if easy_best > hard_best:
+				return PackedStringArray(["easy", "hard"])
+			if randf() < 0.5:
+				return PackedStringArray(["easy", "hard"])
+			return PackedStringArray(["hard", "easy"])
+		_:
+			return PackedStringArray(["easy", "medium", "hard"])
 
 
 func _adjacent_difficulties(preferred: String) -> PackedStringArray:
@@ -1044,35 +1229,103 @@ func _remember_question(q: Dictionary, history: Array[String]) -> void:
 	history.append(key)
 
 
-func _pick_summative_question() -> Dictionary:
-	var question_bank: Dictionary = ContentDB.get_questions()
-	var all_questions: Array[Dictionary] = []
-	var skill_ids: Array = question_bank.keys()
-	for i in skill_ids.size():
-		var skill_id: String = str(skill_ids[i])
-		var list_stored: Variant = question_bank[skill_id]
-		var q_list: Array = list_stored as Array
-		for j in q_list.size():
-			var q_stored: Variant = q_list[j]
-			if typeof(q_stored) != TYPE_DICTIONARY:
+func _take_balanced_count(candidates: Array[Dictionary], needed: int, type_counts: Dictionary) -> Array[Dictionary]:
+	var remaining: Array[Dictionary] = candidates.duplicate()
+	remaining.shuffle()
+	var picked: Array[Dictionary] = []
+	while picked.size() < needed and not remaining.is_empty():
+		var min_count: int = 999999
+		for i in remaining.size():
+			var used: int = int(type_counts.get(_question_type_id(remaining[i]), 0))
+			if used < min_count:
+				min_count = used
+		var chosen_index: int = -1
+		for i in remaining.size():
+			if int(type_counts.get(_question_type_id(remaining[i]), 0)) == min_count:
+				chosen_index = i
+				break
+		if chosen_index < 0:
+			break
+		var chosen: Dictionary = remaining[chosen_index]
+		picked.append(chosen)
+		remaining.remove_at(chosen_index)
+		var type_id: String = _question_type_id(chosen)
+		type_counts[type_id] = int(type_counts.get(type_id, 0)) + 1
+	return picked
+
+
+func _build_exam_deck() -> Array[Dictionary]:
+	var module_id: String = _current_module_id()
+	var pool: Array[Dictionary] = _module_question_pool()
+	if pool.is_empty():
+		push_error("LevelManager: TRACE exam bank unavailable for %s" % module_id)
+		return []
+	var type_counts: Dictionary = {}
+	var picked: Array[Dictionary] = []
+	var picked_ids: Dictionary = {}
+	var quotas: Array = [["easy", 4], ["medium", 7], ["hard", 4]]
+	for q in quotas.size():
+		var difficulty: String = str(quotas[q][0])
+		var needed: int = int(quotas[q][1])
+		var available: Array[Dictionary] = []
+		var matched: Array[Dictionary] = _questions_with_difficulty(pool, difficulty)
+		for i in matched.size():
+			var qid: String = _question_key(matched[i])
+			if picked_ids.has(qid):
 				continue
-			var q_dict: Dictionary = (q_stored as Dictionary).duplicate(true)
-			if str(q_dict.get("skill_id", "")).is_empty():
-				q_dict["skill_id"] = skill_id
-			all_questions.append(q_dict)
-	if all_questions.is_empty():
-		push_error("LevelManager: question bank has no questions")
+			available.append(matched[i])
+		var taken: Array[Dictionary] = _take_balanced_count(available, needed, type_counts)
+		for i in taken.size():
+			var item: Dictionary = taken[i]
+			picked.append(item)
+			picked_ids[_question_key(item)] = true
+	if picked.size() < 15:
+		var leftover: Array[Dictionary] = []
+		for i in pool.size():
+			var qid: String = _question_key(pool[i])
+			if picked_ids.has(qid):
+				continue
+			leftover.append(pool[i])
+		var filler: Array[Dictionary] = _take_balanced_count(leftover, 15 - picked.size(), type_counts)
+		for i in filler.size():
+			picked.append(filler[i])
+			picked_ids[_question_key(filler[i])] = true
+	picked.shuffle()
+	var easy_n: int = 0
+	var medium_n: int = 0
+	var hard_n: int = 0
+	var unique_ids: Dictionary = {}
+	for i in picked.size():
+		unique_ids[_question_key(picked[i])] = true
+		match _question_difficulty(picked[i]):
+			"easy":
+				easy_n += 1
+			"hard":
+				hard_n += 1
+			_:
+				medium_n += 1
+	print("[TRACE EXAM]")
+	print("module=%s" % module_id)
+	print("questions=%d" % picked.size())
+	print("easy=%d" % easy_n)
+	print("medium=%d" % medium_n)
+	print("hard=%d" % hard_n)
+	print("unique=%d" % unique_ids.size())
+	return picked
+
+
+func _pick_summative_question() -> Dictionary:
+	if _exam_deck.is_empty():
+		_exam_deck = _build_exam_deck()
+		_exam_deck_index = 0
+	if _exam_deck_index >= _exam_deck.size():
+		push_error("LevelManager: TRACE exam deck exhausted")
 		return {}
-	var valid_questions: Array[Dictionary] = []
-	for i in all_questions.size():
-		var q: Dictionary = all_questions[i]
-		var qid: String = _question_key(q)
-		if not exam_history.has(qid):
-			valid_questions.append(q)
-	if valid_questions.is_empty():
-		exam_history.clear()
-		valid_questions = all_questions
-	var selected_q: Dictionary = valid_questions[randi() % valid_questions.size()]
+	var selected_q: Dictionary = _exam_deck[_exam_deck_index]
+	_exam_deck_index += 1
+	var skill_id: String = _current_module_skill()
+	if not skill_id.is_empty():
+		selected_q["skill_id"] = str(selected_q.get("skill_id", skill_id))
 	exam_history.append(_question_key(selected_q))
 	_remember_question(selected_q, _asked_question_ids)
 	return selected_q
@@ -1086,10 +1339,70 @@ func _question_key(q: Dictionary) -> String:
 
 
 func _current_skill_id() -> String:
-	var skill_id: String = str(current_question.get("skill_id", "phishing")).strip_edges()
+	var skill_id: String = str(current_question.get("skill_id", "")).strip_edges()
 	if skill_id.is_empty():
-		return "phishing"
-	return skill_id
+		skill_id = _current_module_skill()
+	if not skill_id.is_empty():
+		return skill_id
+	return "phishing"
+
+
+func _malicious_verdict_label(q: Dictionary) -> String:
+	var module_id: String = str(q.get("module_id", _current_module_id())).strip_edges().to_lower()
+	var skill_id: String = str(q.get("skill_id", "")).strip_edges().to_lower()
+	if module_id == "mod_05" or skill_id == "baiting":
+		return "BAITING"
+	if module_id == "mod_04" or skill_id == "pretexting":
+		return "PRETEXTING"
+	if module_id == "mod_03" or skill_id == "vishing":
+		return "VISHING"
+	if module_id == "mod_02" or skill_id == "smishing":
+		return "SMISHING"
+	return "PHISHING"
+
+
+func _display_type_label(q: Dictionary) -> String:
+	var type_id: String = str(q.get("type_id", "")).strip_edges()
+	var type_label: String = str(q.get("type_label", "")).strip_edges()
+	var module_id: String = str(q.get("module_id", _current_module_id())).strip_edges().to_lower()
+	var skill_id: String = str(q.get("skill_id", "")).strip_edges().to_lower()
+	if module_id == "mod_05" or skill_id == "baiting":
+		match type_id:
+			"sender_audit":
+				return "Source Audit"
+			"url_spoof":
+				return "Source & Action Check"
+			"tap_trap_lines":
+				return "Tap the Bait Lines"
+			"inbox_triage":
+				return "Offer Triage"
+			"consequence_choice":
+				return "Before You Plug or Download"
+	if module_id == "mod_04" or skill_id == "pretexting":
+		match type_id:
+			"sender_audit":
+				return "Role Audit"
+			"url_spoof":
+				return "Verification Check"
+			"tap_trap_lines":
+				return "Tap the Story Lines"
+			"inbox_triage":
+				return "Situation Triage"
+			"consequence_choice":
+				return "Before You Help"
+	if module_id == "mod_03" or skill_id == "vishing":
+		match type_id:
+			"sender_audit":
+				return "Caller Audit"
+			"url_spoof":
+				return "Callback Check"
+			"inbox_triage":
+				return "Call Triage"
+			"consequence_choice":
+				return "Before You Speak"
+	if not type_label.is_empty():
+		return type_label
+	return type_id
 
 
 func _record_bkt(skill_id: String, is_correct: bool, params: Dictionary = {}) -> void:
@@ -1125,7 +1438,7 @@ func _present_current_question() -> void:
 		return
 	_quiz_confirm.visible = false
 	if delivery == "binary_ab" or type_id == "trust_verdict":
-		_add_quiz_option("PHISHING", "phishing", false)
+		_add_quiz_option(_malicious_verdict_label(current_question), "phishing", false)
 		_add_quiz_option("LEGITIMATE", "legitimate", false)
 		return
 	if delivery == "true_false" or type_id == "safety_rule_tf":
@@ -1188,6 +1501,17 @@ func _format_prompt(q: Dictionary) -> String:
 		return prompt
 	var delivery: String = str(q.get("delivery", ""))
 	if delivery == "binary_ab":
+		var type_label: String = _display_type_label(q)
+		if not type_label.is_empty() and type_label != str(q.get("type_id", "")).strip_edges():
+			return type_label
+		if _malicious_verdict_label(q) == "BAITING":
+			return "Baiting or legitimate?"
+		if _malicious_verdict_label(q) == "PRETEXTING":
+			return "Pretexting or legitimate?"
+		if _malicious_verdict_label(q) == "VISHING":
+			return "Vishing or legitimate?"
+		if _malicious_verdict_label(q) == "SMISHING":
+			return "Smishing or legitimate?"
 		return "Phishing or legitimate?"
 	if delivery == "true_false":
 		return str(q.get("text", "")).strip_edges()
@@ -1366,6 +1690,8 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	if is_correct:
 		exam_questions_correct += 1
 	_record_bkt(_current_skill_id(), is_correct, PlayerManager.bkt_params_from(current_question))
+	if not Router.is_tutorial:
+		PlayerManager.record_trace_result(_current_module_id(), _question_key(current_question), is_correct)
 	if is_inside_tree():
 		await get_tree().create_timer(1.05).timeout
 	if current_phase != GamePhase.PHASE_1_QUIZ:
@@ -1468,7 +1794,7 @@ func _sync_phase_chrome() -> void:
 func _refresh_quiz_copy() -> void:
 	var exam: bool = _is_summative()
 	_quiz_file_label.text = "EXAM.DAT" if exam else "QTE.DAT"
-	var type_label: String = str(current_question.get("type_label", "")).strip_edges()
+	var type_label: String = _display_type_label(current_question)
 	if type_label.is_empty():
 		_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
 	else:

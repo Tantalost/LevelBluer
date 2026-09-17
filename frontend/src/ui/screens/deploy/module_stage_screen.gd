@@ -310,7 +310,7 @@ func _on_breach_pressed() -> void:
 	if not _active or not _can_play(_selected):
 		return
 	current_selected_stage = _launch_index(_selected)
-	Router.start_level(current_selected_stage)
+	Router.start_level(current_selected_stage, str(_module_entry().get("id", "mod_01")))
 
 func _status(index: int) -> String:
 	if _stage_config(index).is_empty():
@@ -337,7 +337,7 @@ func _can_play(index: int) -> bool:
 	return index >= 0 and index < STAGE_COUNT and _is_unlocked(index) and not _stage_config(index).is_empty()
 
 func _stage_id(index: int) -> int:
-	return index + 1 if _module_index == 0 and index >= 0 and index < STAGE_COUNT else -1
+	return index + 1 if _module_index in [0, 1, 2, 3, 4] and index >= 0 and index < STAGE_COUNT else -1
 
 func _launch_index(index: int) -> int:
 	return _stage_id(index) - 1 if _stage_id(index) > 0 else -1

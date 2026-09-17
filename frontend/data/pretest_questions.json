@@ -231,12 +231,12 @@
       "id": 1,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "What is smishing?",
+      "text": "You receive this text:\n\n\"GCash Security: Your wallet has been locked. Tap the link below immediately to restore access.\"\n\nWhat makes this most likely a smishing attempt?",
       "options": [
-        "Phone-call fraud",
-        "Social engineering using SMS or messaging apps",
-        "Malware that attacks SIM cards",
-        "Email spoofing"
+        "It mentions a mobile wallet",
+        "It uses a message to pressure you into taking an action",
+        "It was received on a phone",
+        "It contains the word \"Security\""
       ],
       "answer": 1,
       "difficulty": "easy",
@@ -246,27 +246,27 @@
       "id": 2,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "You receive:\n\n\"You won ₱50,000! Claim now.\"\n\nYou never entered a contest.\n\nWhat is most likely happening?",
+      "text": "A text claiming to be from your bank says:\n\n\"We detected an unauthorized payment. Reply with the 6-digit OTP we just sent so we can cancel it.\"\n\nWhat should you do?",
       "options": [
-        "Account verification",
-        "Software update",
-        "Bank notification",
-        "Smishing bait"
+        "Send the OTP because you did not make the payment",
+        "Send only the first three digits",
+        "Ask the sender to prove they work for the bank",
+        "Do not send the OTP and verify through the bank's official channel"
       ],
       "answer": 3,
       "difficulty": "easy",
-      "skill": "recognition"
+      "skill": "code_protection"
     },
     {
       "id": 3,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A text asks you to send your OTP. What should you do?",
+      "text": "You receive an unexpected delivery text containing a link to pay a small redelivery fee.\n\nWhat is the safest first action?",
       "options": [
-        "Never provide the OTP and verify independently",
-        "Send it",
-        "Send only half",
-        "Ask why they need it first"
+        "Open the courier's official app or website yourself and check the tracking information",
+        "Open the link because the fee is small",
+        "Reply asking whether the message is real",
+        "Forward the link to someone else to test it"
       ],
       "answer": 0,
       "difficulty": "easy",
@@ -276,57 +276,57 @@
       "id": 4,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A delivery message includes an unexpected link. Safest response?",
+      "text": "Which message is the strongest example of smishing?",
       "options": [
-        "Open the link",
-        "Reply with your address",
-        "Use the courier's official site/app independently",
-        "Ask someone else to open it"
+        "Your school app displays your normal class schedule",
+        "A courier app you already installed reports that your parcel was delivered",
+        "An unexpected SMS threatens to suspend your account unless you open a link",
+        "Your phone displays a low-battery warning"
       ],
       "answer": 2,
       "difficulty": "easy",
-      "skill": "safe_response"
+      "skill": "recognition"
     },
     {
       "id": 5,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "Why can shortened URLs be risky?",
+      "text": "You receive:\n\n\"Your student allowance is ready. Confirm at bit.ly/student-pay before 5 PM.\"\n\nWhy should the link increase your suspicion?",
       "options": [
-        "They always contain malware",
-        "They cannot use HTTPS",
-        "They only work on phones",
-        "They hide the actual destination"
+        "All bit.ly links are malware",
+        "Short links cannot use encryption",
+        "Schools cannot send links by SMS",
+        "The shortened link hides the actual destination"
       ],
       "answer": 3,
       "difficulty": "medium",
-      "skill": "url_analysis"
+      "skill": "link_analysis"
     },
     {
       "id": 6,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A bank SMS appears in the same conversation thread as legitimate bank notifications.\n\nDoes that guarantee authenticity?",
+      "text": "A message begins:\n\n\"GCash Alert\"\n\nand uses the correct company name and logo.\n\nWhat should you conclude?",
       "options": [
-        "Yes",
-        "No, sender information may be spoofed",
-        "Only on Android",
-        "Yes, if a bank logo appears"
+        "The message is legitimate because the brand is correct",
+        "A familiar brand name alone does not prove the sender is legitimate",
+        "The message is legitimate if it arrived in the morning",
+        "Companies cannot be impersonated by text"
       ],
       "answer": 1,
       "difficulty": "medium",
-      "skill": "sender_verification"
+      "skill": "sender_evaluation"
     },
     {
       "id": 7,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A message says:\n\n\"Your SIM expires tonight. Verify immediately.\"\n\nBest action?",
+      "text": "You receive:\n\n\"Your SIM will be disabled in 30 minutes. Verify at telecom-security-help.com.\"\n\nWhat is the safest action?",
       "options": [
-        "Open the provided link",
-        "Reply with your PIN",
-        "Contact your carrier using an official channel",
-        "Forward it to friends"
+        "Open the link but do not enter a password",
+        "Reply to the sender asking for more information",
+        "Contact your carrier through its official app, website, or known number",
+        "Ask a friend to open the link first"
       ],
       "answer": 2,
       "difficulty": "medium",
@@ -336,72 +336,72 @@
       "id": 8,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "Your friend's real Messenger account sends an unusual login link.\n\nWhat may have happened?",
+      "text": "Someone messages you from a new number:\n\n\"Hi, this is Mom. My phone broke. Please send ₱4,000 now.\"\n\nWhat is the strongest way to verify the request?",
       "options": [
-        "Their account could be compromised",
-        "The link must be safe",
-        "Messenger verified the link",
-        "Friends cannot send malicious links"
+        "Contact your mother through a previously trusted method or another trusted family member",
+        "Ask the sender to tell you your birthday",
+        "Send a smaller amount first",
+        "Ask for a photo"
       ],
       "answer": 0,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "verification"
     },
     {
       "id": 9,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "Someone messages:\n\n\"Mom, new number. I lost my phone. Send ₱5,000.\"\n\nBest verification?",
+      "text": "A text says:\n\n\"Your ₱6,800 charge becomes permanent in 10 minutes. Tap now for a refund.\"\n\nWhat social-engineering technique is being used most clearly?",
       "options": [
-        "Ask for your birthday",
-        "Send ₱500 first",
-        "Ask for a selfie",
-        "Contact your mother through an existing trusted channel"
+        "Encryption",
+        "Password cracking",
+        "Software installation",
+        "Urgency and fear of losing money"
       ],
       "answer": 3,
       "difficulty": "medium",
-      "skill": "verification"
+      "skill": "urgency_detection"
     },
     {
       "id": 10,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "Which request is most suspicious?",
+      "text": "Which message should you be most likely to report as suspicious?",
       "options": [
-        "Open the official app to review your transaction.",
-        "Reply with your OTP to cancel this transaction.",
-        "Your monthly statement is available.",
-        "Visit a branch if you need assistance."
+        "\"Your monthly pass renews tomorrow. View details in the app you already use.\"",
+        "\"Your wallet is frozen. Send your OTP here within five minutes.\"",
+        "\"Your parcel was delivered successfully.\"",
+        "\"Your bookstore reservation is available for pickup at the counter.\""
       ],
       "answer": 1,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "triage"
     },
     {
       "id": 11,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A QR code arrives by SMS for \"account verification.\"\n\nWhat should you do?",
+      "text": "You receive:\n\n\"MetroRide refund: metro-ride-help.tk/refund\"\n\nThe real company's known website is:\n\n\"metroride.ph\"\n\nWhat is the strongest warning sign?",
       "options": [
-        "Scan it with another phone",
-        "Scan it while using mobile data",
-        "Verify through the official service instead",
-        "Scan it but don't type anything"
+        "The text uses the word \"refund\"",
+        "The message was sent by SMS",
+        "The destination uses a different domain from the company's known domain",
+        "The link contains a slash"
       ],
       "answer": 2,
       "difficulty": "medium",
-      "skill": "safe_response"
+      "skill": "link_analysis"
     },
     {
       "id": 12,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A message correctly identifies your name and recent online purchase.\n\nDoes that prove legitimacy?",
+      "text": "A message knows your full name, phone number, and the store where you recently made a purchase.\n\nDoes this prove the text is legitimate?",
       "options": [
-        "Yes",
-        "Only if the amount is correct",
-        "Yes, because scammers do not know purchase information",
-        "No; personal information can be leaked or obtained elsewhere"
+        "Yes, because scammers cannot know recent purchases",
+        "Yes, if your phone number is also correct",
+        "Only if the message has no spelling errors",
+        "No; personal information can be leaked, purchased, guessed, or obtained elsewhere"
       ],
       "answer": 3,
       "difficulty": "hard",
@@ -411,27 +411,27 @@
       "id": 13,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "A sender claims to be your bank and provides a link using HTTPS.\n\nWhat does HTTPS prove?",
+      "text": "Your school normally uses:\n\n\"westfield.edu\"\n\nWhich link is most suspicious?",
       "options": [
-        "The sender is your bank",
-        "The connection to that website is encrypted, not that the site is legitimate",
-        "The site has been approved by the bank",
-        "Your OTP is safe to enter"
+        "https://portal.westfield.edu",
+        "https://westfield.edu.verify-account.net",
+        "https://library.westfield.edu",
+        "https://westfield.edu"
       ],
       "answer": 1,
       "difficulty": "hard",
-      "skill": "url_analysis"
+      "skill": "domain_analysis"
     },
     {
       "id": 14,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "Which is the strongest verification?",
+      "text": "A suspicious bank text contains a phone number and says:\n\n\"Call this number immediately if this transaction wasn't yours.\"\n\nWhat is the strongest verification method?",
       "options": [
-        "Opening your bank's official app independently",
-        "Replying to the suspicious message",
-        "Calling the number contained in the message",
-        "Checking whether the sender knows your name"
+        "Ignore the supplied number and use the number from the official banking app, card, or website",
+        "Call the number in the text because it claims to be fraud support",
+        "Reply to the text first",
+        "Search the phone number inside the message"
       ],
       "answer": 0,
       "difficulty": "hard",
@@ -441,12 +441,12 @@
       "id": 15,
       "topic": "Smishing",
       "type": "multiple_choice",
-      "text": "What feature connects most smishing attacks?",
+      "text": "Which feature is common across fake delivery texts, fake wallet warnings, prize texts, and account-suspension texts?",
       "options": [
-        "They always contain spelling errors",
-        "They always request money",
-        "They attempt to trigger an unsafe action through a message",
-        "They always use shortened links"
+        "They always contain shortened URLs",
+        "They always ask directly for money",
+        "They use a message to create trust, fear, urgency, or temptation so the victim takes an unsafe action",
+        "They always impersonate a bank"
       ],
       "answer": 2,
       "difficulty": "hard",
@@ -458,12 +458,12 @@
       "id": 1,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "Vishing primarily uses:",
+      "text": "Which situation is the strongest example of vishing?",
       "options": [
-        "Voice calls",
-        "Email",
-        "USB drives",
-        "Websites only"
+        "An unexpected caller claims to be your bank and asks you to read a one-time code",
+        "A website displays a fake login page",
+        "An email contains a suspicious attachment",
+        "A stranger leaves a USB drive in a hallway"
       ],
       "answer": 0,
       "difficulty": "easy",
@@ -473,119 +473,119 @@
       "id": 2,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A bank caller asks for your OTP.\n\nWhat should you do?",
+      "text": "A caller says:\n\n\"This is your bank's fraud desk. A ₱12,000 transfer is pending. Read me the 6-digit code we just sent so I can cancel it.\"\n\nWhat should you do?",
       "options": [
-        "Provide it",
-        "Give only half",
-        "Refuse and verify independently",
-        "Text it instead"
+        "Read the code because the caller is trying to stop fraud",
+        "Give only part of the code",
+        "Do not give the code; hang up and contact the bank independently",
+        "Ask the caller to repeat your account number first"
       ],
       "answer": 2,
       "difficulty": "easy",
-      "skill": "credential_protection"
+      "skill": "code_protection"
     },
     {
       "id": 3,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "Can caller ID alone prove who is calling?",
+      "text": "Your phone displays \"WESTFIELD REGISTRAR\" when someone calls.\n\nWhat does this prove?",
       "options": [
-        "Yes",
-        "No",
-        "Only for banks",
-        "Only for local calls"
+        "The caller definitely works for the school",
+        "Very little; caller ID information can be spoofed or manipulated",
+        "The phone company verified the caller",
+        "The call is legitimate if the caller knows your name"
       ],
       "answer": 1,
       "difficulty": "easy",
-      "skill": "sender_verification"
+      "skill": "caller_id"
     },
     {
       "id": 4,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A caller demands payment using gift cards to avoid arrest.\n\nWhat is most likely?",
+      "text": "What is the safest way to verify an unexpected bank call?",
       "options": [
-        "A normal government procedure",
-        "A bank verification process",
-        "Technical support",
-        "Vishing/social engineering"
+        "Ask the caller more security questions",
+        "Call the number shown in your recent-call list",
+        "Ask the caller to send you a text",
+        "Hang up and dial the bank using a number from your card or official app"
       ],
       "answer": 3,
       "difficulty": "easy",
-      "skill": "recognition"
+      "skill": "verification"
     },
     {
       "id": 5,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A caller says:\n\n\"Do not hang up or your account will be permanently closed.\"\n\nWhat tactic is being used?",
+      "text": "A caller claiming to be your bank knows the last four digits of a card you actually own.\n\nWhat should you conclude?",
       "options": [
-        "Encryption",
-        "Malware",
-        "Urgency and pressure",
-        "Password cracking"
+        "They have proven they work for the bank",
+        "Knowing one true detail does not prove the caller's identity",
+        "The call is safe unless they ask for your password",
+        "Only bank employees can know partial card information"
       ],
-      "answer": 2,
+      "answer": 1,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "evidence_evaluation"
     },
     {
       "id": 6,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "Someone claiming to be IT support asks for remote access to your computer.\n\nSafest response?",
+      "text": "A caller says:\n\n\"Do not hang up. If you disconnect, we cannot stop the transaction.\"\n\nWhat is the safest response?",
       "options": [
-        "Refuse and independently contact IT",
-        "Allow access",
-        "Give temporary access",
-        "Share your password instead"
+        "Hang up and independently contact the real organization",
+        "Stay on the line until the problem is fixed",
+        "Give the caller basic information but no password",
+        "Put the call on speaker and ask a friend"
       ],
       "answer": 0,
       "difficulty": "medium",
-      "skill": "safe_response"
+      "skill": "pressure_resistance"
     },
     {
       "id": 7,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A caller knows your full name.\n\nWhat does this prove?",
+      "text": "Why might a scammer ask you to read a one-time code aloud?",
       "options": [
-        "They are legitimate",
-        "They work for your bank",
-        "They have passed authentication",
-        "Very little; names can be publicly available or leaked"
+        "To check whether your phone works",
+        "To identify your mobile network",
+        "To create a support ticket",
+        "The code may allow them to approve a login, payment, or account change"
       ],
       "answer": 3,
       "difficulty": "medium",
-      "skill": "evidence_evaluation"
+      "skill": "consequence_awareness"
     },
     {
       "id": 8,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A caller claiming to be your bank asks for your CVV.\n\nBest response?",
+      "text": "Campus IT calls and says:\n\n\"Your account is logged in from another city. Stay on the line and read the code that just arrived.\"\n\nWhat should you do?",
       "options": [
-        "Provide it if they know your name",
-        "Refuse and contact the bank independently",
-        "Provide only one digit",
-        "Ask them to call again"
+        "Read the code if they know your student number",
+        "Ask for their employee ID, then continue",
+        "Hang up and contact campus IT using the school's known contact information",
+        "Wait for another code and give them that one instead"
       ],
-      "answer": 1,
+      "answer": 2,
       "difficulty": "medium",
-      "skill": "credential_protection"
+      "skill": "safe_response"
     },
     {
       "id": 9,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "You receive a suspicious call from a displayed bank number.\n\nHow should you verify it?",
+      "text": "Which situation provides the strongest reason to trust a support call?",
       "options": [
-        "Call the official number from your card or bank app",
-        "Redial the displayed number",
-        "Ask the caller to send an SMS",
-        "Stay on the line"
+        "The caller knows your full name",
+        "You initiated the call yourself using an independently verified official number",
+        "The correct company name appears on caller ID",
+        "The caller knows information about your account"
       ],
-      "answer": 0,
+      "answer": 1,
       "difficulty": "medium",
       "skill": "verification"
     },
@@ -593,89 +593,89 @@
       "id": 10,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A caller creates panic and repeatedly prevents you from hanging up.\n\nWhy?",
+      "text": "A caller says:\n\n\"Act now. Don't hang up and don't tell anyone in the room.\"\n\nWhy is this especially suspicious?",
       "options": [
-        "To keep your phone connected technically",
-        "To improve call quality",
-        "To reduce the time you have to think and verify",
-        "To protect your account"
+        "Legitimate companies never make phone calls",
+        "Real employees cannot discuss account problems",
+        "Calls lasting several minutes are usually scams",
+        "Urgency and isolation reduce your chance to stop and independently verify the claim"
       ],
-      "answer": 2,
+      "answer": 3,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "pressure_resistance"
     },
     {
       "id": 11,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "Someone claiming to be the registrar asks for your portal password.\n\nBest response?",
+      "text": "Which sequence most closely matches the vishing playbook taught in the lesson?",
       "options": [
-        "Give the password",
-        "Text the password later",
-        "Give an old password",
-        "Verify with the registrar through an official channel"
+        "Borrow a trusted identity → mention a true detail → prevent callback → request a secret/code",
+        "Send malware → encrypt files → demand payment → delete backups",
+        "Leave a USB → wait for someone to connect it → install malware",
+        "Create a fake website → advertise it → wait for search traffic"
       ],
-      "answer": 3,
+      "answer": 0,
       "difficulty": "medium",
-      "skill": "credential_protection"
+      "skill": "playbook_recognition"
     },
     {
       "id": 12,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "A caller sounds exactly like a family member asking for emergency money.\n\nWhat should you do?",
+      "text": "A caller appears as your bank's real name, knows your name and partial card number, and describes a purchase you recently made. They then ask you to stay on the line and read a code.\n\nWhat is the strongest conclusion?",
       "options": [
-        "Trust the voice",
-        "Verify using another established contact method",
-        "Send a smaller amount",
-        "Ask them to repeat your name"
-      ],
-      "answer": 1,
-      "difficulty": "hard",
-      "skill": "verification"
-    },
-    {
-      "id": 13,
-      "topic": "Vishing",
-      "type": "multiple_choice",
-      "text": "A caller knows your name, school and date of birth.\n\nWhat is the correct conclusion?",
-      "options": [
-        "Identity is confirmed",
-        "The call is probably legitimate",
-        "Information knowledge alone does not prove identity",
-        "It is safe to provide an OTP"
+        "The accurate information proves the caller is legitimate",
+        "It is safe because the caller only wants a temporary code",
+        "The known details do not prove identity; the code request and refusal to let you verify independently are major warning signs",
+        "The call is legitimate if the transaction amount is correct"
       ],
       "answer": 2,
       "difficulty": "hard",
       "skill": "evidence_evaluation"
     },
     {
+      "id": 13,
+      "topic": "Vishing",
+      "type": "multiple_choice",
+      "text": "A caller claiming to be from your bank says:\n\n\"You can call us back, but only using the number currently shown on your screen.\"\n\nWhat should you do?",
+      "options": [
+        "Call that number because it matches caller ID",
+        "Ask the caller to call again later",
+        "Save the displayed number before hanging up",
+        "Ignore the supplied number and use an independently known official number"
+      ],
+      "answer": 3,
+      "difficulty": "hard",
+      "skill": "verification"
+    },
+    {
       "id": 14,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "Why is \"stay on the line and don't tell anyone\" especially suspicious?",
+      "text": "A caller claiming to be your registrar gives you a believable ticket number and correctly states your course. They insist your enrollment will be cancelled unless you verify immediately.\n\nWhat is the strongest next step?",
       "options": [
-        "Isolation prevents independent verification",
-        "Legitimate organizations cannot use phones",
-        "Calls longer than five minutes are fraudulent",
-        "Banks never give instructions"
+        "Give limited information because they know your course",
+        "End the call and verify the issue through the registrar's official contact channel",
+        "Ask the caller to tell you another private fact",
+        "Stay connected while opening the school portal"
       ],
-      "answer": 0,
+      "answer": 1,
       "difficulty": "hard",
-      "skill": "recognition"
+      "skill": "verification"
     },
     {
       "id": 15,
       "topic": "Vishing",
       "type": "multiple_choice",
-      "text": "What principle best protects against vishing?",
+      "text": "What feature best connects fake bank calls, fake school IT calls, and fake registrar calls?",
       "options": [
-        "Trust calls from known numbers",
-        "Never rely solely on information provided by the caller to verify the caller",
-        "Answer security questions quickly",
-        "Only trust callers who know personal information"
+        "They always use the same phone number",
+        "They always ask directly for money",
+        "They borrow trust and pressure the victim to say or approve something before independently checking",
+        "They always use threatening language"
       ],
-      "answer": 1,
+      "answer": 2,
       "difficulty": "hard",
       "skill": "transfer"
     }
@@ -685,12 +685,12 @@
       "id": 1,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "What is pretexting?",
+      "text": "Which situation is the strongest example of pretexting?",
       "options": [
-        "Guessing passwords",
-        "Sending malware automatically",
-        "Encrypting files",
-        "Creating a believable fake identity or story to obtain information/access"
+        "A website automatically downloads malware",
+        "Someone guesses your password repeatedly",
+        "A text contains a shortened link",
+        "A stranger invents a believable work role and story to convince you to unlock a restricted room"
       ],
       "answer": 3,
       "difficulty": "easy",
@@ -700,102 +700,102 @@
       "id": 2,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "Someone wearing an IT uniform asks for your password.\n\nWhat should you do?",
+      "text": "A visitor with a clipboard says:\n\n\"I'm from Facilities. We're doing a surprise key audit.\"\n\nWhat should you remember?",
       "options": [
-        "Give it because of the uniform",
-        "Verify their identity and authorization independently",
-        "Give part of it",
-        "Ask another student to give theirs first"
+        "A clipboard proves they are working",
+        "Their appearance and story do not prove their identity or authorization",
+        "Surprise audits never happen",
+        "Facilities workers never enter buildings"
       ],
       "answer": 1,
       "difficulty": "easy",
-      "skill": "credential_protection"
+      "skill": "role_verification"
     },
     {
       "id": 3,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "A stranger claims to be a student's parent and asks for private records.\n\nSafest action?",
+      "text": "A person claiming to be from Facilities asks you to unlock a staff closet and wait outside while they inspect it.\n\nWhat is the safest response?",
       "options": [
-        "Follow official authorization procedures",
-        "Provide them",
-        "Give only basic information",
-        "Ask whether they know the student's birthday"
+        "Do not unlock it until their identity and authorization are verified",
+        "Unlock it but remain nearby",
+        "Ask whether the inspection will take long",
+        "Let them enter if they know the building name"
       ],
       "answer": 0,
       "difficulty": "easy",
-      "skill": "safe_response"
+      "skill": "access_control"
     },
     {
       "id": 4,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "Why do attackers often impersonate authority figures?",
+      "text": "Someone says they are the dean's new assistant and asks you to approve a payment because the dean is currently in a meeting.\n\nWhat should you do?",
       "options": [
-        "Authority bypasses passwords technically",
-        "Executives have stronger computers",
-        "Authority can make victims more likely to comply",
-        "Emails from managers cannot be blocked"
+        "Approve it because the dean is unavailable",
+        "Approve a smaller amount first",
+        "Wait and verify the request directly with the dean or authorized process",
+        "Ask the assistant to promise the request is legitimate"
       ],
       "answer": 2,
       "difficulty": "easy",
-      "skill": "recognition"
+      "skill": "safe_response"
     },
     {
       "id": 5,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "Someone claims:\n\n\"I'm the Dean's assistant. Send the student list immediately.\"\n\nWhat should you do?",
+      "text": "A visitor says:\n\n\"I'm with the accreditation team. Your professor already knows. She stepped out, so copy the class list from her laptop before she returns.\"\n\nWhat is the strongest warning sign?",
       "options": [
-        "Send it immediately",
-        "Independently verify the request",
-        "Send only names",
-        "Ask whether it is urgent"
+        "Accreditation teams visit schools",
+        "The story uses the professor's absence to justify accessing something you normally should not",
+        "The visitor did not wear a uniform",
+        "Class lists contain student names"
       ],
       "answer": 1,
       "difficulty": "medium",
-      "skill": "verification"
+      "skill": "story_analysis"
     },
     {
       "id": 6,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "A person knows your supervisor's name and office number.\n\nDoes this establish authorization?",
+      "text": "A supposed administrator says:\n\n\"Do not contact the dean. She's presenting right now and will be upset if this payment is delayed.\"\n\nWhy is this suspicious?",
       "options": [
-        "Yes",
-        "Only during office hours",
-        "Only if they know your name too",
-        "No"
+        "Administrators never handle payments",
+        "Meetings cannot last long",
+        "Payments cannot be made on phones",
+        "The story discourages independent verification while creating pressure to comply"
       ],
       "answer": 3,
       "difficulty": "medium",
-      "skill": "evidence_evaluation"
+      "skill": "authority_resistance"
     },
     {
       "id": 7,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "A delivery worker asks to enter a restricted room.\n\nWhat matters most?",
+      "text": "A stranger claims to be helping your professor and asks you to copy a student list from the professor's unattended laptop.\n\nWhat should you do?",
       "options": [
-        "Whether they are authorized to enter",
-        "Whether they have a package",
-        "Whether they look professional",
-        "Whether they know someone's name"
+        "Refuse and wait for the professor or another authorized person to confirm the request",
+        "Copy only student names",
+        "Open the laptop but do not send anything",
+        "Ask the stranger whether the data is confidential"
       ],
       "answer": 0,
       "difficulty": "medium",
-      "skill": "verification"
+      "skill": "information_protection"
     },
     {
       "id": 8,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "What should you verify first when someone requests sensitive information?",
+      "text": "Which situation gives the strongest evidence that a person is authorized?",
       "options": [
-        "Their clothing",
-        "Their age",
-        "Their authority and legitimate need for the information",
-        "Their job title alone"
+        "They know the building name",
+        "They carry a clipboard and wear professional clothes",
+        "Their identity and access request can be checked through an established school process",
+        "They know the name of your professor"
       ],
       "answer": 2,
       "difficulty": "medium",
@@ -805,104 +805,104 @@
       "id": 9,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "A \"researcher\" asks for your account password to complete a survey.\n\nBest response?",
+      "text": "A visitor says:\n\n\"The inspection slot closes in ten minutes. If we miss it, your department will fail the audit.\"\n\nWhat role does this statement play in a pretexting attack?",
       "options": [
-        "Provide an old password",
-        "Create a temporary password",
-        "Give only the username and password hint",
-        "Refuse"
+        "It proves an official inspection exists",
+        "It verifies the visitor's authority",
+        "It protects the department from delays",
+        "It creates urgency so you are less likely to stop and verify"
       ],
       "answer": 3,
       "difficulty": "medium",
-      "skill": "credential_protection"
+      "skill": "urgency_detection"
     },
     {
       "id": 10,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "Which is a common characteristic of pretexting?",
+      "text": "Which request is more suspicious?",
       "options": [
-        "A computer virus",
-        "A believable story explaining why information or access is needed",
-        "A damaged hard drive",
-        "Automatic password guessing"
+        "A verified employee asks you to walk with them to a shared room",
+        "A visitor asks you to unlock a restricted room and leave them alone inside",
+        "A coworker waits while you use your own badge",
+        "A staff member asks where the copy room is"
       ],
       "answer": 1,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "access_control"
     },
     {
       "id": 11,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "An employee says their badge stopped working and asks you to let them inside.\n\nBest response?",
+      "text": "Which sequence most closely matches the pretexting pattern taught in the lesson?",
       "options": [
-        "Follow official access procedures",
-        "Let them in",
-        "Ask for their employee name only",
-        "Enter with them"
+        "Borrow a trusted role → make the trusted person unavailable → request an unusual favor → add time pressure",
+        "Send malware → encrypt files → demand payment → erase backups",
+        "Call repeatedly → guess a password → lock the account",
+        "Offer a prize → ask the victim to install software"
       ],
       "answer": 0,
       "difficulty": "medium",
-      "skill": "safe_response"
+      "skill": "playbook_recognition"
     },
     {
       "id": 12,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "An attacker has researched your organization and knows several real employee names.\n\nWhy does this strengthen pretexting?",
+      "text": "A visitor knows your dean's name, carries a professional badge, and says the dean already approved a vendor payment. The dean is conveniently unavailable, and the visitor wants you to approve it on their phone immediately.\n\nWhat is the strongest conclusion?",
       "options": [
-        "Employee names bypass security systems",
-        "It proves the attacker works there",
-        "Accurate details make a fabricated story more believable",
-        "It disables access control"
+        "Knowing the dean's name proves the story is probably legitimate",
+        "The badge is enough if it looks professional",
+        "The combination of borrowed authority, an unavailable decision-maker, unusual payment request, and urgency strongly suggests pretexting",
+        "The payment is safe if the amount is small"
       ],
       "answer": 2,
       "difficulty": "hard",
-      "skill": "recognition"
+      "skill": "multi_cue_analysis"
     },
     {
       "id": 13,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "A senior manager tells you to bypass normal security because the request is urgent.\n\nWhat should you do?",
+      "text": "Someone claiming to be from an accrediting team gives you their name, department, and a believable explanation for accessing a staff laptop.\n\nWhat is the strongest next step?",
       "options": [
-        "Follow the request because they outrank you",
-        "Follow the required security process or seek formal authorization",
-        "Bypass it temporarily",
-        "Do it and report it later"
+        "Let them use the laptop while you watch",
+        "Verify the visit through a trusted school contact before allowing access",
+        "Ask them one more question about the school",
+        "Let them proceed if their story is detailed"
       ],
       "answer": 1,
       "difficulty": "hard",
-      "skill": "safe_response"
+      "skill": "independent_verification"
     },
     {
       "id": 14,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "Which question is most important when evaluating a request?",
+      "text": "A visitor claims they need access to a locked drawer while the adviser is away. They say:\n\n\"The adviser already knows. Please don't message them yet because we're on a deadline.\"\n\nWhat should you do?",
       "options": [
-        "\"Does the person sound confident?\"",
-        "\"Do they know my name?\"",
-        "\"Are they being polite?\"",
-        "\"Is this person independently verified and authorized to request this?\""
+        "Open the drawer but stay nearby",
+        "Give them only the documents they request",
+        "Ask them to return the documents afterward",
+        "Refuse to open it until the adviser or another authorized person independently confirms the request"
       ],
       "answer": 3,
       "difficulty": "hard",
-      "skill": "verification"
+      "skill": "boundary_control"
     },
     {
       "id": 15,
       "topic": "Pretexting",
       "type": "multiple_choice",
-      "text": "What is the fundamental weakness exploited by pretexting?",
+      "text": "What feature best connects fake Facilities audits, fake accreditation visits, and fake executive-assistant requests?",
       "options": [
-        "People's willingness to trust believable identities and stories",
-        "Software bugs",
-        "Weak Wi-Fi",
-        "Old computers"
+        "They always involve physical keys",
+        "They always request money",
+        "They create a believable role and situation designed to make you bypass normal verification or access rules",
+        "They always require the real employee to leave the building"
       ],
-      "answer": 0,
+      "answer": 2,
       "difficulty": "hard",
       "skill": "transfer"
     }
@@ -912,14 +912,14 @@
       "id": 1,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "What makes baiting different from many other attacks?",
+      "text": "Which situation is the strongest example of baiting?",
       "options": [
-        "It always uses email",
-        "It offers something attractive to encourage unsafe behavior",
-        "It requires a password",
-        "It requires physical access"
+        "A caller pretends to be your bank",
+        "A message threatens to close your account",
+        "A USB labeled \"Final Exam Answers\" is left where students are likely to find it",
+        "Someone repeatedly guesses your password"
       ],
-      "answer": 1,
+      "answer": 2,
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -927,209 +927,209 @@
       "id": 2,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "You find a USB labeled \"Final Exam Answers.\"\n\nSafest action?",
+      "text": "You find a USB labeled \"Grades 2026\" in the computer lab.\n\nWhat should you do?",
       "options": [
-        "Turn it in without connecting it",
-        "Open it",
-        "Test it at home",
-        "Format it first"
+        "Do not plug it in; turn it over to the appropriate staff",
+        "Plug it into a school computer instead of your own",
+        "Open it only long enough to find the owner",
+        "Take it home and scan it first"
       ],
       "answer": 0,
       "difficulty": "easy",
-      "skill": "safe_response"
+      "skill": "unknown_media"
     },
     {
       "id": 3,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "A site offers expensive software completely free from an unknown source.\n\nWhat is the main risk?",
+      "text": "A booth outside campus gives students free flash drives and says:\n\n\"Plug it in now to claim the files we included.\"\n\nWhat is the main security concern?",
       "options": [
-        "It will download slowly",
-        "It cannot work without internet",
-        "Free software cannot run on Windows",
-        "The download could contain malware"
+        "Free flash drives usually have little storage",
+        "School computers may not recognize the drive",
+        "Students might lose the drive",
+        "The free item could be bait containing malicious files or software"
       ],
       "answer": 3,
       "difficulty": "easy",
-      "skill": "attachment_awareness"
+      "skill": "gift_bait"
     },
     {
       "id": 4,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "A pop-up says:\n\n\"Congratulations! You won a new phone!\"\n\nWhat technique may be involved?",
+      "text": "A website offers a free cracked version of expensive school software.\n\nWhy is downloading it risky?",
       "options": [
-        "Encryption",
-        "Firewalling",
-        "Baiting",
-        "Authentication"
+        "Free software cannot run on modern computers",
+        "The installer may contain malware hidden behind the attractive free offer",
+        "Cracked programs are always slower",
+        "Schools automatically delete every free program"
       ],
-      "answer": 2,
+      "answer": 1,
       "difficulty": "easy",
-      "skill": "recognition"
+      "skill": "suspicious_download"
     },
     {
       "id": 5,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "Why might an attacker label a USB \"Salary Information\"?",
+      "text": "A hallway poster says:\n\n\"FREE CAMPUS WI-FI — Scan this QR code to connect.\"\n\nWhat is the safest response?",
       "options": [
-        "To exploit curiosity",
-        "To encrypt the USB",
-        "To increase storage",
-        "To make antivirus ignore it"
+        "Scan it because the poster is inside the school",
+        "Ask a friend to scan it first",
+        "Use the school's known Wi-Fi instructions or official portal instead of the unknown QR code",
+        "Scan it only if your phone has antivirus software"
       ],
-      "answer": 0,
+      "answer": 2,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "qr_safety"
     },
     {
       "id": 6,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "A file is named:\n\nFreeMovie.mp4.exe\n\nWhat is its actual executable extension?",
+      "text": "You receive a file named:\n\nFreeMovie.mp4.exe\n\nWhat is the strongest warning sign?",
       "options": [
-        ".mp4",
-        ".movie",
-        ".free",
-        ".exe"
+        "The filename is too long",
+        "The final .exe means it is an executable program, not simply a video",
+        "Movies cannot be downloaded",
+        ".mp4 files are always malicious"
       ],
-      "answer": 3,
+      "answer": 1,
       "difficulty": "medium",
-      "skill": "attachment_awareness"
+      "skill": "file_extension"
     },
     {
       "id": 7,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "Why can pirated software be dangerous?",
+      "text": "A pop-up says:\n\n\"Congratulations! You won a new phone. Download PrizeClaim.exe now.\"\n\nWhat is the safest conclusion?",
       "options": [
-        "Paid software cannot contain malware",
-        "Modified installers can hide malicious code",
-        "Antivirus automatically disables pirated programs",
-        "Pirated programs cannot connect to the internet"
+        "The prize may be bait designed to make you run an unsafe file",
+        "The prize is legitimate if the page uses school colors",
+        "The offer is safe if no password is requested",
+        "Winning a phone online is always impossible"
       ],
-      "answer": 1,
+      "answer": 0,
       "difficulty": "medium",
-      "skill": "attachment_awareness"
+      "skill": "temptation"
     },
     {
       "id": 8,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "A QR code on a poster promises free Wi-Fi.\n\nSafest response?",
+      "text": "A classmate finds a USB labeled \"Answer Key\" and says:\n\n\"We can test it on an old laptop first.\"\n\nWhat is the best response?",
       "options": [
-        "Scan immediately",
-        "Let a friend scan it",
-        "Verify the Wi-Fi details with an official source",
-        "Scan while disconnected from Wi-Fi"
+        "Use the old laptop because nothing important is stored there",
+        "Scan the USB first, then open it",
+        "Copy only the PDF files",
+        "Do not plug unknown media into any device just to discover what is inside"
       ],
-      "answer": 2,
+      "answer": 3,
       "difficulty": "medium",
-      "skill": "safe_response"
+      "skill": "safe_handling"
     },
     {
       "id": 9,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "A stranger gives students free USB drives.\n\nWhat is the key security concern?",
+      "text": "Which situation is most suspicious?",
       "options": [
-        "They may contain malicious files or programs",
-        "USB drives cannot store documents",
-        "Free electronics are illegal",
-        "The USB may be too small"
+        "Your school provides software through its official student portal",
+        "A teacher posts a file in the official learning system",
+        "An unknown site promises a \"free premium license\" if you download and run its installer",
+        "A verified store offers a normal student discount"
       ],
-      "answer": 0,
+      "answer": 2,
       "difficulty": "medium",
-      "skill": "attachment_awareness"
+      "skill": "source_verification"
     },
     {
       "id": 10,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "Which is the best example of baiting?",
+      "text": "You urgently need to charge your phone and see an unfamiliar public USB charging station.\n\nWhat is the safer choice when possible?",
       "options": [
-        "\"Give me your OTP or your account will close.\"",
-        "A fake bank phone call",
-        "An attacker pretending to be IT",
-        "A USB labeled \"Confidential Exams\" deliberately left in a hallway"
+        "Connect because charging cables cannot transfer data",
+        "Use your own charger/power source or another trusted charging method",
+        "Connect only for five minutes",
+        "Unlock the phone while charging so you can monitor it"
       ],
-      "answer": 3,
+      "answer": 1,
       "difficulty": "medium",
-      "skill": "recognition"
+      "skill": "charging_safety"
     },
     {
       "id": 11,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "Someone sends you a \"free premium game\" installer.\n\nBefore running it, what is most important?",
+      "text": "Why might an attacker leave several attractive USB drives around a school?",
       "options": [
-        "Whether the graphics look good",
-        "Whether it came from a trusted and authorized source",
-        "Whether your friend likes the game",
-        "Whether the file size is small"
+        "To increase the chance that curiosity or temptation causes someone to plug one into a device",
+        "To give students free storage",
+        "To test whether USB ports work",
+        "To identify students who lose property"
       ],
-      "answer": 1,
+      "answer": 0,
       "difficulty": "medium",
-      "skill": "verification"
+      "skill": "attacker_goal"
     },
     {
       "id": 12,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "What do malicious USBs, free downloads, prize links and enticing QR codes have in common?",
+      "text": "A USB labeled \"Scholarship Applicants — Confidential\" is found outside the registrar's office. It looks new and has the school logo printed on it.\n\nWhat is the strongest conclusion?",
       "options": [
-        "They all require passwords",
-        "They all attack phones",
-        "They exploit curiosity or desire to trigger unsafe actions",
-        "They all contain ransomware"
+        "The school logo proves it belongs to the registrar",
+        "It is safer because it was found near an office",
+        "You may open it if you disconnect from Wi-Fi first",
+        "The label, location, and logo may all be part of the bait; do not plug it in and report it appropriately"
       ],
-      "answer": 2,
+      "answer": 3,
       "difficulty": "hard",
-      "skill": "transfer"
+      "skill": "multi_cue_analysis"
     },
     {
       "id": 13,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "A trusted friend gives you cracked software that works correctly on their computer.\n\nWhat should you conclude?",
+      "text": "A post says:\n\n\"Download the leaked answer key before it gets deleted.\"\n\nThe file comes from an unknown file-sharing account.\n\nWhy is this dangerous?",
       "options": [
-        "It must be safe",
-        "It is safe if antivirus finds nothing",
-        "Your friend's computer proves its authenticity",
-        "Successful execution does not prove the software is free from malicious code"
+        "Answer keys are always fake",
+        "Curiosity and scarcity are being used to persuade you to download an untrusted file",
+        "File-sharing services cannot contain school files",
+        "Deleted files cannot contain malware"
       ],
-      "answer": 3,
+      "answer": 1,
       "difficulty": "hard",
-      "skill": "evidence_evaluation"
+      "skill": "scarcity_bait"
     },
     {
       "id": 14,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "Why is plugging a suspicious USB into an unused computer still unsafe?",
+      "text": "Which situation gives the strongest reason to trust a software download?",
       "options": [
-        "Malicious code may still execute or spread",
-        "USB attacks only work once",
-        "Unused computers cannot read USB devices",
-        "Formatting happens automatically"
+        "The website says \"100% virus free\"",
+        "Thousands of people supposedly downloaded it",
+        "The software is obtained from the school's official portal or the vendor's independently verified official source",
+        "The installer filename matches the product name"
       ],
-      "answer": 0,
+      "answer": 2,
       "difficulty": "hard",
-      "skill": "attachment_awareness"
+      "skill": "trusted_download"
     },
     {
       "id": 15,
       "topic": "Baiting",
       "type": "multiple_choice",
-      "text": "Which best describes the defensive principle against baiting?",
+      "text": "What feature best connects a found \"Grades\" USB, a free cracked application, an unknown prize QR code, and a \"you won a phone\" download?",
       "options": [
-        "Avoid every free item",
-        "Do not let curiosity or rewards bypass normal trust and verification procedures",
-        "Only use USBs at school",
-        "Download files only at night"
+        "They all require USB ports",
+        "They all steal passwords immediately",
+        "They all depend on school computers",
+        "They use something attractive, useful, or interesting to persuade the victim to perform a risky action"
       ],
-      "answer": 1,
+      "answer": 3,
       "difficulty": "hard",
       "skill": "transfer"
     }
