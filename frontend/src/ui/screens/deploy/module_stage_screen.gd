@@ -1,251 +1,297 @@
 extends BaseScreen
-## Per-module stage list. Same chrome for every module; backdrop tint and stage data change.
-
-const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const BG_CITY := "res://assets/ui/dashboard.png"
-const BG_ALT := "res://assets/ui/background.png"
+## Mission briefing terminal. StageManager remains the authority for deployment.
+const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const Briefings = preload("res://src/ui/screens/deploy/stage_briefings.gd")
+const ACCENTS := [Color("8dc9bd"), Color("adcca6"), Color("a8bfd7"), Color("c8baa0"), Color("c3b6cf")]
 const STAGE_COUNT := 10
-const ROW_H := 64.0
-const ROW_GAP := 18.0
-const ROW_W := 560.0
-const ROW_SELECTED_EXTRA := 36.0
+const COMPLETED_INK := Color("a0dcae")
+const COMPLETED_FILL := Color("193a2b")
+const COMPLETED_SELECTED_FILL := Color("254c36")
 
-@onready var _safe: MarginContainer = %SafeArea
-@onready var _back_button: Button = %BackButton
-@onready var _title_label: Label = %TitleLabel
-@onready var _player_name: Label = %PlayerName
-@onready var _threat_value: Label = %ThreatValue
-@onready var _materials_value: Label = %MaterialsValue
-@onready var _settings_button: HudGeoButton = %SettingsButton
-@onready var _hero_art: TextureRect = %HeroArt
-@onready var _type_chip: HudGeoButton = %TypeChip
-@onready var _waves_chip: HudGeoButton = %WavesChip
-@onready var _gold_chip: HudGeoButton = %GoldChip
-@onready var _score_label: Label = %ScoreLabel
-@onready var _stage_title: Label = %StageTitle
-@onready var _stage_sub: Label = %StageSub
-@onready var _art_well: PanelContainer = %ArtWell
-@onready var _art_glyph: IntelPixelIcon = %ArtGlyph
-@onready var _pack_label: Label = %PackLabel
-@onready var _pack_title: Label = %PackTitle
-@onready var _pack_stats: Label = %PackStats
-@onready var _stage_list: VBoxContainer = %StageList
-@onready var _main_menu: HudGeoButton = %MainMenuButton
-@onready var _breach_button: HudGeoButton = %BreachButton
-
-var _pixel_font: Font
 var _modules: Array[Dictionary] = []
-var _module_index: int = 0
-var _selected: int = 0
-var current_selected_stage: int = 0
-var _seen_cleared: int = -1
-
+var _module_index := 0
+var _selected := 0
+var current_selected_stage := 0
+var _active := false
+var _queued := false
+var _font := 28
+var _touch := 64.0
+var _poll := 0.0
+var _seen := ""
+var _rows: Array[Button] = []
+var _back: Button
+var _settings: Button
+var _profile: Button
+var _avatar: TextureRect
+var _title: Label
+var _wallet: Label
+var _body: HBoxContainer
+var _detail: VBoxContainer
+var _stage_list: VBoxContainer
+var _summary: Label
+var _completion: ProgressBar
+var _breach_button: Button
+var _reason_label: Label
+var _header: HBoxContainer
+var _profile_name: Label
+var _profile_rank: Label
+var _teaser_label: Label
+var _briefing_tween: Tween
 
 func _ready() -> void:
-	_load_font()
 	_modules = LessonCatalog.modules()
-	_back_button.pressed.connect(func() -> void: Router.request_back())
-	_main_menu.pressed.connect(func() -> void: Router.request_back())
-	_settings_button.pressed.connect(func() -> void: Router.push(&"settings"))
-	_breach_button.pressed.connect(_on_breach_pressed)
-	%ProfileButton.pressed.connect(func() -> void: Router.push(&"profile"))
-	%PackBanner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_type_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_waves_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_gold_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_style_back()
-
+	var shell := UI.shell(self, "MISSION\nSELECT", func() -> void: Router.request_back())
+	_back = shell.back
+	_title = shell.title
+	_header = _title.get_parent()
+	_header.add_theme_constant_override("separation", 14)
+	_profile = UI.button("", func() -> void: Router.push(&"profile"))
+	_profile.size_flags_horizontal = SIZE_EXPAND_FILL
+	_profile.size_flags_stretch_ratio = 1.3
+	for state in ["normal", "hover", "pressed"]:
+		_profile.add_theme_stylebox_override(state, UI.box(Color("20373d") if state != "normal" else Color("13232c"), Color("48635f"), 10))
+	_header.add_child(_profile)
+	var band := HBoxContainer.new()
+	band.add_theme_constant_override("separation", 12)
+	band.mouse_filter = MOUSE_FILTER_IGNORE
+	band.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	band.offset_left = 12
+	band.offset_right = -12
+	band.offset_top = 8
+	band.offset_bottom = -8
+	_profile.add_child(band)
+	_avatar = TextureRect.new()
+	_avatar.custom_minimum_size = Vector2(48, 48)
+	_avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_avatar.mouse_filter = MOUSE_FILTER_IGNORE
+	band.add_child(_avatar)
+	var identity := UI.column(band, 3)
+	identity.mouse_filter = MOUSE_FILTER_IGNORE
+	identity.size_flags_horizontal = SIZE_EXPAND_FILL
+	identity.size_flags_vertical = SIZE_SHRINK_CENTER
+	_profile_name = UI.label("")
+	_profile_rank = UI.label("", 24, UI.MUTED)
+	for label in [_profile_name, _profile_rank]:
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		identity.add_child(label)
+	_wallet = UI.label("", 24)
+	_wallet.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_wallet.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_header.add_child(_wallet)
+	_settings = UI.button("SETTINGS", func() -> void: Router.push(&"settings"))
+	_header.add_child(_settings)
+	_body = HBoxContainer.new()
+	_body.add_theme_constant_override("separation", 20)
+	_body.size_flags_vertical = SIZE_EXPAND_FILL
+	shell.layout.add_child(_body)
+	var briefing := UI.column(_body, 12)
+	briefing.size_flags_horizontal = SIZE_EXPAND_FILL
+	briefing.size_flags_stretch_ratio = 0.55
+	_detail = UI.scroll_column(briefing)
+	_breach_button = UI.button("DEPLOY  >", _on_breach_pressed, true)
+	briefing.add_child(_breach_button)
+	var missions := UI.column(_body, 12)
+	missions.size_flags_horizontal = SIZE_EXPAND_FILL
+	missions.size_flags_stretch_ratio = 0.45
+	_summary = UI.label("")
+	missions.add_child(_summary)
+	_completion = ProgressBar.new()
+	_completion.show_percentage = false
+	_completion.custom_minimum_size.y = 8
+	_completion.mouse_filter = MOUSE_FILTER_IGNORE
+	_completion.add_theme_stylebox_override("background", UI.box(UI.PANEL, UI.PANEL, 0))
+	_completion.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
+	missions.add_child(_completion)
+	_stage_list = UI.scroll_column(missions)
+	_stage_list.add_theme_constant_override("separation", 10)
+	get_viewport().size_changed.connect(_request_refresh)
+	AuthService.progress_changed.connect(_request_refresh)
+	AuthService.session_changed.connect(_session_changed)
+	set_process(false)
 
 func on_enter(args: Dictionary) -> void:
-	visible = true
-	set_process(true)
-	AssetManager.bind_texture(find_child("AvatarImage", true, false) as CanvasItem, "ui_pfp")
 	_modules = LessonCatalog.modules()
 	_module_index = clampi(int(args.get("module_index", 0)), 0, maxi(0, _modules.size() - 1))
 	_selected = _first_playable()
-	current_selected_stage = _launch_index(_selected)
-	_seen_cleared = PlayerManager.mock_max_stage_cleared
+	current_selected_stage = maxi(0, _launch_index(_selected))
+	_active = true
+	visible = true
+	AssetManager.bind_texture(_avatar, "ui_pfp")
 	_refresh_all()
-
+	(_stage_list.get_parent() as ScrollContainer).set_deferred("scroll_vertical", 0)
+	(_detail.get_parent() as ScrollContainer).set_deferred("scroll_vertical", 0)
+	set_process(true)
 
 func on_resume() -> void:
+	_active = true
 	visible = true
-	set_process(true)
-	_seen_cleared = PlayerManager.mock_max_stage_cleared
 	_refresh_all()
-
+	set_process(true)
 
 func on_exit() -> void:
-	set_process(false)
+	if _briefing_tween != null:
+		_briefing_tween.kill()
+	_active = false
 	visible = false
+	set_process(false)
 
+func _session_changed(_signed_in: bool) -> void:
+	_selected = 0
+	current_selected_stage = maxi(0, _launch_index(0))
+	_request_refresh()
 
-func _process(_delta: float) -> void:
-	if not visible:
+func _state_key() -> String:
+	return str([PlayerManager.mock_max_stage_cleared, PlayerManager.cleared_stages,
+		PlayerManager.lesson_progress, PlayerManager.completed_lessons,
+		PlayerManager.locked_stages, PlayerManager.credits])
+
+func _process(delta: float) -> void:
+	_poll += delta
+	if _poll < 0.5:
 		return
-	var cleared: int = PlayerManager.mock_max_stage_cleared
-	if cleared == _seen_cleared:
-		return
-	_seen_cleared = cleared
-	_refresh_all()
+	_poll = 0
+	if _state_key() != _seen:
+		_request_refresh()
 
+func _request_refresh() -> void:
+	if not _active or _queued:
+		return
+	_queued = true
+	_refresh_all.call_deferred()
 
 func _refresh_all() -> void:
-	_refresh_header()
-	_apply_backdrop()
+	_queued = false
+	if not _active or not is_inside_tree():
+		return
+	_seen = _state_key()
+	var scale_y := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_font = maxi(28, ceili(16 / scale_y))
+	_touch = maxf(64, ceilf(48 / scale_y))
+	for button in [_back, _settings, _profile, _breach_button]:
+		button.custom_minimum_size.y = _touch
+		button.add_theme_font_size_override("font_size", _font)
+	for button in [_back, _settings]:
+		button.autowrap_mode = TextServer.AUTOWRAP_OFF
+		button.custom_minimum_size.x = 120 if button == _back else 148
+	_title.add_theme_font_size_override("font_size", maxi(20, ceili(12 / scale_y)))
+	_profile.custom_minimum_size = Vector2(260, maxf(_touch, _font * 2 + 24))
+	_profile_name.text = AuthService.display_name().to_upper()
+	_profile_rank.text = AuthService.rank_title().to_upper()
+	_profile.tooltip_text = "%s / %s — Open profile" % [AuthService.display_name(), AuthService.rank_title()]
+	_profile_name.add_theme_font_size_override("font_size", _font)
+	_profile_rank.add_theme_font_size_override("font_size", _font - 4)
+	_wallet.text = "THREAT   %d\nCREDITS  %d" % [maxi(0, AuthService.wallet_threat_points()), maxi(0, PlayerManager.credits)]
+	_wallet.add_theme_font_size_override("font_size", _font - 2)
+	_summary.text = "OPERATIONS  /  %d OF %d CLEARED" % [_cleared_count(), _authored_count()]
+	_summary.add_theme_font_size_override("font_size", _font - 2)
+	_completion.max_value = maxi(1, _authored_count())
+	_completion.value = _cleared_count()
 	_rebuild_rows()
 	_refresh_detail()
-	_refresh_breach()
 
-
-func _refresh_header() -> void:
-	_title_label.text = "SELECT A STAGE"
-	_player_name.text = "<%s>" % AuthService.display_name().to_upper()
-	var threat: int = AuthService.wallet_threat_points()
-	var mats: int = PlayerManager.credits
-	_threat_value.text = str(threat if threat >= 0 else 0)
-	_materials_value.text = str(maxi(0, mats))
-	_apply_label(_title_label, Palette.TEXT_PRIMARY, 14)
-	_apply_label(_player_name, Palette.TEXT_PRIMARY, 11)
-	_apply_label(_threat_value, Palette.TEXT_PRIMARY, 12)
-	_apply_label(_materials_value, Palette.TEXT_PRIMARY, 12)
-	_style_back()
-	%AvatarBox.add_theme_stylebox_override("panel", _pixel_box(Palette.FOREST_NIGHT, Palette.CYAN, 0, 2))
-	_apply_spacing()
-	var entry: Dictionary = _module_entry()
-	var module_id := str(entry.get("id", ""))
-	var total: int = maxi(1, LessonCatalog.lesson_count(module_id))
-	var done: int = mini(PlayerManager.get_lesson_progress(module_id), total)
-	_pack_label.text = "MODULE %d/%d" % [_module_index + 1, maxi(1, _modules.size())]
-	_pack_title.text = str(entry.get("title", "")).to_upper()
-	_pack_stats.text = "CLR %d   ALL %d" % [done, total]
-	_apply_label(_pack_label, Palette.CYAN, 10)
-	_apply_label(_pack_title, Palette.TEXT_PRIMARY, 16)
-	_apply_label(_pack_stats, Palette.TEXT_PRIMARY, 10)
-
-
-func _apply_spacing() -> void:
-	_safe.add_theme_constant_override("margin_left", 24)
-	_safe.add_theme_constant_override("margin_top", 14)
-	_safe.add_theme_constant_override("margin_right", 20)
-	_safe.add_theme_constant_override("margin_bottom", 12)
-	var layout: VBoxContainer = _safe.get_node_or_null("ScreenLayout") as VBoxContainer
-	if layout != null:
-		layout.add_theme_constant_override("separation", 18)
-	var main_row: HBoxContainer = null
-	if layout != null:
-		main_row = layout.get_node_or_null("MainRow") as HBoxContainer
-	if main_row != null:
-		main_row.add_theme_constant_override("separation", 48)
-	var left: VBoxContainer = null
-	var right: VBoxContainer = null
-	if main_row != null:
-		left = main_row.get_node_or_null("LeftCol") as VBoxContainer
-		right = main_row.get_node_or_null("RightCol") as VBoxContainer
-	if left != null:
-		left.add_theme_constant_override("separation", 16)
-		left.size_flags_stretch_ratio = 0.38
-	if right != null:
-		right.add_theme_constant_override("separation", 16)
-		right.size_flags_stretch_ratio = 0.62
-	_stage_list.add_theme_constant_override("separation", int(ROW_GAP))
-
-
-func _apply_backdrop() -> void:
-	var asset_id: String = "ui_dashboard" if _module_index == 0 else "ui_background"
-	AssetManager.bind_texture(_hero_art, asset_id)
-	if _hero_art.texture == null:
-		var path := BG_CITY if _module_index == 0 else BG_ALT
-		if ResourceLoader.exists(path):
-			_hero_art.texture = load(path) as Texture2D
-	var accent: Color = _module_accent()
-	_hero_art.modulate = Color(accent.lightened(0.35), 0.72)
-	%MapDim.color = Color(Palette.BG_DEEP, 0.48)
-
+func _label(text: String, color: Color = UI.TEXT, extra: int = 0) -> Label:
+	return UI.label(text, _font + extra, color)
 
 func _rebuild_rows() -> void:
-	var kids: Array = _stage_list.get_children()
-	for i in kids.size():
-		var child: Node = kids[i] as Node
-		if child != null:
-			_stage_list.remove_child(child)
-			child.queue_free()
-	_stage_list.add_theme_constant_override("separation", int(ROW_GAP))
+	var focused := -1
+	for i in _rows.size():
+		if _rows[i].has_focus():
+			focused = i
+	UI.clear(_stage_list)
+	_rows.clear()
+	if _authored_count() == 0:
+		_stage_list.add_child(_label("COMING SOON", UI.GOLD, 8))
+		_stage_list.add_child(_label("This module's missions are still being prepared. No stages are available to deploy yet.", UI.MUTED))
+		return
 	for i in STAGE_COUNT:
-		_stage_list.add_child(_make_row(i))
+		var completed := PlayerManager.has_cleared_stage(_stage_id(i))
+		var selected := i == _selected
+		var ink := COMPLETED_INK if completed else (_accent() if _can_play(i) else UI.MUTED)
+		var fill := (COMPLETED_SELECTED_FILL if selected else COMPLETED_FILL) if completed else (Color("203a40") if selected else Color("13232c"))
+		var border := UI.GOLD if selected else (Color("5b936a") if completed else Color("364951"))
+		var row := UI.button("", _select_stage.bind(i))
+		row.name = "Stage%02d" % (i + 1)
+		row.custom_minimum_size.y = maxf(104, _touch + 28)
+		row.tooltip_text = _stage_name(i) + " / " + _status(i)
+		row.add_theme_stylebox_override("normal", UI.box(fill, border, 14))
+		row.add_theme_stylebox_override("hover", UI.box(Color("30543d") if completed else Color("29444a"), UI.GOLD if selected else ink, 14))
+		row.add_theme_stylebox_override("pressed", UI.box(COMPLETED_SELECTED_FILL if completed else Color("304c50"), UI.GOLD, 14))
+		_stage_list.add_child(row)
+		_rows.append(row)
+		var content := HBoxContainer.new()
+		content.mouse_filter = MOUSE_FILTER_IGNORE
+		content.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		content.offset_left = 16
+		content.offset_right = -16
+		content.offset_top = 12
+		content.offset_bottom = -12
+		content.add_theme_constant_override("separation", 16)
+		row.add_child(content)
+		var number := _label("%02d" % (i + 1), ink, 10)
+		number.custom_minimum_size.x = 48
+		number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		content.add_child(number)
+		var lines := UI.column(content, 4)
+		lines.mouse_filter = MOUSE_FILTER_IGNORE
+		lines.size_flags_horizontal = SIZE_EXPAND_FILL
+		lines.size_flags_vertical = SIZE_SHRINK_CENTER
+		lines.add_child(_label(_stage_name(i)))
+		lines.add_child(_label(_status(i), ink, -3))
+		if not _can_play(i):
+			var lock := IntelPixelIcon.new()
+			lock.kind = IntelPixelIcon.Kind.LOCK
+			lock.ink_override = UI.MUTED
+			lock.custom_minimum_size = Vector2(48, 48)
+			lock.mouse_filter = MOUSE_FILTER_IGNORE
+			content.add_child(lock)
+		content.resized.connect(_fit_row.bind(row, content))
+		_fit_row.call_deferred(row, content)
+	if focused >= 0 and focused < _rows.size():
+		_rows[focused].grab_focus()
 
+func _fit_row(row: Button, content: Container) -> void:
+	if not is_instance_valid(row) or not is_instance_valid(content):
+		return
+	# Wrapped mission names must increase row height, never overlap the next card.
+	row.custom_minimum_size.y = maxf(maxf(104, _touch + 28), content.get_combined_minimum_size().y + 24)
 
-func _make_row(index: int) -> HudGeoButton:
-	var selected: bool = index == _selected
-	var playable: bool = _can_play(index)
-	var locked: bool = not _is_unlocked(index)
-	var row := HudGeoButton.new()
-	row.geo = HudGeoButton.Geo.CHIP
-	row.shear = 28.0
-	row.title_size = 12
-	row.custom_minimum_size = Vector2(ROW_W + (ROW_SELECTED_EXTRA if selected else 0.0), ROW_H)
-	row.size_flags_horizontal = Control.SIZE_SHRINK_END
-	if locked:
-		row.fill_key = "header"
-		row.border_key = "muted"
-	elif selected and playable:
-		row.fill_key = "gold"
-		row.border_key = "gold"
-	elif selected:
-		row.fill_key = "cyan"
-		row.border_key = "cyan"
-	else:
-		row.fill_key = "panel"
-		row.border_key = "cyan"
-	var pad := MarginContainer.new()
-	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	pad.add_theme_constant_override("margin_left", 26)
-	pad.add_theme_constant_override("margin_right", 22)
-	pad.add_theme_constant_override("margin_top", 10)
-	pad.add_theme_constant_override("margin_bottom", 10)
-	row.add_child(pad)
-	pad.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var body := HBoxContainer.new()
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	body.add_theme_constant_override("separation", 16)
-	pad.add_child(body)
-	var num_color: Color = Palette.TEXT_ON_GOLD if selected and playable else Palette.TEXT_PRIMARY
-	if locked:
-		num_color = Palette.TEXT_MUTED
-	var num := _card_label("%02d" % (index + 1), num_color, 16, false)
-	num.custom_minimum_size = Vector2(40, 0)
-	num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	body.add_child(num)
-	var name_color: Color = num_color
-	if selected and playable:
-		name_color = Palette.TEXT_ON_GOLD
-	elif not locked:
-		name_color = Palette.TEXT_PRIMARY
-	var name_label := _card_label(_stage_name(index), name_color, 11, false)
-	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.clip_text = true
-	body.add_child(name_label)
-	if selected and playable:
-		var start_lbl := _card_label("START", Palette.TEXT_ON_GOLD, 12, false)
-		start_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		body.add_child(start_lbl)
-	if locked:
-		var overlay := CenterContainer.new()
-		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.add_child(overlay)
-		overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var glyph := IntelPixelIcon.new()
-		glyph.kind = IntelPixelIcon.Kind.LOCK
-		glyph.monochrome = true
-		glyph.custom_minimum_size = Vector2(44, 44)
-		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		glyph.modulate = Palette.TEXT_MUTED
-		overlay.add_child(glyph)
-	var captured: int = index
-	row.pressed.connect(func() -> void: _select_stage(captured))
-	return row
-
+func _refresh_detail() -> void:
+	if _briefing_tween != null:
+		_briefing_tween.kill()
+	_detail.modulate.a = 1.0
+	UI.clear(_detail)
+	var module := _module_entry()
+	var config := _stage_config(_selected)
+	var note := Briefings.get_note(_stage_id(_selected))
+	var panel := UI.panel(_detail, Color("13242d"))
+	panel.add_theme_stylebox_override("panel", UI.box(Color("13242d"), _accent(), 20))
+	var content := UI.column(panel, 12)
+	content.add_child(_label("M%02d / %02d   —   %s" % [_module_index + 1, _selected + 1, note.eyebrow] if not config.is_empty() else "OPERATION PENDING", _accent(), -2))
+	content.add_child(_label(_stage_name(_selected) if not config.is_empty() else "OPERATIONS IN PREPARATION", UI.TEXT, 10))
+	var status_ink := COMPLETED_INK if PlayerManager.has_cleared_stage(_stage_id(_selected)) else _accent()
+	_reason_label = _label(_status(_selected), status_ink if _can_play(_selected) else UI.GOLD, -3)
+	content.add_child(_reason_label)
+	if not _can_play(_selected):
+		content.add_child(_label(_lock_reason(_selected), UI.MUTED))
+	_teaser_label = _label(note.teaser)
+	content.add_child(_teaser_label)
+	content.add_child(_label(note.hint, UI.GOLD, -2))
+	if not config.is_empty():
+		var waves: Array = config.get("waves", [])
+		var intel := UI.panel(content, Color("0e1e26"))
+		var facts := UI.column(intel, 8)
+		facts.add_child(_label("KNOWN INTEL", _accent(), -3))
+		facts.add_child(_label("%d WAVES    /    %d START GOLD" % [waves.size(), int(config.get("starting_gold", 0))]))
+		facts.add_child(_label("Encounter details withheld. Discover the rest in the field.", UI.MUTED, -2))
+	var id := str(module.get("id", ""))
+	var total := LessonCatalog.lesson_count(id)
+	content.add_child(_label("%s  /  LESSONS %d OF %d" % [str(module.get("title", "")).to_upper(), clampi(PlayerManager.get_lesson_progress(id), 0, total), total], UI.MUTED, -3))
+	_breach_button.disabled = not _can_play(_selected)
+	_breach_button.text = ("REPLAY STAGE %02d  >" if PlayerManager.has_cleared_stage(_stage_id(_selected)) else "DEPLOY STAGE %02d  >") % (_selected + 1)
+	if _breach_button.disabled:
+		_breach_button.text = "COMING SOON" if config.is_empty() else "LOCKED / SEE REQUIREMENTS"
 
 func _select_stage(index: int) -> void:
 	if index < 0 or index >= STAGE_COUNT:
@@ -254,78 +300,29 @@ func _select_stage(index: int) -> void:
 	current_selected_stage = maxi(0, _launch_index(index))
 	_rebuild_rows()
 	_refresh_detail()
-	_refresh_breach()
-
-
-func _refresh_detail() -> void:
-	var config: Dictionary = _stage_config(_selected)
-	var locked: bool = not _is_unlocked(_selected)
-	var playable: bool = _can_play(_selected)
-	_stage_title.text = _stage_name(_selected)
-	var entry: Dictionary = _module_entry()
-	_stage_sub.text = "MODULE %d  ·  %s" % [_module_index + 1, str(entry.get("title", "")).to_upper()]
-	_score_label.text = "BEST  --"
-	_apply_label(_score_label, Palette.TEXT_PRIMARY, 18)
-	_apply_label(_stage_title, Palette.TEXT_PRIMARY, 16)
-	_apply_label(_stage_sub, Palette.CYAN, 10)
-	var type_text := "LOCKED"
-	var waves_text := "WAVES --"
-	var gold_text := "GOLD --"
-	if not config.is_empty():
-		type_text = str(config.get("type", "stage")).to_upper()
-		var waves: Array = config.get("waves", [])
-		waves_text = "WAVES %d" % waves.size()
-		gold_text = "GOLD %d" % int(config.get("starting_gold", 0))
-	elif locked:
-		type_text = "LOCKED"
-	else:
-		type_text = "SOON"
-	_type_chip.title = type_text
-	_waves_chip.title = waves_text
-	_gold_chip.title = gold_text
-	_type_chip.fill_key = "gold" if playable else "header"
-	_type_chip.border_key = "gold" if playable else "muted"
-	_waves_chip.fill_key = "panel"
-	_waves_chip.border_key = "cyan" if not locked else "muted"
-	_gold_chip.fill_key = "panel"
-	_gold_chip.border_key = "cyan" if not locked else "muted"
-	_type_chip.queue_redraw()
-	_waves_chip.queue_redraw()
-	_gold_chip.queue_redraw()
-	var accent: Color = _module_accent()
-	if locked:
-		accent = Palette.TEXT_MUTED
-	_art_well.add_theme_stylebox_override("panel", _pixel_box(Color(accent, 0.42), Color(Palette.TEXT_PRIMARY, 0.16), 0, 2))
-	_art_glyph.kind = IntelPixelIcon.Kind.LOCK if locked else _glyph_for_stage(_selected)
-	_art_glyph.modulate = Palette.TEXT_MUTED if locked else Color(1.0, 1.0, 1.0, 1.0)
-	_art_glyph.queue_redraw()
-
-
-func _refresh_breach() -> void:
-	if _can_play(_selected):
-		_breach_button.title = "BREACH  >"
-		_breach_button.fill_key = "gold"
-		_breach_button.border_key = "gold"
-	elif _stage_id(_selected) < 0 or _stage_config(_selected).is_empty():
-		_breach_button.title = "SOON"
-		_breach_button.fill_key = "header"
-		_breach_button.border_key = "muted"
-	else:
-		_breach_button.title = "LOCKED"
-		_breach_button.fill_key = "header"
-		_breach_button.border_key = "muted"
-	_breach_button.queue_redraw()
-
+	(_detail.get_parent() as ScrollContainer).scroll_vertical = 0
+	# Brief transmission reveal; text stays readable and clicks never wait on it.
+	_detail.modulate.a = 0.72
+	_briefing_tween = create_tween()
+	_briefing_tween.tween_property(_detail, "modulate:a", 1.0, 0.16)
 
 func _on_breach_pressed() -> void:
-	if not _can_play(_selected):
+	if not _active or not _can_play(_selected):
 		return
-	var launch: int = _launch_index(_selected)
-	if launch < 0:
-		return
-	current_selected_stage = launch
-	Router.start_level(launch)
+	current_selected_stage = _launch_index(_selected)
+	Router.start_level(current_selected_stage)
 
+func _status(index: int) -> String:
+	if _stage_config(index).is_empty():
+		return "COMING SOON"
+	if not _is_unlocked(index):
+		return "COMPLETED / REVIEW REQUIRED" if PlayerManager.has_cleared_stage(_stage_id(index)) else "LOCKED"
+	return "COMPLETED / REPLAY AVAILABLE" if PlayerManager.has_cleared_stage(_stage_id(index)) else "AVAILABLE / READY TO DEPLOY"
+
+func _lock_reason(index: int) -> String:
+	if _stage_config(index).is_empty():
+		return "This module's stages have not been authored yet. Check back for future operations."
+	return StageManager.access_reason(_stage_id(index), str(_module_entry().get("id", "")))
 
 func _first_playable() -> int:
 	for i in STAGE_COUNT:
@@ -333,143 +330,40 @@ func _first_playable() -> int:
 			return i
 	return 0
 
-
 func _is_unlocked(index: int) -> bool:
-	var module_id := str(_module_entry().get("id", ""))
-	return StageManager.access_reason(_stage_id(index), module_id).is_empty()
-
+	return StageManager.access_reason(_stage_id(index), str(_module_entry().get("id", ""))).is_empty()
 
 func _can_play(index: int) -> bool:
-	return _is_unlocked(index) and not _stage_config(index).is_empty()
-
-
-func _previous_playable_id(index: int) -> int:
-	var i: int = index - 1
-	while i >= 0:
-		var stage_id: int = _stage_id(i)
-		if stage_id > 0 and not StageManager.get_stage_config(stage_id).is_empty():
-			return stage_id
-		i -= 1
-	return 0
-
+	return index >= 0 and index < STAGE_COUNT and _is_unlocked(index) and not _stage_config(index).is_empty()
 
 func _stage_id(index: int) -> int:
-	# Module 1 maps to ContentDB stage ids 1-10. Other modules have no TD data yet.
-	if _module_index != 0:
-		return -1
-	return index + 1
-
+	return index + 1 if _module_index == 0 and index >= 0 and index < STAGE_COUNT else -1
 
 func _launch_index(index: int) -> int:
-	var stage_id: int = _stage_id(index)
-	if stage_id <= 0:
-		return -1
-	return stage_id - 1
-
+	return _stage_id(index) - 1 if _stage_id(index) > 0 else -1
 
 func _stage_config(index: int) -> Dictionary:
-	var stage_id: int = _stage_id(index)
-	if stage_id <= 0:
-		return {}
-	return StageManager.get_stage_config(stage_id)
-
+	return StageManager.get_stage_config(_stage_id(index)) if _stage_id(index) > 0 else {}
 
 func _stage_name(index: int) -> String:
-	var config: Dictionary = _stage_config(index)
-	if not config.is_empty():
-		return str(config.get("name", "STAGE %d" % (index + 1))).to_upper()
-	return "STAGE %d" % (index + 1)
-
+	return str(_stage_config(index).get("name", "STAGE %d" % (index + 1))).to_upper()
 
 func _module_entry() -> Dictionary:
-	if _module_index < 0 or _module_index >= _modules.size():
-		return {}
-	return _modules[_module_index]
+	return _modules[_module_index] if _module_index >= 0 and _module_index < _modules.size() else {}
 
+func _accent() -> Color:
+	return ACCENTS[_module_index]
 
-func _module_accent() -> Color:
-	return _accent_of(str(_module_entry().get("accent", "cyan")))
+func _authored_count() -> int:
+	var total := 0
+	for i in STAGE_COUNT:
+		if not _stage_config(i).is_empty():
+			total += 1
+	return total
 
-
-func _glyph_for_stage(index: int) -> IntelPixelIcon.Kind:
-	var config: Dictionary = _stage_config(index)
-	var kind := str(config.get("type", ""))
-	match kind:
-		"diagnostic":
-			return IntelPixelIcon.Kind.TERMINAL
-		"formative":
-			return IntelPixelIcon.Kind.BADGE
-		"summative":
-			return IntelPixelIcon.Kind.SKULL
-		_:
-			return _module_glyph()
-
-
-func _module_glyph() -> IntelPixelIcon.Kind:
-	match _module_index:
-		0:
-			return IntelPixelIcon.Kind.ENVELOPE
-		1:
-			return IntelPixelIcon.Kind.PHONE
-		2:
-			return IntelPixelIcon.Kind.PHONE
-		3:
-			return IntelPixelIcon.Kind.BADGE
-		_:
-			return IntelPixelIcon.Kind.SKULL
-
-
-func _style_back() -> void:
-	_back_button.text = tr("SETT_BACK")
-	if _pixel_font != null:
-		_back_button.add_theme_font_override("font", _pixel_font)
-	_back_button.add_theme_font_size_override("font_size", 14)
-	_back_button.add_theme_color_override("font_color", Palette.FIELD_PLACEHOLDER)
-	_back_button.add_theme_color_override("font_hover_color", Palette.TEXT_PRIMARY)
-
-
-func _accent_of(name: String) -> Color:
-	match name:
-		"green":
-			return Palette.GREEN
-		"magenta":
-			return Palette.MAGENTA
-		"gold":
-			return Palette.GOLD
-		"muted":
-			return Palette.TEXT_MUTED
-		_:
-			return Palette.CYAN
-
-
-func _card_label(text: String, color: Color, font_size: int, centered: bool) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if centered else HORIZONTAL_ALIGNMENT_LEFT
-	_apply_label(label, color, font_size)
-	return label
-
-
-func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(border_w)
-	box.set_corner_radius_all(radius)
-	return box
-
-
-func _apply_label(label: Label, color: Color, font_size: int) -> void:
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	if _pixel_font != null:
-		label.add_theme_font_override("font", _pixel_font)
-
-
-func _load_font() -> void:
-	if not ResourceLoader.exists(FONT_PATH):
-		return
-	var file: FontFile = load(FONT_PATH) as FontFile
-	if file != null:
-		_pixel_font = file
+func _cleared_count() -> int:
+	var total := 0
+	for i in STAGE_COUNT:
+		if not _stage_config(i).is_empty() and PlayerManager.has_cleared_stage(_stage_id(i)):
+			total += 1
+	return total

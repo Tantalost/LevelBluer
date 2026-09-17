@@ -194,7 +194,7 @@ layout_mode = 2
 focus_mode = 0
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 14
-text = "RETURN TO INTEL HUB"
+text = "RETURN TO DASHBOARD"
 
 [node name="Scanlines" type="Control" parent="."]
 modulate = Color(1, 1, 1, 2.2)

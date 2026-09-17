@@ -24,7 +24,6 @@ const SCREENS: Dictionary = {
 	&"login":        "res://src/ui/screens/login/login_screen.tscn",
 	&"dashboard":    "res://src/ui/screens/dashboard/dashboard_screen.tscn",
 	&"store":        "res://src/ui/screens/store/store_screen.tscn",
-	&"intel_hub":    "res://src/ui/screens/intel/intel_hub_screen.tscn",
 	&"lessons":      "res://src/ui/screens/intel/lessons_screen.tscn",
 	&"lesson_player": "res://src/ui/screens/intel/lesson_player_screen.tscn",
 	&"codex":        "res://src/ui/screens/intel/codex_screen.tscn",
@@ -152,15 +151,14 @@ func open_defeat_upgrades() -> void:
 	)
 
 
-func open_intel_hub() -> void:
+func open_dashboard() -> void:
 	if _host == null:
-		push_error("Router: cannot open Intel Hub (host not registered)")
+		push_error("Router: cannot open Dashboard (host not registered)")
 		return
 	await _navigate(true, func() -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
-		_push_now(&"intel_hub")
 	)
 
 
@@ -184,7 +182,7 @@ func open_lessons() -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
-		_push_now(&"intel_hub")
+		# Lessons returns directly to Dashboard, including after a failed stage.
 		_push_now(&"lessons")
 	)
 
@@ -245,7 +243,6 @@ func open_codex(skill_id: String) -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
-		_push_now(&"intel_hub")
 		_push_now(&"codex", {"skill_id": topic})
 	)
 
@@ -280,7 +277,6 @@ func open_certificate_screen() -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
-		_push_now(&"intel_hub")
 		_push_now(&"certificate")
 	)
 

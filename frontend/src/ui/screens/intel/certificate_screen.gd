@@ -39,8 +39,8 @@ func _ready() -> void:
 	_apply_label(_cert_file, Palette.TEXT_PRIMARY, 11)
 	_apply_label(_title_label, Palette.GOLD, 16)
 	_apply_label(_subtitle_label, Palette.TEXT_PRIMARY, 12)
-	_back_button.pressed.connect(func() -> void: Router.open_intel_hub())
-	_return_button.pressed.connect(func() -> void: Router.open_intel_hub())
+	_back_button.pressed.connect(func() -> void: Router.open_dashboard())
+	_return_button.pressed.connect(func() -> void: Router.open_dashboard())
 
 
 func _process(delta: float) -> void:

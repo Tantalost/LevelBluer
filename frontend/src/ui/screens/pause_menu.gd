@@ -66,7 +66,7 @@ func _on_settings_pressed() -> void:
 func _on_retreat_pressed() -> void:
 	resume_game()
 	Engine.time_scale = 1.0
-	Router.open_intel_hub()
+	Router.open_dashboard()
 
 
 func _style_panel() -> void:
