@@ -44,6 +44,10 @@ var deployment_scale := Vector2.ONE
 var ground_range_scale := Vector2.ONE
 var combat_map: Node2D = null
 var _ground_radius: float = -1.0
+var match_context: MatchContext = MatchContext.new()
+var _preview_recoil := 0.0
+var preview_damage_dealt := 0
+var preview_kills := 0
 
 @onready var _base_sprite: Sprite2D = $BaseSprite
 @onready var _turret_pivot: Node2D = $TurretPivot
@@ -79,6 +83,13 @@ func _ready() -> void:
 
 
 func _bind_runtime_art() -> void:
+	if match_context.geometric:
+		_base_sprite.hide()
+		_head_sprite.hide()
+		_muzzle_flash.hide()
+		_deploy_ring.hide()
+		_muzzle_origin.position = Vector2(27, 0)
+		return
 	if starting_type != "base":
 		_base_sprite.visible = false
 		_head_sprite.visible = false
@@ -105,6 +116,9 @@ func _bind_runtime_art() -> void:
 
 
 func _draw() -> void:
+	if match_context.geometric:
+		preload("res://src/gameplay/preview/unit_glyphs.gd").tower(self, current_type, _turret_pivot.rotation, _preview_recoil, _range_radius())
+		return
 	if current_type == "sandbox":
 		var radius: float = _range_radius()
 		draw_set_transform(Vector2.ZERO, 0.0, ground_range_scale)
@@ -162,7 +176,7 @@ func apply_stats(type_id: String) -> void:
 	current_slow_duration = slow_duration_for(type_id)
 	current_zone_slow = zone_slow_for(type_id)
 	_apply_meta_stats()
-	if current_type == "base":
+	if current_type == "base" and match_context.account_bonuses:
 		fire_rate += float(PlayerManager.stats_bonus_for("base").get("fire_rate", 0.0))
 	queue_redraw()
 	if _buff_time_left > 0.0:
@@ -262,6 +276,8 @@ static func zone_slow_for(type_id: String) -> float:
 
 
 func _apply_meta_stats() -> void:
+	if not match_context.account_bonuses:
+		return
 	if current_type != "base":
 		return
 	var bonus: Dictionary = PlayerManager.stats_bonus_for("base")
@@ -292,6 +308,9 @@ func _apply_zone_to(area: Area2D, entering: bool) -> void:
 
 
 func _process(delta: float) -> void:
+	if match_context.geometric:
+		_preview_recoil = maxf(0, _preview_recoil - delta * 8)
+		queue_redraw()
 	_prune_invalid_targets()
 	if current_type == "sandbox" or fire_rate <= 0.0:
 		current_target = null
@@ -360,6 +379,8 @@ func _restore_modulate() -> void:
 
 
 func _pierce_extra() -> int:
+	if not match_context.account_bonuses:
+		return 0
 	if current_type != "base":
 		return 0
 	if PlayerManager.has_stateful_inspection:
@@ -400,6 +421,9 @@ func _fire() -> void:
 	var parent_node: Node = get_parent()
 	if parent_node == null:
 		return
+	projectile.match_context = match_context
+	if match_context.preview:
+		projectile.source_tower = weakref(self)
 	parent_node.add_child(projectile)
 	projectile.combat_map = combat_map
 	projectile.scale = deployment_scale
@@ -441,6 +465,9 @@ func _finish_deploy_ring() -> void:
 
 
 func _play_attack_animation() -> void:
+	if match_context.geometric:
+		_preview_recoil = 1.0
+		return
 	if _recoil_tween != null and _recoil_tween.is_valid():
 		_recoil_tween.kill()
 	if _flash_tween != null and _flash_tween.is_valid():

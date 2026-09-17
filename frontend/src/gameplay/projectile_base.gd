@@ -2,7 +2,8 @@ class_name ProjectileBase
 extends Area2D
 ## Homing bolt. Stateful Inspection lets a Basic Node shot pierce one extra target.
 
-var speed: float = 400.0
+const DEFAULT_SPEED := 400.0
+var speed: float = DEFAULT_SPEED
 var target: Node2D = null
 var damage: int = 1
 var blast_radius: float = 0.0
@@ -14,6 +15,8 @@ var _hit_ids: Dictionary = {}
 var _last_dir: Vector2 = Vector2.RIGHT
 var _orphan_life: float = 0.0
 var combat_map: Node2D = null
+var match_context: MatchContext = MatchContext.new()
+var source_tower: WeakRef
 
 
 func _combat_distance(a: Vector2, b: Vector2) -> float:
@@ -74,11 +77,13 @@ func _on_area_entered(area: Area2D) -> void:
 	if _hit_ids.has(enemy_id):
 		return
 	if blast_radius > 0.0:
-		VfxManager.spawn_vfx("aoe", global_position)
+		if not match_context.geometric:
+			VfxManager.spawn_vfx("aoe", global_position)
 		_apply_aoe()
 		queue_free()
 		return
-	VfxManager.spawn_vfx("impact", global_position)
+	if not match_context.geometric:
+		VfxManager.spawn_vfx("impact", global_position)
 	if _hit_enemy(enemy):
 		print("[Combat] Dealt " + str(damage) + " damage!")
 	_hit_ids[enemy_id] = true
@@ -138,6 +143,12 @@ func _hit_enemy(enemy: EnemyBase) -> bool:
 	var multiplier: float = enemy.damage_multiplier_vs(source_type)
 	var scaled: int = maxi(0, int(round(float(damage) * multiplier)))
 	var tier: StringName = EnemyBase.matchup_tier(multiplier, 1.5, 0.5)
+	var before := enemy.current_health
 	enemy.take_damage(scaled, tier)
+	if match_context.preview and source_tower != null:
+		var tower: Node = source_tower.get_ref()
+		if is_instance_valid(tower):
+			tower.preview_damage_dealt += maxi(0, before - enemy.current_health)
+			tower.preview_kills += int(before > 0 and enemy.current_health == 0)
 	enemy.apply_slow(slow_factor, slow_duration)
 	return true

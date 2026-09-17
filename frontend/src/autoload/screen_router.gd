@@ -47,6 +47,8 @@ const SCREENS: Dictionary = {
 signal quit_requested
 
 const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
+const PREVIEW_SCENE := "res://src/gameplay/preview/stage_one_preview.tscn"
+var active_match_context: MatchContext = MatchContext.new()
 
 var active_stage_index: int = 0
 var _host: Control = null
@@ -73,6 +75,14 @@ func start_level(stage_index: int) -> void:
 		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
 		return
 	await _navigate(true, func() -> void: _begin_gameplay(stage_index))
+
+
+func start_gameplay_preview() -> void:
+	if _busy or _host == null or is_tutorial or is_instance_valid(_gameplay):
+		return
+	if not StageManager.access_reason(1, "mod_01").is_empty():
+		return
+	await _navigate(true, func() -> void: _begin_gameplay(0, MatchContext.stage_one_preview()))
 
 
 func start_tutorial() -> void:
@@ -123,9 +133,10 @@ func return_to_stage_select() -> void:
 
 func restart_level() -> void:
 	var stage: int = active_stage_index
+	var context: MatchContext = active_match_context
 	await _navigate(true, func() -> void:
 		_teardown_gameplay()
-		_begin_gameplay(stage)
+		_begin_gameplay(stage, context)
 	)
 
 
@@ -366,6 +377,7 @@ func _teardown_gameplay() -> void:
 			parent.remove_child(_gameplay)
 		_gameplay.queue_free()
 	_gameplay = null
+	active_match_context = MatchContext.new()
 	if not PlayerManager.needs_tutorial():
 		is_tutorial = false
 		tutorial_beat = &""
@@ -404,6 +416,9 @@ func request_back() -> void:
 	if is_tutorial:
 		return
 	if _gameplay != null and is_instance_valid(_gameplay):
+		if active_match_context.preview and _gameplay.has_method("toggle_pause"):
+			_gameplay.toggle_pause()
+			return
 		var manager: Node = _gameplay.get_node_or_null("LevelManager")
 		if manager is LevelManager:
 			(manager as LevelManager).toggle_pause()
@@ -503,8 +518,11 @@ func _pop_now() -> void:
 	screen_changed.emit(arriving.screen_id)
 
 
-func _begin_gameplay(stage_index: int) -> void:
-	if not AssetManager.has_required_gameplay_assets():
+func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
+	if context == null:
+		context = MatchContext.new()
+	context.stage_id = stage_index + 1
+	if not context.preview and not AssetManager.has_required_gameplay_assets():
 		push_error("Router: required gameplay assets are not available locally")
 		_set_ui_stack_active(true)
 		return
@@ -512,10 +530,11 @@ func _begin_gameplay(stage_index: int) -> void:
 	if _gameplay != null and is_instance_valid(_gameplay):
 		push_warning("Router: a level is already running")
 		return
-	if not ResourceLoader.exists(LEVEL_SCENE):
+	var scene_path: String = PREVIEW_SCENE if context.preview else LEVEL_SCENE
+	if not ResourceLoader.exists(scene_path):
 		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
 		return
-	var packed: PackedScene = load(LEVEL_SCENE) as PackedScene
+	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
 		push_error("Router: failed to load %s" % LEVEL_SCENE)
 		return
@@ -523,6 +542,10 @@ func _begin_gameplay(stage_index: int) -> void:
 	if instance == null:
 		push_error("Router: failed to instantiate level")
 		return
+	# Configure before entering the tree; no preview side effects can run first.
+	active_match_context = context
+	if context.preview:
+		instance.set("match_context", context)
 	if not _stack.is_empty():
 		_stack.back().on_exit()
 	_set_ui_stack_active(false)

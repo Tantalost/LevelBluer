@@ -31,6 +31,7 @@ var _stage_list: VBoxContainer
 var _summary: Label
 var _completion: ProgressBar
 var _breach_button: Button
+var _preview_button: Button
 var _reason_label: Label
 var _header: HBoxContainer
 var _profile_name: Label
@@ -92,6 +93,8 @@ func _ready() -> void:
 	_detail = UI.scroll_column(briefing)
 	_breach_button = UI.button("DEPLOY  >", _on_breach_pressed, true)
 	briefing.add_child(_breach_button)
+	_preview_button = UI.button("Try Gameplay Preview — Nothing Saved", _on_preview_pressed)
+	briefing.add_child(_preview_button)
 	var missions := UI.column(_body, 12)
 	missions.size_flags_horizontal = SIZE_EXPAND_FILL
 	missions.size_flags_stretch_ratio = 0.45
@@ -169,7 +172,7 @@ func _refresh_all() -> void:
 	var scale_y := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	_font = maxi(28, ceili(16 / scale_y))
 	_touch = maxf(64, ceilf(48 / scale_y))
-	for button in [_back, _settings, _profile, _breach_button]:
+	for button in [_back, _settings, _profile, _breach_button, _preview_button]:
 		button.custom_minimum_size.y = _touch
 		button.add_theme_font_size_override("font_size", _font)
 	for button in [_back, _settings]:
@@ -289,6 +292,8 @@ func _refresh_detail() -> void:
 	var total := LessonCatalog.lesson_count(id)
 	content.add_child(_label("%s  /  LESSONS %d OF %d" % [str(module.get("title", "")).to_upper(), clampi(PlayerManager.get_lesson_progress(id), 0, total), total], UI.MUTED, -3))
 	_breach_button.disabled = not _can_play(_selected)
+	_preview_button.visible = _module_index == 0 and _selected == 0
+	_preview_button.disabled = not _can_play(_selected)
 	_breach_button.text = ("REPLAY STAGE %02d  >" if PlayerManager.has_cleared_stage(_stage_id(_selected)) else "DEPLOY STAGE %02d  >") % (_selected + 1)
 	if _breach_button.disabled:
 		_breach_button.text = "COMING SOON" if config.is_empty() else "LOCKED / SEE REQUIREMENTS"
@@ -311,6 +316,10 @@ func _on_breach_pressed() -> void:
 		return
 	current_selected_stage = _launch_index(_selected)
 	Router.start_level(current_selected_stage)
+
+func _on_preview_pressed() -> void:
+	if _active and _module_index == 0 and _selected == 0 and _can_play(_selected):
+		Router.start_gameplay_preview()
 
 func _status(index: int) -> String:
 	if _stage_config(index).is_empty():
