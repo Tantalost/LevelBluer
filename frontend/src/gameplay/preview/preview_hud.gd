@@ -7,6 +7,7 @@ const Battle = preload("res://src/gameplay/preview/battle_view.gd")
 const Meter = preload("res://src/gameplay/preview/animated_meter.gd")
 const Glyph = preload("res://src/gameplay/preview/tower_glyph.gd")
 const ResourceIcon = preload("res://src/gameplay/preview/resource_icon.gd")
+const StatIcon = preload("res://src/gameplay/preview/stat_icon.gd")
 var battle: SubViewportContainer
 var status: Label
 var gold_label: Label
@@ -16,6 +17,8 @@ var phase_label: Label
 var preview_label: Label
 var wave_progress: ProgressBar
 var speed_button: Button
+var pause_button: Button
+var _resource_gap: Control
 var start_button: Button
 var body: Control
 var side: PanelContainer
@@ -74,13 +77,22 @@ func _ready() -> void:
 	status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	header.add_child(status)
 	gold_label = _resource_badge(header, "gold", UI.GOLD)
+	_resource_gap = Control.new()
+	_resource_gap.mouse_filter = MOUSE_FILTER_IGNORE
+	header.add_child(_resource_gap)
 	health_label = _resource_badge(header, "health", Color("a3deb2"))
 	speed_button = button("1x", "speed")
 	speed_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	header.add_child(speed_button)
-	var pause_button := button("Pause", "pause")
+	pause_button = button("", "pause")
+	pause_button.name = "PauseButton"
+	pause_button.tooltip_text = "Pause"
 	pause_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	header.add_child(pause_button)
+	var pause_icon := ResourceIcon.new()
+	pause_icon.kind = "pause"
+	pause_icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	pause_button.add_child(pause_icon)
 	_crt(top)
 	var phases := HBoxContainer.new()
 	layout.add_child(phases)
@@ -177,13 +189,18 @@ func _responsive() -> void:
 	var scale_y := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	font_size = maxi(26, ceili(16 / scale_y))
 	touch = maxf(64, ceilf(48 / scale_y))
-	side.custom_minimum_size.x = clampf(size.x * 0.30, 370, 440)
+	_resource_gap.custom_minimum_size.x = maxf(12, ceilf(10 / scale_y))
+	# Reserve enough real text width for all names; never split Scanner/Sandbox
+	# mid-word or shrink below the mobile body-text minimum.
+	side.custom_minimum_size.x = maxf(clampf(size.x * 0.30, 370, 440), _card_width() * 3 + 80)
 	build_details.custom_minimum_size.x = clampf(size.x * 0.24, 300, 350)
 	_apply_metrics(self)
 
 func _apply_metrics(node: Node) -> void:
 	if node is Button:
-		node.custom_minimum_size.y = 100 + font_size * 4 if node.get_meta("tower_card", false) else touch
+		node.custom_minimum_size.y = 76 + font_size * 4 if node.get_meta("tower_card", false) else touch
+		if node.get_meta("tower_card", false):
+			node.custom_minimum_size.x = _card_width()
 		node.add_theme_font_size_override("font_size", font_size)
 	elif node is Label:
 		node.add_theme_font_size_override("font_size", font_size + int(node.get_meta("font_boost", 0)))
@@ -363,8 +380,6 @@ func show_build_picker(choices: Array, cell: Vector2i, selected: String = "", de
 	UI.clear(side_content)
 	UI.clear(side_actions)
 	side_content.add_child(UI.label("PLATFORM / %02d:%02d" % [cell.x + 1, cell.y + 1], font_size, UI.TEAL))
-	side_content.add_child(UI.label("One tile. One defender.\nChoose a tower to inspect.", font_size, UI.MUTED))
-	side_content.add_child(UI.label("TOWERS / REMAINING", font_size, UI.TEAL))
 	tower_grid = GridContainer.new()
 	tower_grid.columns = 3
 	tower_grid.add_theme_constant_override("h_separation", 6)
@@ -378,30 +393,70 @@ func show_build_picker(choices: Array, cell: Vector2i, selected: String = "", de
 		return
 	UI.clear(build_content)
 	UI.clear(build_actions)
-	build_content.add_child(UI.label(str(detail.name).to_upper(), font_size, UI.TEAL))
+	build_content.add_theme_constant_override("separation", 4)
+	var identity := HBoxContainer.new()
+	identity.add_theme_constant_override("separation", 10)
+	build_content.add_child(identity)
 	var icon := Glyph.new()
 	icon.kind = selected
-	icon.custom_minimum_size.y = 74
-	build_content.add_child(icon)
-	build_content.add_child(UI.label(str(detail.description), font_size))
+	icon.custom_minimum_size = Vector2(40, 40)
+	identity.add_child(icon)
+	var title := UI.label(str(detail.name).to_upper(), font_size, UI.TEAL)
+	title.size_flags_horizontal = SIZE_EXPAND_FILL
+	identity.add_child(title)
 	for stat in detail.stats:
-		build_content.add_child(UI.label(str(stat.text), font_size))
-		var meter := Meter.new()
-		meter.custom_minimum_size.y = 8
-		meter.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
-		build_content.add_child(meter)
-		meter.set_progress(float(stat.value), float(stat.maximum))
-	build_content.add_child(UI.label("%d of %d available" % [detail.remaining, detail.capacity], font_size, UI.TEAL))
-	build_content.add_child(UI.label(str(detail.reason) if not str(detail.reason).is_empty() else "Range shown on the map. Place to confirm.", font_size, Color("ee8791") if not str(detail.reason).is_empty() else UI.MUTED))
+		_stat_row(build_content, stat)
+	for matchup in detail.matchups:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		build_content.add_child(row)
+		var symbol := StatIcon.new()
+		symbol.kind = matchup.kind
+		symbol.tint = Color("a3deb2") if bool(matchup.strong) else Color("ee9999")
+		row.add_child(symbol)
+		var name_label := UI.label(matchup.name, font_size, UI.MUTED)
+		name_label.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.add_child(name_label)
+		var value := UI.label(matchup.value, font_size, symbol.tint)
+		value.autowrap_mode = TextServer.AUTOWRAP_OFF
+		row.add_child(value)
+	if not str(detail.reason).is_empty():
+		build_content.add_child(UI.label(str(detail.reason), font_size, Color("ee8791")))
 	var place := button("Place / %d gold" % detail.cost, "place", null, true)
 	place.disabled = not str(detail.reason).is_empty()
 	build_actions.add_child(place)
 	build_details.show()
 
+func _stat_row(parent: Node, stat: Dictionary) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+	var icon := StatIcon.new()
+	icon.kind = str(stat.kind)
+	row.add_child(icon)
+	var column := UI.column(row, 3)
+	column.size_flags_horizontal = SIZE_EXPAND_FILL
+	var values := HBoxContainer.new()
+	column.add_child(values)
+	var caption := UI.label(str(stat.caption), font_size, UI.MUTED)
+	caption.size_flags_horizontal = SIZE_EXPAND_FILL
+	values.add_child(caption)
+	var value := UI.label(str(stat.display), font_size)
+	value.autowrap_mode = TextServer.AUTOWRAP_OFF
+	values.add_child(value)
+	var meter := Meter.new()
+	meter.custom_minimum_size.y = 6
+	meter.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
+	column.add_child(meter)
+	meter.set_progress(float(stat.value), float(stat.maximum))
+
+func _card_width() -> float:
+	return ceilf(maxf(UI.FONT.get_string_size("Scanner", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x, UI.FONT.get_string_size("Sandbox", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)) + 22
+
 func _add_tower_card(row: Dictionary, selected: bool) -> void:
 	var card := button("", row.id, row.get("value"))
 	card.set_meta("tower_card", true)
-	card.custom_minimum_size = Vector2(0, 100 + font_size * 4)
+	card.custom_minimum_size = Vector2(_card_width(), 76 + font_size * 4)
 	card.size_flags_horizontal = SIZE_EXPAND_FILL
 	var available := int(row.remaining) > 0 and bool(row.affordable)
 	card.add_theme_stylebox_override("normal", UI.box(Color("254944") if selected else (UI.PANEL if available else Color("111b22")), UI.TEAL if selected else Color("30454d"), 4))
@@ -416,10 +471,12 @@ func _add_tower_card(row: Dictionary, selected: bool) -> void:
 	card.add_child(column)
 	var icon := Glyph.new()
 	icon.kind = str(row.value)
-	icon.custom_minimum_size.y = 66
+	icon.custom_minimum_size.y = 50
 	icon.modulate = Color.WHITE if available else Color("7f9699")
 	column.add_child(icon)
-	var title := UI.label(str(row.name), font_size)
+	var title := UI.label("Basic\nNode" if str(row.value) == "base" else str(row.name), font_size)
+	title.set_meta("tower_name", true)
+	title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title.custom_minimum_size.y = font_size * 2 + 4
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)

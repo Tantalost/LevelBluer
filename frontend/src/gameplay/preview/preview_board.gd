@@ -1,5 +1,6 @@
 extends Node2D
 const Glyphs = preload("res://src/gameplay/preview/unit_glyphs.gd")
+const Terrain = preload("res://src/gameplay/preview/preview_terrain.gd")
 const CELL := 64
 const GRID := Vector2i(13, 7)
 const WAYPOINTS := [Vector2i(0, 1), Vector2i(9, 1), Vector2i(9, 3), Vector2i(3, 3), Vector2i(3, 5), Vector2i(12, 5)]
@@ -12,6 +13,12 @@ var health := 5
 var route_offset := 0.0
 var home_destroyed := false
 
+func _ready() -> void:
+	var terrain := Terrain.new()
+	terrain.name = "Terrain"
+	terrain.path_cells = path_cells.duplicate()
+	add_child(terrain)
+
 func _process(delta: float) -> void:
 	route_offset = fposmod(route_offset + delta * 0.7, 3.0)
 	queue_redraw()
@@ -22,7 +29,7 @@ func play_home_destruction() -> void:
 	home_destroyed = true
 	# Feed the existing collapse animator a runtime vector version of this server.
 	# No downloaded sprites, generated image files, or production artwork changes.
-	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="-32 -32 64 64"><path d="M-25-22H25L22 14 0 27-22 14Z" fill="#14252b" stroke="#e58d8e" stroke-width="2.5"/><g fill="none" stroke="#e58d8e" stroke-width="2"><path d="M-12-15H12V-8H-12ZM-12-5H12V2H-12ZM-12 5H12V12H-12Z"/><path d="M8-20-2-3 8 3-4 20"/></g></svg>'
+	var svg := '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="-32 -32 64 64"><path d="M-25-25H25V25H-25Z" fill="#823d4c" stroke="#e58d8e" stroke-width="2"/><path d="M-19-19H19V19H-19Z" fill="#a64c60"/><g fill="#e58d8e"><path d="M-13-14H13V-7H-13ZM-13-3H13V4H-13ZM-13 8H13V15H-13Z"/></g><path d="M8-24-2-3 8 3-4 24" fill="none" stroke="#392129" stroke-width="3"/></svg>'
 	var image := Image.new()
 	if image.load_svg_from_string(svg) == OK:
 		var effect := preload("res://src/gameplay/base_destruction.gd").new()
@@ -64,14 +71,6 @@ func cell_reason(cell: Vector2i) -> String:
 	return ""
 
 func _draw() -> void:
-	for y in GRID.y:
-		for x in GRID.x:
-			var cell := Vector2i(x, y)
-			var path := path_cells.has(cell)
-			var fill := Color("35484e") if path else Color("19262d")
-			if not path and (x + y) % 2 == 0:
-				fill = Color("1d2b32")
-			draw_rect(Rect2(Vector2(cell) * CELL + Vector2(2, 2), Vector2(60, 60)), fill)
 	for i in range(0, path_cells.size() - 1, 3):
 		var travel := float(i) + route_offset
 		if travel < 0.65 or travel > path_cells.size() - 1.65:
@@ -103,10 +102,11 @@ func _draw_endpoints() -> void:
 		return
 	at = center(WAYPOINTS.back())
 	var tint := Color("85d9c3") if health > 3 else (Color("e5c88a") if health > 1 else Color("e58d8e"))
-	var shield := PackedVector2Array([at + Vector2(-25, -22), at + Vector2(25, -22), at + Vector2(22, 14), at + Vector2(0, 27), at + Vector2(-22, 14), at + Vector2(-25, -22)])
-	draw_colored_polygon(shield, Color("14252b"))
-	draw_polyline(shield, tint, 2.5, true)
+	draw_set_transform(at)
+	Glyphs.bevel(self, PackedVector2Array([Vector2(-25,-25),Vector2(25,-25),Vector2(25,25),Vector2(-25,25)]), tint.darkened(0.35))
+	draw_set_transform(Vector2.ZERO)
 	for i in 3:
-		draw_rect(Rect2(at + Vector2(-12, -15 + i * 10), Vector2(24, 7)), tint, false, 2)
+		draw_rect(Rect2(at + Vector2(-13, -14 + i * 11), Vector2(26, 7)), tint)
+		draw_rect(Rect2(at + Vector2(7, -12 + i * 11), Vector2(3, 3)), Color("183c3b"))
 	if health <= 3:
 		draw_polyline(PackedVector2Array([at + Vector2(8, -20), at + Vector2(-2, -3), at + Vector2(8, 3), at + Vector2(-4, 20)]), Color("ed9b91"), 2)

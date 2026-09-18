@@ -343,7 +343,7 @@ func _begin_death() -> void:
 	_clear_slow_timer()
 	_disable_hitbox()
 	if match_context.geometric:
-		preload("res://src/gameplay/preview/unit_glyphs.gd").fragments(get_parent(), position, _base_color)
+		preload("res://src/gameplay/preview/unit_glyphs.gd").fragments(get_parent(), position, _base_color, _type_id)
 	else:
 		VfxManager.spawn_vfx("death", global_position)
 	if match_context.persistent:

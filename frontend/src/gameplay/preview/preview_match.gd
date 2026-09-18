@@ -278,14 +278,9 @@ func pick_tower(kind: String) -> void:
 	var radius := template._range_radius()
 	template.free()
 	hud.battle.board.range_radius = radius
-	var descriptions := {
-		"base": "Direct-fire defender. Strong against heavy enemies; weaker against swarms.",
-		"scanner": "Rapid scanning fire. Strong against swarms; weaker against armor.",
-		"sandbox": "Passive containment field. Slows nearby enemies instead of firing. Especially effective against stealth.",
-	}
-	var stats: Array[Dictionary] = [{"text": "Range / %.2f tiles" % (radius / Board.CELL), "value": radius / Board.CELL, "maximum": 3.0}]
+	var stats: Array[Dictionary] = [{"kind": "range", "caption": "Range", "display": "%.2f tiles" % (radius / Board.CELL), "value": radius / Board.CELL, "maximum": 3.0}]
 	if kind == "sandbox":
-		stats.append({"text": "Slow / 20–60% by enemy type", "value": 60, "maximum": 100})
+		stats.append({"kind": "slow", "caption": "Slow", "display": "20–60%", "value": 60, "maximum": 100})
 	else:
 		var entry := TowerBase.entry_for(kind)
 		var max_damage := 1.0
@@ -293,13 +288,17 @@ func pick_tower(kind: String) -> void:
 		for type in TYPES:
 			max_damage = maxf(max_damage, TowerBase.damage_at(type, 0))
 			max_rate = maxf(max_rate, float(TowerBase.entry_for(type).get("fire_rate", 1.0)))
-		stats.append({"text": "Base damage / %d" % TowerBase.damage_at(kind, 0), "value": TowerBase.damage_at(kind, 0), "maximum": max_damage})
-		stats.append({"text": "Attack speed / %.2f per sec" % float(entry.get("fire_rate", 1.0)), "value": float(entry.get("fire_rate", 1.0)), "maximum": max_rate})
-	var description: String = descriptions[kind]
-	if global_patch and kind != "sandbox":
-		description += "\nActive global patch: +15% damage."
+		stats.append({"kind": "damage", "caption": "Damage", "display": str(TowerBase.damage_at(kind, 0)) + (" +15%" if global_patch else ""), "value": TowerBase.damage_at(kind, 0), "maximum": max_damage})
+		stats.append({"kind": "rate", "caption": "Rate", "display": "%.2f/s" % float(entry.get("fire_rate", 1.0)), "value": float(entry.get("fire_rate", 1.0)), "maximum": max_rate})
+	var matchups: Array[Dictionary] = [
+		{"kind": "heavy", "name": "Heavy", "value": "×1.5", "strong": true},
+		{"kind": "swarm", "name": "Swarm", "value": "×0.5", "strong": false}]
+	if kind == "scanner":
+		matchups = [{"kind": "swarm", "name": "Swarm", "value": "×1.5", "strong": true}, {"kind": "heavy", "name": "Heavy", "value": "×0.5", "strong": false}]
+	elif kind == "sandbox":
+		matchups = [{"kind": "stealth", "name": "Stealth", "value": "−60%", "strong": true}, {"kind": "heavy", "name": "Heavy / swarm", "value": "−20%", "strong": false}]
 	hud.show_build_picker(_loadout_choices(), pending_cell, kind, {
-		"name": TowerBase.display_name_for(kind), "description": description, "stats": stats,
+		"name": TowerBase.display_name_for(kind), "stats": stats, "matchups": matchups, "patch": global_patch and kind != "sandbox",
 		"cost": TowerBase.cost_for(kind), "remaining": maxi(0, ContentDB.default_capacity(kind) - _count(kind)),
 		"capacity": ContentDB.default_capacity(kind), "reason": reason,
 	})
@@ -489,6 +488,11 @@ func _finish(won: bool) -> void:
 	_set_phase("Results")
 	incident_active = false
 	hud.battle.world.process_mode = Node.PROCESS_MODE_DISABLED
+	# Combat freezes behind the result reveal, but temporary residue must still
+	# finish fading instead of being left permanently suspended on the map.
+	for effect in hud.battle.track.get_children():
+		if effect.has_meta("preview_death_burst") or effect.has_meta("preview_death_stain"):
+			effect.process_mode = Node.PROCESS_MODE_ALWAYS
 	if not won:
 		hud.battle.board.play_home_destruction()
 		AudioManager.play_sfx("explosion")

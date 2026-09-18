@@ -41,6 +41,22 @@ func check_layout(match_node: Control, label: String) -> void:
 	var scale_y: float = root.get_final_transform().get_scale().y
 	check(hud.font_size * scale_y >= 15.9, label + ": body text at least 16 physical pixels")
 	check(hud.speed_button.size.y * scale_y >= 47.9, label + ": control height at least 48 physical pixels")
+	check(hud.pause_button.size.x * scale_y >= 47.9 and hud.pause_button.size.y * scale_y >= 47.9, label + ": icon-only Pause retains a full touch target")
+	check(hud.pause_button.text.is_empty() and hud.pause_button.get_child(0).kind == "pause", label + ": Pause uses a code-drawn twin-bar symbol")
+	check((hud.health_icon.get_global_rect().position.x - hud.gold_label.get_global_rect().end.x) * scale_y >= 20, label + ": gold and health have visible separation")
+	if is_instance_valid(hud.tower_grid) and hud.tower_grid.is_inside_tree() and hud.side.visible:
+		check(hud.side_content.size.y <= hud.side_content.get_parent().size.y + 2, label + ": entire picker is visible without scrolling")
+		check(hud.tower_grid.get_global_rect().end.x <= hud.side_content.get_parent().get_global_rect().end.x + 1, label + ": all card borders fit inside the panel")
+		for name_label in hud.tower_grid.find_children("*", "Label", true, false):
+			if not name_label.get_meta("tower_name", false):
+				continue
+			check(name_label.autowrap_mode == TextServer.AUTOWRAP_OFF, label + ": tower names never break mid-word")
+			for line in name_label.text.split("\n"):
+				var width: float = name_label.get_theme_font("font").get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, name_label.get_theme_font_size("font_size")).x
+				check(width <= name_label.size.x + 1, label + ": tower name has enough width")
+	if hud.build_details.visible:
+		check(hud.build_content.size.y <= hud.build_content.get_parent().size.y + 2, label + ": essential build stats visible without scrolling")
+		check(hud.build_actions.get_global_rect().end.x <= viewport_rect.end.x, label + ": Place stays in viewport")
 
 func answer(match_node: Node) -> void:
 	var q: Dictionary = match_node.question
@@ -85,6 +101,18 @@ func _run() -> void:
 	check(match_node.phase == "Trace", "Preview begins with Trace")
 	check(match_node.gold == 2, "Canonical Stage 1 starting gold, no account intel bonus")
 	check(match_node.hud.battle.board.path_cells.size() == 29, "Route contains the expected winding path cells")
+	var board: Node = match_node.hud.battle.board
+	var terrain: Node = board.get_node("Terrain")
+	check(terrain.show_behind_parent and terrain.path_cells == board.path_cells, "Static terrain follows the gameplay route and sits behind arrows and selections")
+	check(terrain.FLOOR.get_luminance() > terrain.ROUTE.get_luminance() * 1.5, "Gray platforms remain clearly brighter than the dark route")
+	var buildable := 0
+	for y in 7:
+		for x in 13:
+			buildable += int(board.cell_reason(Vector2i(x,y)).is_empty())
+	check(buildable == 62, "Terrain restyle retains all 62 placement cells")
+	for i in range(1, board.path_cells.size()):
+		var step: Vector2i = board.path_cells[i] - board.path_cells[i - 1]
+		check(absi(step.x) + absi(step.y) == 1, "Every route cell connects orthogonally")
 	await shot("trace_1280")
 	for resolution in [Vector2i(960, 600), Vector2i(844, 390)]:
 		root.size = resolution
@@ -137,6 +165,8 @@ func _run() -> void:
 	test_enemy.match_context = match_node.match_context
 	test_enemy.initialize_stats("fast", 1)
 	match_node.hud.battle.track.add_child(test_enemy)
+	test_enemy.progress = 210
+	var death_position: Vector2 = test_enemy.position
 	var enemy_hp: int = test_enemy.current_health
 	var projectile: Node = load("res://src/gameplay/projectile_base.tscn").instantiate()
 	projectile.match_context = match_node.match_context
@@ -145,9 +175,49 @@ func _run() -> void:
 	projectile._hit_enemy(test_enemy)
 	check(tower.preview_damage_dealt == enemy_hp and tower.preview_kills == 1, "Inspector combat counters use actual damage and kills")
 	projectile.free()
-	var bursts: Array = match_node.hud.battle.track.get_children().filter(func(node: Node) -> bool: return node.get("tint") != null)
+	var bursts: Array = match_node.hud.battle.track.get_children().filter(func(node: Node) -> bool: return node.has_meta("preview_death_burst"))
 	check(bursts.size() == 1 and bursts[0].tint == test_enemy._base_color, "Death burst matches the enemy color")
 	check(bursts[0].get_child(0) is CPUParticles2D, "Enemy defeat emits particles")
+	check(bursts[0].get_child(0).amount >= 34 and bursts[0]._pieces.size() >= 10, "Deaths combine dense sparks and spinning silhouette fragments")
+	var stains: Array = match_node.hud.battle.track.get_children().filter(func(node: Node) -> bool: return node.has_meta("preview_death_stain"))
+	check(stains.size() == 1 and stains[0].tint == test_enemy._base_color, "Death residue matches the enemy color")
+	var stain: Node = stains[0]
+	check(stain.position == death_position and bursts[0].position == death_position, "Effects remain at the actual death position")
+	check(stain.z_index < 0 and stain.z_index > terrain.z_index, "Stain is above terrain but below actors and route arrows")
+	test_enemy.take_damage(999)
+	check(tower.preview_kills == 1, "Repeated damage after death does not award another kill")
+	match_node.toggle_pause()
+	var frozen_age: float = stain.elapsed
+	await create_timer(0.15).timeout
+	check(stain.elapsed == frozen_age, "Pause freezes death effects with the battlefield")
+	match_node.toggle_pause()
+	await shot("death_burst_1280")
+	await create_timer(0.25).timeout
+	await shot("death_shards_1280")
+	root.size = Vector2i(844, 390)
+	await shot("death_shards_844")
+	root.size = Vector2i(1280, 720)
+	await create_timer(1.2).timeout
+	check(not is_instance_valid(bursts[0]), "Burst cleans up after its short lifetime")
+	stain.set_process(false)
+	stain.elapsed = 1.5
+	check(is_equal_approx(stain.opacity(), 1.0), "Residue holds briefly before fading")
+	stain.elapsed = 3.2
+	stain.queue_redraw()
+	check(stain.opacity() > 0 and stain.opacity() < 1, "Residue fades gradually rather than disappearing abruptly")
+	await shot("death_stain_fading_1280")
+	stain._process(2.0)
+	await settle()
+	check(not is_instance_valid(stain), "Residue is removed after four seconds")
+	var glyphs := load("res://src/gameplay/preview/unit_glyphs.gd")
+	for i in 40:
+		glyphs.fragments(match_node.hud.battle.track, death_position, Color("71bf83"), "basic")
+	bursts = match_node.hud.battle.track.get_children().filter(func(node: Node) -> bool: return node.has_meta("preview_death_burst") and not node.is_queued_for_deletion())
+	stains = match_node.hud.battle.track.get_children().filter(func(node: Node) -> bool: return node.has_meta("preview_death_stain") and not node.is_queued_for_deletion())
+	check(bursts.size() <= 16 and stains.size() <= 32, "Clustered kills stay within mobile effect budgets")
+	for effect in bursts + stains:
+		effect._process(5.0)
+	await settle()
 	await shot("inspector_1280")
 	match_node.cancel_selection()
 	for resolution in [Vector2i(960, 600), Vector2i(844, 390)]:
@@ -157,6 +227,10 @@ func _run() -> void:
 		match_node.select_cell(Vector2i(7, 2))
 		match_node.pick_tower("scanner")
 		await shot("placement_%d" % resolution.x)
+		match_node.pick_tower("sandbox")
+		await shot("sandbox_%d" % resolution.x)
+		match_node.pick_tower("base")
+		await shot("basic_%d" % resolution.x)
 		match_node.cancel_selection()
 		match_node.select_cell(Vector2i(3, 2))
 		await shot("inspector_%d" % resolution.x)
@@ -165,8 +239,8 @@ func _run() -> void:
 	match_node.begin_defend()
 	check(match_node.phase == "Defend" and match_node.pending_cell.x < 0, "Defend closes construction state")
 	check(not match_node.place_tower(), "Defend rejects placement")
-	match_node.toggle_pause()
-	check(match_node.paused, "Pause works")
+	match_node.hud.pause_button.pressed.emit()
+	check(match_node.paused, "Icon-only Pause button still pauses the match")
 	await shot("pause_1280")
 	match_node.toggle_pause()
 	# Drive all waves through actual actor death signals; no persistent death tasks.
