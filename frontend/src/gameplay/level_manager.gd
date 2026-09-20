@@ -186,7 +186,7 @@ func _ready() -> void:
 	if Router.is_tutorial:
 		_begin_tutorial_shell()
 	else:
-		change_phase(GamePhase.PHASE_1_QUIZ)
+	change_phase(GamePhase.PHASE_1_QUIZ)
 	AudioManager.play_bgm(AudioManager.level_track)
 
 
@@ -677,7 +677,7 @@ func _load_stage_config() -> void:
 	_asked_question_ids.clear()
 	_exam_deck.clear()
 	_exam_deck_index = 0
-	var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
+		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
 	current_gold = _apply_intel_bonus_gold(int(gold_stored))
 	_wave_intel_hidden = false
 	_global_patch_active = false
@@ -1086,10 +1086,10 @@ func _skill_question_pool(question_bank: Dictionary, skill_id: String) -> Array[
 	var pool: Array[Dictionary] = []
 	if not question_bank.has(skill_id):
 		return pool
-	var list_stored: Variant = question_bank[skill_id]
+		var list_stored: Variant = question_bank[skill_id]
 	if typeof(list_stored) != TYPE_ARRAY:
 		return pool
-	var q_list: Array = list_stored as Array
+		var q_list: Array = list_stored as Array
 	for i in q_list.size():
 		var q_stored: Variant = q_list[i]
 		if typeof(q_stored) != TYPE_DICTIONARY:
@@ -1706,7 +1706,7 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	if not _is_summative():
 		current_gold += reward
 		print("[Economy] Quiz reward +" + str(reward) + " Gold. Current Gold: " + str(current_gold))
-	update_hud()
+		update_hud()
 	var exam_count: int = _exam_question_count()
 	var more_in_wave: bool = _wave_questions_asked < _questions_per_wave()
 	var more_in_exam: bool = not _is_summative() or exam_questions_asked < exam_count
@@ -1722,7 +1722,7 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 			print("[Exam] Score below target. Final result follows wave 3: " + str(accuracy))
 		else:
 			print("[Exam] Passing score secured: " + str(accuracy))
-	change_phase(GamePhase.PHASE_2_BUILD)
+		change_phase(GamePhase.PHASE_2_BUILD)
 
 
 func _on_start_wave_pressed() -> void:
@@ -1796,7 +1796,7 @@ func _refresh_quiz_copy() -> void:
 	_quiz_file_label.text = "EXAM.DAT" if exam else "QTE.DAT"
 	var type_label: String = _display_type_label(current_question)
 	if type_label.is_empty():
-		_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
+	_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
 	else:
 		_quiz_event_label.text = type_label.to_upper()
 	_quiz_reward_hint.visible = not exam
@@ -1807,7 +1807,7 @@ func _refresh_quiz_copy() -> void:
 		var mastery_pct: int = clampi(int(round(PlayerManager.get_mastery(skill_id) * 100.0)), 0, 100)
 		if _bkt_frozen:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%% LOCKED" % [hit_gold, miss_gold, mastery_pct]
-		else:
+	else:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%%" % [hit_gold, miss_gold, mastery_pct]
 	_quiz_tap_hint.text = "TAKE YOUR TIME — FOLLOW THE HANDLER" if Router.is_tutorial else "SELECT BEFORE THE TRACE EXPIRES"
 	if Router.is_tutorial:
@@ -2346,7 +2346,7 @@ func _check_wave_cleared() -> void:
 			PlayerManager.lock_stage(stage_id)
 			print("[Exam] Failed after final defense. Locking Stage ", stage_id, " for remediation.")
 			change_phase(GamePhase.GAME_OVER)
-			return
+		return
 	change_phase(GamePhase.VICTORY)
 
 
@@ -2435,10 +2435,10 @@ func _rebuild_upgrade_buttons(tower_node: TowerBase) -> void:
 
 
 func _make_power_upgrade_button(tower_node: TowerBase) -> Button:
-	var btn := Button.new()
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var btn := Button.new()
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.custom_minimum_size = Vector2(0, 40)
-	_apply_panel_font(btn, 10)
+		_apply_panel_font(btn, 10)
 	if not tower_node.can_upgrade():
 		btn.text = "MAX LV %d" % TowerBase.MAX_UPGRADE_LEVEL
 		btn.disabled = true
