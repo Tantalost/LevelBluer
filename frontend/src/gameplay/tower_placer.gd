@@ -410,6 +410,17 @@ func placed_count() -> int:
 	return _unique_towers().size()
 
 
+func clear_placed_towers() -> void:
+	_cancel_drag()
+	clear_selection()
+	var towers: Array[TowerBase] = _unique_towers()
+	occupied_cells.clear()
+	for i in towers.size():
+		var tower: TowerBase = towers[i]
+		if tower != null and is_instance_valid(tower):
+			tower.queue_free()
+
+
 func placed_count_of(type_id: String) -> int:
 	var count: int = 0
 	var towers: Array[TowerBase] = _unique_towers()

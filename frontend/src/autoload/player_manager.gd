@@ -42,6 +42,9 @@ var _session_hydrated: bool = false
 const TRACE_MODULE_IDS: PackedStringArray = ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]
 var trace_seen_by_module: Dictionary = {}
 var trace_missed_by_module: Dictionary = {}
+## Resume checkpoints for decision-based stages, keyed "mod_01:1".
+## Only in-progress stages are stored; a cleared stage erases its entry.
+var decision_stage_state: Dictionary = {}
 
 
 func has_skill(skill_id: String) -> bool:
@@ -223,9 +226,61 @@ func reset_to_defaults() -> void:
 	intel_bonus_module = ""
 	trace_seen_by_module = _empty_trace_history()
 	trace_missed_by_module = _empty_trace_history()
+	decision_stage_state = {}
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
+
+
+func get_decision_stage_state(stage_key: String) -> Dictionary:
+	var key: String = stage_key.strip_edges()
+	if key.is_empty() or not decision_stage_state.has(key):
+		return {}
+	var stored: Variant = decision_stage_state[key]
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return (stored as Dictionary).duplicate(true)
+
+
+func set_decision_stage_state(stage_key: String, state: Dictionary) -> void:
+	var key: String = stage_key.strip_edges()
+	if key.is_empty():
+		return
+	decision_stage_state[key] = state.duplicate(true)
+	SaveService.save_game()
+
+
+func clear_decision_stage_state(stage_key: String) -> void:
+	var key: String = stage_key.strip_edges()
+	if key.is_empty() or not decision_stage_state.has(key):
+		return
+	decision_stage_state.erase(key)
+	SaveService.save_game()
+
+
+func _normalize_decision_state(raw: Variant) -> Dictionary:
+	var result: Dictionary = {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return result
+	var stored: Dictionary = raw as Dictionary
+	for key in stored.keys():
+		var entry: Variant = stored[key]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var row: Dictionary = entry as Dictionary
+		var retry_cp: Dictionary = {}
+		if typeof(row.get("retry_checkpoint")) == TYPE_DICTIONARY:
+			retry_cp = (row["retry_checkpoint"] as Dictionary).duplicate(true)
+		result[str(key)] = {
+			"threat_index": int(row.get("threat_index", 0)),
+			"resolved_threats": int(row.get("resolved_threats", 0)),
+			"flow_state": str(row.get("flow_state", "")),
+			"in_breach": bool(row.get("in_breach", false)),
+			"security_state": str(row.get("security_state", "NOMINAL")),
+			"safe_count": int(row.get("safe_count", 0)),
+			"retry_checkpoint": retry_cp,
+		}
+	return result
 
 
 func add_credits(amount: int) -> void:
@@ -615,6 +670,7 @@ func get_save_data() -> Dictionary:
 		"intel_bonus_module": intel_bonus_module,
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
+		"decision_stage_state": decision_stage_state.duplicate(true),
 	}
 
 
@@ -755,6 +811,8 @@ func apply_save_data(data: Dictionary) -> void:
 		trace_missed_by_module = _normalize_trace_history(data["trace_missed_by_module"])
 	else:
 		trace_missed_by_module = _empty_trace_history()
+	# Older saves have no decision checkpoints; they simply start Stage 1 fresh.
+	decision_stage_state = _normalize_decision_state(data.get("decision_stage_state", {}))
 
 	if module_1_complete:
 		cleared_stages[10] = true

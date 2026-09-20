@@ -43,6 +43,12 @@ var _wave_finished_spawning: bool = true
 var _wave_kills: int = 0
 var _wave_total_enemies: int = 0
 var _is_wave_intermission: bool = false
+# Decision-based stage (currently Module 1 Stage 1 only). Null for every other
+# stage, so the TRACE quiz flow below runs exactly as before.
+var _decision: DecisionStageController = null
+var _decision_stage: Dictionary = {}
+var _decision_overlay: DecisionOverlay = null
+var _decision_next: Callable = Callable()
 
 @onready var _map_mount: Node2D = %MapMount
 var _track: Path2D
@@ -185,8 +191,10 @@ func _ready() -> void:
 	print("[LevelManager] Initializing Level for Stage Index: ", Router.active_stage_index)
 	if Router.is_tutorial:
 		_begin_tutorial_shell()
+	elif _is_decision_stage():
+		_begin_decision_stage()
 	else:
-	change_phase(GamePhase.PHASE_1_QUIZ)
+		change_phase(GamePhase.PHASE_1_QUIZ)
 	AudioManager.play_bgm(AudioManager.level_track)
 
 
@@ -438,9 +446,16 @@ func change_phase(new_phase: GamePhase) -> void:
 				tip = "Exam score %d%%. Review the missed topics in Lessons, then retry." % accuracy_pct
 			elif not weak_skill.is_empty():
 				tip = "Critical weakness: %s. Train it in Lessons before you deploy again." % weak_skill.capitalize()
+			if _decision != null:
+				tip = _decision_game_over_tip()
 			print("[LevelManager] Entering GAME_OVER. Match lost.")
-			_award_loss_credits()
-			if base_health <= 0:
+			if _decision == null:
+				_award_loss_credits()
+			if _decision != null:
+				# CRITICAL and a lost breach both end on the live map; the
+				# checkpoint keeps the current threat so RESTART resumes there.
+				_present_base_defeat(tip, _decision_defeat_presentation())
+			elif base_health <= 0:
 				_present_base_defeat(tip)
 			else:
 				# A failed exam is not a destroyed base; retain its advisory result.
@@ -455,6 +470,8 @@ func change_phase(new_phase: GamePhase) -> void:
 			_hide_upgrade_ui()
 			var stage_id: int = Router.active_stage_index + 1
 			PlayerManager.mark_stage_cleared(stage_id)
+			if _decision != null:
+				PlayerManager.clear_decision_stage_state(_decision_key())
 			TaskManager.record_stage_cleared()
 			print("[Victory] Stage ", stage_id, " cleared. Max stage is now ", PlayerManager.mock_max_stage_cleared)
 			var accuracy: float = 1.0
@@ -500,18 +517,21 @@ func _present_stage_clear(accuracy: float, credits: int) -> void:
 	_defeat_overlay = preload("res://src/ui/screens/victory/base_defeat_overlay.gd").new()
 	_defeat_overlay.name = "StageClearOverlay"
 	get_parent().add_child(_defeat_overlay)
-	_defeat_overlay.configure({
+	var clear_data: Dictionary = {
 		"won": true,
 		"stage": Router.active_stage_index + 1,
 		"credits": credits,
 		"kills": _match_kills,
 		"accuracy": accuracy,
 		"final_stage": _is_module_final(),
-	})
+	}
+	if _decision != null:
+		clear_data.merge(_decision_clear_presentation(), true)
+	_defeat_overlay.configure(clear_data)
 	_defeat_overlay.action_requested.connect(_on_defeat_action)
 
 
-func _present_base_defeat(tip: String) -> void:
+func _present_base_defeat(tip: String, extra: Dictionary = {}) -> void:
 	get_tree().paused = false
 	Engine.time_scale = 1.0
 	_pause_menu.hide()
@@ -529,14 +549,16 @@ func _present_base_defeat(tip: String) -> void:
 	_defeat_overlay = preload("res://src/ui/screens/victory/base_defeat_overlay.gd").new()
 	_defeat_overlay.name = "BaseDefeatOverlay"
 	get_parent().add_child(_defeat_overlay)
-	_defeat_overlay.configure({
+	var defeat_data: Dictionary = {
 		"stage": Router.active_stage_index + 1,
 		"credits": LOSS_CREDIT_PAYOUT,
 		"wave": current_wave_index + 1,
 		"waves": maxi(1, _wave_count()),
 		"kills": _match_kills,
 		"tip": tip,
-	})
+	}
+	defeat_data.merge(extra, true)
+	_defeat_overlay.configure(defeat_data)
 	_defeat_overlay.action_requested.connect(_on_defeat_action)
 
 
@@ -677,7 +699,7 @@ func _load_stage_config() -> void:
 	_asked_question_ids.clear()
 	_exam_deck.clear()
 	_exam_deck_index = 0
-		var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
+	var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
 	current_gold = _apply_intel_bonus_gold(int(gold_stored))
 	_wave_intel_hidden = false
 	_global_patch_active = false
@@ -836,6 +858,8 @@ func _exam_required_score() -> float:
 func _phase_display_name() -> String:
 	match current_phase:
 		GamePhase.PRE_MATCH:
+			if _decision != null:
+				return "INCIDENT"
 			return "BRIEFING" if Router.is_tutorial else "PRE-MATCH"
 		GamePhase.PHASE_1_QUIZ:
 			return "TRACE"
@@ -1086,10 +1110,10 @@ func _skill_question_pool(question_bank: Dictionary, skill_id: String) -> Array[
 	var pool: Array[Dictionary] = []
 	if not question_bank.has(skill_id):
 		return pool
-		var list_stored: Variant = question_bank[skill_id]
+	var list_stored: Variant = question_bank[skill_id]
 	if typeof(list_stored) != TYPE_ARRAY:
 		return pool
-		var q_list: Array = list_stored as Array
+	var q_list: Array = list_stored as Array
 	for i in q_list.size():
 		var q_stored: Variant = q_list[i]
 		if typeof(q_stored) != TYPE_DICTIONARY:
@@ -1710,6 +1734,9 @@ func _apply_speed() -> void:
 
 
 func _sync_phase_chrome() -> void:
+	if _decision != null:
+		_apply_decision_presentation()
+		return
 	var building: bool = current_phase == GamePhase.PHASE_2_BUILD
 	var live: bool = building or current_phase == GamePhase.PHASE_3_DEFEND
 	if _tower_placer != null:
@@ -1722,12 +1749,54 @@ func _sync_phase_chrome() -> void:
 	_apply_speed()
 
 
+func _is_decision_td_live() -> bool:
+	return _decision != null and (current_phase == GamePhase.PHASE_2_BUILD or current_phase == GamePhase.PHASE_3_DEFEND)
+
+
+func _apply_decision_presentation() -> void:
+	if _decision == null:
+		return
+	var td: bool = _is_decision_td_live()
+	var terminal: bool = current_phase == GamePhase.GAME_OVER or current_phase == GamePhase.VICTORY
+	var show_td_hud: bool = td and not terminal
+	_gold_label.visible = show_td_hud
+	_map_label.visible = show_td_hud
+	_phase_label.visible = show_td_hud
+	_heart_hud.visible = show_td_hud
+	var wave_frame: CanvasItem = _wave_label.get_parent() as CanvasItem
+	if wave_frame != null:
+		wave_frame.visible = show_td_hud
+	_shop_row.visible = show_td_hud and current_phase == GamePhase.PHASE_2_BUILD
+	_btn_speed.visible = show_td_hud and current_phase == GamePhase.PHASE_3_DEFEND and not Router.is_tutorial
+	_btn_pause.visible = not Router.is_tutorial
+	var start_cluster: CanvasItem = _start_wave_button.get_parent() as CanvasItem
+	if start_cluster != null:
+		start_cluster.visible = show_td_hud and current_phase == GamePhase.PHASE_2_BUILD
+	if not show_td_hud:
+		_set_start_controls_visible(false)
+		_hide_upgrade_ui()
+		_hide_incident()
+		_quiz_modal.visible = false
+	elif current_phase == GamePhase.PHASE_2_BUILD:
+		_set_start_controls_visible(not Router.is_tutorial)
+	if _decision_overlay != null and is_instance_valid(_decision_overlay):
+		_decision_overlay.visible = not td and not terminal
+	if _tower_placer != null:
+		_tower_placer.set_build_preview(show_td_hud and current_phase == GamePhase.PHASE_2_BUILD)
+		_tower_placer.process_mode = Node.PROCESS_MODE_INHERIT if show_td_hud else Node.PROCESS_MODE_DISABLED
+	_refresh_shop_cards()
+	if show_td_hud:
+		_apply_speed()
+	else:
+		Engine.time_scale = 1.0
+
+
 func _refresh_quiz_copy() -> void:
 	var exam: bool = _is_summative()
 	_quiz_file_label.text = "EXAM.DAT" if exam else "QTE.DAT"
 	var type_label: String = _display_type_label(current_question)
 	if type_label.is_empty():
-	_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
+		_quiz_event_label.text = "EXAM TRACE" if exam else "QUICK TRACE"
 	else:
 		_quiz_event_label.text = type_label.to_upper()
 	_quiz_reward_hint.visible = not exam
@@ -1738,7 +1807,7 @@ func _refresh_quiz_copy() -> void:
 		var mastery_pct: int = clampi(int(round(PlayerManager.get_mastery(skill_id) * 100.0)), 0, 100)
 		if _bkt_frozen:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%% LOCKED" % [hit_gold, miss_gold, mastery_pct]
-	else:
+		else:
 			_quiz_reward_hint.text = "SECURE +%dG     MISS +%dG     P(L) %d%%" % [hit_gold, miss_gold, mastery_pct]
 	_quiz_tap_hint.text = "TAKE YOUR TIME — FOLLOW THE HANDLER" if Router.is_tutorial else "SELECT BEFORE THE TRACE EXPIRES"
 	if Router.is_tutorial:
@@ -1813,6 +1882,10 @@ func _incident_chance() -> float:
 
 
 func _schedule_incident() -> void:
+	if _decision != null:
+		# Decision stages measure the decision, not the defense: no mid-wave
+		# incident pop-ups (and therefore no extra BKT updates) during a breach.
+		return
 	if randf() > _incident_chance():
 		return
 	if not is_inside_tree():
@@ -2254,6 +2327,21 @@ func _check_wave_cleared() -> void:
 		return
 	if active_enemies != 0 or not _wave_finished_spawning:
 		return
+	if _decision != null:
+		# A contained breach hands control back to the story, never to the quiz.
+		_is_wave_intermission = true
+		print("[Wave] Breach contained! Pausing for 2 seconds...")
+		if not is_inside_tree():
+			_is_wave_intermission = false
+			return
+		await get_tree().create_timer(2.0).timeout
+		_is_wave_intermission = false
+		if not is_inside_tree():
+			return
+		if current_phase != GamePhase.PHASE_3_DEFEND:
+			return
+		_on_decision_breach_cleared()
+		return
 	if current_wave_index < _wave_count() - 1:
 		_is_wave_intermission = true
 		print("[Wave] Cleared! Pausing for 2 seconds...")
@@ -2366,10 +2454,10 @@ func _rebuild_upgrade_buttons(tower_node: TowerBase) -> void:
 
 
 func _make_power_upgrade_button(tower_node: TowerBase) -> Button:
-		var btn := Button.new()
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var btn := Button.new()
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.custom_minimum_size = Vector2(0, 40)
-		_apply_panel_font(btn, 10)
+	_apply_panel_font(btn, 10)
 	if not tower_node.can_upgrade():
 		btn.text = "MAX LV %d" % TowerBase.MAX_UPGRADE_LEVEL
 		btn.disabled = true
@@ -2474,3 +2562,374 @@ func toggle_pause() -> void:
 		_pause_menu.resume_game()
 	else:
 		_pause_menu.pause_game()
+
+
+# ---------------------------------------------------------------------------
+# Decision-based stage flow (Module 1 Stage 1).
+# Story -> Threat -> Decision -> Consequence -> next Threat. SAFE continues the
+# story, RISKY runs one wave of the existing Tower Defense, CRITICAL is an
+# immediate Game Over. The stage clears only after every threat is resolved.
+# ---------------------------------------------------------------------------
+
+func _is_decision_stage() -> bool:
+	if Router.is_tutorial or Router.active_match_context.preview:
+		return false
+	return DecisionScenarios.is_decision_stage(_current_module_id(), _current_stage_id())
+
+
+func _decision_key() -> String:
+	return DecisionScenarios.stage_key(_current_module_id(), _current_stage_id())
+
+
+func _decision_skill() -> String:
+	var threat: Dictionary = _decision.current_threat() if _decision != null else {}
+	var skill: String = str(threat.get("bkt_skill", "")).strip_edges()
+	if skill.is_empty():
+		skill = str(_decision_stage.get("bkt_skill", "")).strip_edges()
+	if skill.is_empty():
+		skill = _current_module_skill()
+	return skill if not skill.is_empty() else "phishing"
+
+
+func _decision_header() -> String:
+	var company: String = str(_decision_stage.get("company", "BlueTech Solutions"))
+	return "%s  //  SECURITY DESK" % company.to_upper()
+
+
+func _begin_decision_stage() -> void:
+	change_phase(GamePhase.PRE_MATCH)
+	var module_id: String = _current_module_id()
+	var stage_id: int = _current_stage_id()
+	_decision_stage = DecisionScenarios.get_stage(module_id, stage_id)
+	_decision = DecisionStageController.new()
+	_decision.setup(module_id, stage_id, DecisionScenarios.get_threats(module_id, stage_id))
+	if _decision.total_threats() == 0:
+		push_error("LevelManager: decision stage %s has no threats; falling back to TRACE" % _decision_key())
+		_decision = null
+		_decision_stage = {}
+		change_phase(GamePhase.PHASE_1_QUIZ)
+		return
+	var resumed: bool = _decision.restore(PlayerManager.get_decision_stage_state(_decision_key()))
+	_mount_decision_overlay()
+	_apply_decision_presentation()
+	update_hud()
+	print("[DECISION] stage=%s threats=%d resumed=%s flow=%s threat_index=%d resolved=%d in_breach=%s security=%s" % [
+		_decision_key(), _decision.total_threats(), str(resumed), _decision.flow_state, _decision.threat_index,
+		_decision.resolved_threats, str(_decision.in_breach), _decision.security_state,
+	])
+	if not resumed:
+		_show_decision_story("opening", _show_decision_threat)
+	elif _decision.flow_state == DecisionStageController.FLOW_ENDING:
+		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+	elif _decision.flow_state == DecisionStageController.FLOW_BREACH:
+		_show_decision_story("resume_breach", _begin_decision_breach, "DEPLOY DEFENSES")
+	else:
+		_show_decision_threat()
+
+
+func _mount_decision_overlay() -> void:
+	if _decision_overlay != null and is_instance_valid(_decision_overlay):
+		return
+	var canvas: Node = get_parent().get_node_or_null("GameplayCanvas")
+	if canvas == null:
+		push_error("LevelManager: GameplayCanvas missing; cannot mount decision overlay")
+		return
+	_decision_overlay = DecisionOverlay.new()
+	_decision_overlay.name = "DecisionOverlay"
+	canvas.add_child(_decision_overlay)
+	# Keep the pause menu above the incident window.
+	if _pause_menu != null and _pause_menu.get_parent() == canvas:
+		canvas.move_child(_decision_overlay, _pause_menu.get_index())
+	_decision_overlay.story_continued.connect(_on_decision_story_continued)
+	_decision_overlay.choice_selected.connect(_on_decision_choice_selected)
+	_decision_overlay.consequence_continued.connect(_on_decision_consequence_continued)
+
+
+func _show_decision_story(key: String, next: Callable, continue_text: String = "CONTINUE") -> void:
+	if _decision_overlay == null:
+		next.call()
+		return
+	var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(_decision_stage, key)
+	if lines.is_empty():
+		next.call()
+		return
+	_decision_next = next
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_story(lines, _decision_header(), continue_text)
+
+
+func _on_decision_story_continued() -> void:
+	var next: Callable = _decision_next
+	_decision_next = Callable()
+	if next.is_valid():
+		next.call()
+
+
+func _show_decision_threat() -> void:
+	if _decision == null or _decision_overlay == null:
+		return
+	if _decision.flow_state == DecisionStageController.FLOW_ENDING or _decision.is_complete():
+		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+		return
+	var threat: Dictionary = _decision.current_threat()
+	if threat.is_empty():
+		push_error("LevelManager: decision threat %d missing" % _decision.threat_index)
+		return
+	_decision.capture_retry_checkpoint()
+	_save_decision_checkpoint()
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_threat(threat, _decision.current_threat_number(), _decision.total_threats(), _decision_header())
+	print("[DECISION] threat=%s (%d/%d) security=%s" % [
+		str(threat.get("id", "")), _decision.current_threat_number(), _decision.total_threats(), _decision.security_state,
+	])
+
+
+func _on_decision_choice_selected(choice_index: int) -> void:
+	if _decision == null or _decision_overlay == null:
+		return
+	var result: Dictionary = _decision.choose(choice_index)
+	if result.is_empty():
+		_decision_overlay.set_interaction_locked(false)
+		return
+	var outcome: String = str(result.get("outcome", ""))
+	var threat: Dictionary = result.get("threat", {}) as Dictionary
+	var choice: Dictionary = result.get("choice", {}) as Dictionary
+	print("[DECISION] threat=%s choice=%d outcome=%s pending_commit" % [
+		str(threat.get("id", "")), choice_index, outcome,
+	])
+	var continue_text: String = "CONTINUE"
+	match outcome:
+		DecisionScenarios.OUTCOME_RISKY:
+			continue_text = "DEPLOY DEFENSES"
+		DecisionScenarios.OUTCOME_CRITICAL:
+			continue_text = "DAMAGE REPORT"
+	_decision_overlay.show_consequence(
+		outcome,
+		str(choice.get("consequence", "")),
+		str(threat.get("explanation", "")),
+		_decision_header(),
+		continue_text,
+	)
+
+
+func _on_decision_consequence_continued() -> void:
+	if _decision == null:
+		return
+	var result: Dictionary = _decision.commit()
+	if result.is_empty():
+		return
+	var outcome: String = str(result.get("outcome", ""))
+	var skill_id: String = _decision_skill()
+	_record_bkt(skill_id, bool(result.get("bkt_correct", false)))
+	_save_decision_checkpoint()
+	print("[DECISION] commit threat=%s outcome=%s bkt_skill=%s bkt_correct=%s P(L)=%.2f flow=%s" % [
+		str((result.get("threat", {}) as Dictionary).get("id", "")), outcome, skill_id,
+		str(result.get("bkt_correct", false)), PlayerManager.get_mastery(skill_id), _decision.flow_state,
+	])
+	match outcome:
+		DecisionScenarios.OUTCOME_SAFE:
+			_advance_decision()
+		DecisionScenarios.OUTCOME_RISKY:
+			_begin_decision_breach()
+		DecisionScenarios.OUTCOME_CRITICAL:
+			if _decision_overlay != null:
+				_decision_overlay.visible = false
+			change_phase(GamePhase.GAME_OVER)
+
+
+func _advance_decision() -> void:
+	if _decision == null:
+		return
+	if _decision.flow_state == DecisionStageController.FLOW_ENDING or _decision.is_complete():
+		_save_decision_checkpoint()
+		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+	else:
+		_show_decision_threat()
+
+
+## RISKY: run the current threat as one wave of the existing Tower Defense.
+func _begin_decision_breach() -> void:
+	if _decision == null:
+		return
+	_prepare_decision_breach_encounter()
+	if _decision_overlay != null:
+		_decision_overlay.visible = false
+	var threat: Dictionary = _decision.current_threat()
+	print("[DECISION] breach threat=%s wave=%d gold=%d hp=%d" % [
+		str(threat.get("id", "")), current_wave_index + 1, current_gold, base_health,
+	])
+	change_phase(GamePhase.PHASE_2_BUILD)
+	_apply_decision_presentation()
+
+
+## Encounter-runtime reset only. Persistent progression (BKT, credits, cleared
+## stages, decision checkpoints) is left untouched.
+func _prepare_decision_breach_encounter() -> void:
+	_wave_token += 1
+	_defeat_started = false
+	_is_wave_intermission = false
+	_wave_finished_spawning = true
+	_wave_kills = 0
+	_wave_total_enemies = 0
+	active_enemies = 0
+	current_wave_index = 0
+	_global_patch_active = false
+	_wave_intel_hidden = false
+	_speed_mult = 1.0
+	_shake_intensity = 0.0
+	if _camera != null:
+		_camera.offset = Vector2.ZERO
+	if _heart_tween != null and _heart_tween.is_valid():
+		_heart_tween.kill()
+		_heart_tween = null
+	if _player_base != null:
+		_player_base.set_deferred("monitoring", true)
+	_hide_upgrade_ui()
+	_hide_incident()
+	_clear_track_enemies()
+	_clear_stray_enemies()
+	if _tower_placer != null:
+		_tower_placer.clear_placed_towers()
+	_clear_decision_combat_ephemera()
+	base_health = maxi(1, _heart_icons.size()) if not _heart_icons.is_empty() else 5
+	_sync_hearts()
+	var threat: Dictionary = _decision.current_threat() if _decision != null else {}
+	var gold_budget: int = maxi(0, int(threat.get("breach_gold", 0)))
+	if gold_budget <= 0:
+		gold_budget = maxi(0, int(current_stage_config.get("starting_gold", 0)))
+	current_gold = gold_budget
+	update_hud()
+
+
+func _clear_stray_enemies() -> void:
+	if not is_inside_tree():
+		active_enemies = 0
+		return
+	var leftover: Array = get_tree().get_nodes_in_group("enemies")
+	for i in leftover.size():
+		var node: Node = leftover[i] as Node
+		if node == null or not is_instance_valid(node):
+			continue
+		node.queue_free()
+	active_enemies = 0
+
+
+func _clear_decision_combat_ephemera() -> void:
+	var hosts: Array[Node] = [self]
+	if _map_mount != null:
+		hosts.append(_map_mount)
+	var parent_n: Node = get_parent()
+	if parent_n != null:
+		hosts.append(parent_n)
+		var environment: Node = parent_n.get_node_or_null("Environment")
+		if environment != null:
+			hosts.append(environment)
+	if _tower_placer != null:
+		hosts.append(_tower_placer)
+	for i in hosts.size():
+		_free_ephemeral_under(hosts[i])
+
+
+func _free_ephemeral_under(host: Node) -> void:
+	if host == null:
+		return
+	for child in host.get_children():
+		if child is ProjectileBase or child is CPUParticles2D:
+			child.queue_free()
+			continue
+		if child is TowerBase or child is Path2D or child is PathFollow2D:
+			continue
+		if child is CanvasLayer or child is Control:
+			continue
+		_free_ephemeral_under(child)
+
+
+## Tower Defense win: the threat is resolved and the story resumes.
+func _on_decision_breach_cleared() -> void:
+	if _decision == null:
+		return
+	var threat: Dictionary = _decision.current_threat()
+	_decision.contain_breach()
+	_save_decision_checkpoint()
+	print("[DECISION] breach contained threat=%s resolved=%d/%d flow=%s" % [
+		str(threat.get("id", "")), _decision.resolved_threats, _decision.total_threats(), _decision.flow_state,
+	])
+	change_phase(GamePhase.PRE_MATCH)
+	_show_decision_story("breach_contained", _advance_decision)
+
+
+func _save_decision_checkpoint() -> void:
+	if _decision == null:
+		return
+	PlayerManager.set_decision_stage_state(_decision_key(), _decision.checkpoint_state())
+
+
+func _finish_decision_stage() -> void:
+	if _decision == null or not _decision.is_complete():
+		return
+	if _decision_overlay != null:
+		_decision_overlay.visible = false
+	print("[DECISION] stage complete resolved=%d/%d safe=%d security=%s" % [
+		_decision.resolved_threats, _decision.total_threats(), _decision.safe_count, _decision.security_state,
+	])
+	change_phase(GamePhase.VICTORY)
+
+
+func _decision_game_over_tip() -> String:
+	if _decision == null:
+		return ""
+	if _decision.flow_state == DecisionStageController.FLOW_BREACH or _decision.in_breach:
+		_decision.fail_breach()
+	_save_decision_checkpoint()
+	print("[DECISION] game over critical=%s threat_index=%d resolved=%d flow=%s security=%s" % [
+		str(_decision.last_failure_critical), _decision.threat_index, _decision.resolved_threats,
+		_decision.flow_state, _decision.security_state,
+	])
+	return _decision.game_over_tip()
+
+
+func _decision_defeat_presentation() -> Dictionary:
+	var stage_id: int = Router.active_stage_index + 1
+	var data: Dictionary = {
+		"retry_label": "RETRY",
+		"exit_label": "EXIT MISSION",
+		"is_decision": true,
+	}
+	if _decision != null and _decision.last_failure_critical:
+		# CRITICAL: title + the exact consequence of the bad choice (stored in fail_tip).
+		var body: String = _decision.fail_tip.strip_edges()
+		if body.is_empty():
+			body = "A critical mistake gave the attacker immediate access to the system."
+		data["title"] = "SYSTEM COMPROMISED"
+		data["subtitle"] = "MAP A%d  /  CRITICAL DECISION" % stage_id
+		data["body"] = body
+	else:
+		# RISKY + TD loss: title + the educational explanation from the threat data.
+		var threat: Dictionary = _decision.current_threat() if _decision != null else {}
+		var body: String = str(threat.get("explanation", "")).strip_edges()
+		if body.is_empty():
+			body = "The threat reached a critical company system before containment could succeed."
+		data["title"] = "CONTAINMENT FAILED"
+		data["subtitle"] = "MAP A%d  /  SYSTEM BREACH" % stage_id
+		data["body"] = body
+	return data
+
+
+func _decision_clear_presentation() -> Dictionary:
+	var stage_id: int = Router.active_stage_index + 1
+	var subtitle: String = str(_decision_stage.get("clear_subtitle", "")).strip_edges()
+	var next_title: String = str(_decision_stage.get("next_stage_title", "")).strip_edges()
+	var data: Dictionary = {
+		"title": str(_decision_stage.get("clear_title", "STAGE CLEARED")),
+		"kills": _decision.resolved_threats if _decision != null else 0,
+		"kills_label": "THREATS RESOLVED",
+	}
+	if _decision != null and _decision.total_threats() > 0:
+		data["accuracy"] = float(_decision.safe_count) / float(_decision.total_threats())
+	if not subtitle.is_empty():
+		data["subtitle"] = "MAP A%d  /  %s" % [stage_id, subtitle]
+	if not next_title.is_empty():
+		data["advisory"] = "NEXT: %s" % next_title.to_upper()
+	return data

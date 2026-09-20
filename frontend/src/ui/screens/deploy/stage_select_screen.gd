@@ -277,7 +277,7 @@ func _can_open() -> bool:
 
 func _on_breach_pressed() -> void:
 	if _can_open():
-	_open_module(_selected)
+		_open_module(_selected)
 
 func _module_route(index: int) -> Dictionary:
 	return {"route": &"module_intro" if index == 0 else &"module_stages", "args": {"module_index": index}}

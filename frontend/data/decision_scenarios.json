@@ -1,0 +1,147 @@
+{
+	"stages": [
+		{
+			"id": "mod01_stage1",
+			"module_id": "mod_01",
+			"stage": 1,
+			"title": "The First Warning",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 1 COMPLETE",
+			"clear_subtitle": "THE FIRST WARNING",
+			"next_stage_title": "Stage 2 — They Know Who We Are",
+			"opening": [
+				{"speaker": "", "text": "BlueTech Solutions. 08:52. A normal Monday."},
+				{"speaker": "Security Assistant", "text": "Morning shift. Ticket queue is quiet. Keep an eye on the inbox."},
+				{"speaker": "Mia", "text": "Quiet is good. Let's keep it that way."}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "I pulled the logs. These messages weren't random."},
+				{"speaker": "Mia", "text": "So someone is targeting the company?"},
+				{"speaker": "Security Assistant", "text": "Yes. And they already know more about us than they should."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. The workstation is clean, but that was too close."},
+				{"speaker": "Mia", "text": "Next time we verify first."}
+			],
+			"threats": [
+				{
+					"id": "mod01_s1_t1",
+					"module_id": "mod_01",
+					"stage": 1,
+					"title": "Account Suspension Notice",
+					"bkt_skill": "phishing",
+					"story": [
+						{"speaker": "Mia", "text": "I got an email saying my account will be disabled in two hours. Should I use the link?"}
+					],
+					"situation": "An email claiming to be from IT Support says Mia's account will be suspended unless she verifies it right now.",
+					"evidence": [
+						"FROM  it-support@bluetech-secure-login.com",
+						"SUBJ  URGENT: Account suspension in 2 hours",
+						"LINK  http://bluetech-verify.net/login",
+						"BlueTech's real IT domain is bluetech.com"
+					],
+					"choices": [
+						{
+							"label": "Open the verification link and sign in before the deadline",
+							"outcome": "CRITICAL",
+							"consequence": "The link opened a cloned sign-in page. Mia's credentials were captured within seconds and the attacker gained critical access."
+						},
+						{
+							"label": "Check the account status through the official employee portal",
+							"outcome": "SAFE",
+							"consequence": "The official portal shows no warning. The email has been reported to Security and the lookalike domain is blocked."
+						},
+						{
+							"label": "Reply to the sender and ask if the message is legitimate",
+							"outcome": "RISKY",
+							"consequence": "The reply confirmed the mailbox is live. A follow-up message carrying a payload reached Mia's workstation."
+						}
+					],
+					"explanation": "Urgency plus a lookalike domain is the phishing signature. Verify through a channel you already trust, never through the message itself.",
+					"breach_gold": 12,
+					"next": "mod01_s1_t2"
+				},
+				{
+					"id": "mod01_s1_t2",
+					"module_id": "mod_01",
+					"stage": 1,
+					"title": "Overdue Invoice",
+					"bkt_skill": "phishing",
+					"story": [
+						{"speaker": "Ramon (Finance)", "text": "A vendor says we're thirty days overdue. There's an invoice attached. They want it paid today."},
+						{"speaker": "Mia", "text": "Which vendor? We just settled Northwind last week."}
+					],
+					"situation": "Finance received an 'overdue invoice' from a supplier BlueTech actually uses. The attachment is a .zip named like an invoice, and the sender address differs slightly from the vendor's usual domain.",
+					"evidence": [
+						"FROM  billing@northwind-supplies.co",
+						"Usual vendor domain: northwind-supplies.com",
+						"ATTACHMENT  INV-4471.zip  (contains INV-4471.pdf.exe)",
+						"Tone: 'Pay today to avoid service interruption'"
+					],
+					"choices": [
+						{
+							"label": "Open the attachment to check the invoice details",
+							"outcome": "CRITICAL",
+							"consequence": "The archive launched an executable disguised as a PDF. The Finance workstation is now under attacker control."
+						},
+						{
+							"label": "Call the vendor using the number on the existing contract to confirm",
+							"outcome": "SAFE",
+							"consequence": "Northwind confirms no invoice was sent. The message has been quarantined and Finance has been warned."
+						},
+						{
+							"label": "Ignore the email without checking whether the invoice is real",
+							"outcome": "RISKY",
+							"consequence": "The message was never reported. A second copy reached another Finance mailbox and was opened."
+						}
+					],
+					"explanation": "Attachments plus payment pressure is how invoice fraud lands. Confirm through the vendor's known channel and report it so nobody else opens it.",
+					"breach_gold": 14,
+					"next": "mod01_s1_t3"
+				},
+				{
+					"id": "mod01_s1_t3",
+					"module_id": "mod_01",
+					"stage": 1,
+					"title": "Password Reset Notice",
+					"bkt_skill": "phishing",
+					"story": [
+						{"speaker": "Security Assistant", "text": "This one is different. It names our real HR platform, our HR lead, and the maintenance window from Friday's all-hands."},
+						{"speaker": "Mia", "text": "It looks like it came from inside."}
+					],
+					"situation": "An employee receives a password-reset notice that references BlueTech's real HR platform, the real HR lead, and an actual scheduled maintenance window. The reset link points to a domain registered last week.",
+					"evidence": [
+						"FROM  HR Notifications <hr-notify@bluetech.com>   reply-to: reset@bluetech-hr-portal.com",
+						"Mentions: 'Workday maintenance, Saturday 02:00'  (a real event)",
+						"LINK  https://bluetech-hr-portal.com/reset  (registered 6 days ago)",
+						"Asks for: current password AND new password"
+					],
+					"choices": [
+						{
+							"label": "Follow the link and complete the reset since the details match",
+							"outcome": "CRITICAL",
+							"consequence": "The reset form forwarded the current password straight to the attacker. HR system access was hijacked."
+						},
+						{
+							"label": "Change nothing, report it to Security, and open the HR platform directly to check",
+							"outcome": "SAFE",
+							"consequence": "HR confirms no reset was requested. Security flags the domain and blocks it company-wide."
+						},
+						{
+							"label": "Forward the message to a coworker to ask whether they received it too",
+							"outcome": "RISKY",
+							"consequence": "The forward spread the lure. A coworker clicked before Security could respond."
+						}
+					],
+					"explanation": "Real details do not prove a message is real. Attackers research their targets. A legitimate reset never asks for your current password through a link.",
+					"breach_gold": 16,
+					"next": ""
+				}
+			]
+		}
+	]
+}
