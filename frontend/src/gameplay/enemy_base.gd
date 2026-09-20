@@ -42,6 +42,8 @@ var _visual_scale: float = 1.0
 var _bar_width: float = BAR_WIDTH
 var _bar_y: float = BAR_Y
 var _path_unit_scale: float = 1.0
+var match_context: MatchContext = MatchContext.new()
+var _preview_flash := 0.0
 
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
@@ -93,6 +95,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if match_context.geometric:
+		_preview_flash = maxf(0, _preview_flash - delta * 7)
+		queue_redraw()
 	if _leaked or is_queued_for_deletion():
 		return
 	if is_dead:
@@ -207,6 +212,9 @@ func _show_hit(dealt: int, matchup: StringName = &"neutral") -> void:
 
 
 func _flash_hit() -> void:
+	if match_context.geometric:
+		_preview_flash = 1.0
+		return
 	var sprite: AnimatedSprite2D = _character_sprite()
 	if sprite == null:
 		return
@@ -248,6 +256,10 @@ func _character_sprite() -> AnimatedSprite2D:
 func _bind_character_visuals() -> void:
 	var sprite: AnimatedSprite2D = _character_sprite()
 	_visual_id = character_for_wave(_type_id)
+	if match_context.geometric:
+		if sprite != null:
+			sprite.hide()
+		return
 	if _visual_id.is_empty():
 		_visual_id = AssetManager.pick_random_character()
 	var frames: SpriteFrames = AssetManager.get_character_sprite_frames(_visual_id)
@@ -330,8 +342,12 @@ func _begin_death() -> void:
 	queue_redraw()
 	_clear_slow_timer()
 	_disable_hitbox()
-	VfxManager.spawn_vfx("death", global_position)
-	TaskManager.record_enemy_defeated(_type_id)
+	if match_context.geometric:
+		preload("res://src/gameplay/preview/unit_glyphs.gd").fragments(get_parent(), position, _base_color, _type_id)
+	else:
+		VfxManager.spawn_vfx("death", global_position)
+	if match_context.persistent:
+		TaskManager.record_enemy_defeated(_type_id)
 	enemy_died.emit(bounty)
 	var sprite: AnimatedSprite2D = _character_sprite()
 	var death_anim: StringName = _death_anim_name()
@@ -382,6 +398,8 @@ func _disable_hitbox() -> void:
 func _draw() -> void:
 	if _leaked or max_health <= 0:
 		return
+	if match_context.geometric and not is_dead:
+		preload("res://src/gameplay/preview/unit_glyphs.gd").enemy(self, _type_id, _path_tangent().angle(), _base_color.lerp(Color.WHITE, _preview_flash))
 	var origin := Vector2(-_bar_width * 0.5, _bar_y)
 	var ratio: float = clampf(_displayed_health / float(max_health), 0.0, 1.0)
 	var fill_w: float = _bar_width * ratio

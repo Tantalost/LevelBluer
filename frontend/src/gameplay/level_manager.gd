@@ -1455,36 +1455,7 @@ func _present_current_question() -> void:
 
 
 func _format_scenario(q: Dictionary) -> String:
-	var scene: Dictionary = {}
-	var scene_stored: Variant = q.get("scenario", {})
-	if typeof(scene_stored) == TYPE_DICTIONARY:
-		scene = scene_stored as Dictionary
-	# Sender Audit ships the address inside "scenario", triage ships it top level.
-	var from_line: String = _first_text([q.get("from_line", ""), scene.get("from_line", "")])
-	if not from_line.is_empty():
-		return "FROM  %s" % from_line
-	var preview: String = _first_text([q.get("preview", ""), scene.get("preview", "")])
-	var content: String = _first_text([q.get("content", ""), scene.get("content", "")])
-	if not preview.is_empty() or not content.is_empty():
-		var parts: PackedStringArray = PackedStringArray()
-		if not preview.is_empty():
-			parts.append(preview.to_upper())
-		if not content.is_empty():
-			parts.append(content)
-		return "\n".join(parts)
-	var lines: PackedStringArray = PackedStringArray()
-	var sender: String = str(scene.get("from", "")).strip_edges()
-	var subject: String = str(scene.get("subject", "")).strip_edges()
-	var body: String = str(scene.get("body", "")).strip_edges()
-	if not sender.is_empty():
-		lines.append("FROM  %s" % sender)
-	if not subject.is_empty():
-		lines.append("SUBJ  %s" % subject)
-	if not body.is_empty():
-		if not lines.is_empty():
-			lines.append("")
-		lines.append(body)
-	return "\n".join(lines)
+	return preload("res://src/gameplay/quiz_content.gd")._format_scenario(q)
 
 
 func _first_text(candidates: Array) -> String:
@@ -1496,26 +1467,7 @@ func _first_text(candidates: Array) -> String:
 
 
 func _format_prompt(q: Dictionary) -> String:
-	var prompt: String = str(q.get("question", "")).strip_edges()
-	if not prompt.is_empty():
-		return prompt
-	var delivery: String = str(q.get("delivery", ""))
-	if delivery == "binary_ab":
-		var type_label: String = _display_type_label(q)
-		if not type_label.is_empty() and type_label != str(q.get("type_id", "")).strip_edges():
-			return type_label
-		if _malicious_verdict_label(q) == "BAITING":
-			return "Baiting or legitimate?"
-		if _malicious_verdict_label(q) == "PRETEXTING":
-			return "Pretexting or legitimate?"
-		if _malicious_verdict_label(q) == "VISHING":
-			return "Vishing or legitimate?"
-		if _malicious_verdict_label(q) == "SMISHING":
-			return "Smishing or legitimate?"
-		return "Phishing or legitimate?"
-	if delivery == "true_false":
-		return str(q.get("text", "")).strip_edges()
-	return str(q.get("prompt", q.get("text", ""))).strip_edges()
+	return preload("res://src/gameplay/quiz_content.gd")._format_prompt(q)
 
 
 func _clear_answer_list() -> void:
@@ -1606,28 +1558,7 @@ func _paint_toggle_button(button: Button, selected: bool) -> void:
 
 
 func _is_quiz_correct(picked: Variant) -> bool:
-	var delivery: String = str(current_question.get("delivery", ""))
-	var type_id: String = str(current_question.get("type_id", ""))
-	if delivery == "multi_select" or type_id == "tap_trap_lines":
-		var expected: Array[int] = _int_list(current_question.get("correct_indices", []))
-		var got: Array[int] = []
-		if typeof(picked) == TYPE_ARRAY:
-			got = _int_list(picked)
-		expected.sort()
-		got.sort()
-		if expected.size() != got.size():
-			return false
-		for i in expected.size():
-			if expected[i] != got[i]:
-				return false
-		return true
-	if delivery == "binary_ab" or type_id == "trust_verdict":
-		return str(picked).to_lower() == str(current_question.get("correct_answer", "")).to_lower()
-	if delivery == "true_false" or type_id == "safety_rule_tf":
-		return bool(picked) == bool(current_question.get("answer", false))
-	if current_question.has("answer_index"):
-		return int(picked) == int(current_question.get("answer_index", -1))
-	return str(picked) == _quiz_correct_text
+	return preload("res://src/gameplay/quiz_content.gd").grade(current_question, picked, _quiz_correct_text)
 
 
 func _int_list(raw: Variant) -> Array[int]:
