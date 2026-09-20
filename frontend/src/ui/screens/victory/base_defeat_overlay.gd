@@ -81,13 +81,13 @@ func configure(data: Dictionary) -> void:
 func _configure_clear(data: Dictionary) -> void:
 	var stage: int = int(data.get("stage", 1))
 	var final_stage: bool = bool(data.get("final_stage", stage >= 10))
-	_stage.text = "MAP A%d  /  DEFENSE SECURED" % stage
-	_title.text = "STAGE CLEARED"
+	_stage.text = str(data.get("subtitle", "MAP A%d  /  DEFENSE SECURED" % stage))
+	_title.text = str(data.get("title", "STAGE CLEARED"))
 	_reward_title.text = "CREDITS ACQUIRED"
 	_credits.text = "+%d CR" % int(data.get("credits", 0))
-	_wave.text = "THREATS CLEARED   %d" % int(data.get("kills", 0))
+	_wave.text = "%s   %d" % [str(data.get("kills_label", "THREATS CLEARED")), int(data.get("kills", 0))]
 	_kills.text = "ACCURACY   %d%%" % int(round(float(data.get("accuracy", 1.0)) * 100.0))
-	_advisory.text = "MODULE COMPLETE" if final_stage else "NEXT STAGE UNLOCKED"
+	_advisory.text = str(data.get("advisory", "MODULE COMPLETE" if final_stage else "NEXT STAGE UNLOCKED"))
 	_buttons[0].text = "CERTIFICATE" if final_stage else "NEXT STAGE"
 	_buttons[1].text = "REPLAY"
 	_buttons[2].text = "UPGRADES"
@@ -107,18 +107,39 @@ func _configure_clear(data: Dictionary) -> void:
 
 
 func _configure_defeat(data: Dictionary) -> void:
-	_stage.text = "MAP A%d  /  DEFENSE FAILED" % int(data.get("stage", 1))
-	_title.text = "BASE DESTROYED"
-	_reward_title.text = "CREDITS ACQUIRED"
-	_credits.text = "+%d CR" % int(data.get("credits", 0))
-	_wave.text = "WAVE REACHED   %d / %d" % [data.get("wave", 1), data.get("waves", 1)]
-	_kills.text = "THREATS CLEARED   %d" % int(data.get("kills", 0))
-	_advisory.text = str(data.get("tip", "Upgrade your nodes, then redeploy."))
-	_buttons[0].text = "UPGRADE"
-	_buttons[1].text = "RESTART"
-	_buttons[2].text = "LESSONS"
-	_buttons[3].text = "BACK"
-	_button_actions = [&"upgrade", &"restart", &"lessons", &"back"]
+	_stage.text = str(data.get("subtitle", "MAP A%d  /  DEFENSE FAILED" % int(data.get("stage", 1))))
+	_title.text = str(data.get("title", "BASE DESTROYED"))
+	if bool(data.get("is_decision", false)):
+		# Decision-stage defeat: 2 buttons, body text, no credits/wave/kills rows.
+		_reward_title.text = ""
+		_credits.text = ""
+		_wave.text = ""
+		_kills.text = ""
+		_advisory.text = str(data.get("body", ""))
+		_buttons[0].text = str(data.get("retry_label", "RETRY"))
+		_buttons[1].text = str(data.get("exit_label", "EXIT MISSION"))
+		_buttons[2].text = ""
+		_buttons[3].text = ""
+		_button_actions = [&"restart", &"back", &"", &""]
+		# Primary is RETRY; EXIT MISSION is secondary.
+		_buttons[0].set("primary", true)
+		_buttons[1].set("primary", false)
+		_buttons[2].visible = false
+		_buttons[3].visible = false
+		_set_label_color(_title, Color("ff648a"))
+	else:
+		_reward_title.text = "CREDITS ACQUIRED"
+		_credits.text = "+%d CR" % int(data.get("credits", 0))
+		_wave.text = "%s   %d / %d" % [str(data.get("wave_label", "WAVE REACHED")), data.get("wave", 1), data.get("waves", 1)]
+		_kills.text = "THREATS CLEARED   %d" % int(data.get("kills", 0))
+		_advisory.text = str(data.get("tip", "Upgrade your nodes, then redeploy."))
+		_buttons[0].text = "UPGRADE"
+		_buttons[1].text = str(data.get("retry_label", "RESTART"))
+		_buttons[2].text = "LESSONS"
+		_buttons[3].text = "BACK"
+		_buttons[2].visible = true
+		_buttons[3].visible = true
+		_button_actions = [&"upgrade", &"restart", &"lessons", &"back"]
 
 
 func _set_label_color(label: Label, color: Color) -> void:
@@ -207,7 +228,7 @@ func _choose_button(index: int) -> void:
 	_choose(_button_actions[index])
 
 func _choose(action: StringName) -> void:
-	if not results_ready or _leaving:
+	if action.is_empty() or not results_ready or _leaving:
 		return
 	_leaving = true
 	for button in _buttons:
