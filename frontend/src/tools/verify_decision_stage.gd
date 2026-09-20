@@ -94,12 +94,23 @@ func _test_overlay_layout(threats: Array[Dictionary]) -> void:
 	check(hover.bg_color != focus.bg_color or hover.border_color != focus.border_color, "Keyboard focus does not reuse the hover fill")
 	check(focus.bg_color == normal.bg_color, "Focus keeps the normal background")
 	check(selected.bg_color != hover.bg_color, "Selected/pressed is distinct from hover")
-	check(overlay._choice_buttons[0].get_theme_font_size("font_size") == 10, "Choice text is not shrunk")
+	check(overlay._choice_buttons[0].get_theme_font_size("font_size") == 14, "[UI-1.1] Choice text uses the larger story-decision font")
+	# [UI-1.1] Story-layout proportions: prominent portrait, wide choice
+	# column, and a dialogue box that is actually the dominant element.
+	check(overlay._portrait_panel.custom_minimum_size.x >= 260.0, "[UI-1.1] Portrait column is at least 260px wide")
+	check(overlay._choices_panel.custom_minimum_size.x >= 300.0, "[UI-1.1] Choice column is at least 300px wide")
 	for i in threats.size():
 		overlay.show_threat(threats[i], i + 1, threats.size(), "BLUETECH SOLUTIONS  //  SECURITY DESK")
 		await settle(20)
 		check(overlay._window.size.y <= 680.0, "Threat %d window stays inside 1280x720 (%dpx)" % [i + 1, int(overlay._window.size.y)])
 		check(overlay._window.size.x <= 1280.0, "Threat %d window width fits the viewport" % (i + 1))
+		# _dialogue_panel's own .size can exceed the visible box (it's the
+		# scrollable content, which is allowed to be taller than its
+		# viewport) — _body_scroll.size is the actual visible dialogue box.
+		check(overlay._body_scroll.size.y >= 160.0, "[UI-1.1] Threat %d dialogue box is at least 160px tall (%dpx)" % [i + 1, int(overlay._body_scroll.size.y)])
+		# [UI-1.2] The dialogue CONTENT column must actually use the width the
+		# dialogue panel has, not collapse to a narrow word-wrapped minimum.
+		check(overlay._dialogue_box.size.x >= overlay._dialogue_panel.size.x * 0.8, "[UI-1.2] Threat %d dialogue content uses >=80%% of the dialogue panel width (%d/%dpx)" % [i + 1, int(overlay._dialogue_box.size.x), int(overlay._dialogue_panel.size.x)])
 		var focused := 0
 		var reachable := 0
 		for b in overlay._choice_buttons.size():
@@ -107,8 +118,9 @@ func _test_overlay_layout(threats: Array[Dictionary]) -> void:
 			if not button.visible:
 				continue
 			check(not button.clip_text, "Threat %d choice %s does not clip text" % [i + 1, char(65 + b)])
-			check(button.custom_minimum_size.y >= 56.0, "Threat %d choice %s grows with its label" % [i + 1, char(65 + b)])
+			check(button.custom_minimum_size.y >= 80.0, "[UI-1.1] Threat %d choice %s uses the larger choice height" % [i + 1, char(65 + b)])
 			check(button.size.y + 0.5 >= button.custom_minimum_size.y, "Threat %d choice %s is tall enough for wrapped text" % [i + 1, char(65 + b)])
+			check(button.size.x >= overlay._choices_panel.size.x - 4.0, "[UI-1.2] Threat %d choice %s uses almost the full choice-column width" % [i + 1, char(65 + b)])
 			if button.has_focus():
 				focused += 1
 			var window_rect: Rect2 = overlay._window.get_global_rect()
@@ -121,6 +133,26 @@ func _test_overlay_layout(threats: Array[Dictionary]) -> void:
 		check(reachable == 3, "Threat %d keeps all three choices reachable by layout or scroll" % (i + 1))
 		check(overlay._prompt.visible and overlay._prompt.text == "CHOOSE AN ACTION", "Threat %d still shows Choose an Action" % (i + 1))
 		check(overlay._situation_title.visible and overlay._evidence_box.get_child_count() > 0, "Threat %d still shows incident title and evidence" % (i + 1))
+	# [UI-1.1] Incident 3 (index 2) has the longest choice labels in the data —
+	# confirm they still wrap into the button rather than clipping or
+	# overflowing past the window.
+	var incident3_choices: Array = (threats[2].get("choices", []) as Array)
+	for b in mini(overlay._choice_buttons.size(), incident3_choices.size()):
+		var long_button: Button = overlay._choice_buttons[b]
+		check(not long_button.clip_text and long_button.size.y >= long_button.custom_minimum_size.y, "[UI-1.1] Incident 3 choice %s wraps without clipping" % char(65 + b))
+	# [UI-1.2] The dialogue box now correctly uses the full panel width, which
+	# means most real dialogue lines wrap into far fewer lines than before —
+	# genuinely long content must still overflow into a scrollbar rather than
+	# ever clipping or forcing the window past the viewport.
+	var long_lines: Array[Dictionary] = [
+		{"speaker": "Security Assistant", "text": "This is a deliberately long line of dialogue text repeated to force the dialogue box content past its visible height so the scrollbar must activate. ".repeat(6)},
+	]
+	overlay.show_story(long_lines, "TEST", "CONTINUE")
+	await settle(20)
+	check(overlay._window.size.y <= 680.0, "[UI-1.2] Overlay stays within the viewport even with overflowing dialogue text")
+	var long_scroll_bar: VScrollBar = overlay._body_scroll.get_v_scroll_bar()
+	check(long_scroll_bar != null and long_scroll_bar.max_value > 1.0, "[UI-1.2] Dialogue box scrolls when content genuinely overflows")
+
 	overlay.show_threat(threats[0], 1, 3, "TEST")
 	await settle()
 	overlay._choice_buttons[1].grab_focus()
@@ -474,6 +506,7 @@ func _test_breach_transition() -> void:
 	overlay._continue_button.pressed.emit()
 	await settle()
 	check(overlay.visible and overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "Breach transition beat uses a distinct BREACH DETECTED banner")
+	check(overlay._body_scroll.size.y >= 160.0, "[UI-1.1] BREACH DETECTED dialogue box is at least 160px tall (%dpx)" % int(overlay._body_scroll.size.y))
 	check(_dialogue_contains(overlay, "WORKSTATION-07"), "Threat 1 breach transition names WORKSTATION-07, not the threat title")
 	check(not _dialogue_contains(overlay, "Account Suspension Notice"), "Threat 1 breach transition does not fall back to the threat title")
 	check(overlay._continue_button.text == "DEPLOY DEFENSES", "Breach transition offers DEPLOY DEFENSES")
@@ -492,6 +525,7 @@ func _test_breach_transition() -> void:
 	await _force_td_win(lm)
 	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "Combat stops once the breach is contained")
 	check(overlay.visible and overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "BREACH CONTAINED banner is shown instead of jumping ahead")
+	check(overlay._body_scroll.size.y >= 160.0, "[UI-1.1] BREACH CONTAINED dialogue box is at least 160px tall (%dpx)" % int(overlay._body_scroll.size.y))
 	check(_dialogue_contains(overlay, "WORKSTATION-07"), "BREACH CONTAINED names WORKSTATION-07, matching the breach transition")
 	check(overlay._continue_button.text == "CONTINUE INVESTIGATION", "Breach-contained beat offers CONTINUE INVESTIGATION")
 	check(overlay._header_right.text == "", "Next threat is not shown until Continue Investigation is pressed")
@@ -560,6 +594,7 @@ func _test_breach_transition() -> void:
 	overlay._choice_buttons[0].pressed.emit()
 	await settle()
 	check(overlay._banner.text == "SYSTEM COMPROMISED", "[M7 regression] CRITICAL banner is unchanged")
+	check(overlay._body_scroll.size.y >= 160.0, "[UI-1.1] SYSTEM COMPROMISED dialogue box is at least 160px tall (%dpx)" % int(overlay._body_scroll.size.y))
 	check(overlay._continue_button.text == "DAMAGE REPORT", "[M7 regression] CRITICAL still shows DAMAGE REPORT, not DEPLOY DEFENSES")
 	overlay._continue_button.pressed.emit()
 	await settle()

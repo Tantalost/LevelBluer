@@ -1,25 +1,44 @@
 class_name DecisionOverlay
 extends Control
-## Incident-style presentation for decision stages. Built in code so the
+## Visual-novel style presentation for decision stages. Built in code so the
 ## existing level_base.tscn (TRACE quiz modal, HUD, pause menu) stays untouched.
 ##
-## Three views:
-##   story       - dialogue lines + one CONTINUE button
+## Scene layout: LEFT portrait placeholder + speaker name, CENTER scene-art
+## placeholder, RIGHT vertical choices (shown only when choices exist),
+## BOTTOM a large scrollable dialogue box with a CONTINUE action.
+##
+## Three modes drive the same layout:
+##   story       - dialogue lines + one CONTINUE button, choices hidden
 ##   threat      - dialogue, situation, evidence, "CHOOSE AN ACTION", 3 actions
 ##   consequence - outcome banner (THREAT CONTAINED / SECURITY WARNING /
-##                 SYSTEM COMPROMISED), narrative result, lesson, CONTINUE
-## It never shows quiz vocabulary ("Question", "Correct", "Quiz", "Exam").
+##                 BREACH DETECTED / SYSTEM COMPROMISED / ...), narrative
+##                 result, lesson, CONTINUE
+## It never shows quiz vocabulary ("Question", "Correct", "Quiz", "Exam") or
+## an A/B/C exam-style choice layout.
 
 signal story_continued
 signal choice_selected(choice_index: int)
 signal consequence_continued
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const WINDOW_WIDTH := 760.0
 const VIEW_MARGIN := 40.0
-const CHOICE_MIN_HEIGHT := 56.0
-const CHOICE_PAD_Y := 28.0
-const CHOICE_PAD_X := 42.0
+const PORTRAIT_PANEL_WIDTH := 300.0
+const PORTRAIT_PANEL_HEIGHT := 380.0
+const SCENE_PANEL_WIDTH := 520.0
+const SCENE_PANEL_HEIGHT := 300.0
+const CHOICES_PANEL_WIDTH := 350.0
+const CHOICE_MIN_HEIGHT := 84.0
+const CHOICE_PAD_Y := 34.0
+## Matches the choice stylebox's real left+right content margin (see
+## _make_choice_styles): 18 + 18. Using a wider padding here than the button
+## actually has just makes the *height estimate* wrap a word earlier than
+## the real button will, wasting vertical space without narrowing anything
+## visible — so this must track the stylebox margin exactly, not pad it.
+const CHOICE_PAD_X := 36.0
+const DIALOGUE_MIN_HEIGHT := 175.0
+const DIALOGUE_TEXT_FONT_SIZE := 15
+const DIALOGUE_SPEAKER_FONT_SIZE := 11
+const SITUATION_TEXT_FONT_SIZE := 13
 
 var _pixel_font: Font
 var _dim: ColorRect
@@ -29,13 +48,17 @@ var _body_scroll: ScrollContainer
 var _header_left: Label
 var _header_right: Label
 var _banner: Label
+var _portrait_panel: PanelContainer
+var _speaker_name: Label
+var _scene_panel: PanelContainer
+var _choices_panel: VBoxContainer
+var _dialogue_panel: PanelContainer
 var _dialogue_box: VBoxContainer
 var _situation_title: Label
 var _situation: Label
 var _evidence_title: Label
 var _evidence_box: VBoxContainer
 var _prompt: Label
-var _choices_box: VBoxContainer
 var _choice_buttons: Array[Button] = []
 var _continue_button: Button
 var _mode: StringName = &"story"
@@ -68,46 +91,53 @@ func _build_ui() -> void:
 	_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_dim)
 
+	# Sized explicitly in _fit_layout() to fill most of the viewport (portrait
+	# / scene-art / choices need real room), then centered. A CenterContainer
+	# — rather than a MarginContainer that forces an exact fill — sizes the
+	# window to its own computed size, which is what keeps it correct even
+	# when a host Control reports a scaled/inflated size (e.g. a headless
+	# test probe parented directly under the root viewport).
 	var center := CenterContainer.new()
-	center.name = "Center"
+	center.name = "SceneCenter"
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(center)
 
 	_window = PanelContainer.new()
-	_window.name = "IncidentWindow"
-	_window.custom_minimum_size = Vector2(WINDOW_WIDTH, 0)
+	_window.name = "SceneWindow"
 	_window.clip_contents = true
 	var box: StyleBoxFlat = _panel_box(Palette.NAVY_900, Palette.CYAN_400, 3)
 	box.shadow_color = Color(Palette.DEEP_SPACE, 0.82)
 	box.shadow_size = 5
 	box.shadow_offset = Vector2(8, 8)
-	box.content_margin_left = 26.0
-	box.content_margin_right = 26.0
-	box.content_margin_top = 18.0
-	box.content_margin_bottom = 22.0
+	box.content_margin_left = 22.0
+	box.content_margin_right = 22.0
+	box.content_margin_top = 10.0
+	box.content_margin_bottom = 12.0
 	_window.add_theme_stylebox_override("panel", box)
 	center.add_child(_window)
 
 	_column = VBoxContainer.new()
 	_column.name = "Column"
-	_column.add_theme_constant_override("separation", 12)
+	_column.add_theme_constant_override("separation", 8)
 	_window.add_child(_column)
 
 	var header := HBoxContainer.new()
 	header.name = "Header"
-	_header_left = _label(Palette.CYAN_300, 9)
+	_header_left = _label(Palette.CYAN_300, 9, false)
 	_header_left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_header_right = _label(Palette.CYAN_300, 9)
+	_header_right = _label(Palette.CYAN_300, 9, false)
 	_header_right.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	header.add_child(_header_left)
 	header.add_child(_header_right)
 	_column.add_child(header)
 
-	_banner = _label(Palette.SUCCESS, 18)
+	_banner = _label(Palette.SUCCESS, 18, false)
 	_banner.name = "Banner"
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_column.add_child(_banner)
+
+	_build_stage_row()
 
 	_body_scroll = ScrollContainer.new()
 	_body_scroll.name = "BodyScroll"
@@ -116,26 +146,45 @@ func _build_ui() -> void:
 	_body_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_body_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_column.add_child(_body_scroll)
+
+	# Bottom dialogue box: its own panel so it reads as a distinct, dominant VN
+	# textbox rather than bare text floating in the scene.
+	# size_flags_horizontal defaults to SIZE_FILL, not EXPAND_FILL — inside a
+	# ScrollContainer with horizontal scrolling disabled, that default is NOT
+	# stretched to the scroll viewport's width; it collapses to its content's
+	# own natural minimum instead (which, for word-wrapped text, is roughly
+	# one-word wide). EXPAND_FILL is what actually makes it use the full
+	# available width instead of a narrow column.
+	_dialogue_panel = PanelContainer.new()
+	_dialogue_panel.name = "DialoguePanel"
+	_dialogue_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var dialogue_style: StyleBoxFlat = _panel_box(Color(Palette.NAVY_800, 0.96), Palette.NAVY_700, 2)
+	dialogue_style.content_margin_left = 20.0
+	dialogue_style.content_margin_right = 20.0
+	dialogue_style.content_margin_top = 14.0
+	dialogue_style.content_margin_bottom = 14.0
+	_dialogue_panel.add_theme_stylebox_override("panel", dialogue_style)
+	_body_scroll.add_child(_dialogue_panel)
 	var body := VBoxContainer.new()
 	body.name = "Body"
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 10)
-	_body_scroll.add_child(body)
+	_dialogue_panel.add_child(body)
 
 	_dialogue_box = VBoxContainer.new()
 	_dialogue_box.name = "Dialogue"
 	_dialogue_box.add_theme_constant_override("separation", 8)
 	body.add_child(_dialogue_box)
 
-	_situation_title = _label(Palette.GOLD, 9)
+	_situation_title = _label(Palette.GOLD, 9, false)
 	_situation_title.name = "SituationTitle"
 	_situation_title.text = "INCIDENT"
 	body.add_child(_situation_title)
-	_situation = _label(Palette.CREAM, 11)
+	_situation = _label(Palette.CREAM, SITUATION_TEXT_FONT_SIZE)
 	_situation.name = "Situation"
 	body.add_child(_situation)
 
-	_evidence_title = _label(Palette.GOLD, 9)
+	_evidence_title = _label(Palette.GOLD, 9, false)
 	_evidence_title.name = "EvidenceTitle"
 	_evidence_title.text = "EVIDENCE"
 	body.add_child(_evidence_title)
@@ -155,16 +204,85 @@ func _build_ui() -> void:
 	_evidence_box.add_theme_constant_override("separation", 6)
 	evidence_panel.add_child(_evidence_box)
 
-	_prompt = _label(Palette.GOLD, 10)
+	_prompt = _label(Palette.GOLD, 10, false)
 	_prompt.name = "Prompt"
 	_prompt.text = "CHOOSE AN ACTION"
 	body.add_child(_prompt)
 
-	_choices_box = VBoxContainer.new()
-	_choices_box.name = "Choices"
-	_choices_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_choices_box.add_theme_constant_override("separation", 8)
-	body.add_child(_choices_box)
+	_continue_button = Button.new()
+	_continue_button.name = "Continue"
+	_continue_button.text = "CONTINUE"
+	_style_submit(_continue_button)
+	_continue_button.pressed.connect(_on_continue_pressed)
+	_column.add_child(_continue_button)
+	_apply_mode()
+
+
+## LEFT portrait placeholder + speaker name, CENTER scene-art placeholder,
+## RIGHT vertical choice buttons. No final art yet — placeholder panels only.
+func _build_stage_row() -> void:
+	var stage_row := HBoxContainer.new()
+	stage_row.name = "StageRow"
+	stage_row.add_theme_constant_override("separation", 14)
+	_column.add_child(stage_row)
+
+	# Sized as if a real full/half-body sprite will land here later: the
+	# placeholder text itself stays small and centered within a large frame,
+	# not a small box with padding.
+	_portrait_panel = PanelContainer.new()
+	_portrait_panel.name = "PortraitPanel"
+	_portrait_panel.custom_minimum_size = Vector2(PORTRAIT_PANEL_WIDTH, PORTRAIT_PANEL_HEIGHT)
+	var portrait_style: StyleBoxFlat = _panel_box(Color(Palette.NAVY_800, 0.9), Palette.NAVY_700, 2)
+	portrait_style.content_margin_left = 10.0
+	portrait_style.content_margin_right = 10.0
+	portrait_style.content_margin_top = 10.0
+	portrait_style.content_margin_bottom = 10.0
+	_portrait_panel.add_theme_stylebox_override("panel", portrait_style)
+	stage_row.add_child(_portrait_panel)
+	var portrait_col := VBoxContainer.new()
+	portrait_col.name = "PortraitColumn"
+	portrait_col.add_theme_constant_override("separation", 8)
+	_portrait_panel.add_child(portrait_col)
+	var portrait_placeholder: Label = _label(Palette.TEXT_MUTED, 10, false)
+	portrait_placeholder.name = "PortraitPlaceholder"
+	portrait_placeholder.text = "[ CHARACTER PORTRAIT ]"
+	portrait_placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	portrait_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	portrait_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	portrait_col.add_child(portrait_placeholder)
+	_speaker_name = _label(Palette.CYAN_300, 12, false)
+	_speaker_name.name = "SpeakerName"
+	_speaker_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	portrait_col.add_child(_speaker_name)
+
+	# Framed future-illustration space: fixed, more modest size instead of
+	# stretching to fill the whole row, and vertically centered so it reads
+	# as a picture frame rather than a massive blank container.
+	_scene_panel = PanelContainer.new()
+	_scene_panel.name = "ScenePanel"
+	_scene_panel.custom_minimum_size = Vector2(SCENE_PANEL_WIDTH, SCENE_PANEL_HEIGHT)
+	_scene_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var scene_style: StyleBoxFlat = _panel_box(Color(Palette.NAVY_800, 0.85), Palette.NAVY_700, 1)
+	_scene_panel.add_theme_stylebox_override("panel", scene_style)
+	stage_row.add_child(_scene_panel)
+	var scene_center := CenterContainer.new()
+	scene_center.name = "SceneCenter"
+	scene_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_scene_panel.add_child(scene_center)
+	var scene_placeholder: Label = _label(Palette.TEXT_MUTED, 10, false)
+	scene_placeholder.name = "ScenePlaceholder"
+	scene_placeholder.text = "[ SCENE ART ]"
+	scene_center.add_child(scene_placeholder)
+
+	# Vertically centered ("middle-right"), not pinned to the row's top edge.
+	_choices_panel = VBoxContainer.new()
+	_choices_panel.name = "ChoicesPanel"
+	_choices_panel.custom_minimum_size = Vector2(CHOICES_PANEL_WIDTH, 0)
+	_choices_panel.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_choices_panel.alignment = BoxContainer.ALIGNMENT_CENTER
+	_choices_panel.add_theme_constant_override("separation", 10)
+	stage_row.add_child(_choices_panel)
+
 	_make_choice_styles()
 	for i in 3:
 		var button := Button.new()
@@ -181,16 +299,8 @@ func _build_ui() -> void:
 		button.pressed.connect(_on_choice_pressed.bind(i))
 		button.mouse_entered.connect(_on_choice_hovered.bind(i))
 		button.focus_entered.connect(_on_choice_focused.bind(i))
-		_choices_box.add_child(button)
+		_choices_panel.add_child(button)
 		_choice_buttons.append(button)
-
-	_continue_button = Button.new()
-	_continue_button.name = "Continue"
-	_continue_button.text = "CONTINUE"
-	_style_submit(_continue_button)
-	_continue_button.pressed.connect(_on_continue_pressed)
-	_column.add_child(_continue_button)
-	_apply_mode()
 
 
 ## Dialogue-only beat (opening, ending, resume notice). An optional banner
@@ -229,7 +339,7 @@ func show_threat(threat: Dictionary, threat_number: int, threat_total: int, head
 	for i in _choice_buttons.size():
 		var button: Button = _choice_buttons[i]
 		if i < choices.size() and typeof(choices[i]) == TYPE_DICTIONARY:
-			button.text = "%s   %s" % [char(65 + i), str((choices[i] as Dictionary).get("label", ""))]
+			button.text = str((choices[i] as Dictionary).get("label", ""))
 			button.visible = true
 			button.disabled = false
 			_paint_choice(button, false)
@@ -314,7 +424,7 @@ func _apply_mode() -> void:
 	_evidence_title.visible = threat and _evidence_box.get_child_count() > 0
 	_evidence_box.get_parent().visible = _evidence_title.visible
 	_prompt.visible = threat
-	_choices_box.visible = threat
+	_choices_panel.visible = threat
 	_continue_button.visible = not threat
 	_continue_button.disabled = _locked
 
@@ -322,23 +432,27 @@ func _apply_mode() -> void:
 func _fill_dialogue(lines: Array[Dictionary]) -> void:
 	for child in _dialogue_box.get_children():
 		child.queue_free()
+	var speaker_shown: String = ""
 	for i in lines.size():
 		var line: Dictionary = lines[i]
 		var speaker: String = str(line.get("speaker", "")).strip_edges()
 		var text: String = str(line.get("text", "")).strip_edges()
 		if text.is_empty():
 			continue
+		if speaker_shown.is_empty() and not speaker.is_empty():
+			speaker_shown = speaker
 		var row := VBoxContainer.new()
 		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_theme_constant_override("separation", 3)
 		if not speaker.is_empty():
-			var who: Label = _label(Palette.CYAN_300, 9)
+			var who: Label = _label(Palette.CYAN_300, DIALOGUE_SPEAKER_FONT_SIZE, false)
 			who.text = speaker.to_upper()
 			row.add_child(who)
-		var said: Label = _label(Palette.CREAM if speaker.is_empty() else Palette.TEXT_PRIMARY, 11)
+		var said: Label = _label(Palette.CREAM if speaker.is_empty() else Palette.TEXT_PRIMARY, DIALOGUE_TEXT_FONT_SIZE)
 		said.text = text if speaker.is_empty() else "\"%s\"" % text
 		row.add_child(said)
 		_dialogue_box.add_child(row)
+	_speaker_name.text = speaker_shown.to_upper()
 
 
 func _fill_evidence(raw: Variant) -> void:
@@ -392,6 +506,12 @@ func _on_continue_pressed() -> void:
 		story_continued.emit()
 
 
+## ScrollContainer does not shrink itself to a scrollable size on its own —
+## left alone it reports its full content height as its minimum, which would
+## balloon the whole window past the viewport. So, same as before the
+## layout rework: explicitly cap the window's width to the available space
+## and clamp the scroll body to the remaining height, letting it scroll for
+## any overflow (e.g. Incident 3's longer text).
 func _fit_layout() -> void:
 	if _window == null or _body_scroll == null:
 		return
@@ -399,24 +519,30 @@ func _fit_layout() -> void:
 	if view.x < 8.0 or view.y < 8.0:
 		view = Vector2(1280, 720)
 	var max_h: float = maxf(360.0, view.y - VIEW_MARGIN)
-	var width: float = minf(WINDOW_WIDTH, maxf(320.0, view.x - VIEW_MARGIN))
+	var width: float = maxf(640.0, view.x - VIEW_MARGIN)
 	_window.custom_minimum_size.x = width
-	_fit_choice_buttons(width)
-	var chrome: float = 40.0
+	_fit_choice_buttons()
+	var chrome: float = 26.0
 	for child in _column.get_children():
 		var control: Control = child as Control
 		if control == null or control == _body_scroll or not control.visible:
 			continue
-		chrome += control.get_combined_minimum_size().y + 12.0
+		chrome += control.get_combined_minimum_size().y + 8.0
 	var body: Control = _body_scroll.get_child(0) as Control if _body_scroll.get_child_count() > 0 else null
 	var body_h: float = body.get_combined_minimum_size().y if body != null else 0.0
-	var scroll_h: float = minf(body_h, maxf(80.0, max_h - chrome))
+	# The dialogue box is meant to be a dominant element (see UI-1.1), not a
+	# label that shrink-wraps to whatever short line happens to be showing.
+	# Give it a floor of DIALOGUE_MIN_HEIGHT regardless of content, only
+	# growing past that — up to the available budget, with scroll for any
+	# overflow — when the actual text needs more room (e.g. Incident 3).
+	var available: float = maxf(DIALOGUE_MIN_HEIGHT, max_h - chrome)
+	var scroll_h: float = clampf(body_h, DIALOGUE_MIN_HEIGHT, available)
 	_body_scroll.custom_minimum_size = Vector2(0, scroll_h)
 	_window.custom_minimum_size.y = minf(chrome + scroll_h, max_h)
 
 
-func _fit_choice_buttons(window_width: float) -> void:
-	var wrap_w: float = maxf(160.0, window_width - 52.0 - CHOICE_PAD_X)
+func _fit_choice_buttons() -> void:
+	var wrap_w: float = maxf(120.0, CHOICES_PANEL_WIDTH - CHOICE_PAD_X)
 	for button in _choice_buttons:
 		if not button.visible:
 			continue
@@ -462,13 +588,22 @@ func _paint_choice(button: Button, selected: bool) -> void:
 		button.add_theme_stylebox_override("focus", _style_focus)
 
 
-func _label(color: Color, font_size: int) -> Label:
+## wrap=false is for short, single-line labels (headers, banner, prompts,
+## placeholders). A wrapping Label with no assigned width yet can briefly
+## report a near-zero minimum width — which, for short text, means it wraps
+## one character per line and reports a huge minimum height. That transient
+## is harmless for paragraph text buried in the scrollable dialogue body,
+## but disastrous for a label sitting directly in the chrome (e.g. the
+## banner), where it briefly balloons the whole window. Single-line labels
+## never need to wrap anyway, so it's simplest to just turn it off for them.
+func _label(color: Color, font_size: int, wrap: bool = true) -> Label:
 	var label := Label.new()
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wrap else TextServer.AUTOWRAP_OFF
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_color_override("font_color", color)
 	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_constant_override("line_spacing", 4)
 	if _pixel_font != null:
 		label.add_theme_font_override("font", _pixel_font)
 	return label
@@ -509,7 +644,7 @@ func _style_choice(button: Button) -> void:
 	button.add_theme_color_override("font_pressed_color", Palette.CREAM)
 	button.add_theme_color_override("font_focus_color", Palette.CREAM)
 	button.add_theme_color_override("font_disabled_color", Palette.TEXT_MUTED)
-	button.add_theme_font_size_override("font_size", 10)
+	button.add_theme_font_size_override("font_size", 14)
 	if _pixel_font != null:
 		button.add_theme_font_override("font", _pixel_font)
 
