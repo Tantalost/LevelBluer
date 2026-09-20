@@ -1,6 +1,6 @@
 extends Control
-## Disposable match controller. Intentionally has NO PlayerManager, AuthService,
-## SaveService, task, achievement, or assessment-queue dependencies.
+## Shared geometric combat/presentation. The default scene remains disposable;
+## live story play extends explicit hooks without giving the preview save access.
 const HUD = preload("res://src/gameplay/preview/preview_hud.gd")
 const Board = preload("res://src/gameplay/preview/preview_board.gd")
 const Quiz = preload("res://src/gameplay/quiz_content.gd")
@@ -35,6 +35,7 @@ var move_origin := Vector2i(-1, -1)
 var active_enemies := 0
 var spawned := 0
 var defeated := 0
+var match_kills := 0
 var spawn_clock := 0.0
 var defend_clock := 0.0
 var intermission := 0.0
@@ -46,16 +47,13 @@ var global_patch := false
 var hud: Control
 
 func _ready() -> void:
-	# Fail closed: only the explicitly initialized preview can run this scene.
-	if match_context == null or not match_context.preview or match_context.persistent:
-		push_error("Preview requires a non-persistent match context before initialization.")
+	# Fail closed: each scene validates its explicit context before any setup.
+	if not _valid_context():
+		push_error("Gameplay scene requires its matching context before initialization.")
 		set_process(false)
 		return
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	config = ContentDB.get_stage("1").duplicate(true)
-	gold = int(config.get("starting_gold", 2))
-	question_pool = ContentDB.get_stage_question_pool(1).duplicate(true)
-	question_pool.shuffle()
+	_configure_match()
 	hud = HUD.new()
 	add_child(hud)
 	hud.action.connect(_intent)
@@ -63,6 +61,27 @@ func _ready() -> void:
 	Engine.time_scale = 1.0
 	hud.show_intro(str(config.get("name", "Diagnostic Protocol")), intro_elapsed)
 	_update_hud()
+
+func _valid_context() -> bool:
+	return match_context != null and match_context.preview and not match_context.persistent
+
+func _configure_match() -> void:
+	config = ContentDB.get_stage("1").duplicate(true)
+	gold = int(config.get("starting_gold", 2))
+	question_pool = ContentDB.get_stage_question_pool(1).duplicate(true)
+	question_pool.shuffle()
+
+func _capacity(kind: String) -> int:
+	return ContentDB.default_capacity(kind)
+
+func _access_reason(_kind: String) -> String:
+	return ""
+
+func _research_bonus(_kind: String) -> Dictionary:
+	return {}
+
+func _enemy_health_scale() -> float:
+	return 1.0
 
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
@@ -96,17 +115,20 @@ func _process(delta: float) -> void:
 		if spawned >= int(data.enemy_count) and active_enemies == 0 and not incident_active:
 			intermission += delta
 			if intermission >= 2.0:
-				waves_completed = wave + 1
-				if waves_completed >= config.waves.size():
-					_finish(true)
-				else:
-					wave += 1
-					question_index = 0
-					_set_phase("Trace")
-					_next_question()
+				_wave_cleared()
 	_update_hud()
 	if is_instance_valid(selected_tower) and hud.side.visible:
 		hud.update_tower_details(_tower_details(selected_tower))
+
+func _wave_cleared() -> void:
+	waves_completed = wave + 1
+	if waves_completed >= config.waves.size():
+		_finish(true)
+	else:
+		wave += 1
+		question_index = 0
+		_set_phase("Trace")
+		_next_question()
 
 func advance_briefing(delta: float) -> void:
 	if phase != "Briefing" or paused:
@@ -210,8 +232,10 @@ func cell_reason(cell: Vector2i, kind: String = "") -> String:
 		return "This tile already holds a tower."
 	if not kind.is_empty():
 		if not TYPES.has(kind):
-			return "Choose a tower from the preview loadout."
-		if _count(kind) >= ContentDB.default_capacity(kind):
+			return "Choose a tower from the loadout."
+		if not _access_reason(kind).is_empty():
+			return _access_reason(kind)
+		if _count(kind) >= _capacity(kind):
 			return "Capacity reached for this tower."
 		if gold < TowerBase.cost_for(kind):
 			return "Not enough gold."
@@ -263,7 +287,8 @@ func _loadout_choices() -> Array[Dictionary]:
 	for kind in TYPES:
 		choices.append({"name": TowerBase.display_name_for(kind), "id": "pick_tower", "value": kind,
 			"cost": TowerBase.cost_for(kind), "affordable": gold >= TowerBase.cost_for(kind),
-			"remaining": maxi(0, ContentDB.default_capacity(kind) - _count(kind))})
+			"locked": not _access_reason(kind).is_empty(),
+			"remaining": maxi(0, _capacity(kind) - _count(kind))})
 	return choices
 
 func pick_tower(kind: String) -> void:
@@ -275,6 +300,7 @@ func pick_tower(kind: String) -> void:
 	# Read the real baseline footprint/range from an unmounted actor, without
 	# running ready, account bonus hooks or spawning a preview combat unit.
 	var template := TOWER.instantiate() as TowerBase
+	template.match_context = match_context
 	var radius := template._range_radius()
 	template.free()
 	hud.battle.board.range_radius = radius
@@ -288,8 +314,10 @@ func pick_tower(kind: String) -> void:
 		for type in TYPES:
 			max_damage = maxf(max_damage, TowerBase.damage_at(type, 0))
 			max_rate = maxf(max_rate, float(TowerBase.entry_for(type).get("fire_rate", 1.0)))
-		stats.append({"kind": "damage", "caption": "Damage", "display": str(TowerBase.damage_at(kind, 0)) + (" +15%" if global_patch else ""), "value": TowerBase.damage_at(kind, 0), "maximum": max_damage})
-		stats.append({"kind": "rate", "caption": "Rate", "display": "%.2f/s" % float(entry.get("fire_rate", 1.0)), "value": float(entry.get("fire_rate", 1.0)), "maximum": max_rate})
+		var damage := TowerBase.damage_at(kind, 0) + int(_research_bonus(kind).get("damage", 0))
+		var rate := float(entry.get("fire_rate", 1.0)) + float(_research_bonus(kind).get("fire_rate", 0))
+		stats.append({"kind": "damage", "caption": "Damage", "display": str(damage) + (" +15%" if global_patch else ""), "value": damage, "maximum": maxf(max_damage, damage)})
+		stats.append({"kind": "rate", "caption": "Rate", "display": "%.2f/s" % rate, "value": rate, "maximum": maxf(max_rate, rate)})
 	var matchups: Array[Dictionary] = [
 		{"kind": "heavy", "name": "Heavy", "value": "×1.5", "strong": true},
 		{"kind": "swarm", "name": "Swarm", "value": "×0.5", "strong": false}]
@@ -299,8 +327,8 @@ func pick_tower(kind: String) -> void:
 		matchups = [{"kind": "stealth", "name": "Stealth", "value": "−60%", "strong": true}, {"kind": "heavy", "name": "Heavy / swarm", "value": "−20%", "strong": false}]
 	hud.show_build_picker(_loadout_choices(), pending_cell, kind, {
 		"name": TowerBase.display_name_for(kind), "stats": stats, "matchups": matchups, "patch": global_patch and kind != "sandbox",
-		"cost": TowerBase.cost_for(kind), "remaining": maxi(0, ContentDB.default_capacity(kind) - _count(kind)),
-		"capacity": ContentDB.default_capacity(kind), "reason": reason,
+		"cost": TowerBase.cost_for(kind), "remaining": maxi(0, _capacity(kind) - _count(kind)),
+		"capacity": _capacity(kind), "reason": reason,
 	})
 
 func place_tower() -> bool:
@@ -356,7 +384,7 @@ func _tower_details(tower: TowerBase) -> Dictionary:
 		"projectile": "Bolt speed\n%s" % ("—" if field else "%.0f u/s" % ProjectileBase.DEFAULT_SPEED),
 		"multiplier": "Damage boost\n%s" % ("—" if field else "×%.2f" % tower._match_damage_scale),
 		"effects": effect,
-		"next": ("Next: damage %d → %d" % [tower.base_damage, TowerBase.damage_at(tower.current_type, tower.upgrade_level + 1)] if not field else "Power upgrades do not increase this slow field.") if tower.can_upgrade() else "Maximum upgrade reached.",
+		"next": ("Next: damage %d → %d" % [tower.base_damage, TowerBase.damage_at(tower.current_type, tower.upgrade_level + 1) + int(_research_bonus(tower.current_type).get("damage", 0))] if not field else "Power upgrades do not increase this slow field.") if tower.can_upgrade() else "Maximum upgrade reached.",
 	}
 
 func upgrade_tower() -> bool:
@@ -421,7 +449,7 @@ func _spawn_enemy() -> void:
 	var kind: String = str(mix[spawned % mix.size()]) if not mix.is_empty() else str(data.get("enemy_type", "basic"))
 	var enemy := ENEMY.instantiate() as EnemyBase
 	enemy.match_context = match_context
-	enemy.initialize_stats(kind, float(data.get("health_multiplier", 1)))
+	enemy.initialize_stats(kind, float(data.get("health_multiplier", 1)) * _enemy_health_scale())
 	enemy.enemy_died.connect(_enemy_died)
 	enemy.reached_base.connect(_enemy_leaked)
 	spawned += 1
@@ -432,6 +460,7 @@ func _enemy_died(bounty: int) -> void:
 	if phase != "Defend":
 		return
 	gold += bounty
+	match_kills += 1
 	active_enemies = maxi(0, active_enemies - 1)
 	defeated += 1
 
@@ -477,7 +506,7 @@ func toggle_pause() -> void:
 	hud.battle.world.process_mode = Node.PROCESS_MODE_DISABLED if paused else Node.PROCESS_MODE_INHERIT
 	hud.battle.enabled = not paused and phase in ["Build", "Defend"] and not incident_active
 	if paused:
-		hud.show_modal("Preview paused", "Your account is untouched. Resume, or return to Stage Select.", [{"text": "Resume", "id": "pause", "primary": true}, {"text": "Exit preview", "id": "exit"}])
+		hud.show_modal(_pause_title(), _pause_description(), [{"text": "Resume", "id": "pause", "primary": true}, {"text": "Return to Stage Select", "id": "exit"}])
 	else:
 		hud.close_modal()
 		if incident_active:
@@ -485,6 +514,8 @@ func toggle_pause() -> void:
 	_update_hud()
 
 func _finish(won: bool) -> void:
+	if phase == "Results":
+		return
 	_set_phase("Results")
 	incident_active = false
 	hud.battle.world.process_mode = Node.PROCESS_MODE_DISABLED
@@ -493,11 +524,23 @@ func _finish(won: bool) -> void:
 	for effect in hud.battle.track.get_children():
 		if effect.has_meta("preview_death_burst") or effect.has_meta("preview_death_stain"):
 			effect.process_mode = Node.PROCESS_MODE_ALWAYS
-	if not won:
+	if not won and _destroy_home_on_loss():
 		hud.battle.board.play_home_destruction()
 		AudioManager.play_sfx("explosion")
-	hud.show_results({"won": won, "stage": 1, "completed": waves_completed,
-		"waves": config.waves.size(), "correct": correct_answers, "answered": answered, "health": health})
+	hud.show_results(_result_data(won))
+
+func _pause_title() -> String:
+	return "Preview paused"
+
+func _pause_description() -> String:
+	return "Your account is untouched. Resume, or return to Stage Select."
+
+func _destroy_home_on_loss() -> bool:
+	return true
+
+func _result_data(won: bool) -> Dictionary:
+	return {"won": won, "stage": 1, "completed": waves_completed,
+		"waves": config.waves.size(), "correct": correct_answers, "answered": answered, "health": health}
 
 func _intent(id: String, value: Variant) -> void:
 	if paused and id not in ["pause", "exit"]:

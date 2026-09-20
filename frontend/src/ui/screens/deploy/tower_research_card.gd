@@ -36,6 +36,7 @@ func refresh() -> void:
 	content.add_child(status)
 	var portrait := Portrait.new()
 	portrait.tower_id = tower_id
+	portrait.unlocked = unlocked
 	portrait.accent = accent if unlocked else UI.MUTED
 	portrait.custom_minimum_size.y = 160
 	portrait.size_flags_vertical = SIZE_EXPAND_FILL
@@ -46,4 +47,25 @@ func refresh() -> void:
 		stats = "SLOW %d%%\nDEPLOY %dG  /  SLOTS %d" % [roundi((1 - float(ContentDB.get_tower(tower_id).get("zone_slow", 1))) * 100), cost, slots]
 	content.add_child(UI.label(stats, body_font, UI.MUTED))
 	content.add_child(UI.label("%d / %d UPGRADES" % [ranks, total_ranks] if total_ranks > 0 else "UPGRADES COMING SOON", body_font - 2, accent))
+	if total_ranks > 0:
+		var progress := ProgressBar.new()
+		progress.mouse_filter = MOUSE_FILTER_IGNORE
+		progress.show_percentage = false
+		progress.max_value = total_ranks
+		progress.value = ranks
+		progress.custom_minimum_size.y = 8
+		progress.add_theme_stylebox_override("background", UI.box(UI.BG, UI.BG, 0))
+		progress.add_theme_stylebox_override("fill", UI.box(accent, accent, 0))
+		content.add_child(progress)
 	content.add_child(UI.label("OPEN RESEARCH >" if unlocked else requirement, body_font, UI.TEAL if unlocked else UI.GOLD))
+	if not unlocked:
+		var lock := IntelPixelIcon.new()
+		lock.kind = IntelPixelIcon.Kind.LOCK
+		lock.ink_override = UI.GOLD
+		lock.set_anchors_and_offsets_preset(PRESET_TOP_RIGHT)
+		lock.offset_left = -48
+		lock.offset_right = -20
+		lock.offset_top = 20
+		lock.offset_bottom = 48
+		lock.mouse_filter = MOUSE_FILTER_IGNORE
+		add_child(lock)

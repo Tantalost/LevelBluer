@@ -1,5 +1,6 @@
 extends SceneTree
-## Headless check for the Module 1 Stage 1 decision flow.
+## Legacy-scene regression for the Module 1 Stage 1 decision flow.
+## Normal deployment is covered by the isolated verify_stage_one_live.gd harness.
 ## Run from frontend/:  godot --headless --script res://src/tools/verify_decision_stage.gd
 ## The local guest save is backed up before the run and restored afterwards.
 
@@ -648,7 +649,11 @@ func _start_match(module_id: String, stage_index: int) -> Node:
 		await _router.return_to_stage_select()
 		await settle()
 	_router.is_tutorial = false
-	await _router.start_level(stage_index, module_id)
+	_router.active_module_id = module_id
+	# Explicit legacy context: normal start_level now uses the geometric scene.
+	var legacy := MatchContext.new()
+	legacy.module_id = module_id
+	_router._begin_gameplay(stage_index, legacy)
 	await settle(30)
 	check(_router._gameplay != null and is_instance_valid(_router._gameplay), "Router started gameplay for %s stage %d" % [module_id, stage_index + 1])
 	return _router._gameplay

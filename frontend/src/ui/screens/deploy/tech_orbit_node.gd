@@ -1,6 +1,8 @@
 extends Button
 ## Glowing orbit nodes; real Buttons provide keyboard and touch input.
 const Glyphs = preload("res://src/ui/screens/deploy/upgrade_glyphs.gd")
+const Units = preload("res://src/gameplay/preview/unit_glyphs.gd")
+var tower_id := "base"
 const FONT = preload("res://assets/fonts/DigitalDisco.ttf")
 var track_id := "stats"
 var rank := 1
@@ -42,7 +44,13 @@ func _draw() -> void:
 		draw_arc(c, r + 5, 0, TAU, 64, Color("e5c88a"), 2, true)
 	if _pulse > 0:
 		draw_arc(c, r + 6 + (1 - _pulse) * 28, 0, TAU, 64, Color(accent, _pulse), 3, true)
-	Glyphs.paint(self, c, r * 0.5, "root" if is_root else track_id, ink)
+	if is_root or track_id == "evolution":
+		var kind := tower_id if is_root else ("scanner" if rank == 1 else "sandbox")
+		draw_set_transform(c, 0, Vector2.ONE * r / 42.0)
+		Units.tower(self, kind, -PI / 2, 0, 30)
+		draw_set_transform(Vector2.ZERO)
+	else:
+		Glyphs.paint(self, c, r * 0.5, track_id, ink)
 	if state == "LOCKED" and not is_root:
 		var lock := c + Vector2(-r * 0.8, r * 0.65)
 		draw_circle(lock, 11, Color("0c1821"))

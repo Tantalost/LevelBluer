@@ -422,7 +422,7 @@ func _fire() -> void:
 	if parent_node == null:
 		return
 	projectile.match_context = match_context
-	if match_context.preview:
+	if match_context.geometric:
 		projectile.source_tower = weakref(self)
 	parent_node.add_child(projectile)
 	projectile.combat_map = combat_map

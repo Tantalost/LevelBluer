@@ -31,6 +31,15 @@ func _run() -> void:
 	root.add_child(screen)
 	await _settle()
 	_check(screen._select_cards.size() == 3, "Three research cards")
+	var portrait_script = load("res://src/ui/screens/deploy/research_portrait.gd")
+	_check(portrait_script.get_script_constant_map().get("Glyphs") == load("res://src/gameplay/preview/unit_glyphs.gd"), "Armory shares the actual gameplay shape renderer")
+	for id in screen._select_cards:
+		var portraits := 0
+		for node in screen._select_cards[id].find_children("*", "Control", true, false):
+			if node.get_script() == portrait_script:
+				portraits += 1
+				_check(node.tower_id == id and node.unlocked == screen._is_tower_selectable(id), "Card shape and lock state match tower: " + id)
+		_check(portraits == 1, "One geometric portrait per tower card")
 	_check(screen._is_tower_selectable("base"), "Base selectable")
 	_check(not screen._is_tower_selectable("scanner"), "Scanner stays locked")
 	await _capture("research_armory")
@@ -42,6 +51,7 @@ func _run() -> void:
 	for track in screen._track_nodes:
 		count += screen._track_nodes[track].size()
 	_check(count == 9, "All nine existing ranks rendered")
+	_check(screen._root_button.tower_id == "base", "Research core uses selected tower silhouette")
 	screen._inspect_rank("stats", 1)
 	_check(screen._purchase_button.disabled, "Insufficient credits cannot buy")
 	_check(screen._detail_state.text.contains("18"), "Exact missing credits displayed")
@@ -72,6 +82,7 @@ func _run() -> void:
 	await _settle()
 	_check(screen._empty_hint.visible, "Unconfigured tracks get honest empty state")
 	_check(screen._track_nodes.is_empty(), "No invented scanner upgrades")
+	_check(screen._detail_icon.is_root and screen._detail_icon.tower_id == "scanner", "Inspector uses selected scanner shape")
 	screen._on_back_pressed()
 	_check(screen._selection_screen.visible, "Back returns to armory")
 	# Check compact landscape layout and tutorial target without starting the coach/save flow.

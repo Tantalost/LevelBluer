@@ -158,7 +158,7 @@ func _hit_enemy(enemy: EnemyBase) -> bool:
 	var tier: StringName = EnemyBase.matchup_tier(multiplier, 1.5, 0.5)
 	var before := enemy.current_health
 	enemy.take_damage(scaled, tier)
-	if match_context.preview and source_tower != null:
+	if match_context.geometric and source_tower != null:
 		var tower: Node = source_tower.get_ref()
 		if is_instance_valid(tower):
 			tower.preview_damage_dealt += maxi(0, before - enemy.current_health)

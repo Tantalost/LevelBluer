@@ -280,6 +280,10 @@ func _normalize_decision_state(raw: Variant) -> Dictionary:
 			"safe_count": int(row.get("safe_count", 0)),
 			"retry_checkpoint": retry_cp,
 		}
+		# Optional live Stage 1 review marker; older checkpoints remain unchanged.
+		var reviewed_index := int(row.get("reviewed_breach_index", -1))
+		if reviewed_index >= 0 and reviewed_index == int(row.get("threat_index", 0)):
+			result[str(key)]["reviewed_breach_index"] = reviewed_index
 	return result
 
 

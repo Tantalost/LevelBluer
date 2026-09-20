@@ -260,7 +260,7 @@ func _refresh_selection_cards() -> void:
 		_select_cards[id] = card
 
 func _tower_color(id: String) -> Color:
-	return {"base": UI.TEAL, "scanner": Color("9cbfdb"), "sandbox": Color("c4b1d2")}.get(id, UI.TEAL)
+	return {"base": UI.TEAL, "scanner": Color("72b8ed"), "sandbox": Color("b997e8")}.get(id, UI.TEAL)
 
 func _build_switcher() -> void:
 	UI.clear(_switcher)
@@ -272,6 +272,7 @@ func _build_switcher() -> void:
 		button.add_theme_stylebox_override("normal", UI.box(Color("233e41") if id == _active_tower else UI.PANEL, _tower_color(id), 0))
 		var portrait := Portrait.new()
 		portrait.tower_id = id
+		portrait.unlocked = _is_tower_selectable(id)
 		portrait.accent = _tower_color(id) if _is_tower_selectable(id) else UI.MUTED
 		portrait.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		portrait.offset_bottom = -36
@@ -343,6 +344,7 @@ func _rebuild_tree() -> void:
 
 func _make_rank_node(track: String, rank: int, count: int, center: Vector2) -> Button:
 	var node := OrbitNode.new()
+	node.tower_id = _active_tower
 	node.track_id = track
 	node.rank = rank
 	node.max_rank = count
@@ -379,6 +381,7 @@ func _refresh_inspector() -> void:
 	_purchase_button.disabled = true
 	_detail_cost.text = ""
 	_detail_icon.is_root = _selected_track.is_empty()
+	_detail_icon.tower_id = _active_tower
 	_detail_icon.track_id = "root" if _selected_track.is_empty() else _selected_track
 	_detail_icon.caption = ""
 	_detail_icon.accent = UI.TEAL if _selected_track.is_empty() else TRACK_COLORS[_selected_track]

@@ -50,6 +50,7 @@ signal quit_requested
 
 const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
 const PREVIEW_SCENE := "res://src/gameplay/preview/stage_one_preview.tscn"
+const STAGE_ONE_LIVE_SCENE := "res://src/gameplay/decision/stage_one_live.tscn"
 var active_match_context: MatchContext = MatchContext.new()
 
 var _host: Control = null
@@ -112,7 +113,7 @@ func enter_gameplay(stage_index: int) -> void:
 		if tree == null:
 			return
 		await tree.process_frame
-	if not AssetManager.has_required_gameplay_assets():
+	if not _context_for_stage(stage_index).geometric and not AssetManager.has_required_gameplay_assets():
 		push_error("Router: required gameplay assets are not available locally")
 		return
 	if _gameplay != null and is_instance_valid(_gameplay):
@@ -422,7 +423,7 @@ func request_back() -> void:
 	if is_tutorial:
 		return
 	if _gameplay != null and is_instance_valid(_gameplay):
-		if active_match_context.preview and _gameplay.has_method("toggle_pause"):
+		if active_match_context.geometric and _gameplay.has_method("toggle_pause"):
 			_gameplay.toggle_pause()
 			return
 		var manager: Node = _gameplay.get_node_or_null("LevelManager")
@@ -524,11 +525,28 @@ func _pop_now() -> void:
 	screen_changed.emit(arriving.screen_id)
 
 
+func _context_for_stage(stage_index: int) -> MatchContext:
+	# Deliberately narrow rollout: later stages/modules and tutorial stay legacy.
+	var context := MatchContext.stage_one_live() if stage_index == 0 and active_module_id == "mod_01" and not is_tutorial else MatchContext.new()
+	context.stage_id = stage_index + 1
+	context.module_id = active_module_id
+	return context
+
+func _scene_for_context(context: MatchContext) -> String:
+	if context.preview:
+		return PREVIEW_SCENE
+	return STAGE_ONE_LIVE_SCENE if context.geometric else LEVEL_SCENE
+
 func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 	if context == null:
-		context = MatchContext.new()
+		context = _context_for_stage(stage_index)
 	context.stage_id = stage_index + 1
-	if not context.preview and not AssetManager.has_required_gameplay_assets():
+	if context.geometric and context.persistent:
+		if context.stage_id != 1 or context.module_id != "mod_01" or is_tutorial or not StageManager.access_reason(1, "mod_01").is_empty():
+			push_warning("Router: Stage 1 is not available for this session.")
+			_set_ui_stack_active(true)
+			return
+	if not context.geometric and not AssetManager.has_required_gameplay_assets():
 		push_error("Router: required gameplay assets are not available locally")
 		_set_ui_stack_active(true)
 		return
@@ -536,13 +554,13 @@ func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 	if _gameplay != null and is_instance_valid(_gameplay):
 		push_warning("Router: a level is already running")
 		return
-	var scene_path: String = PREVIEW_SCENE if context.preview else LEVEL_SCENE
+	var scene_path: String = _scene_for_context(context)
 	if not ResourceLoader.exists(scene_path):
-		push_error("Router: level scene missing at %s" % LEVEL_SCENE)
+		push_error("Router: level scene missing at %s" % scene_path)
 		return
 	var packed: PackedScene = load(scene_path) as PackedScene
 	if packed == null:
-		push_error("Router: failed to load %s" % LEVEL_SCENE)
+		push_error("Router: failed to load %s" % scene_path)
 		return
 	var instance: Node = packed.instantiate()
 	if instance == null:
@@ -550,7 +568,7 @@ func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 		return
 	# Configure before entering the tree; no preview side effects can run first.
 	active_match_context = context
-	if context.preview:
+	if context.geometric:
 		instance.set("match_context", context)
 	if not _stack.is_empty():
 		_stack.back().on_exit()

@@ -197,6 +197,8 @@ func _responsive() -> void:
 	_apply_metrics(self)
 
 func _apply_metrics(node: Node) -> void:
+	if node is CanvasLayer:
+		return # Result overlays own their typography and responsive layout.
 	if node is Button:
 		node.custom_minimum_size.y = 76 + font_size * 4 if node.get_meta("tower_card", false) else touch
 		if node.get_meta("tower_card", false):
@@ -458,7 +460,7 @@ func _add_tower_card(row: Dictionary, selected: bool) -> void:
 	card.set_meta("tower_card", true)
 	card.custom_minimum_size = Vector2(_card_width(), 76 + font_size * 4)
 	card.size_flags_horizontal = SIZE_EXPAND_FILL
-	var available := int(row.remaining) > 0 and bool(row.affordable)
+	var available := int(row.remaining) > 0 and bool(row.affordable) and not bool(row.get("locked", false))
 	card.add_theme_stylebox_override("normal", UI.box(Color("254944") if selected else (UI.PANEL if available else Color("111b22")), UI.TEAL if selected else Color("30454d"), 4))
 	var column := VBoxContainer.new()
 	column.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
@@ -480,7 +482,7 @@ func _add_tower_card(row: Dictionary, selected: bool) -> void:
 	title.custom_minimum_size.y = font_size * 2 + 4
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
-	var count := UI.label("%d left" % int(row.remaining), font_size, UI.TEAL if int(row.remaining) > 0 else Color("ee8791"))
+	var count := UI.label("Locked" if bool(row.get("locked", false)) else "%d left" % int(row.remaining), font_size, UI.TEAL if available else Color("ee8791"))
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(count)
 	var cost := UI.label("%d G" % int(row.cost), font_size, UI.GOLD if bool(row.affordable) else Color("ee8791"))
@@ -556,10 +558,16 @@ func show_results(data: Dictionary) -> void:
 	for control in body.get_parent().get_children():
 		if control != body:
 			control.hide()
-	result_overlay = preload("res://src/gameplay/preview/preview_result_overlay.gd").new()
+	var live := bool(data.get("live", false))
+	result_overlay = preload("res://src/ui/screens/victory/base_defeat_overlay.gd").new() if live else preload("res://src/gameplay/preview/preview_result_overlay.gd").new()
 	add_child(result_overlay)
 	result_overlay.configure(data)
-	result_overlay.action_requested.connect(func(id: StringName) -> void: action.emit("retry" if id == &"restart" else "exit", null))
+	result_overlay.action_requested.connect(func(id: StringName) -> void:
+		if live:
+			action.emit("result_" + str(id), null)
+		else:
+			action.emit("retry" if id == &"restart" else "exit", null)
+	)
 
 func show_modal(title: String, copy: String, actions: Array) -> void:
 	close_modal()
