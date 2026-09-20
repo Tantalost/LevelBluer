@@ -48,7 +48,7 @@ var _preview_flash := 0.0
 
 func initialize_stats(type_id: String, hp_mult: float) -> void:
 	_type_id = type_id
-	var stats: Dictionary = ContentDB.get_enemy(type_id)
+	var stats: Dictionary = _content_db_get_enemy(type_id)
 	var health_stored: Variant = stats.get("hp", stats.get("base_health", 3))
 	var speed_stored: Variant = stats.get("speed", 50.0)
 	var color_stored: Variant = stats.get("color", Palette.RED)
@@ -81,6 +81,25 @@ func initialize_stats(type_id: String, hp_mult: float) -> void:
 	threat_profile = profile_for_character(_visual_id)
 	_apply_hitbox_scale()
 	_apply_tint(_base_color)
+
+
+## Resolved via the SceneTree root instead of a bare autoload identifier
+## (e.g. "ContentDB"): initialize_stats() runs before this enemy is added to
+## the tree (get_node would fail here), and a bare autoload identifier also
+## forces GDScript to eagerly compile this script's autoload dependencies
+## before headless --script runs have registered any autoloads.
+func _autoload(singleton_name: String) -> Node:
+	var loop: SceneTree = Engine.get_main_loop() as SceneTree
+	if loop == null:
+		return null
+	return loop.root.get_node_or_null(singleton_name)
+
+
+func _content_db_get_enemy(type_id: String) -> Dictionary:
+	var content_db: Node = _autoload("ContentDB")
+	if content_db == null:
+		return {}
+	return content_db.call("get_enemy", type_id)
 
 
 func _ready() -> void:
@@ -260,9 +279,12 @@ func _bind_character_visuals() -> void:
 		if sprite != null:
 			sprite.hide()
 		return
-	if _visual_id.is_empty():
-		_visual_id = AssetManager.pick_random_character()
-	var frames: SpriteFrames = AssetManager.get_character_sprite_frames(_visual_id)
+	var asset_manager: Node = _autoload("AssetManager")
+	if _visual_id.is_empty() and asset_manager != null:
+		_visual_id = str(asset_manager.call("pick_random_character"))
+	var frames: SpriteFrames = null
+	if asset_manager != null:
+		frames = asset_manager.call("get_character_sprite_frames", _visual_id) as SpriteFrames
 	if sprite == null or frames == null:
 		_uses_character_sheets = false
 		rotates = false
@@ -345,9 +367,13 @@ func _begin_death() -> void:
 	if match_context.geometric:
 		preload("res://src/gameplay/preview/unit_glyphs.gd").fragments(get_parent(), position, _base_color, _type_id)
 	else:
-		VfxManager.spawn_vfx("death", global_position)
+		var vfx: Node = _autoload("VfxManager")
+		if vfx != null:
+			vfx.call("spawn_vfx", "death", global_position)
 	if match_context.persistent:
-		TaskManager.record_enemy_defeated(_type_id)
+		var task_manager: Node = _autoload("TaskManager")
+		if task_manager != null:
+			task_manager.call("record_enemy_defeated", _type_id)
 	enemy_died.emit(bounty)
 	var sprite: AnimatedSprite2D = _character_sprite()
 	var death_anim: StringName = _death_anim_name()

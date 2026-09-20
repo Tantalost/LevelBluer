@@ -46,6 +46,7 @@ var _style_hover: StyleBoxFlat
 var _style_selected: StyleBoxFlat
 var _style_focus: StyleBoxFlat
 var _style_disabled: StyleBoxFlat
+var _story_banner: String = ""
 
 
 func _init() -> void:
@@ -192,8 +193,10 @@ func _build_ui() -> void:
 	_apply_mode()
 
 
-## Dialogue-only beat (opening, ending, resume notice).
-func show_story(lines: Array[Dictionary], header: String, continue_text: String = "CONTINUE") -> void:
+## Dialogue-only beat (opening, ending, resume notice). An optional banner
+## reuses the consequence banner styling for beats that need a short heading
+## (e.g. "BREACH CONTAINED") without offering the three action choices.
+func show_story(lines: Array[Dictionary], header: String, continue_text: String = "CONTINUE", banner: String = "") -> void:
 	_mode = &"story"
 	_locked = false
 	_selected_index = -1
@@ -201,6 +204,10 @@ func show_story(lines: Array[Dictionary], header: String, continue_text: String 
 	_header_right.text = ""
 	_fill_dialogue(lines)
 	_continue_button.text = continue_text
+	_story_banner = banner.strip_edges()
+	if not _story_banner.is_empty():
+		_banner.text = _story_banner
+		_banner.add_theme_color_override("font_color", outcome_color(DecisionScenarios.OUTCOME_SAFE))
 	_apply_mode()
 	_release_choice_focus()
 	_fit_layout()
@@ -235,13 +242,16 @@ func show_threat(threat: Dictionary, threat_number: int, threat_total: int, head
 	call_deferred("_fit_layout")
 
 
-## Narrative result of a decision. No right/wrong wording.
-func show_consequence(outcome: String, consequence: String, explanation: String, header: String, continue_text: String = "CONTINUE") -> void:
+## Narrative result of a decision. No right/wrong wording. banner_override
+## replaces the outcome's default banner text (e.g. "BREACH DETECTED" instead
+## of "SECURITY WARNING") while keeping the outcome's status line and color.
+func show_consequence(outcome: String, consequence: String, explanation: String, header: String, continue_text: String = "CONTINUE", banner_override: String = "") -> void:
 	_mode = &"consequence"
 	_locked = false
 	_header_left.text = header
 	_header_right.text = outcome_status_line(outcome)
-	_banner.text = outcome_banner(outcome)
+	var banner_text: String = banner_override.strip_edges()
+	_banner.text = banner_text if not banner_text.is_empty() else outcome_banner(outcome)
 	_banner.add_theme_color_override("font_color", outcome_color(outcome))
 	var lines: Array[Dictionary] = [{"speaker": "", "text": consequence}]
 	if not explanation.strip_edges().is_empty():
@@ -297,7 +307,8 @@ static func outcome_color(outcome: String) -> Color:
 func _apply_mode() -> void:
 	var threat: bool = _mode == &"threat"
 	var consequence: bool = _mode == &"consequence"
-	_banner.visible = consequence
+	var story_banner: bool = _mode == &"story" and not _story_banner.is_empty()
+	_banner.visible = consequence or story_banner
 	_situation_title.visible = threat
 	_situation.visible = threat
 	_evidence_title.visible = threat and _evidence_box.get_child_count() > 0

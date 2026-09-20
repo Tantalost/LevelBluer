@@ -181,6 +181,20 @@ func fail_breach() -> void:
 		security_state = str(retry_checkpoint.get("security_state", security_state))
 
 
+## True from a committed RISKY choice through TD win/loss. in_breach mirrors
+## this by construction (see commit()/resolve_current()/fail_breach()/
+## restore()); this query lets callers derive the same fact from flow_state
+## instead of checking both.
+func is_breach_active() -> bool:
+	return flow_state == FLOW_BREACH
+
+
+## True only between a committed RISKY choice and the player pressing DEPLOY
+## DEFENSES on the breach-transition beat. Tower Defense has not started yet.
+func awaiting_breach_deploy() -> bool:
+	return flow_state == FLOW_BREACH and pending_committed
+
+
 func capture_retry_checkpoint() -> Dictionary:
 	retry_checkpoint = {
 		"threat_index": threat_index,

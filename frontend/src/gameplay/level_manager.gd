@@ -17,6 +17,10 @@ const LOSS_CREDIT_PAYOUT: int = 10
 const QUESTION_TIME_SEC: float = 20.0
 const MULTI_SELECT_TIME_SEC: float = 30.0
 const OPTION_KEYS: PackedStringArray = ["A", "B", "C", "D", "E", "F"]
+## Balance-only knob for Module 1 Stage 1's RISKY breach Tower Defense.
+## Scales spawned enemy HP alone (see _decision_breach_hp_scale()); damage,
+## speed, tower stats, wave count, and rewards are untouched.
+const DECISION_BREACH_ENEMY_HP_MULTIPLIER: float = 0.60
 
 @export var enemy_scene: PackedScene
 
@@ -2202,6 +2206,17 @@ func _begin_wave() -> void:
 	_spawn_wave(_wave_token)
 
 
+## Module 1 Stage 1's RISKY breach only. Every other stage/wave (including
+## Stage 1's own retry/checkpoint flow, Stage 2+, and Modules 2-5) spawns at
+## the normal 1.0 scale untouched.
+func _decision_breach_hp_scale() -> float:
+	if _decision == null or not _decision.is_breach_active():
+		return 1.0
+	if _current_module_id() != "mod_01" or _current_stage_id() != 1:
+		return 1.0
+	return DECISION_BREACH_ENEMY_HP_MULTIPLIER
+
+
 func _spawn_wave(token: int) -> void:
 	var wave_data: Dictionary = _current_wave_data()
 	var count_stored: Variant = wave_data.get("enemy_count", 0)
@@ -2211,7 +2226,7 @@ func _spawn_wave(token: int) -> void:
 	var mix_stored: Variant = wave_data.get("enemy_mix", [])
 	var count: int = maxi(0, int(count_stored))
 	var delay: float = float(delay_stored)
-	var hp_mult: float = float(hp_stored)
+	var hp_mult: float = float(hp_stored) * _decision_breach_hp_scale()
 	var type_id: String = str(type_stored)
 	if type_id.is_empty():
 		type_id = "basic"
@@ -2619,9 +2634,9 @@ func _begin_decision_stage() -> void:
 	])
 	if not resumed:
 		_show_decision_story("opening", _show_decision_threat)
-	elif _decision.flow_state == DecisionStageController.FLOW_ENDING:
+	elif _decision.is_complete():
 		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
-	elif _decision.flow_state == DecisionStageController.FLOW_BREACH:
+	elif _decision.is_breach_active():
 		_show_decision_story("resume_breach", _begin_decision_breach, "DEPLOY DEFENSES")
 	else:
 		_show_decision_threat()
@@ -2669,7 +2684,7 @@ func _on_decision_story_continued() -> void:
 func _show_decision_threat() -> void:
 	if _decision == null or _decision_overlay == null:
 		return
-	if _decision.flow_state == DecisionStageController.FLOW_ENDING or _decision.is_complete():
+	if _decision.is_complete():
 		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
 		return
 	var threat: Dictionary = _decision.current_threat()
@@ -2700,11 +2715,8 @@ func _on_decision_choice_selected(choice_index: int) -> void:
 		str(threat.get("id", "")), choice_index, outcome,
 	])
 	var continue_text: String = "CONTINUE"
-	match outcome:
-		DecisionScenarios.OUTCOME_RISKY:
-			continue_text = "DEPLOY DEFENSES"
-		DecisionScenarios.OUTCOME_CRITICAL:
-			continue_text = "DAMAGE REPORT"
+	if outcome == DecisionScenarios.OUTCOME_CRITICAL:
+		continue_text = "DAMAGE REPORT"
 	_decision_overlay.show_consequence(
 		outcome,
 		str(choice.get("consequence", "")),
@@ -2716,6 +2728,10 @@ func _on_decision_choice_selected(choice_index: int) -> void:
 
 func _on_decision_consequence_continued() -> void:
 	if _decision == null:
+		return
+	if _decision.awaiting_breach_deploy():
+		# Breach-transition beat: DEPLOY DEFENSES is what actually starts TD.
+		_begin_decision_breach()
 		return
 	var result: Dictionary = _decision.commit()
 	if result.is_empty():
@@ -2732,17 +2748,48 @@ func _on_decision_consequence_continued() -> void:
 		DecisionScenarios.OUTCOME_SAFE:
 			_advance_decision()
 		DecisionScenarios.OUTCOME_RISKY:
-			_begin_decision_breach()
+			_show_decision_breach_warning()
 		DecisionScenarios.OUTCOME_CRITICAL:
 			if _decision_overlay != null:
 				_decision_overlay.visible = false
 			change_phase(GamePhase.GAME_OVER)
 
 
+## RISKY commit: the choice's specific consequence has already been shown
+## under the SECURITY WARNING banner. This is the distinct breach-entry beat
+## — Tower Defense does not start until the player presses DEPLOY DEFENSES.
+func _show_decision_breach_warning() -> void:
+	if _decision == null:
+		return
+	if _decision_overlay == null:
+		_begin_decision_breach()
+		return
+	var threat: Dictionary = _decision.current_threat()
+	var system_name: String = _decision_affected_system(threat)
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_consequence(
+		DecisionScenarios.OUTCOME_RISKY,
+		"Malicious activity has been detected on %s." % system_name,
+		"The threat is attempting to spread through the internal network.",
+		_decision_header(),
+		"DEPLOY DEFENSES",
+		"BREACH DETECTED",
+	)
+
+
+## Decision-stage presentation only: never derived from the threat title.
+func _decision_affected_system(threat: Dictionary) -> String:
+	var system_name: String = str(threat.get("affected_system", "")).strip_edges()
+	if system_name.is_empty():
+		return "the affected workstation"
+	return system_name
+
+
 func _advance_decision() -> void:
 	if _decision == null:
 		return
-	if _decision.flow_state == DecisionStageController.FLOW_ENDING or _decision.is_complete():
+	if _decision.is_complete():
 		_save_decision_checkpoint()
 		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
 	else:
@@ -2851,13 +2898,27 @@ func _on_decision_breach_cleared() -> void:
 	if _decision == null:
 		return
 	var threat: Dictionary = _decision.current_threat()
+	var system_name: String = _decision_affected_system(threat)
 	_decision.contain_breach()
 	_save_decision_checkpoint()
 	print("[DECISION] breach contained threat=%s resolved=%d/%d flow=%s" % [
 		str(threat.get("id", "")), _decision.resolved_threats, _decision.total_threats(), _decision.flow_state,
 	])
 	change_phase(GamePhase.PRE_MATCH)
-	_show_decision_story("breach_contained", _advance_decision)
+	_show_decision_breach_contained(system_name)
+
+
+func _show_decision_breach_contained(system_name: String) -> void:
+	var lines: Array[Dictionary] = [
+		{"speaker": "", "text": "The threat on %s was isolated before reaching critical systems." % system_name},
+	]
+	_decision_next = _advance_decision
+	if _decision_overlay == null:
+		_advance_decision()
+		return
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_story(lines, _decision_header(), "CONTINUE INVESTIGATION", "BREACH CONTAINED")
 
 
 func _save_decision_checkpoint() -> void:
@@ -2880,7 +2941,7 @@ func _finish_decision_stage() -> void:
 func _decision_game_over_tip() -> String:
 	if _decision == null:
 		return ""
-	if _decision.flow_state == DecisionStageController.FLOW_BREACH or _decision.in_breach:
+	if _decision.is_breach_active():
 		_decision.fail_breach()
 	_save_decision_checkpoint()
 	print("[DECISION] game over critical=%s threat_index=%d resolved=%d flow=%s security=%s" % [

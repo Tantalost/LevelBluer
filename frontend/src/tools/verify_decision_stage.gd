@@ -55,6 +55,7 @@ func _run() -> void:
 	await _test_controller(threats)
 	await _test_save_compat()
 	await _test_required_scenarios()
+	await _test_breach_transition()
 	await _test_regression()
 
 	_restore_save()
@@ -457,6 +458,126 @@ func _test_required_scenarios() -> void:
 	await _stop_match()
 
 
+func _test_breach_transition() -> void:
+	print("== Milestone 7 / 7.1: RISKY breach transition + affected-system polish ==")
+	_player.reset_to_defaults()
+	var level: Node = await _start_match("mod_01", 0)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+
+	print("-- Threat 1 RISKY: SECURITY WARNING -> BREACH DETECTED (WORKSTATION-07) --")
+	overlay._choice_buttons[2].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "Threat 1 RISKY choice shows the SECURITY WARNING consequence")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "TD has not started after the consequence beat")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay.visible and overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "Breach transition beat uses a distinct BREACH DETECTED banner")
+	check(_dialogue_contains(overlay, "WORKSTATION-07"), "Threat 1 breach transition names WORKSTATION-07, not the threat title")
+	check(not _dialogue_contains(overlay, "Account Suspension Notice"), "Threat 1 breach transition does not fall back to the threat title")
+	check(overlay._continue_button.text == "DEPLOY DEFENSES", "Breach transition offers DEPLOY DEFENSES")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "TD still has not started before DEPLOY DEFENSES is pressed")
+	check(not lm._gold_label.visible and not lm._heart_hud.visible, "TD HUD stays hidden during the breach transition")
+	check(_no_forbidden_words(overlay), "Breach transition avoids quiz vocabulary")
+
+	print("-- Press DEPLOY DEFENSES: overlay closes, TD HUD appears, combat begins --")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(not overlay.visible, "Decision overlay closes once defenses are deployed")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "Tower Defense starts only after DEPLOY DEFENSES")
+	_assert_td_mode(lm, "After DEPLOY DEFENSES")
+
+	print("-- TD WIN: BREACH CONTAINED names the same affected system, no next threat yet --")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "Combat stops once the breach is contained")
+	check(overlay.visible and overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "BREACH CONTAINED banner is shown instead of jumping ahead")
+	check(_dialogue_contains(overlay, "WORKSTATION-07"), "BREACH CONTAINED names WORKSTATION-07, matching the breach transition")
+	check(overlay._continue_button.text == "CONTINUE INVESTIGATION", "Breach-contained beat offers CONTINUE INVESTIGATION")
+	check(overlay._header_right.text == "", "Next threat is not shown until Continue Investigation is pressed")
+	check(not lm._gold_label.visible and not lm._heart_hud.visible, "TD HUD hidden during BREACH CONTAINED")
+	if lm._tower_placer != null:
+		check(lm._tower_placer.process_mode == Node.PROCESS_MODE_DISABLED, "Combat interaction disabled during BREACH CONTAINED")
+
+	print("-- Press CONTINUE INVESTIGATION: Threat 2 appears, decision UI active --")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "Continue Investigation reveals the next threat")
+	_assert_decision_mode(lm, "After Continue Investigation")
+
+	print("-- SAFE never shows BREACH DETECTED or DEPLOY DEFENSES --")
+	overlay._choice_buttons[1].pressed.emit()
+	await settle()
+	check(overlay._continue_button.text != "DEPLOY DEFENSES", "SAFE consequence never offers DEPLOY DEFENSES")
+	check(overlay._banner.text != "BREACH DETECTED", "SAFE consequence never shows the BREACH DETECTED banner")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "SAFE proceeds normally to the next threat")
+
+	print("-- Threat 3 RISKY: uses its own configured affected system --")
+	overlay._choice_buttons[2].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "Threat 3 breach transition also uses BREACH DETECTED")
+	check(_dialogue_contains(overlay, "EMPLOYEE ACCOUNT / MAIL SYSTEM"), "Threat 3 breach transition names its configured affected system")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "Threat 3 RISKY still reaches Tower Defense through the transition")
+
+	print("-- TD LOSS after the breach transition: existing CONTAINMENT FAILED flow --")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "TD loss is still Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[M7 regression] CONTAINMENT FAILED screen is unchanged")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[M7 regression] RETRY works exactly as Milestone 4")
+	await _stop_match()
+
+	print("-- Threat 2 RISKY (standalone): affected system = FINANCE-WS-03 --")
+	_player.reset_to_defaults()
+	_player.decision_stage_state = {"mod_01:1": {"threat_index": 1, "resolved_threats": 1, "flow_state": "THREAT", "in_breach": false, "security_state": "NOMINAL", "safe_count": 1}}
+	level = await _start_match("mod_01", 0)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "Injected checkpoint lands on Threat 2")
+	overlay._choice_buttons[2].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "Threat 2 breach transition uses BREACH DETECTED")
+	check(_dialogue_contains(overlay, "FINANCE-WS-03"), "Threat 2 breach transition names FINANCE-WS-03")
+	await _stop_match()
+
+	print("-- CRITICAL: existing SYSTEM COMPROMISED flow unchanged --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 0)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[0].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[M7 regression] CRITICAL banner is unchanged")
+	check(overlay._continue_button.text == "DAMAGE REPORT", "[M7 regression] CRITICAL still shows DAMAGE REPORT, not DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[M7 regression] CRITICAL is still an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[M7 regression] SYSTEM COMPROMISED screen is unchanged")
+	await _stop_match()
+
+
+func _dialogue_contains(overlay, needle: String) -> bool:
+	var texts: Array[String] = []
+	_collect_texts(overlay, texts)
+	for text in texts:
+		if text.contains(needle):
+			return true
+	return false
+
+
 func _test_regression() -> void:
 	print("== regression: other stages keep TRACE and TD loss payout ==")
 	_player.reset_to_defaults()
@@ -635,6 +756,10 @@ func _pick(overlay, choice_index: int) -> void:
 	await settle()
 	overlay._continue_button.pressed.emit()
 	await settle()
+	if overlay._mode == &"consequence" and overlay._continue_button.text == "DEPLOY DEFENSES":
+		# RISKY: the breach-transition beat needs its own DEPLOY DEFENSES press.
+		overlay._continue_button.pressed.emit()
+		await settle()
 
 
 func _force_td_win(lm) -> void:

@@ -78,12 +78,12 @@ func _on_area_entered(area: Area2D) -> void:
 		return
 	if blast_radius > 0.0:
 		if not match_context.geometric:
-			VfxManager.spawn_vfx("aoe", global_position)
+			_spawn_vfx("aoe", global_position)
 		_apply_aoe()
 		queue_free()
 		return
 	if not match_context.geometric:
-		VfxManager.spawn_vfx("impact", global_position)
+		_spawn_vfx("impact", global_position)
 	if _hit_enemy(enemy):
 		print("[Combat] Dealt " + str(damage) + " damage!")
 	_hit_ids[enemy_id] = true
@@ -92,6 +92,19 @@ func _on_area_entered(area: Area2D) -> void:
 		_retarget()
 		return
 	queue_free()
+
+
+## Resolved via the SceneTree root instead of the bare "VfxManager" autoload
+## identifier: a bare autoload identifier forces GDScript to eagerly compile
+## this script's autoload dependency before headless --script runs have
+## registered any autoloads.
+func _spawn_vfx(effect_id: String, pos: Vector2) -> void:
+	var loop: SceneTree = Engine.get_main_loop() as SceneTree
+	if loop == null:
+		return
+	var vfx: Node = loop.root.get_node_or_null("VfxManager")
+	if vfx != null:
+		vfx.call("spawn_vfx", effect_id, pos)
 
 
 func _retarget() -> void:
