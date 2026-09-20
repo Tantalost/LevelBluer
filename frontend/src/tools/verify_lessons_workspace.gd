@@ -40,11 +40,19 @@ func _run() -> void:
 	screen._load_module("mod_01")
 	await settle()
 	var locked_topics := 0
-	for child in screen._side.get_children():
+	for card in screen._roadmap.get_children():
+		var child = card.find_child("SelectTopic", true, false)
 		if child is Button and child.disabled:
 			locked_topics += 1
 			check(child.text.begins_with("LOCKED / ") and child.has_node("LockIcon"), "Locked topic has visible label and icon")
 	check(locked_topics == 5, "Five future topics visibly locked")
+	check(not screen._in_lesson and not screen._workspace.visible, "Module opens on roadmap, not repeated definition")
+	check(screen._start_button.text == "START LESSON  >", "Explicit start lesson action")
+	check(screen._roadmap.find_children("Step*", "Button", true, false).size() == 18, "Six topics each have three connected steps")
+	screen._open_step(0, 2)
+	check(screen._phase == 0 and not screen._simulation_passed, "Roadmap cannot bypass quiz")
+	check(not screen.can_go_back() and not screen._in_lesson, "Back from lesson returns to path")
+	check(screen.can_go_back(), "Back from path returns to module picker")
 	await capture("lessons_locked_topics")
 	var count := 0
 	for id in catalog.module_ids():
@@ -59,6 +67,17 @@ func _run() -> void:
 			check(not screen._can_complete(), "Cannot finish definition")
 			screen._set_phase(2)
 			check(screen._phase == 0, "Cannot skip quiz")
+			screen._set_phase(1)
+			check(screen._phase == 0, "Cannot skip reading")
+			screen._open_lesson()
+			screen._on_continue()
+			check(screen._reading_page == 1, "Definition advances to visual example")
+			check(screen._content.has_node("VisualExample"), "Authored example has visual message presentation")
+			screen.can_go_back()
+			screen._select_topic(index)
+			screen._open_lesson()
+			check(screen._reading_page == 1, "Return to path and reselect retains reading position")
+			screen._on_continue()
 			screen._on_continue()
 			screen._check_quiz()
 			check(not screen._quiz_passed, "Empty quiz cannot pass")
@@ -94,8 +113,13 @@ func _run() -> void:
 			count += 1
 	check(player.lesson_progress.is_empty(), "No progress written before finish")
 	screen._load_module("mod_01", true)
+	screen._open_lesson()
 	await settle()
 	await capture("lessons_definition")
+	screen._on_continue()
+	await settle()
+	await capture("lessons_visual_example")
+	screen._on_continue()
 	screen._on_continue()
 	await settle()
 	await capture("lessons_mini_quiz")
@@ -119,8 +143,29 @@ func _run() -> void:
 	root.size = Vector2i(960, 600)
 	await settle()
 	check(root.get_visible_rect().encloses(screen._submit_button.get_global_rect()), "Compact CTA remains visible")
-	check(screen._panes.get_child(0).size.x > 200, "Readable left pane")
+	check(not screen._panes.visible, "Full-screen activity hides duplicate left brief")
 	await capture("lessons_compact")
+	screen.can_go_back()
+	player.lesson_progress = {"mod_01": 2}
+	screen._load_module("mod_01")
+	screen._select_topic(0)
+	await settle()
+	var completed = screen._roadmap.find_child("TopicPath1", true, false)
+	check(completed.get_theme_stylebox("panel").bg_color == screen.COMPLETE_FILL, "Completed topic has green tint")
+	for step in completed.find_children("Step*", "Button", true, false):
+		check(step.complete, "Completed topic has three checked nodes")
+	await capture("lessons_roadmap_completed")
+	for dimensions in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		check(root.get_visible_rect().encloses(screen._start_button.get_global_rect()), "Start visible at %s" % dimensions)
+		check(root.get_visible_rect().encloses(screen._panes.get_global_rect()), "Roadmap fits without horizontal scrolling")
+		await capture("lessons_path_%dx%d" % [dimensions.x, dimensions.y])
+		screen._open_lesson()
+		await settle()
+		check(root.get_visible_rect().encloses(screen._submit_button.get_global_rect()), "Lesson CTA visible at %s" % dimensions)
+		await capture("lessons_fullscreen_%dx%d" % [dimensions.x, dimensions.y])
+		screen.can_go_back()
 	screen.queue_free()
 	picker.show()
 	await settle()
