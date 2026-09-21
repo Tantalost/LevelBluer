@@ -58,9 +58,9 @@ func settle() -> void:
 func fingerprint() -> String:
 	return JSON.stringify([root.get_node("PlayerManager").get_save_data(), root.get_node("TaskManager").daily_tasks, root.get_node("AuthService")._mastery, root.get_node("AuthService")._bkt_queue])
 
-func mount(account: Account) -> Control:
+func mount(account: Account, context: MatchContext = null) -> Control:
 	var match_node: Control = scene.instantiate()
-	match_node.match_context = Context.stage_one_live()
+	match_node.match_context = context if context != null else Context.stage_one_live()
 	match_node.account = account
 	match_node.tasks = account
 	root.add_child(match_node)
@@ -77,7 +77,10 @@ func choose(match_node: Control, outcome: String) -> void:
 		read_page(match_node)
 	if not match_node.story_overlay._dialogue_done:
 		read_page(match_node)
-	var choices: Array = match_node.decision.current_threat().choices
+	# Choices are shown in a randomized order (see DecisionStageController.
+	# current_threat_for_display); find the outcome in THAT order, matching
+	# what the overlay's buttons (and thus _choose(i)) actually display.
+	var choices: Array = match_node.decision.current_threat_for_display().choices
 	for i in choices.size():
 		if choices[i].outcome == outcome:
 			match_node.story_overlay._choose(i)
@@ -118,9 +121,16 @@ func _run() -> void:
 	scene = load("res://src/gameplay/decision/stage_one_live.tscn")
 	var router := root.get_node("Router")
 	router.active_module_id = "mod_01"
-	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Normal Stage 1 routes to new scene")
-	for i in range(1, 10):
-		check(router._scene_for_context(router._context_for_stage(i)) == router.LEVEL_SCENE, "Later stage remains legacy")
+	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Normal Stage 1 routes to the live decision scene")
+	check(router._scene_for_context(router._context_for_stage(1)) == router.STAGE_ONE_LIVE_SCENE, "Stage 2 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(2)) == router.STAGE_ONE_LIVE_SCENE, "Stage 3 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(3)) == router.STAGE_ONE_LIVE_SCENE, "Stage 4 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(4)) == router.STAGE_ONE_LIVE_SCENE, "Stage 5 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(5)) == router.STAGE_ONE_LIVE_SCENE, "Stage 6 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(6)) == router.STAGE_ONE_LIVE_SCENE, "Stage 7 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(7)) == router.STAGE_ONE_LIVE_SCENE, "Stage 8 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(8)) == router.STAGE_ONE_LIVE_SCENE, "Stage 9 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(9)) == router.LEVEL_SCENE, "Stage 10 (the post-assessment, no decision data) remains legacy")
 	router.is_tutorial = true
 	check(not router._context_for_stage(0).geometric, "Tutorial remains legacy")
 	router.is_tutorial = false
@@ -371,12 +381,73 @@ func _run() -> void:
 	read_page(game)
 	read_page(game)
 	game.advance_decision_timer(44.9)
-	game.story_overlay._choose(1)
+	var safe_display_choices: Array = game.decision.current_threat_for_display().choices
+	var safe_index := 0
+	for i in safe_display_choices.size():
+		if safe_display_choices[i].outcome == "SAFE":
+			safe_index = i
+			break
+	game.story_overlay._choose(safe_index)
 	game.advance_decision_timer(100)
 	check(game.decision.pending_outcome == "SAFE" and not game.decision_timer_active and account.bkt.is_empty(), "Accepted answer wins over a subsequent timeout")
 	read_page(game)
 	check(account.bkt == [["phishing", true]], "Accepted safe answer grades once after consequence")
 	await unmount(game)
+
+	# Module 1 Stage 2 runs through the exact same live scene/controller as
+	# Stage 1, driven purely by DecisionScenarios data for stage 2.
+	print("-- [Stage 2] Same live scene, its own data --")
+	var stage2 := Context.stage_one_live()
+	stage2.stage_id = 2
+	stage2.module_id = "mod_01"
+	account = Account.new()
+	game = mount(account, stage2)
+	check(game.story_overlay._mode == &"story", "[Stage 2] Fresh launch includes opening dialogue")
+	check(game.config.name == "They Know Who We Are", "[Stage 2] Uses its own authored story title, not Stage 1's")
+	check(game.decision.total_threats() == 3, "[Stage 2] Exactly 3 incidents load")
+	check(is_equal_approx(game._enemy_health_scale(), 0.65), "[Stage 2] Breach HP scale is 0.65, independent of Stage 1's 0.60")
+	check(game._key() == "mod_01:2", "[Stage 2] Checkpoint key is stage-specific")
+	read_page(game)
+	check(game.story_overlay._mode == &"threat" and game.decision.threat_index == 0, "[Stage 2] Incident 1 shown after opening")
+	choose(game, "SAFE")
+	check(game.decision.resolved_threats == 1 and game.decision.threat_index == 1, "[Stage 2] SAFE resolves Incident 1 and advances to Incident 2")
+	check(account.bkt == [["phishing", true]], "[Stage 2] SAFE grades BKT correct exactly once")
+	choose(game, "RISKY")
+	check(game.phase == "Incident" and game.decision.awaiting_breach_deploy(), "[Stage 2] RISKY warning waits for Deploy Defenses")
+	check(account.bkt.size() == 2 and account.bkt[1] == ["phishing", false], "[Stage 2] RISKY commit grades BKT incorrect exactly once, before Tower Defense")
+	game._consequence_continued()
+	check(game.phase == "Build" and game.gold == int(game.decision.current_threat().breach_gold), "[Stage 2] Breach uses Incident 2's authored gold budget")
+	game.begin_defend()
+	game._wave_cleared()
+	check(game.phase == "Incident" and game.decision.resolved_threats == 2, "[Stage 2] TD win resolves Incident 2 and returns to story")
+	check(game.story_overlay._mode == &"story", "[Stage 2] BREACH CONTAINED story shown before Incident 3")
+	check(account.bkt.size() == 2, "[Stage 2] TD win applies no additional BKT update")
+	game._story_continued()
+	check(game.story_overlay._mode == &"threat" and game.decision.threat_index == 2, "[Stage 2] Incident 3 follows containment")
+	await unmount(game)
+
+	print("-- [Stage 2] CRITICAL -> Game Over -> retry same incident --")
+	account = Account.new()
+	game = mount(account, stage2)
+	choose(game, "CRITICAL")
+	check(game.phase == "Results" and account.credits == 0 and account.clears == 0, "[Stage 2] CRITICAL fails without inventing loss rewards")
+	check(account.checkpoint.threat_index == 0 and account.bkt.size() == 1, "[Stage 2] CRITICAL retry preserves the same incident and grades once")
+	await unmount(game)
+	game = mount(account, stage2)
+	check(game.story_overlay._mode == &"threat" and game.decision.threat_index == 0, "[Stage 2] Retry resumes Incident 1, not a fresh opening")
+	await unmount(game)
+
+	print("-- [Stage 2] All incidents resolved -> Stage 2 Complete --")
+	account = Account.new()
+	game = mount(account, stage2)
+	for i in game.decision.total_threats():
+		choose(game, "SAFE")
+	game._story_continued()
+	check(game.phase == "Results" and account.clears == 1, "[Stage 2] All SAFE completes the story and clears the stage")
+	check(account.credits == 50 + game.gold and account.stage_tasks == 1, "[Stage 2] Victory rewards match the existing production rules")
+	await unmount(game)
+
+	check(DecisionScenarios.stage_key("mod_01", 1) != DecisionScenarios.stage_key("mod_01", 2), "[Stage 2] Stage 1 and Stage 2 checkpoint keys never collide")
 	check(fingerprint() == before, "Tests left actual player/mastery/tasks/queue unchanged")
 	print("[LIVE STAGE ONE] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)

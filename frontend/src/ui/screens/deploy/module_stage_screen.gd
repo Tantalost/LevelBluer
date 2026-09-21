@@ -346,6 +346,12 @@ func _stage_config(index: int) -> Dictionary:
 	return StageManager.get_stage_config(_stage_id(index)) if _stage_id(index) > 0 else {}
 
 func _stage_name(index: int) -> String:
+	# Decision-story stages carry their own authored title; every other stage
+	# keeps the shared stages.json name (used by all 5 modules alike).
+	var module_id: String = str(_module_entry().get("id", ""))
+	var decision_title: String = str(DecisionScenarios.get_stage(module_id, _stage_id(index)).get("title", "")).strip_edges()
+	if not decision_title.is_empty():
+		return decision_title.to_upper()
 	return str(_stage_config(index).get("name", "STAGE %d" % (index + 1))).to_upper()
 
 func _module_entry() -> Dictionary:

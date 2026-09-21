@@ -526,9 +526,13 @@ func _pop_now() -> void:
 
 
 func _context_for_stage(stage_index: int) -> MatchContext:
-	# Deliberately narrow rollout: later stages/modules and tutorial stay legacy.
-	var context := MatchContext.stage_one_live() if stage_index == 0 and active_module_id == "mod_01" and not is_tutorial else MatchContext.new()
-	context.stage_id = stage_index + 1
+	# Any authored decision-story stage (DecisionScenarios data exists for it)
+	# uses the live geometric scene; everything else stays on the legacy
+	# level_base/TRACE path. The tutorial always stays legacy.
+	var stage_id: int = stage_index + 1
+	var decision_stage: bool = not is_tutorial and DecisionScenarios.is_decision_stage(active_module_id, stage_id)
+	var context := MatchContext.stage_one_live() if decision_stage else MatchContext.new()
+	context.stage_id = stage_id
 	context.module_id = active_module_id
 	return context
 
@@ -542,8 +546,8 @@ func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 		context = _context_for_stage(stage_index)
 	context.stage_id = stage_index + 1
 	if context.geometric and context.persistent:
-		if context.stage_id != 1 or context.module_id != "mod_01" or is_tutorial or not StageManager.access_reason(1, "mod_01").is_empty():
-			push_warning("Router: Stage 1 is not available for this session.")
+		if not DecisionScenarios.is_decision_stage(context.module_id, context.stage_id) or is_tutorial or not StageManager.access_reason(context.stage_id, context.module_id).is_empty():
+			push_warning("Router: this decision stage is not available for this session.")
 			_set_ui_stack_active(true)
 			return
 	if not context.geometric and not AssetManager.has_required_gameplay_assets():

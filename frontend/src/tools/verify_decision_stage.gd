@@ -55,9 +55,17 @@ func _run() -> void:
 	await _test_overlay_layout(threats)
 	await _test_controller(threats)
 	await _test_save_compat()
+	await _test_choice_randomization()
 	await _test_required_scenarios()
 	await _test_breach_transition()
 	await _test_stage2()
+	await _test_stage3()
+	await _test_stage4()
+	await _test_stage5()
+	await _test_stage6()
+	await _test_stage7()
+	await _test_stage8()
+	await _test_stage9()
 	await _test_regression()
 
 	_restore_save()
@@ -69,9 +77,17 @@ func _test_data_model(threats: Array[Dictionary]) -> void:
 	print("== data model ==")
 	check(DecisionScenarios.is_decision_stage("mod_01", 1), "Module 1 Stage 1 is decision-based")
 	check(DecisionScenarios.is_decision_stage("mod_01", 2), "[Stage 2] Module 1 Stage 2 is decision-based")
-	check(not DecisionScenarios.is_decision_stage("mod_01", 3), "Module 1 Stage 3 is not decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 3), "[Stage 3] Module 1 Stage 3 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 4), "[Stage 4] Module 1 Stage 4 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 5), "[Stage 5] Module 1 Stage 5 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 6), "[Stage 6] Module 1 Stage 6 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 7), "[Stage 7] Module 1 Stage 7 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 8), "[Stage 8] Module 1 Stage 8 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 9), "[Stage 9] Module 1 Stage 9 is decision-based")
+	check(not DecisionScenarios.is_decision_stage("mod_01", 10), "Module 1 Stage 10 is not decision-based (post-assessment stays separate)")
 	check(not DecisionScenarios.is_decision_stage("mod_02", 1), "Module 2 Stage 1 is not decision-based")
 	check(not DecisionScenarios.is_decision_stage("mod_02", 2), "Module 2 Stage 2 is not decision-based")
+	check(not DecisionScenarios.is_decision_stage("mod_02", 3), "Module 2 Stage 3 is not decision-based")
 	check(threats.size() == 3, "Stage 1 has three threats")
 	for i in threats.size():
 		var outcomes: Array[String] = []
@@ -87,6 +103,130 @@ func _test_data_model(threats: Array[Dictionary]) -> void:
 		for c in 3:
 			outcomes2.append(DecisionScenarios.choice_outcome(stage2_threats[i], c))
 		check(outcomes2.has("SAFE") and outcomes2.has("RISKY") and outcomes2.has("CRITICAL"), "[Stage 2] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+	var stage3_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 3)
+	check(stage3_threats.size() == 3, "[Stage 3] Stage 3 has three threats")
+	var trivial_phrases: PackedStringArray = ["give them your password", "give attacker the password", "ignore it", "ignore everything", "looks safe"]
+	for i in stage3_threats.size():
+		check(int(stage3_threats[i].get("stage", -1)) == 3, "[Stage 3] Threat %d belongs to stage 3 only" % (i + 1))
+		check(str(stage3_threats[i].get("module_id", "")) == "mod_01", "[Stage 3] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes3: Array[String] = []
+		var choices3: Array = stage3_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes3.append(DecisionScenarios.choice_outcome(stage3_threats[i], c))
+		check(outcomes3.has("SAFE") and outcomes3.has("RISKY") and outcomes3.has("CRITICAL"), "[Stage 3] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		# Difficulty-content check: no obviously trivial choice text.
+		for choice in choices3:
+			var label_lower: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases:
+				check(not label_lower.contains(phrase), "[Stage 3] Threat %d choice avoids the trivial phrase '%s'" % [i + 1, phrase])
+	var stage4_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 4)
+	check(stage4_threats.size() == 3, "[Stage 4] Stage 4 has three threats")
+	var trivial_phrases4: PackedStringArray = ["give.*password", "ignore.*request", "ignore everything", "trust blindly", "looks safe", "ignore it"]
+	for i in stage4_threats.size():
+		check(int(stage4_threats[i].get("stage", -1)) == 4, "[Stage 4] Threat %d belongs to stage 4 only" % (i + 1))
+		check(str(stage4_threats[i].get("module_id", "")) == "mod_01", "[Stage 4] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes4: Array[String] = []
+		var choices4: Array = stage4_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes4.append(DecisionScenarios.choice_outcome(stage4_threats[i], c))
+		check(outcomes4.has("SAFE") and outcomes4.has("RISKY") and outcomes4.has("CRITICAL"), "[Stage 4] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		for choice in choices4:
+			var label_lower4: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases4:
+				var rx := RegEx.new()
+				rx.compile(phrase)
+				check(not rx.search(label_lower4), "[Stage 4] Threat %d choice avoids the trivial phrase pattern '%s'" % [i + 1, phrase])
+	var stage5_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 5)
+	check(stage5_threats.size() == 3, "[Stage 5] Stage 5 has three threats")
+	var trivial_phrases5: PackedStringArray = ["give.*mfa code", "give.*code", "ignore everything", "approve because attacker", "ignore it", "looks safe"]
+	for i in stage5_threats.size():
+		check(int(stage5_threats[i].get("stage", -1)) == 5, "[Stage 5] Threat %d belongs to stage 5 only" % (i + 1))
+		check(str(stage5_threats[i].get("module_id", "")) == "mod_01", "[Stage 5] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes5: Array[String] = []
+		var choices5: Array = stage5_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes5.append(DecisionScenarios.choice_outcome(stage5_threats[i], c))
+		check(outcomes5.has("SAFE") and outcomes5.has("RISKY") and outcomes5.has("CRITICAL"), "[Stage 5] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		for choice in choices5:
+			var label_lower5: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases5:
+				var rx5 := RegEx.new()
+				rx5.compile(phrase)
+				check(not rx5.search(label_lower5), "[Stage 5] Threat %d choice avoids the trivial phrase pattern '%s'" % [i + 1, phrase])
+	var stage6_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 6)
+	check(stage6_threats.size() == 3, "[Stage 6] Stage 6 has three threats")
+	var trivial_phrases6: PackedStringArray = ["give.*password", "ignore the warning", "ignore everything", "open anything immediately", "ignore it", "looks safe"]
+	for i in stage6_threats.size():
+		check(int(stage6_threats[i].get("stage", -1)) == 6, "[Stage 6] Threat %d belongs to stage 6 only" % (i + 1))
+		check(str(stage6_threats[i].get("module_id", "")) == "mod_01", "[Stage 6] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes6: Array[String] = []
+		var choices6: Array = stage6_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes6.append(DecisionScenarios.choice_outcome(stage6_threats[i], c))
+		check(outcomes6.has("SAFE") and outcomes6.has("RISKY") and outcomes6.has("CRITICAL"), "[Stage 6] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		for choice in choices6:
+			var label_lower6: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases6:
+				var rx6 := RegEx.new()
+				rx6.compile(phrase)
+				check(not rx6.search(label_lower6), "[Stage 6] Threat %d choice avoids the trivial phrase pattern '%s'" % [i + 1, phrase])
+	var stage7_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 7)
+	check(stage7_threats.size() == 3, "[Stage 7] Stage 7 has three threats")
+	var trivial_phrases7: PackedStringArray = ["send money immediately", "ignore the supplier", "trust it because it looks real", "ignore it", "ignore everything", "looks safe"]
+	for i in stage7_threats.size():
+		check(int(stage7_threats[i].get("stage", -1)) == 7, "[Stage 7] Threat %d belongs to stage 7 only" % (i + 1))
+		check(str(stage7_threats[i].get("module_id", "")) == "mod_01", "[Stage 7] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes7: Array[String] = []
+		var choices7: Array = stage7_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes7.append(DecisionScenarios.choice_outcome(stage7_threats[i], c))
+		check(outcomes7.has("SAFE") and outcomes7.has("RISKY") and outcomes7.has("CRITICAL"), "[Stage 7] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		for choice in choices7:
+			var label_lower7: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases7:
+				var rx7 := RegEx.new()
+				rx7.compile(phrase)
+				check(not rx7.search(label_lower7), "[Stage 7] Threat %d choice avoids the trivial phrase pattern '%s'" % [i + 1, phrase])
+	var stage8_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 8)
+	check(stage8_threats.size() == 3, "[Stage 8] Stage 8 has three threats")
+	var trivial_phrases8: PackedStringArray = ["ignore everything", "do nothing", "give access", "trust the attacker", "ignore it", "looks safe"]
+	for i in stage8_threats.size():
+		check(int(stage8_threats[i].get("stage", -1)) == 8, "[Stage 8] Threat %d belongs to stage 8 only" % (i + 1))
+		check(str(stage8_threats[i].get("module_id", "")) == "mod_01", "[Stage 8] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes8: Array[String] = []
+		var choices8: Array = stage8_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes8.append(DecisionScenarios.choice_outcome(stage8_threats[i], c))
+		check(outcomes8.has("SAFE") and outcomes8.has("RISKY") and outcomes8.has("CRITICAL"), "[Stage 8] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		for choice in choices8:
+			var label_lower8: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases8:
+				var rx8 := RegEx.new()
+				rx8.compile(phrase)
+				check(not rx8.search(label_lower8), "[Stage 8] Threat %d choice avoids the trivial phrase pattern '%s'" % [i + 1, phrase])
+	var stage9_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 9)
+	check(stage9_threats.size() == 3, "[Stage 9] Stage 9 has three threats")
+	var trivial_phrases9: PackedStringArray = ["ignore everything", "do nothing", "give access", "trust the attacker", "ignore it", "looks safe"]
+	for i in stage9_threats.size():
+		check(int(stage9_threats[i].get("stage", -1)) == 9, "[Stage 9] Threat %d belongs to stage 9 only" % (i + 1))
+		check(str(stage9_threats[i].get("module_id", "")) == "mod_01", "[Stage 9] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes9: Array[String] = []
+		var choices9: Array = stage9_threats[i].get("choices", []) as Array
+		for c in 3:
+			outcomes9.append(DecisionScenarios.choice_outcome(stage9_threats[i], c))
+		check(outcomes9.has("SAFE") and outcomes9.has("RISKY") and outcomes9.has("CRITICAL"), "[Stage 9] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+		for choice in choices9:
+			var label_lower9: String = str((choice as Dictionary).get("label", "")).to_lower()
+			for phrase in trivial_phrases9:
+				var rx9 := RegEx.new()
+				rx9.compile(phrase)
+				check(not rx9.search(label_lower9), "[Stage 9] Threat %d choice avoids the trivial phrase pattern '%s'" % [i + 1, phrase])
+	var stage9_data: Dictionary = DecisionScenarios.get_stage("mod_01", 9)
+	check(DecisionScenarios.has_finale(stage9_data), "[Stage 9] Finale capability is enabled via data, not a hardcoded stage check")
+	check(is_equal_approx(DecisionScenarios.finale_hp_multiplier(stage9_data, -1.0), 1.0), "[Stage 9] Finale enemy HP multiplier is 1.0")
+	check(is_equal_approx(DecisionScenarios.breach_hp_multiplier(stage9_data, -1.0), 1.0), "[Stage 9] Stage breach HP multiplier is 1.0")
+	check(not DecisionScenarios.has_finale(DecisionScenarios.get_stage("mod_01", 8)), "[Stage 8] Has no finale (data-driven, not stage-numbered)")
+	check(not DecisionScenarios.has_finale({}), "An empty/absent stage has no finale")
 
 
 func _test_overlay_layout(threats: Array[Dictionary]) -> void:
@@ -179,13 +319,20 @@ func _test_overlay_layout(threats: Array[Dictionary]) -> void:
 
 func _test_controller(threats: Array[Dictionary]) -> void:
 	print("== controller ==")
+	# This function tests the controller's own state machine (commit, resolve,
+	# checkpoint, restore), not choice randomization — that has its own
+	# dedicated test. Pin display_order to identity before each choose() so
+	# "option B" / "index 2" keep meaning the authored option at that JSON
+	# position, exactly as before randomization existed.
 	var ctrl := DecisionStageController.new()
 	ctrl.setup("mod_01", 1, threats)
+	ctrl.display_order = [0, 1, 2]
 	check(ctrl.choose(1).get("outcome", "") == "SAFE", "Threat 1 option B is SAFE")
 	check(ctrl.resolved_threats == 0 and ctrl.safe_count == 0, "choose() does not commit progress")
 	var first_commit: Dictionary = ctrl.commit()
 	check(first_commit.get("committed", false) and ctrl.commit().is_empty(), "The same decision cannot be committed twice")
 	check(not ctrl.is_complete() and ctrl.resolved_threats == 1, "One SAFE decision does not clear the stage")
+	ctrl.display_order = [0, 1, 2]
 	check(ctrl.choose(2).get("outcome", "") == "RISKY", "Threat 2 option C is RISKY")
 	ctrl.commit()
 	check(ctrl.in_breach and ctrl.flow_state == DecisionStageController.FLOW_BREACH, "RISKY commit enters breach")
@@ -201,6 +348,7 @@ func _test_controller(threats: Array[Dictionary]) -> void:
 
 	var t1 := DecisionStageController.new()
 	t1.setup("mod_01", 1, threats)
+	t1.display_order = [0, 1, 2]
 	t1.choose(0)
 	t1.commit()
 	check(t1.stage_failed and t1.threat_index == 0 and t1.security_state == DecisionStageController.STATE_NOMINAL, "CRITICAL fails without persisting COMPROMISED")
@@ -210,6 +358,7 @@ func _test_controller(threats: Array[Dictionary]) -> void:
 	t1_again.setup("mod_01", 1, threats)
 	check(t1_again.restore(t1_snap) and t1_again.threat_index == 0 and not t1_again.stage_failed and t1_again.flow_state == DecisionStageController.FLOW_THREAT, "Threat 1 checkpoint is a resume, not a fresh run")
 
+	ctrl.display_order = [0, 1, 2]
 	check(ctrl.choose(1).get("outcome", "") == "SAFE", "Threat 3 option B is SAFE")
 	ctrl.commit()
 	check(ctrl.is_complete() and ctrl.flow_state == DecisionStageController.FLOW_ENDING, "Stage completes after all three threats")
@@ -220,6 +369,7 @@ func _test_controller(threats: Array[Dictionary]) -> void:
 
 	var lost := DecisionStageController.new()
 	lost.setup("mod_01", 1, threats)
+	lost.display_order = [0, 1, 2]
 	lost.choose(2)
 	lost.commit()
 	lost.fail_breach()
@@ -246,6 +396,137 @@ func _test_save_compat() -> void:
 	check(_player.decision_stage_state.is_empty(), "Old saves without checkpoints still load")
 
 
+func _same_choice_order(a: Array, b: Array) -> bool:
+	if a.size() != b.size():
+		return false
+	for i in a.size():
+		if str((a[i] as Dictionary).get("label", "")) != str((b[i] as Dictionary).get("label", "")):
+			return false
+	return true
+
+
+## Tests the reusable engine's shuffle mechanics directly against the
+## controller, for every authored threat in every decision stage that
+## currently exists (Stage 1 and Stage 2) — nothing here is stage-specific.
+func _test_choice_randomization() -> void:
+	print("== choice randomization (generic, applies to every decision stage) ==")
+	# Discovers every authored Module 1 decision stage generically, so this
+	# test automatically covers Stage 3 and any future Stage 4-9 without
+	# needing another manual edit each time one is added.
+	var all_threats: Array[Dictionary] = []
+	var covered_stages: Array[int] = []
+	for stage_number in range(1, 10):
+		if DecisionScenarios.is_decision_stage("mod_01", stage_number):
+			all_threats.append_array(DecisionScenarios.get_threats("mod_01", stage_number))
+			covered_stages.append(stage_number)
+	check(all_threats.size() == covered_stages.size() * 3, "Sampling covers exactly 3 threats per authored decision stage %s" % [covered_stages])
+
+	var safe_position_counts: Dictionary = {}
+	var samples := 40
+	for _sample in samples:
+		for threat in all_threats:
+			var threat_id: String = str(threat.get("id", ""))
+			var module_id: String = str(threat.get("module_id", "mod_01"))
+			var stage_id: int = int(threat.get("stage", 1))
+			var ctrl := DecisionStageController.new()
+			ctrl.setup(module_id, stage_id, [threat])
+			var displayed: Array = ctrl.current_threat_for_display().get("choices", [])
+			# 1. Every threat still displays exactly 3 choices.
+			check(displayed.size() == 3, "%s displays exactly 3 choices" % threat_id)
+			# 2. Every displayed set contains exactly one SAFE/RISKY/CRITICAL.
+			var outcomes: Array = []
+			for c in displayed:
+				outcomes.append(str((c as Dictionary).get("outcome", "")))
+			check(outcomes.count("SAFE") == 1 and outcomes.count("RISKY") == 1 and outcomes.count("CRITICAL") == 1,
+				"%s shows exactly one SAFE, one RISKY and one CRITICAL" % threat_id)
+			# 3. Selecting each displayed button produces the outcome attached
+			# to THAT choice, regardless of screen position.
+			for i in displayed.size():
+				var probe := DecisionStageController.new()
+				probe.setup(module_id, stage_id, [threat])
+				probe.display_order = ctrl.display_order.duplicate()
+				var result: Dictionary = probe.choose(i)
+				check(str(result.get("outcome", "")) == str((displayed[i] as Dictionary).get("outcome", "")),
+					"%s slot %d selection produces the outcome shown at that slot" % [threat_id, i])
+				check(str((result.get("choice", {}) as Dictionary).get("label", "")) == str((displayed[i] as Dictionary).get("label", "")),
+					"%s slot %d selection produces the label shown at that slot" % [threat_id, i])
+			var safe_pos: int = outcomes.find("SAFE")
+			if not safe_position_counts.has(threat_id):
+				safe_position_counts[threat_id] = {}
+			var per_threat: Dictionary = safe_position_counts[threat_id]
+			per_threat[safe_pos] = int(per_threat.get(safe_pos, 0)) + 1
+
+	# 4. Across many samples, SAFE is not permanently button 1 / the middle
+	# slot (or any other fixed slot) for any threat.
+	for threat in all_threats:
+		var threat_id: String = str(threat.get("id", ""))
+		var per_threat: Dictionary = safe_position_counts.get(threat_id, {})
+		check(per_threat.size() > 1, "%s: SAFE is not pinned to one screen position across %d samples (positions seen: %s)" % [threat_id, samples, per_threat.keys()])
+
+	# 12. The same active attempt never reshuffles while it's on screen.
+	var stable := DecisionStageController.new()
+	stable.setup("mod_01", 1, DecisionScenarios.get_threats("mod_01", 1))
+	var first_display: Array = stable.current_threat_for_display().get("choices", []).duplicate(true)
+	for _i in 5:
+		var again: Array = stable.current_threat_for_display().get("choices", [])
+		check(_same_choice_order(first_display, again), "Repeated display of the same attempt keeps the same order")
+
+	# Save/reload before choosing preserves the exact order already shown
+	# (checkpoint captures display_order once it has actually been generated).
+	var saved_state: Dictionary = stable.checkpoint_state()
+	check(not (saved_state.get("display_order", []) as Array).is_empty(), "An unresolved attempt's checkpoint carries its display order")
+	var reloaded := DecisionStageController.new()
+	reloaded.setup("mod_01", 1, DecisionScenarios.get_threats("mod_01", 1))
+	reloaded.restore(saved_state)
+	var reload_display: Array = reloaded.current_threat_for_display().get("choices", [])
+	check(_same_choice_order(first_display, reload_display), "Save/reload before choosing preserves the same displayed order")
+
+	# 11. Retry after a failure is a new attempt: its checkpoint must not
+	# carry the failed attempt's order forward (a fresh shuffle follows).
+	var retry_ctrl := DecisionStageController.new()
+	retry_ctrl.setup("mod_01", 1, DecisionScenarios.get_threats("mod_01", 1))
+	var pre_fail_display: Array = retry_ctrl.current_threat_for_display().get("choices", [])
+	var risky_slot := 0
+	for i in pre_fail_display.size():
+		if str((pre_fail_display[i] as Dictionary).get("outcome", "")) == "RISKY":
+			risky_slot = i
+			break
+	retry_ctrl.choose(risky_slot)
+	retry_ctrl.commit()
+	check(retry_ctrl.is_breach_active(), "RISKY still launches the breach flow after randomization")
+	retry_ctrl.fail_breach()
+	var post_fail_checkpoint: Dictionary = retry_ctrl.checkpoint_state()
+	check((post_fail_checkpoint.get("display_order", ["not empty"]) as Array).is_empty(), "A failed attempt's checkpoint does not persist its display order, so retry may reshuffle")
+
+	# CRITICAL failure: same guarantee.
+	var critical_ctrl := DecisionStageController.new()
+	critical_ctrl.setup("mod_01", 1, DecisionScenarios.get_threats("mod_01", 1))
+	var pre_critical_display: Array = critical_ctrl.current_threat_for_display().get("choices", [])
+	var critical_slot := 0
+	for i in pre_critical_display.size():
+		if str((pre_critical_display[i] as Dictionary).get("outcome", "")) == "CRITICAL":
+			critical_slot = i
+			break
+	critical_ctrl.choose(critical_slot)
+	var critical_result: Dictionary = critical_ctrl.commit()
+	check(str(critical_result.get("outcome", "")) == "CRITICAL", "CRITICAL still Game Overs after randomization")
+	var critical_checkpoint: Dictionary = critical_ctrl.checkpoint_state()
+	check((critical_checkpoint.get("display_order", ["not empty"]) as Array).is_empty(), "A CRITICAL failure's checkpoint does not persist its display order either")
+
+	# SAFE: still resolves the threat and advances, after randomization.
+	var safe_ctrl := DecisionStageController.new()
+	safe_ctrl.setup("mod_01", 1, DecisionScenarios.get_threats("mod_01", 1))
+	var pre_safe_display: Array = safe_ctrl.current_threat_for_display().get("choices", [])
+	var safe_slot := 0
+	for i in pre_safe_display.size():
+		if str((pre_safe_display[i] as Dictionary).get("outcome", "")) == "SAFE":
+			safe_slot = i
+			break
+	safe_ctrl.choose(safe_slot)
+	var safe_result: Dictionary = safe_ctrl.commit()
+	check(str(safe_result.get("outcome", "")) == "SAFE" and safe_ctrl.resolved_threats == 1, "SAFE still resolves the threat after randomization")
+
+
 func _test_required_scenarios() -> void:
 	print("== required restart scenarios ==")
 	_player.reset_to_defaults()
@@ -265,7 +546,7 @@ func _test_required_scenarios() -> void:
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "Threat 1 shown after opening")
 	_assert_decision_mode(lm, "Threat 1")
 	var pl0: float = _player.get_mastery("phishing")
-	overlay._choice_buttons[1].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "SAFE")].pressed.emit()
 	await settle()
 	check(overlay._mode == &"consequence" and overlay._banner.text == "THREAT CONTAINED", "SAFE shows THREAT CONTAINED")
 	check(is_equal_approx(_player.get_mastery("phishing"), pl0), "BKT is not applied until consequence CONTINUE")
@@ -278,7 +559,7 @@ func _test_required_scenarios() -> void:
 
 	print("-- 7. Close before consequence CONTINUE does not double-apply BKT --")
 	var pl_before_pending: float = _player.get_mastery("phishing")
-	overlay._choice_buttons[1].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "SAFE")].pressed.emit()
 	await settle()
 	check(is_equal_approx(_player.get_mastery("phishing"), pl_before_pending), "Uncommitted SAFE has not touched BKT")
 	await _stop_match()
@@ -289,7 +570,7 @@ func _test_required_scenarios() -> void:
 	check(is_equal_approx(_player.get_mastery("phishing"), pl_before_pending), "Reload did not apply the uncommitted BKT update")
 
 	print("-- 4. Threat 2 CRITICAL, real restart, Threat 2 restored --")
-	overlay._choice_buttons[0].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
 	await settle()
 	check(overlay._banner.text == "SYSTEM COMPROMISED", "CRITICAL shows SYSTEM COMPROMISED")
 	overlay._continue_button.pressed.emit()
@@ -313,7 +594,7 @@ func _test_required_scenarios() -> void:
 
 	print("-- 9. CRITICAL retry then SAFE continues normally --")
 	var pl_retry: float = _player.get_mastery("phishing")
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "SAFE on retried Threat 2 continues to Threat 3")
 	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl_retry, true)), "Retry SAFE applies one BKT update")
 	await _stop_match()
@@ -325,7 +606,7 @@ func _test_required_scenarios() -> void:
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
 	var pl_c0: float = _player.get_mastery("phishing")
-	overlay._choice_buttons[0].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
 	await settle()
 	check(is_equal_approx(_player.get_mastery("phishing"), pl_c0), "CRITICAL BKT waits for CONTINUE")
 	overlay._continue_button.pressed.emit()
@@ -342,7 +623,7 @@ func _test_required_scenarios() -> void:
 	print("-- 10. Repeated CRITICAL cannot farm credits --")
 	var wallet: int = _player.credits
 	for attempt in 3:
-		await _pick(overlay, 0)
+		await _pick(lm, overlay, "CRITICAL")
 		check(lm.current_phase == lm.GamePhase.GAME_OVER, "Repeated CRITICAL still Game Over")
 		check(_player.credits == wallet, "Decision-stage loss payout stays at 0 (attempt %d)" % (attempt + 1))
 		level = await _restart_from_game_over(level)
@@ -358,7 +639,7 @@ func _test_required_scenarios() -> void:
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
 	var pl_r0: float = _player.get_mastery("phishing")
-	await _pick(overlay, 2)
+	await _pick(lm, overlay, "RISKY")
 	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and lm.current_wave_index == 0, "RISKY launches Tower Defense on wave 1")
 	_assert_fresh_breach(lm, 0, "Threat 1 RISKY")
 	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl_r0, false)), "RISKY commit applies BKT once before Tower Defense")
@@ -387,10 +668,10 @@ func _test_required_scenarios() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(lm._decision.resolved_threats == 1, "Threat 1 resolved")
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "Threat 2 appears")
-	await _pick(overlay, 2)
+	await _pick(lm, overlay, "RISKY")
 	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "Threat 2 RISKY starts breach build")
 	var pl_after_m4_commit: float = _player.get_mastery("phishing")
 	await _force_td_loss(lm)
@@ -425,7 +706,7 @@ func _test_required_scenarios() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
-	await _pick(overlay, 2)
+	await _pick(lm, overlay, "RISKY")
 	_assert_fresh_breach(lm, 0, "Threat 1 RISKY before dirtied state")
 	await _force_td_win(lm)
 	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 1, "Threat 1 TD win returns to the story")
@@ -438,7 +719,7 @@ func _test_required_scenarios() -> void:
 	overlay._continue_button.pressed.emit()
 	await settle()
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "Threat 2 follows the contained first breach")
-	await _pick(overlay, 2)
+	await _pick(lm, overlay, "RISKY")
 	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "Threat 2 RISKY launches Tower Defense")
 	_assert_fresh_breach(lm, 1, "Threat 2 RISKY after Threat 1 TD win")
 	_assert_td_mode(lm, "Threat 2 RISKY after prior win")
@@ -453,7 +734,7 @@ func _test_required_scenarios() -> void:
 	overlay = lm._decision_overlay
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "Injected checkpoint lands on Threat 2")
 	var pl_r2: float = _player.get_mastery("phishing")
-	await _pick(overlay, 2)
+	await _pick(lm, overlay, "RISKY")
 	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "Threat 2 RISKY launches Tower Defense")
 	_assert_fresh_breach(lm, 1, "Injected Threat 2 RISKY")
 	_assert_td_mode(lm, "Threat 2 RISKY build")
@@ -473,7 +754,7 @@ func _test_required_scenarios() -> void:
 	check(is_equal_approx(_player.get_mastery("phishing"), pl_after_risky), "BKT is unchanged after the TD win")
 
 	print("-- 6. Threat 3 SAFE, ending, save/reload, Stage Complete --")
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT" and not _player.has_cleared_stage(1), "Ending story plays before the stage clears")
 	check(str(_player.get_decision_stage_state("mod_01:1").get("flow_state", "")) == "ENDING", "Ending checkpoint is persisted before victory")
 	await _stop_match()
@@ -498,7 +779,7 @@ func _test_required_scenarios() -> void:
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
 	var pl_replay: float = _player.get_mastery("phishing")
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(is_equal_approx(_player.get_mastery("phishing"), pl_replay), "Replay keeps P(L) frozen")
 	await _stop_match()
 
@@ -512,7 +793,7 @@ func _test_breach_transition() -> void:
 	await _skip_opening(overlay)
 
 	print("-- Threat 1 RISKY: SECURITY WARNING -> BREACH DETECTED (WORKSTATION-07) --")
-	overlay._choice_buttons[2].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
 	await settle()
 	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "Threat 1 RISKY choice shows the SECURITY WARNING consequence")
 	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "TD has not started after the consequence beat")
@@ -553,7 +834,7 @@ func _test_breach_transition() -> void:
 	_assert_decision_mode(lm, "After Continue Investigation")
 
 	print("-- SAFE never shows BREACH DETECTED or DEPLOY DEFENSES --")
-	overlay._choice_buttons[1].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "SAFE")].pressed.emit()
 	await settle()
 	check(overlay._continue_button.text != "DEPLOY DEFENSES", "SAFE consequence never offers DEPLOY DEFENSES")
 	check(overlay._banner.text != "BREACH DETECTED", "SAFE consequence never shows the BREACH DETECTED banner")
@@ -562,7 +843,7 @@ func _test_breach_transition() -> void:
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "SAFE proceeds normally to the next threat")
 
 	print("-- Threat 3 RISKY: uses its own configured affected system --")
-	overlay._choice_buttons[2].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
 	await settle()
 	overlay._continue_button.pressed.emit()
 	await settle()
@@ -590,7 +871,7 @@ func _test_breach_transition() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	check(overlay._header_right.text == "INCIDENT 2 / 3", "Injected checkpoint lands on Threat 2")
-	overlay._choice_buttons[2].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
 	await settle()
 	overlay._continue_button.pressed.emit()
 	await settle()
@@ -604,7 +885,7 @@ func _test_breach_transition() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
-	overlay._choice_buttons[0].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
 	await settle()
 	check(overlay._banner.text == "SYSTEM COMPROMISED", "[M7 regression] CRITICAL banner is unchanged")
 	check(overlay._body_scroll.size.y >= 160.0, "[UI-1.1] SYSTEM COMPROMISED dialogue box is at least 160px tall (%dpx)" % int(overlay._body_scroll.size.y))
@@ -644,14 +925,14 @@ func _test_stage2() -> void:
 
 	print("-- 4. Incident 1 SAFE -> Incident 2 --")
 	var pl0: float = _player.get_mastery("phishing")
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 2] SAFE on Incident 1 continues to Incident 2")
 	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 2] SAFE commit applies exactly one positive BKT update")
 	check(lm._decision.resolved_threats == 1, "[Stage 2] Incident 1 resolved")
 
 	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
 	var pl1: float = _player.get_mastery("phishing")
-	overlay._choice_buttons[2].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
 	await settle()
 	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 2] RISKY shows SECURITY WARNING")
 	overlay._continue_button.pressed.emit()
@@ -679,7 +960,7 @@ func _test_stage2() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
-	await _pick(overlay, 2)
+	await _pick(lm, overlay, "RISKY")
 	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 2] Incident 1 RISKY reaches Tower Defense")
 	await _force_td_loss(lm)
 	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 2] TD loss is Game Over")
@@ -697,7 +978,7 @@ func _test_stage2() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
-	overlay._choice_buttons[0].pressed.emit()
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
 	await settle()
 	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 2] CRITICAL shows SYSTEM COMPROMISED")
 	overlay._continue_button.pressed.emit()
@@ -717,11 +998,11 @@ func _test_stage2() -> void:
 	lm = _level_manager(level)
 	overlay = lm._decision_overlay
 	await _skip_opening(overlay)
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 2] Incident 1 resolved via SAFE")
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 2] Incident 2 resolved via SAFE")
-	await _pick(overlay, 1)
+	await _pick(lm, overlay, "SAFE")
 	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 2] Ending story plays before the stage clears")
 	overlay._continue_button.pressed.emit()
 	await settle()
@@ -732,16 +1013,803 @@ func _test_stage2() -> void:
 	await _stop_match()
 
 
+func _test_stage3() -> void:
+	print("== Module 1 Stage 3: Someone Got In ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 3 launches the decision controller with 3 stage-3-only incidents --")
+	var level: Node = await _start_match("mod_01", 2)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 3] Stage 3 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 3] No TRACE quiz opened for Stage 3")
+	check(lm._decision.total_threats() == 3, "[Stage 3] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 3] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 3] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 3] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 3] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 3] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 3] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 3] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 3] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "RAMON'S ACCOUNT SESSION"), "[Stage 3] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 3] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 3] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 3] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 3] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 3] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 3] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 3] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 3 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 2)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 3] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 3] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 3] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 3] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 2)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 3] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 3] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 3] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 3] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 3 Complete, unlocks Stage 4 --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 2)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 3] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 3] Incident 2 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 3] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(3), "[Stage 3] Stage 3 clears after the ending")
+	var clear_overlay = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay != null and clear_overlay._title.text == "STAGE 3 COMPLETE", "[Stage 3] Stage clear card uses the authored title")
+	check(clear_overlay != null and clear_overlay._advisory.text.contains("STAGE 4"), "[Stage 3] Stage clear card points to Stage 4")
+	await _stop_match()
+
+
+func _test_stage4() -> void:
+	print("== Module 1 Stage 4: The Impostor Inside ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 4 launches the decision controller with 3 stage-4-only incidents --")
+	var level: Node = await _start_match("mod_01", 3)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 4] Stage 4 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 4] No TRACE quiz opened for Stage 4")
+	check(lm._decision.total_threats() == 3, "[Stage 4] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 4] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 4] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 4] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 4] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 4] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 4] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 4] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 4] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "CONFIDENTIAL PROJECT FOLDER"), "[Stage 4] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 4] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 4] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 4] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 4] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 4] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 4] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 4] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 4 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 3)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 4] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 4] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 4] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 4] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 3)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 4] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 4] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 4] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 4] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 4 Complete, unlocks Stage 5 --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 3)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 4] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 4] Incident 2 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 4] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(4), "[Stage 4] Stage 4 clears after the ending")
+	var clear_overlay4 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay4 != null and clear_overlay4._title.text == "STAGE 4 COMPLETE", "[Stage 4] Stage clear card uses the authored title")
+	check(clear_overlay4 != null and clear_overlay4._advisory.text.contains("STAGE 5"), "[Stage 4] Stage clear card points to Stage 5")
+	await _stop_match()
+
+
+func _test_stage5() -> void:
+	print("== Module 1 Stage 5: The Second Key ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 5 launches the decision controller with 3 stage-5-only incidents --")
+	var level: Node = await _start_match("mod_01", 4)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 5] Stage 5 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 5] No TRACE quiz opened for Stage 5")
+	check(lm._decision.total_threats() == 3, "[Stage 5] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 5] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 5] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 5] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 5] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 5] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 5] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 5] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 5] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "CLOUD ACCOUNT / ACTIVE SESSION"), "[Stage 5] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 5] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 5] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 5] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 5] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 5] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 5] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 5] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 5 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 4)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 5] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 5] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 5] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 5] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 4)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 5] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 5] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 5] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 5] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 5 Complete, unlocks Stage 6 --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 4)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 5] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 5] Incident 2 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 5] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(5), "[Stage 5] Stage 5 clears after the ending")
+	var clear_overlay5 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay5 != null and clear_overlay5._title.text == "STAGE 5 COMPLETE", "[Stage 5] Stage clear card uses the authored title")
+	check(clear_overlay5 != null and clear_overlay5._advisory.text.contains("STAGE 6"), "[Stage 5] Stage clear card points to Stage 6")
+	await _stop_match()
+
+
+func _test_stage6() -> void:
+	print("== Module 1 Stage 6: Trusted Files ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 6 launches the decision controller with 3 stage-6-only incidents --")
+	var level: Node = await _start_match("mod_01", 5)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 6] Stage 6 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 6] No TRACE quiz opened for Stage 6")
+	check(lm._decision.total_threats() == 3, "[Stage 6] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 6] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 6] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 6] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 6] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 6] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 6] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 6] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 6] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "MAILBOX / CLOUD STORAGE"), "[Stage 6] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 6] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 6] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 6] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 6] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 6] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 6] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 6] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 6 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 5)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 6] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 6] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 6] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 6] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 5)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 6] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 6] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 6] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 6] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 6 Complete, unlocks Stage 7 --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 5)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 6] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 6] Incident 2 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 6] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(6), "[Stage 6] Stage 6 clears after the ending")
+	var clear_overlay6 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay6 != null and clear_overlay6._title.text == "STAGE 6 COMPLETE", "[Stage 6] Stage clear card uses the authored title")
+	check(clear_overlay6 != null and clear_overlay6._advisory.text.contains("STAGE 7"), "[Stage 6] Stage clear card points to Stage 7")
+	await _stop_match()
+
+
+func _test_stage7() -> void:
+	print("== Module 1 Stage 7: Trusted Supplier ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 7 launches the decision controller with 3 stage-7-only incidents --")
+	var level: Node = await _start_match("mod_01", 6)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 7] Stage 7 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 7] No TRACE quiz opened for Stage 7")
+	check(lm._decision.total_threats() == 3, "[Stage 7] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 7] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 7] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 7] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 7] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 7] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 7] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 7] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 7] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "PROCUREMENT-WS-02"), "[Stage 7] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 7] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 7] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 7] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 7] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 7] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 7] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 7] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 7 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 6)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 7] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 7] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 7] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 7] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 6)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 7] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 7] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 7] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 7] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 7 Complete, unlocks Stage 8 --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 6)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 7] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 7] Incident 2 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 7] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(7), "[Stage 7] Stage 7 clears after the ending")
+	var clear_overlay7 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay7 != null and clear_overlay7._title.text == "STAGE 7 COMPLETE", "[Stage 7] Stage clear card uses the authored title")
+	check(clear_overlay7 != null and clear_overlay7._advisory.text.contains("STAGE 8"), "[Stage 7] Stage clear card points to Stage 8")
+	await _stop_match()
+
+
+func _test_stage8() -> void:
+	print("== Module 1 Stage 8: All Hands ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 8 launches the decision controller with 3 stage-8-only incidents --")
+	var level: Node = await _start_match("mod_01", 7)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 8] Stage 8 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 8] No TRACE quiz opened for Stage 8")
+	check(lm._decision.total_threats() == 3, "[Stage 8] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 8] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 8] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 8] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 8] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 8] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 8] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 8] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 8] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "SALES ACCOUNT / CLOUD SESSION"), "[Stage 8] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 8] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 8] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 8] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 8] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 8] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 8] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 8] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 8 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 7)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 8] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 8] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 8] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 8] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 7)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 8] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 8] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 8] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 8] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 8 Complete, unlocks Stage 9 --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 7)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 8] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 8] Incident 2 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 8] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(8), "[Stage 8] Stage 8 clears after the ending")
+	var clear_overlay8 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay8 != null and clear_overlay8._title.text == "STAGE 8 COMPLETE", "[Stage 8] Stage clear card uses the authored title")
+	check(clear_overlay8 != null and clear_overlay8._advisory.text.contains("STAGE 9"), "[Stage 8] Stage clear card points to Stage 9")
+	await _stop_match()
+
+
+func _test_stage9() -> void:
+	print("== Module 1 Stage 9: Cut the Line (final story stage, with FINAL CONTAINMENT finale) ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 9 launches the decision controller with 3 stage-9-only incidents --")
+	var level: Node = await _start_match("mod_01", 8)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 9] Stage 9 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 9] No TRACE quiz opened for Stage 9")
+	check(lm._decision.total_threats() == 3, "[Stage 9] Exactly 3 incidents load")
+	check(lm._decision.has_finale, "[Stage 9] Controller reports a finale is configured for this stage")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 9] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 9] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 9] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 9] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 9] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 9] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 9] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 9] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "MAILBOX / CLOUD RULES"), "[Stage 9] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 9] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 9] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 9] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 9] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 9] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 9] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 9] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 9 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 9] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 9] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 9] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 9] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 9] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 9] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 9] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 9] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> FINAL CONTAINMENT, not an immediate Stage Complete --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 9] Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 9] Incident 2 resolved via SAFE")
+	var pl_pre_finale: float = _player.get_mastery("phishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "DEPLOY FINAL DEFENSES", "[Stage 9] All 3 incidents resolved shows the FINAL CONTAINMENT prompt, not FILE REPORT")
+	check(lm.current_phase != lm.GamePhase.VICTORY, "[Stage 9] Stage does not complete before the finale is played")
+	check(not _player.has_cleared_stage(9), "[Stage 9] Stage is not marked cleared before the finale is played")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl_pre_finale, true)), "[Stage 9] Incident 3's SAFE commit applies exactly one BKT update (the finale adds none)")
+
+	print("-- 9. FINAL CONTAINMENT TD LOSS -> CONTAINMENT FAILED -> RETRY replays the finale, never Incident 3, no BKT change --")
+	var pl_before_finale_loss: float = _player.get_mastery("phishing")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 9] DEPLOY FINAL DEFENSES starts the finale Tower Defense")
+	check(lm._decision.is_finale_active(), "[Stage 9] Controller reports the finale encounter is active")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 9] Finale TD loss is Game Over")
+	var finale_defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(finale_defeat_card != null and finale_defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 9] CONTAINMENT FAILED shown on finale TD loss")
+	check(finale_defeat_card != null and finale_defeat_card._stage.text == "BLUETECH CORE NETWORK", "[Stage 9] Finale defeat card names the finale's affected system, from data")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_before_finale_loss), "[Stage 9] Finale TD loss applies no BKT update")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(lm._decision.resolved_threats == 3, "[Stage 9] Retry after finale loss keeps all 3 incidents resolved")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "DEPLOY FINAL DEFENSES", "[Stage 9] Retry after finale loss replays the finale prompt, never Incident 3")
+
+	print("-- 10. FINAL CONTAINMENT TD WIN -> CONTAINMENT COMPLETE -> CASE CLOSED -> MODULE 1 STORY COMPLETE -> Stage 9 clears, unlocks Stage 10 --")
+	var pl_before_finale_win: float = _player.get_mastery("phishing")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 9] Retrying DEPLOY FINAL DEFENSES restarts the finale Tower Defense")
+	await _force_td_win(lm)
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_before_finale_win), "[Stage 9] Finale TD win applies no BKT update")
+	check(overlay._mode == &"story" and overlay._banner.text == "CONTAINMENT COMPLETE", "[Stage 9] Finale win shows CONTAINMENT COMPLETE")
+	check(lm.current_phase != lm.GamePhase.VICTORY, "[Stage 9] Stage still not complete before the case-closed epilogue plays")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and overlay._banner.text == "CASE CLOSED", "[Stage 9] Case summary shows CASE CLOSED")
+	check(_dialogue_contains(overlay, "Accounts Secured"), "[Stage 9] Case summary lists the authored case-closed items")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and overlay._banner.text == "MODULE 1 STORY COMPLETE" and overlay._continue_button.text == "FILE REPORT", "[Stage 9] Closing dialogue shows MODULE 1 STORY COMPLETE with FILE REPORT")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(9), "[Stage 9] Stage 9 clears only after the finale and its epilogue")
+	var clear_overlay9 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay9 != null and clear_overlay9._title.text == "STAGE 9 COMPLETE", "[Stage 9] Stage clear card uses the authored title")
+	check(clear_overlay9 != null and clear_overlay9._advisory.text.contains("STAGE 10"), "[Stage 9] Stage clear card points to Stage 10")
+	await _stop_match()
+
+	print("-- 11. Stage 10 stays the existing post-assessment, never the decision-story live scene --")
+	check(not DecisionScenarios.is_decision_stage("mod_01", 10), "[Stage 9] Stage 10 remains a non-decision (TRACE/post-assessment) stage")
+	await _stop_match()
+
+
 func _test_regression() -> void:
 	print("== regression: other stages keep TRACE and TD loss payout ==")
 	_player.reset_to_defaults()
 	_router.active_module_id = "mod_01"
-	# Module 1 Stage 2 is now decision-based (see _test_stage2). Stage 3 is the
-	# next TRACE stage and is the correct "still normal" regression baseline.
-	var level: Node = await _start_match("mod_01", 2)
+	# Module 1 Stages 1-9 are now decision-based (see _test_stage2 through _test_stage9).
+	# Stage 10 is the next TRACE stage (the existing post-assessment) and the
+	# correct "still normal" baseline.
+	var level: Node = await _start_match("mod_01", 9)
 	var lm = _level_manager(level)
-	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 1 Stage 3 still opens the TRACE quiz")
-	check(level.get_node("GameplayCanvas").get_node_or_null("DecisionOverlay") == null, "No decision overlay on Stage 3")
+	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 1 Stage 10 still opens the TRACE quiz")
+	check(level.get_node("GameplayCanvas").get_node_or_null("DecisionOverlay") == null, "No decision overlay on Stage 10")
 	lm.base_health = 0
 	lm.change_phase(lm.GamePhase.GAME_OVER)
 	await settle()
@@ -911,8 +1979,20 @@ func _skip_opening(overlay) -> void:
 		await settle()
 
 
-func _pick(overlay, choice_index: int) -> void:
-	overlay._choice_buttons[choice_index].pressed.emit()
+## Choices are now displayed in a randomized order (see
+## DecisionStageController.current_threat_for_display); tests must find a
+## button by the OUTCOME it currently shows, never by a fixed position.
+func _button_for_outcome(lm, outcome: String) -> int:
+	var displayed: Array = lm._decision.current_threat_for_display().get("choices", [])
+	for i in displayed.size():
+		if str((displayed[i] as Dictionary).get("outcome", "")) == outcome:
+			return i
+	check(false, "No displayed choice currently has outcome " + outcome)
+	return -1
+
+
+func _pick(lm, overlay, outcome: String) -> void:
+	overlay._choice_buttons[_button_for_outcome(lm, outcome)].pressed.emit()
 	await settle()
 	overlay._continue_button.pressed.emit()
 	await settle()

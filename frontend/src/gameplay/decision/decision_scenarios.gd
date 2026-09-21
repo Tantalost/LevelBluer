@@ -51,8 +51,19 @@ static func get_threats(module_id: String, stage_id: int) -> Array[Dictionary]:
 
 
 static func dialogue_lines(stage: Dictionary, key: String) -> Array[Dictionary]:
+	return _lines_from(stage.get(key, []))
+
+
+## Same shape as dialogue_lines(), but reads from the stage's nested "finale"
+## config instead of a top-level key. Kept separate so a stage without a
+## finale (every stage but the last of a module) never needs to carry these
+## keys at all.
+static func finale_dialogue_lines(stage: Dictionary, key: String) -> Array[Dictionary]:
+	return _lines_from(finale_config(stage).get(key, []))
+
+
+static func _lines_from(stored: Variant) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
-	var stored: Variant = stage.get(key, [])
 	if typeof(stored) != TYPE_ARRAY:
 		return result
 	var rows: Array = stored as Array
@@ -64,6 +75,41 @@ static func dialogue_lines(stage: Dictionary, key: String) -> Array[Dictionary]:
 				"text": str(line.get("text", "")).strip_edges(),
 			})
 	return result
+
+
+## A stage-level FINAL CONTAINMENT encounter: a mandatory Tower Defense wave
+## after every threat is resolved, before the stage can clear. Data-driven so
+## any decision stage can opt in — no module/stage-number checks anywhere
+## else in the engine. Absent or malformed data behaves exactly like a stage
+## with no finale.
+static func finale_config(stage: Dictionary) -> Dictionary:
+	var stored: Variant = stage.get("finale", {})
+	if typeof(stored) != TYPE_DICTIONARY:
+		return {}
+	return stored as Dictionary
+
+
+static func has_finale(stage: Dictionary) -> bool:
+	return bool(finale_config(stage).get("enabled", false))
+
+
+## Mirrors breach_hp_multiplier(): the finale's own Tower Defense encounter
+## scales enemy HP the same data-driven way a RISKY breach does, just from a
+## different field so authoring a finale never collides with a stage's own
+## breach_hp_multiplier.
+static func finale_hp_multiplier(stage: Dictionary, fallback: float) -> float:
+	var stored: Variant = finale_config(stage).get("enemy_hp_multiplier", fallback)
+	var scale: float = float(stored)
+	return scale if scale > 0.0 else fallback
+
+
+## Shared by every presentation of decision-story RISKY breaches (the legacy
+## LevelManager flow and the live geometric scene) so the fallback logic for
+## an unauthored/invalid multiplier lives in exactly one place.
+static func breach_hp_multiplier(stage: Dictionary, fallback: float) -> float:
+	var stored: Variant = stage.get("breach_hp_multiplier", fallback)
+	var scale: float = float(stored)
+	return scale if scale > 0.0 else fallback
 
 
 static func choice_outcome(threat: Dictionary, choice_index: int) -> String:

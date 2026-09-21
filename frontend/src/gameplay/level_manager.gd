@@ -2209,19 +2209,23 @@ func _begin_wave() -> void:
 	_spawn_wave(_wave_token)
 
 
-## Decision-story RISKY breach Tower Defense only. Every other stage/wave
-## (a decision stage's own SAFE/CRITICAL paths, Stage 3+, and every
-## non-decision TRACE stage in Modules 1-5) spawns at the normal 1.0 scale.
-## Each decision stage can set its own "breach_hp_multiplier" in
-## decision_scenarios.json; stages that don't (Module 1 Stage 1) fall back to
-## DECISION_BREACH_ENEMY_HP_MULTIPLIER, so this generalization changes
-## nothing about Stage 1's existing behavior.
+## Decision-story RISKY breach and stage-level finale Tower Defense only.
+## Every other stage/wave (a decision stage's own SAFE/CRITICAL paths, Stage
+## 3+, and every non-decision TRACE stage in Modules 1-5) spawns at the
+## normal 1.0 scale. Each decision stage can set its own "breach_hp_multiplier"
+## in decision_scenarios.json; stages that don't (Module 1 Stage 1) fall back
+## to DECISION_BREACH_ENEMY_HP_MULTIPLIER, so this generalization changes
+## nothing about Stage 1's existing behavior. A finale scales separately via
+## its own "enemy_hp_multiplier" so authoring one never collides with the
+## stage's breach scale.
 func _decision_breach_hp_scale() -> float:
-	if _decision == null or not _decision.is_breach_active():
+	if _decision == null:
 		return 1.0
-	var stored: Variant = _decision_stage.get("breach_hp_multiplier", DECISION_BREACH_ENEMY_HP_MULTIPLIER)
-	var scale: float = float(stored)
-	return scale if scale > 0.0 else DECISION_BREACH_ENEMY_HP_MULTIPLIER
+	if _decision.is_finale_active():
+		return DecisionScenarios.finale_hp_multiplier(_decision_stage, 1.0)
+	if not _decision.is_breach_active():
+		return 1.0
+	return DecisionScenarios.breach_hp_multiplier(_decision_stage, DECISION_BREACH_ENEMY_HP_MULTIPLIER)
 
 
 func _spawn_wave(token: int) -> void:
@@ -2624,7 +2628,7 @@ func _begin_decision_stage() -> void:
 	var stage_id: int = _current_stage_id()
 	_decision_stage = DecisionScenarios.get_stage(module_id, stage_id)
 	_decision = DecisionStageController.new()
-	_decision.setup(module_id, stage_id, DecisionScenarios.get_threats(module_id, stage_id))
+	_decision.setup(module_id, stage_id, DecisionScenarios.get_threats(module_id, stage_id), DecisionScenarios.has_finale(_decision_stage))
 	if _decision.total_threats() == 0:
 		push_error("LevelManager: decision stage %s has no threats; falling back to TRACE" % _decision_key())
 		_decision = null
@@ -2641,8 +2645,10 @@ func _begin_decision_stage() -> void:
 	])
 	if not resumed:
 		_show_decision_story("opening", _show_decision_threat)
-	elif _decision.is_complete():
-		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+	elif _decision.is_finale_active():
+		_show_decision_story("resume_finale", _begin_decision_finale, _decision_finale_deploy_label())
+	elif _decision.all_threats_resolved():
+		_show_decision_ending_or_finale()
 	elif _decision.is_breach_active():
 		_show_decision_story("resume_breach", _begin_decision_breach, "DEPLOY DEFENSES")
 	else:
@@ -2688,21 +2694,45 @@ func _on_decision_story_continued() -> void:
 		next.call()
 
 
+## The stage's authored "ending" beat is shared by two very different
+## outcomes, decided purely from data (DecisionScenarios.has_finale): a plain
+## stage finishes immediately after it, while a stage with an enabled finale
+## uses the same beat to introduce the FINAL CONTAINMENT encounter instead.
+func _decision_finale_deploy_label() -> String:
+	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
+	return str(finale.get("deploy_label", "DEPLOY FINAL DEFENSES"))
+
+
+func _show_decision_ending_or_finale() -> void:
+	if _decision == null:
+		return
+	if _decision.finale_pending():
+		_show_decision_story("ending", _begin_decision_finale, _decision_finale_deploy_label())
+	else:
+		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+
+
 func _show_decision_threat() -> void:
 	if _decision == null or _decision_overlay == null:
 		return
-	if _decision.is_complete():
-		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+	if _decision.all_threats_resolved():
+		_show_decision_ending_or_finale()
 		return
 	var threat: Dictionary = _decision.current_threat()
 	if threat.is_empty():
 		push_error("LevelManager: decision threat %d missing" % _decision.threat_index)
 		return
 	_decision.capture_retry_checkpoint()
+	# current_threat_for_display() lazily generates this attempt's randomized
+	# order (see DecisionStageController.ensure_display_order) — resolve it
+	# BEFORE saving the checkpoint, so a save/reload before any choice is
+	# made still resumes the exact order the player is looking at, instead
+	# of the checkpoint capturing an as-yet-ungenerated (empty) order.
+	var display_threat: Dictionary = _decision.current_threat_for_display()
 	_save_decision_checkpoint()
 	_decision_overlay.visible = true
 	_apply_decision_presentation()
-	_decision_overlay.show_threat(threat, _decision.current_threat_number(), _decision.total_threats(), _decision_header())
+	_decision_overlay.show_threat(display_threat, _decision.current_threat_number(), _decision.total_threats(), _decision_header())
 	print("[DECISION] threat=%s (%d/%d) security=%s" % [
 		str(threat.get("id", "")), _decision.current_threat_number(), _decision.total_threats(), _decision.security_state,
 	])
@@ -2796,9 +2826,9 @@ func _decision_affected_system(threat: Dictionary) -> String:
 func _advance_decision() -> void:
 	if _decision == null:
 		return
-	if _decision.is_complete():
+	if _decision.all_threats_resolved():
 		_save_decision_checkpoint()
-		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+		_show_decision_ending_or_finale()
 	else:
 		_show_decision_threat()
 
@@ -2807,10 +2837,11 @@ func _advance_decision() -> void:
 func _begin_decision_breach() -> void:
 	if _decision == null:
 		return
-	_prepare_decision_breach_encounter()
+	var threat: Dictionary = _decision.current_threat()
+	var gold_budget: int = maxi(0, int(threat.get("breach_gold", 0)))
+	_prepare_decision_combat_encounter(gold_budget)
 	if _decision_overlay != null:
 		_decision_overlay.visible = false
-	var threat: Dictionary = _decision.current_threat()
 	print("[DECISION] breach threat=%s wave=%d gold=%d hp=%d" % [
 		str(threat.get("id", "")), current_wave_index + 1, current_gold, base_health,
 	])
@@ -2818,9 +2849,34 @@ func _begin_decision_breach() -> void:
 	_apply_decision_presentation()
 
 
-## Encounter-runtime reset only. Persistent progression (BKT, credits, cleared
-## stages, decision checkpoints) is left untouched.
-func _prepare_decision_breach_encounter() -> void:
+## Starts the stage-level FINAL CONTAINMENT encounter (see
+## DecisionScenarios.has_finale). Mirrors _begin_decision_breach() exactly,
+## except its gold budget and enemy scale come from the stage's "finale"
+## config instead of the current threat.
+func _begin_decision_finale() -> void:
+	if _decision == null:
+		return
+	_decision.begin_finale()
+	if not _decision.is_finale_active():
+		return
+	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
+	var gold_budget: int = maxi(0, int(finale.get("gold", 0)))
+	_prepare_decision_combat_encounter(gold_budget)
+	_save_decision_checkpoint()
+	if _decision_overlay != null:
+		_decision_overlay.visible = false
+	print("[DECISION] finale begin stage=%s gold=%d hp=%d" % [
+		_decision_key(), current_gold, base_health,
+	])
+	change_phase(GamePhase.PHASE_2_BUILD)
+	_apply_decision_presentation()
+
+
+## Encounter-runtime reset shared by every decision-stage Tower Defense
+## encounter — a RISKY breach or the stage-level finale. Persistent
+## progression (BKT, credits, cleared stages, decision checkpoints) is left
+## untouched; only this one encounter's combat state resets.
+func _prepare_decision_combat_encounter(gold_budget: int) -> void:
 	_wave_token += 1
 	_defeat_started = false
 	_is_wave_intermission = false
@@ -2849,8 +2905,6 @@ func _prepare_decision_breach_encounter() -> void:
 	_clear_decision_combat_ephemera()
 	base_health = maxi(1, _heart_icons.size()) if not _heart_icons.is_empty() else 5
 	_sync_hearts()
-	var threat: Dictionary = _decision.current_threat() if _decision != null else {}
-	var gold_budget: int = maxi(0, int(threat.get("breach_gold", 0)))
 	if gold_budget <= 0:
 		gold_budget = maxi(0, int(current_stage_config.get("starting_gold", 0)))
 	current_gold = gold_budget
@@ -2900,9 +2954,16 @@ func _free_ephemeral_under(host: Node) -> void:
 		_free_ephemeral_under(child)
 
 
-## Tower Defense win: the threat is resolved and the story resumes.
+## Tower Defense win: the threat is resolved and the story resumes, OR — if
+## this win is the stage-level finale — the case closes instead. Both flows
+## share the same generic wave-cleared hook (_check_wave_cleared()); which
+## one runs is decided purely from controller state (is_finale_active()),
+## never a module/stage check.
 func _on_decision_breach_cleared() -> void:
 	if _decision == null:
+		return
+	if _decision.is_finale_active():
+		_on_decision_finale_cleared()
 		return
 	var threat: Dictionary = _decision.current_threat()
 	var system_name: String = _decision_affected_system(threat)
@@ -2928,6 +2989,73 @@ func _show_decision_breach_contained(system_name: String) -> void:
 	_decision_overlay.show_story(lines, _decision_header(), "CONTINUE INVESTIGATION", "BREACH CONTAINED")
 
 
+## Tower Defense win for the stage-level FINAL CONTAINMENT encounter. Never
+## touches BKT. Chains three purely data-driven story beats (victory,
+## case summary, closing) before the stage is finally allowed to finish.
+func _on_decision_finale_cleared() -> void:
+	if _decision == null:
+		return
+	_decision.win_finale()
+	_save_decision_checkpoint()
+	print("[DECISION] finale contained stage=%s flow=%s" % [_decision_key(), _decision.flow_state])
+	change_phase(GamePhase.PRE_MATCH)
+	_show_decision_finale_victory()
+
+
+func _show_decision_finale_victory() -> void:
+	if _decision == null:
+		return
+	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
+	var banner: String = str(finale.get("victory_banner", "CONTAINMENT COMPLETE"))
+	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "ending")
+	if _decision_overlay == null or lines.is_empty():
+		_show_decision_case_summary()
+		return
+	_decision_next = _show_decision_case_summary
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_story(lines, _decision_header(), "CONTINUE", banner)
+
+
+func _show_decision_case_summary() -> void:
+	if _decision == null:
+		return
+	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
+	var summary: Dictionary = finale.get("case_summary", {}) as Dictionary
+	var title: String = str(summary.get("title", "")).strip_edges()
+	var lines: Array[Dictionary] = []
+	var subtitle: String = str(summary.get("subtitle", "")).strip_edges()
+	if not subtitle.is_empty():
+		lines.append({"speaker": "", "text": subtitle})
+	var items: Array = summary.get("items", []) as Array
+	for i in items.size():
+		var item_text: String = str(items[i]).strip_edges()
+		if not item_text.is_empty():
+			lines.append({"speaker": "", "text": "> " + item_text})
+	if _decision_overlay == null or title.is_empty() or lines.is_empty():
+		_show_decision_finale_closing()
+		return
+	_decision_next = _show_decision_finale_closing
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_story(lines, _decision_header(), "CONTINUE", title)
+
+
+func _show_decision_finale_closing() -> void:
+	if _decision == null:
+		return
+	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
+	var banner: String = str(finale.get("complete_banner", ""))
+	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "closing")
+	if _decision_overlay == null or lines.is_empty():
+		_finish_decision_stage()
+		return
+	_decision_next = _finish_decision_stage
+	_decision_overlay.visible = true
+	_apply_decision_presentation()
+	_decision_overlay.show_story(lines, _decision_header(), "FILE REPORT", banner)
+
+
 func _save_decision_checkpoint() -> void:
 	if _decision == null:
 		return
@@ -2948,12 +3076,14 @@ func _finish_decision_stage() -> void:
 func _decision_game_over_tip() -> String:
 	if _decision == null:
 		return ""
-	if _decision.is_breach_active():
+	if _decision.is_finale_active():
+		_decision.fail_finale()
+	elif _decision.is_breach_active():
 		_decision.fail_breach()
 	_save_decision_checkpoint()
-	print("[DECISION] game over critical=%s threat_index=%d resolved=%d flow=%s security=%s" % [
-		str(_decision.last_failure_critical), _decision.threat_index, _decision.resolved_threats,
-		_decision.flow_state, _decision.security_state,
+	print("[DECISION] game over critical=%s finale=%s threat_index=%d resolved=%d flow=%s security=%s" % [
+		str(_decision.last_failure_critical), str(_decision.last_failure_finale), _decision.threat_index,
+		_decision.resolved_threats, _decision.flow_state, _decision.security_state,
 	])
 	return _decision.game_over_tip()
 
@@ -2965,7 +3095,15 @@ func _decision_defeat_presentation() -> Dictionary:
 		"exit_label": "EXIT MISSION",
 		"is_decision": true,
 	}
-	if _decision != null and _decision.last_failure_critical:
+	if _decision != null and _decision.last_failure_finale:
+		# Finale TD loss: title/subtitle come from the stage's own finale data,
+		# never a hardcoded stage-9 string.
+		var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
+		var system_name: String = str(finale.get("affected_system", "")).strip_edges()
+		data["title"] = str(finale.get("failure_title", "CONTAINMENT FAILED"))
+		data["subtitle"] = system_name.to_upper() if not system_name.is_empty() else "FINAL CONTAINMENT"
+		data["body"] = "Malicious processes were still active when containment failed. Deploy final defenses again and stop them before they spread."
+	elif _decision != null and _decision.last_failure_critical:
 		# CRITICAL: title + the exact consequence of the bad choice (stored in fail_tip).
 		var body: String = _decision.fail_tip.strip_edges()
 		if body.is_empty():

@@ -300,6 +300,923 @@
 					"next": ""
 				}
 			]
+		},
+		{
+			"id": "mod01_stage3",
+			"module_id": "mod_01",
+			"stage": 3,
+			"title": "Someone Got In",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 3 COMPLETE",
+			"clear_subtitle": "SOMEONE GOT IN",
+			"next_stage_title": "Stage 4 — The Impostor Inside",
+			"breach_hp_multiplier": 0.7,
+			"opening": [
+				{"speaker": "Security Assistant", "text": "Mia, we have a problem. Ramon's account just sent out a shared document."},
+				{"speaker": "Mia", "text": "Ramon from Finance? He's on leave this week."},
+				{"speaker": "Security Assistant", "text": "That's what worries me. The email came from his real address — his actual mailbox."},
+				{"speaker": "Mia", "text": "So his account was compromised, not spoofed."},
+				{"speaker": "Security Assistant", "text": "Exactly. And a real account is far more dangerous than a fake one."}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "Ramon's account is locked. Sessions revoked. The team's been warned."},
+				{"speaker": "Mia", "text": "So we're clear?"},
+				{"speaker": "Security Assistant", "text": "For now. But whoever did this had real access, even briefly."},
+				{"speaker": "Mia", "text": "What could they have learned?"},
+				{"speaker": "Security Assistant", "text": "Enough to sound like one of us. That's what worries me next."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. The account is locked down, but that intrusion window is still under review."},
+				{"speaker": "Mia", "text": "One down. Let's make sure nothing else got through."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage03_incident01",
+					"module_id": "mod_01",
+					"stage": 3,
+					"title": "The Compromised Colleague",
+					"bkt_skill": "phishing",
+					"affected_system": "RAMON'S MAILBOX / SHARED DRIVE",
+					"story": [
+						{"speaker": "Mia", "text": "Ramon just sent me a document link. But... he's on leave this week."},
+						{"speaker": "Mia", "text": "The email looks completely real. Same address, same signature."},
+						{"speaker": "Security Assistant", "text": "That's because it is his real address. His account may be compromised."}
+					],
+					"situation": "Ramon's verified BlueTech mailbox sends Mia a link to a shared document while he is confirmed to be on approved leave. Nothing about the sender address is fake.",
+					"evidence": [
+						"FROM  ramon.santos@bluetech.com (verified real mailbox, not spoofed)",
+						"Ramon is confirmed on approved leave through Friday",
+						"LINK  \"shared document\" hosted on an external file-sharing domain",
+						"No prior message from Ramon about this document"
+					],
+					"choices": [
+						{
+							"label": "Allow the request and open the document normally because it came from an authenticated internal mailbox.",
+							"outcome": "CRITICAL",
+							"consequence": "The document silently loads a credential-harvesting script through Mia's already-open session, widening the attacker's access without a single new password entered."
+						},
+						{
+							"label": "Contact Ramon through another trusted channel to confirm, and report the account to Security for immediate containment.",
+							"outcome": "SAFE",
+							"consequence": "Ramon confirms by phone that he never sent it. Security locks the account before any other message goes out."
+						},
+						{
+							"label": "Open the document in preview/sandbox mode without downloading it, planning to report it afterward.",
+							"outcome": "RISKY",
+							"consequence": "Preview mode still renders an embedded script. The account's compromise spreads a step further before containment begins."
+						}
+					],
+					"explanation": "An authenticated internal sender proves the account is real, not that the request is authorized. A compromised account is trusted by every filter that only checks whether the address is genuine.",
+					"breach_gold": 14,
+					"next": "mod01_stage03_incident02"
+				},
+				{
+					"id": "mod01_stage03_incident02",
+					"module_id": "mod_01",
+					"stage": 3,
+					"title": "Session Left Open",
+					"bkt_skill": "phishing",
+					"affected_system": "RAMON'S ACCOUNT SESSION",
+					"story": [
+						{"speaker": "Security Assistant", "text": "I found something. Ramon's account is still logged in from a device we don't recognize."},
+						{"speaker": "Mia", "text": "Didn't we already reset his password?"},
+						{"speaker": "Security Assistant", "text": "We did. That doesn't always end an existing session."}
+					],
+					"situation": "While containing the first incident, Security finds Ramon's account still has an active session from an unfamiliar device and location. Ramon has not traveled and remains on leave.",
+					"evidence": [
+						"Active session location: unrecognized device, outside BlueTech's usual regions",
+						"Ramon has not traveled and is on leave",
+						"Password was reset 10 minutes ago; the session token was not",
+						"Sign-in history shows continuous activity across the reset"
+					],
+					"choices": [
+						{
+							"label": "Message the active session directly to ask who is signed in before taking any action.",
+							"outcome": "CRITICAL",
+							"consequence": "The message tips off the attacker, who copies additional files before the session can be revoked."
+						},
+						{
+							"label": "Revoke the active session, force a sign-out everywhere, and require Ramon to re-authenticate with a new password.",
+							"outcome": "SAFE",
+							"consequence": "The session ends immediately. Ramon re-authenticates cleanly, and the account is fully contained."
+						},
+						{
+							"label": "Reset Ramon's password again, without revoking the existing active session.",
+							"outcome": "RISKY",
+							"consequence": "The password changes, but the attacker's session token still works. Access continues uninterrupted."
+						}
+					],
+					"explanation": "Resetting a password does not end sessions that were authenticated before the reset. Full containment requires revoking active sessions, not just changing credentials.",
+					"breach_gold": 16,
+					"next": "mod01_stage03_incident03"
+				},
+				{
+					"id": "mod01_stage03_incident03",
+					"module_id": "mod_01",
+					"stage": 3,
+					"title": "The Second Invite",
+					"bkt_skill": "phishing",
+					"affected_system": "FINANCE TEAM MAILBOXES",
+					"story": [
+						{"speaker": "Mia", "text": "Finance just got a calendar invite. From Ramon's account. Right now."},
+						{"speaker": "Security Assistant", "text": "His account isn't locked yet?"},
+						{"speaker": "Mia", "text": "Not for a few more minutes."}
+					],
+					"situation": "While the compromised account is being locked, it sends a calendar invite with a linked 'meeting agenda' to the entire Finance distribution list, minutes before the scheduled lockout completes.",
+					"evidence": [
+						"Calendar invite sent from Ramon's account to the full Finance distribution list",
+						"Sent 6 minutes before the scheduled account lockout",
+						"LINK  \"meeting agenda\" pointing to an unfamiliar external domain",
+						"Several Finance staff have not yet opened the invite"
+					],
+					"choices": [
+						{
+							"label": "Let the invite stand since the account is already scheduled to be locked out shortly.",
+							"outcome": "CRITICAL",
+							"consequence": "Several Finance employees open the invite in the minutes before lockout, and the compromise spreads into their mailboxes too."
+						},
+						{
+							"label": "Alert the Finance team immediately, quarantine the message across all mailboxes, and confirm the lockout completes before anyone responds.",
+							"outcome": "SAFE",
+							"consequence": "The invite is pulled from every inbox before it's opened, and the account lockout completes cleanly."
+						},
+						{
+							"label": "Ask Finance team members individually to avoid the invite while the lockout finishes on schedule.",
+							"outcome": "RISKY",
+							"consequence": "The warning reaches most of the team, but one employee opens the invite before hearing it, just before the lockout takes effect."
+						}
+					],
+					"explanation": "A scheduled fix is not a completed one. Until an account is confirmed locked, every message it sends is still coming from a live attacker foothold.",
+					"breach_gold": 18,
+					"next": ""
+				}
+			]
+		},
+		{
+			"id": "mod01_stage4",
+			"module_id": "mod_01",
+			"stage": 4,
+			"title": "The Impostor Inside",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 4 COMPLETE",
+			"clear_subtitle": "THE IMPOSTOR INSIDE",
+			"next_stage_title": "Stage 5 — The Second Key",
+			"breach_hp_multiplier": 0.75,
+			"opening": [
+				{"speaker": "Mia", "text": "You said whoever got into Ramon's account learned enough to sound like one of us."},
+				{"speaker": "Security Assistant", "text": "They did. And now we're seeing requests that sound exactly right — the right names, the right tone, the right internal process."},
+				{"speaker": "Mia", "text": "But they're not actually coming from the people they claim to be."},
+				{"speaker": "Security Assistant", "text": "Some of them might be. That's what makes this harder than last time."},
+				{"speaker": "Mia", "text": "So we can't just trust the name in the message anymore."},
+				{"speaker": "Security Assistant", "text": "Not without checking. Authority can be borrowed just as easily as an inbox."}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "Three requests, three borrowed identities. Payroll, permissions, and now 'security' itself."},
+				{"speaker": "Mia", "text": "They never had to break in loudly. They just asked, and hoped nobody would check."},
+				{"speaker": "Security Assistant", "text": "That's the pattern. They're not exploiting a system flaw. They're exploiting how much we trust internal titles."},
+				{"speaker": "Mia", "text": "So the real defense isn't a better filter. It's verification, every time."},
+				{"speaker": "Security Assistant", "text": "Exactly. And whoever is behind this isn't finished. There's still a second key they haven't used yet."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. But the request that caused it was never legitimate to begin with."},
+				{"speaker": "Mia", "text": "Then let's find out who's really asking before anything else gets through."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage04_incident01",
+					"module_id": "mod_01",
+					"stage": 4,
+					"title": "Payroll Change",
+					"bkt_skill": "phishing",
+					"affected_system": "PAYROLL / BANKING RECORDS",
+					"story": [
+						{"speaker": "Mia", "text": "Payroll just got a request to change an employee's direct-deposit account."},
+						{"speaker": "Security Assistant", "text": "From who?"},
+						{"speaker": "Mia", "text": "The employee's own mailbox. Real address, real signature, urgent tone."}
+					],
+					"situation": "A genuine internal mailbox emails Payroll asking to update the employee's bank-account details before the next pay cycle, citing a closed old account and urgency.",
+					"evidence": [
+						"FROM  the employee's verified BlueTech mailbox",
+						"Request asks for a bank-account number change before the next pay run",
+						"Message cites urgency: \"old account is closed, please process before Friday\"",
+						"No phone call or in-person confirmation has occurred"
+					],
+					"choices": [
+						{"label": "Apply the change temporarily and reverse it later if the employee reports a problem.", "outcome": "CRITICAL", "consequence": "The next payroll cycle deposits the employee's wages into the attacker's account before anyone notices the reversal never happened."},
+						{"label": "Verify using the normal payroll identity-verification procedure before changing any financial information.", "outcome": "SAFE", "consequence": "The verification call reaches the real employee, who confirms they never sent the request. The account change is blocked."},
+						{"label": "Place the change on hold and reply through the same internal email thread asking for confirmation.", "outcome": "RISKY", "consequence": "The attacker replies through the same compromised mailbox confirming their own request, and the change proceeds unverified."}
+					],
+					"explanation": "Confirming a request through the same channel it arrived on only proves the channel is consistent, not that the requester is legitimate. Financial changes require verification through an independent, pre-established procedure.",
+					"breach_gold": 20,
+					"next": "mod01_stage04_incident02"
+				},
+				{
+					"id": "mod01_stage04_incident02",
+					"module_id": "mod_01",
+					"stage": 4,
+					"title": "Confidential Folder Access",
+					"bkt_skill": "phishing",
+					"affected_system": "CONFIDENTIAL PROJECT FOLDER",
+					"story": [
+						{"speaker": "Security Assistant", "text": "A manager's account just requested access to the confidential project folder."},
+						{"speaker": "Mia", "text": "Which manager?"},
+						{"speaker": "Security Assistant", "text": "One who isn't on that project. And the account's behavior doesn't match their usual pattern."}
+					],
+					"situation": "An authenticated manager-level account, not normally associated with the project, requests permissions to a confidential folder, citing a last-minute review need.",
+					"evidence": [
+						"Requesting account belongs to a real manager, verified and authenticated",
+						"That manager has no prior involvement with this project",
+						"Request cites a \"last-minute leadership review\" with no ticket or approval reference",
+						"Account's recent login pattern differs from its normal working hours"
+					],
+					"choices": [
+						{"label": "Grant temporary full access with an expiration time.", "outcome": "CRITICAL", "consequence": "The expiring grant is enough time for every confidential file to be copied out before it ever lapses."},
+						{"label": "Verify the request through the normal approval channel before modifying permissions.", "outcome": "SAFE", "consequence": "The project lead confirms no such review was requested. The account is flagged and the access request is denied."},
+						{"label": "Grant view-only access while waiting for confirmation.", "outcome": "RISKY", "consequence": "View-only access is still enough to read and exfiltrate every confidential document before confirmation ever comes back."}
+					],
+					"explanation": "A manager's title grants authority in the org chart, not automatic authorization for any specific resource. Access to sensitive material must be approved through its own channel, regardless of who is asking.",
+					"breach_gold": 22,
+					"next": "mod01_stage04_incident03"
+				},
+				{
+					"id": "mod01_stage04_incident03",
+					"module_id": "mod_01",
+					"stage": 4,
+					"title": "Emergency Security Request",
+					"bkt_skill": "phishing",
+					"affected_system": "COMPANY-WIDE ACCOUNT SECURITY",
+					"story": [
+						{"speaker": "Mia", "text": "Everyone just got a message claiming to be from Security. It says to verify our accounts immediately."},
+						{"speaker": "Security Assistant", "text": "That message didn't come from us."},
+						{"speaker": "Mia", "text": "It says delaying could lock people out of their work for the day."}
+					],
+					"situation": "A company-wide message, sent from an internal account claiming to represent management/security, instructs employees to perform an urgent account-security action right away or risk losing access.",
+					"evidence": [
+						"Message sent from an internal account impersonating Security/Management authority",
+						"No corresponding entry exists in the official security-incident log",
+						"Message pressures immediate action, warning of lost access if delayed",
+						"The \"security action\" requested is not part of any documented procedure"
+					],
+					"choices": [
+						{"label": "Comply with the internal request because delaying could disrupt everyone's work for the day.", "outcome": "CRITICAL", "consequence": "Employees follow the fraudulent instructions company-wide, handing the attacker exactly the account access the message was designed to harvest."},
+						{"label": "Verify the request through the official security workflow before anyone acts on it.", "outcome": "SAFE", "consequence": "The verification confirms no such directive was issued. The message is blocked company-wide before anyone acts on it."},
+						{"label": "Ask employees to partially comply now while confirmation is still pending.", "outcome": "RISKY", "consequence": "Partial compliance is enough for the attacker to capture what they needed from the employees who acted before confirmation arrived."}
+					],
+					"explanation": "Urgency and claimed authority are the two levers every impersonation depends on. A genuine security directive will always survive being verified through the official workflow before anyone acts.",
+					"breach_gold": 24,
+					"next": ""
+				}
+			]
+		},
+		{
+			"id": "mod01_stage5",
+			"module_id": "mod_01",
+			"stage": 5,
+			"title": "The Second Key",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 5 COMPLETE",
+			"clear_subtitle": "THE SECOND KEY",
+			"next_stage_title": "Stage 6 — Trusted Files",
+			"breach_hp_multiplier": 0.8,
+			"opening": [
+				{"speaker": "Security Assistant", "text": "The attacker keeps losing access, but they keep coming back."},
+				{"speaker": "Mia", "text": "We changed the passwords. How are they still getting in?"},
+				{"speaker": "Security Assistant", "text": "A password is only the first key."},
+				{"speaker": "Mia", "text": "And the second?"},
+				{"speaker": "Security Assistant", "text": "Authentication approval. Sessions. Tokens. That's what they're after now."}
+			],
+			"ending": [
+				{"speaker": "Mia", "text": "So even changing the password isn't always enough."},
+				{"speaker": "Security Assistant", "text": "Not if the attacker already has an authenticated session."},
+				{"speaker": "Mia", "text": "They're trying to stay signed in."},
+				{"speaker": "Security Assistant", "text": "And their next step may not look like a login attack at all."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. The session is gone, but the attacker is still probing for a way to stay authenticated."},
+				{"speaker": "Mia", "text": "Then let's make sure the next key doesn't turn either."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage05_incident01",
+					"module_id": "mod_01",
+					"stage": 5,
+					"title": "Unexpected MFA Prompt",
+					"bkt_skill": "phishing",
+					"affected_system": "EMPLOYEE SSO / MFA",
+					"story": [
+						{"speaker": "Mia", "text": "My phone just buzzed with an MFA approval request. I'm not signing in anywhere."},
+						{"speaker": "Security Assistant", "text": "Don't approve it."},
+						{"speaker": "Mia", "text": "I wasn't going to. But it's the third one this hour."}
+					],
+					"situation": "Mia receives an MFA approval notification on her authenticator app even though she is not currently attempting to sign in anywhere.",
+					"evidence": [
+						"MFA approval push received with no matching sign-in attempt by Mia",
+						"This is the third unsolicited approval prompt in the last hour",
+						"Prompt originates from Mia's real SSO account, not a spoofed one",
+						"No travel or new device has been added to Mia's account recently"
+					],
+					"choices": [
+						{"label": "Approve the request once, then immediately change the password if any suspicious activity appears.", "outcome": "CRITICAL", "consequence": "The single approval hands the attacker a fully authenticated session, and the later password change does nothing to remove it."},
+						{"label": "Deny the request, review recent sign-ins and active sessions, and report the account to Security.", "outcome": "SAFE", "consequence": "The review turns up a login attempt from an unrecognized location. Security locks it down before another prompt goes out."},
+						{"label": "Deny the request and wait to see whether another approval prompt appears.", "outcome": "RISKY", "consequence": "Denying stops this attempt, but with no review or report, the attacker simply tries again from a different angle."}
+					],
+					"explanation": "An MFA prompt is a request for permission, not a login itself. Denying one attempt only closes that single door; the account still needs to be reviewed and the compromise attempt reported before it recurs.",
+					"breach_gold": 26,
+					"next": "mod01_stage05_incident02"
+				},
+				{
+					"id": "mod01_stage05_incident02",
+					"module_id": "mod_01",
+					"stage": 5,
+					"title": "Password Reset Isn't Enough",
+					"bkt_skill": "phishing",
+					"affected_system": "CLOUD ACCOUNT / ACTIVE SESSION",
+					"story": [
+						{"speaker": "Security Assistant", "text": "We reset the employee's password an hour ago. Their cloud account still shows an active session we don't recognize."},
+						{"speaker": "Mia", "text": "Didn't the reset kick them out?"},
+						{"speaker": "Security Assistant", "text": "A reset changes the key. It doesn't always close the door that's already open."}
+					],
+					"situation": "An employee's password was reset after a suspected compromise, but Security still observes an unfamiliar authenticated session actively connected to the cloud account.",
+					"evidence": [
+						"Password was reset 60 minutes ago",
+						"Cloud account still shows one active session from an unrecognized device",
+						"That session has continued making requests after the reset",
+						"No sign-out or session revocation has occurred yet"
+					],
+					"choices": [
+						{"label": "Leave the suspicious session active temporarily so Security can observe what actions it performs.", "outcome": "CRITICAL", "consequence": "While Security watches, the session downloads sensitive files, and the observation comes at the cost of the very data it was meant to protect."},
+						{"label": "Revoke all active sessions, reset credentials if needed, and require fresh authentication.", "outcome": "SAFE", "consequence": "Every session is terminated immediately. The employee re-authenticates cleanly and the account is fully contained."},
+						{"label": "Reset the password again using a stronger password and continue monitoring.", "outcome": "RISKY", "consequence": "The stronger password changes nothing for a session that was never re-authenticated. The unfamiliar session keeps working."}
+					],
+					"explanation": "A password reset only affects future authentication attempts. A session already granted before the reset keeps its access until it is explicitly revoked.",
+					"breach_gold": 28,
+					"next": "mod01_stage05_incident03"
+				},
+				{
+					"id": "mod01_stage05_incident03",
+					"module_id": "mod_01",
+					"stage": 5,
+					"title": "Session Expired",
+					"bkt_skill": "phishing",
+					"affected_system": "CLOUD DOCUMENT SYSTEM",
+					"story": [
+						{"speaker": "Mia", "text": "I got a shared-document notification from a coworker. When I opened it, it says my session expired and I need to sign in again."},
+						{"speaker": "Security Assistant", "text": "Does the login page look right?"},
+						{"speaker": "Mia", "text": "It looks exactly like our real cloud portal."}
+					],
+					"situation": "Mia opens a legitimate-looking shared-document notification from a known internal contact. The linked page displays \"Your session has expired. Authenticate again to continue,\" styled to closely resemble BlueTech's real cloud login.",
+					"evidence": [
+						"Notification appears to come from a known internal contact",
+						"Linked page visually matches BlueTech's real cloud login page",
+						"Page prompts re-authentication, citing an \"expired session\"",
+						"Mia has not independently opened the company cloud portal to compare"
+					],
+					"choices": [
+						{"label": "Authenticate through the page because the document notification came from a known internal contact.", "outcome": "CRITICAL", "consequence": "The credentials are entered directly into the attacker's lookalike page, handing over a fresh authenticated session on the spot."},
+						{"label": "Close the page and open the official company cloud portal independently to check the shared document.", "outcome": "SAFE", "consequence": "The independent portal shows no expired session and no such document pending. The lookalike page is reported and blocked."},
+						{"label": "Compare the page URL and certificate details before deciding whether to authenticate.", "outcome": "RISKY", "consequence": "The URL and certificate look convincing enough to pass a quick check, and the credentials are entered into a page that was never verified as the real workflow."}
+					],
+					"explanation": "Visual and technical inspection can confirm a page looks legitimate, but it cannot confirm that the login prompt itself is a genuine step in a trusted workflow. Independently reopening a known-good entry point is the only way to be sure.",
+					"breach_gold": 30,
+					"next": ""
+				}
+			]
+		},
+		{
+			"id": "mod01_stage6",
+			"module_id": "mod_01",
+			"stage": 6,
+			"title": "Trusted Files",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 6 COMPLETE",
+			"clear_subtitle": "TRUSTED FILES",
+			"next_stage_title": "Stage 7 — Trusted Supplier",
+			"breach_hp_multiplier": 0.85,
+			"opening": [
+				{"speaker": "Security Assistant", "text": "We've been watching the authentication attacks."},
+				{"speaker": "Mia", "text": "So they'll try another login page?"},
+				{"speaker": "Security Assistant", "text": "Maybe. Or they may stop asking for passwords directly."},
+				{"speaker": "Mia", "text": "What would they ask for instead?"},
+				{"speaker": "Security Assistant", "text": "Trust."},
+				{"speaker": "Mia", "text": "Trust in what?"},
+				{"speaker": "Security Assistant", "text": "Files. Apps. Shared documents. Things employees use every day."}
+			],
+			"ending": [
+				{"speaker": "Mia", "text": "They don't even need to make the login page look fake anymore."},
+				{"speaker": "Security Assistant", "text": "Correct."},
+				{"speaker": "Mia", "text": "They can use real cloud services and still lead us into the wrong action."},
+				{"speaker": "Security Assistant", "text": "Trusting the platform isn't enough. You have to trust the request."},
+				{"speaker": "Mia", "text": "And if they know who we work with..."},
+				{"speaker": "Security Assistant", "text": "Then suppliers are the next obvious target."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. The file, the app, or the page is gone, but the workflow it hid behind is still worth reviewing."},
+				{"speaker": "Mia", "text": "Then let's check what else came through that same kind of channel."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage06_incident01",
+					"module_id": "mod_01",
+					"stage": 6,
+					"title": "Shared Proposal",
+					"bkt_skill": "phishing",
+					"affected_system": "CLOUD DRIVE / MARKETING FILES",
+					"story": [
+						{"speaker": "Mia", "text": "I just got a shared-document notification from the vendor we're discussing the marketing proposal with."},
+						{"speaker": "Security Assistant", "text": "Does the proposal match what you're actually expecting?"},
+						{"speaker": "Mia", "text": "Yes, it's the real project. The link opens what looks like our usual cloud-sharing page."}
+					],
+					"situation": "Mia receives a shared-document notification from a known external business contact, referencing a real proposal currently under discussion. The link opens a page that looks like a legitimate cloud-sharing service.",
+					"evidence": [
+						"Sender is a known external business contact with an active project relationship",
+						"The referenced proposal is genuinely being discussed between both parties",
+						"Link opens what appears to be a standard cloud-sharing login page",
+						"Mia has not independently confirmed the file was actually shared through the platform"
+					],
+					"choices": [
+						{"label": "Use the shared link because the sender and proposal are both legitimate, then authenticate only if the cloud service asks.", "outcome": "CRITICAL", "consequence": "The cloud service does ask, and the credentials entered on the linked page go straight to the attacker's collection point."},
+						{"label": "Open the approved company cloud platform independently and check whether the proposal is actually listed in my shared files.", "outcome": "SAFE", "consequence": "The independent platform shows no such file was ever shared. The link is reported and blocked before anyone signs in through it."},
+						{"label": "Open the link in a browser sandbox and inspect the document before deciding whether to sign in.", "outcome": "RISKY", "consequence": "The sandbox limits damage from the file itself, but the login prompt it eventually shows still captures credentials when entered."}
+					],
+					"explanation": "A real sender relationship and a real project do not validate the delivery path. The document being genuine says nothing about whether this particular link is the platform's actual sharing mechanism.",
+					"breach_gold": 32,
+					"next": "mod01_stage06_incident02"
+				},
+				{
+					"id": "mod01_stage06_incident02",
+					"module_id": "mod_01",
+					"stage": 6,
+					"title": "Collaboration App Access",
+					"bkt_skill": "phishing",
+					"affected_system": "MAILBOX / CLOUD STORAGE",
+					"story": [
+						{"speaker": "Mia", "text": "A new collaboration app is asking me to sign in through our normal cloud provider to authorize it."},
+						{"speaker": "Security Assistant", "text": "What is it asking for?"},
+						{"speaker": "Mia", "text": "Read my profile, read email, access shared files, view contacts. But the login screen is definitely ours."}
+					],
+					"situation": "A collaboration app requests authorization through BlueTech's real cloud authentication provider. Requested permissions include reading Mia's profile, reading email, accessing shared files, and viewing contacts. The login page itself is the genuine provider page.",
+					"evidence": [
+						"Authorization flow runs through BlueTech's real, unmodified cloud login page",
+						"Requested scopes: read profile, read email, access shared files, view contacts",
+						"The app is not listed in any previously approved software inventory",
+						"No password field is shown anywhere in the flow"
+					],
+					"choices": [
+						{"label": "Approve the request because authentication happens through BlueTech's legitimate cloud provider and no password is given directly to the app.", "outcome": "CRITICAL", "consequence": "The granted scopes hand the app standing access to Mia's email and files, all without the attacker ever needing a password."},
+						{"label": "Reject the request and verify the app through BlueTech's approved application catalog or Security team.", "outcome": "SAFE", "consequence": "The app is not in the catalog and Security confirms it was never vetted. The authorization request is denied company-wide."},
+						{"label": "Approve only the minimum permissions needed and review the app's publisher afterward.", "outcome": "RISKY", "consequence": "Even the reduced scope still grants standing read access to email, which the unreviewed publisher begins pulling from immediately."}
+					],
+					"explanation": "A genuine login page only proves the identity provider is real, not that the application requesting access should be trusted. OAuth-style consent can grant lasting access without ever touching a password.",
+					"breach_gold": 34,
+					"next": "mod01_stage06_incident03"
+				},
+				{
+					"id": "mod01_stage06_incident03",
+					"module_id": "mod_01",
+					"stage": 6,
+					"title": "Secure Document QR",
+					"bkt_skill": "phishing",
+					"affected_system": "EMPLOYEE ACCOUNT / MOBILE SESSION",
+					"story": [
+						{"speaker": "Mia", "text": "This email says a document can't open on my workstation, and I need to scan a QR code with my phone instead."},
+						{"speaker": "Security Assistant", "text": "Does it reference a real file?"},
+						{"speaker": "Mia", "text": "Yes, one I actually expect. And it has our branding."}
+					],
+					"situation": "An email states \"Your secure document cannot be opened on this workstation. Scan the QR code with your phone to continue.\" The email uses BlueTech branding and references a real internal file Mia is expecting.",
+					"evidence": [
+						"Email references a real, currently expected internal file",
+						"Message uses BlueTech's visual branding and formatting",
+						"QR code is the only way offered to \"continue\" viewing the document",
+						"No workstation-access limitation of this kind has ever applied to this file type before"
+					],
+					"choices": [
+						{"label": "Scan the QR code and continue if it opens the company's normal authentication page.", "outcome": "CRITICAL", "consequence": "The page matches the company's look exactly, and Mia's phone authenticates straight into a session the attacker now controls."},
+						{"label": "Verify the document request through the official company file system before scanning anything.", "outcome": "SAFE", "consequence": "The file system shows no such restriction and no pending document matching the claim. The QR code is reported before it's ever scanned."},
+						{"label": "Scan the QR code using a separate device, but do not submit credentials unless the destination appears legitimate.", "outcome": "RISKY", "consequence": "The destination appears legitimate enough to pass that judgment, and the credentials are submitted on the separate device instead."}
+					],
+					"explanation": "Moving the request to a second device changes where the attack happens, not whether the underlying request is trustworthy. The claim itself — that a workstation suddenly can't open a normal file — needs to be verified before any device engages with it.",
+					"breach_gold": 36,
+					"next": ""
+				}
+			]
+		},
+		{
+			"id": "mod01_stage7",
+			"module_id": "mod_01",
+			"stage": 7,
+			"title": "Trusted Supplier",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 7 COMPLETE",
+			"clear_subtitle": "TRUSTED SUPPLIER",
+			"next_stage_title": "Stage 8 — All Hands",
+			"breach_hp_multiplier": 0.9,
+			"opening": [
+				{"speaker": "Mia", "text": "If they know our files, projects, and apps, they probably know who we work with too."},
+				{"speaker": "Security Assistant", "text": "Exactly."},
+				{"speaker": "Mia", "text": "Suppliers?"},
+				{"speaker": "Security Assistant", "text": "Suppliers. Purchase orders. Payment schedules. Anything employees expect to receive."},
+				{"speaker": "Mia", "text": "So now the phishing looks like normal business."},
+				{"speaker": "Security Assistant", "text": "That's what makes it dangerous."}
+			],
+			"ending": [
+				{"speaker": "Mia", "text": "They knew the suppliers, invoice numbers, even the payment amounts."},
+				{"speaker": "Security Assistant", "text": "They've been collecting information throughout the campaign."},
+				{"speaker": "Mia", "text": "So every compromise gave them more context for the next attack."},
+				{"speaker": "Security Assistant", "text": "Exactly."},
+				{"speaker": "Mia", "text": "What happens if they stop targeting one person at a time?"},
+				{"speaker": "Security Assistant", "text": "Then we have a company-wide incident."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. The payment never went through, but the business context they used to build it is still worth reviewing."},
+				{"speaker": "Mia", "text": "Then let's see how much of our own information they actually have."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage07_incident01",
+					"module_id": "mod_01",
+					"stage": 7,
+					"title": "Updated Bank Details",
+					"bkt_skill": "phishing",
+					"affected_system": "FINANCE / VENDOR PAYMENTS",
+					"story": [
+						{"speaker": "Mia", "text": "Our regular supplier just emailed. They say their banking details changed and want the next payment on the new account."},
+						{"speaker": "Security Assistant", "text": "Is it the same thread you've been using?"},
+						{"speaker": "Mia", "text": "Yes. Same contact name, same invoice number we're already expecting."}
+					],
+					"situation": "BlueTech receives an email from a regular supplier stating their banking details have changed. The email continues an existing conversation thread, references a real outstanding invoice, uses the correct supplier contact name, and asks for the next payment to go to a new account.",
+					"evidence": [
+						"Message continues an existing, genuine email thread with this supplier",
+						"References a real outstanding invoice currently awaiting payment",
+						"Uses the supplier's correct contact name and signature",
+						"Requests the next payment be redirected to a new bank account"
+					],
+					"choices": [
+						{"label": "Send a small test payment to the new account before transferring the remaining balance.", "outcome": "CRITICAL", "consequence": "The test payment clears straight into the attacker's account, confirming the account works before the remaining balance follows it."},
+						{"label": "Hold the payment and verify the banking change using the supplier contact information already stored in BlueTech's vendor records.", "outcome": "SAFE", "consequence": "The verified contact confirms no banking change was requested. The payment is held on the original account and the fraudulent email is reported."},
+						{"label": "Reply within the existing email thread and ask the supplier contact to confirm the new account details.", "outcome": "RISKY", "consequence": "The reply reaches the same compromised or spoofed thread, which confirms its own request right back."}
+					],
+					"explanation": "A continuing thread, a real invoice, and a correct contact name only confirm the business relationship is genuine — they say nothing about who controls the account requesting a change. Bank-detail changes require verification through contact information independent of the message itself.",
+					"breach_gold": 38,
+					"next": "mod01_stage07_incident02"
+				},
+				{
+					"id": "mod01_stage07_incident02",
+					"module_id": "mod_01",
+					"stage": 7,
+					"title": "Purchase Order",
+					"bkt_skill": "phishing",
+					"affected_system": "PROCUREMENT-WS-02",
+					"story": [
+						{"speaker": "Security Assistant", "text": "Procurement got an updated purchase order from a known supplier."},
+						{"speaker": "Mia", "text": "Does the order match something real?"},
+						{"speaker": "Security Assistant", "text": "It does. But the sender's domain is off by a single character."}
+					],
+					"situation": "A known supplier sends an updated purchase order. The sender address is visually almost identical to the supplier's normal domain. The attachment is unexpected but refers to a real order currently being processed.",
+					"evidence": [
+						"Sender domain is nearly identical to the supplier's real domain, differing by one character",
+						"Attachment was not requested or expected as part of the normal update cycle",
+						"Order number and line items match an order currently in active processing",
+						"No prior notice from the supplier's verified contacts about a revised order"
+					],
+					"choices": [
+						{"label": "Open the attachment because the order number and supplier details match an active purchase.", "outcome": "CRITICAL", "consequence": "The attachment matches on paper, but opening it on the procurement workstation runs the payload the lookalike domain was built to deliver."},
+						{"label": "Retrieve the purchase order through the supplier's established portal or confirm it using the contact details already on record.", "outcome": "SAFE", "consequence": "The established portal shows no revised order was issued. The lookalike domain is reported and the attachment is never opened."},
+						{"label": "Download the attachment into an isolated environment and inspect it before opening it on the procurement workstation.", "outcome": "RISKY", "consequence": "The isolated inspection looks clean, but the file was never confirmed to come from the supplier at all before it eventually reaches procurement."}
+					],
+					"explanation": "Correct order numbers and line items can be copied from a real transaction into a malicious request. Verifying the sending domain and channel matters as much as verifying the content of the document itself.",
+					"breach_gold": 40,
+					"next": "mod01_stage07_incident03"
+				},
+				{
+					"id": "mod01_stage07_incident03",
+					"module_id": "mod_01",
+					"stage": 7,
+					"title": "Executive Payment Request",
+					"bkt_skill": "phishing",
+					"affected_system": "FINANCE PAYMENT SYSTEM",
+					"story": [
+						{"speaker": "Mia", "text": "Finance just got a message from an executive. Urgent payment, no calls, confirm afterward."},
+						{"speaker": "Security Assistant", "text": "Does it match their schedule?"},
+						{"speaker": "Mia", "text": "Exactly. They really are in back-to-back client meetings today."}
+					],
+					"situation": "Finance receives an urgent internal message apparently from a BlueTech executive: \"I'm entering a client meeting. The supplier needs this payment completed before noon. Please process it now. Don't call — I'll confirm afterward.\" The request references a real supplier, a real invoice, the correct payment amount, and the executive's current travel schedule.",
+					"evidence": [
+						"Message references a real supplier, real invoice, and correct payment amount",
+						"Executive's travel and meeting schedule genuinely matches the message's claims",
+						"Message explicitly discourages a phone call to confirm",
+						"No entry for this payment exists in the standard approval queue yet"
+					],
+					"choices": [
+						{"label": "Process only part of the payment now so the supplier is not delayed, then verify the rest afterward.", "outcome": "CRITICAL", "consequence": "The partial payment still reaches the unverified destination in full working order, and 'the rest' never needs verifying because the first part already succeeded."},
+						{"label": "Pause the payment and complete the company's required independent approval and vendor-verification process.", "outcome": "SAFE", "consequence": "The verification process reaches the executive through a separate channel, who confirms no such request was sent. The payment is blocked before submission."},
+						{"label": "Prepare the payment in the finance system but hold final submission until another authorized employee reviews it.", "outcome": "RISKY", "consequence": "The second reviewer sees a request that matches every real detail and, under the same time pressure, approves the submission before the impersonation is caught."}
+					],
+					"explanation": "Accurate business details and real urgency describe the target, not the legitimacy of the request. A message that specifically discourages verification is asking to bypass the exact control designed to catch this scenario.",
+					"breach_gold": 42,
+					"next": ""
+				}
+			]
+		},
+		{
+			"id": "mod01_stage8",
+			"module_id": "mod_01",
+			"stage": 8,
+			"title": "All Hands",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 8 COMPLETE",
+			"clear_subtitle": "ALL HANDS",
+			"next_stage_title": "Stage 9 — Cut the Line",
+			"breach_hp_multiplier": 0.95,
+			"opening": [
+				{"speaker": "Security Assistant", "text": "Thirty-seven suspicious messages in two minutes."},
+				{"speaker": "Mia", "text": "Thirty-seven?"},
+				{"speaker": "Security Assistant", "text": "Marketing. Finance. HR. Operations. Different messages, same infrastructure."},
+				{"speaker": "Mia", "text": "So they're not targeting one person anymore."},
+				{"speaker": "Security Assistant", "text": "No."},
+				{"speaker": "Mia", "text": "They're hitting everyone."},
+				{"speaker": "Security Assistant", "text": "All hands."}
+			],
+			"ending": [
+				{"speaker": "Mia", "text": "Sessions revoked. Domains blocked. Accounts isolated."},
+				{"speaker": "Security Assistant", "text": "Most of them."},
+				{"speaker": "Mia", "text": "Most?"},
+				{"speaker": "Security Assistant", "text": "One session is still active."},
+				{"speaker": "Mia", "text": "Whose?"},
+				{"speaker": "Security Assistant", "text": "We're tracing it now."},
+				{"speaker": "Mia", "text": "So they're still inside."},
+				{"speaker": "Security Assistant", "text": "Yes."},
+				{"speaker": "Mia", "text": "Then we finish this."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. That front is closed, but the rest of this attack is still moving."},
+				{"speaker": "Mia", "text": "Then let's get to the next one before they do."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage08_incident01",
+					"module_id": "mod_01",
+					"stage": 8,
+					"title": "Emergency Security Update",
+					"bkt_skill": "phishing",
+					"affected_system": "COMPANY-WIDE MAIL / EMPLOYEE ENDPOINTS",
+					"story": [
+						{"speaker": "Security Assistant", "text": "Employees across every department just got a message demanding they follow 'critical security update' instructions immediately."},
+						{"speaker": "Mia", "text": "Is it real?"},
+						{"speaker": "Security Assistant", "text": "No. It's confirmed malicious. But it's already everywhere, and some people may have already clicked."}
+					],
+					"situation": "Multiple BlueTech employees across departments receive an urgent message demanding they follow attached 'critical security update' instructions. Security confirms the messages are malicious. Copies are already spread across departments, some employees may have already interacted, and external email is still needed for normal operations.",
+					"evidence": [
+						"Message confirmed malicious and already delivered to multiple departments",
+						"Unknown number of employees may have already interacted with it",
+						"External email remains required for ongoing business operations",
+						"No company-wide warning has been issued yet"
+					],
+					"choices": [
+						{"label": "Remove the known malicious messages first and continue monitoring before issuing a company-wide warning to avoid unnecessary disruption.", "outcome": "CRITICAL", "consequence": "Employees who already received the message before removal act on it while everyone else remains unwarned, and the delay lets the campaign keep working."},
+						{"label": "Block the confirmed malicious indicators, issue a verified company-wide warning, and begin targeted investigation of employees who interacted.", "outcome": "SAFE", "consequence": "The warning reaches every department before more employees act on it, and the targeted investigation quickly finds the handful who already had."},
+						{"label": "Temporarily disable inbound external email while Security searches for every copy and affected account.", "outcome": "RISKY", "consequence": "The search proceeds safely, but disabling all external mail halts legitimate business communication company-wide for the duration."}
+					],
+					"explanation": "Containment has to reach the people already affected, not just the messages still sitting in inboxes. Blocking indicators without warning users leaves earlier recipients exposed for as long as the warning is delayed.",
+					"breach_gold": 44,
+					"next": "mod01_stage08_incident02"
+				},
+				{
+					"id": "mod01_stage08_incident02",
+					"module_id": "mod_01",
+					"stage": 8,
+					"title": "Compromised Employee",
+					"bkt_skill": "phishing",
+					"affected_system": "SALES ACCOUNT / CLOUD SESSION",
+					"story": [
+						{"speaker": "Security Assistant", "text": "A Sales account is sending malicious links internally."},
+						{"speaker": "Mia", "text": "Did they notice?"},
+						{"speaker": "Security Assistant", "text": "They already changed their password. But one session is still active, and they're in the middle of a live customer transaction."}
+					],
+					"situation": "Security identifies a Sales account sending malicious links internally. The employee has already changed their password, but logs show one suspicious session is still active. The account is currently needed for a live customer transaction, and immediately disabling it will interrupt that work.",
+					"evidence": [
+						"Employee has already reset their own password",
+						"One suspicious session remains active despite the reset",
+						"Account is currently mid-transaction with a live customer",
+						"No session revocation has occurred yet"
+					],
+					"choices": [
+						{"label": "Leave the account active until the transaction is complete, then isolate it immediately afterward.", "outcome": "CRITICAL", "consequence": "The transaction finishes, but so does whatever the still-active session was doing the entire time it was left running."},
+						{"label": "Revoke active sessions, temporarily restrict the account, and require a clean re-authentication before restoring access.", "outcome": "SAFE", "consequence": "The suspicious session ends immediately. The employee re-authenticates cleanly and finishes the transaction from a verified, contained account."},
+						{"label": "Reset the password again and allow the employee to finish the customer transaction while Security watches the session.", "outcome": "RISKY", "consequence": "The extra reset changes nothing for a session that was never tied to the password, and 'watching' it does not stop it from continuing to act."}
+					],
+					"explanation": "A password reset does not end a session that was authenticated before it. Letting a confirmed-active compromise continue, even briefly and even for a legitimate business reason, keeps the attacker's access live the entire time.",
+					"breach_gold": 46,
+					"next": "mod01_stage08_incident03"
+				},
+				{
+					"id": "mod01_stage08_incident03",
+					"module_id": "mod_01",
+					"stage": 8,
+					"title": "The Attacker's Exit",
+					"bkt_skill": "phishing",
+					"affected_system": "CLOUD STORAGE / MAIL / ACTIVE SESSIONS",
+					"story": [
+						{"speaker": "Security Assistant", "text": "Several compromised accounts just spiked. Large file access, mailbox searches, forwarding rules changing."},
+						{"speaker": "Mia", "text": "They're gathering everything they can before we shut it down."},
+						{"speaker": "Security Assistant", "text": "That's what it looks like. The tokens are still live right now."}
+					],
+					"situation": "Security detects a burst of activity across several compromised accounts: large cloud-file access, mailbox searches, unusual forwarding activity, and authentication tokens still in active use. The attacker may be preparing to leave with collected information.",
+					"evidence": [
+						"Simultaneous large-volume file access across multiple compromised accounts",
+						"Mailbox search activity consistent with information gathering",
+						"New, unauthorized forwarding rules recently added",
+						"Authentication tokens for these accounts remain live right now"
+					],
+					"choices": [
+						{"label": "Keep the sessions active briefly so Security can map the attacker's remaining access before beginning containment.", "outcome": "CRITICAL", "consequence": "The mapping proceeds, but every minute the tokens stay live is another minute of forwarding rules and file downloads completing successfully."},
+						{"label": "Revoke suspicious sessions, block confirmed attacker infrastructure, and isolate affected accounts while preserving logs for investigation.", "outcome": "SAFE", "consequence": "The live tokens are cut immediately, stopping the exfiltration in progress, while the preserved logs still give investigators everything they need afterward."},
+						{"label": "Block the known external infrastructure first and continue monitoring the active sessions to identify any additional compromised accounts.", "outcome": "RISKY", "consequence": "The blocked infrastructure slows the attacker down, but the still-active sessions keep pulling files and mail through channels that were never cut off."}
+					],
+					"explanation": "Once tokens are confirmed live during active exfiltration, every additional minute of observation has a real cost measured in data leaving the company. Logs preserved at the moment of containment provide the investigative value without extending a confirmed compromise.",
+					"breach_gold": 48,
+					"next": ""
+				}
+			]
+		},
+		{
+			"id": "mod01_stage9",
+			"module_id": "mod_01",
+			"stage": 9,
+			"title": "Cut the Line",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 9 COMPLETE",
+			"clear_subtitle": "CUT THE LINE",
+			"next_stage_title": "Stage 10 — Post-Assessment",
+			"breach_hp_multiplier": 1.0,
+			"opening": [
+				{"speaker": "Security Assistant", "text": "Found it."},
+				{"speaker": "Mia", "text": "The remaining session?"},
+				{"speaker": "Security Assistant", "text": "Yes. But it's connected to more than one account."},
+				{"speaker": "Mia", "text": "How much access?"},
+				{"speaker": "Security Assistant", "text": "Cloud storage. Mail. One endpoint. And at least one persistence mechanism."},
+				{"speaker": "Mia", "text": "So blocking another domain won't finish this."},
+				{"speaker": "Security Assistant", "text": "No."},
+				{"speaker": "Mia", "text": "Then we cut every path they have left."},
+				{"speaker": "Security Assistant", "text": "Exactly. Cut the line."}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "The access points are closed."},
+				{"speaker": "Mia", "text": "Then why are we still seeing traffic?"},
+				{"speaker": "Security Assistant", "text": "Processes already in motion. Stop them before they reach the remaining systems."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. That path is cut, but more of their access is still live."},
+				{"speaker": "Mia", "text": "Then let's close the rest before they notice."}
+			],
+			"finale": {
+				"enabled": true,
+				"type": "tower_defense",
+				"affected_system": "BLUETECH CORE NETWORK",
+				"enemy_hp_multiplier": 1.0,
+				"deploy_label": "DEPLOY FINAL DEFENSES",
+				"victory_banner": "CONTAINMENT COMPLETE",
+				"failure_title": "CONTAINMENT FAILED",
+				"ending": [
+					{"speaker": "Security Assistant", "text": "External session terminated."},
+					{"speaker": "Ramon", "text": "Forwarding rules are clean."},
+					{"speaker": "Mia", "text": "Any malicious accounts still active?"},
+					{"speaker": "Security Assistant", "text": "None."},
+					{"speaker": "Mia", "text": "So that's it?"},
+					{"speaker": "Security Assistant", "text": "That's it. The phishing campaign is contained."}
+				],
+				"case_summary": {
+					"title": "CASE CLOSED",
+					"subtitle": "THE PHISHING CAMPAIGN",
+					"items": [
+						"Accounts Secured",
+						"Malicious Sessions Revoked",
+						"Persistence Removed",
+						"Attacker Infrastructure Blocked",
+						"Systems Recovered"
+					]
+				},
+				"closing": [
+					{"speaker": "Mia", "text": "At the beginning, it was just one suspicious email."},
+					{"speaker": "Security Assistant", "text": "That's usually all an attacker needs."},
+					{"speaker": "Mia", "text": "And all we needed was to stop trusting the message and start verifying the situation."},
+					{"speaker": "Security Assistant", "text": "Exactly."}
+				],
+				"complete_banner": "MODULE 1 STORY COMPLETE"
+			},
+			"threats": [
+				{
+					"id": "mod01_stage09_incident01",
+					"module_id": "mod_01",
+					"stage": 9,
+					"title": "Active Session",
+					"bkt_skill": "phishing",
+					"affected_system": "COMPROMISED CLOUD SESSION",
+					"story": [
+						{"speaker": "Security Assistant", "text": "The remaining suspicious cloud session is still authenticated."},
+						{"speaker": "Mia", "text": "Didn't the employee already change their password?"},
+						{"speaker": "Security Assistant", "text": "They did. The token never cared."}
+					],
+					"situation": "The remaining suspicious cloud session is still authenticated even though the employee's password has already been changed. The session token is still valid and has accessed several internal files. Terminating every session will force legitimate users to sign in again, but current logs are already preserved.",
+					"evidence": [
+						"Employee's password was already changed",
+						"Session token for the suspicious session remains valid",
+						"The session has accessed several internal files",
+						"Current logs are already preserved and safe to act on"
+					],
+					"choices": [
+						{"label": "Keep the session connected briefly while restricting file permissions so Security can observe whether it attempts to access another system.", "outcome": "CRITICAL", "consequence": "The permission restriction slows the session down, but it stays authenticated long enough to reach a second account before anyone acts further."},
+						{"label": "Revoke all active sessions for the affected account, rotate its credentials, and require fresh authentication before restoring access.", "outcome": "SAFE", "consequence": "Every session tied to the account ends immediately. The employee re-authenticates cleanly and the account is fully contained."},
+						{"label": "Revoke only the suspicious session and continue monitoring the employee's other authenticated sessions.", "outcome": "RISKY", "consequence": "The named session ends, but one of the employee's other 'legitimate' sessions turns out to be the attacker's actual foothold."}
+					],
+					"explanation": "A password change does not invalidate a session that was authenticated before it. Containment has to remove every potentially compromised authentication state, not only the one session that happened to be caught first.",
+					"breach_gold": 50,
+					"next": "mod01_stage09_incident02"
+				},
+				{
+					"id": "mod01_stage09_incident02",
+					"module_id": "mod_01",
+					"stage": 9,
+					"title": "Hidden Forwarding Rule",
+					"bkt_skill": "phishing",
+					"affected_system": "MAILBOX / CLOUD RULES",
+					"story": [
+						{"speaker": "Security Assistant", "text": "After containing the session, I found an unusual mailbox rule."},
+						{"speaker": "Mia", "text": "What does it do?"},
+						{"speaker": "Security Assistant", "text": "Forwards selected messages to an external address, then marks them read. It's been there for days."}
+					],
+					"situation": "Security finds an unusual mailbox rule that automatically forwards selected messages to an external address and then marks them as read. The rule appears to have been created several days ago.",
+					"evidence": [
+						"Forwarding rule sends selected messages to an external address",
+						"Rule marks forwarded messages as read, hiding them from the inbox view",
+						"Rule creation timestamp is several days old",
+						"No other persistence mechanisms have been confirmed yet"
+					],
+					"choices": [
+						{"label": "Disable the rule without deleting it so investigators can preserve its configuration while watching for further attacker activity.", "outcome": "CRITICAL", "consequence": "The disabled rule stops forwarding, but leaving it intact means the attacker's fallback configuration is still sitting there, undiscovered persistence elsewhere included."},
+						{"label": "Remove the rule, audit the mailbox for other persistence settings, review the external destination, and revoke remaining authorization tokens.", "outcome": "SAFE", "consequence": "The rule is gone and the audit turns up a second forwarding rule on a shared mailbox, which is removed before it does any damage."},
+						{"label": "Remove the forwarding rule and monitor the mailbox closely for any new unauthorized configuration changes.", "outcome": "RISKY", "consequence": "The discovered rule is gone, but a second, unaudited rule on a shared mailbox keeps forwarding messages unnoticed."}
+					],
+					"explanation": "Finding one persistence mechanism does not prove it is the only one. A full audit of related mailboxes and authorization tokens is what actually closes the door, not just removing the rule that happened to be found first.",
+					"breach_gold": 52,
+					"next": "mod01_stage09_incident03"
+				},
+				{
+					"id": "mod01_stage09_incident03",
+					"module_id": "mod_01",
+					"stage": 9,
+					"title": "Final Connection",
+					"bkt_skill": "phishing",
+					"affected_system": "BLUETECH CORE NETWORK / AFFECTED ENDPOINT",
+					"story": [
+						{"speaker": "Security Assistant", "text": "One workstation is still talking to infrastructure tied to this campaign."},
+						{"speaker": "Mia", "text": "Whose is it?"},
+						{"speaker": "Security Assistant", "text": "Someone currently working, with unsaved files open. This could be their last foothold."}
+					],
+					"situation": "Security correlates the remaining indicators to one workstation still communicating with infrastructure associated with the campaign. The endpoint belongs to an employee currently working, contains unsaved business data, has active network connections, and may contain the attacker's final foothold. Security already has sufficient centralized logs for initial investigation.",
+					"evidence": [
+						"Workstation actively communicating with known campaign infrastructure",
+						"Employee is currently working with unsaved business data open",
+						"Endpoint has active network connections right now",
+						"Centralized logs already provide sufficient data for initial investigation"
+					],
+					"choices": [
+						{"label": "Keep the endpoint connected under enhanced monitoring long enough to map any additional attacker infrastructure before isolating it.", "outcome": "CRITICAL", "consequence": "The mapping identifies more infrastructure, but the confirmed foothold stays online the entire time, continuing to communicate outward."},
+						{"label": "Isolate the endpoint from the network, preserve its current state for forensics, and begin coordinated containment across linked accounts.", "outcome": "SAFE", "consequence": "The endpoint drops off the network immediately, its state preserved intact, while the linked accounts are contained in the same motion."},
+						{"label": "Block the known malicious destinations at the network edge while keeping the workstation online so the employee can save and close active work.", "outcome": "RISKY", "consequence": "The known destinations are blocked, but the endpoint stays online and reachable long enough for the attacker to pivot through a channel that was never on the block list."}
+					],
+					"explanation": "Blocking known indicators only stops the traffic already identified. With enough evidence already gathered and a confirmed foothold still active, immediate isolation is what actually ends the exposure — extended observation at this point only extends the compromise.",
+					"breach_gold": 55,
+					"next": ""
+				}
+			]
 		}
 	]
 }
