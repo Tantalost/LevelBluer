@@ -264,7 +264,7 @@ func _refresh_detail() -> void:
 	UI.clear(_detail)
 	var module := _module_entry()
 	var config := _stage_config(_selected)
-	var note := Briefings.get_note(_stage_id(_selected))
+	var note := Briefings.get_note(_stage_id(_selected), str(_module_entry().get("id", "")))
 	var panel := UI.panel(_detail, Color("13242d"))
 	panel.add_theme_stylebox_override("panel", UI.box(Color("13242d"), _accent(), 20))
 	var content := UI.column(panel, 12)

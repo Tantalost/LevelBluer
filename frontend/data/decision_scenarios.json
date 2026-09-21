@@ -145,6 +145,161 @@
 					"next": ""
 				}
 			]
+		},
+		{
+			"id": "mod01_stage2",
+			"module_id": "mod_01",
+			"stage": 2,
+			"title": "They Know Who We Are",
+			"bkt_skill": "phishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 2 COMPLETE",
+			"clear_subtitle": "THEY KNOW WHO WE ARE",
+			"next_stage_title": "Stage 3 — Someone Got In",
+			"breach_hp_multiplier": 0.65,
+			"opening": [
+				{"speaker": "Security Assistant", "text": "The domains from yesterday are already offline. But the campaign didn't stop."},
+				{"speaker": "Mia", "text": "Another batch?"},
+				{"speaker": "Security Assistant", "text": "Worse. These messages know who works here."},
+				{"speaker": "Mia", "text": "What do you mean?"},
+				{"speaker": "Security Assistant", "text": "Names. Departments. Meetings. Someone has been researching BlueTech."}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "Names. Meetings. Departments. Internal projects."},
+				{"speaker": "Mia", "text": "They're not guessing anymore."},
+				{"speaker": "Security Assistant", "text": "No. Someone has been collecting information about BlueTech."},
+				{"speaker": "Mia", "text": "So the next messages could look even more real."},
+				{"speaker": "Security Assistant", "text": "Exactly."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. But they knew enough about us to almost make it work."},
+				{"speaker": "Mia", "text": "Next time we verify first."}
+			],
+			"threats": [
+				{
+					"id": "mod01_stage02_incident01",
+					"module_id": "mod_01",
+					"stage": 2,
+					"title": "The Meeting Follow-Up",
+					"bkt_skill": "phishing",
+					"affected_system": "MARKETING-WS-04",
+					"story": [
+						{"speaker": "Mia", "text": "I just received a document about the marketing meeting we had this morning."},
+						{"speaker": "Mia", "text": "It even mentions the campaign we discussed."},
+						{"speaker": "Security Assistant", "text": "Accurate information can still be used in a phishing attack."}
+					],
+					"situation": "An email claims to contain notes from a real BlueTech marketing meeting. The message includes Mia's name, the real project name, today's meeting, and a link to a shared document.",
+					"evidence": [
+						"Uses Mia's real name",
+						"References the real marketing campaign",
+						"References today's real meeting",
+						"LINK  \"shared document\" hosted outside the company drive"
+					],
+					"choices": [
+						{
+							"label": "Open the document because the meeting details are correct.",
+							"outcome": "CRITICAL",
+							"consequence": "The document redirects Mia to a fake company login page, allowing the attacker to capture her credentials."
+						},
+						{
+							"label": "Open the official company drive and check whether the document was actually shared with me.",
+							"outcome": "SAFE",
+							"consequence": "The document does not exist in the official company drive. Security confirms the email was impersonating an internal collaboration request."
+						},
+						{
+							"label": "Forward the email to another team member and ask if they recognize it.",
+							"outcome": "RISKY",
+							"consequence": "The suspicious link is spread to another employee before the message has been verified."
+						}
+					],
+					"explanation": "Attackers can use publicly available or stolen information to make phishing messages appear legitimate.",
+					"breach_gold": 12,
+					"next": "mod01_stage02_incident02"
+				},
+				{
+					"id": "mod01_stage02_incident02",
+					"module_id": "mod_01",
+					"stage": 2,
+					"title": "HR Benefits Update",
+					"bkt_skill": "phishing",
+					"affected_system": "HR PORTAL / EMPLOYEE ACCOUNTS",
+					"story": [
+						{"speaker": "Mia", "text": "This one says it's from HR."},
+						{"speaker": "Mia", "text": "And that's actually our HR manager's name."},
+						{"speaker": "Security Assistant", "text": "Check the source, not just the name."}
+					],
+					"situation": "Employees receive an email announcing an urgent benefits update. It uses the real HR manager's name, copies BlueTech branding, asks employees to sign in before the end of the day, and links to an external login page.",
+					"evidence": [
+						"Uses the real HR manager's name",
+						"Copies BlueTech branding",
+						"Urgency: 'sign in before the end of the day'",
+						"LINK  external login page, not the official HR portal"
+					],
+					"choices": [
+						{
+							"label": "Use the login link because the HR manager's name is correct.",
+							"outcome": "CRITICAL",
+							"consequence": "The fake portal captures the employee's BlueTech credentials."
+						},
+						{
+							"label": "Open the official HR portal manually and check for the announcement.",
+							"outcome": "SAFE",
+							"consequence": "There is no benefits announcement in the official HR portal. The email is reported and blocked."
+						},
+						{
+							"label": "Reply to the message and ask HR if the update is legitimate.",
+							"outcome": "RISKY",
+							"consequence": "The reply goes back to the attacker's mailbox, confirming that Mia's address is active and monitored."
+						}
+					],
+					"explanation": "Display names and company branding are easy to imitate.",
+					"breach_gold": 14,
+					"next": "mod01_stage02_incident03"
+				},
+				{
+					"id": "mod01_stage02_incident03",
+					"module_id": "mod_01",
+					"stage": 2,
+					"title": "Manager Access Request",
+					"bkt_skill": "phishing",
+					"affected_system": "MARKETING SHARED DRIVE",
+					"story": [
+						{"speaker": "Mia", "text": "My manager is asking for access to our campaign folder."},
+						{"speaker": "Mia", "text": "The email even uses the project code."},
+						{"speaker": "Security Assistant", "text": "A familiar name doesn't replace verification."}
+					],
+					"situation": "An email appears to come from Mia's manager. It requests immediate access to a confidential marketing folder. The message contains the manager's real name, the real project code, an urgent deadline, and a request for folder permissions.",
+					"evidence": [
+						"Uses the manager's real name",
+						"References the real project code",
+						"Urgency: immediate deadline",
+						"Requests folder permission changes"
+					],
+					"choices": [
+						{
+							"label": "Grant the requested access because the project information is correct.",
+							"outcome": "CRITICAL",
+							"consequence": "The attacker gains access to confidential marketing documents and internal company information."
+						},
+						{
+							"label": "Confirm the request through the normal internal communication channel before changing access.",
+							"outcome": "SAFE",
+							"consequence": "Mia's manager confirms that they never requested access. The phishing attempt is contained."
+						},
+						{
+							"label": "Grant view-only access so the requester cannot edit anything.",
+							"outcome": "RISKY",
+							"consequence": "Sensitive company documents are still exposed to an unverified account."
+						}
+					],
+					"explanation": "Access requests must be verified independently, even when the request contains accurate internal information.",
+					"breach_gold": 16,
+					"next": ""
+				}
+			]
 		}
 	]
 }

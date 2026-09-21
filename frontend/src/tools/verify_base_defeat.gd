@@ -22,17 +22,17 @@ func _frames(count: int) -> void:
 func _run() -> void:
 	var router := root.get_node("Router")
 	router.is_tutorial = false
-	# Module 1 Stage 1 is decision-based (see verify_decision_stage.gd). This test
-	# exercises the plain Tower Defense loss/reward flow, so it targets Stage 2
-	# (index 1), which is not a decision stage.
+	# Module 1 Stages 1 and 2 are decision-based (see verify_decision_stage.gd).
+	# This test exercises the plain Tower Defense loss/reward flow, so it
+	# targets Stage 3 (index 2), which is not a decision stage.
 	router.active_module_id = "mod_01"
-	router.active_stage_index = 1
+	router.active_stage_index = 2
 	var level: Node = load("res://src/gameplay/level_base.tscn").instantiate()
 	var manager := level.get_node("LevelManager")
 	manager.set_script(load("res://src/tools/defeat_test_manager.gd"))
 	root.add_child(level)
 	await _frames(3)
-	_check(manager._decision == null, "Stage 2 does not activate the decision flow")
+	_check(manager._decision == null, "Stage 3 does not activate the decision flow")
 	manager.change_phase(2)
 	manager.current_phase = 3
 	manager.base_health = 1

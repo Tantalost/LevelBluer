@@ -1,5 +1,10 @@
 extends RefCounted
 ## Spoiler-light flavor copy, not enemy intelligence or gameplay configuration.
+## NOTES is keyed by stage number alone and shared across every module — do
+## not rely on it for a single module's story. MODULE_NOTES overrides it for
+## one authored "module_id:stage_id" card at a time, so giving Module 1
+## Stage 2 its own copy never touches Module 1 Stage 1 or any other module's
+## same-numbered stage.
 const NOTES := {
 	1: ["FIRST CONTACT", "A quiet inbox. A signal that does not belong. Your first defense begins with a simple question: what can you trust?", "Establish your defense. Stay curious."],
 	2: ["PATTERN BREAK", "The familiar rhythm is slipping. What looked predictable a moment ago may deserve a second look.", "Observe first. Be ready to reconsider."],
@@ -13,6 +18,15 @@ const NOTES := {
 	10: ["FINAL CHECKPOINT", "The last checkpoint is waiting. Everything you have learned comes with you; the decisions ahead are yours.", "Bring your knowledge. Leave assumptions behind."],
 }
 
-static func get_note(stage_id: int) -> Dictionary:
-	var note: Array = NOTES.get(stage_id, ["SIGNAL PENDING", "This operation has not been revealed yet.", "More information will arrive with the mission."])
+const MODULE_NOTES := {
+	"mod_01:2": [
+		"THEY KNOW WHO WE ARE",
+		"The phishing campaign becomes more targeted. Investigate messages that use real BlueTech information before employees trust the wrong source.",
+		"Real details do not prove a message is real.",
+	],
+}
+
+static func get_note(stage_id: int, module_id: String = "") -> Dictionary:
+	var key: String = "%s:%d" % [module_id.strip_edges(), stage_id]
+	var note: Array = MODULE_NOTES.get(key, NOTES.get(stage_id, ["SIGNAL PENDING", "This operation has not been revealed yet.", "More information will arrive with the mission."]))
 	return {"eyebrow": note[0], "teaser": note[1], "hint": note[2]}

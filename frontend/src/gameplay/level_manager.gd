@@ -17,9 +17,12 @@ const LOSS_CREDIT_PAYOUT: int = 10
 const QUESTION_TIME_SEC: float = 20.0
 const MULTI_SELECT_TIME_SEC: float = 30.0
 const OPTION_KEYS: PackedStringArray = ["A", "B", "C", "D", "E", "F"]
-## Balance-only knob for Module 1 Stage 1's RISKY breach Tower Defense.
-## Scales spawned enemy HP alone (see _decision_breach_hp_scale()); damage,
-## speed, tower stats, wave count, and rewards are untouched.
+## Balance-only knob for decision-story RISKY breach Tower Defense. Scales
+## spawned enemy HP alone (see _decision_breach_hp_scale()); damage, speed,
+## tower stats, wave count, and rewards are untouched. This is the fallback
+## value when a decision stage's data sets no "breach_hp_multiplier" of its
+## own (Module 1 Stage 1's authored value) — keep the name and value stable,
+## `stage_one_live.gd`'s geometric Stage 1 presentation reads it directly.
 const DECISION_BREACH_ENEMY_HP_MULTIPLIER: float = 0.60
 
 @export var enemy_scene: PackedScene
@@ -2206,15 +2209,19 @@ func _begin_wave() -> void:
 	_spawn_wave(_wave_token)
 
 
-## Module 1 Stage 1's RISKY breach only. Every other stage/wave (including
-## Stage 1's own retry/checkpoint flow, Stage 2+, and Modules 2-5) spawns at
-## the normal 1.0 scale untouched.
+## Decision-story RISKY breach Tower Defense only. Every other stage/wave
+## (a decision stage's own SAFE/CRITICAL paths, Stage 3+, and every
+## non-decision TRACE stage in Modules 1-5) spawns at the normal 1.0 scale.
+## Each decision stage can set its own "breach_hp_multiplier" in
+## decision_scenarios.json; stages that don't (Module 1 Stage 1) fall back to
+## DECISION_BREACH_ENEMY_HP_MULTIPLIER, so this generalization changes
+## nothing about Stage 1's existing behavior.
 func _decision_breach_hp_scale() -> float:
 	if _decision == null or not _decision.is_breach_active():
 		return 1.0
-	if _current_module_id() != "mod_01" or _current_stage_id() != 1:
-		return 1.0
-	return DECISION_BREACH_ENEMY_HP_MULTIPLIER
+	var stored: Variant = _decision_stage.get("breach_hp_multiplier", DECISION_BREACH_ENEMY_HP_MULTIPLIER)
+	var scale: float = float(stored)
+	return scale if scale > 0.0 else DECISION_BREACH_ENEMY_HP_MULTIPLIER
 
 
 func _spawn_wave(token: int) -> void:

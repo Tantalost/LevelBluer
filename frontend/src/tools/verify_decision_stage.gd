@@ -57,6 +57,7 @@ func _run() -> void:
 	await _test_save_compat()
 	await _test_required_scenarios()
 	await _test_breach_transition()
+	await _test_stage2()
 	await _test_regression()
 
 	_restore_save()
@@ -67,14 +68,25 @@ func _run() -> void:
 func _test_data_model(threats: Array[Dictionary]) -> void:
 	print("== data model ==")
 	check(DecisionScenarios.is_decision_stage("mod_01", 1), "Module 1 Stage 1 is decision-based")
-	check(not DecisionScenarios.is_decision_stage("mod_01", 2), "Module 1 Stage 2 is not decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_01", 2), "[Stage 2] Module 1 Stage 2 is decision-based")
+	check(not DecisionScenarios.is_decision_stage("mod_01", 3), "Module 1 Stage 3 is not decision-based")
 	check(not DecisionScenarios.is_decision_stage("mod_02", 1), "Module 2 Stage 1 is not decision-based")
+	check(not DecisionScenarios.is_decision_stage("mod_02", 2), "Module 2 Stage 2 is not decision-based")
 	check(threats.size() == 3, "Stage 1 has three threats")
 	for i in threats.size():
 		var outcomes: Array[String] = []
 		for c in 3:
 			outcomes.append(DecisionScenarios.choice_outcome(threats[i], c))
 		check(outcomes.has("SAFE") and outcomes.has("RISKY") and outcomes.has("CRITICAL"), "Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
+	var stage2_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_01", 2)
+	check(stage2_threats.size() == 3, "[Stage 2] Stage 2 has three threats")
+	for i in stage2_threats.size():
+		check(int(stage2_threats[i].get("stage", -1)) == 2, "[Stage 2] Threat %d belongs to stage 2 only" % (i + 1))
+		check(str(stage2_threats[i].get("module_id", "")) == "mod_01", "[Stage 2] Threat %d belongs to mod_01 only" % (i + 1))
+		var outcomes2: Array[String] = []
+		for c in 3:
+			outcomes2.append(DecisionScenarios.choice_outcome(stage2_threats[i], c))
+		check(outcomes2.has("SAFE") and outcomes2.has("RISKY") and outcomes2.has("CRITICAL"), "[Stage 2] Threat %d offers SAFE, RISKY and CRITICAL" % (i + 1))
 
 
 func _test_overlay_layout(threats: Array[Dictionary]) -> void:
@@ -614,14 +626,122 @@ func _dialogue_contains(overlay, needle: String) -> bool:
 	return false
 
 
+func _test_stage2() -> void:
+	print("== Module 1 Stage 2: They Know Who We Are ==")
+	_player.reset_to_defaults()
+
+	print("-- 1/2/3. Stage 2 launches the decision controller with 3 stage-2-only incidents --")
+	var level: Node = await _start_match("mod_01", 1)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Stage 2] Stage 2 uses the decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Stage 2] No TRACE quiz opened for Stage 2")
+	check(lm._decision.total_threats() == 3, "[Stage 2] Exactly 3 incidents load")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Stage 2] Opening story shown")
+	check(_no_forbidden_words(overlay), "[Stage 2] Opening avoids quiz vocabulary")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 2] Incident 1 shown after opening")
+
+	print("-- 4. Incident 1 SAFE -> Incident 2 --")
+	var pl0: float = _player.get_mastery("phishing")
+	await _pick(overlay, 1)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 2] SAFE on Incident 1 continues to Incident 2")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl0, true)), "[Stage 2] SAFE commit applies exactly one positive BKT update")
+	check(lm._decision.resolved_threats == 1, "[Stage 2] Incident 1 resolved")
+
+	print("-- 5. Incident 2 RISKY -> BREACH DETECTED -> DEPLOY DEFENSES -> TD WIN -> Incident 3 --")
+	var pl1: float = _player.get_mastery("phishing")
+	overlay._choice_buttons[2].pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "SECURITY WARNING", "[Stage 2] RISKY shows SECURITY WARNING")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"consequence" and overlay._banner.text == "BREACH DETECTED", "[Stage 2] Breach transition shows BREACH DETECTED")
+	check(_dialogue_contains(overlay, "HR PORTAL / EMPLOYEE ACCOUNTS"), "[Stage 2] Breach transition names Incident 2's affected system")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH, "[Stage 2] TD has not started before DEPLOY DEFENSES")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 2] DEPLOY DEFENSES starts Tower Defense")
+	check(is_equal_approx(_player.get_mastery("phishing"), one_bkt_step(_player, pl1, false)), "[Stage 2] RISKY commit applies BKT once before Tower Defense")
+	var pl_td: float = _player.get_mastery("phishing")
+	await _force_td_win(lm)
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and lm._decision.resolved_threats == 2, "[Stage 2] TD win resolves Incident 2")
+	check(overlay._mode == &"story" and overlay._banner.text == "BREACH CONTAINED", "[Stage 2] BREACH CONTAINED shown")
+	check(is_equal_approx(_player.get_mastery("phishing"), pl_td), "[Stage 2] TD win applies no BKT update")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 2] Continue Investigation reveals Incident 3")
+	await _stop_match()
+
+	print("-- 6. RISKY TD LOSS -> RETRY same Stage 2 incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 1)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(overlay, 2)
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 2] Incident 1 RISKY reaches Tower Defense")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 2] TD loss is Game Over")
+	var defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(defeat_card != null and defeat_card._title.text == "CONTAINMENT FAILED", "[Stage 2] CONTAINMENT FAILED shown on TD loss")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 2] Retry after TD loss returns to the same incident")
+	await _stop_match()
+
+	print("-- 7. CRITICAL -> SYSTEM COMPROMISED -> RETRY same incident --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 1)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[0].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SYSTEM COMPROMISED", "[Stage 2] CRITICAL shows SYSTEM COMPROMISED")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Stage 2] CRITICAL is an immediate Game Over")
+	var crit_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(crit_card != null and crit_card._title.text == "SYSTEM COMPROMISED", "[Stage 2] SYSTEM COMPROMISED card shown")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Stage 2] Retry after CRITICAL returns to the same incident")
+	await _stop_match()
+
+	print("-- 8. All 3 incidents resolved -> Stage 2 Complete --")
+	_player.reset_to_defaults()
+	level = await _start_match("mod_01", 1)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(overlay, 1)
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Stage 2] Incident 1 resolved via SAFE")
+	await _pick(overlay, 1)
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Stage 2] Incident 2 resolved via SAFE")
+	await _pick(overlay, 1)
+	check(overlay._mode == &"story" and overlay._continue_button.text == "FILE REPORT", "[Stage 2] Ending story plays before the stage clears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage(2), "[Stage 2] Stage 2 clears after the ending")
+	var clear_overlay = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay != null and clear_overlay._title.text == "STAGE 2 COMPLETE", "[Stage 2] Stage clear card uses the authored title")
+	check(clear_overlay != null and clear_overlay._advisory.text.contains("STAGE 3"), "[Stage 2] Stage clear card points to Stage 3")
+	await _stop_match()
+
+
 func _test_regression() -> void:
 	print("== regression: other stages keep TRACE and TD loss payout ==")
 	_player.reset_to_defaults()
 	_router.active_module_id = "mod_01"
-	var level: Node = await _start_match("mod_01", 1)
+	# Module 1 Stage 2 is now decision-based (see _test_stage2). Stage 3 is the
+	# next TRACE stage and is the correct "still normal" regression baseline.
+	var level: Node = await _start_match("mod_01", 2)
 	var lm = _level_manager(level)
-	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 1 Stage 2 still opens the TRACE quiz")
-	check(level.get_node("GameplayCanvas").get_node_or_null("DecisionOverlay") == null, "No decision overlay on Stage 2")
+	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 1 Stage 3 still opens the TRACE quiz")
+	check(level.get_node("GameplayCanvas").get_node_or_null("DecisionOverlay") == null, "No decision overlay on Stage 3")
 	lm.base_health = 0
 	lm.change_phase(lm.GamePhase.GAME_OVER)
 	await settle()
