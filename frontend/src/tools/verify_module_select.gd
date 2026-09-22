@@ -52,7 +52,7 @@ func _run() -> void:
 	check(fingerprint(player, auth) == before, "Viewing all modules does not change account")
 	player.lesson_progress = {"mod_01": 6, "mod_02": 3}
 	player.completed_lessons.assign(["mod_01"])
-	player.cleared_stages = {1: true, 3: true}
+	player.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
 	screen.on_resume()
 	await settle()
 	check(screen._is_unlocked(0) and screen._is_unlocked(1), "Existing first/second module rules preserved")

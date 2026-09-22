@@ -20,7 +20,7 @@ func capture(label: String) -> void:
 		root.get_texture().get_image().save_png("res://.godot/stage_select_" + label + ".png")
 
 func fingerprint(p: Node, a: Node) -> String:
-	return str([p.lesson_progress, p.completed_lessons, p.cleared_stages, p.locked_stages, p.mock_max_stage_cleared, p.credits, a._mastery, a._points])
+	return str([p.lesson_progress, p.completed_lessons, p.cleared_stages, p.locked_stages, p.max_stage_cleared_by_module, p.credits, a._mastery, a._points])
 
 func _run() -> void:
 	var p := root.get_node("PlayerManager")
@@ -31,7 +31,7 @@ func _run() -> void:
 	p.cleared_stages = {}
 	p.locked_stages = {}
 	p.credits = 229
-	p.mock_max_stage_cleared = 1
+	p.max_stage_cleared_by_module = {}
 	var screen: Control = load("res://src/ui/screens/deploy/module_stage_screen.tscn").instantiate()
 	root.add_child(screen)
 	screen.on_enter({"module_index": 0})
@@ -60,8 +60,8 @@ func _run() -> void:
 	await capture("fresh_1280")
 	p.lesson_progress = {"mod_01": 6}
 	p.completed_lessons.assign(["mod_01", "mod1_all"])
-	p.mock_max_stage_cleared = 3
-	p.cleared_stages = {1: true, 3: true}
+	p.max_stage_cleared_by_module = {"mod_01": 3}
+	p.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
 	screen.on_resume()
 	await settle()
 	check(screen._cleared_count() == 2, "Counts explicit clears, not highest stage")
@@ -81,7 +81,7 @@ func _run() -> void:
 	await settle()
 	check(screen._lock_reason(9).contains("preceding"), "Sequential gate explained")
 	await capture("locked_1280")
-	p.locked_stages = {1: true}
+	p.locked_stages = {"mod_01:1": true}
 	screen._select_stage(0)
 	await settle()
 	check(screen._lock_reason(0).contains("exam") and screen._breach_button.disabled, "Exam lock still prevents replay")
@@ -122,9 +122,9 @@ func _run() -> void:
 		scroll.scroll_vertical = 99999
 		await settle()
 		check(scroll.get_global_rect().intersects(screen._rows[9].get_global_rect()), "Last stage reachable by vertical scrolling")
-	p.mock_max_stage_cleared = 10
+	p.max_stage_cleared_by_module = {"mod_01": 10}
 	for i in range(1, 11):
-		p.cleared_stages[i] = true
+		p.cleared_stages[p.stage_progress_key("mod_01", i)] = true
 	screen.on_resume()
 	await settle()
 	check(screen._completion.value == 10 and screen._cleared_count() == 10, "Full completion shown")

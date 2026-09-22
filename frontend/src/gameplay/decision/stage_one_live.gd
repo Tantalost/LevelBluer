@@ -33,7 +33,7 @@ func _configure_match() -> void:
 	story = DecisionScenarios.get_stage(match_context.module_id, match_context.stage_id)
 	config["name"] = str(story.get("title", config.get("name", "Stage %d" % match_context.stage_id)))
 	gold = account.consume_intel_bonus_gold(int(config.get("starting_gold", 2)), match_context.module_id)
-	mastery_frozen = account.has_cleared_stage(match_context.stage_id)
+	mastery_frozen = account.has_cleared_stage(match_context.module_id, match_context.stage_id)
 	decision = DecisionStageController.new()
 	decision.setup(match_context.module_id, match_context.stage_id, DecisionScenarios.get_threats(match_context.module_id, match_context.stage_id), DecisionScenarios.has_finale(story))
 	var checkpoint: Dictionary = account.get_decision_stage_state(_key())
@@ -391,7 +391,7 @@ func _result_data(won: bool) -> Dictionary:
 	var stage_id: int = match_context.stage_id
 	var data := {"live": true, "won": won, "stage": stage_id, "wave": 1, "waves": config.waves.size(), "credits": 0, "kills": match_kills, "final_stage": false}
 	if won:
-		account.mark_stage_cleared(stage_id)
+		account.mark_stage_cleared(match_context.module_id, stage_id)
 		account.clear_decision_stage_state(_key())
 		tasks.record_stage_cleared()
 		var payout := 50 + maxi(0, gold)

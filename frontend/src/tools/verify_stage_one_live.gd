@@ -18,7 +18,7 @@ class Account extends RefCounted:
 	func consume_intel_bonus_gold(value: int, _module: String) -> int:
 		intel_uses += 1
 		return value
-	func has_cleared_stage(_stage: int) -> bool:
+	func has_cleared_stage(_module_id: String, _stage: int) -> bool:
 		return cleared
 	func get_decision_stage_state(_key: String) -> Dictionary:
 		return checkpoint.duplicate(true)
@@ -35,7 +35,7 @@ class Account extends RefCounted:
 		return kind in unlocked
 	func stats_bonus_for(_kind: String) -> Dictionary:
 		return bonus
-	func mark_stage_cleared(_id: int) -> void:
+	func mark_stage_cleared(_module_id: String, _id: int) -> void:
 		clears += 1
 		cleared = true
 	func add_credits(value: int) -> void:
@@ -135,7 +135,18 @@ func _run() -> void:
 	check(not router._context_for_stage(0).geometric, "Tutorial remains legacy")
 	router.is_tutorial = false
 	router.active_module_id = "mod_02"
-	check(not router._context_for_stage(0).geometric, "Other module remains legacy")
+	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 1 also routes to the live decision scene (it is decision-based too)")
+	check(router._scene_for_context(router._context_for_stage(1)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 2 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(2)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 3 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(3)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 4 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(4)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 5 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(5)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 6 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(6)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 7 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(7)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 8 also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(8)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 9 (final story stage, with a finale) also routes to the same live decision scene")
+	check(router._scene_for_context(router._context_for_stage(9)) == router.LEVEL_SCENE, "Module 2 Stage 10 (the post-assessment) remains legacy")
+	router.active_module_id = "mod_03"
+	check(not router._context_for_stage(0).geometric, "A module with no decision content remains legacy")
 	router.active_module_id = "mod_01"
 	check(router._scene_for_context(Context.stage_one_preview()) == router.PREVIEW_SCENE, "Preview remains separate")
 	var account := Account.new()

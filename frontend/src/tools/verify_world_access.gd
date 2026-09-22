@@ -29,7 +29,7 @@ func _run() -> void:
 	player.completed_lessons.clear()
 	player.cleared_stages = {}
 	player.locked_stages = {}
-	player.mock_max_stage_cleared = 1
+	player.max_stage_cleared_by_module = {}
 	check(access.snapshot().heading == "TUTORIAL REQUIRED", "Tutorial guidance first")
 	player.tutorial_complete = true
 	var state: Dictionary = access.snapshot()
@@ -59,11 +59,11 @@ func _run() -> void:
 	check(screen._world_access.modules[1].reason.contains("coming soon"), "Future maps not mistaken for unlockable authored stages")
 	await settle()
 	await capture("ready")
-	player.cleared_stages = {1: true, 2: true}
+	player.cleared_stages = {"mod_01:1": true, "mod_01:2": true}
 	screen._refresh_world()
 	check(screen._world_access.heading == "STAGE 3 LOCKED" and screen._world_access.route == &"stage_select", "Sequential gate guidance matches actual ceiling")
-	player.mock_max_stage_cleared = 3
-	player.locked_stages = {3: true}
+	player.max_stage_cleared_by_module = {"mod_01": 3}
+	player.locked_stages = {"mod_01:3": true}
 	screen._refresh_world()
 	check(screen._world_access.explanation.contains("does not automatically clear"), "No false promise of automatic exam unlock")
 	screen._show_access()
@@ -93,7 +93,7 @@ func _run() -> void:
 	check(not screen._access_modal.visible, "Account change closes old access details")
 	player.locked_stages = {}
 	for id in range(1, 11):
-		player.cleared_stages[id] = true
+		player.cleared_stages[player.stage_progress_key("mod_01", id)] = true
 	state = access.snapshot()
 	check(state.heading == "MODULE 1 CLEARED" and state.route == &"progress", "Completion has truthful coming-soon message")
 	screen.on_exit()

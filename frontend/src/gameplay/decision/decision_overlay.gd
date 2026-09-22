@@ -27,6 +27,11 @@ const PORTRAIT_PANEL_HEIGHT := 380.0
 const SCENE_PANEL_WIDTH := 520.0
 const SCENE_PANEL_HEIGHT := 300.0
 const CHOICES_PANEL_WIDTH := 350.0
+## Upper bound on how many choice buttons this overlay ever needs to build.
+## show_threat() shows exactly threat["choices"].size() of them (3 for every
+## Module 1 stage, 4 starting with Module 2) and hides the rest — never a
+## per-module or per-count special case, just a big-enough pool.
+const MAX_CHOICE_BUTTONS := 4
 const CHOICE_MIN_HEIGHT := 84.0
 const CHOICE_PAD_Y := 34.0
 ## Matches the choice stylebox's real left+right content margin (see
@@ -284,7 +289,7 @@ func _build_stage_row() -> void:
 	stage_row.add_child(_choices_panel)
 
 	_make_choice_styles()
-	for i in 3:
+	for i in MAX_CHOICE_BUTTONS:
 		var button := Button.new()
 		button.name = "Action%d" % (i + 1)
 		button.focus_mode = Control.FOCUS_ALL

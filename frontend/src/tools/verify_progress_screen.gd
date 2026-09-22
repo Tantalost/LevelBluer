@@ -34,7 +34,7 @@ func fresh() -> void:
 	player.lesson_progress = {}
 	player.completed_lessons.clear()
 	player.locked_stages = {}
-	player.mock_max_stage_cleared = 1
+	player.max_stage_cleared_by_module = {}
 	player.credits = 123
 
 func fingerprint() -> String:
@@ -91,7 +91,7 @@ func _run() -> void:
 	auth._mastery = {"phishing": 0.25, "Smishing": 0.4, "Vishing": 0.70, "Pretexting": 0.85, "Baiting": 0.95}
 	auth._points = 1230
 	auth._completed_module_ids = ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]
-	player.cleared_stages = {1: true, 3: true}
+	player.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
 	player.lesson_progress = {"mod_01": 6, "mod_02": 3}
 	player.completed_lessons.assign(["mod_01"])
 	state = Data.snapshot()
@@ -151,7 +151,7 @@ func _run() -> void:
 	for module in state.modules:
 		player.lesson_progress[module.id] = module.total
 	for id in range(1, 11):
-		player.cleared_stages[id] = true
+		player.cleared_stages[player.stage_progress_key("mod_01", id)] = true
 	state = Data.snapshot()
 	check(state.max_rank and state.rank_value == state.rank_span, "Maximum rank full bar")
 	check(state.stage_done == 10 and state.lesson_done == 30, "Full completion")
@@ -169,12 +169,12 @@ func _run() -> void:
 		if unlocked:
 			player.completed_lessons.assign(["mod_01"])
 		for ceiling in [1, 5, 10]:
-			player.mock_max_stage_cleared = ceiling
-			player.locked_stages = {3: true}
+			player.max_stage_cleared_by_module = {"mod_01": ceiling}
+			player.locked_stages = {"mod_01:3": true}
 			for id in range(1, 11):
 				var config: Dictionary = stage_manager.get_stage_config(id)
 				var req := str(config.get("req_lesson", ""))
-				var old_rule: bool = player.is_module_deploy_unlocked("mod_01") and not config.is_empty() and id <= ceiling + 1 and (req.is_empty() or player.has_completed_lesson(req)) and not player.is_stage_locked(id)
+				var old_rule: bool = player.is_module_deploy_unlocked("mod_01") and not config.is_empty() and id <= ceiling + 1 and (req.is_empty() or player.has_completed_lesson(req)) and not player.is_stage_locked("mod_01", id)
 				check(stage_manager.access_reason(id).is_empty() == old_rule, "Shared stage access parity")
 	auth._mastery = {"Phishing": 0.25, "Smishing": 0.4, "Vishing": 0.7, "Pretexting": 0.85, "Baiting": 0.95}
 	# Render real viewport scaling with phone-landscape safe-area simulation.

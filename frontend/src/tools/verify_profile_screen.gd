@@ -71,8 +71,8 @@ func _run() -> void:
 	auth._completed_module_ids = ["mod_01"]
 	player.lesson_progress = {"mod_01": 6, "mod_02": 2}
 	player.completed_lessons.assign(["mod_01"])
-	player.cleared_stages = {1: true, 3: true}
-	player.mock_max_stage_cleared = 3
+	player.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
+	player.max_stage_cleared_by_module = {"mod_01": 3}
 	screen.on_resume()
 	await settle()
 	check(screen._dossier.next.route == &"stage_select", "Available stage gives Deploy shortcut")
@@ -123,7 +123,7 @@ func _run() -> void:
 	for module in screen._snapshot.modules:
 		player.lesson_progress[module.id] = module.total
 	for id in range(1, 11):
-		player.cleared_stages[id] = true
+		player.cleared_stages[player.stage_progress_key("mod_01", id)] = true
 	screen._refresh()
 	check(screen._snapshot.max_rank, "Commander max rank state")
 	check(screen._dossier.milestones.all(func(m: Dictionary) -> bool: return m.earned), "All milestones earned on full completion")

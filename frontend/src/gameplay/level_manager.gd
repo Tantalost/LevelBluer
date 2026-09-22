@@ -476,11 +476,12 @@ func change_phase(new_phase: GamePhase) -> void:
 			_set_start_controls_visible(false)
 			_hide_upgrade_ui()
 			var stage_id: int = Router.active_stage_index + 1
-			PlayerManager.mark_stage_cleared(stage_id)
+			var module_id: String = _current_module_id()
+			PlayerManager.mark_stage_cleared(module_id, stage_id)
 			if _decision != null:
 				PlayerManager.clear_decision_stage_state(_decision_key())
 			TaskManager.record_stage_cleared()
-			print("[Victory] Stage ", stage_id, " cleared. Max stage is now ", PlayerManager.mock_max_stage_cleared)
+			print("[Victory] Stage ", stage_id, " cleared for ", module_id, ". Max stage is now ", PlayerManager.max_stage_cleared(module_id))
 			var accuracy: float = 1.0
 			if _is_summative():
 				var exam_count: int = _exam_question_count()
@@ -710,9 +711,9 @@ func _load_stage_config() -> void:
 	current_gold = _apply_intel_bonus_gold(int(gold_stored))
 	_wave_intel_hidden = false
 	_global_patch_active = false
-	_bkt_frozen = PlayerManager.has_cleared_stage(stage_id)
+	_bkt_frozen = PlayerManager.has_cleared_stage(_current_module_id(), stage_id)
 	if _bkt_frozen:
-		print("[BKT] Stage ", stage_id, " already cleared. P(L) frozen for this replay.")
+		print("[BKT] Stage ", stage_id, " already cleared for ", _current_module_id(), ". P(L) frozen for this replay.")
 	if _is_summative():
 		_exam_deck = _build_exam_deck()
 		_exam_deck_index = 0
@@ -2388,8 +2389,8 @@ func _check_wave_cleared() -> void:
 		var accuracy: float = float(exam_questions_correct) / float(exam_count)
 		if accuracy < _exam_required_score():
 			var stage_id: int = Router.active_stage_index + 1
-			PlayerManager.lock_stage(stage_id)
-			print("[Exam] Failed after final defense. Locking Stage ", stage_id, " for remediation.")
+			PlayerManager.lock_stage(_current_module_id(), stage_id)
+			print("[Exam] Failed after final defense. Locking Stage ", stage_id, " for ", _current_module_id(), " for remediation.")
 			change_phase(GamePhase.GAME_OVER)
 		return
 	change_phase(GamePhase.VICTORY)

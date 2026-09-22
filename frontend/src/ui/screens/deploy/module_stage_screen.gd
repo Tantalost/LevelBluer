@@ -143,7 +143,7 @@ func _session_changed(_signed_in: bool) -> void:
 	_request_refresh()
 
 func _state_key() -> String:
-	return str([PlayerManager.mock_max_stage_cleared, PlayerManager.cleared_stages,
+	return str([PlayerManager.max_stage_cleared_by_module, PlayerManager.cleared_stages,
 		PlayerManager.lesson_progress, PlayerManager.completed_lessons,
 		PlayerManager.locked_stages, PlayerManager.credits])
 
@@ -206,7 +206,7 @@ func _rebuild_rows() -> void:
 		_stage_list.add_child(_label("This module's missions are still being prepared. No stages are available to deploy yet.", UI.MUTED))
 		return
 	for i in STAGE_COUNT:
-		var completed := PlayerManager.has_cleared_stage(_stage_id(i))
+		var completed := PlayerManager.has_cleared_stage(_module_id(), _stage_id(i))
 		var selected := i == _selected
 		var ink := COMPLETED_INK if completed else (_accent() if _can_play(i) else UI.MUTED)
 		var fill := (COMPLETED_SELECTED_FILL if selected else COMPLETED_FILL) if completed else (Color("203a40") if selected else Color("13232c"))
@@ -270,7 +270,7 @@ func _refresh_detail() -> void:
 	var content := UI.column(panel, 12)
 	content.add_child(_label("M%02d / %02d   —   %s" % [_module_index + 1, _selected + 1, note.eyebrow] if not config.is_empty() else "OPERATION PENDING", _accent(), -2))
 	content.add_child(_label(_stage_name(_selected) if not config.is_empty() else "OPERATIONS IN PREPARATION", UI.TEXT, 10))
-	var status_ink := COMPLETED_INK if PlayerManager.has_cleared_stage(_stage_id(_selected)) else _accent()
+	var status_ink := COMPLETED_INK if PlayerManager.has_cleared_stage(_module_id(), _stage_id(_selected)) else _accent()
 	_reason_label = _label(_status(_selected), status_ink if _can_play(_selected) else UI.GOLD, -3)
 	content.add_child(_reason_label)
 	if not _can_play(_selected):
@@ -289,7 +289,7 @@ func _refresh_detail() -> void:
 	var total := LessonCatalog.lesson_count(id)
 	content.add_child(_label("%s  /  LESSONS %d OF %d" % [str(module.get("title", "")).to_upper(), clampi(PlayerManager.get_lesson_progress(id), 0, total), total], UI.MUTED, -3))
 	_breach_button.disabled = not _can_play(_selected)
-	_breach_button.text = ("REPLAY STAGE %02d  >" if PlayerManager.has_cleared_stage(_stage_id(_selected)) else "DEPLOY STAGE %02d  >") % (_selected + 1)
+	_breach_button.text = ("REPLAY STAGE %02d  >" if PlayerManager.has_cleared_stage(_module_id(), _stage_id(_selected)) else "DEPLOY STAGE %02d  >") % (_selected + 1)
 	if _breach_button.disabled:
 		_breach_button.text = "COMING SOON" if config.is_empty() else "LOCKED / SEE REQUIREMENTS"
 
@@ -316,8 +316,8 @@ func _status(index: int) -> String:
 	if _stage_config(index).is_empty():
 		return "COMING SOON"
 	if not _is_unlocked(index):
-		return "COMPLETED / REVIEW REQUIRED" if PlayerManager.has_cleared_stage(_stage_id(index)) else "LOCKED"
-	return "COMPLETED / REPLAY AVAILABLE" if PlayerManager.has_cleared_stage(_stage_id(index)) else "AVAILABLE / READY TO DEPLOY"
+		return "COMPLETED / REVIEW REQUIRED" if PlayerManager.has_cleared_stage(_module_id(), _stage_id(index)) else "LOCKED"
+	return "COMPLETED / REPLAY AVAILABLE" if PlayerManager.has_cleared_stage(_module_id(), _stage_id(index)) else "AVAILABLE / READY TO DEPLOY"
 
 func _lock_reason(index: int) -> String:
 	if _stage_config(index).is_empty():
@@ -357,6 +357,9 @@ func _stage_name(index: int) -> String:
 func _module_entry() -> Dictionary:
 	return _modules[_module_index] if _module_index >= 0 and _module_index < _modules.size() else {}
 
+func _module_id() -> String:
+	return str(_module_entry().get("id", ""))
+
 func _accent() -> Color:
 	return ACCENTS[_module_index]
 
@@ -370,6 +373,6 @@ func _authored_count() -> int:
 func _cleared_count() -> int:
 	var total := 0
 	for i in STAGE_COUNT:
-		if not _stage_config(i).is_empty() and PlayerManager.has_cleared_stage(_stage_id(i)):
+		if not _stage_config(i).is_empty() and PlayerManager.has_cleared_stage(_module_id(), _stage_id(i)):
 			total += 1
 	return total

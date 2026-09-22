@@ -334,7 +334,7 @@ func _fill_access() -> void:
 	_access_body.add_child(StudyUI.label("MODULE 1 / STAGE ACCESS", 28, StudyUI.TEAL))
 	for stage in _world_access.stages:
 		var note := str(stage.reason) if stage.status == "LOCKED" else ("Stage cleared. Replay available." if stage.done else "Choose this stage in Deploy.")
-		if stage.status == "LOCKED" and PlayerManager.is_stage_locked(int(stage.id)):
+		if stage.status == "LOCKED" and PlayerManager.is_stage_locked("mod_01", int(stage.id)):
 			note += " Review does not automatically remove the recorded exam lock."
 		_access_body.add_child(StudyUI.label("%s / %s\n%s" % [stage.title, stage.status, note], 28, StudyUI.GOLD if stage.status == "LOCKED" else StudyUI.MUTED))
 	_access_action.text = str(_world_access.action)
@@ -351,7 +351,7 @@ func _access_missions() -> void:
 
 func _refresh_updates() -> void:
 	_updates_title.text = "FIELD PROGRESS"
-	var stage_cleared: int = clampi(PlayerManager.mock_max_stage_cleared, 0, STAGE_TOTAL)
+	var stage_cleared: int = clampi(PlayerManager.max_stage_cleared("mod_01"), 0, STAGE_TOTAL)
 	var lesson_done: int = LessonCatalog.completed_units()
 	var lesson_total: int = LessonCatalog.total_units()
 	_updates_body.text = "STAGE %d/%d    /    LESSONS %d/%d" % [stage_cleared, STAGE_TOTAL, lesson_done, lesson_total]

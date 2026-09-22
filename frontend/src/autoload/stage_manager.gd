@@ -13,11 +13,11 @@ func access_reason(stage_id: int, module_id: String = "mod_01") -> String:
 		return "Complete this module's lessons to unlock deployment."
 	if stage_id <= 0 or get_stage_config(stage_id).is_empty():
 		return "Coming soon: this stage has not been authored."
-	if stage_id > PlayerManager.mock_max_stage_cleared + 1:
+	if stage_id > PlayerManager.max_stage_cleared(module_id) + 1:
 		return "Clear the preceding stages first."
 	var requirement := str(get_stage_config(stage_id).get("req_lesson", ""))
 	if not requirement.is_empty() and not PlayerManager.has_completed_lesson(requirement):
 		return "Complete the required lesson before deploying."
-	if PlayerManager.is_stage_locked(stage_id):
+	if PlayerManager.is_stage_locked(module_id, stage_id):
 		return "Review the required material to clear this exam lock."
 	return ""

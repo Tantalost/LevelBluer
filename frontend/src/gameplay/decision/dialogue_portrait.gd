@@ -44,6 +44,12 @@ func _draw() -> void:
 	elif speaker == "Mia":
 		coat = Color("487e77")
 		hair = Color("394153")
+	elif speaker == "Leah":
+		# Leah is not a BlueTech employee: a warm, non-corporate palette keeps
+		# her visually distinct from Mia/Ramon's teal-and-slate work attire.
+		skin = Color("dab48f")
+		coat = Color("b1543f")
+		hair = Color("4a2e22")
 	if not speaking:
 		skin = skin.darkened(0.4)
 		coat = coat.darkened(0.4)
@@ -64,6 +70,11 @@ func _draw() -> void:
 	elif speaker.begins_with("Ramon"):
 		draw_rect(Rect2(16, 17, 8, 6), ink, false, 1)
 		draw_rect(Rect2(25, 17, 8, 6), ink, false, 1)
+	elif speaker == "Leah":
+		# Long hair on both sides — a clearly different silhouette from
+		# Mia's single-side hair and Ramon's glasses.
+		draw_rect(Rect2(11, 15, 5, 21), hair)
+		draw_rect(Rect2(32, 15, 5, 21), hair)
 	else:
 		draw_rect(Rect2(12, 17, 4, 9), ink)
 		draw_line(Vector2(14, 25), Vector2(20, 28), ink, 2)

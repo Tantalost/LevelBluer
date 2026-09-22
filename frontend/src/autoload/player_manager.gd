@@ -23,6 +23,9 @@ var mastery_matrix: Dictionary = {
 	"phishing": DEFAULT_MASTERY,
 }
 var unlocked_skills: Array[String] = []
+## Both keyed by the canonical "module_id:stage_id" string (see
+## stage_progress_key()) — e.g. "mod_01:1" and "mod_02:1" never collide.
+## Never key either of these by raw stage number alone.
 var locked_stages: Dictionary = {}
 var cleared_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
@@ -31,7 +34,10 @@ var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
 var tech_ranks: Dictionary = {}
 var has_stateful_inspection: bool = false
-var mock_max_stage_cleared: int = 1
+## Per-module progression ceiling: max_stage_cleared_by_module["mod_01"] is
+## the highest stage cleared in Module 1, independent of every other module.
+## Absent means "no clears recorded yet" — see max_stage_cleared().
+var max_stage_cleared_by_module: Dictionary = {}
 var credits: int = 0
 var module_1_complete: bool = false
 var seen_module_intros: Array[String] = []
@@ -207,7 +213,7 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 
 
 func reset_to_defaults() -> void:
-	mock_max_stage_cleared = 1
+	max_stage_cleared_by_module.clear()
 	credits = 0
 	locked_stages.clear()
 	cleared_stages.clear()
@@ -337,20 +343,38 @@ func _save_progress() -> void:
 	SaveService.save_game()
 
 
-func lock_stage(stage_id: int) -> void:
-	if stage_id <= 0:
+## Canonical identity for stage-progression state (cleared/locked/ceiling).
+## Use this everywhere instead of rebuilding the string manually, and never
+## represent a stage's completion/lock state by raw stage number alone —
+## mod_01:1 and mod_02:1 must never collide.
+static func stage_progress_key(module_id: String, stage_id: int) -> String:
+	return "%s:%d" % [module_id.strip_edges(), stage_id]
+
+
+## Highest stage cleared within module_id, independent of every other
+## module. Defaults to 1 (no clears yet) — the same baseline every module
+## has always started from, now scoped per module instead of shared.
+func max_stage_cleared(module_id: String) -> int:
+	var mid: String = module_id.strip_edges()
+	if mid.is_empty() or not max_stage_cleared_by_module.has(mid):
+		return 1
+	return int(max_stage_cleared_by_module[mid])
+
+
+func lock_stage(module_id: String, stage_id: int) -> void:
+	if stage_id <= 0 or module_id.strip_edges().is_empty():
 		return
-	locked_stages[stage_id] = true
+	locked_stages[stage_progress_key(module_id, stage_id)] = true
 	SaveService.save_game()
 
 
-func unlock_stage(stage_id: int) -> void:
-	locked_stages.erase(stage_id)
+func unlock_stage(module_id: String, stage_id: int) -> void:
+	locked_stages.erase(stage_progress_key(module_id, stage_id))
 	SaveService.save_game()
 
 
-func is_stage_locked(stage_id: int) -> bool:
-	return locked_stages.has(stage_id)
+func is_stage_locked(module_id: String, stage_id: int) -> bool:
+	return locked_stages.has(stage_progress_key(module_id, stage_id))
 
 
 func owns_store_item(item_id: String) -> bool:
@@ -416,18 +440,19 @@ func mark_tutorial_complete() -> void:
 	SaveService.save_game()
 
 
-func mark_stage_cleared(stage_id: int) -> void:
-	if stage_id <= 0:
+func mark_stage_cleared(module_id: String, stage_id: int) -> void:
+	var mid: String = module_id.strip_edges()
+	if stage_id <= 0 or mid.is_empty():
 		return
-	mock_max_stage_cleared = maxi(mock_max_stage_cleared, stage_id)
-	cleared_stages[stage_id] = true
+	max_stage_cleared_by_module[mid] = maxi(max_stage_cleared(mid), stage_id)
+	cleared_stages[stage_progress_key(mid, stage_id)] = true
 	SaveService.save_game()
 
 
-func has_cleared_stage(stage_id: int) -> bool:
+func has_cleared_stage(module_id: String, stage_id: int) -> bool:
 	if stage_id <= 0:
 		return false
-	return cleared_stages.has(stage_id)
+	return cleared_stages.has(stage_progress_key(module_id, stage_id))
 
 
 func get_weakest_skill() -> String:
@@ -655,7 +680,12 @@ func _posterior(p_learned: float, is_correct: bool, p_guess: float = P_GUESS, p_
 
 func get_save_data() -> Dictionary:
 	return {
-		"mock_max_stage_cleared": mock_max_stage_cleared,
+		"max_stage_cleared_by_module": max_stage_cleared_by_module.duplicate(true),
+		# Legacy field kept for older clients/detection only (see
+		# SaveService._looks_like_save()); it mirrors Module 1's own ceiling,
+		# since Module 1 was the sole module with real stage content when
+		# this field was the single source of truth.
+		"mock_max_stage_cleared": max_stage_cleared("mod_01"),
 		"mastery_matrix": mastery_matrix.duplicate(true),
 		"locked_stages": locked_stages.duplicate(true),
 		"cleared_stages": cleared_stages.keys(),
@@ -679,8 +709,19 @@ func get_save_data() -> Dictionary:
 
 
 func apply_save_data(data: Dictionary) -> void:
-	if data.has("mock_max_stage_cleared"):
-		mock_max_stage_cleared = int(data["mock_max_stage_cleared"])
+	max_stage_cleared_by_module.clear()
+	if data.has("max_stage_cleared_by_module") and typeof(data["max_stage_cleared_by_module"]) == TYPE_DICTIONARY:
+		var saved_ceilings: Dictionary = data["max_stage_cleared_by_module"] as Dictionary
+		var ceiling_keys: Array = saved_ceilings.keys()
+		for i in ceiling_keys.size():
+			var mid: String = str(ceiling_keys[i]).strip_edges()
+			if not mid.is_empty():
+				max_stage_cleared_by_module[mid] = maxi(1, int(saved_ceilings[ceiling_keys[i]]))
+	elif data.has("mock_max_stage_cleared"):
+		# Legacy global counter only ever tracked Module 1 — the sole module
+		# with real stage content before Module 2 existed — so it migrates
+		# there rather than being guessed at for any other module.
+		max_stage_cleared_by_module["mod_01"] = maxi(1, int(data["mock_max_stage_cleared"]))
 
 	if data.has("mastery_matrix") and typeof(data["mastery_matrix"]) == TYPE_DICTIONARY:
 		var saved_matrix: Dictionary = data["mastery_matrix"] as Dictionary
@@ -691,19 +732,16 @@ func apply_save_data(data: Dictionary) -> void:
 				continue
 			mastery_matrix[skill_id] = float(saved_matrix[matrix_keys[i]])
 
-	if data.has("locked_stages") and typeof(data["locked_stages"]) == TYPE_DICTIONARY:
-		var saved_locks: Dictionary = data["locked_stages"] as Dictionary
-		locked_stages.clear()
-		var lock_keys: Array = saved_locks.keys()
-		for i in lock_keys.size():
-			locked_stages[int(lock_keys[i])] = true
+	locked_stages.clear()
+	if data.has("locked_stages"):
+		_ingest_stage_progress_set(data["locked_stages"], locked_stages)
 
 	cleared_stages.clear()
 	if data.has("cleared_stages"):
-		_ingest_cleared_stages(data["cleared_stages"])
-	elif mock_max_stage_cleared > 1:
-		for stage_n in range(1, mock_max_stage_cleared + 1):
-			cleared_stages[stage_n] = true
+		_ingest_stage_progress_set(data["cleared_stages"], cleared_stages)
+	elif max_stage_cleared("mod_01") > 1:
+		for stage_n in range(1, max_stage_cleared("mod_01") + 1):
+			cleared_stages[stage_progress_key("mod_01", stage_n)] = true
 
 	if data.has("completed_lessons") and typeof(data["completed_lessons"]) == TYPE_ARRAY:
 		var saved_lessons: Array = data["completed_lessons"] as Array
@@ -819,26 +857,50 @@ func apply_save_data(data: Dictionary) -> void:
 	decision_stage_state = _normalize_decision_state(data.get("decision_stage_state", {}))
 
 	if module_1_complete:
-		cleared_stages[10] = true
+		cleared_stages[stage_progress_key("mod_01", 10)] = true
 	_normalize_mastery_keys()
 
 
-func _ingest_cleared_stages(raw: Variant) -> void:
+## Normalizes either representation of a stage-progress set (cleared_stages
+## or locked_stages) into module-scoped keys. Accepts already-canonical
+## "module_id:stage_id" strings unchanged (idempotent — re-ingesting a
+## normalized save reproduces the identical set, no duplicates) and migrates
+## legacy raw stage numbers (int, float, or a bare numeric string) into
+## Module 1, the only module with real stage content before Module 2 existed.
+func _ingest_stage_progress_set(raw: Variant, target: Dictionary) -> void:
+	var entries: Array = []
 	if typeof(raw) == TYPE_ARRAY:
-		var rows: Array = raw as Array
-		for i in rows.size():
-			var stage_id: int = int(rows[i])
-			if stage_id > 0:
-				cleared_stages[stage_id] = true
+		entries = raw as Array
+	elif typeof(raw) == TYPE_DICTIONARY:
+		entries = (raw as Dictionary).keys()
+	else:
 		return
-	if typeof(raw) != TYPE_DICTIONARY:
-		return
-	var stored: Dictionary = raw as Dictionary
-	var keys: Array = stored.keys()
-	for i in keys.size():
-		var stage_id: int = int(keys[i])
-		if stage_id > 0:
-			cleared_stages[stage_id] = true
+	for i in entries.size():
+		var key: String = _normalize_stage_progress_key(entries[i])
+		if not key.is_empty():
+			target[key] = true
+
+
+func _normalize_stage_progress_key(entry: Variant) -> String:
+	if typeof(entry) == TYPE_INT or typeof(entry) == TYPE_FLOAT:
+		var stage_id: int = int(entry)
+		return stage_progress_key("mod_01", stage_id) if stage_id > 0 else ""
+	if typeof(entry) != TYPE_STRING and typeof(entry) != TYPE_STRING_NAME:
+		return ""
+	var text: String = str(entry).strip_edges()
+	if text.is_empty():
+		return ""
+	var colon: int = text.find(":")
+	if colon > 0:
+		var module_part: String = text.substr(0, colon).strip_edges()
+		var stage_part: String = text.substr(colon + 1).strip_edges()
+		if not module_part.is_empty() and stage_part.is_valid_int() and int(stage_part) > 0:
+			return stage_progress_key(module_part, int(stage_part))
+		return ""
+	if text.is_valid_int():
+		var legacy_id: int = int(text)
+		return stage_progress_key("mod_01", legacy_id) if legacy_id > 0 else ""
+	return ""
 
 
 func _normalize_mastery_keys() -> void:

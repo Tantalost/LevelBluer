@@ -25,8 +25,8 @@ static func snapshot() -> Dictionary:
 		var config := StageManager.get_stage_config(id)
 		if config.is_empty():
 			continue
-		var done := PlayerManager.has_cleared_stage(id)
-		var reason := StageManager.access_reason(id)
+		var done := PlayerManager.has_cleared_stage("mod_01", id)
+		var reason := StageManager.access_reason(id, "mod_01")
 		if done:
 			cleared += 1
 		stages.append({"id": id, "name": str(config.get("name", "Stage %d" % id)), "done": done,

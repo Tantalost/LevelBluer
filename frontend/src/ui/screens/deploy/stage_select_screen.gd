@@ -213,7 +213,7 @@ func _build_detail() -> void:
 	if _selected == 0:
 		var clears := 0
 		for stage_id in range(1, 11):
-			if PlayerManager.has_cleared_stage(stage_id):
+			if PlayerManager.has_cleared_stage("mod_01", stage_id):
 				clears += 1
 		content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
 	else:

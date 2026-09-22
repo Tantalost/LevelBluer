@@ -19,8 +19,8 @@ static func snapshot() -> Dictionary:
 		var config := StageManager.get_stage_config(id)
 		if config.is_empty():
 			continue
-		var reason := StageManager.access_reason(id)
-		var done := PlayerManager.has_cleared_stage(id)
+		var reason := StageManager.access_reason(id, "mod_01")
+		var done := PlayerManager.has_cleared_stage("mod_01", id)
 		# A completed stage may still have a replay lock; do not hide that restriction.
 		var status := "LOCKED" if not reason.is_empty() else ("CLEARED" if done else "AVAILABLE")
 		var row := {"id": id, "title": "STAGE %d / %s" % [id, config.get("name", "")], "status": status, "done": done, "reason": reason}
@@ -44,11 +44,11 @@ static func snapshot() -> Dictionary:
 	elif next.status == "LOCKED":
 		var explanation := str(next.reason)
 		var short := "Open briefing\nfor requirements"
-		if int(next.id) > PlayerManager.mock_max_stage_cleared + 1:
+		if int(next.id) > PlayerManager.max_stage_cleared("mod_01") + 1:
 			short = "Clear preceding\nstages in DEPLOY"
 			result.route = &"stage_select"
 			result.action = "OPEN DEPLOY"
-		elif PlayerManager.is_stage_locked(int(next.id)):
+		elif PlayerManager.is_stage_locked("mod_01", int(next.id)):
 			short = "Review lessons\nExam lock active"
 			explanation = "An exam lock is active. Review the required material in Lessons. The current game does not automatically clear this recorded lock when you review."
 		result.merge({"heading": "STAGE %d LOCKED" % next.id, "short": short, "explanation": str(next.title) + "\n" + explanation})
