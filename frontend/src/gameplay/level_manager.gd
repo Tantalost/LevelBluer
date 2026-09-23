@@ -2623,6 +2623,16 @@ func _decision_header() -> String:
 	return "%s  //  SECURITY DESK" % company.to_upper()
 
 
+## Read-only snapshot for reactive dialogue's condition checks (see
+## DecisionScenarios.condition_met) — re-read fresh at every dialogue/
+## story_event call site rather than cached, so a memory committed mid-scene
+## (e.g. a RISKY TD win) is visible to whatever's shown right after it.
+## Mirrors stage_one_live.gd's own _memory() exactly — one implementation,
+## read by both engines.
+func _decision_memory() -> Dictionary:
+	return PlayerManager.get_story_memory_snapshot()
+
+
 func _begin_decision_stage() -> void:
 	change_phase(GamePhase.PRE_MATCH)
 	var module_id: String = _current_module_id()
@@ -2678,7 +2688,7 @@ func _show_decision_story(key: String, next: Callable, continue_text: String = "
 	if _decision_overlay == null:
 		next.call()
 		return
-	var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(_decision_stage, key)
+	var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(_decision_stage, key, _decision_memory())
 	if lines.is_empty():
 		next.call()
 		return
@@ -2733,7 +2743,8 @@ func _show_decision_threat() -> void:
 	_save_decision_checkpoint()
 	_decision_overlay.visible = true
 	_apply_decision_presentation()
-	_decision_overlay.show_threat(display_threat, _decision.current_threat_number(), _decision.total_threats(), _decision_header())
+	var threat_lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(threat, "story", _decision_memory())
+	_decision_overlay.show_threat(display_threat, threat_lines, _decision.current_threat_number(), _decision.total_threats(), _decision_header())
 	print("[DECISION] threat=%s (%d/%d) security=%s" % [
 		str(threat.get("id", "")), _decision.current_threat_number(), _decision.total_threats(), _decision.security_state,
 	])
@@ -2761,6 +2772,8 @@ func _on_decision_choice_selected(choice_index: int) -> void:
 		str(threat.get("explanation", "")),
 		_decision_header(),
 		continue_text,
+		"",
+		DecisionScenarios.story_event_lines(choice, _decision_memory()),
 	)
 
 
@@ -2777,6 +2790,19 @@ func _on_decision_consequence_continued() -> void:
 	var outcome: String = str(result.get("outcome", ""))
 	var skill_id: String = _decision_skill()
 	_record_bkt(skill_id, bool(result.get("bkt_correct", false)))
+	# Story memory follows the SAME "canonical resolution" rule as BKT just
+	# above: SAFE resolves the incident right here, so its memory commits
+	# now. RISKY only reaches a canonical resolution once its breach is
+	# actually won (see _on_decision_breach_cleared()/DecisionStageController.
+	# contain_breach()) — commit() has already stashed it in
+	# pending_breach_memory for that moment. CRITICAL never resolves the
+	# incident at all (Game Over rewinds it), so its memory is never written.
+	# Mirrors stage_one_live.gd's _commit_decision() exactly — one
+	# implementation of the timing rule, applied by both engines.
+	if outcome == DecisionScenarios.OUTCOME_SAFE:
+		var memory: Dictionary = result.get("memory", {}) as Dictionary
+		if not memory.is_empty():
+			PlayerManager.set_story_memories(memory)
 	_save_decision_checkpoint()
 	print("[DECISION] commit threat=%s outcome=%s bkt_skill=%s bkt_correct=%s P(L)=%.2f flow=%s" % [
 		str((result.get("threat", {}) as Dictionary).get("id", "")), outcome, skill_id,
@@ -2968,7 +2994,12 @@ func _on_decision_breach_cleared() -> void:
 		return
 	var threat: Dictionary = _decision.current_threat()
 	var system_name: String = _decision_affected_system(threat)
-	_decision.contain_breach()
+	# The RISKY choice's incident has just canonically resolved (contained,
+	# not abandoned) — this is the one moment its pending story memory (see
+	# DecisionStageController.pending_breach_memory) is actually written.
+	var memory: Dictionary = _decision.contain_breach()
+	if not memory.is_empty():
+		PlayerManager.set_story_memories(memory)
 	_save_decision_checkpoint()
 	print("[DECISION] breach contained threat=%s resolved=%d/%d flow=%s" % [
 		str(threat.get("id", "")), _decision.resolved_threats, _decision.total_threats(), _decision.flow_state,
@@ -3008,7 +3039,7 @@ func _show_decision_finale_victory() -> void:
 		return
 	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
 	var banner: String = str(finale.get("victory_banner", "CONTAINMENT COMPLETE"))
-	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "ending")
+	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "ending", _decision_memory())
 	if _decision_overlay == null or lines.is_empty():
 		_show_decision_case_summary()
 		return
@@ -3047,7 +3078,7 @@ func _show_decision_finale_closing() -> void:
 		return
 	var finale: Dictionary = _decision_stage.get("finale", {}) as Dictionary
 	var banner: String = str(finale.get("complete_banner", ""))
-	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "closing")
+	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "closing", _decision_memory())
 	if _decision_overlay == null or lines.is_empty():
 		_finish_decision_stage()
 		return

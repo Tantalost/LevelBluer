@@ -41,6 +41,16 @@ var pending_choice_index: int = -1
 var pending_outcome: String = ""
 var pending_choice: Dictionary = {}
 var pending_committed: bool = false
+## A committed RISKY choice's authored story memory (see DecisionScenarios.
+## choice_memory), held here rather than written immediately: the incident
+## hasn't canonically resolved yet, only reached the breach — see
+## contain_breach()/fail_breach(). Persisted through checkpoint_state()/
+## restore() so a save/reload mid-breach still commits the right memory on a
+## later TD win, and discarded outright on a TD loss/retry — an abandoned
+## RISKY attempt must never be remembered. Never set for SAFE (which commits
+## its own memory immediately at the caller's canonical-resolution point) or
+## CRITICAL (which never resolves the incident at all).
+var pending_breach_memory: Dictionary = {}
 var retry_checkpoint: Dictionary = {}
 ## This attempt's choice presentation order, as original decision_scenarios
 ## indices (display_order[shown_slot] == original_choice_index). Generated
@@ -72,6 +82,7 @@ func reset_progress() -> void:
 	fail_tip = ""
 	finale_won = false
 	_clear_pending()
+	pending_breach_memory.clear()
 	display_order.clear()
 	capture_retry_checkpoint()
 
@@ -229,6 +240,38 @@ func choose(choice_index: int) -> Dictionary:
 	}
 
 
+## Resolves a countdown timeout: stages the deterministically AUTHORED
+## choice matching `outcome` — always the same original (pre-shuffle)
+## choice for a given threat, regardless of which slot it currently
+## displays in — exactly the same pending/commit path a manual choose()
+## would use. Never a randomly/shuffle-dependent pick. Returns {} only if
+## this threat has no choice with that outcome (a data-authoring error) or
+## a choice is already pending/committed.
+func choose_by_outcome(outcome: String) -> Dictionary:
+	if stage_failed or flow_state != FLOW_THREAT or pending_committed:
+		return {}
+	var threat: Dictionary = current_threat()
+	if threat.is_empty():
+		return {}
+	var choices: Array = threat.get("choices", []) as Array
+	for original_index in choices.size():
+		if DecisionScenarios.choice_outcome(threat, original_index) != outcome:
+			continue
+		var choice: Dictionary = (choices[original_index] as Dictionary).duplicate(true)
+		pending_choice_index = original_index
+		pending_outcome = outcome
+		pending_choice = choice
+		last_outcome = outcome
+		return {
+			"outcome": outcome,
+			"choice": choice,
+			"threat": threat.duplicate(true),
+			"threat_index": threat_index,
+			"committed": false,
+		}
+	return {}
+
+
 ## Commits the pending choice exactly once. SAFE/RISKY/CRITICAL side effects
 ## apply here; callers should then update BKT and persist the checkpoint.
 func commit() -> Dictionary:
@@ -236,6 +279,7 @@ func commit() -> Dictionary:
 		return {}
 	pending_committed = true
 	var outcome: String = pending_outcome
+	var memory: Dictionary = DecisionScenarios.choice_memory(pending_choice)
 	var record: Dictionary = {
 		"outcome": outcome,
 		"choice": pending_choice.duplicate(true),
@@ -243,11 +287,17 @@ func commit() -> Dictionary:
 		"threat_index": threat_index,
 		"bkt_correct": outcome == DecisionScenarios.OUTCOME_SAFE,
 		"committed": true,
+		# Story memory this choice would write once the incident canonically
+		# resolves — the caller applies this immediately for SAFE (resolved
+		# right here) but must NOT apply it for RISKY (see
+		# pending_breach_memory/contain_breach()) or CRITICAL (never resolves).
+		"memory": memory,
 	}
 	match outcome:
 		DecisionScenarios.OUTCOME_RISKY:
 			in_breach = true
 			flow_state = FLOW_BREACH
+			pending_breach_memory = memory
 		DecisionScenarios.OUTCOME_CRITICAL:
 			in_breach = false
 			stage_failed = true
@@ -288,22 +338,33 @@ func resolve_current() -> void:
 
 
 ## Tower Defense win during a RISKY breach. Elevates security only after the
-## containment succeeds, then advances.
-func contain_breach() -> void:
+## containment succeeds, then advances. Returns the RISKY choice's pending
+## story memory (see pending_breach_memory) for the caller to persist NOW —
+## this is the incident's canonical resolution point for a RISKY attempt.
+## Empty when the choice authored no memory, exactly like every choice
+## before this system existed.
+func contain_breach() -> Dictionary:
 	if flow_state != FLOW_BREACH:
-		return
+		return {}
 	if security_state == STATE_NOMINAL:
 		security_state = STATE_ELEVATED
+	var memory: Dictionary = pending_breach_memory.duplicate(true)
+	pending_breach_memory.clear()
 	resolve_current()
+	return memory
 
 
 ## Tower Defense loss during a RISKY breach. Failure flags are session-only;
-## the persisted security state stays at the pre-attempt value.
+## the persisted security state stays at the pre-attempt value. The pending
+## RISKY choice's story memory is discarded outright — an abandoned attempt
+## must never be remembered; only a retry's eventual canonical choice can
+## commit memory for this incident.
 func fail_breach() -> void:
 	in_breach = false
 	stage_failed = true
 	last_failure_critical = false
 	flow_state = FLOW_THREAT
+	pending_breach_memory.clear()
 	_clear_pending()
 	# A retry is a new attempt: it must not inherit this failed attempt's
 	# display order from the persisted checkpoint.
@@ -369,6 +430,11 @@ func checkpoint_state() -> Dictionary:
 		"security_state": _persisted_security(),
 		"safe_count": safe_count,
 		"finale_won": finale_won,
+		# Only ever non-empty while flow_state is BREACH (see commit()'s RISKY
+		# branch/contain_breach()/fail_breach()) — lets a save/reload during a
+		# pending RISKY breach still commit the right memory on a later TD
+		# win, per the milestone's own "save during pending RISKY" rule.
+		"pending_breach_memory": pending_breach_memory.duplicate(true),
 		"retry_checkpoint": retry_checkpoint.duplicate(true),
 		# Only ever non-empty while flow_state is THREAT and the attempt is
 		# still unresolved (see resolve_current()/fail_breach()/commit()'s
@@ -408,6 +474,7 @@ func restore(state: Dictionary) -> bool:
 		in_breach = false
 		safe_count = clampi(safe_count, 0, total_threats())
 		display_order.clear()
+		pending_breach_memory.clear()
 		_prepare_retry()
 		flow_state = flow
 		return true
@@ -421,6 +488,14 @@ func restore(state: Dictionary) -> bool:
 	flow_state = FLOW_BREACH if flow == FLOW_BREACH or stored_breach else FLOW_THREAT
 	in_breach = flow_state == FLOW_BREACH
 	safe_count = clampi(safe_count, 0, resolved)
+	# Tied to the RESULTING flow_state, not blindly trusted from the incoming
+	# dict — a breach reopened as a plain THREAT review (see
+	# stage_one_live.gd's _configure_match()) is a fresh re-choice, so any
+	# old pending memory correctly never survives into it.
+	if flow_state == FLOW_BREACH and state.has("pending_breach_memory") and typeof(state["pending_breach_memory"]) == TYPE_DICTIONARY:
+		pending_breach_memory = (state["pending_breach_memory"] as Dictionary).duplicate(true)
+	else:
+		pending_breach_memory.clear()
 	if state.has("retry_checkpoint") and typeof(state["retry_checkpoint"]) == TYPE_DICTIONARY and not (state["retry_checkpoint"] as Dictionary).is_empty():
 		retry_checkpoint = (state["retry_checkpoint"] as Dictionary).duplicate(true)
 	else:

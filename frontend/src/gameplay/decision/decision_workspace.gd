@@ -5,14 +5,28 @@ signal story_continued
 signal choice_selected(index: int)
 signal consequence_continued
 signal decision_ready
+signal end_call_requested
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Portrait = preload("res://src/gameplay/decision/dialogue_portrait.gd")
+const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
+const ScreenShake = preload("res://src/gameplay/decision/dialogue_screen_shake.gd")
+const CallPanel = preload("res://src/gameplay/decision/decision_call_panel.gd")
+const InvestigationPanel = preload("res://src/gameplay/decision/decision_investigation_panel.gd")
 # Future art can be assigned by exact authored speaker name, without changing story data.
 var portrait_textures: Dictionary = {}
 var _lines: Array[Dictionary] = []
 var _line_index := 0
 var _typing := false
 var _revealed := 0.0
+## Skip-safe hold (see DialogueEmotion.pause_before) before a line's typing
+## actually starts revealing characters. A tap/click during it still jumps
+## straight to the full line, same as skipping mid-type.
+var _pause_remaining := 0.0
+var _typing_speed := 1.0
+## The previous line's emotion, so a screen shake (angry/shocked) only fires
+## on the leading edge of a run of same-emotion lines — see
+## DialogueEmotion.shake_profile and the restraint rule in _apply_line_emotion_fx().
+var _previous_line_emotion: String = Emotion.NEUTRAL
 var _dialogue_done := true
 var _caption := "CONTINUE"
 var _speaker_label: Label
@@ -33,6 +47,26 @@ var _review_content: VBoxContainer
 var _timer_row: HBoxContainer
 var _timer_text: Label
 var _timer_bar: ProgressBar
+## Set by the caller (see set_decision_timer_visible()) once per threat —
+## true only when THIS threat has an authored, enabled timer. Reset to
+## false by _reset() so a countdown from one threat can never bleed into
+## the next screen's default presentation.
+var _timer_visible_for_threat := false
+var _call_panel: Control
+## Non-empty only while a threat's authored investigation (see
+## DecisionScenarios.has_investigation) is still pending — cleared the
+## moment it resolves, which doubles as the single source of truth for
+## _refresh_controls()'s "are choices actionable yet" gate (see
+## _open_decision()/_on_investigation_resolved()). Reset to {} by _reset()
+## so one threat's investigation can never bleed into the next screen.
+var _investigation_config: Dictionary = {}
+## Optional narrative beat, already resolved by the caller (see
+## DecisionScenarios.investigation_resolved_story_event_lines), shown right
+## after the investigation confirms and before choices become actionable —
+## reuses the exact same dialogue reader as everything else, never a new
+## consequence/event system.
+var _investigation_followup_lines: Array[Dictionary] = []
+var _investigation_panel: Control
 var _evidence: Control
 var _choice_hint: Label
 var _mode: StringName = &"story"
@@ -60,6 +94,10 @@ func _ready() -> void:
 	_review_button = UI.button("DIALOGUE REVIEW", _open_review)
 	_review_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	top.add_child(_review_button)
+	_call_panel = CallPanel.new()
+	layout.add_child(_call_panel)
+	_call_panel.end_call_requested.connect(func() -> void: end_call_requested.emit())
+	_call_panel.hide()
 	_timer_row = HBoxContainer.new()
 	_timer_row.add_theme_constant_override("separation", 16)
 	layout.add_child(_timer_row)
@@ -74,6 +112,10 @@ func _ready() -> void:
 	_timer_bar.add_theme_stylebox_override("background", UI.box(UI.BG, UI.BG, 0))
 	_timer_bar.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
 	_timer_row.add_child(_timer_bar)
+	_investigation_panel = InvestigationPanel.new()
+	layout.add_child(_investigation_panel)
+	_investigation_panel.investigation_resolved.connect(_on_investigation_resolved)
+	_investigation_panel.hide()
 	var columns := HBoxContainer.new()
 	columns.size_flags_vertical = SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 24)
@@ -108,9 +150,17 @@ func _reset(mode: StringName, header: String, caption: String) -> void:
 	_review_open = false
 	_review_panel.hide()
 	_timer_row.hide()
+	_timer_visible_for_threat = false
+	_call_panel.hide()
+	_investigation_panel.hide()
+	_investigation_config = {}
+	_investigation_followup_lines = []
 	_lines.clear()
 	_line_index = 0
 	_typing = false
+	_pause_remaining = 0.0
+	_typing_speed = 1.0
+	_previous_line_emotion = Emotion.NEUTRAL
 	_dialogue_done = true
 	_caption = caption
 	_speech = null
@@ -190,24 +240,49 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 func _show_line() -> void:
 	var line := _lines[_line_index]
 	var who := str(line.get("speaker", ""))
+	var line_emotion := Emotion.of(line)
 	_speaker_label.text = who.to_upper() if not who.is_empty() else "SCENE"
 	_line_counter.text = "%d / %d" % [_line_index + 1, _lines.size()]
 	_speech.text = str(line.get("text", ""))
 	_speech.visible_characters = 0
 	_revealed = 0
+	_typing_speed = Emotion.typing_speed(line_emotion)
+	_pause_remaining = Emotion.pause_before(line_emotion)
 	_line_recorded = false
 	_typing = not _speech.text.is_empty()
 	if not who.is_empty() and who not in _cast:
 		_cast[1] = who
 	_update_portraits()
 	_refresh_controls()
+	_apply_line_emotion_fx(line_emotion)
+
+## Screen-level emotion FX (see DialogueEmotion.shake_profile) fire exactly
+## once here, at the moment a new line begins — never repeated by the
+## _update_portraits() calls that follow later for the same line (typing
+## finishing, dialogue review open/close). Restraint rule: a shake only
+## fires on the LEADING EDGE of a run of same-emotion lines — consecutive
+## angry/shocked lines don't each re-shake, but leaving and later
+## re-entering angry/shocked (even later in the same block) can trigger it
+## again, since that's a genuinely new emotional beat.
+func _apply_line_emotion_fx(line_emotion: String) -> void:
+	# Only a genuine transition triggers a shake. Repeating the same emotion
+	# deliberately does nothing here (not even a cancel) — any prior shake
+	# from this same beat is short enough to have already finished in
+	# practice, and the NEXT real transition (to any other emotion) always
+	# cancels stale state first via ScreenShake.apply()'s own cancel() call,
+	# so nothing can leak or accumulate either way.
+	if line_emotion != _previous_line_emotion:
+		ScreenShake.apply(_window, line_emotion)
+	_previous_line_emotion = line_emotion
 
 func _update_portraits() -> void:
-	var who := str(_lines[_line_index].get("speaker", ""))
+	var line := _lines[_line_index]
+	var who := str(line.get("speaker", ""))
+	var line_emotion := Emotion.of(line)
 	for i in _portraits.size():
 		_portraits[i].get_parent().visible = who == _cast[i]
 		_portraits[i].portrait_texture = portrait_textures.get(_cast[i])
-		_portraits[i].configure(_cast[i], who == _cast[i], who == _cast[i] and _typing and not _locked and not _review_open)
+		_portraits[i].configure(_cast[i], who == _cast[i], who == _cast[i] and _typing and not _locked and not _review_open, line_emotion)
 		_portrait_names[i].text = _cast[i]
 		_portrait_names[i].add_theme_color_override("font_color", UI.TEAL if who == _cast[i] else UI.MUTED)
 	_conversation.move_child(_portraits[0].get_parent(), 0)
@@ -218,13 +293,20 @@ func _update_portraits() -> void:
 func _process(delta: float) -> void:
 	if not _typing or _locked or _review_open or not is_visible_in_tree():
 		return
-	_revealed += delta * 42.0
+	if _pause_remaining > 0.0:
+		# Skip-safe hold before revealing starts (see DialogueEmotion.pause_before)
+		# — a tap during it goes through _speech_input() -> _reveal_line()
+		# exactly like skipping mid-type, never blocked by this pause.
+		_pause_remaining = maxf(0.0, _pause_remaining - delta)
+		return
+	_revealed += delta * 42.0 * _typing_speed
 	_speech.visible_characters = int(_revealed)
 	if _speech.visible_characters >= _speech.get_total_character_count():
 		_reveal_line()
 
 func _reveal_line() -> void:
 	_typing = false
+	_pause_remaining = 0.0
 	_speech.visible_characters = -1
 	if not _line_recorded:
 		_history.append(_lines[_line_index].duplicate(true))
@@ -240,14 +322,24 @@ func _speech_input(event: InputEvent) -> void:
 		_speech.accept_event()
 
 func _refresh_controls() -> void:
-	var deciding := _mode == &"threat" and _dialogue_done
-	_narrative.alignment = BoxContainer.ALIGNMENT_BEGIN if deciding else BoxContainer.ALIGNMENT_END
+	var investigating := _mode == &"threat" and _dialogue_done and not _investigation_config.is_empty()
+	# Choices (and the decision timer) only ever become actionable once any
+	# authored investigation is resolved (see _open_decision()/
+	# _on_investigation_resolved()) — an incident with no investigation at
+	# all behaves exactly as before this system existed.
+	var deciding := _mode == &"threat" and _dialogue_done and not investigating
+	_narrative.alignment = BoxContainer.ALIGNMENT_BEGIN if (deciding or investigating) else BoxContainer.ALIGNMENT_END
+	_investigation_panel.visible = investigating
 	_choices_scroll.visible = deciding
-	_timer_row.visible = deciding
+	# Most decisions are untimed (see DecisionScenarios.has_timer) — the
+	# countdown row only ever shows when the caller has explicitly enabled
+	# it for the current threat via set_decision_timer_visible(), never by
+	# default just because choices are actionable.
+	_timer_row.visible = deciding and _timer_visible_for_threat
 	_review_button.disabled = _locked or _history.is_empty()
 	_review_close.disabled = _locked
 	if _conversation != null:
-		_conversation.visible = not deciding
+		_conversation.visible = not deciding and not investigating
 	_continue_button.visible = _mode != &"threat" or not _dialogue_done
 	_continue_button.disabled = _locked
 	_continue_button.text = "SHOW TEXT" if _typing else ("NEXT LINE  >" if not _dialogue_done and _line_index + 1 < _lines.size() else _caption)
@@ -256,7 +348,7 @@ func _refresh_controls() -> void:
 	if _choice_hint != null:
 		_choice_hint.text = "Choose your response" if _dialogue_done else "Listen, then choose your response"
 	if _evidence != null:
-		_evidence.visible = _dialogue_done
+		_evidence.visible = _dialogue_done and not investigating
 
 func show_story(lines: Array[Dictionary], header: String, continue_text: String = "CONTINUE", banner: String = "") -> void:
 	_reset(&"story", header, continue_text)
@@ -265,10 +357,15 @@ func show_story(lines: Array[Dictionary], header: String, continue_text: String 
 	_dialogue(lines)
 	_metrics.call_deferred()
 
-func show_threat(threat: Dictionary, number: int, total: int, header: String) -> void:
+## story_lines: the threat's own opening dialogue, already resolved by the
+## caller (see stage_one_live.gd's _show_threat()) — this never calls
+## DecisionScenarios.dialogue_lines() itself, so it stays account-agnostic
+## and never needs to know about story memory, exactly like show_story()
+## and show_consequence() already take their lines as a parameter.
+func show_threat(threat: Dictionary, story_lines: Array[Dictionary], number: int, total: int, header: String) -> void:
 	_reset(&"threat", header, "VIEW SCENARIO / START DECISION")
 	_narrative.add_child(UI.label(str(threat.get("title", "INCIDENT")), 30, UI.TEAL))
-	_dialogue(DecisionScenarios.dialogue_lines(threat, "story"))
+	_dialogue(story_lines)
 	_evidence = UI.column(_narrative)
 	_evidence.add_child(UI.label(str(threat.get("situation", "")), 28))
 	var evidence := UI.panel(_evidence, Color("1b3038"))
@@ -290,13 +387,19 @@ func show_threat(threat: Dictionary, number: int, total: int, header: String) ->
 		_open_decision()
 	_metrics.call_deferred()
 
-func show_consequence(outcome: String, consequence: String, explanation: String, header: String, continue_text: String = "CONTINUE", banner_override: String = "") -> void:
+## story_lines: optional authored story-event beats (see
+## DecisionScenarios.story_event_lines) appended after the consequence and
+## explanation, inside this SAME screen — never a separate step, so the
+## existing CONTINUE gate that already holds RISKY/CRITICAL before
+## breach/TD/Game Over covers them for free.
+func show_consequence(outcome: String, consequence: String, explanation: String, header: String, continue_text: String = "CONTINUE", banner_override: String = "", story_lines: Array[Dictionary] = []) -> void:
 	_reset(&"consequence", header, continue_text)
 	var ink := DecisionOverlay.outcome_color(outcome)
 	_narrative.add_child(UI.label(banner_override if not banner_override.is_empty() else DecisionOverlay.outcome_banner(outcome), 30, ink))
 	var lines: Array[Dictionary] = [{"speaker": "", "text": consequence}]
 	if not explanation.is_empty():
 		lines.append({"speaker": "Security Assistant", "text": explanation})
+	lines.append_array(story_lines)
 	_dialogue(lines)
 	_window.add_theme_stylebox_override("panel", UI.box(Color("101c24"), ink))
 	_metrics.call_deferred()
@@ -336,17 +439,118 @@ func _continue() -> void:
 	elif _mode == &"consequence":
 		consequence_continued.emit()
 
+## An authored, still-pending investigation (see set_investigation()) shows
+## its panel here INSTEAD of emitting decision_ready — the operational
+## choices (and the decision timer) only become actionable once
+## _on_investigation_resolved() fires, so a threat with an investigation
+## never starts its countdown, or exposes its choices, while it's unread.
 func _open_decision() -> void:
 	_dialogue_done = true
 	_refresh_controls()
 	(_narrative.get_parent() as ScrollContainer).scroll_vertical = 0
+	if not _investigation_config.is_empty():
+		_investigation_panel.configure(_investigation_config)
+		_refresh_controls()
+		return
 	decision_ready.emit()
 
-func update_decision_timer(seconds: float, total: float) -> void:
+## Called once an authored investigation's valid item has been analyzed and
+## confirmed (see decision_investigation_panel.gd's investigation_resolved
+## signal) — clearing _investigation_config both hides the panel (via
+## _refresh_controls()'s gate) and permanently unlocks this threat's choices
+## for the rest of this attempt (a retry replays the whole incident, so the
+## investigation naturally reappears — see the milestone's own retry rule).
+## Any authored resolved_story_event lines are spliced into the SAME
+## dialogue reader already driving this screen (never a new consequence/
+## event system) — once they're read, _continue() reaches _open_decision()
+## again on its own, which now finds _investigation_config already empty
+## and emits decision_ready immediately, exactly like a threat with no
+## investigation at all.
+func _on_investigation_resolved() -> void:
+	_investigation_config = {}
+	var followup: Array[Dictionary] = _investigation_followup_lines
+	_investigation_followup_lines = []
+	_refresh_controls()
+	if followup.is_empty():
+		decision_ready.emit()
+		return
+	var insert_at: int = _lines.size()
+	_lines.append_array(followup)
+	_dialogue_done = false
+	_line_index = insert_at
+	_show_line()
+
+## Called once per threat by the caller (see DecisionScenarios.
+## has_investigation) — an empty dict (the default after every _reset())
+## means no investigation at all, so decision_ready emits immediately once
+## dialogue is read, exactly like every existing threat.
+func set_investigation(config: Dictionary, followup_lines: Array[Dictionary] = []) -> void:
+	_investigation_config = config
+	_investigation_followup_lines = followup_lines
+
+## Only ever called by the caller for a threat that actually has an
+## enabled, authored timer (see set_decision_timer_visible()) — this method
+## itself has no opinion on whether a timer should exist, only on how to
+## render one that does. `label` is the optional authored pressure line
+## (e.g. "THE CALLER SAYS THE TRANSFER MAY PROCESS"); it defaults to the
+## generic "DECIDE" heading when a threat's timer doesn't author one.
+## Urgency in the final 3 seconds is signaled by BOTH color and a text
+## change (never color alone), and never flashes/animates.
+func update_decision_timer(seconds: float, total: float, label: String = "DECIDE") -> void:
+	var clamped: float = maxf(0.0, seconds)
+	var whole: int = ceili(clamped)
+	var urgent: bool = whole <= 3
 	_timer_bar.max_value = total
-	_timer_bar.value = maxf(0, seconds)
-	_timer_text.text = "DECIDE / %02ds" % ceili(maxf(0, seconds))
-	_timer_text.add_theme_color_override("font_color", Color("ef9292") if seconds <= 10 else UI.GOLD)
+	_timer_bar.value = clamped
+	_timer_text.text = "%s / %02ds%s" % [label if not label.is_empty() else "DECIDE", whole, "  !" if urgent else ""]
+	_timer_text.add_theme_color_override("font_color", Color("ff3b3b") if urgent else (Color("ef9292") if clamped <= 10.0 else UI.GOLD))
+
+
+## Called once per threat by the caller (see DecisionScenarios.has_timer) —
+## true only for a threat with an enabled, authored timer. false (the
+## default after every _reset()) keeps the countdown row hidden entirely,
+## which is what "most decisions remain untimed" means in practice here.
+func set_decision_timer_visible(visible_now: bool) -> void:
+	_timer_visible_for_threat = visible_now
+	_refresh_controls()
+
+## Called once per threat/story screen by the caller (see DecisionScenarios.
+## has_call) — an empty dict (the default after every _reset()) keeps the
+## call row hidden, which is what "most decisions have no call at all" means
+## in practice here. Non-empty call_data both shows and (re)configures the
+## panel, so a stale mute/ended state from a previous incident's call can
+## never bleed into this one.
+func set_call(call_data: Dictionary) -> void:
+	if call_data.is_empty():
+		_call_panel.hide()
+		return
+	_call_panel.configure(call_data)
+	_call_panel.show()
+
+## Presentation only — see stage_one_live.gd's advance_call_duration(). A
+## separate clock from the decision countdown; never one clock for both.
+func update_call_duration(elapsed_seconds: float) -> void:
+	_call_panel.update_duration(elapsed_seconds)
+
+## Ending a call and deciding what to do next are separate concepts: this
+## marks the call ENDED and, if the threat authored a call_end_story_event,
+## splices it into the SAME dialogue reader the rest of the scene already
+## uses (reusing _lines/_show_line() — never a new consequence/event system)
+## so it plays through the usual reveal/continue rhythm before leaving the
+## player exactly where they were (mid-dialogue, or already deciding). It
+## never grades anything and never selects a choice on the player's behalf.
+func end_call(story_lines: Array[Dictionary] = []) -> void:
+	_call_panel.set_ended()
+	if story_lines.is_empty():
+		return
+	var insert_at: int = _lines.size() if _dialogue_done else _line_index + 1
+	for i in story_lines.size():
+		_lines.insert(insert_at + i, story_lines[i])
+	if _dialogue_done:
+		_dialogue_done = false
+		_line_index = insert_at
+		_show_line()
+	_refresh_controls()
 
 func _open_review() -> void:
 	if _locked or _review_open or _history.is_empty():

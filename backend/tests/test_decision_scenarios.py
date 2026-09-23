@@ -54,15 +54,15 @@ class DecisionScenarioDataTest(unittest.TestCase):
             expected_next = threats[index + 1]["id"] if index + 1 < len(threats) else ""
             self.assertEqual(threat["next"], expected_next)
 
-    def _assert_module2_four_choice_threats(self, stage: dict) -> None:
+    def _assert_module2_four_choice_threats(self, stage: dict, module_id: str = "mod_02", bkt_skill: str = "smishing") -> None:
         threats = stage["threats"]
         self.assertEqual(len(threats), 3)
         ids = [threat["id"] for threat in threats]
         self.assertEqual(len(set(ids)), 3)
         for index, threat in enumerate(threats):
-            self.assertEqual(threat["module_id"], "mod_02")
+            self.assertEqual(threat["module_id"], module_id)
             self.assertEqual(threat["stage"], stage["stage"])
-            self.assertEqual(threat["bkt_skill"], "smishing")
+            self.assertEqual(threat["bkt_skill"], bkt_skill)
             self.assertTrue(threat["title"].strip())
             self.assertTrue(threat["situation"].strip())
             self.assertTrue(threat["explanation"].strip())
@@ -1100,6 +1100,172 @@ class DecisionScenarioDataTest(unittest.TestCase):
             for threat in stage["threats"]
         ]
         self.assertEqual(len(safe_outcomes), 3)
+
+    def test_module_3_stage_1_is_unknown_caller_with_four_choice_incidents(self):
+        stage = self._stage(1, module_id="mod_03")
+        self.assertEqual(stage["title"], "Unknown Caller")
+        self.assertEqual(stage["bkt_skill"], "vishing")
+        self.assertEqual(stage["breach_hp_multiplier"], 0.65)
+        self.assertEqual(stage["clear_title"], "STAGE 1 COMPLETE")
+        self.assertEqual(stage["clear_subtitle"], "UNKNOWN CALLER")
+        self.assertIn("Stage 2", stage["next_stage_title"])
+        self.assertIn("Stay on the Line", stage["next_stage_title"])
+        self._assert_module2_four_choice_threats(stage, module_id="mod_03", bkt_skill="vishing")
+
+    def test_module_3_stage_1_topics_and_continuity_match_the_brief(self):
+        stage = self._stage(1, module_id="mod_03")
+        threats = stage["threats"]
+        self.assertEqual(
+            [threat["title"] for threat in threats],
+            ["Fraud Department", "Stay on the Line", "Security Callback"],
+        )
+        opening = " ".join(line["text"] for line in stage["opening"])
+        self.assertIn("Fraud Prevention Department", opening)
+        self.assertIn("Daniel", opening)
+        ending = " ".join(line["text"] for line in stage["ending"])
+        self.assertIn("isn't a random robocall", ending)
+        self.assertIn("PRIVATE NUMBER", ending)
+        self.assertIn("stay on the line", ending.lower())
+
+    def test_module_3_stage_1_choices_avoid_trivial_wording(self):
+        trivial_patterns = [
+            r"give.*password",
+            r"ignore it",
+            r"ignore everything",
+            r"looks safe",
+            r"trust it because it looks real",
+        ]
+        for threat in self._stage(1, module_id="mod_03")["threats"]:
+            for choice in threat["choices"]:
+                label = choice["label"].lower()
+                for pattern in trivial_patterns:
+                    self.assertNotRegex(label, pattern)
+
+    def test_module_3_stage_1_ids_do_not_collide_with_module_1_or_2_stage_1(self):
+        mod3_ids = {threat["id"] for threat in self._stage(1, module_id="mod_03")["threats"]}
+        mod1_ids = {threat["id"] for threat in self._stage(1)["threats"]}
+        mod2_ids = {threat["id"] for threat in self._stage(1, module_id="mod_02")["threats"]}
+        self.assertTrue(mod3_ids.isdisjoint(mod1_ids))
+        self.assertTrue(mod3_ids.isdisjoint(mod2_ids))
+
+    def test_module_3_stage_1_daniel_is_a_recognized_speaker(self):
+        stage = self._stage(1, module_id="mod_03")
+        opening_speakers = {line["speaker"] for line in stage["opening"]}
+        self.assertIn("Daniel", opening_speakers)
+
+    def test_module_3_stage_1_uses_caller_id_spoofing_and_teaches_callback_verification(self):
+        stage = self._stage(1, module_id="mod_03")
+        incident1 = stage["threats"][0]
+        self.assertEqual(incident1["affected_system"], "DANIEL'S BUSINESS BANK ACCOUNT")
+        incident1_story = " ".join(line["text"] for line in incident1["story"])
+        self.assertIn("we detected an attempted", incident1_story)
+        safe_labels = " ".join(
+            choice["label"].lower()
+            for threat in stage["threats"]
+            for choice in threat["choices"]
+            if choice["outcome"] == "SAFE"
+        )
+        self.assertTrue(
+            "independently" in safe_labels
+            or "known official channel" in safe_labels
+            or "previously trusted channel" in safe_labels
+        )
+
+    def test_module_3_stage_1_attacker_tells_daniel_to_stay_on_the_line(self):
+        stage = self._stage(1, module_id="mod_03")
+        incident2_story = " ".join(line["text"] for line in stage["threats"][1]["story"])
+        self.assertIn("stay on this call", incident2_story.lower())
+
+    def test_module_3_stage_1_emotion_metadata_is_present_and_diverse(self):
+        stage = self._stage(1, module_id="mod_03")
+        all_lines = list(stage["opening"]) + list(stage["ending"])
+        for threat in stage["threats"]:
+            all_lines += threat["story"]
+        emotions_found = {line["emotion"] for line in all_lines if "emotion" in line}
+        required = {"worried", "frustrated", "angry", "sad", "shocked", "determined"}
+        self.assertTrue(required.issubset(emotions_found), emotions_found)
+        self.assertNotIn("crying", emotions_found)
+        valid_emotions = {
+            "neutral", "worried", "shocked", "scared", "angry",
+            "crying", "sad", "frustrated", "determined", "relieved",
+        }
+        self.assertTrue(emotions_found.issubset(valid_emotions), emotions_found)
+        # Lines with no "emotion" key at all must keep working (default neutral
+        # is applied by DialogueEmotion at read time, not authored here).
+        lines_without_emotion = [line for line in all_lines if "emotion" not in line]
+        self.assertTrue(lines_without_emotion)
+
+    def test_module_3_stage_1_emotion_does_not_correlate_with_outcome(self):
+        # Emotion is a dialogue-line concept, not a choice concept: choice
+        # dictionaries (SAFE/RISKY/RISKY/CRITICAL) must never carry an
+        # "emotion" key, so presentation can never leak which option is
+        # correct. This is a structural guarantee, not a per-stage judgment
+        # call — checked here so it can never regress.
+        stage = self._stage(1, module_id="mod_03")
+        for threat in stage["threats"]:
+            for choice in threat["choices"]:
+                self.assertNotIn("emotion", choice)
+
+    def test_module_3_stage_1_ending_includes_bluetech_clue_without_full_reveal(self):
+        stage = self._stage(1, module_id="mod_03")
+        ending = " ".join(line["text"] for line in stage["ending"])
+        self.assertIn("BlueTech", ending)
+        self.assertIn("Probably nothing", ending)
+        campaign_leak_phrases = [
+            "the same attacker who targeted bluetech",
+            "this is part of the phishing campaign",
+            "connected to the smishing campaign",
+        ]
+        for phrase in campaign_leak_phrases:
+            self.assertNotIn(phrase, ending.lower())
+
+    def test_module_3_stage_1_safe_playthrough_still_reaches_the_same_beats(self):
+        stage = self._stage(1, module_id="mod_03")
+        incident3_story = " ".join(line["text"] for line in stage["threats"][2]["story"])
+        self.assertIn("Someone knows my bank account", incident3_story)
+        ending = " ".join(line["text"] for line in stage["ending"])
+        self.assertIn("BlueTech", ending)
+        self.assertIn("PRIVATE NUMBER", ending)
+        safe_outcomes = [
+            next(choice for choice in threat["choices"] if choice["outcome"] == "SAFE")
+            for threat in stage["threats"]
+        ]
+        self.assertEqual(len(safe_outcomes), 3)
+
+    def test_module_3_stage_1_demo_story_events_are_well_formed(self):
+        # Milestone: visible decision consequences. Only 3 demo choices are
+        # authored with "story_event" on Stage 1; every other choice across
+        # the whole project must remain untouched (no "story_event" key).
+        stage = self._stage(1, module_id="mod_03")
+        incident1_risky = next(
+            c for c in stage["threats"][0]["choices"]
+            if c["outcome"] == "RISKY" and "Keep the caller on the line" in c["label"]
+        )
+        events = incident1_risky["story_event"]
+        self.assertIsInstance(events, list)
+        self.assertEqual(events[0]["type"], "notification")
+        self.assertEqual(events[0]["title"], "SECURITY ACTIVITY")
+        self.assertEqual(events[1]["type"], "dialogue")
+        self.assertEqual(events[1]["speaker"], "Daniel")
+        self.assertEqual(events[1]["emotion"], "shocked")
+
+        incident2_critical = next(c for c in stage["threats"][1]["choices"] if c["outcome"] == "CRITICAL")
+        critical_events = incident2_critical["story_event"]
+        self.assertEqual(critical_events[0]["type"], "status")
+        self.assertEqual(critical_events[0]["title"], "CALL STATUS")
+        self.assertEqual(critical_events[1]["type"], "notification")
+
+        incident3_safe = next(c for c in stage["threats"][2]["choices"] if c["outcome"] == "SAFE")
+        safe_event = incident3_safe["story_event"]
+        self.assertEqual(safe_event["type"], "status")
+        self.assertEqual(safe_event["title"], "FRAUD CASE")
+
+        # Everywhere else on Stage 1, choices must be untouched.
+        demo_choice_ids = {id(incident1_risky), id(incident2_critical), id(incident3_safe)}
+        for threat in stage["threats"]:
+            for choice in threat["choices"]:
+                if id(choice) not in demo_choice_ids:
+                    self.assertNotIn("story_event", choice)
 
     def test_module_1_stage_1_still_authors_exactly_three_choices(self):
         # Module 2 introduces a 4-choice format; Module 1's existing stages

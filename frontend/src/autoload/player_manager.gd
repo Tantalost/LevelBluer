@@ -51,6 +51,17 @@ var trace_missed_by_module: Dictionary = {}
 ## Resume checkpoints for decision-based stages, keyed "mod_01:1".
 ## Only in-progress stages are stored; a cleared stage erases its entry.
 var decision_stage_state: Dictionary = {}
+## Lightweight, permanent story memory for reactive dialogue (see
+## DecisionScenarios.condition_met / choice_memory) — a flat, free-form
+## key -> scalar (bool/String/int/float) dictionary, authored explicitly per
+## choice, never auto-derived from SAFE/RISKY/CRITICAL. Deliberately separate
+## from mastery_matrix/decision_stage_state/cleared_stages/credits: this is
+## narrative continuity only, never BKT, mastery, stage progression, the
+## Case Board, or TD balance. Keys are free-form authored strings (e.g.
+## "mod03_s1_bank_verification"), not scoped by code to any one module or
+## stage, so a later module/stage can read an earlier one's memory with no
+## special wiring — see get_story_memory_snapshot().
+var story_memory: Dictionary = {}
 
 
 func has_skill(skill_id: String) -> bool:
@@ -233,6 +244,7 @@ func reset_to_defaults() -> void:
 	trace_seen_by_module = _empty_trace_history()
 	trace_missed_by_module = _empty_trace_history()
 	decision_stage_state = {}
+	story_memory = {}
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
@@ -264,6 +276,33 @@ func clear_decision_stage_state(stage_key: String) -> void:
 	SaveService.save_game()
 
 
+## Read-only snapshot for reactive dialogue's condition checks (see
+## DecisionScenarios.condition_met/dialogue_lines) — a duplicate, so callers
+## can never mutate story memory by editing what this returns.
+func get_story_memory_snapshot() -> Dictionary:
+	return story_memory.duplicate(true)
+
+
+func get_story_memory(key: String) -> Variant:
+	return story_memory.get(key.strip_edges(), null)
+
+
+## Commits one choice's whole authored "memory" block (see
+## DecisionScenarios.choice_memory) in a single save, never one write per
+## key — this is the one and only place story memory is ever persisted, so
+## every commit path (SAFE's immediate resolution, RISKY's TD-win) reaches
+## exactly this same, exactly-once write.
+func set_story_memories(entries: Dictionary) -> void:
+	if entries.is_empty():
+		return
+	for key in entries.keys():
+		var trimmed: String = str(key).strip_edges()
+		if trimmed.is_empty():
+			continue
+		story_memory[trimmed] = entries[key]
+	SaveService.save_game()
+
+
 func _normalize_decision_state(raw: Variant) -> Dictionary:
 	var result: Dictionary = {}
 	if typeof(raw) != TYPE_DICTIONARY:
@@ -290,6 +329,27 @@ func _normalize_decision_state(raw: Variant) -> Dictionary:
 		var reviewed_index := int(row.get("reviewed_breach_index", -1))
 		if reviewed_index >= 0 and reviewed_index == int(row.get("threat_index", 0)):
 			result[str(key)]["reviewed_breach_index"] = reviewed_index
+	return result
+
+
+## Older saves have no "story_memory" key at all; they simply start with no
+## memory, exactly the same as a fresh account. Only scalar values
+## (bool/String/int/float) are trusted from a save file — anything else
+## (an array, a nested dictionary) is dropped rather than risking a
+## condition_met() comparison against an unexpected type.
+func _normalize_story_memory(raw: Variant) -> Dictionary:
+	var result: Dictionary = {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return result
+	var stored: Dictionary = raw as Dictionary
+	for key in stored.keys():
+		var trimmed: String = str(key).strip_edges()
+		if trimmed.is_empty():
+			continue
+		var value: Variant = stored[key]
+		var value_type: int = typeof(value)
+		if value_type == TYPE_BOOL or value_type == TYPE_STRING or value_type == TYPE_STRING_NAME or value_type == TYPE_INT or value_type == TYPE_FLOAT:
+			result[trimmed] = value
 	return result
 
 
@@ -705,6 +765,7 @@ func get_save_data() -> Dictionary:
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
 		"decision_stage_state": decision_stage_state.duplicate(true),
+		"story_memory": story_memory.duplicate(true),
 	}
 
 
@@ -855,6 +916,7 @@ func apply_save_data(data: Dictionary) -> void:
 		trace_missed_by_module = _empty_trace_history()
 	# Older saves have no decision checkpoints; they simply start Stage 1 fresh.
 	decision_stage_state = _normalize_decision_state(data.get("decision_stage_state", {}))
+	story_memory = _normalize_story_memory(data.get("story_memory", {}))
 
 	if module_1_complete:
 		cleared_stages[stage_progress_key("mod_01", 10)] = true

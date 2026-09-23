@@ -329,14 +329,19 @@ func show_story(lines: Array[Dictionary], header: String, continue_text: String 
 	call_deferred("_fit_layout")
 
 
-## Threat beat: dialogue, incident, evidence, three actions.
-func show_threat(threat: Dictionary, threat_number: int, threat_total: int, header: String) -> void:
+## Threat beat: dialogue, incident, evidence, three actions. story_lines: the
+## threat's own opening dialogue, already resolved by the caller (see
+## level_manager.gd's _show_decision_threat()) — this never calls
+## DecisionScenarios.dialogue_lines() itself, so it stays account-agnostic
+## and never needs to know about story memory, exactly like show_story()
+## and show_consequence() already take their lines as a parameter.
+func show_threat(threat: Dictionary, story_lines: Array[Dictionary], threat_number: int, threat_total: int, header: String) -> void:
 	_mode = &"threat"
 	_locked = false
 	_selected_index = -1
 	_header_left.text = header
 	_header_right.text = "INCIDENT %d / %d" % [threat_number, threat_total]
-	_fill_dialogue(DecisionScenarios.dialogue_lines(threat, "story"))
+	_fill_dialogue(story_lines)
 	_situation_title.text = str(threat.get("title", "INCIDENT")).to_upper()
 	_situation.text = str(threat.get("situation", ""))
 	_fill_evidence(threat.get("evidence", []))
@@ -360,7 +365,10 @@ func show_threat(threat: Dictionary, threat_number: int, threat_total: int, head
 ## Narrative result of a decision. No right/wrong wording. banner_override
 ## replaces the outcome's default banner text (e.g. "BREACH DETECTED" instead
 ## of "SECURITY WARNING") while keeping the outcome's status line and color.
-func show_consequence(outcome: String, consequence: String, explanation: String, header: String, continue_text: String = "CONTINUE", banner_override: String = "") -> void:
+## story_lines: optional authored story-event beats (see
+## DecisionScenarios.story_event_lines), appended after the consequence and
+## explanation inside this same screen.
+func show_consequence(outcome: String, consequence: String, explanation: String, header: String, continue_text: String = "CONTINUE", banner_override: String = "", story_lines: Array[Dictionary] = []) -> void:
 	_mode = &"consequence"
 	_locked = false
 	_header_left.text = header
@@ -371,6 +379,7 @@ func show_consequence(outcome: String, consequence: String, explanation: String,
 	var lines: Array[Dictionary] = [{"speaker": "", "text": consequence}]
 	if not explanation.strip_edges().is_empty():
 		lines.append({"speaker": "Security Assistant", "text": explanation})
+	lines.append_array(story_lines)
 	_fill_dialogue(lines)
 	_continue_button.text = continue_text
 	_apply_mode()

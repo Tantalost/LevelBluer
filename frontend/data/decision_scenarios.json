@@ -2935,6 +2935,236 @@
 					"next": ""
 				}
 			]
+		},
+		{
+			"id": "mod03_stage1",
+			"module_id": "mod_03",
+			"stage": 1,
+			"title": "Unknown Caller",
+			"bkt_skill": "vishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 1 COMPLETE",
+			"clear_subtitle": "UNKNOWN CALLER",
+			"next_stage_title": "Stage 2 — Stay on the Line",
+			"breach_hp_multiplier": 0.65,
+			"opening": [
+				{"speaker": "", "text": "Daniel is closing his small business for the day. His phone rings. Unknown number."},
+				{"speaker": "", "text": "Daniel ignores it. It rings again. Then again."},
+				{"speaker": "Daniel", "text": "Three times.", "emotion": "frustrated"},
+				{"speaker": "Daniel", "text": "If it's a customer, they'll leave a message."},
+				{"speaker": "", "text": "A voicemail appears."},
+				{"speaker": "Caller", "text": "Mr. Santos, this is the Fraud Prevention Department regarding your business account. Immediate verification is required."},
+				{"speaker": "Daniel", "text": "...Fraud prevention?", "emotion": "worried"},
+				{"speaker": "", "text": "He calls Mia because his company has recently done business with BlueTech and he knows she has dealt with security incidents before."},
+				{"speaker": "Daniel", "text": "Mia, can I ask you something?"},
+				{"speaker": "Mia", "text": "What happened?"},
+				{"speaker": "Daniel", "text": "Does BlueTech ever contact suppliers about bank fraud?"},
+				{"speaker": "Mia", "text": "Not like that."},
+				{"speaker": "Daniel", "text": "They know my business name."},
+				{"speaker": "Mia", "text": "Don't call them back yet."},
+				{"speaker": "Daniel", "text": "I'm not panicking."},
+				{"speaker": "Mia", "text": "I didn't say you were."},
+				{"speaker": "Daniel", "text": "I can hear you thinking it."}
+			],
+			"ending": [
+				{"speaker": "Daniel", "text": "Calling the bank myself was the only thing that actually answered anything.", "emotion": "determined", "when": {"mod03_s1_bank_verification": "independent"}},
+				{"speaker": "Daniel", "text": "I kept asking them to prove themselves with information they already had.", "emotion": "frustrated", "when": {"mod03_s1_bank_verification": "caller_knowledge"}},
+				{"speaker": "Daniel", "text": "I was checking the real app and still letting the caller control the conversation.", "emotion": "frustrated", "when": {"mod03_s1_bank_verification": "inside_call"}},
+				{"speaker": "Security Assistant", "text": "The first caller knew about the business."},
+				{"speaker": "Mia", "text": "The second knew how security verification works."},
+				{"speaker": "Daniel", "text": "And the third knew I had just called the real bank.", "emotion": "worried"},
+				{"speaker": "Security Assistant", "text": "Which means this isn't a random robocall."},
+				{"speaker": "Daniel", "text": "Good."},
+				{"speaker": "Mia", "text": "Good?"},
+				{"speaker": "Daniel", "text": "Now I know I'm not imagining it."},
+				{"speaker": "Security Assistant", "text": "Daniel."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Security Assistant", "text": "Do not turn this into a fight with whoever calls next."},
+				{"speaker": "Daniel", "text": "They called me."},
+				{"speaker": "Security Assistant", "text": "Exactly."},
+				{"speaker": "Security Assistant", "text": "They want you emotional."},
+				{"speaker": "", "text": "Daniel pauses."},
+				{"speaker": "Daniel", "text": "...Then next time I hang up.", "emotion": "determined"},
+				{"speaker": "Mia", "text": "Daniel."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Mia", "text": "That transaction they mentioned."},
+				{"speaker": "Daniel", "text": "The one from yesterday?"},
+				{"speaker": "Mia", "text": "Who was it for?"},
+				{"speaker": "", "text": "Daniel checks."},
+				{"speaker": "Daniel", "text": "BlueTech."},
+				{"speaker": "", "text": "Pause."},
+				{"speaker": "Daniel", "text": "Why?"},
+				{"speaker": "Security Assistant", "text": "Probably nothing."},
+				{"speaker": "Mia", "text": "You don't sound like you believe that."},
+				{"speaker": "Security Assistant", "text": "I said probably."},
+				{"speaker": "", "text": "Daniel's phone rings again. This time the caller ID says: PRIVATE NUMBER."},
+				{"speaker": "", "text": "Daniel looks at Mia."},
+				{"speaker": "Daniel", "text": "I'm hanging up.", "emotion": "determined"},
+				{"speaker": "", "text": "Before he can decline it, voicemail begins recording."},
+				{"speaker": "Caller", "text": "Mr. Santos, hanging up won't protect the account."},
+				{"speaker": "", "text": "Daniel freezes."},
+				{"speaker": "Daniel", "text": "...", "emotion": "shocked"},
+				{"speaker": "Caller", "text": "We need you to stay on the line."}
+			],
+			"resume_breach": [
+				{"speaker": "Security Assistant", "text": "That call is still trying to keep him on the line. Bring containment back online."}
+			],
+			"breach_contained": [
+				{"speaker": "Security Assistant", "text": "Breach contained. That call is cut off, but we still need to check what else it reached."},
+				{"speaker": "Daniel", "text": "Then let's check."}
+			],
+			"threats": [
+				{
+					"id": "mod03_stage01_incident01",
+					"module_id": "mod_03",
+					"stage": 1,
+					"title": "Fraud Department",
+					"bkt_skill": "vishing",
+					"affected_system": "DANIEL'S BUSINESS BANK ACCOUNT",
+					"story": [
+						{"speaker": "", "text": "Daniel receives another call. Caller ID displays the name of his real bank."},
+						{"speaker": "Caller", "text": "Mr. Santos, we detected an attempted ₱48,500 transfer from your business account. Before we freeze the account, I need to verify recent activity."},
+						{"speaker": "Daniel", "text": "How do you know my account number?", "emotion": "worried"}
+					],
+					"situation": "Daniel receives a call. Caller ID displays the name of his real bank. The caller says: \"Mr. Santos, we detected an attempted ₱48,500 transfer from your business account. Before we freeze the account, I need to verify recent activity.\" The caller knows Daniel's full name, his business name, his bank name, an approximate account balance range, one recent legitimate transaction, and the last four digits of the business account. The caller does not immediately ask for a password.",
+					"evidence": [
+						"Caller ID displays the name of Daniel's real bank",
+						"The caller accurately knows his business name and an approximate balance range",
+						"The caller correctly references one recent legitimate transaction",
+						"The caller has not asked for a password or OTP yet"
+					],
+					"choices": [
+						{"label": "Continue the call because the caller has accurate private account information, while refusing to disclose passwords or OTPs.", "outcome": "CRITICAL", "consequence": "Withholding passwords feels safe, but staying on the call at all keeps Daniel exactly where the caller wants him — accurate account details were never the hard part to obtain."},
+						{"label": "End the call and contact the bank using the number from Daniel's banking app/card/known official channel to verify whether a fraud case exists.", "outcome": "SAFE", "consequence": "Calling through the number on his own card confirms in minutes whether the bank's real fraud team actually flagged anything — and this caller never gets the chance to steer what happens next.", "memory": {"mod03_s1_bank_verification": "independent"}},
+						{"label": "Ask the caller to identify additional recent transactions before continuing.", "outcome": "RISKY", "consequence": "The caller lists another transaction correctly, but that only proves they already have access to Daniel's account activity — it doesn't prove they work for the bank.", "memory": {"mod03_s1_bank_verification": "caller_knowledge"}},
+						{"label": "Keep the caller on the line while Daniel independently opens his real banking app and checks for the claimed transaction.", "outcome": "RISKY", "consequence": "The app does show a matching flagged attempt, but the caller is still on the line walking Daniel through what it means and what to do about it.", "memory": {"mod03_s1_bank_verification": "inside_call"}, "story_event": [
+							{"type": "notification", "title": "SECURITY ACTIVITY", "text": "A new account-verification request appears while the call remains active."},
+							{"type": "dialogue", "speaker": "Daniel", "text": "They're doing something while I'm talking to them.", "emotion": "shocked"}
+						]}
+					],
+					"explanation": "Vishing rarely opens by asking for a password — accurate account details build trust first. A caller having real information proves they can see the account somehow, not that they belong to the bank.",
+					"breach_gold": 20,
+					"next": "mod03_stage01_incident02"
+				},
+				{
+					"id": "mod03_stage01_incident02",
+					"module_id": "mod_03",
+					"stage": 1,
+					"title": "Stay on the Line",
+					"bkt_skill": "vishing",
+					"affected_system": "DANIEL'S BANK / MOBILE DEVICE",
+					"story": [
+						{"speaker": "Daniel", "text": "They knew a transaction from yesterday.", "emotion": "worried"},
+						{"speaker": "Mia", "text": "That still doesn't prove the caller works for the bank."},
+						{"speaker": "Daniel", "text": "Then how did they know it?"},
+						{"speaker": "Mia", "text": "I don't know."},
+						{"speaker": "Daniel", "text": "That's becoming everybody's favorite answer.", "emotion": "frustrated"},
+						{"speaker": "", "text": "Security Assistant joins."},
+						{"speaker": "Security Assistant", "text": "Not knowing is better than pretending we verified something we didn't."},
+						{"speaker": "Daniel", "text": "I run a business. 'I don't know' isn't very useful.", "emotion": "frustrated"},
+						{"speaker": "Security Assistant", "text": "Then let's find out."},
+						{"speaker": "", "text": "The caller phones again."},
+						{"speaker": "Caller", "text": "Mr. Santos, your previous call disconnected during an active fraud case. Do NOT contact another number yet. The criminals may be impersonating the bank's normal support line. Stay on this call while we protect the account."}
+					],
+					"situation": "The caller phones again, warning Daniel not to contact another number because \"criminals may be impersonating the bank's normal support line,\" and instructing him to stay on the call while they \"protect the account.\" The caller instructs Daniel to keep the call active, open his banking app, not answer other calls, and wait for an account-security notification.",
+					"evidence": [
+						"The caller warns Daniel not to call any other number, including the bank's normal line",
+						"The caller frames staying on this call as protecting the account",
+						"Daniel is told to open his banking app while remaining on this call",
+						"Daniel is told not to answer any other incoming calls"
+					],
+					"timer": {
+						"enabled": true,
+						"seconds": 14,
+						"label": "THE CALLER SAYS THE TRANSFER MAY PROCESS",
+						"timeout_outcome": "RISKY",
+						"timeout_story_event": [
+							{"type": "status", "title": "CALL STATUS", "text": "The caller remains connected while Daniel hesitates."},
+							{"type": "dialogue", "speaker": "Daniel", "text": "I waited too long.", "emotion": "worried"}
+						]
+					},
+					"call": {
+						"enabled": true,
+						"caller": "BANK FRAUD DEPARTMENT",
+						"number": "PRIVATE NUMBER",
+						"status": "CONNECTED",
+						"show_duration": true,
+						"allow_end_call": false
+					},
+					"choices": [
+						{"label": "Stay on the call because the caller's warning about support-number impersonation is itself a legitimate security concern.", "outcome": "CRITICAL", "consequence": "The advice about impersonated support lines is real — the person giving it right now is using that true fact to keep Daniel from ever dialing a number they don't control.", "story_event": [
+							{"type": "status", "title": "CALL STATUS", "text": "08:14 — ACTIVE"},
+							{"type": "notification", "title": "ACCOUNT SECURITY REQUEST", "text": "A new request just appeared on the account while the call is still connected."}
+						]},
+						{"label": "End the call despite the warning and independently contact the bank using a previously trusted channel.", "outcome": "SAFE", "consequence": "Hanging up on the warning and calling the number Daniel already trusts reaches the bank's real fraud desk directly, with no chance for the caller to redirect that call somewhere else."},
+						{"label": "Keep the caller connected but mute the call while Daniel checks the bank's official app and security notifications independently.", "outcome": "RISKY", "consequence": "The app check is genuinely independent, but the still-open call means the caller can hear Daniel come back and immediately reshape whatever he found."},
+						{"label": "Ask the caller for a case number, then separately compare it against any case displayed in the real bank app before continuing.", "outcome": "RISKY", "consequence": "A case number appears in the app too, but that only confirms something is happening on the account — not that this caller is the one legitimately handling it."}
+					],
+					"explanation": "The attacker is using a true piece of security advice — support lines can be impersonated — to prevent the one action that would actually expose them: hanging up and dialing a number Daniel already trusts.",
+					"breach_gold": 22,
+					"next": "mod03_stage01_incident03"
+				},
+				{
+					"id": "mod03_stage01_incident03",
+					"module_id": "mod_03",
+					"stage": 1,
+					"title": "Security Callback",
+					"bkt_skill": "vishing",
+					"affected_system": "DANIEL'S BUSINESS ACCOUNT / CALLER IDENTITY",
+					"story": [
+						{"speaker": "Daniel", "text": "So now hanging up could be the dangerous thing?", "emotion": "worried"},
+						{"speaker": "Security Assistant", "text": "That's what they want you to believe."},
+						{"speaker": "Daniel", "text": "You keep saying 'they.'"},
+						{"speaker": "Mia", "text": "Daniel—"},
+						{"speaker": "Daniel", "text": "No.", "emotion": "angry"},
+						{"speaker": "Daniel", "text": "Someone knows my bank account. Someone knows my business. And now I'm supposed to just sit here while everybody tells me not to trust anyone?", "emotion": "angry"},
+						{"speaker": "", "text": "Silence."},
+						{"speaker": "Daniel", "text": "...Sorry.", "emotion": "sad"},
+						{"speaker": "Mia", "text": "You don't need to apologize."},
+						{"speaker": "Daniel", "text": "I don't like not knowing who's on the other side of the phone."},
+						{"speaker": "Security Assistant", "text": "That's exactly what they're exploiting."},
+						{"speaker": "", "text": "Daniel independently contacts his bank. The legitimate bank confirms there was an attempted suspicious transfer, that it was blocked, and that they are reviewing the account. Daniel ends the legitimate call."},
+						{"speaker": "", "text": "Minutes later, another call arrives. Caller ID again displays the bank's real support number."},
+						{"speaker": "Caller", "text": "Mr. Santos, this is the senior fraud investigator handling the case you just reported. I see you contacted our support desk at 6:42 PM."},
+						{"speaker": "Daniel", "text": "They know I called the bank.", "emotion": "shocked"},
+						{"speaker": "Mia", "text": "That doesn't mean this is the same person."},
+						{"speaker": "Daniel", "text": "How could they know that quickly?"},
+						{"speaker": "Security Assistant", "text": "That's what we need to understand."},
+						{"speaker": "", "text": "The caller says they need Daniel to remain available while the case is \"escalated.\""}
+					],
+					"situation": "Daniel independently called his bank, which confirmed a suspicious transfer was attempted and blocked and that the account is under review. Minutes after ending that legitimate call, another call arrives with the bank's real support number on caller ID. The caller claims to be the senior fraud investigator handling the case and accurately references the exact approximate time of Daniel's legitimate call, the blocked transfer amount, his real fraud case context, his business name, and the current investigation status. The caller says Daniel needs to remain available while the case is \"escalated.\"",
+					"evidence": [
+						"Daniel's bank independently confirmed a real, blocked suspicious transfer under review",
+						"A second call arrives minutes later with the bank's real support number on caller ID",
+						"The caller accurately knows the approximate time of Daniel's legitimate call",
+						"The caller accurately knows the blocked amount and current investigation status"
+					],
+					"investigation": {
+						"enabled": true,
+						"title": "VERIFY THE CALLER",
+						"prompt": "Which detail independently verifies that this caller is actually the bank?",
+						"items": [
+							{"id": "mod03_s1_i3_caller_id", "label": "Caller ID shows the bank's real support number", "valid": false, "analysis": "Caller ID can be spoofed."},
+							{"id": "mod03_s1_i3_transfer_amount", "label": "Caller knows the blocked ₱48,500 transfer", "valid": false, "analysis": "Knowledge of the incident does not establish caller identity."},
+							{"id": "mod03_s1_i3_recent_call", "label": "Caller knows Daniel contacted the real bank minutes ago", "valid": false, "analysis": "Fresh information is highly convincing but still not authentication."},
+							{"id": "mod03_s1_i3_none", "label": "None of these independently verify the caller", "valid": true, "analysis": "Daniel must verify through the independently established bank channel."}
+						],
+						"resolved_story_event": [
+							{"type": "dialogue", "speaker": "Daniel", "text": "So everything they're showing me can be real...", "emotion": "worried"},
+							{"type": "dialogue", "speaker": "Security Assistant", "text": "...and the person using it can still be fake."}
+						]
+					},
+					"choices": [
+						{"label": "Continue the call because the caller accurately knows about a legitimate bank interaction that occurred only minutes earlier.", "outcome": "CRITICAL", "consequence": "Knowing about a call from minutes ago is unsettling, but it only proves someone was watching that fast — not that they're the one now claiming to handle the case."},
+						{"label": "End the incoming call and reconnect through the bank's independently established fraud channel/case process to confirm whether the senior investigator actually contacted him.", "outcome": "SAFE", "consequence": "Going back through the fraud case Daniel opened himself confirms in one call whether any senior investigator was actually assigned — and this caller was never part of that process.", "story_event": {"type": "status", "title": "FRAUD CASE", "text": "Caller identity could not be verified through the legitimate case channel."}},
+						{"label": "Ask the caller for the fraud case number and details from Daniel's previous legitimate call before deciding whether to continue.", "outcome": "RISKY", "consequence": "The caller recites the case details accurately, but that only shows they know what happened on the real call minutes ago — not that they're the investigator handling it."},
+						{"label": "Continue listening without providing information while Daniel separately checks whether the bank app shows an investigator assigned to the case.", "outcome": "RISKY", "consequence": "The check itself gives Daniel real information, but he's still listening to an unverified caller narrate the case the entire time he's looking."}
+					],
+					"explanation": "Fresh, accurate knowledge of a call that happened minutes earlier is exactly what makes this the hardest call to doubt — and exactly why it still isn't proof. Only the fraud case Daniel opened himself can confirm who is really assigned to it.",
+					"breach_gold": 24,
+					"next": ""
+				}
+			]
 		}
 	]
 }

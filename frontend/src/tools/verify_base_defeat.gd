@@ -28,17 +28,19 @@ func _run() -> void:
 	# non-decision, non-exam Tower Defense stage. Module 2 Stages 1-9 are now
 	# ALL decision-based too (Stage 9 is Module 2's final story stage, with a
 	# finale), and Module 2 Stage 10 is likewise its own summative
-	# post-assessment, so Module 2 has run out of plain stages as well. This
-	# test exercises the plain loss/reward flow against Module 3 Stage 1
-	# instead, since mod_03 has no decision-scenarios data at all.
-	router.active_module_id = "mod_03"
+	# post-assessment, so Module 2 has run out of plain stages as well.
+	# Module 3 Stage 1 is now decision-based too (see verify_decision_stage.gd
+	# _test_module3_stage1()), so this test exercises the plain loss/reward
+	# flow against Module 4 Stage 1 instead, since mod_04 has no
+	# decision-scenarios data at all.
+	router.active_module_id = "mod_04"
 	router.active_stage_index = 0
 	var level: Node = load("res://src/gameplay/level_base.tscn").instantiate()
 	var manager := level.get_node("LevelManager")
 	manager.set_script(load("res://src/tools/defeat_test_manager.gd"))
 	root.add_child(level)
 	await _frames(3)
-	_check(manager._decision == null, "Module 3 Stage 1 does not activate the decision flow")
+	_check(manager._decision == null, "Module 4 Stage 1 does not activate the decision flow")
 	manager.change_phase(2)
 	manager.current_phase = 3
 	manager.base_health = 1

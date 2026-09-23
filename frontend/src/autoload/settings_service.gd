@@ -21,6 +21,20 @@ var mission_reminders: bool = true
 var high_quality_graphics: bool = true
 var show_fps_counter: bool = false
 
+## Suppresses strong motion effects (e.g. dialogue screen shake) in favor of
+## portrait-only/UI-emphasis presentation. See DialogueScreenShake.
+var reduced_motion: bool = false
+
+## Accommodation for authored countdown decisions (see
+## DecisionScenarios.has_timer / stage_one_live.gd's decision timer).
+## "normal": authored duration. "extended": ~1.75x duration. "off": no
+## automatic timeout — the decision stays manually selectable indefinitely.
+## Turning timers off never blocks story progression; it only removes the
+## deadline. Independent of reduced_motion, which never changes timer
+## duration/logic, only motion presentation.
+var timed_decision_assist: String = "normal"
+const TIMED_DECISION_ASSIST_MODES: PackedStringArray = ["normal", "extended", "off"]
+
 
 func _ready() -> void:
 	load_settings()
@@ -47,6 +61,10 @@ func load_settings() -> void:
 	high_quality_graphics = cfg.get_value("display", "high_quality_graphics", true)
 	show_fps_counter = cfg.get_value("display", "show_fps_counter", false)
 
+	reduced_motion = cfg.get_value("accessibility", "reduced_motion", false)
+	var stored_assist: String = str(cfg.get_value("accessibility", "timed_decision_assist", "normal")).strip_edges().to_lower()
+	timed_decision_assist = stored_assist if TIMED_DECISION_ASSIST_MODES.has(stored_assist) else "normal"
+
 
 func save_settings() -> void:
 	var cfg := ConfigFile.new()
@@ -65,6 +83,9 @@ func save_settings() -> void:
 
 	cfg.set_value("display", "high_quality_graphics", high_quality_graphics)
 	cfg.set_value("display", "show_fps_counter", show_fps_counter)
+
+	cfg.set_value("accessibility", "reduced_motion", reduced_motion)
+	cfg.set_value("accessibility", "timed_decision_assist", timed_decision_assist)
 
 	cfg.save(SAVE_PATH)
 	settings_changed.emit()
