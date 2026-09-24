@@ -45,6 +45,18 @@ func _run() -> void:
 	manager.current_phase = 3
 	manager.base_health = 1
 	manager._match_kills = 7
+	# The normal defeat sequence needs a visible home sprite. Supply an
+	# in-memory visual fixture when the optional downloaded atlas is absent;
+	# gameplay and reward behavior remain the real production path.
+	var assets: Node = root.get_node("AssetManager")
+	var had_critical_texture: bool = assets._textures.has("home_base_critical")
+	var previous_critical_texture: Variant = assets._textures.get("home_base_critical", null)
+	var injected_texture: bool = not FileAccess.file_exists("user://assets/home_base_critical.png")
+	if injected_texture:
+		var fixture_image: Image = Image.create(16, 16, false, Image.FORMAT_RGBA8)
+		fixture_image.fill(Color.WHITE)
+		assets._textures["home_base_critical"] = ImageTexture.create_from_image(fixture_image)
+		print("[BASE DEFEAT] Using in-memory home texture; Cloudinary cache unavailable")
 	var old_credits: int = root.get_node("PlayerManager").credits
 	Engine.time_scale = 2
 	manager._apply_base_breach()
@@ -106,6 +118,11 @@ func _run() -> void:
 	_check(root.get_node("PlayerManager").credits == old_credits, "Test did not mutate wallet or save")
 	level.queue_free()
 	await _frames(2)
+	if injected_texture:
+		if had_critical_texture:
+			assets._textures["home_base_critical"] = previous_critical_texture
+		else:
+			assets._textures.erase("home_base_critical")
 	_check(get_nodes_in_group("level_root").is_empty(), "Level and effect clean up together")
 	_check(Engine.time_scale == 1 and not paused, "Exit leaves timing and pause clean")
 	print("[BASE DEFEAT] failures=%d" % failures)

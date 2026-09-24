@@ -50,6 +50,48 @@ static func get_threats(module_id: String, stage_id: int) -> Array[Dictionary]:
 	return result
 
 
+## A reconstruction describes the attacker timeline, never the player's
+## choices. Invalid or disabled blocks are ignored like other optional beats.
+static func reconstruction_data(stage: Dictionary) -> Dictionary:
+	var stored: Variant = stage.get("reconstruction", {})
+	if not stored is Dictionary:
+		return {}
+	var source: Dictionary = stored as Dictionary
+	if source.get("enabled", false) != true:
+		return {}
+	var events: Array[Dictionary] = []
+	var raw_events: Variant = source.get("events", [])
+	if not raw_events is Array or (raw_events as Array).is_empty():
+		return {}
+	for entry: Variant in raw_events:
+		if not entry is Dictionary:
+			return {}
+		var event: Dictionary = entry as Dictionary
+		if not event.get("id", null) is String or not event.get("time", null) is String or not event.get("text", null) is String:
+			return {}
+		var id: String = (event["id"] as String).strip_edges()
+		var time: String = (event["time"] as String).strip_edges()
+		var description: String = (event["text"] as String).strip_edges()
+		if id.is_empty() or time.is_empty() or description.is_empty():
+			return {}
+		events.append({"id": id, "time": time, "text": description})
+	var raw_finding: Variant = source.get("finding", null)
+	if not raw_finding is String or (raw_finding as String).strip_edges().is_empty():
+		return {}
+	var finding: String = (raw_finding as String).strip_edges()
+	var techniques: Array[String] = []
+	var raw_techniques: Variant = source.get("techniques", [])
+	if not raw_techniques is Array or (raw_techniques as Array).is_empty():
+		return {}
+	for entry: Variant in raw_techniques:
+		if not entry is String or (entry as String).strip_edges().is_empty():
+			return {}
+		techniques.append((entry as String).strip_edges())
+	var title: String = str(source.get("title", "")).strip_edges()
+	return {"title": title if not title.is_empty() else "INCIDENT RECONSTRUCTION",
+		"events": events, "techniques": techniques, "finding": finding}
+
+
 ## memory: the player's current story memory snapshot (a flat key -> scalar
 ## dictionary — see get_story_memory_snapshot() on the account/profile
 ## singleton) — defaults to an empty dictionary, which is exactly the
@@ -124,6 +166,29 @@ static func filter_lines_by_memory(lines: Array[Dictionary], memory: Dictionary)
 		if condition_met(line.get("when", {}) as Dictionary, memory):
 			result.append(line)
 	return result
+
+
+## Optional presentation shared by investigation configs and plain threat
+## inspection. Only these two display fields are accepted; gameplay data is
+## never consulted. Unknown modes retain readable metadata in generic chrome.
+static func inspection_display(source: Dictionary) -> Dictionary:
+	var stored: Variant = source.get("display", {})
+	var display: Dictionary = stored as Dictionary if stored is Dictionary else {}
+	var mode: String = str(display.get("presentation", "generic")).strip_edges().to_lower()
+	if mode not in ["generic", "email", "mobile", "identity", "artifact"]:
+		mode = "generic"
+	var metadata: Array[Dictionary] = []
+	var rows: Variant = display.get("metadata", [])
+	if rows is Array:
+		for entry: Variant in rows:
+			if not entry is Dictionary:
+				continue
+			var row: Dictionary = entry as Dictionary
+			var label: Variant = row.get("label", "")
+			var value: Variant = row.get("value", "")
+			if label is String and value is String and not label.strip_edges().is_empty() and not value.strip_edges().is_empty():
+				metadata.append({"label": label.strip_edges(), "value": value.strip_edges()})
+	return {"presentation": mode, "metadata": metadata}
 
 
 ## Optional "inspect evidence, reach a conclusion" moment before a threat's
@@ -202,6 +267,61 @@ static func investigation_resolved_story_event_lines(threat: Dictionary, memory:
 ## any decision stage can opt in — no module/stage-number checks anywhere
 ## else in the engine. Absent or malformed data behaves exactly like a stage
 ## with no finale.
+##
+## This is also every module's "boss stage" (Stage 9) framework — there is no
+## separate boss controller, combat engine, finale system, or BKT rule, and
+## none should ever be added. A boss stage is: 3 hardest operational
+## incidents -> a major story reveal -> this SAME generic finale TD -> module
+## story resolution -> Stage 10 (post-assessment, gated by normal
+## progression, same as after any other stage). finale_config's own fields
+## (deploy_label/victory_banner/complete_banner/case_summary) already carry
+## everything a boss needs to present and identify itself — do not add a
+## redundant "boss": {...} block unless a genuinely new field is needed that
+## finale_config cannot express; presentation/validation should reach for
+## has_finale()/finale_config() first.
+##
+## BOSS AUTHORING CONTRACT — what makes a Stage 9 a boss is COMBINING
+## mechanics the player already learned earlier in the module (spoofed
+## identity + a genuine security event + real case details + time pressure +
+## emotional pressure + the call interface + an investigation moment +
+## visible consequences + reactive dialogue, mixed together), never a new
+## rule invented just for the finale. Never make a boss harder by inflating
+## enemy stats, using an extremely short timer, or writing an obviously evil
+## choice — difficulty comes from the DECISIONS being harder to read, not
+## from the combat or the clock. Choices should keep normal BKT semantics
+## (1 SAFE / 2 RISKY / 1 CRITICAL on a 4-choice module), make every option
+## plausible, avoid vocabulary tells, and never make SAFE the longest option
+## or CRITICAL sound foolish — a boss tests transfer of understanding, not
+## memorization. The player should finish thinking "I've seen every piece of
+## this before — but never all at once."
+##
+## MODULE BOSS IDENTITIES (locked; Module 1/2 already authored, do not
+## rewrite; Module 3/4/5 not authored yet — do not author them from this
+## comment alone, this is the locked design brief only):
+## - Module 1 (Phishing): coordinated corporate phishing / internal
+##   compromise. Core test: can the player verify internal-looking
+##   communication under pressure?
+## - Module 2 (Smishing): real OTP + spoofed identities + personal leverage
+##   + a BlueTech identity-recovery attack. Core test: can the player
+##   separate a genuine security artifact from the malicious workflow
+##   surrounding it?
+## - Module 3 (Vishing, future): a live coordinated voice attack combining
+##   caller-ID spoofing, fresh private information, legitimate security
+##   events, authority, time pressure, emotional pressure, and independent
+##   verification. Core test: can the player break out of a convincing
+##   live caller-controlled trust loop?
+## - Module 4 (Pretexting, future): the attacker maintains one complete,
+##   believable false identity across multiple sources/channels. Core test:
+##   can the player distinguish consistency from actual verification?
+## - Module 5 (Baiting, future): the final campaign operation uses a
+##   desirable object/file/offer as the last delivery mechanism — this is
+##   ALSO the Modules 1-5 campaign climax, not just Module 5's own ending.
+##   It must eventually answer: who/what ran the coordinated campaign, why
+##   BlueTech was targeted, what the final objective was, how phishing/
+##   smishing/vishing/pretexting/baiting connected, and how the operation is
+##   finally contained. Core test: can the player combine everything learned
+##   across the whole game? Not to be authored until Modules 3-4's own boss
+##   content exists.
 static func finale_config(stage: Dictionary) -> Dictionary:
 	var stored: Variant = stage.get("finale", {})
 	if typeof(stored) != TYPE_DICTIONARY:

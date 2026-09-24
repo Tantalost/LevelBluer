@@ -246,8 +246,10 @@ func _show_line() -> void:
 	_speech.text = str(line.get("text", ""))
 	_speech.visible_characters = 0
 	_revealed = 0
-	_typing_speed = Emotion.typing_speed(line_emotion)
-	_pause_remaining = Emotion.pause_before(line_emotion)
+	var settings: Node = get_node_or_null("/root/SettingsService")
+	var speed_mode: String = str(settings.get("text_speed")) if settings != null else "normal"
+	_typing_speed = Emotion.typing_speed(line_emotion) * (float(settings.call("text_speed_multiplier")) if settings != null else 1.0)
+	_pause_remaining = 0.0 if speed_mode == "instant" else Emotion.pause_before(line_emotion)
 	_line_recorded = false
 	_typing = not _speech.text.is_empty()
 	if not who.is_empty() and who not in _cast:
@@ -255,6 +257,8 @@ func _show_line() -> void:
 	_update_portraits()
 	_refresh_controls()
 	_apply_line_emotion_fx(line_emotion)
+	if speed_mode == "instant" and _typing:
+		_reveal_line()
 
 ## Screen-level emotion FX (see DialogueEmotion.shake_profile) fire exactly
 ## once here, at the moment a new line begins — never repeated by the
@@ -322,6 +326,7 @@ func _speech_input(event: InputEvent) -> void:
 		_speech.accept_event()
 
 func _refresh_controls() -> void:
+	var choices_were_visible: bool = _choices_scroll.visible
 	var investigating := _mode == &"threat" and _dialogue_done and not _investigation_config.is_empty()
 	# Choices (and the decision timer) only ever become actionable once any
 	# authored investigation is resolved (see _open_decision()/
@@ -331,6 +336,8 @@ func _refresh_controls() -> void:
 	_narrative.alignment = BoxContainer.ALIGNMENT_BEGIN if (deciding or investigating) else BoxContainer.ALIGNMENT_END
 	_investigation_panel.visible = investigating
 	_choices_scroll.visible = deciding
+	if deciding and not choices_were_visible and not _choice_buttons.is_empty():
+		_choice_buttons[0].grab_focus.call_deferred()
 	# Most decisions are untimed (see DecisionScenarios.has_timer) — the
 	# countdown row only ever shows when the caller has explicitly enabled
 	# it for the current threat via set_decision_timer_visible(), never by
@@ -367,6 +374,8 @@ func show_threat(threat: Dictionary, story_lines: Array[Dictionary], number: int
 	_narrative.add_child(UI.label(str(threat.get("title", "INCIDENT")), 30, UI.TEAL))
 	_dialogue(story_lines)
 	_evidence = UI.column(_narrative)
+	var inspection: VBoxContainer = UI.column(_evidence, 10)
+	InvestigationPanel.render_display(inspection, threat)
 	_evidence.add_child(UI.label(str(threat.get("situation", "")), 28))
 	var evidence := UI.panel(_evidence, Color("1b3038"))
 	var details := UI.column(evidence)
@@ -584,6 +593,8 @@ func _metrics() -> void:
 	for portrait in _portraits:
 		portrait.custom_minimum_size = Vector2(80, 90 if get_viewport_rect().size.y < 500 else 130)
 	for node in find_children("*", "Control", true, false):
+		if _call_panel != null and _call_panel.is_ancestor_of(node):
+			continue # Preserve the compact phone header instead of inflating it to dialogue size.
 		if node is Label or node is Button:
 			node.add_theme_font_size_override("font_size", font)
 		if node is Button:

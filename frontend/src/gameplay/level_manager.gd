@@ -55,6 +55,7 @@ var _is_wave_intermission: bool = false
 var _decision: DecisionStageController = null
 var _decision_stage: Dictionary = {}
 var _decision_overlay: DecisionOverlay = null
+var _decision_reconstruction_panel: Control = null
 var _decision_next: Callable = Callable()
 
 @onready var _map_mount: Node2D = %MapMount
@@ -2720,7 +2721,7 @@ func _show_decision_ending_or_finale() -> void:
 	if _decision.finale_pending():
 		_show_decision_story("ending", _begin_decision_finale, _decision_finale_deploy_label())
 	else:
-		_show_decision_story("ending", _finish_decision_stage, "FILE REPORT")
+		_show_decision_story("ending", _show_decision_reconstruction_or_finish, "FILE REPORT")
 
 
 func _show_decision_threat() -> void:
@@ -3080,12 +3081,30 @@ func _show_decision_finale_closing() -> void:
 	var banner: String = str(finale.get("complete_banner", ""))
 	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(_decision_stage, "closing", _decision_memory())
 	if _decision_overlay == null or lines.is_empty():
-		_finish_decision_stage()
+		_show_decision_reconstruction_or_finish()
 		return
-	_decision_next = _finish_decision_stage
+	_decision_next = _show_decision_reconstruction_or_finish
 	_decision_overlay.visible = true
 	_apply_decision_presentation()
 	_decision_overlay.show_story(lines, _decision_header(), "FILE REPORT", banner)
+
+func _show_decision_reconstruction_or_finish() -> void:
+	var data: Dictionary = DecisionScenarios.reconstruction_data(_decision_stage)
+	if data.is_empty():
+		_finish_decision_stage()
+		return
+	if _decision_reconstruction_panel == null:
+		var canvas: Node = get_parent().get_node_or_null("GameplayCanvas")
+		if canvas == null:
+			_finish_decision_stage()
+			return
+		_decision_reconstruction_panel = preload("res://src/gameplay/decision/decision_reconstruction_panel.gd").new()
+		_decision_reconstruction_panel.name = "DecisionReconstruction"
+		canvas.add_child(_decision_reconstruction_panel)
+		_decision_reconstruction_panel.continued.connect(_finish_decision_stage)
+	if _decision_overlay != null:
+		_decision_overlay.hide()
+	_decision_reconstruction_panel.configure(data)
 
 
 func _save_decision_checkpoint() -> void:

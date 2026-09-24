@@ -16,6 +16,12 @@ func _run() -> void:
 	assets._ensure_assets_dir()
 	var entries: Array = assets._map_environment_catalog()
 	_check(entries.size() == 7, "Seven environment assets registered")
+	if not "--download" in OS.get_cmdline_user_args():
+		for entry: Dictionary in entries:
+			if not FileAccess.file_exists(str(entry.get("local_path", ""))):
+				print("[SKIP CLOUD ENVIRONMENT] Offline asset cache is incomplete; run with --download in an authorized network environment.")
+				quit(0 if failures == 0 else 1)
+				return
 	for entry in entries:
 		if "--download" in OS.get_cmdline_user_args():
 			var success: bool = await assets._download_and_store(entry)

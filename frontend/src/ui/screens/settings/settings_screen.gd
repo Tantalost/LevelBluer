@@ -30,10 +30,15 @@ extends BaseScreen
 @onready var _logout_button: Button = %LogoutButton
 
 var _pixel_font: Font
+var _accessibility_labels: Array[Label] = []
+var _reduced_motion_toggle: CheckButton
+var _timer_assist_select: OptionButton
+var _text_speed_select: OptionButton
 
 
 func _ready() -> void:
 	_load_font()
+	_build_accessibility_controls()
 	get_viewport().size_changed.connect(_apply_scale)
 
 	_back_button.pressed.connect(func(): Router.request_back())
@@ -53,6 +58,43 @@ func _load_font() -> void:
 		var file := load("res://assets/fonts/PressStart2P-Regular.ttf") as FontFile
 		if file != null:
 			_pixel_font = file
+
+
+func _build_accessibility_controls() -> void:
+	var content: VBoxContainer = get_node("SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox") as VBoxContainer
+	var section := VBoxContainer.new()
+	section.name = "AccessibilitySection"
+	section.add_theme_constant_override("separation", 10)
+	content.add_child(section)
+	content.move_child(section, content.get_node("LogoutSpacer").get_index())
+	var heading := Label.new()
+	heading.text = "ACCESSIBILITY"
+	heading.add_theme_color_override("font_color", Color("4fe0d4"))
+	section.add_child(heading)
+	_accessibility_labels.append(heading)
+	var motion_label := Label.new()
+	motion_label.text = "Reduce dialogue motion"
+	section.add_child(motion_label)
+	_accessibility_labels.append(motion_label)
+	_reduced_motion_toggle = CheckButton.new()
+	_reduced_motion_toggle.text = "NO SCREEN SHAKE OR PORTRAIT JOLTS"
+	section.add_child(_reduced_motion_toggle)
+	var timer_label := Label.new()
+	timer_label.text = "Timed decisions"
+	section.add_child(timer_label)
+	_accessibility_labels.append(timer_label)
+	_timer_assist_select = OptionButton.new()
+	for mode: String in SettingsService.TIMED_DECISION_ASSIST_MODES:
+		_timer_assist_select.add_item(mode.to_upper())
+	section.add_child(_timer_assist_select)
+	var speed_label := Label.new()
+	speed_label.text = "Dialogue text speed"
+	section.add_child(speed_label)
+	_accessibility_labels.append(speed_label)
+	_text_speed_select = OptionButton.new()
+	for mode: String in SettingsService.TEXT_SPEED_MODES:
+		_text_speed_select.add_item(mode.to_upper())
+	section.add_child(_text_speed_select)
 
 
 func _update_localized_text() -> void:
@@ -111,6 +153,9 @@ func _load_ui_from_service() -> void:
 
 	_hq_toggle.button_pressed = SettingsService.high_quality_graphics
 	_fps_toggle.button_pressed = SettingsService.show_fps_counter
+	_reduced_motion_toggle.set_pressed_no_signal(SettingsService.reduced_motion)
+	_timer_assist_select.select(maxi(0, SettingsService.TIMED_DECISION_ASSIST_MODES.find(SettingsService.timed_decision_assist)))
+	_text_speed_select.select(maxi(0, SettingsService.TEXT_SPEED_MODES.find(SettingsService.text_speed)))
 
 
 func _setup_control_handlers() -> void:
@@ -170,6 +215,18 @@ func _setup_control_handlers() -> void:
 		SettingsService.show_fps_counter = t
 		SettingsService.save_settings()
 	)
+	_reduced_motion_toggle.toggled.connect(func(enabled: bool) -> void:
+		SettingsService.reduced_motion = enabled
+		SettingsService.save_settings()
+	)
+	_timer_assist_select.item_selected.connect(func(index: int) -> void:
+		SettingsService.timed_decision_assist = SettingsService.TIMED_DECISION_ASSIST_MODES[index]
+		SettingsService.save_settings()
+	)
+	_text_speed_select.item_selected.connect(func(index: int) -> void:
+		SettingsService.text_speed = SettingsService.TEXT_SPEED_MODES[index]
+		SettingsService.save_settings()
+	)
 
 
 func _on_logout_pressed() -> void:
@@ -212,6 +269,11 @@ func _apply_scale() -> void:
 
 	for val in [_master_val, _sfx_val]:
 		_apply_pixel_font(val, scaled.call(10))
+	for label: Label in _accessibility_labels:
+		_apply_pixel_font(label, scaled.call(14))
+	_apply_pixel_font_button(_reduced_motion_toggle, scaled.call(11))
+	_apply_pixel_font_button(_timer_assist_select, scaled.call(12))
+	_apply_pixel_font_button(_text_speed_select, scaled.call(12))
 
 
 func _apply_pixel_font(label: Label, font_size: int) -> void:

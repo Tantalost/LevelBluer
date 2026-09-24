@@ -1,5 +1,60 @@
 # Geometric gameplay rollout: Module 1 / Stage 1
 
+## Module interaction identities and authoring contract
+
+Future decision-story scenes share the controller, live workspace, investigation,
+BKT, checkpoints, and breach systems. Their signature interactions are:
+
+- Module 1 / phishing: email/message inspection (sender, domain, links,
+  attachments, wording and context). Inspect before trusting.
+- Module 2 / smishing: SMS and mobile account-event inspection (OTP/recovery,
+  carrier/eSIM events and conflicting notifications). Separate the real event
+  from the malicious message.
+- Module 3 / vishing: the existing live call panel, emotion, duration, timed
+  pressure and optional investigation. Break out of the caller-controlled
+  channel. Calls stay in their dedicated panel.
+- Module 4 / pretexting: identity and story-consistency inspection (claimed
+  name, organization, role, history, credentials and timeline contradictions).
+  Check what is verified rather than merely plausible. No new content yet.
+- Module 5 / baiting: object/file/offer inspection (source, type, description,
+  isolation and evidence handling). Something attractive can still be the
+  attack. No new content yet.
+
+Optional `display` may appear on a threat for passive inspection before its
+existing evidence/choices, or inside its `investigation` config above the
+existing evidence-analysis items. Both use the same metadata renderer:
+
+```json
+"display": {
+  "presentation": "email",
+  "metadata": [
+    {"label": "FROM", "value": "security@example.test"},
+    {"label": "SUBJECT", "value": "Account notice"}
+  ]
+}
+```
+
+Modes are `generic`, `email`, `mobile`, `identity`, and `artifact`. Missing or
+unknown mode falls back to generic. Labels/values must be non-empty strings;
+malformed rows are skipped. Authored order is preserved, text wraps and scrolls,
+and values are literal text rather than interpreted markup. No icon, animation,
+or color is required to read them. Modes supply a heading only; they never
+read or infer evidence validity, outcomes, BKT or progression. Never author
+metadata that labels an item valid or names a SAFE/RISKY/CRITICAL answer.
+
+Each future stage does **not** need every mechanic. Use the signature mechanic
+only when it improves the scene. Mix dialogue → decision, dialogue → investigation
+→ decision, call → timed decision, inspection → story reveal, and dialogue →
+consequence. Do not repeat inspection → decision → TD for every incident.
+Adding passive display metadata does not introduce a new required interaction
+or change any existing timer/reduced-motion setting.
+
+Current demos: Module 1 Stage 1 Account Suspension Notice (email headers/link),
+and Module 2 Stage 2 Delivery Delayed (SMS versus delivery-app status). The
+original dialogue, choices, evidence and outcomes remain authored as before.
+Module 3 Stage 1 retains its existing call/investigation demo; no Stage 2 or
+Case Board is added here.
+
 Normal Stage 1 now launches `src/gameplay/decision/stage_one_live.tscn`.
 The dedicated, non-saving preview still launches `preview/stage_one_preview.tscn`.
 Stage 2–10, other modules and the tutorial continue to use `level_base.tscn`.
@@ -85,3 +140,12 @@ Layouts checked: 1280×720, 960×600, 844×390.
 
 `verify_decision_stage.gd` is the retained **legacy** decision-scene regression
 harness. It writes/restores a guest save; use the new isolated harness for this rollout.
+
+## Accessibility authoring
+
+Essential story and incident information must be written in text. Strong motion
+and emotion animation are optional emphasis, never the only way to understand a
+scene. Timed decisions must remain usable with extended or disabled deadlines;
+do not communicate a critical distinction by color alone. If audio is added
+later, provide an equivalent text cue. Keep call identity/status, evidence,
+reconstruction findings, and consequences readable without sound or motion.

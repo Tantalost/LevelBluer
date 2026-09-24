@@ -27,6 +27,30 @@ var _continue_button: Button
 var _items: Array[Dictionary] = []
 var _selected_index := -1
 var _confirmed := false
+var _display_column: VBoxContainer
+
+
+## The same text-only view is also embedded in a threat's existing scrollable
+## evidence column. No selection, validation, or signals are added here.
+static func render_display(parent: VBoxContainer, source: Dictionary) -> void:
+	UI.clear(parent)
+	var display: Dictionary = DecisionScenarios.inspection_display(source)
+	var metadata: Array = display["metadata"]
+	parent.visible = not metadata.is_empty()
+	if metadata.is_empty():
+		return
+	var headings: Dictionary = {
+		"generic": "INSPECTION", "email": "EMAIL / MESSAGE",
+		"mobile": "MOBILE / ACCOUNT EVENTS", "identity": "IDENTITY / CONTEXT",
+		"artifact": "OBJECT / FILE / OFFER",
+	}
+	parent.add_child(UI.label(str(headings[display["presentation"]]), 26, UI.TEXT))
+	for row: Dictionary in metadata:
+		# Label, rather than RichTextLabel: authored values are literal text,
+		# including brackets, never markup that can impersonate UI highlights.
+		var field: Label = UI.label("%s\n%s" % [row["label"], row["value"]], 26, UI.TEXT)
+		field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		parent.add_child(field)
 
 
 func _ready() -> void:
@@ -37,6 +61,14 @@ func _ready() -> void:
 	body.add_child(_title_label)
 	_prompt_label = UI.label("", 26, UI.TEXT)
 	body.add_child(_prompt_label)
+	# Bound metadata height so a long message cannot displace ANALYZE or
+	# evidence selection. Plain scenes reuse their existing evidence scroll.
+	var display_scroll: ScrollContainer = ScrollContainer.new()
+	display_scroll.custom_minimum_size.y = 156
+	display_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body.add_child(display_scroll)
+	_display_column = UI.column(display_scroll, 10)
+	_display_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_items_column = UI.column(body, 8)
 	_button_group = ButtonGroup.new()
 	_analyze_button = UI.button("ANALYZE", _analyze, true)
@@ -59,6 +91,8 @@ func configure(config: Dictionary) -> void:
 	_confirmed = false
 	_title_label.text = str(config.get("title", "INVESTIGATION")).strip_edges().to_upper()
 	_prompt_label.text = str(config.get("prompt", "")).strip_edges()
+	render_display(_display_column, config)
+	_display_column.get_parent().visible = _display_column.visible
 	_items.clear()
 	var stored: Variant = config.get("items", [])
 	if typeof(stored) == TYPE_ARRAY:
@@ -81,6 +115,8 @@ func configure(config: Dictionary) -> void:
 	_result_label.text = ""
 	_continue_button.hide()
 	_continue_button.disabled = false
+	if not _item_buttons.is_empty():
+		_item_buttons[0].grab_focus.call_deferred()
 
 
 func is_resolved() -> bool:
@@ -101,6 +137,7 @@ func _select(index: int) -> void:
 	for i in _item_buttons.size():
 		_item_buttons[i].text = _item_text(i == index, str(_items[i].get("label", "")))
 	_analyze_button.disabled = false
+	_analyze_button.grab_focus.call_deferred()
 
 
 ## No BKT, no Tower Defense, no Game Over, no outcome selection — this only
@@ -118,6 +155,7 @@ func _analyze() -> void:
 		_items_column.hide()
 		_analyze_button.hide()
 		_continue_button.show()
+		_continue_button.grab_focus.call_deferred()
 	else:
 		# Evidence insufficient: the player picks again — items and ANALYZE
 		# stay live, exactly like before this attempt, no separate "try
@@ -125,6 +163,7 @@ func _analyze() -> void:
 		_result_label.add_theme_color_override("font_color", UI.GOLD)
 		_result_label.text = "EVIDENCE INSUFFICIENT\n" + analysis
 		_result_label.show()
+		_item_buttons[_selected_index].grab_focus.call_deferred()
 
 
 func _confirm_continue() -> void:

@@ -30,6 +30,14 @@
 			"threats": [
 				{
 					"id": "mod01_s1_t1",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{"label": "FROM", "value": "it-support@bluetech-secure-login.com"},
+							{"label": "SUBJECT", "value": "URGENT: Account suspension in 2 hours"},
+							{"label": "LINK", "value": "http://bluetech-verify.net/login"}
+						]
+					},
 					"module_id": "mod_01",
 					"stage": 1,
 					"title": "Account Suspension Notice",
@@ -1423,6 +1431,14 @@
 			"threats": [
 				{
 					"id": "mod02_stage02_incident01",
+					"display": {
+						"presentation": "mobile",
+						"metadata": [
+							{"label": "SMS", "value": "Delivery attempt delayed. Address verification required before 12:00 PM."},
+							{"label": "MESSAGE DETAILS", "value": "Merchant, delivery date, tracking suffix and neighborhood match Leah's order."},
+							{"label": "DELIVERY APP", "value": "Out for Delivery"}
+						]
+					},
 					"module_id": "mod_02",
 					"stage": 2,
 					"title": "Delivery Delayed",
@@ -2947,6 +2963,20 @@
 			"clear_subtitle": "UNKNOWN CALLER",
 			"next_stage_title": "Stage 2 — Stay on the Line",
 			"breach_hp_multiplier": 0.65,
+			"reconstruction": {
+				"enabled": true,
+				"title": "INCIDENT RECONSTRUCTION",
+				"events": [
+					{"id": "mod03_s1_event01", "time": "18:42", "text": "Daniel receives a fraud call displaying his bank's identity."},
+					{"id": "mod03_s1_event02", "time": "18:44", "text": "The caller uses real business and account information to build credibility."},
+					{"id": "mod03_s1_event03", "time": "18:47", "text": "The caller discourages Daniel from contacting the bank independently."},
+					{"id": "mod03_s1_event04", "time": "18:52", "text": "Daniel confirms that a genuine blocked transfer exists."},
+					{"id": "mod03_s1_event05", "time": "18:55", "text": "A new caller uses fresh case information and spoofed caller identity to appear legitimate."},
+					{"id": "mod03_s1_event06", "time": "18:57", "text": "Independent verification remains the reliable identity check."}
+				],
+				"techniques": ["Vishing", "Caller-ID Spoofing", "Urgency", "Knowledge-Based Impersonation"],
+				"finding": "A real security event can be wrapped inside a false story. Verify the caller through an independently established channel."
+			},
 			"opening": [
 				{"speaker": "", "text": "Daniel is closing his small business for the day. His phone rings. Unknown number."},
 				{"speaker": "", "text": "Daniel ignores it. It rings again. Then again."},

@@ -34,6 +34,16 @@ var reduced_motion: bool = false
 ## duration/logic, only motion presentation.
 var timed_decision_assist: String = "normal"
 const TIMED_DECISION_ASSIST_MODES: PackedStringArray = ["normal", "extended", "off"]
+## Multiplies the authored emotion pace; instant still displays every line and
+## leaves Continue/choice progression entirely manual.
+var text_speed: String = "normal"
+const TEXT_SPEED_MODES: PackedStringArray = ["slow", "normal", "fast", "instant"]
+
+func text_speed_multiplier() -> float:
+	match text_speed:
+		"slow": return 0.55
+		"fast": return 1.8
+		_: return 1.0
 
 
 func _ready() -> void:
@@ -64,6 +74,8 @@ func load_settings() -> void:
 	reduced_motion = cfg.get_value("accessibility", "reduced_motion", false)
 	var stored_assist: String = str(cfg.get_value("accessibility", "timed_decision_assist", "normal")).strip_edges().to_lower()
 	timed_decision_assist = stored_assist if TIMED_DECISION_ASSIST_MODES.has(stored_assist) else "normal"
+	var stored_speed: String = str(cfg.get_value("accessibility", "text_speed", "normal")).strip_edges().to_lower()
+	text_speed = stored_speed if TEXT_SPEED_MODES.has(stored_speed) else "normal"
 
 
 func save_settings() -> void:
@@ -86,6 +98,7 @@ func save_settings() -> void:
 
 	cfg.set_value("accessibility", "reduced_motion", reduced_motion)
 	cfg.set_value("accessibility", "timed_decision_assist", timed_decision_assist)
+	cfg.set_value("accessibility", "text_speed", text_speed)
 
 	cfg.save(SAVE_PATH)
 	settings_changed.emit()

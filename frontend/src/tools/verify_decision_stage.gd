@@ -2409,11 +2409,25 @@ func _test_stage9() -> void:
 	check(lm._decision.resolved_threats == 3, "[Stage 9] Retry after finale loss keeps all 3 incidents resolved")
 	check(overlay._mode == &"story" and overlay._continue_button.text == "DEPLOY FINAL DEFENSES", "[Stage 9] Retry after finale loss replays the finale prompt, never Incident 3")
 
-	print("-- 10. FINAL CONTAINMENT TD WIN -> CONTAINMENT COMPLETE -> CASE CLOSED -> MODULE 1 STORY COMPLETE -> Stage 9 clears, unlocks Stage 10 --")
-	var pl_before_finale_win: float = _player.get_mastery("phishing")
+	print("-- [Boss/Finale] Exiting mid-active-finale and reloading preserves finale state (checkpoint_state()/restore()), never re-litigating Incident 3 --")
 	overlay._continue_button.pressed.emit()
 	await settle()
-	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Stage 9] Retrying DEPLOY FINAL DEFENSES restarts the finale Tower Defense")
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and lm._decision.is_finale_active(), "[Boss/Finale] Finale Tower Defense is active before the simulated exit")
+	await _stop_match()
+	level = await _start_match("mod_01", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(lm._decision.is_finale_active() and lm._decision.resolved_threats == 3, "[Boss/Finale] Reloading mid-finale restores the finale flow state and keeps all 3 incidents resolved")
+	# mod01_stage9 authors no "resume_finale" text, so _show_decision_story()
+	# finds nothing to show and calls straight through to _begin_decision_finale()
+	# — the finale restarts immediately rather than pausing on a DEPLOY prompt.
+	# Either way, the guarantee holds: never Incident 3, never a lost/duplicated attempt.
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and lm._decision.is_finale_active(),
+		"[Boss/Finale] Reloading mid-finale goes straight back into the finale Tower Defense — never Incident 3, never stuck mid-battle with lost state")
+
+	print("-- 10. FINAL CONTAINMENT TD WIN -> CONTAINMENT COMPLETE -> CASE CLOSED -> MODULE 1 STORY COMPLETE -> Stage 9 clears, unlocks Stage 10 --")
+	var pl_before_finale_win: float = _player.get_mastery("phishing")
+	# Already inside the finale Tower Defense from the reload check just above.
 	await _force_td_win(lm)
 	check(is_equal_approx(_player.get_mastery("phishing"), pl_before_finale_win), "[Stage 9] Finale TD win applies no BKT update")
 	check(overlay._mode == &"story" and overlay._banner.text == "CONTAINMENT COMPLETE", "[Stage 9] Finale win shows CONTAINMENT COMPLETE")
@@ -3775,6 +3789,25 @@ func _test_module3_stage1() -> void:
 	check(not _dialogue_contains(overlay, "same campaign that hit BlueTech"), "[Mod3 Stage 1] Ending does not reveal the larger Module 1/2 campaign")
 	overlay._continue_button.pressed.emit()
 	await settle()
+	check(lm.current_phase != lm.GamePhase.VICTORY and not _player.has_cleared_stage("mod_03", 1), "[Reconstruction] Ending does not award stage completion before reconstruction")
+	var reconstruction_m3: Control = level.get_node_or_null("GameplayCanvas/DecisionReconstruction")
+	check(reconstruction_m3 != null and reconstruction_m3.visible, "[Reconstruction] Module 3 Stage 1 shows reconstruction after ending")
+	var reconstruction_credits: int = _player.credits
+	var reconstruction_mastery: float = _player.get_mastery("vishing")
+	var reconstruction_memory: Dictionary = _player.get_story_memory_snapshot()
+	await _stop_match()
+	level = await _start_match("mod_03", 0)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(lm._decision.resolved_threats == 3 and overlay._mode == &"story", "[Reconstruction] Legacy reload retains resolved incidents and replays ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	reconstruction_m3 = level.get_node_or_null("GameplayCanvas/DecisionReconstruction")
+	check(reconstruction_m3 != null and reconstruction_m3.visible, "[Reconstruction] Legacy reload returns to reconstruction")
+	check(_player.credits == reconstruction_credits and is_equal_approx(_player.get_mastery("vishing"), reconstruction_mastery) and _player.get_story_memory_snapshot() == reconstruction_memory and not _player.has_cleared_stage("mod_03", 1), "[Reconstruction] Legacy reload adds no rewards, BKT, memory, or clear")
+	if reconstruction_m3 != null:
+		reconstruction_m3._continue.pressed.emit()
+		await settle()
 	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 1), "[Mod3 Stage 1] Completion marks mod_03:1")
 	check(not _player.has_cleared_stage("mod_01", 1) and not _player.has_cleared_stage("mod_02", 1), "[Mod3 Stage 1] Completion does not mark mod_01:1 or mod_02:1 (no checkpoint collision)")
 	check(root.get_node("StageManager").access_reason(2, "mod_03").is_empty(), "[Mod3 Stage 1] Completion unlocks mod_03:2")
@@ -3800,6 +3833,10 @@ func _test_module3_stage1() -> void:
 	check(_dialogue_contains(overlay, "PRIVATE NUMBER"), "[Mod3 Stage 1] All-SAFE run still reaches the Stage 2 cliffhanger")
 	overlay._continue_button.pressed.emit()
 	await settle()
+	var safe_reconstruction_m3: Control = level.get_node_or_null("GameplayCanvas/DecisionReconstruction")
+	if safe_reconstruction_m3 != null:
+		safe_reconstruction_m3._continue.pressed.emit()
+		await settle()
 	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 1), "[Mod3 Stage 1] All-SAFE run still clears the stage normally")
 	await _stop_match()
 
@@ -3986,6 +4023,10 @@ func _test_module3_stage1_story_consequences() -> void:
 	check(overlay._mode == &"story" and _dialogue_contains(overlay, "isn't a random robocall"), "[StoryEvent] SAFE still continues into Stage 1's unchanged ending, not a new/different beat")
 	overlay._continue_button.pressed.emit()
 	await settle()
+	var story_reconstruction_m3: Control = level.get_node_or_null("GameplayCanvas/DecisionReconstruction")
+	if story_reconstruction_m3 != null:
+		story_reconstruction_m3._continue.pressed.emit()
+		await settle()
 	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 1), "[StoryEvent] Stage 1 still completes and clears normally with story-event choices in play")
 	await _stop_match()
 	_router.active_module_id = "mod_01"

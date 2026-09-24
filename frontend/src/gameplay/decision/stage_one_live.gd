@@ -11,6 +11,7 @@ var decision: DecisionStageController
 var story: Dictionary
 var story_overlay: Control
 var story_next: Callable
+var _reconstruction_panel: Control
 var mastery_frozen := false
 # Reopening an already-graded breach is a story review, not another assessment.
 # Persist this marker through exits before the player chooses again.
@@ -268,7 +269,7 @@ func _show_ending_or_finale() -> void:
 	if decision.finale_pending():
 		_show_story("ending", _begin_finale, _finale_deploy_label())
 	else:
-		_show_story("ending", _finish_investigation, "FILE REPORT")
+		_show_story("ending", _show_reconstruction_or_finish, "FILE REPORT")
 
 func _update_hud() -> void:
 	super._update_hud()
@@ -561,11 +562,25 @@ func _show_finale_closing() -> void:
 	var banner: String = str(finale.get("complete_banner", ""))
 	var lines: Array[Dictionary] = DecisionScenarios.finale_dialogue_lines(story, "closing")
 	if lines.is_empty():
-		_finish_investigation()
+		_show_reconstruction_or_finish()
 		return
 	_present_story()
-	story_next = _finish_investigation
+	story_next = _show_reconstruction_or_finish
 	story_overlay.show_story(lines, _header(), "FILE REPORT", banner)
+
+func _show_reconstruction_or_finish() -> void:
+	var data: Dictionary = DecisionScenarios.reconstruction_data(story)
+	if data.is_empty():
+		_finish_investigation()
+		return
+	if _reconstruction_panel == null:
+		_reconstruction_panel = preload("res://src/gameplay/decision/decision_reconstruction_panel.gd").new()
+		_reconstruction_panel.name = "DecisionReconstruction"
+		hud.body.add_child(_reconstruction_panel)
+		_reconstruction_panel.continued.connect(_finish_investigation)
+	_present_story()
+	story_overlay.hide()
+	_reconstruction_panel.configure(data)
 
 func _finish_investigation() -> void:
 	if decision.is_complete():

@@ -62,7 +62,10 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	_check(scenery.get_child_count() >= 1, "Scene tile actually instantiates")
-	_verify_pixels()
+	if FileAccess.file_exists("user://assets/map_industrial_atlas.png"):
+		_verify_pixels()
+	else:
+		print("[SKIP ISOMETRIC PIXELS] Cloud atlas is not cached locally; structural checks still ran")
 	map.free()
 	print("[ISOMETRIC VERIFY] modules=", scene_count, " failures=", failures)
 	if "--render" in OS.get_cmdline_user_args():

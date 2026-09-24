@@ -40,9 +40,85 @@ func _run() -> void:
 	await _test_panel_reconfigure_resets_state()
 	await _test_workspace_gates_decision_ready_until_resolved()
 	await _test_workspace_call_and_emotions_coexist_with_investigation()
+	await _test_presentation_modes()
+	await _test_authored_inspection_demos()
 
 	print("INVESTIGATION_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)
+
+
+func _test_presentation_modes() -> void:
+	var panel: Control = await _mount_panel()
+	var source: Dictionary = {"title": "T", "items": [
+		{"id": "a", "label": "A", "valid": false, "analysis": "Unverified"},
+		{"id": "b", "label": "B", "valid": true, "analysis": "Verified"},
+	]}
+	panel.configure(source)
+	check(not panel._display_column.get_parent().visible, "Absent display keeps generic investigation layout unchanged")
+	for mode: String in ["generic", "email", "mobile", "identity", "artifact", "unknown"]:
+		var config: Dictionary = source.duplicate(true)
+		config["display"] = {"presentation": mode, "metadata": [
+			{"label": "SECOND", "value": "[color=red]Literal text[/color]"},
+			{"label": "FIRST", "value": "A long account notification. ".repeat(40)},
+		]}
+		var normalized: Dictionary = DecisionScenarios.inspection_display(config)
+		check(normalized.presentation == ("generic" if mode == "unknown" else mode), "%s normalizes safely" % mode)
+		panel.configure(config)
+		check(panel._display_column.get_child_count() == 3, "%s renders heading and ordered fields" % mode)
+		check(panel._display_column.get_child(1).text == "SECOND\n[color=red]Literal text[/color]", "%s retains literal authored text and order" % mode)
+		check(panel._display_column.get_child(2).text.begins_with("FIRST\n"), "%s does not sort metadata" % mode)
+		check(panel._item_buttons[0].text == "[ ] A" and panel._item_buttons[1].text == "[ ] B" and not panel._result_label.visible,
+			"%s does not reveal validity before analysis" % mode)
+		panel._select(0)
+		panel._analyze()
+		check(not panel.is_resolved(), "%s cannot turn invalid evidence into valid evidence" % mode)
+		panel._select(1)
+		panel._analyze()
+		check(panel.is_resolved(), "%s preserves valid analysis" % mode)
+	panel.configure(source)
+	check(not panel._display_column.get_parent().visible and panel._display_column.get_child_count() == 0, "Generic reset removes previous metadata")
+	for malformed: Variant in [null, "bad", [], {"metadata": "bad"}, {"metadata": [1, {}, {"label": "X", "value": {}}]}]:
+		check(DecisionScenarios.inspection_display({"display": malformed}).metadata.is_empty(), "Malformed metadata safely omitted")
+	panel.queue_free()
+	await process_frame
+
+
+func _test_authored_inspection_demos() -> void:
+	for location: Array in [["mod_01", 1, "email"], ["mod_02", 2, "mobile"]]:
+		var module_id: String = location[0]
+		var stage_id: int = location[1]
+		var threat: Dictionary = DecisionScenarios.get_threats(module_id, stage_id)[0]
+		check(DecisionScenarios.inspection_display(threat).presentation == location[2], "%s demo uses authored presentation" % module_id)
+		var workspace: Control = Workspace.new()
+		root.add_child(workspace)
+		await process_frame
+		var ready_calls: Array[bool] = []
+		workspace.decision_ready.connect(func() -> void: ready_calls.append(true))
+		var lines: Array[Dictionary] = [{"speaker": "Mia", "text": "Inspect the message."}]
+		workspace.show_threat(threat, lines, 1, 3, "DEMO")
+		_drain_dialogue(workspace)
+		check(ready_calls.size() == 1 and workspace._choices_scroll.visible, "%s inspection keeps the existing decision gate" % module_id)
+		check(workspace._evidence.get_child(0).get_child_count() == 4, "%s demo renders its three text fields in the existing scroll" % module_id)
+		var plain: Dictionary = threat.duplicate(true)
+		plain.erase("display")
+		var choices: Array = threat["choices"]
+		for index: int in choices.size():
+			var decorated: DecisionStageController = DecisionStageController.new()
+			var baseline: DecisionStageController = DecisionStageController.new()
+			decorated.setup(module_id, stage_id, [threat])
+			baseline.setup(module_id, stage_id, [plain])
+			decorated.current_threat_for_display()
+			baseline.display_order = decorated.display_order.duplicate()
+			check(decorated.choose(index).outcome == baseline.choose(index).outcome, "%s metadata leaves shuffled choice outcome unchanged" % module_id)
+			var decorated_commit: Dictionary = decorated.commit()
+			var baseline_commit: Dictionary = baseline.commit()
+			# Records carry the whole authored threat for presentation. Only
+			# its optional display block is expected to differ.
+			(decorated_commit["threat"] as Dictionary).erase("display")
+			check(decorated_commit == baseline_commit, "%s metadata leaves commit and BKT mapping unchanged" % module_id)
+			check(decorated.checkpoint_state() == baseline.checkpoint_state(), "%s metadata leaves progression/checkpoint unchanged" % module_id)
+		workspace.queue_free()
+		await process_frame
 
 
 func _test_absent_investigation_preserves_old_behavior() -> void:

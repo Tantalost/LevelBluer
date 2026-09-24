@@ -36,6 +36,7 @@ func _run() -> void:
 	await _test_end_call_marks_ended_and_stops_duration()
 	await _test_end_call_disabled_unless_authored()
 	await _test_reduced_motion_does_not_change_call_state()
+	await _test_compact_layout()
 
 	print("CALL_PANEL_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)
@@ -135,9 +136,9 @@ func _test_mute_speaker_are_purely_local() -> void:
 	panel.configure({"caller": "X"})
 	check(not panel.is_muted() and not panel.is_speaker_on(), "A fresh call starts unmuted, speaker off")
 	panel._toggle_mute()
-	check(panel.is_muted() and panel._mute_button.text == "UNMUTE", "Toggling mute flips the visual state and label")
+	check(panel.is_muted() and panel._mute_button.text == "MUTE: ON", "Toggling mute exposes its state in text")
 	panel._toggle_mute()
-	check(not panel.is_muted() and panel._mute_button.text == "MUTE", "Toggling mute again restores it")
+	check(not panel.is_muted() and panel._mute_button.text == "MUTE: OFF", "Toggling mute again restores it")
 	panel._toggle_speaker()
 	check(panel.is_speaker_on() and panel._speaker_button.text.contains("ON"), "Toggling speaker flips the visual state and label")
 	# A fresh call (e.g. the next incident) always resets both, never carrying
@@ -196,5 +197,25 @@ func _test_reduced_motion_does_not_change_call_state() -> void:
 	var without_reduced_motion := {"caller": panel._caller_label.text, "number": panel._number_label.text, "status": panel._status_label.text, "duration": panel._duration_label.text}
 	check(with_reduced_motion == without_reduced_motion, "reduced_motion changes nothing about call caller/number/status/duration presentation")
 	settings.reduced_motion = reduced_motion_before
+	panel.queue_free()
+	await process_frame
+
+
+func _test_compact_layout() -> void:
+	print("== Caller identity and controls remain compact at wide and narrow widths ==")
+	var panel: Control = await _mount_panel()
+	panel.size = Vector2(900, 0)
+	panel.configure({"caller": "Bank Fraud Department", "number": "PRIVATE NUMBER", "status": "CONNECTED"})
+	await process_frame
+	await process_frame
+	print("[CALL LAYOUT] wide panel=%s mute=%s speaker=%s" % [panel.size, panel._mute_button.size, panel._speaker_button.size])
+	check(panel._caller_label.size.x > 300.0 and panel._caller_label.get_line_count() == 1, "Caller uses horizontal space without character wrapping")
+	check(panel.size.y < 210.0 and panel._mute_button.size.y < 80.0 and panel._speaker_button.size.y < 80.0, "Call panel and controls remain compact")
+	panel.size = Vector2(600, 0)
+	panel.configure({"caller": "Bank Fraud Department Senior Investigations and Account Protection Team", "number": "PRIVATE NUMBER", "status": "CONNECTED", "allow_end_call": true})
+	await process_frame
+	await process_frame
+	check(panel._caller_label.get_line_count() == 1 and panel._caller_label.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS, "Long caller names truncate safely, without per-character wrapping")
+	check(panel.size.y < 230.0 and panel.get_global_rect().encloses(panel._speaker_button.get_global_rect()), "Narrow call layout remains bounded")
 	panel.queue_free()
 	await process_frame
