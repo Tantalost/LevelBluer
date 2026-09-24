@@ -3460,6 +3460,139 @@
 					"explanation": "A real payroll alert and familiar voice can be synchronized; verify the request and the person through channels the caller did not establish.", "breach_gold": 28, "next": ""
 				}
 			]
+		},
+		{
+			"id": "mod03_stage4", "module_id": "mod_03", "stage": 4, "title": "Don't Hang Up", "bkt_skill": "vishing", "company": "BlueTech Solutions",
+			"clear_title": "STAGE 4 COMPLETE", "clear_subtitle": "DON'T HANG UP", "next_stage_title": "Stage 5 — Too Late", "breach_hp_multiplier": 0.80,
+			"opening": [
+				{"speaker": "", "text": "Caller ID: BLUETECH SECURITY."},
+				{"speaker": "Caller", "text": "Daniel Santos, do not disconnect."},
+				{"speaker": "Caller", "text": "We are investigating the person impersonating your sister."},
+				{"speaker": "Caller", "text": "If you hang up now, you may destroy evidence."},
+				{"speaker": "Daniel", "text": "They know about Ana.", "emotion": "worried"},
+				{"speaker": "Security Assistant", "text": "And that is not our outbound number."},
+				{"speaker": "Daniel", "text": "I already learned that familiar doesn't mean verified.", "emotion": "determined", "when": {"mod03_s3_voice_response": "independent_verification"}},
+				{"speaker": "Daniel", "text": "I compared the voice and it still fooled me.", "emotion": "frustrated", "when": {"mod03_s3_voice_response": "voice_comparison"}},
+				{"speaker": "Daniel", "text": "They knew answers they shouldn't have known.", "emotion": "frustrated", "when": {"mod03_s3_voice_response": "knowledge_challenge"}},
+				{"speaker": "Daniel", "text": "So what do they want this time?"},
+				{"speaker": "Security Assistant", "text": "Let's find out without letting them control the response."}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "The caller wasn't only trying to convince you."},
+				{"speaker": "Daniel", "text": "What do you mean?"},
+				{"speaker": "Mia", "text": "Look at the timing."},
+				{"speaker": "Security Assistant", "text": "Every time they kept you engaged..."},
+				{"speaker": "Mia", "text": "...someone else contacted your business."},
+				{"speaker": "Daniel", "text": "They were keeping me busy.", "emotion": "shocked"},
+				{"speaker": "Security Assistant", "text": "Yes."},
+				{"speaker": "Daniel", "text": "So while I was arguing with them..."},
+				{"speaker": "", "text": "Ana contacts Daniel through their verified channel."},
+				{"speaker": "Ana", "text": "Daniel."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Ana", "text": "We found another payment request."},
+				{"speaker": "Daniel", "text": "Freeze it."},
+				{"speaker": "", "text": "Ana pauses."},
+				{"speaker": "Ana", "text": "It's older. It was submitted before we started warning everyone."},
+				{"speaker": "Daniel", "text": "...Was it approved?"},
+				{"speaker": "Ana", "text": "Yes."},
+				{"speaker": "", "text": "Silence."},
+				{"speaker": "Daniel", "text": "How much?", "emotion": "worried"},
+				{"speaker": "Ana", "text": "₱18,600 to a replacement vendor account. Accounting thought it matched the supplier update."},
+				{"speaker": "Daniel", "text": "And nobody saw it?"},
+				{"speaker": "Ana", "text": "It looked like one of ours."},
+				{"speaker": "Daniel", "text": "Who approved it?"},
+				{"speaker": "", "text": "Ana does not answer immediately."},
+				{"speaker": "Daniel", "text": "Ana."},
+				{"speaker": "Ana", "text": "Someone called accounting."},
+				{"speaker": "Daniel", "text": "Who?"},
+				{"speaker": "Ana", "text": "They said they were you."},
+				{"speaker": "", "text": "Daniel freezes."},
+				{"speaker": "Mia", "text": "Daniel..."},
+				{"speaker": "Daniel", "text": "Don't.", "emotion": "angry"},
+				{"speaker": "Daniel", "text": "Not right now.", "emotion": "frustrated"},
+				{"speaker": "Security Assistant", "text": "The payment may still be recoverable."},
+				{"speaker": "Daniel", "text": "May?"},
+				{"speaker": "Security Assistant", "text": "We need to trace where it went."},
+				{"speaker": "Daniel", "text": "And if it's already gone?"},
+				{"speaker": "", "text": "Silence. Daniel looks at the business screen."},
+				{"speaker": "Daniel", "text": "I spent all this time trying not to let them fool me.", "emotion": "sad"},
+				{"speaker": "Daniel", "text": "And they used my voice on someone else."}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The attacker is still keeping Daniel occupied. Resume containment."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That connection is contained. Check what else happened while Daniel was on the call."}],
+			"threats": [
+				{
+					"id": "mod03_stage04_incident01", "module_id": "mod_03", "stage": 4, "title": "Preserve the Line", "bkt_skill": "vishing", "affected_system": "DANIEL / BLUETECH INCIDENT RESPONSE",
+					"story": [
+						{"speaker": "Caller", "text": "BlueTech is tracing whoever impersonated Ana. This call is part of the evidence chain. Disconnecting could destroy the trace."},
+						{"speaker": "Caller", "text": "Don't call anyone else. Keep this line active while our investigators work."},
+						{"speaker": "", "text": "The caller knows Ana's impersonation, Daniel's supplier relationship, the BlueTech-linked payment, and the incident timeline."},
+						{"speaker": "Daniel", "text": "They know the whole sequence.", "emotion": "worried"}
+					],
+					"situation": "A caller displaying BLUETECH SECURITY says Daniel's active call is vital evidence and must stay connected. They forbid him to contact anyone else while investigators supposedly trace Ana's impersonator.",
+					"evidence": ["Caller ID displays BLUETECH SECURITY, but Security Assistant says it is not their outbound number", "Caller knows Ana's impersonation and the BlueTech-linked payment", "Caller insists an unverified connection must stay active to preserve evidence"],
+					"call": {"enabled": true, "caller": "BLUETECH SECURITY", "number": "UNVERIFIED OUTBOUND NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": true, "call_end_story_event": [{"type": "status", "title": "CALL STATUS", "text": "ENDED — Daniel still needs to choose how to respond."}]},
+					"choices": [
+						{"label": "Keep the line open to preserve the alleged trace while withholding account access until investigators finish.", "outcome": "CRITICAL", "consequence": "The evidence claim makes Daniel preserve an attacker-controlled call and delay independent verification.", "story_event": [{"type": "status", "title": "CALL DURATION", "text": "ACTIVE — 09:32"}, {"type": "dialogue", "speaker": "Caller", "text": "Good. Stay with me."}, {"type": "dialogue", "speaker": "Daniel", "text": "I don't like how relieved they sound.", "emotion": "worried"}]},
+						{"label": "End the unverified call and continue through the BlueTech security channel Daniel and Mia had established already.", "outcome": "SAFE", "consequence": "Daniel reconnects through their established route, where Security confirms the incoming caller was not on BlueTech's team."},
+						{"label": "Keep the caller talking while the real Security Assistant investigates the displayed number and claims.", "outcome": "RISKY", "consequence": "Security checks the number, but Daniel remains engaged and isolated inside the caller's route.", "story_event": [{"type": "status", "title": "CALL DURATION", "text": "ACTIVE — 09:32"}, {"type": "dialogue", "speaker": "Caller", "text": "Good. Stay with me."}, {"type": "dialogue", "speaker": "Daniel", "text": "I don't like how relieved they sound.", "emotion": "worried"}]},
+						{"label": "Ask the caller for an internal BlueTech incident reference and compare it with known case information.", "outcome": "RISKY", "consequence": "The reference looks current, but accurate case data still does not authenticate the person controlling the call."}
+					],
+					"explanation": "Preserving an unverified call is not evidence preservation when the caller controls the route. End it and verify through a channel already trusted.", "breach_gold": 26, "next": "mod03_stage04_incident02"
+				},
+				{
+					"id": "mod03_stage04_incident02", "module_id": "mod_03", "stage": 4, "title": "Do Not Contact Staff", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS COMMUNICATION",
+					"story": [
+						{"speaker": "Caller", "text": "Your company may be compromised. Do not call Ana, your employees, or anyone who contacts you. BlueTech is coordinating directly with the bank."},
+						{"speaker": "", "text": "Daniel sees several missed calls and messages from his staff. One reads: Sir, please call. Someone contacted accounting."},
+						{"speaker": "Daniel", "text": "Someone contacted my staff.", "emotion": "worried"},
+						{"speaker": "Caller", "text": "Do NOT respond. That may be the attacker."}
+					],
+					"situation": "An unverified caller claiming to be BlueTech Security tells Daniel to stop speaking to Ana and his staff because any contact could be fraudulent. Daniel's staff has already reported someone contacting accounting.",
+					"evidence": ["Several staff calls have gone unanswered", "Accounting has been contacted by an unknown person", "Caller claims BlueTech and the bank are coordinating", "The caller wants Daniel isolated from established contacts"],
+					"investigation": {"enabled": true, "title": "WHO CONTROLS THE CHANNEL?", "prompt": "Which fact independently verifies the caller's instruction to isolate Daniel?", "items": [
+						{"id": "mod03_s4_i2_ana", "label": "The caller knows about Ana's impersonation", "valid": false, "analysis": "Knowledge of Ana's earlier call is context, not caller authentication."},
+						{"id": "mod03_s4_i2_supplier", "label": "The caller knows Daniel supplies BlueTech", "valid": false, "analysis": "A business relationship can be researched or learned from compromised records."},
+						{"id": "mod03_s4_i2_staff", "label": "The caller predicts suspicious people may contact staff", "valid": false, "analysis": "Predicting a threat does not authorize isolating Daniel from trusted staff."},
+						{"id": "mod03_s4_i2_none", "label": "None verify the caller or justify isolating Daniel", "valid": true, "analysis": "Accurate context can support a convincing pretext; verification needs a route outside the caller's control."}
+					], "resolved_story_event": [{"type": "dialogue", "speaker": "Daniel", "text": "They're using every new problem as a reason to keep me here.", "emotion": "frustrated"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "Exactly."}]},
+					"choices": [
+						{"label": "Follow the isolation instruction temporarily so contact with potentially compromised staff cannot contaminate the investigation.", "outcome": "CRITICAL", "consequence": "Daniel's isolation gives the attacker time to contact staff while no one compares the contradictory stories."},
+						{"label": "End the call and warn staff through established business channels while Security investigates independently.", "outcome": "SAFE", "consequence": "Daniel coordinates a verified warning and Security investigates without relying on the caller's instructions.", "memory": {"mod03_s4_isolation_response": "independent_coordination"}},
+						{"label": "Keep the caller connected while Mia warns Daniel's staff through their normal business contacts.", "outcome": "RISKY", "consequence": "Mia's warning helps, but Daniel stays occupied and cannot coordinate directly with his staff.", "memory": {"mod03_s4_isolation_response": "delegated_response"}},
+						{"label": "Contact the employee who sent the urgent message while leaving the caller active for Security to review.", "outcome": "RISKY", "consequence": "One employee is reached, but the wider business remains unwarned and Daniel remains on the attacker-controlled call.", "memory": {"mod03_s4_isolation_response": "stayed_engaged"}}
+					],
+					"explanation": "Isolating the victim prevents trusted people from comparing events. A credible warning from an unverified caller is still an instruction from an unverified caller.", "breach_gold": 28, "next": "mod03_stage04_incident03"
+				},
+				{
+					"id": "mod03_stage04_incident03", "module_id": "mod_03", "stage": 4, "title": "Keep Him Busy", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS / DANIEL'S ATTENTION",
+					"story": [
+						{"speaker": "Daniel", "text": "They want me alone.", "emotion": "angry"},
+						{"speaker": "Daniel", "text": "First the bank. Then Ana. Now my own employees.", "emotion": "frustrated"},
+						{"speaker": "Mia", "text": "That's why they keep telling you not to hang up."},
+						{"speaker": "Daniel", "text": "I thought they wanted something from me."},
+						{"speaker": "Security Assistant", "text": "They might."},
+						{"speaker": "Daniel", "text": "Or?"},
+						{"speaker": "Security Assistant", "text": "They may also want your attention."},
+						{"speaker": "", "text": "Daniel becomes quiet."},
+						{"speaker": "", "text": "While the business line receives repeated calls, accounting reports a caller claiming to be Daniel. A genuine vendor-payment change request appears in the business system."},
+						{"speaker": "Caller", "text": "Do not touch that request. We're using it to trace the attacker."},
+						{"speaker": "Daniel", "text": "Someone is inside our payment workflow.", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "Or triggering it from outside."},
+						{"speaker": "Caller", "text": "Daniel, stay with me."}
+					],
+					"situation": "While an unverified caller keeps Daniel busy, accounting reports someone claiming to be him and a real vendor-payment change request appears. The caller says BlueTech needs the request untouched as trace evidence.",
+					"evidence": ["Business line receives repeated calls", "Accounting received a call from someone claiming to be Daniel", "The vendor-change request is real but its origin remains unverified", "Caller demands Daniel stay connected and avoid accounting"],
+					"timer": {"enabled": true, "seconds": 15, "label": "ACCOUNTING IS WAITING — CALLER SAYS DO NOT DISCONNECT", "timeout_outcome": "RISKY", "timeout_story_event": [{"type": "status", "title": "ACCOUNTING", "text": "WAITING FOR DANIEL"}, {"type": "dialogue", "speaker": "Daniel", "text": "They're making me wait while someone talks to my staff.", "emotion": "worried"}]},
+					"choices": [
+						{"label": "Leave the vendor request untouched and stay connected because changing it could destroy BlueTech's alleged trace.", "outcome": "CRITICAL", "consequence": "The attacker turns Daniel's caution into inactivity while the real vendor-change request remains unresolved.", "story_event": [{"type": "status", "title": "VENDOR PAYMENT", "text": "CHANGE REQUEST PENDING"}, {"type": "dialogue", "speaker": "Caller", "text": "Do not touch it."}, {"type": "dialogue", "speaker": "Daniel", "text": "They keep buying time.", "emotion": "shocked"}]},
+						{"label": "Break the unverified call, contact accounting through established channels, and freeze the vendor change until independently verified.", "outcome": "SAFE", "consequence": "Accounting receives an authenticated warning and the new vendor change is frozen pending direct verification."},
+						{"label": "Let Mia coordinate with accounting while Daniel keeps the caller engaged to gather details.", "outcome": "RISKY", "consequence": "Parallel coordination helps, but Daniel stays occupied and the caller can continue shaping his response."},
+						{"label": "Inspect the genuine vendor-change request first while keeping the caller connected before contacting accounting.", "outcome": "RISKY", "consequence": "The request is real, yet direct coordination is delayed and the attacker gains more time."}
+					],
+					"explanation": "The call itself keeps Daniel away from his own staff. A genuine vendor-change request does not validate the caller's instruction to do nothing.", "breach_gold": 30, "next": ""
+				}
+			]
 		}
 	]
 }

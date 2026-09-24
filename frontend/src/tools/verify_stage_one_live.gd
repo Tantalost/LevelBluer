@@ -196,7 +196,8 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 1 also routes to the live decision scene (it is decision-based too)")
 	check(router._scene_for_context(router._context_for_stage(1)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 2 uses the reusable live decision scene")
 	check(router._scene_for_context(router._context_for_stage(2)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 3 uses the reusable live decision scene")
-	check(router._scene_for_context(router._context_for_stage(3)) == router.LEVEL_SCENE, "Module 3 Stage 4 remains legacy")
+	check(router._scene_for_context(router._context_for_stage(3)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 4 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(4)) == router.LEVEL_SCENE, "Module 3 Stage 5 remains legacy")
 	var module3_stage2_context := Context.stage_one_live()
 	module3_stage2_context.module_id = "mod_03"
 	module3_stage2_context.stage_id = 2
@@ -215,6 +216,14 @@ func _run() -> void:
 	read_page(module3_stage3_game)
 	check(module3_stage3_game.story_overlay._call_panel.visible, "Module 3 Stage 3 Incident 1 presents Ana's call UI")
 	await unmount(module3_stage3_game)
+	var module3_stage4_context := Context.stage_one_live()
+	module3_stage4_context.module_id = "mod_03"
+	module3_stage4_context.stage_id = 4
+	var module3_stage4_game: Control = mount(Account.new(), module3_stage4_context)
+	check(module3_stage4_game.decision.total_threats() == 3 and is_equal_approx(module3_stage4_game._enemy_health_scale(), 0.80), "Module 3 Stage 4 live scene loads three incidents at 0.80 HP")
+	read_page(module3_stage4_game)
+	check(module3_stage4_game.story_overlay._call_panel.visible, "Module 3 Stage 4 Incident 1 presents BlueTech Security impersonation in call UI")
+	await unmount(module3_stage4_game)
 	router.active_module_id = "mod_04"
 	check(not router._context_for_stage(0).geometric, "A module with no decision content remains legacy")
 	router.active_module_id = "mod_01"
