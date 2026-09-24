@@ -3195,6 +3195,271 @@
 					"next": ""
 				}
 			]
+		},
+		{
+			"id": "mod03_stage2",
+			"module_id": "mod_03",
+			"stage": 2,
+			"title": "Stay on the Line",
+			"bkt_skill": "vishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 2 COMPLETE",
+			"clear_subtitle": "STAY ON THE LINE",
+			"next_stage_title": "Stage 3 — A Familiar Voice",
+			"breach_hp_multiplier": 0.70,
+			"opening": [
+				{"speaker": "Caller", "text": "Mr. Santos, hanging up won't protect the account. We need you to stay on the line."},
+				{"speaker": "Daniel", "text": "They really don't want me hanging up.", "emotion": "frustrated"},
+				{"speaker": "Daniel", "text": "Calling the bank myself was the only thing that gave me a straight answer.", "emotion": "determined", "when": {"mod03_s1_bank_verification": "independent"}},
+				{"speaker": "Daniel", "text": "I wasted too much time asking them things they already knew.", "emotion": "frustrated", "when": {"mod03_s1_bank_verification": "caller_knowledge"}},
+				{"speaker": "Daniel", "text": "I was checking the real app and still letting the caller control the conversation.", "emotion": "frustrated", "when": {"mod03_s1_bank_verification": "inside_call"}},
+				{"speaker": "Security Assistant", "text": "Good. Remember that."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Security Assistant", "text": "Verification only works when they don't control the route you're using."},
+				{"speaker": "", "text": "Daniel's phone rings again."}
+			],
+			"ending": [
+				{"speaker": "Daniel", "text": "Every time I thought I had proof, I was still looking at something they could influence.", "emotion": "frustrated"},
+				{"speaker": "Security Assistant", "text": "Caller ID."},
+				{"speaker": "Mia", "text": "Case information."},
+				{"speaker": "Daniel", "text": "Transfers."},
+				{"speaker": "Security Assistant", "text": "Genuine account prompts."},
+				{"speaker": "Daniel", "text": "And none of it answered the only question that mattered."},
+				{"speaker": "Mia", "text": "Who's actually on the other end?"},
+				{"speaker": "Daniel", "text": "Exactly.", "emotion": "determined"},
+				{"speaker": "Security Assistant", "text": "There's another pattern."},
+				{"speaker": "Mia", "text": "BlueTech?"},
+				{"speaker": "Security Assistant", "text": "Not enough evidence yet."},
+				{"speaker": "Daniel", "text": "You said that last time."},
+				{"speaker": "Security Assistant", "text": "And I'm saying it again."},
+				{"speaker": "", "text": "Daniel's phone rings. The display says: ANA SANTOS."},
+				{"speaker": "Daniel", "text": "Ana?", "emotion": "worried"},
+				{"speaker": "", "text": "Ana is Daniel's sister. She helps with the family business bookkeeping. Daniel answers."},
+				{"speaker": "Voice", "text": "Kuya?"},
+				{"speaker": "", "text": "Daniel freezes."},
+				{"speaker": "Daniel", "text": "...", "emotion": "shocked"},
+				{"speaker": "Voice", "text": "Please don't hang up."}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The call is still active. Restore containment before it reaches the account."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That connection is contained. We still have to verify what the caller controlled."}],
+			"threats": [
+				{
+					"id": "mod03_stage02_incident01", "module_id": "mod_03", "stage": 2, "title": "Security Transfer", "bkt_skill": "vishing", "affected_system": "DANIEL'S BUSINESS BANK ACCOUNT",
+					"story": [
+						{"speaker": "Caller", "text": "Your case has been escalated. I'm transferring you to our senior fraud desk. Do not disconnect or the account hold may be released."},
+						{"speaker": "", "text": "Hold music plays. Another agent joins the same call and recites the blocked transfer and case details."},
+						{"speaker": "Daniel", "text": "Different person.", "emotion": "worried"},
+						{"speaker": "Security Assistant", "text": "Same call."},
+						{"speaker": "Daniel", "text": "...Right."}
+					],
+					"situation": "A caller claiming to represent Daniel's bank transfers him to a senior fraud agent without disconnecting. The second voice knows the real blocked transfer, case details, and business account. The first caller warns that ending the call could release the account hold.",
+					"evidence": ["The second representative joins through the same incoming call", "Both voices know real case details", "The supposed hold depends on Daniel staying connected"],
+					"call": {"enabled": true, "caller": "BANK FRAUD DEPARTMENT", "number": "BANK SUPPORT", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Continue with the transferred agent because two representatives know the case, while withholding passwords and codes.", "outcome": "CRITICAL", "consequence": "Two voices on one controlled call do not provide two independent identities. The attacker keeps Daniel connected to a staged verification workflow.", "story_event": {"type": "status", "title": "SECOND AGENT CONNECTED", "text": "CASE VERIFICATION IN PROGRESS"}},
+						{"label": "End the entire call and originate a new call through the bank's previously established fraud channel.", "outcome": "SAFE", "consequence": "The independently dialed bank confirms the case without relying on either voice on the incoming call."},
+						{"label": "Accept the transfer and ask the second agent to confirm details already recorded in the case.", "outcome": "RISKY", "consequence": "The second agent confirms the details, but both representatives are still on the same unverified connection.", "story_event": [{"type": "status", "title": "TRANSFER COMPLETE", "text": "The second representative confirms the case details."}, {"type": "dialogue", "speaker": "Daniel", "text": "That sounded completely normal.", "emotion": "worried"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "That's the problem."}]},
+						{"label": "Remain connected while independently checking the blocked transfer in the real banking app.", "outcome": "RISKY", "consequence": "The app confirms a real event, but the caller still controls the explanation and next steps."}
+					],
+					"explanation": "A transfer, hold music, and a second voice do not create an independent verification channel when the original caller controls the connection.", "breach_gold": 22, "next": "mod03_stage02_incident02"
+				},
+				{
+					"id": "mod03_stage02_incident02", "module_id": "mod_03", "stage": 2, "title": "Two Calls", "bkt_skill": "vishing", "affected_system": "DANIEL'S TRUST / BANK COMMUNICATION",
+					"story": [
+						{"speaker": "", "text": "While Daniel is still speaking with the suspicious caller, a second call appears from the bank's real support number."},
+						{"speaker": "Caller", "text": "Don't answer it. Criminals can spoof the support line."},
+						{"speaker": "Daniel", "text": "They're warning me about themselves now.", "emotion": "frustrated"},
+						{"speaker": "Security Assistant", "text": "Or about another attacker."},
+						{"speaker": "Daniel", "text": "That's helpful.", "emotion": "frustrated"}
+					],
+					"situation": "Two simultaneous callers claim to protect Daniel's business bank account. The current caller warns him that the new incoming caller ID could be spoofed. The second call displays the bank's real support number. Neither incoming route independently establishes identity.",
+					"evidence": ["First caller remains connected and warns against the second", "Second incoming call displays a genuine-looking support number", "Both callers could know the legitimate case details"],
+					"call": {"enabled": true, "caller": "BANK FRAUD DEPARTMENT", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"timer": {"enabled": true, "seconds": 15, "label": "TWO CALLS ARE CLAIMING TO PROTECT THE ACCOUNT", "timeout_outcome": "RISKY", "timeout_story_event": [{"type": "status", "title": "CALL STATUS", "text": "Both callers are still waiting."}, {"type": "dialogue", "speaker": "Daniel", "text": "I'm letting them decide the pace again.", "emotion": "worried"}]},
+					"choices": [
+						{"label": "Continue with whichever caller knows the most current case information before the account hold changes.", "outcome": "CRITICAL", "consequence": "Fresh case knowledge can reach an attacker quickly. Choosing the better story keeps Daniel inside an unverified call."},
+						{"label": "End the current call, decline the other incoming call, and dial the established bank fraud channel himself.", "outcome": "SAFE", "consequence": "Daniel stops comparing two untrusted incoming routes and reaches the bank through a channel he established.", "memory": {"mod03_s2_channel_response": "independent_channel"}},
+						{"label": "Put the first caller on hold, answer the second call, and compare their accounts of the fraud case.", "outcome": "RISKY", "consequence": "Comparing two incoming callers produces consistency, not independent authentication.", "memory": {"mod03_s2_channel_response": "cross_validated"}},
+						{"label": "Ask both callers for the case ID and continue with the one matching the legitimate bank-app record.", "outcome": "RISKY", "consequence": "A matching case ID confirms a real event but not which caller, if either, belongs to the bank.", "memory": {"mod03_s2_channel_response": "stayed_connected"}}
+					],
+					"explanation": "Comparing two attacker-influenced calls cannot establish identity. The independent action is to originate a new contact using a previously trusted bank channel.", "breach_gold": 24, "next": "mod03_stage02_incident03"
+				},
+				{
+					"id": "mod03_stage02_incident03", "module_id": "mod_03", "stage": 2, "title": "Approve to Protect", "bkt_skill": "vishing", "affected_system": "DANIEL'S BUSINESS BANK SECURITY SESSION",
+					"story": [
+						{"speaker": "Daniel", "text": "This is ridiculous.", "emotion": "angry"},
+						{"speaker": "Daniel", "text": "One says don't trust the other. The other looks like the real bank. Both know what happened.", "emotion": "frustrated"},
+						{"speaker": "Mia", "text": "Daniel."},
+						{"speaker": "Daniel", "text": "What am I supposed to trust?", "emotion": "frustrated"},
+						{"speaker": "", "text": "Silence."},
+						{"speaker": "Security Assistant", "text": "Not either caller."},
+						{"speaker": "Daniel", "text": "Then what?"},
+						{"speaker": "Security Assistant", "text": "The channel you established yourself."},
+						{"speaker": "Daniel", "text": "So stop choosing between their stories.", "emotion": "determined"},
+						{"speaker": "Security Assistant", "text": "Exactly."},
+						{"speaker": "Daniel", "text": "Leave both stories.", "emotion": "determined"},
+						{"speaker": "", "text": "A genuine bank-app notification appears: SECURITY SESSION REQUEST — Approve / Decline."},
+						{"speaker": "Caller", "text": "Approve it to enter the protected fraud console."},
+						{"speaker": "Daniel", "text": "The prompt is inside the real app.", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "That proves the bank generated a request."},
+						{"speaker": "Daniel", "text": "Not who triggered it."},
+						{"speaker": "Security Assistant", "text": "Exactly."}
+					],
+					"situation": "Daniel sees a genuine SECURITY SESSION REQUEST in his real bank app while an unverified caller tells him to approve it to enter a protected fraud console. The bank generated the prompt, but Daniel did not initiate this workflow.",
+					"evidence": ["The request is visible inside the real bank app", "Approve and Decline are genuine app actions", "The caller instructed Daniel to expect and approve the prompt", "Daniel did not independently request a security session"],
+					"investigation": {"enabled": true, "title": "WHAT DOES THE PROMPT PROVE?", "prompt": "What can Daniel safely conclude from the genuine bank-app request?", "items": [
+						{"id": "mod03_s2_i3_caller", "label": "The caller is a legitimate bank investigator", "valid": false, "analysis": "A real app request does not authenticate the person who told Daniel to use it."},
+						{"id": "mod03_s2_i3_compromised", "label": "The account is already fully compromised", "valid": false, "analysis": "A triggered workflow does not itself prove that access was granted."},
+						{"id": "mod03_s2_i3_workflow", "label": "A real bank workflow was triggered, but the caller remains unverified", "valid": true, "analysis": "The genuine prompt and the caller's identity are separate facts."},
+						{"id": "mod03_s2_i3_contact", "label": "The bank independently contacted Daniel", "valid": false, "analysis": "An attacker may initiate a real workflow and narrate it through an unverified call."}
+					], "resolved_story_event": [{"type": "dialogue", "speaker": "Daniel", "text": "So the screen can be real...", "emotion": "worried"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "...while the reason you're being told to use it is false."}]},
+					"choices": [
+						{"label": "Approve the genuine request to reach the protected fraud console, then review the session once connected.", "outcome": "CRITICAL", "consequence": "The attacker gains an authorized session through a real bank workflow that Daniel never independently requested.", "story_event": [{"type": "status", "title": "SECURITY SESSION", "text": "APPROVED"}, {"type": "dialogue", "speaker": "Daniel", "text": "...What did I just authorize?", "emotion": "shocked"}]},
+						{"label": "Decline the unsolicited request and verify the security session through Daniel's established bank channel.", "outcome": "SAFE", "consequence": "The genuine request is declined until the bank confirms through Daniel's independently initiated channel whether a session was necessary."},
+						{"label": "Keep the call open while comparing the request and case identifiers in the real bank app.", "outcome": "RISKY", "consequence": "The identifiers match a real workflow, but they cannot identify the caller who prompted it."},
+						{"label": "Ask the caller to explain why approval is required before deciding whether to accept the app prompt.", "outcome": "RISKY", "consequence": "The explanation sounds coherent, yet it comes from the same unverified caller who initiated the conversation."}
+					],
+					"explanation": "A real bank-app event establishes that a workflow exists, not that the person directing Daniel to use it is authorized.", "breach_gold": 26, "next": ""
+				}
+			]
+		},
+		{
+			"id": "mod03_stage3",
+			"module_id": "mod_03",
+			"stage": 3,
+			"title": "A Familiar Voice",
+			"bkt_skill": "vishing",
+			"company": "BlueTech Solutions",
+			"clear_title": "STAGE 3 COMPLETE",
+			"clear_subtitle": "A FAMILIAR VOICE",
+			"next_stage_title": "Stage 4 — Don't Hang Up",
+			"breach_hp_multiplier": 0.75,
+			"opening": [
+				{"speaker": "", "text": "Daniel's phone displays ANA SANTOS."},
+				{"speaker": "Voice", "text": "Kuya?"},
+				{"speaker": "Daniel", "text": "Ana?", "emotion": "shocked"},
+				{"speaker": "Voice", "text": "Please don't hang up."},
+				{"speaker": "", "text": "Daniel freezes."},
+				{"speaker": "Daniel", "text": "Last time I stopped letting the caller choose the channel.", "emotion": "determined", "when": {"mod03_s2_channel_response": "independent_channel"}},
+				{"speaker": "Daniel", "text": "I already know what happens when I stay inside their call.", "emotion": "frustrated", "when": {"mod03_s2_channel_response": "stayed_connected"}},
+				{"speaker": "Daniel", "text": "I compared two callers last time and still didn't know who either one was.", "emotion": "frustrated", "when": {"mod03_s2_channel_response": "cross_validated"}},
+				{"speaker": "Mia", "text": "Daniel, don't assume anything yet."},
+				{"speaker": "Daniel", "text": "That's my sister's voice.", "emotion": "worried"},
+				{"speaker": "Security Assistant", "text": "You recognize a voice."},
+				{"speaker": "Daniel", "text": "What's the difference?"},
+				{"speaker": "Security Assistant", "text": "That's what we need to establish."}
+			],
+			"ending": [
+				{"speaker": "", "text": "The real Ana joins through a channel Daniel established independently."},
+				{"speaker": "Ana", "text": "Okay. I'm actually me this time."},
+				{"speaker": "Daniel", "text": "Don't joke about that.", "emotion": "frustrated"},
+				{"speaker": "Ana", "text": "Sorry."},
+				{"speaker": "Daniel", "text": "I heard your voice."},
+				{"speaker": "Ana", "text": "I believe you."},
+				{"speaker": "Daniel", "text": "It knew things you know."},
+				{"speaker": "Ana", "text": "That doesn't make it me."},
+				{"speaker": "", "text": "Daniel pauses."},
+				{"speaker": "Daniel", "text": "I used to think I'd know if someone was pretending to be family.", "emotion": "sad"},
+				{"speaker": "Ana", "text": "So did I."},
+				{"speaker": "Mia", "text": "That's what they were counting on."},
+				{"speaker": "", "text": "Ana reviews the payroll request."},
+				{"speaker": "Ana", "text": "Wait."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Ana", "text": "This payment reference..."},
+				{"speaker": "Mia", "text": "What about it?"},
+				{"speaker": "Ana", "text": "It's connected to one of the BlueTech jobs."},
+				{"speaker": "", "text": "Pause."},
+				{"speaker": "Security Assistant", "text": "Again."},
+				{"speaker": "Daniel", "text": "That's twice."},
+				{"speaker": "Security Assistant", "text": "Now it's a pattern worth tracking."},
+				{"speaker": "", "text": "Another call arrives. Caller ID: BLUETECH SECURITY."},
+				{"speaker": "Daniel", "text": "Of course.", "emotion": "frustrated"},
+				{"speaker": "Security Assistant", "text": "That is not our outbound number."},
+				{"speaker": "", "text": "The call connects. A voice begins speaking."},
+				{"speaker": "Caller", "text": "Daniel Santos, do not disconnect."},
+				{"speaker": "Caller", "text": "We are investigating the person who has been impersonating your sister."},
+				{"speaker": "", "text": "Daniel looks at Security Assistant."},
+				{"speaker": "Caller", "text": "If you hang up now, you may destroy evidence."}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The apparent family call remains connected. Restore containment before it reaches the business account."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "The connection is contained. We still do not know how the voice was produced."}],
+			"threats": [
+				{
+					"id": "mod03_stage03_incident01", "module_id": "mod_03", "stage": 3, "title": "I Need Help", "bkt_skill": "vishing", "affected_system": "DANIEL / ANA FAMILY TRUST",
+					"story": [
+						{"speaker": "Voice", "text": "Kuya, my phone is acting up. I can't get into the bookkeeping account, and payroll could be delayed. I need your help now."},
+						{"speaker": "", "text": "The voice knows Daniel's family nickname, today's business schedule, the employee handling payroll, a recent business payment, and his fraud incident."},
+						{"speaker": "Daniel", "text": "Nobody calls me that except family.", "emotion": "worried"}
+					],
+					"situation": "A call displayed as Ana Santos sounds like Daniel's sister. The speaker says her phone failed and she needs urgent bookkeeping access so payroll is not delayed. They know a family nickname and real business details, including Daniel's recent fraud case.",
+					"evidence": ["Caller ID displays Ana's saved contact", "The voice and family nickname sound familiar", "The caller knows private payroll and recent payment details", "Daniel has not contacted Ana through another channel yet"],
+					"call": {"enabled": true, "caller": "ANA SANTOS", "number": "SAVED CONTACT", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Continue with the saved contact because the voice, nickname and business details all match Ana, while limiting access until she explains.", "outcome": "CRITICAL", "consequence": "The matching signals keep Daniel in a conversation the attacker controls; no independent identity check occurred.", "story_event": [{"type": "dialogue", "speaker": "Caller", "text": "Kuya, why are you making this harder?"}, {"type": "dialogue", "speaker": "Daniel", "text": "She even sounds annoyed like Ana.", "emotion": "worried"}]},
+						{"label": "End the call and verify Ana through another already-known family or business channel before changing any account access.", "outcome": "SAFE", "consequence": "Daniel reaches the real Ana independently before touching bookkeeping permissions."},
+						{"label": "Ask the caller family and business questions only Ana would usually know before changing access.", "outcome": "RISKY", "consequence": "The answers sound right, but private facts can be collected or leaked and do not authenticate the caller.", "story_event": [{"type": "dialogue", "speaker": "Caller", "text": "Kuya, why are you making this harder?"}, {"type": "dialogue", "speaker": "Daniel", "text": "She even sounds annoyed like Ana.", "emotion": "worried"}]},
+						{"label": "Keep the call active while messaging Ana through a previously known account for confirmation.", "outcome": "RISKY", "consequence": "A separate message helps, but the live caller can still pressure Daniel and explain away any delay."}
+					],
+					"explanation": "A familiar voice, saved contact name, and private facts are evidence to investigate, not proof of who is speaking.", "breach_gold": 24, "next": "mod03_stage03_incident02"
+				},
+				{
+					"id": "mod03_stage03_incident02", "module_id": "mod_03", "stage": 3, "title": "Her Voice", "bkt_skill": "vishing", "affected_system": "FAMILY IDENTITY / BUSINESS TRUST",
+					"story": [
+						{"speaker": "", "text": "The real Ana replies through Daniel's separately established contact."},
+						{"speaker": "Ana", "text": "I'm fine."},
+						{"speaker": "Daniel", "text": "...You're not calling me?"},
+						{"speaker": "Ana", "text": "No."},
+						{"speaker": "Daniel", "text": "Then whose voice am I listening to?", "emotion": "shocked"},
+						{"speaker": "", "text": "The suspicious call disconnects. Minutes later a voice message arrives, again sounding like Ana."},
+						{"speaker": "Voice", "text": "Kuya, Security told me you might think the first call was fake. That was me. My other account was compromised."},
+						{"speaker": "", "text": "The message mentions Daniel's verification attempt, the ended call, bookkeeping, an upcoming payment, and a phrase Ana often uses."},
+						{"speaker": "Daniel", "text": "They adapted already.", "emotion": "frustrated"},
+						{"speaker": "Mia", "text": "Which means they expected verification."}
+					],
+					"situation": "After the real Ana denies calling, a longer, calmer message in her familiar voice claims the first call was hers and her other account was compromised. It anticipates Daniel's independent check and cites real family and business context.",
+					"evidence": ["The independently contacted Ana denies making the first call", "A second message anticipates Daniel's verification", "The voice sounds more naturally like Ana", "The message knows a real upcoming business payment"],
+					"choices": [
+						{"label": "Accept the second contact because it anticipates Daniel's security concern and sounds even more naturally like Ana.", "outcome": "CRITICAL", "consequence": "Anticipating a verification attempt is a persuasive adaptation, not proof the new contact came from Ana."},
+						{"label": "Continue verification with Ana using an account or channel Daniel established before the incident.", "outcome": "SAFE", "consequence": "Ana confirms through the known channel that she sent neither message.", "memory": {"mod03_s3_voice_response": "independent_verification"}},
+						{"label": "Compare the new voice message with older recordings of Ana before deciding whether to act.", "outcome": "RISKY", "consequence": "The recordings sound similar, but similarity cannot establish who sent this particular message.", "memory": {"mod03_s3_voice_response": "voice_comparison"}},
+						{"label": "Ask the speaker to explain a recent family-business event that was never publicly posted.", "outcome": "RISKY", "consequence": "The answer is correct, yet knowledge of a private event is still not identity verification.", "memory": {"mod03_s3_voice_response": "knowledge_challenge"}}
+					],
+					"explanation": "The attacker can adapt to verification and may possess private context. The exact source of the familiar voice remains unconfirmed.", "breach_gold": 26, "next": "mod03_stage03_incident03"
+				},
+				{
+					"id": "mod03_stage03_incident03", "module_id": "mod_03", "stage": 3, "title": "Payroll Emergency", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS PAYROLL / FAMILY TRUST",
+					"story": [
+						{"speaker": "Daniel", "text": "That was her voice.", "emotion": "angry"},
+						{"speaker": "Daniel", "text": "Not close. Not similar. Her.", "emotion": "frustrated"},
+						{"speaker": "Mia", "text": "I believe that's what you heard."},
+						{"speaker": "Daniel", "text": "Then stop talking like I imagined it.", "emotion": "frustrated"},
+						{"speaker": "Security Assistant", "text": "No one said you imagined it."},
+						{"speaker": "Daniel", "text": "Then how?"},
+						{"speaker": "", "text": "Silence."},
+						{"speaker": "Security Assistant", "text": "We don't know yet."},
+						{"speaker": "Daniel", "text": "I hate that answer.", "emotion": "frustrated"},
+						{"speaker": "Mia", "text": "I know."},
+						{"speaker": "Security Assistant", "text": "Recognizing someone and verifying someone are not the same thing."},
+						{"speaker": "Daniel", "text": "...I'm starting to understand that.", "emotion": "sad"},
+						{"speaker": "", "text": "A genuine business-account alert appears: PAYROLL AUTHORIZATION REQUIRED."},
+						{"speaker": "Voice", "text": "Kuya, that's the one. Approve it or everyone's pay gets delayed."},
+						{"speaker": "Daniel", "text": "The alert is real.", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "Yes."},
+						{"speaker": "Daniel", "text": "And the voice is hers."},
+						{"speaker": "Security Assistant", "text": "Those are two separate facts."}
+					],
+					"situation": "A caller again sounds like Ana and urges Daniel to approve a genuine pending business-account payroll authorization. The request is real because an authorization workflow was triggered, but the caller's identity and the request's purpose remain unverified.",
+					"evidence": ["The payroll alert is genuine and pending", "The voice sounds familiar", "The caller insists approval prevents a payroll delay", "Daniel has not independently confirmed the authorization with Ana or the bank"],
+					"timer": {"enabled": true, "seconds": 15, "label": "PAYROLL AUTHORIZATION IS PENDING", "timeout_outcome": "RISKY", "timeout_story_event": [{"type": "status", "title": "PAYROLL REQUEST", "text": "REMAINS PENDING"}, {"type": "dialogue", "speaker": "Daniel", "text": "They're making me feel responsible for everyone waiting.", "emotion": "worried"}]},
+					"choices": [
+						{"label": "Approve the request because Ana's familiar voice and the genuine payroll authorization appear together.", "outcome": "CRITICAL", "consequence": "The real authorization was initiated within an attacker-controlled story. A familiar voice does not validate the payment.", "story_event": [{"type": "status", "title": "PAYROLL AUTHORIZATION", "text": "APPROVED"}, {"type": "dialogue", "speaker": "Daniel", "text": "What did I just approve?", "emotion": "shocked"}]},
+						{"label": "Pause the unsolicited authorization and verify directly with the real Ana and the business account through established channels.", "outcome": "SAFE", "consequence": "Independent checks show who requested the authorization before any payroll change is approved."},
+						{"label": "Inspect the real payroll request details while keeping the caller connected to clarify the payment.", "outcome": "RISKY", "consequence": "The alert is genuine, but the caller still supplies the interpretation of what should be approved."},
+						{"label": "Ask the caller to name the employees and payment totals before deciding on the authorization.", "outcome": "RISKY", "consequence": "The amounts match, yet business details do not establish who is asking Daniel to approve them."}
+					],
+					"explanation": "A real payroll alert and familiar voice can be synchronized; verify the request and the person through channels the caller did not establish.", "breach_gold": 28, "next": ""
+				}
+			]
 		}
 	]
 }

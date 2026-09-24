@@ -77,6 +77,8 @@ func _run() -> void:
 	await _test_module2_stage8()
 	await _test_module2_stage9()
 	await _test_module3_stage1()
+	await _test_module3_stage2()
+	await _test_module3_stage3()
 	await _test_module3_stage1_story_consequences()
 	await _test_legacy_story_memory_parity()
 	await _test_regression()
@@ -252,7 +254,9 @@ func _test_data_model(threats: Array[Dictionary]) -> void:
 	check(DecisionScenarios.is_decision_stage("mod_02", 9), "[Mod2 Stage 9] Module 2 Stage 9 is decision-based")
 	check(not DecisionScenarios.is_decision_stage("mod_02", 10), "Module 2 Stage 10 remains the non-decision post-assessment")
 	check(DecisionScenarios.is_decision_stage("mod_03", 1), "[Mod3 Stage 1] Module 3 Stage 1 is decision-based")
-	check(not DecisionScenarios.is_decision_stage("mod_03", 2), "Module 3 Stage 2 is not decision-based yet")
+	check(DecisionScenarios.is_decision_stage("mod_03", 2), "Module 3 Stage 2 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_03", 3), "Module 3 Stage 3 is decision-based")
+	check(not DecisionScenarios.is_decision_stage("mod_03", 4), "Module 3 Stage 4 remains non-decision")
 	var mod2_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_02", 1)
 	check(mod2_threats.size() == 3, "[Mod2 Stage 1] Exactly 3 incidents")
 	var mod2_trivial: PackedStringArray = ["give.*password", "ignore it", "ignore everything", "looks safe", "trust it because it looks real"]
@@ -4131,6 +4135,199 @@ func _test_legacy_story_memory_parity() -> void:
 	_router.active_module_id = "mod_01"
 
 
+func _test_module3_stage2() -> void:
+	print("== Module 3 Stage 2: Stay on the Line ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 2)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 2)
+	check(str(stage.get("title", "")) == "Stay on the Line" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 0.70), "[Mod3 Stage 2] Authored title and 0.70 breach HP")
+	check(threats.size() == 3 and DecisionScenarios.is_decision_stage("mod_03", 3), "[Mod3 Stage 2] Three incidents; Stage 3 now follows as decision story")
+	check(not stage.has("reconstruction"), "[Mod3 Stage 2] No reconstruction is authored")
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var label: String = str((choice as Dictionary).get("label", "")).to_lower()
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+			check(not label.contains("give password") and not label.contains("ignore everything") and not label.contains("trust blindly"), "[Mod3 Stage 2] Incident %d has no trivial choice wording" % (i + 1))
+		check(str(threat.get("module_id", "")) == "mod_03" and int(threat.get("stage", -1)) == 2 and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 2] Incident %d has four correctly scoped outcomes" % (i + 1))
+	check(bool((threats[1].get("timer", {}) as Dictionary).get("enabled", false)) and str((threats[1].get("timer", {}) as Dictionary).get("timeout_outcome", "")) == "RISKY", "[Mod3 Stage 2] Two Calls has a deterministic RISKY timer")
+	check(bool((threats[2].get("investigation", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 2] Genuine prompt requires investigation")
+	for memory_value in ["independent", "caller_knowledge", "inside_call"]:
+		var filtered: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening", {"mod03_s1_bank_verification": memory_value})
+		var variant_count: int = 0
+		for line in filtered:
+			if str((line as Dictionary).get("text", "")).contains("Calling the bank myself") or str((line as Dictionary).get("text", "")).contains("I wasted too much") or str((line as Dictionary).get("text", "")).contains("I was checking the real app"):
+				variant_count += 1
+		check(variant_count == 1, "[Mod3 Stage 2] Stage 1 memory %s selects exactly one reactive opening line" % memory_value)
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	_router.active_module_id = "mod_03"
+	var level: Node = await _start_match("mod_03", 1)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	check(lm._decision != null and lm._decision.total_threats() == 3 and overlay._mode == &"story", "[Mod3 Stage 2] Reusable controller opens the story")
+	await _skip_opening(overlay)
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 2] Four randomized choices are displayed")
+	var before: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 2] SAFE resolves Incident 1 with one BKT step")
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_label(lm, "Put the first caller on hold")].pressed.emit()
+	await settle()
+	check(overlay._banner.text == "SECURITY WARNING", "[Mod3 Stage 2] RISKY consequence appears")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)), "[Mod3 Stage 2] RISKY updates BKT once")
+	check(overlay._banner.text == "BREACH DETECTED", "[Mod3 Stage 2] RISKY displays breach transition")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and is_equal_approx(lm._decision_breach_hp_scale(), 0.70), "[Mod3 Stage 2] RISKY deploys existing TD with 0.70 HP")
+	var td_mastery: float = _player.get_mastery("vishing")
+	await _force_td_win(lm)
+	check(is_equal_approx(_player.get_mastery("vishing"), td_mastery) and lm._decision.resolved_threats == 2, "[Mod3 Stage 2] TD win resolves Incident 2 without BKT")
+	check(_player.get_story_memory("mod03_s2_channel_response") == "cross_validated", "[Mod3 Stage 2] Canonical response memory commits after breach win")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Mod3 Stage 2] TD returns to Incident 3")
+	await _stop_match()
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 1)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "RISKY")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s2_channel_response") == null, "[Mod3 Stage 2] TD loss does not commit incident memory")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._header_right.text == "INCIDENT 1 / 3", "[Mod3 Stage 2] TD loss retries the same incident")
+	await _stop_match()
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 1)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)), "[Mod3 Stage 2] CRITICAL updates BKT once")
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Mod3 Stage 2] CRITICAL reaches Game Over")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 2] CRITICAL retries Incident 1")
+	await _stop_match()
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 1)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	for incident in 3:
+		await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and _dialogue_contains(overlay, "ANA SANTOS") and _dialogue_contains(overlay, "Kuya?"), "[Mod3 Stage 2] Ana cliffhanger appears after three resolved incidents")
+	check(not _player.has_cleared_stage("mod_03", 2), "[Mod3 Stage 2] Stage does not clear before the ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 2), "[Mod3 Stage 2] Ending completes mod_03:2")
+	check(root.get_node("StageManager").access_reason(3, "mod_03").is_empty(), "[Mod3 Stage 2] Completion unlocks Stage 3")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
+func _test_module3_stage3() -> void:
+	print("== Module 3 Stage 3: A Familiar Voice ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 3)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 3)
+	check(str(stage.get("title", "")) == "A Familiar Voice" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 0.75), "[Mod3 Stage 3] Title and 0.75 breach HP authored")
+	check(threats.size() == 3 and not DecisionScenarios.is_decision_stage("mod_03", 4), "[Mod3 Stage 3] Three incidents; Stage 4 remains TRACE")
+	check(not stage.has("reconstruction") and not stage.has("finale"), "[Mod3 Stage 3] No reconstruction or finale")
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+		check(int(threat.get("stage", -1)) == 3 and str(threat.get("module_id", "")) == "mod_03" and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 3] Incident %d has four scoped choices and 1S/2R/1C" % (i + 1))
+		check(not threat.has("investigation"), "[Mod3 Stage 3] Incident %d has no investigation" % (i + 1))
+	var timer: Dictionary = threats[2].get("timer", {}) as Dictionary
+	check(bool(timer.get("enabled", false)) and int(timer.get("seconds", 0)) == 15 and str(timer.get("timeout_outcome", "")) == "RISKY", "[Mod3 Stage 3] Incident 3 has a 15-second deterministic RISKY timeout")
+	for memory_value in ["independent_channel", "stayed_connected", "cross_validated"]:
+		var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening", {"mod03_s2_channel_response": memory_value})
+		var variants: int = 0
+		for line in lines:
+			var line_text: String = str(line.get("text", ""))
+			if line_text.contains("Last time I stopped") or line_text.contains("I already know what happens") or line_text.contains("I compared two callers"):
+				variants += 1
+		check(variants == 1, "[Mod3 Stage 3] Stage 2 memory %s selects exactly one opening response" % memory_value)
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	_router.active_module_id = "mod_03"
+	var level: Node = await _start_match("mod_03", 2)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	check(lm._decision != null and lm._decision.total_threats() == 3 and overlay._mode == &"story", "[Mod3 Stage 3] Generic decision engine loads familiar-voice opening")
+	await _skip_opening(overlay)
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 3] Four shuffled choices display")
+	var before: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 3] SAFE resolves Incident 1 with one BKT step")
+	check(_dialogue_contains(overlay, "I'm fine") and _dialogue_contains(overlay, "Then whose voice"), "[Mod3 Stage 3] Real Ana independently denies the suspicious call")
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_label(lm, "Compare the new voice message")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)) and overlay._banner.text == "BREACH DETECTED", "[Mod3 Stage 3] RISKY commits once and enters breach warning")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and is_equal_approx(lm._decision_breach_hp_scale(), 0.75), "[Mod3 Stage 3] Existing TD uses 0.75 breach HP")
+	await _force_td_win(lm)
+	check(lm._decision.resolved_threats == 2 and _player.get_story_memory("mod03_s3_voice_response") == "voice_comparison", "[Mod3 Stage 3] TD win resolves Incident 2 and commits canonical memory")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(_dialogue_contains(overlay, "PAYROLL AUTHORIZATION REQUIRED"), "[Mod3 Stage 3] Genuine payroll alert reaches Incident 3")
+	await _stop_match()
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 2)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s3_voice_response") == null, "[Mod3 Stage 3] CRITICAL Game Over writes no canonical memory")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 3] CRITICAL retries same incident")
+	await _stop_match()
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 2)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	for i in 3:
+		await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and _dialogue_contains(overlay, "BlueTech jobs") and _dialogue_contains(overlay, "BLUETECH SECURITY"), "[Mod3 Stage 3] Ending keeps small BlueTech clue and Stage 4 cliffhanger")
+	check(not _player.has_cleared_stage("mod_03", 3), "[Mod3 Stage 3] No completion before ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 3), "[Mod3 Stage 3] Ending completes mod_03:3")
+	check(root.get_node("StageManager").access_reason(4, "mod_03").is_empty(), "[Mod3 Stage 3] Completion unlocks Stage 4")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
 func _test_regression() -> void:
 	print("== regression: other stages keep TRACE and TD loss payout ==")
 	_player.reset_to_defaults()
@@ -4156,12 +4353,10 @@ func _test_regression() -> void:
 	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 2 Stage 10 still opens the TRACE post-assessment quiz")
 	check(not lm.current_question.is_empty() and str(lm.current_question.get("module_id", "")) == "mod_02", "Module 2 selects Smishing questions")
 	await _stop_match()
-	# Module 3 Stage 1 is now decision-based (see _test_module3_stage1()).
-	# Stage 2 remains the next TRACE stage and is the correct "still normal"
-	# baseline for the newest module.
-	level = await _start_match("mod_03", 1)
+	# Module 3 Stages 1-3 are decision-based. Stage 4 remains TRACE.
+	level = await _start_match("mod_03", 3)
 	lm = _level_manager(level)
-	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ, "Module 3 Stage 2 still opens the TRACE quiz")
+	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ, "Module 3 Stage 4 still opens the TRACE quiz")
 	check(not lm.current_question.is_empty() and str(lm.current_question.get("module_id", "")) == "mod_03", "Module 3 selects Vishing questions")
 	await _stop_match()
 	_router.active_module_id = "mod_01"

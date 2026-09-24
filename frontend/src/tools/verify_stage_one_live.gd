@@ -194,7 +194,27 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(9)) == router.LEVEL_SCENE, "Module 2 Stage 10 (the post-assessment) remains legacy")
 	router.active_module_id = "mod_03"
 	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 1 also routes to the live decision scene (it is decision-based too)")
-	check(router._scene_for_context(router._context_for_stage(1)) == router.LEVEL_SCENE, "Module 3 Stage 2 (no decision data yet) remains legacy")
+	check(router._scene_for_context(router._context_for_stage(1)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 2 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(2)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 3 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(3)) == router.LEVEL_SCENE, "Module 3 Stage 4 remains legacy")
+	var module3_stage2_context := Context.stage_one_live()
+	module3_stage2_context.module_id = "mod_03"
+	module3_stage2_context.stage_id = 2
+	var module3_stage2_account := Account.new()
+	var module3_stage2_game: Control = mount(module3_stage2_account, module3_stage2_context)
+	check(module3_stage2_game.decision.total_threats() == 3 and is_equal_approx(module3_stage2_game._enemy_health_scale(), 0.70), "Module 3 Stage 2 live scene loads three incidents with 0.70 HP scale")
+	read_page(module3_stage2_game)
+	choose(module3_stage2_game, "SAFE")
+	check(module3_stage2_game.decision.threat_index == 1 and module3_stage2_game.story_overlay._call_panel.visible, "Module 3 Stage 2 Incident 2 presents the live call UI")
+	await unmount(module3_stage2_game)
+	var module3_stage3_context := Context.stage_one_live()
+	module3_stage3_context.module_id = "mod_03"
+	module3_stage3_context.stage_id = 3
+	var module3_stage3_game: Control = mount(Account.new(), module3_stage3_context)
+	check(module3_stage3_game.decision.total_threats() == 3 and is_equal_approx(module3_stage3_game._enemy_health_scale(), 0.75), "Module 3 Stage 3 live scene loads three incidents with 0.75 HP scale")
+	read_page(module3_stage3_game)
+	check(module3_stage3_game.story_overlay._call_panel.visible, "Module 3 Stage 3 Incident 1 presents Ana's call UI")
+	await unmount(module3_stage3_game)
 	router.active_module_id = "mod_04"
 	check(not router._context_for_stage(0).geometric, "A module with no decision content remains legacy")
 	router.active_module_id = "mod_01"
