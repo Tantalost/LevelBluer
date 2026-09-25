@@ -197,7 +197,7 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(1)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 2 uses the reusable live decision scene")
 	check(router._scene_for_context(router._context_for_stage(2)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 3 uses the reusable live decision scene")
 	check(router._scene_for_context(router._context_for_stage(3)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 4 uses the reusable live decision scene")
-	check(router._scene_for_context(router._context_for_stage(4)) == router.LEVEL_SCENE, "Module 3 Stage 5 remains legacy")
+	check(router._scene_for_context(router._context_for_stage(4)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 5 uses the reusable live decision scene")
 	var module3_stage2_context := Context.stage_one_live()
 	module3_stage2_context.module_id = "mod_03"
 	module3_stage2_context.stage_id = 2
@@ -224,6 +224,41 @@ func _run() -> void:
 	read_page(module3_stage4_game)
 	check(module3_stage4_game.story_overlay._call_panel.visible, "Module 3 Stage 4 Incident 1 presents BlueTech Security impersonation in call UI")
 	await unmount(module3_stage4_game)
+	var module3_stage5_context := Context.stage_one_live()
+	module3_stage5_context.module_id = "mod_03"
+	module3_stage5_context.stage_id = 5
+	var module3_stage5_account := Account.new()
+	var module3_stage5_game: Control = mount(module3_stage5_account, module3_stage5_context)
+	check(module3_stage5_game.decision.total_threats() == 3 and is_equal_approx(module3_stage5_game._enemy_health_scale(), 0.85), "Module 3 Stage 5 live scene loads three incidents at 0.85 HP")
+	read_page(module3_stage5_game)
+	check(module3_stage5_game.story_overlay._call_panel.visible, "Module 3 Stage 5 Incident 1 presents the bank recovery caller in call UI")
+	choose(module3_stage5_game, "SAFE")
+	check(module3_stage5_account.story_memory.get("mod03_s5_recovery_response") == "verified_recovery", "Module 3 Stage 5 Incident 1 SAFE commits the canonical recovery-response memory")
+	choose(module3_stage5_game, "SAFE")
+	check(module3_stage5_game.story_overlay._mode == &"threat" and module3_stage5_game.decision.threat_index == 2, "Module 3 Stage 5 reaches Incident 3 (We Can Get It Back) after two SAFE resolutions")
+	var stage5_daniel_index: int = module3_stage5_game.story_overlay._cast.find("Daniel")
+	check(stage5_daniel_index != -1, "Module 3 Stage 5 Incident 3 recognizes Daniel as a portrait speaker")
+	var stage5_reached_crying := false
+	for i in 25:
+		if stage5_daniel_index != -1 and module3_stage5_game.story_overlay._portraits[stage5_daniel_index].emotion == "crying":
+			stage5_reached_crying = true
+			break
+		module3_stage5_game.story_overlay._continue()
+	check(stage5_reached_crying, "Module 3 Stage 5 Incident 3 reaches Daniel's first crying scene, using the existing emotion system (no new animation code)")
+	# drain_until_dialogue_done() is sized for a short spliced-in tail (a
+	# couple of lines); Incident 3's own story array is long, and the crying
+	# hunt above only advanced as far as the first crying line — read the
+	# rest of it out directly, same reveal-then-advance rhythm as read_page().
+	for i in 40:
+		if module3_stage5_game.story_overlay._dialogue_done:
+			break
+		if module3_stage5_game.story_overlay._typing:
+			module3_stage5_game.story_overlay._continue()
+		module3_stage5_game.story_overlay._continue()
+	check(module3_stage5_game.decision_timer_active, "Module 3 Stage 5 Incident 3's timer activates once its own dialogue is fully read")
+	module3_stage5_game.advance_decision_timer(15.1)
+	check(not module3_stage5_game.decision_timer_active and module3_stage5_game.decision.is_breach_active(), "Module 3 Stage 5 Incident 3's timeout deterministically resolves the authored RISKY outcome and enters breach")
+	await unmount(module3_stage5_game)
 	router.active_module_id = "mod_04"
 	check(not router._context_for_stage(0).geometric, "A module with no decision content remains legacy")
 	router.active_module_id = "mod_01"

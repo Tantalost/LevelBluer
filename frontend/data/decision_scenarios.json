@@ -3593,6 +3593,153 @@
 					"explanation": "The call itself keeps Daniel away from his own staff. A genuine vendor-change request does not validate the caller's instruction to do nothing.", "breach_gold": 30, "next": ""
 				}
 			]
+		},
+		{
+			"id": "mod03_stage5", "module_id": "mod_03", "stage": 5, "title": "Too Late", "bkt_skill": "vishing", "company": "BlueTech Solutions",
+			"clear_title": "STAGE 5 COMPLETE", "clear_subtitle": "TOO LATE", "next_stage_title": "Stage 6 — The Officer", "breach_hp_multiplier": 0.85,
+			"opening": [
+				{"speaker": "", "text": "Ana pulls up the transaction record."},
+				{"speaker": "Ana", "text": "Eighteen thousand..."},
+				{"speaker": "Daniel", "text": "Eighteen thousand...", "emotion": "shocked"},
+				{"speaker": "Ana", "text": "Six hundred."},
+				{"speaker": "Daniel", "text": "I heard you.", "emotion": "frustrated"},
+				{"speaker": "Ana", "text": "It went to a changed supplier account. The one accounting updated after the call."},
+				{"speaker": "", "text": "Liza, Daniel's long-time bookkeeper, stands near the doorway."},
+				{"speaker": "Liza", "text": "Sir..."},
+				{"speaker": "Daniel", "text": "Who called you?"},
+				{"speaker": "Liza", "text": "It sounded like you."},
+				{"speaker": "", "text": "Silence."},
+				{"speaker": "Daniel", "text": "I already learned that a channel I didn't start isn't proof of anything.", "emotion": "frustrated", "when": {"mod03_s4_isolation_response": "independent_coordination"}},
+				{"speaker": "Daniel", "text": "Mia warned the staff while I stayed stuck on that call.", "emotion": "frustrated", "when": {"mod03_s4_isolation_response": "delegated_response"}},
+				{"speaker": "Daniel", "text": "I only reached one person while the rest of the business kept moving.", "emotion": "frustrated", "when": {"mod03_s4_isolation_response": "stayed_engaged"}},
+				{"speaker": "Daniel", "text": "They used my voice.", "emotion": "angry"}
+			],
+			"ending": [
+				{"speaker": "Security Assistant", "text": "The fraudulent destination account is frozen and under investigation."},
+				{"speaker": "Daniel", "text": "So we might get it back."},
+				{"speaker": "Security Assistant", "text": "Maybe. Part of it, possibly all of it. Recovery isn't guaranteed yet."},
+				{"speaker": "Daniel", "text": "I can live with maybe.", "emotion": "relieved"},
+				{"speaker": "Liza", "text": "I'm still sorry."},
+				{"speaker": "Daniel", "text": "So am I."},
+				{"speaker": "Liza", "text": "For what?"},
+				{"speaker": "Daniel", "text": "For looking at you like you were the problem.", "emotion": "sad"},
+				{"speaker": "Liza", "text": "We were both being used."},
+				{"speaker": "Daniel", "text": "Yeah.", "emotion": "determined"},
+				{"speaker": "Security Assistant", "text": "The fake Daniel call to accounting, the fake Ana voice, the fake BlueTech security call, and these recovery calls all correlate."},
+				{"speaker": "Mia", "text": "Same campaign?"},
+				{"speaker": "Security Assistant", "text": "They're changing identities faster."},
+				{"speaker": "Mia", "text": "But the objective stays the same."},
+				{"speaker": "Daniel", "text": "Keep us emotional. Keep us talking. Keep us reacting."},
+				{"speaker": "Security Assistant", "text": "Yes."},
+				{"speaker": "Security Assistant", "text": "And there's one more thing."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Security Assistant", "text": "The number that called accounting was reused."},
+				{"speaker": "Mia", "text": "Where?"},
+				{"speaker": "Security Assistant", "text": "On another complaint."},
+				{"speaker": "Daniel", "text": "Against BlueTech?"},
+				{"speaker": "Security Assistant", "text": "Not exactly."},
+				{"speaker": "", "text": "Daniel's phone rings. Caller ID: CYBERCRIME INVESTIGATION UNIT."},
+				{"speaker": "Caller", "text": "Mr. Santos, this is Investigator Reyes."},
+				{"speaker": "Caller", "text": "We are investigating the fraud against your company."},
+				{"speaker": "Caller", "text": "Do not discuss this call with your bank or BlueTech."},
+				{"speaker": "Daniel", "text": "Let me guess.", "emotion": "frustrated"},
+				{"speaker": "Security Assistant", "text": "Don't guess."},
+				{"speaker": "Caller", "text": "Mr. Santos?"},
+				{"speaker": "Caller", "text": "We need your cooperation."}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The recovery caller is still trying to hold Daniel's attention. Resume containment."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That connection is contained, but this loss still needs a full response."}, {"speaker": "Daniel", "text": "Then let's finish it."}],
+			"threats": [
+				{
+					"id": "mod03_stage05_incident01", "module_id": "mod_03", "stage": 5, "title": "The Payment", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS PAYMENT / FRAUD RESPONSE",
+					"story": [
+						{"speaker": "Security Assistant", "text": "The bank confirmed the transfer is being investigated."},
+						{"speaker": "Mia", "text": "Can they get it back?"},
+						{"speaker": "Security Assistant", "text": "Possibly. Not guaranteed. The destination account may still be traceable if Daniel doesn't contact it directly."},
+						{"speaker": "Daniel", "text": "Don't touch it. Got it.", "emotion": "frustrated"},
+						{"speaker": "", "text": "Daniel's phone rings. Caller ID: BANK RECOVERY DESK."},
+						{"speaker": "Caller", "text": "Mr. Santos, this is the urgent recovery desk. We may still be able to reverse this before settlement."},
+						{"speaker": "", "text": "The caller knows the exact amount, the transaction time, the destination reference, and the fraud case number."},
+						{"speaker": "Daniel", "text": "They know everything the bank just told me.", "emotion": "worried"}
+					],
+					"situation": "The ₱18,600 transfer has already left the business account. The bank says recovery is possible but not guaranteed, the destination account may still be traceable, and Daniel should preserve records and avoid contacting the recipient directly. A caller claiming to be the bank's urgent recovery desk now offers to reverse the transfer before it settles.",
+					"evidence": ["Caller knows the exact stolen amount", "Caller knows the transaction time and destination reference", "Caller knows the fraud case number", "The legitimate bank never promised an urgent reversal window"],
+					"call": {"enabled": true, "caller": "BANK RECOVERY DESK", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Follow the caller's reversal instructions now because recovery time may be limited and the transaction details are exact.", "outcome": "CRITICAL", "consequence": "Urgency right after a real loss is exactly what makes a second scam effective — accurate details only prove the attacker is watching the case, not that they can reverse anything.", "story_event": [{"type": "status", "title": "RECOVERY WINDOW", "text": "STATUS: TIME-SENSITIVE"}, {"type": "dialogue", "speaker": "Daniel", "text": "That's exactly what they know I'll react to.", "emotion": "worried"}]},
+						{"label": "Continue only through the fraud case Daniel independently established with the bank and preserve the payment records.", "outcome": "SAFE", "consequence": "The independently opened case is the only channel that can actually confirm or advance a reversal.", "memory": {"mod03_s5_recovery_response": "verified_recovery"}},
+						{"label": "Keep the recovery caller connected while comparing their information against the legitimate case.", "outcome": "RISKY", "consequence": "The details match, but accurate transaction data still does not authenticate the caller.", "memory": {"mod03_s5_recovery_response": "case_crosscheck"}, "story_event": [{"type": "status", "title": "RECOVERY WINDOW", "text": "STATUS: TIME-SENSITIVE"}, {"type": "dialogue", "speaker": "Daniel", "text": "That's exactly what they know I'll react to.", "emotion": "worried"}]},
+						{"label": "Ask the caller to prove access to the bank's internal recovery process before following any instructions.", "outcome": "RISKY", "consequence": "The campaign already shows access to fresh case information, so a plausible-sounding proof still doesn't confirm who's calling.", "memory": {"mod03_s5_recovery_response": "caller_explanation"}}
+					],
+					"explanation": "The moment after a real loss is another attack surface. A caller who accurately knows the case is proving they're watching it, not that they can reverse it.", "breach_gold": 28, "next": "mod03_stage05_incident02"
+				},
+				{
+					"id": "mod03_stage05_incident02", "module_id": "mod_03", "stage": 5, "title": "Who Failed?", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS INCIDENT RESPONSE",
+					"story": [
+						{"speaker": "Liza", "text": "I'm sorry."},
+						{"speaker": "Daniel", "text": "Don't."},
+						{"speaker": "Liza", "text": "I should've called you."},
+						{"speaker": "Daniel", "text": "You thought you did.", "emotion": "frustrated"},
+						{"speaker": "Liza", "text": "I approved it."},
+						{"speaker": "Daniel", "text": "They made you think I told you to."},
+						{"speaker": "Liza", "text": "But I still pressed approve."},
+						{"speaker": "", "text": "Daniel is quiet."},
+						{"speaker": "", "text": "The real bank asks Santos Logistics to document who received the call, who approved the request, what information was disclosed, and how the attacker authenticated themselves."},
+						{"speaker": "", "text": "Another call arrives. Caller ID: FRAUD INVESTIGATION SUPERVISOR."},
+						{"speaker": "Caller", "text": "We need to determine employee responsibility before the recovery can continue."},
+						{"speaker": "Daniel", "text": "They want to know who to blame.", "emotion": "angry"}
+					],
+					"situation": "The real bank needs Santos Logistics to document who received the call, who approved the payment, what information was disclosed, and how the attacker authenticated themselves. A caller claiming to be a Fraud Investigation Supervisor now asks Daniel to privately confirm Liza's full identity, employee ID, contact details, and internal approval role, framing it as necessary for the recovery.",
+					"evidence": ["The request sounds plausible for an investigation", "The caller asks for it privately, not through the documented bank process", "The legitimate bank asked Santos Logistics to document this, not to hand it over by phone"],
+					"call": {"enabled": true, "caller": "FRAUD INVESTIGATION SUPERVISOR", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Provide the requested staff details because identifying who authorized the payment seems necessary for fraud recovery.", "outcome": "CRITICAL", "consequence": "The attacker is exploiting Daniel's need to assign responsibility — the details go straight into refining the next impersonation, not into any real recovery process."},
+						{"label": "Provide required employee information only through the verified bank case process, not through the unsolicited call.", "outcome": "SAFE", "consequence": "The documentation still reaches the bank, but only through the channel Daniel already knows is real."},
+						{"label": "Confirm only basic employee details while withholding account credentials.", "outcome": "RISKY", "consequence": "No credentials are exposed, but personal and internal role data can still help the attacker refine future impersonation."},
+						{"label": "Ask the caller to confirm Liza's existing case details before sharing anything.", "outcome": "RISKY", "consequence": "The caller confirms details accurately, but knowledge of the case still does not authenticate who's asking for more."}
+					],
+					"explanation": "The attacker is exploiting Daniel's need to assign responsibility after a loss. Determining who's at fault is the bank's documented process, not an unsolicited caller's request.", "breach_gold": 30, "next": "mod03_stage05_incident03"
+				},
+				{
+					"id": "mod03_stage05_incident03", "module_id": "mod_03", "stage": 5, "title": "We Can Get It Back", "bkt_skill": "vishing", "affected_system": "FRAUD RECOVERY / DANIEL'S EMOTIONAL STATE",
+					"story": [
+						{"speaker": "Daniel", "text": "I was angry at her.", "emotion": "sad"},
+						{"speaker": "Mia", "text": "You were scared."},
+						{"speaker": "Daniel", "text": "I was angry.", "emotion": "sad"},
+						{"speaker": "Daniel", "text": "Because blaming someone felt easier than admitting I couldn't control any of this."},
+						{"speaker": "", "text": "Silence."},
+						{"speaker": "Daniel", "text": "They used my bank.", "emotion": "crying"},
+						{"speaker": "Daniel", "text": "My business.", "emotion": "crying"},
+						{"speaker": "Daniel", "text": "My sister's voice.", "emotion": "crying"},
+						{"speaker": "Daniel", "text": "Then my voice.", "emotion": "crying"},
+						{"speaker": "Daniel", "text": "And someone who trusted me is sitting there thinking she ruined everything.", "emotion": "crying"},
+						{"speaker": "Liza", "text": "Sir..."},
+						{"speaker": "Daniel", "text": "No.", "emotion": "crying"},
+						{"speaker": "Daniel", "text": "You didn't do this.", "emotion": "crying"},
+						{"speaker": "Daniel", "text": "They did."},
+						{"speaker": "", "text": "Pause."},
+						{"speaker": "Daniel", "text": "But I'm done helping them turn us against each other.", "emotion": "determined"},
+						{"speaker": "", "text": "Daniel's phone rings. Caller ID: RECOVERY SPECIALIST."},
+						{"speaker": "Caller", "text": "Mr. Santos, I understand you're angry."},
+						{"speaker": "Daniel", "text": "Don't tell me what I am.", "emotion": "angry"},
+						{"speaker": "Caller", "text": "I can still recover the money."},
+						{"speaker": "", "text": "The caller knows the exact stolen amount, Liza's role, the bank case details, and the destination account, and says Daniel must authorize a temporary recovery verification transfer. A genuine bank-app verification prompt appears."},
+						{"speaker": "Caller", "text": "That prompt proves the recovery process is active."},
+						{"speaker": "Daniel", "text": "The prompt looks real.", "emotion": "shocked"}
+					],
+					"situation": "A caller claiming to be a recovery specialist knows the exact stolen amount, Liza's role, the bank case details, and the destination account. They say a temporary 'recovery verification transfer' must be authorized, and a genuine bank-app verification prompt appears to back up the claim.",
+					"evidence": ["The caller accurately knows details only someone watching the case would have", "A genuine bank-app prompt appears, but Daniel did not request it", "The caller frames the prompt itself as proof the recovery is active", "The recovery window is framed as closing soon"],
+					"call": {"enabled": true, "caller": "RECOVERY SPECIALIST", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"timer": {"enabled": true, "seconds": 15, "label": "RECOVERY WINDOW MAY CLOSE", "timeout_outcome": "RISKY", "timeout_story_event": [{"type": "dialogue", "speaker": "Daniel", "text": "I keep wanting to fix this before I think.", "emotion": "worried"}]},
+					"choices": [
+						{"label": "Approve the genuine bank prompt because the recovery window is limited and the caller knows the exact stolen transaction.", "outcome": "CRITICAL", "consequence": "A real loss, a genuine prompt, urgency, and emotional pressure combine into the one authorization the attacker actually needed.", "story_event": [{"type": "status", "title": "RECOVERY AUTHORIZATION", "text": "APPROVED"}, {"type": "dialogue", "speaker": "Daniel", "text": "No...", "emotion": "shocked"}]},
+						{"label": "Decline the unsolicited recovery action and continue recovery only through Daniel's independently established fraud case.", "outcome": "SAFE", "consequence": "The genuine prompt is declined until the bank confirms through the case Daniel already opened himself."},
+						{"label": "Keep the caller connected while checking whether the legitimate bank case shows the same recovery action.", "outcome": "RISKY", "consequence": "The independent check helps, but the caller still controls the conversation while Daniel looks."},
+						{"label": "Ask the caller to explain exactly why the genuine verification prompt is required before acting.", "outcome": "RISKY", "consequence": "A convincing technical explanation still doesn't authenticate the person giving it."}
+					],
+					"explanation": "The attacker combines a real loss, a genuine app prompt, urgency, and emotional pressure into one authorization. A prompt being real never proves who's telling Daniel to use it.", "breach_gold": 32, "next": ""
+				}
+			]
 		}
 	]
 }

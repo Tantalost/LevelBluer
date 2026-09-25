@@ -80,6 +80,7 @@ func _run() -> void:
 	await _test_module3_stage2()
 	await _test_module3_stage3()
 	await _test_module3_stage4()
+	await _test_module3_stage5()
 	await _test_module3_stage1_story_consequences()
 	await _test_legacy_story_memory_parity()
 	await _test_regression()
@@ -258,7 +259,7 @@ func _test_data_model(threats: Array[Dictionary]) -> void:
 	check(DecisionScenarios.is_decision_stage("mod_03", 2), "Module 3 Stage 2 is decision-based")
 	check(DecisionScenarios.is_decision_stage("mod_03", 3), "Module 3 Stage 3 is decision-based")
 	check(DecisionScenarios.is_decision_stage("mod_03", 4), "Module 3 Stage 4 is decision-based")
-	check(not DecisionScenarios.is_decision_stage("mod_03", 5), "Module 3 Stage 5 remains non-decision")
+	check(DecisionScenarios.is_decision_stage("mod_03", 5), "Module 3 Stage 5 is decision-based")
 	var mod2_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_02", 1)
 	check(mod2_threats.size() == 3, "[Mod2 Stage 1] Exactly 3 incidents")
 	var mod2_trivial: PackedStringArray = ["give.*password", "ignore it", "ignore everything", "looks safe", "trust it because it looks real"]
@@ -4335,7 +4336,7 @@ func _test_module3_stage4() -> void:
 	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 4)
 	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 4)
 	check(str(stage.get("title", "")) == "Don't Hang Up" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 0.80), "[Mod3 Stage 4] Title and 0.80 HP authored")
-	check(threats.size() == 3 and not DecisionScenarios.is_decision_stage("mod_03", 5), "[Mod3 Stage 4] Three incidents; Stage 5 remains TRACE")
+	check(threats.size() == 3 and DecisionScenarios.is_decision_stage("mod_03", 5), "[Mod3 Stage 4] Three incidents; Stage 5 now follows as decision story")
 	check(not stage.has("reconstruction") and not stage.has("finale"), "[Mod3 Stage 4] No reconstruction or finale")
 	for i in threats.size():
 		var threat: Dictionary = threats[i]
@@ -4430,6 +4431,142 @@ func _test_module3_stage4() -> void:
 	_router.active_module_id = "mod_01"
 
 
+func _test_module3_stage5() -> void:
+	print("== Module 3 Stage 5: Too Late ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 5)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 5)
+	check(str(stage.get("title", "")) == "Too Late" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 0.85), "[Mod3 Stage 5] Title and 0.85 breach HP authored")
+	check(threats.size() == 3, "[Mod3 Stage 5] Three incidents")
+	check(not stage.has("reconstruction") and not stage.has("finale"), "[Mod3 Stage 5] No reconstruction or finale")
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		check(not threat.has("investigation"), "[Mod3 Stage 5] Incident %d has no investigation (this milestone explicitly avoids it)" % (i + 1))
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+			if outcome == "CRITICAL":
+				check(not (choice as Dictionary).has("memory"), "[Mod3 Stage 5] Incident %d's CRITICAL choice authors no memory" % (i + 1))
+		check(int(threat.get("stage", -1)) == 5 and str(threat.get("module_id", "")) == "mod_03" and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 5] Incident %d has four scoped choices and 1S/2R/1C" % (i + 1))
+	# The payment predates Stage 5 and is canonical from Stage 4's own ending
+	# (₱18,600) — Stage 5 must never introduce a different figure.
+	var incident1_text: String = JSON.stringify(threats[0])
+	check(incident1_text.contains("18,600") and not incident1_text.contains("84,750"), "[Mod3 Stage 5] The payment amount matches Stage 4's own canonical figure, never a new number")
+	var timer: Dictionary = threats[2].get("timer", {}) as Dictionary
+	check(bool(timer.get("enabled", false)) and int(timer.get("seconds", 0)) == 15 and str(timer.get("timeout_outcome", "")) == "RISKY", "[Mod3 Stage 5] Incident 3 has a 15-second deterministic RISKY timeout")
+	var memory_values: Dictionary = {}
+	for choice in (threats[0].get("choices", []) as Array):
+		var mem: Dictionary = (choice as Dictionary).get("memory", {}) as Dictionary
+		if mem.has("mod03_s5_recovery_response"):
+			memory_values[str(mem["mod03_s5_recovery_response"])] = true
+	check(memory_values.size() == 3 and memory_values.has("verified_recovery") and memory_values.has("case_crosscheck") and memory_values.has("caller_explanation"),
+		"[Mod3 Stage 5] Incident 1 authors exactly the three canonical recovery-response memory values")
+	var stage_text_lower: String = JSON.stringify(stage).to_lower()
+	for word in ["foolish", "stupid", "careless", "idiot"]:
+		check(not stage_text_lower.contains(word), "[Mod3 Stage 5] Liza is never described as %s — she is competent, not foolish" % word)
+	var ending_text: String = JSON.stringify(stage.get("ending", []))
+	check(ending_text.contains("Maybe") and not ending_text.to_lower().contains("full refund") and not ending_text.to_lower().contains("fully refunded"),
+		"[Mod3 Stage 5] Recovery outcome stays realistic and uncertain, never an instant full refund")
+	check(ending_text.contains("CYBERCRIME INVESTIGATION UNIT") and ending_text.contains("Investigator Reyes"), "[Mod3 Stage 5] Ending sets up the Cybercrime Investigation Unit cliffhanger")
+	check(str(stage.get("next_stage_title", "")) == "Stage 6 — The Officer", "[Mod3 Stage 5] Points to Stage 6 — The Officer")
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	_router.active_module_id = "mod_03"
+	var level: Node = await _start_match("mod_03", 4)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	check(lm._decision != null and lm._decision.total_threats() == 3 and overlay._mode == &"story", "[Mod3 Stage 5] Generic decision engine opens Too Late")
+	# The legacy overlay shows a story block's lines all at once (see
+	# decision_overlay.gd's _fill_dialogue()) — check the opening's own
+	# content before _skip_opening() dismisses it for Incident 1.
+	# The opening speaks the canonical amount naturally ("Eighteen thousand...
+	# Six hundred.") rather than as a numeral — the numeral itself is
+	# authored on Incident 1's own situation text (checked separately above).
+	check(_dialogue_contains(overlay, "Eighteen thousand") and _dialogue_contains(overlay, "Liza"), "[Mod3 Stage 5] Opening confirms the canonical payment and introduces Liza")
+	await _skip_opening(overlay)
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 5] Four randomized choices display")
+	var before: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 5] SAFE resolves Incident 1 with one BKT step")
+	check(_player.get_story_memory("mod03_s5_recovery_response") == "verified_recovery", "[Mod3 Stage 5] SAFE commits the canonical recovery-response memory immediately")
+	check(_dialogue_contains(overlay, "I'm sorry") and _dialogue_contains(overlay, "You thought you did"), "[Mod3 Stage 5] Liza/Daniel post-incident scene plays before Incident 2's own threat")
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)) and overlay._banner.text == "BREACH DETECTED", "[Mod3 Stage 5] RISKY commits once and enters breach warning")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and is_equal_approx(lm._decision_breach_hp_scale(), 0.85), "[Mod3 Stage 5] Existing TD uses 0.85 breach HP")
+	await _force_td_win(lm)
+	# mod03_s5_recovery_response is only ever authored on Incident 1's own
+	# choices — Incident 2 doesn't touch it at all, so it stays exactly what
+	# Incident 1's SAFE choice committed above.
+	check(lm._decision.resolved_threats == 2 and _player.get_story_memory("mod03_s5_recovery_response") == "verified_recovery", "[Mod3 Stage 5] TD win resolves Incident 2 without disturbing Incident 1's own committed memory")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(_dialogue_contains(overlay, "I was angry at her") and _dialogue_contains(overlay, "They used my bank"), "[Mod3 Stage 5] Incident 3 opens with Daniel's crying breakdown, reached through Incident 2's own resolution")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 4)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_label(lm, "Keep the recovery caller connected while comparing")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s5_recovery_response") == null, "[Mod3 Stage 5] TD loss commits no memory — the abandoned RISKY attempt is never remembered")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 5] TD loss retries Incident 1")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	level = await _start_match("mod_03", 4)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)), "[Mod3 Stage 5] CRITICAL updates BKT once")
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Mod3 Stage 5] CRITICAL reaches Game Over")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 5] CRITICAL retries Incident 1")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 4)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	for i in 3:
+		await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and _dialogue_contains(overlay, "I can live with maybe") and _dialogue_contains(overlay, "We were both being used"), "[Mod3 Stage 5] All-SAFE ending reaches the uncertain recovery and Liza/Daniel reconciliation")
+	check(_dialogue_contains(overlay, "CYBERCRIME INVESTIGATION UNIT") and _dialogue_contains(overlay, "We need your cooperation"), "[Mod3 Stage 5] Stage 6 cliffhanger plays")
+	check(not _player.has_cleared_stage("mod_03", 5), "[Mod3 Stage 5] Stage does not clear before the ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 5), "[Mod3 Stage 5] Ending completes mod_03:5")
+	check(root.get_node("StageManager").access_reason(6, "mod_03").is_empty(), "[Mod3 Stage 5] Completion unlocks Stage 6")
+	check(not DecisionScenarios.is_decision_stage("mod_03", 6), "[Mod3 Stage 5] Stage 6 remains non-decision (The Officer stays TRACE/post-assessment for now)")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
 func _test_regression() -> void:
 	print("== regression: other stages keep TRACE and TD loss payout ==")
 	_player.reset_to_defaults()
@@ -4455,10 +4592,10 @@ func _test_regression() -> void:
 	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 2 Stage 10 still opens the TRACE post-assessment quiz")
 	check(not lm.current_question.is_empty() and str(lm.current_question.get("module_id", "")) == "mod_02", "Module 2 selects Smishing questions")
 	await _stop_match()
-	# Module 3 Stages 1-4 are decision-based. Stage 5 remains TRACE.
-	level = await _start_match("mod_03", 4)
+	# Module 3 Stages 1-5 are decision-based. Stage 6 remains TRACE.
+	level = await _start_match("mod_03", 5)
 	lm = _level_manager(level)
-	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ, "Module 3 Stage 5 still opens the TRACE quiz")
+	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ, "Module 3 Stage 6 still opens the TRACE quiz")
 	check(not lm.current_question.is_empty() and str(lm.current_question.get("module_id", "")) == "mod_03", "Module 3 selects Vishing questions")
 	await _stop_match()
 	_router.active_module_id = "mod_01"
