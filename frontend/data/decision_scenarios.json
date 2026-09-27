@@ -3740,6 +3740,562 @@
 					"explanation": "The attacker combines a real loss, a genuine app prompt, urgency, and emotional pressure into one authorization. A prompt being real never proves who's telling Daniel to use it.", "breach_gold": 32, "next": ""
 				}
 			]
+		},
+		{
+			"id": "mod03_stage6", "module_id": "mod_03", "stage": 6, "title": "The Officer", "bkt_skill": "vishing", "company": "BlueTech Solutions",
+			"clear_title": "STAGE 6 COMPLETE", "clear_subtitle": "THE OFFICER", "next_stage_title": "Stage 7 — On the Record", "breach_hp_multiplier": 0.90,
+			"opening": [
+				{"speaker": "Caller", "text": "Mr. Santos, this is Investigator Reyes."},
+				{"speaker": "Caller", "text": "We are investigating the fraud against your company."},
+				{"speaker": "Caller", "text": "Do not discuss this call with your bank or BlueTech."},
+				{"speaker": "Daniel", "text": "Let me guess.", "emotion": "frustrated"},
+				{"speaker": "Security Assistant", "text": "Don't guess. Verify."},
+				{"speaker": "Daniel", "text": "After the recovery calls, I'm not following another voice just because it knows the case.", "emotion": "determined", "when": {"mod03_s5_recovery_response": "verified_recovery"}},
+				{"speaker": "Daniel", "text": "I kept comparing callers against real case information. That still wasn't identity.", "emotion": "frustrated", "when": {"mod03_s5_recovery_response": "case_crosscheck"}},
+				{"speaker": "Daniel", "text": "I've heard enough convincing explanations from people I couldn't verify.", "emotion": "frustrated", "when": {"mod03_s5_recovery_response": "caller_explanation"}},
+				{"speaker": "Daniel", "text": "So let's verify.", "emotion": "determined"}
+			],
+			"ending": [
+				{"speaker": "", "text": "The real Investigator Reyes contacts Daniel through the channel Security independently verified."},
+				{"speaker": "Reyes", "text": "Mr. Santos?"},
+				{"speaker": "Daniel", "text": "...How do I know you're Reyes?", "emotion": "frustrated"},
+				{"speaker": "Reyes", "text": "You shouldn't know from my voice."},
+				{"speaker": "", "text": "Daniel verifies her through the already-established agency process."},
+				{"speaker": "Reyes", "text": "I'm real. The earlier caller was not me."},
+				{"speaker": "Reyes", "text": "My public identity was copied. The online report is real — someone used our own public reporting workflow, with information already known about you, to create it."},
+				{"speaker": "Reyes", "text": "That does not mean our systems were compromised. Just the public form."},
+				{"speaker": "Daniel", "text": "They built their own proof."},
+				{"speaker": "Reyes", "text": "They built something real and told you what it meant."},
+				{"speaker": "Security Assistant", "text": "Same pattern."},
+				{"speaker": "Daniel", "text": "Real event. False story.", "emotion": "determined"},
+				{"speaker": "Reyes", "text": "There's another complaint with a similar pattern."},
+				{"speaker": "Mia", "text": "Same company?"},
+				{"speaker": "Reyes", "text": "Different victim. Different company."},
+				{"speaker": "Reyes", "text": "But another connection to a BlueTech business relationship."},
+				{"speaker": "Daniel", "text": "Of course there is."},
+				{"speaker": "", "text": "Reyes pauses."},
+				{"speaker": "Reyes", "text": "There's something else attached to one of the other complaints."},
+				{"speaker": "Daniel", "text": "What?"},
+				{"speaker": "Reyes", "text": "Audio."},
+				{"speaker": "Daniel", "text": "Of the caller?"},
+				{"speaker": "Reyes", "text": "No."},
+				{"speaker": "Reyes", "text": "Of you."},
+				{"speaker": "", "text": "A recording plays. Daniel's voice: \"I authorize the change.\""},
+				{"speaker": "Daniel", "text": "I never said that.", "emotion": "shocked"},
+				{"speaker": "Reyes", "text": "Maybe not like that."}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The caller posing as Investigator Reyes is still on the line. Resume containment."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That connection is contained, but we still need to verify what's real and what isn't."}, {"speaker": "Daniel", "text": "Then let's verify it."}],
+			"threats": [
+				{
+					"id": "mod03_stage06_incident01", "module_id": "mod_03", "stage": 6, "title": "Badge Number", "bkt_skill": "vishing", "affected_system": "DANIEL / CYBERCRIME INVESTIGATION UNIT IDENTITY CHECK",
+					"story": [
+						{"speaker": "Caller", "text": "My name is Investigator Reyes, badge number CIU-4471, Cybercrime Investigation Unit. Our office is listed at the unit's public address."},
+						{"speaker": "Caller", "text": "This concerns the ₱18,600 fraud against Santos Logistics. I have your bookkeeper Liza's statement and your sister Ana's report on file."},
+						{"speaker": "", "text": "Daniel opens the unit's public staff directory."},
+						{"speaker": "Daniel", "text": "She's real.", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "The person exists."},
+						{"speaker": "Daniel", "text": "That's not what I said."},
+						{"speaker": "Security Assistant", "text": "It needs to be."}
+					],
+					"situation": "The caller provides a name, badge number, a fictional unit, a public office address, the exact ₱18,600 fraud amount, Santos Logistics details, references to Ana and Liza, and a BlueTech connection. Daniel independently checks the unit's public directory and finds a real Investigator Reyes listed.",
+					"evidence": ["An Investigator Reyes is genuinely listed in the unit's public directory", "The caller knows the exact fraud amount and Santos Logistics details", "The caller references Ana and Liza by name", "A listed identity is not the same as a verified caller"],
+					"call": {"enabled": true, "caller": "CYBERCRIME INVESTIGATION UNIT", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Continue the call because the name, badge, office, unit, and case details all match.", "outcome": "CRITICAL", "consequence": "Every detail matching a real record proves the record is real, not that the voice on the phone belongs to it.", "story_event": [{"type": "status", "title": "IDENTITY CHECK", "text": "INVESTIGATOR REYES — LISTED"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "Everything except the voice on your phone."}]},
+						{"label": "End the call and contact the unit through its independently published channel, then verify Reyes and the case there.", "outcome": "SAFE", "consequence": "The unit's own published line confirms whether Investigator Reyes is actually assigned, without trusting the incoming caller.", "memory": {"mod03_s6_authority_response": "independent_agency"}},
+						{"label": "Stay connected while comparing the name and badge details with the public directory.", "outcome": "RISKY", "consequence": "The badge number matches the listing, but a matching record doesn't confirm who's actually speaking.", "memory": {"mod03_s6_authority_response": "case_validation"}, "story_event": [{"type": "status", "title": "IDENTITY CHECK", "text": "INVESTIGATOR REYES — LISTED"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "Everything except the voice on your phone."}]},
+						{"label": "Ask Reyes for additional non-public case details before continuing.", "outcome": "RISKY", "consequence": "Accurate non-public details are unsettling, but they only show the caller has access to the case somehow, not that they're assigned to it.", "memory": {"mod03_s6_authority_response": "limited_cooperation"}}
+					],
+					"explanation": "The existence of a real identity is not the authentication of the caller. A listed badge number proves Investigator Reyes is real, not that she's the one on the phone.", "breach_gold": 34, "next": "mod03_stage06_incident02"
+				},
+				{
+					"id": "mod03_stage06_incident02", "module_id": "mod_03", "stage": 6, "title": "The Case Is Real", "bkt_skill": "vishing", "affected_system": "SANTOS LOGISTICS FRAUD CASE RECORD",
+					"story": [
+						{"speaker": "Caller", "text": "Case reference CIU-2291-VS. You can look it up yourself if that helps."},
+						{"speaker": "", "text": "Daniel independently opens the unit's public case-lookup portal and enters the reference."},
+						{"speaker": "", "text": "The record exists: Santos Logistics, a ₱18,600 loss, the incident date, Daniel's name, and a basic fraud description."},
+						{"speaker": "Daniel", "text": "The case is real.", "emotion": "shocked"},
+						{"speaker": "Caller", "text": "Now you understand why this call is confidential."}
+					],
+					"situation": "Daniel independently looks up the case reference the caller provided in the unit's own public portal. The record genuinely exists and lists Santos Logistics, the ₱18,600 loss, the incident date, Daniel's name, and a basic description of the fraud.",
+					"evidence": ["The case reference resolves in the unit's own public lookup portal, not just the caller's word", "The record accurately lists the loss amount, date, and Daniel's name", "A real record does not by itself identify who is calling about it"],
+					"call": {"enabled": true, "caller": "CYBERCRIME INVESTIGATION UNIT", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"investigation": {"enabled": true, "title": "WHAT DOES THE CASE PROVE?", "prompt": "What can Daniel safely conclude from the valid case record?", "items": [
+						{"id": "mod03_s6_i2_reyes_caller", "label": "Reyes is definitely the caller", "valid": false, "analysis": "Knowing the reference doesn't confirm which voice is calling about it."},
+						{"id": "mod03_s6_i2_agency_called", "label": "The agency independently called Daniel", "valid": false, "analysis": "Daniel received this call; the agency never confirmed it originated from them."},
+						{"id": "mod03_s6_i2_case_verification", "label": "The fraud report exists, but the caller still requires independent verification", "valid": true, "analysis": "A genuine case record verifies the case, not the identity of an inbound caller."},
+						{"id": "mod03_s6_i2_employees_only", "label": "Only agency employees could know the reference", "valid": false, "analysis": "The reference is accessible to Daniel too, so knowing it doesn't prove exclusive agency access."}
+					], "resolved_story_event": [
+						{"type": "dialogue", "speaker": "Daniel", "text": "So they can put something real in front of me...", "emotion": "worried"},
+						{"type": "dialogue", "speaker": "Security Assistant", "text": "...and make you assume the person beside it is real."}
+					]},
+					"choices": [
+						{"label": "Continue fully because the independently verified case matches the caller's story.", "outcome": "CRITICAL", "consequence": "A matching case record confirms the fraud happened, not that this caller is the one assigned to it."},
+						{"label": "Verify the assigned investigator through the independently reached agency.", "outcome": "SAFE", "consequence": "The agency's own channel confirms who is actually assigned to the case, separate from whoever called Daniel about it."},
+						{"label": "Discuss the case but withhold any new private information.", "outcome": "RISKY", "consequence": "Withholding new details limits the damage, but Daniel is still taking direction from an unverified caller."},
+						{"label": "Ask the caller for details visible only inside the real case file.", "outcome": "RISKY", "consequence": "The caller may already have that access somehow — reciting internal details still isn't proof of who they are."}
+					],
+					"explanation": "A genuine, independently verifiable case record proves the fraud is real. It does not, on its own, prove that the person calling about it is who they claim to be.", "breach_gold": 36, "next": "mod03_stage06_incident03"
+				},
+				{
+					"id": "mod03_stage06_incident03", "module_id": "mod_03", "stage": 6, "title": "Confidential Cooperation", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS STAFF / ROLE INFORMATION",
+					"story": [
+						{"speaker": "Security Assistant", "text": "I reached the unit's operator independently."},
+						{"speaker": "", "text": "Operator: \"The reference is valid.\""},
+						{"speaker": "Daniel", "text": "I knew it."},
+						{"speaker": "", "text": "Operator: \"But there is a problem.\""},
+						{"speaker": "Security Assistant", "text": "The complaint was submitted online about eleven minutes before the first call claiming to be Reyes."},
+						{"speaker": "Daniel", "text": "...I didn't submit it.", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "Someone used the unit's own public complaint form, with information already known about you, to create a real reference."},
+						{"speaker": "Daniel", "text": "So the case is real, but they made it themselves."},
+						{"speaker": "", "text": "The caller, still claiming to be Reyes, adapts."},
+						{"speaker": "Caller", "text": "The report may have been submitted by another investigator on the case. It's possible there are insiders involved."},
+						{"speaker": "Caller", "text": "Your bank and BlueTech contacts may be compromised. Do not alert them yet."},
+						{"speaker": "Caller", "text": "I need a map of who can approve payments and recover accounts at Santos Logistics — accounting roles, supplier approval roles, payment-change authority, and account recovery roles. No passwords, just roles."},
+						{"speaker": "Daniel", "text": "That's exactly the kind of information an investigator might need.", "emotion": "worried"},
+						{"speaker": "Security Assistant", "text": "And exactly what an attacker might want."}
+					],
+					"situation": "After Daniel begins independently verifying the case, the caller claiming to be Reyes adapts: the report may have been submitted by another investigator, insiders may be involved, and Daniel's bank/BlueTech contacts may be compromised. The caller asks for a map of who holds accounting, supplier-approval, payment-change, and account-recovery roles at Santos Logistics — no passwords, just roles.",
+					"evidence": ["No passwords or credentials are requested, only role information", "The request follows immediately after Daniel started verifying independently", "The caller frames not alerting the bank or BlueTech as protecting the investigation", "The unit's own complaint was submitted minutes before this caller's first contact, using information already known about Daniel"],
+					"call": {"enabled": true, "caller": "CYBERCRIME INVESTIGATION UNIT", "number": "PRIVATE NUMBER", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Provide the staff and approval information because no credentials are requested and it seems relevant to the real investigation.", "outcome": "CRITICAL", "consequence": "Nothing here is a password, but together it hands over exactly the map an attacker needs to target the next impersonation.", "story_event": [{"type": "status", "title": "VICTIM MAP", "text": "BUSINESS ROLES CONFIRMED"}, {"type": "dialogue", "speaker": "Daniel", "text": "I just gave them the shape of the company.", "emotion": "shocked"}]},
+						{"label": "Stop the call and provide the requested business information only after independent agency verification.", "outcome": "SAFE", "consequence": "The information only reaches the agency once Daniel confirms, through their own channel, that this request is genuinely theirs."},
+						{"label": "Give role and process information but withhold names and contact details.", "outcome": "RISKY", "consequence": "Names are withheld, but the roles alone still sketch out who to target next."},
+						{"label": "Keep the caller engaged while independently asking the agency whether these questions are legitimate.", "outcome": "RISKY", "consequence": "The independent check is the right instinct, but Daniel is still on the phone taking direction from the unverified caller while it happens."}
+					],
+					"explanation": "Asking for roles instead of passwords sounds cautious, but a business's whole approval structure is exactly what an attacker needs to plan the next impersonation.", "breach_gold": 38, "next": ""
+				}
+			]
+		},
+		{
+			"id": "mod03_stage7", "module_id": "mod_03", "stage": 7, "title": "On the Record", "bkt_skill": "vishing", "company": "BlueTech Solutions",
+			"clear_title": "STAGE 7 COMPLETE", "clear_subtitle": "ON THE RECORD", "next_stage_title": "Stage 8 — Everyone's Calling", "breach_hp_multiplier": 0.95,
+			"opening": [
+				{"speaker": "", "text": "Reyes presents the audio artifact."},
+				{"speaker": "", "text": "AUDIO RECORD: \"I authorize the change.\""},
+				{"speaker": "Daniel", "text": "That's... me?", "emotion": "shocked"},
+				{"speaker": "Reyes", "text": "It sounds like you."},
+				{"speaker": "Daniel", "text": "No. That's my voice!", "emotion": "frustrated"},
+				{"speaker": "Security Assistant", "text": "Those are still different claims."},
+				{"speaker": "Daniel", "text": "I verified Reyes through the agency. I'm not making the same mistake with a recording.", "emotion": "determined", "when": {"mod03_s6_authority_response": "independent_agency"}},
+				{"speaker": "Daniel", "text": "The case was real and the caller was fake. A real recording could work the same way.", "emotion": "worried", "when": {"mod03_s6_authority_response": "case_validation"}},
+				{"speaker": "Daniel", "text": "I kept thinking limited information was harmless. I'm done assuming what something proves.", "emotion": "frustrated", "when": {"mod03_s6_authority_response": "limited_cooperation"}},
+				{"speaker": "Daniel", "text": "So what exactly am I listening to?"},
+				{"speaker": "Reyes", "text": "That's what we're going to find out."}
+			],
+			"ending": [
+				{"speaker": "Reyes", "text": "Some phrases in the suspicious recording also exist in older, legitimate recordings of you."},
+				{"speaker": "Reyes", "text": "That tells us source material exists."},
+				{"speaker": "Daniel", "text": "But not exactly how they built the final recording?"},
+				{"speaker": "Reyes", "text": "Not yet."},
+				{"speaker": "Daniel", "text": "So even if the voice is real..."},
+				{"speaker": "Security Assistant", "text": "...the story attached to it may not be."},
+				{"speaker": "Daniel", "text": "Real voice. False context.", "emotion": "determined"},
+				{"speaker": "Reyes", "text": "There's another related complaint. It contains voice material from its victim too."},
+				{"speaker": "Mia", "text": "Voice samples?"},
+				{"speaker": "Reyes", "text": "Possibly."},
+				{"speaker": "Daniel", "text": "From where?"},
+				{"speaker": "Reyes", "text": "Public videos. Business calls. Voicemail. Anything they can collect."},
+				{"speaker": "Reyes", "text": "We haven't confirmed every source yet."},
+				{"speaker": "", "text": "Daniel's phone rings."},
+				{"speaker": "", "text": "Ana's phone rings."},
+				{"speaker": "", "text": "Liza's phone rings."},
+				{"speaker": "", "text": "Mia receives another call."},
+				{"speaker": "", "text": "BlueTech Security receives an incoming report."},
+				{"speaker": "", "text": "CALL 1: BANK FRAUD. CALL 2: SANTOS LOGISTICS. CALL 3: BLUETECH SECURITY. CALL 4: UNKNOWN."},
+				{"speaker": "Daniel", "text": "...They're all calling.", "emotion": "shocked"},
+				{"speaker": "", "text": "Another phone rings."},
+				{"speaker": "Daniel", "text": "Nooo... you've got to be kidding me.", "emotion": "frustrated"},
+				{"speaker": "Reyes", "text": "Nobody answer yet."},
+				{"speaker": "", "text": "Another call appears."},
+				{"speaker": "Mia", "text": "There's another one?!", "emotion": "shocked"},
+				{"speaker": "Security Assistant", "text": "Multiple targets. Same window."},
+				{"speaker": "Daniel", "text": "So this isn't just about me anymore...", "emotion": "worried"}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The disputed recording is still being treated as valid authorization. Resume containment."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That approval path is cut, but we still don't know how the recording was actually made."}, {"speaker": "Daniel", "text": "Then let's find out."}],
+			"threats": [
+				{
+					"id": "mod03_stage07_incident01", "module_id": "mod_03", "stage": 7, "title": "The Recording", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS AUTHORIZATION",
+					"story": [
+						{"speaker": "", "text": "A supplier forwards the audio clip attached to the payment-change request."},
+						{"speaker": "Caller", "text": "This is the recording your team sent us. Should we still treat it as valid authorization?"},
+						{"speaker": "Daniel", "text": "They're asking ME if I authorized it?", "emotion": "frustrated"},
+						{"speaker": "Security Assistant", "text": "Let's actually work out what it proves."}
+					],
+					"situation": "A supplier received an audio clip as proof that Daniel authorized the ₱18,600 payment destination change, and now asks whether it should still be accepted as valid authorization evidence.",
+					"evidence": ["The recording sounds like Daniel's voice", "The recording's origin, timing, and context are unconfirmed", "The supplier is treating the clip itself as authorization proof"],
+					"investigation": {"enabled": true, "title": "WHAT DOES THE AUDIO PROVE?", "prompt": "What can Daniel safely conclude from this recording?",
+						"display": {"presentation": "artifact", "metadata": [
+							{"label": "TYPE", "value": "Voice recording"},
+							{"label": "CLAIM", "value": "Daniel authorized payment change"},
+							{"label": "SOURCE", "value": "Attached to supplier request"},
+							{"label": "ORIGIN", "value": "Unverified"}
+						]},
+						"items": [
+							{"id": "mod03_s7_i1_definitely_daniel", "label": "Daniel definitely authorized the payment", "valid": false, "analysis": "A recognizable voice does not establish when, why, or how the recording was produced."},
+							{"id": "mod03_s7_i1_sounds_legit", "label": "The speaker sounds like Daniel, therefore the request is legitimate", "valid": false, "analysis": "Sounding like someone is not the same as the request actually coming from them, now, for this."},
+							{"id": "mod03_s7_i1_needs_verification", "label": "The recording contains a voice resembling Daniel, but its origin, context, and authorization purpose still require verification", "valid": true, "analysis": "A recognizable voice does not establish when, why, or how the recording was produced."},
+							{"id": "mod03_s7_i1_ai_generated", "label": "The recording must be AI-generated", "valid": false, "analysis": "Jumping to one cause isn't safer than assuming it's authentic — the exact method doesn't need to be confirmed to know the clip alone isn't authorization."}
+						], "resolved_story_event": [
+							{"type": "dialogue", "speaker": "Daniel", "text": "So even if that really is my voice...", "emotion": "worried"},
+							{"type": "dialogue", "speaker": "Security Assistant", "text": "...we still don't know what the recording actually proves."},
+							{"type": "dialogue", "speaker": "Daniel", "text": "Great...", "emotion": "frustrated"}
+						]
+					},
+					"call": {"enabled": true, "caller": "SUPPLIER — ACCOUNTS PAYABLE", "number": "UNKNOWN", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Accept the recording because Daniel himself agrees the voice sounds exactly like him.", "outcome": "CRITICAL", "consequence": "Voice identity alone does not prove authorization — agreeing it sounds like him only confirms the recording is convincing.", "story_event": [{"type": "status", "title": "VOICE AUTHORIZATION", "text": "ACCEPTED"}, {"type": "dialogue", "speaker": "Daniel", "text": "No—wait!!", "emotion": "shocked"}]},
+						{"label": "Suspend acceptance of the audio as authorization and verify through the business's established approval process.", "outcome": "SAFE", "consequence": "The established approval process confirms whether any change was actually authorized, independent of what the recording claims.", "memory": {"mod03_s7_audio_response": "verified_process"}},
+						{"label": "Compare the clip against known recordings of Daniel before deciding.", "outcome": "RISKY", "consequence": "The comparison supports analysis, but voice similarity still doesn't establish current authorization or context.", "memory": {"mod03_s7_audio_response": "voice_comparison"}},
+						{"label": "Ask Daniel whether the cadence and speaking style sound like him.", "outcome": "RISKY", "consequence": "Daniel recognizing his own cadence doesn't establish where the recording came from or what it was actually for.", "memory": {"mod03_s7_audio_response": "limited_disclosure"}}
+					],
+					"explanation": "A recognizable voice is evidence, not authentication. It never establishes when, why, or in what context a recording was actually made.", "breach_gold": 40, "next": "mod03_stage07_incident02"
+				},
+				{
+					"id": "mod03_stage07_incident02", "module_id": "mod_03", "stage": 7, "title": "My Own Voice", "bkt_skill": "vishing", "affected_system": "SANTOS BUSINESS ACCOUNTING",
+					"story": [
+						{"speaker": "", "text": "Liza's phone rings. Caller ID: DANIEL SANTOS."},
+						{"speaker": "Caller", "text": "Liza, it's me. Hold the supplier change. Security is testing whether the account is still compromised."},
+						{"speaker": "Daniel", "text": "They're using my voice to sound careful now?!", "emotion": "angry"},
+						{"speaker": "Liza", "text": "If I didn't know you were standing here..."},
+						{"speaker": "Daniel", "text": "I know.", "emotion": "sad"}
+					],
+					"situation": "A caller displaying DANIEL SANTOS and sounding like Daniel tells Liza to hold the supplier change because Security is supposedly testing whether the account is still compromised, then asks her to reveal which supplier records are frozen, who currently holds payment approval authority, and which controls changed after the fraud.",
+					"evidence": ["Caller ID displays Daniel's own name", "The voice sounds like Daniel and uses cautious, security-aware language", "The real Daniel is standing beside Liza while the call is happening", "No credentials or money are directly requested"],
+					"call": {"enabled": true, "caller": "DANIEL SANTOS", "number": "(SPOOFED)", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Liza follows the request because the voice, caller identity, and cautious security language all match Daniel.", "outcome": "CRITICAL", "consequence": "Security-aware language can itself be part of the impersonation — sounding careful is not the same as being verified.", "story_event": [{"type": "status", "title": "BUSINESS PROCESS", "text": "APPROVAL ROLES DISCLOSED"}, {"type": "dialogue", "speaker": "Daniel", "text": "They don't even need me to approve anything anymore...", "emotion": "shocked"}]},
+						{"label": "Liza ignores the inbound identity and verifies the request with the real Daniel using their newly established internal verification process.", "outcome": "SAFE", "consequence": "Checking with Daniel directly, through their own process, resolves it in seconds — no matter how the caller sounded."},
+						{"label": "Liza asks the caller personal or business questions only Daniel should know.", "outcome": "RISKY", "consequence": "Knowledge challenges can be answered using information the attacker already collected elsewhere."},
+						{"label": "Liza gives only general process information because no credentials or money are requested.", "outcome": "RISKY", "consequence": "No money moves, but workflow information can still help an attacker map who to target next."}
+					],
+					"explanation": "Sounding cautious and security-aware is not the same as being verified. The fastest, safest check was standing right there the whole time.", "breach_gold": 42, "next": "mod03_stage07_incident03"
+				},
+				{
+					"id": "mod03_stage07_incident03", "module_id": "mod_03", "stage": 7, "title": "Out of Context", "bkt_skill": "vishing", "affected_system": "SUPPLIER AUTHORIZATION",
+					"story": [
+						{"speaker": "Daniel", "text": "They made Ana sound like Ana..."},
+						{"speaker": "Daniel", "text": "Then they made me sound like me!!", "emotion": "angry"},
+						{"speaker": "Reyes", "text": "That's why we're interested in where these recordings came from."},
+						{"speaker": "Daniel", "text": "You found something?", "emotion": "frustrated"},
+						{"speaker": "Reyes", "text": "Maybe."},
+						{"speaker": "Daniel", "text": "That's not a comforting answer."},
+						{"speaker": "Reyes", "text": "It isn't supposed to be."},
+						{"speaker": "", "text": "Reyes surfaces an older, legitimate Santos Logistics recording. In it, Daniel genuinely says the same words — \"I authorize the change\" — approving a delivery-schedule change, unrelated to any payment destination."},
+						{"speaker": "Daniel", "text": "Those are my words. Just... not about this.", "emotion": "shocked"},
+						{"speaker": "Reyes", "text": "The source material is real. That doesn't prove how the fraudulent version was built."},
+						{"speaker": "", "text": "A supplier urgently asks whether another pending request should be accepted — its attached recording also contains Daniel's real voice."},
+						{"speaker": "Caller", "text": "We need an answer before the payment window closes."},
+						{"speaker": "Daniel", "text": "Again?!", "emotion": "frustrated"}
+					],
+					"situation": "Reyes found an older, genuine Santos Logistics recording in which Daniel says the same words, \"I authorize the change,\" while approving an unrelated delivery-schedule change. The words are authentically Daniel's, but the context was never about a payment destination. A supplier now urgently asks whether another pending request should be accepted because its attached recording also contains Daniel's real voice.",
+					"evidence": ["An older legitimate recording proves Daniel really has said these exact words before", "That recording's context was a delivery-schedule change, not a payment authorization", "Source material existing does not explain how the fraudulent clip was actually built", "The supplier is treating voice authenticity alone as sufficient authorization"],
+					"call": {"enabled": true, "caller": "SUPPLIER — ACCOUNTS PAYABLE", "number": "UNKNOWN", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"timer": {"enabled": true, "seconds": 15, "label": "SUPPLIER IS WAITING FOR AUTHORIZATION", "timeout_outcome": "RISKY", "timeout_story_event": [{"type": "dialogue", "speaker": "Daniel", "text": "They keep forcing me to react before I can check the context...", "emotion": "worried"}]},
+					"choices": [
+						{"label": "Accept the request because the words are confirmed to be Daniel's genuine recorded voice.", "outcome": "CRITICAL", "consequence": "Authentic words can be reused in a false context — being real never means being about this.", "story_event": [{"type": "status", "title": "VOICE AUTHORIZATION", "text": "ACCEPTED"}, {"type": "dialogue", "speaker": "Daniel", "text": "That's something I really said...", "emotion": "shocked"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "Just not about this."}, {"type": "dialogue", "speaker": "Daniel", "text": "...Damn.", "emotion": "frustrated"}]},
+						{"label": "Reject audio-only authorization and require the normal, independently verified business approval process.", "outcome": "SAFE", "consequence": "The established process confirms the request on its own terms, without needing to trust what any recording implies."},
+						{"label": "Ask the supplier to play the full recording before deciding.", "outcome": "RISKY", "consequence": "More context helps, but the recording's provenance and current authorization still aren't established."},
+						{"label": "Compare timestamps and voice characteristics against Daniel's legitimate recordings.", "outcome": "RISKY", "consequence": "Useful for the investigation, but comparing clips still isn't the same as authorizing a payment."}
+					],
+					"explanation": "Authentic words can be lifted from a real recording and reused in a completely different, false context. Being genuinely Daniel's voice never confirms what it's actually authorizing.", "breach_gold": 44, "next": ""
+				}
+			]
+		},
+		{
+			"id": "mod03_stage8", "module_id": "mod_03", "stage": 8, "title": "Everyone's Calling", "bkt_skill": "vishing", "company": "BlueTech Solutions",
+			"clear_title": "STAGE 8 COMPLETE", "clear_subtitle": "EVERYONE'S CALLING", "next_stage_title": "Stage 9 — Hang Up", "breach_hp_multiplier": 1.00,
+			"opening": [
+				{"speaker": "", "text": "Daniel's phone rings. CALLER ID: BANK FRAUD."},
+				{"speaker": "", "text": "Ana's phone rings. CALLER ID: SANTOS LOGISTICS."},
+				{"speaker": "", "text": "Liza's phone rings. CALLER ID: BLUETECH SECURITY."},
+				{"speaker": "", "text": "Mia receives a call. CALLER ID: UNKNOWN."},
+				{"speaker": "", "text": "BlueTech Security receives another incoming report."},
+				{"speaker": "Daniel", "text": "All of them?!", "emotion": "shocked"},
+				{"speaker": "Reyes", "text": "Nobody answer yet."},
+				{"speaker": "Ana", "text": "What if one of them is real?"},
+				{"speaker": "Security Assistant", "text": "Then we'll reach them ourselves."},
+				{"speaker": "Daniel", "text": "Voice isn't enough anymore. We use the process.", "emotion": "determined", "when": {"mod03_s7_audio_response": "verified_process"}},
+				{"speaker": "Daniel", "text": "I compared voices before and still couldn't prove who was speaking.", "emotion": "frustrated", "when": {"mod03_s7_audio_response": "voice_comparison"}},
+				{"speaker": "Daniel", "text": "Even small details gave them something to work with.", "emotion": "worried", "when": {"mod03_s7_audio_response": "limited_disclosure"}},
+				{"speaker": "Daniel", "text": "No one handles this alone.", "emotion": "determined"}
+			],
+			"ending": [
+				{"speaker": "", "text": "The team freezes the coordinated workflow."},
+				{"speaker": "Reyes", "text": "They weren't trying to convince one person."},
+				{"speaker": "Mia", "text": "They were making everyone convince each other."},
+				{"speaker": "Daniel", "text": "Fake calls..."},
+				{"speaker": "Ana", "text": "...real information..."},
+				{"speaker": "Liza", "text": "...real systems..."},
+				{"speaker": "Security Assistant", "text": "...all pointed at the same action."},
+				{"speaker": "Daniel", "text": "A manufactured chain of trust.", "emotion": "determined"},
+				{"speaker": "", "text": "Reyes notices something important."},
+				{"speaker": "", "text": "The attack was not simply trying to steal another Santos payment. The callers were trying to make the Santos Logistics relationship appear to independently validate a BlueTech-side authorization."},
+				{"speaker": "Daniel", "text": "So we're not the target?"},
+				{"speaker": "Security Assistant", "text": "You were a target."},
+				{"speaker": "", "text": "Pause."},
+				{"speaker": "Security Assistant", "text": "But maybe not the final one."},
+				{"speaker": "Daniel", "text": "...BlueTech.", "emotion": "shocked"},
+				{"speaker": "", "text": "An incoming call reaches a BlueTech employee involved in the final authorization chain. Displayed identity: INTERNAL SECURITY."},
+				{"speaker": "", "text": "At the same time, another call reaches Daniel. Displayed identity: MIA."},
+				{"speaker": "", "text": "Mia is standing beside him. Daniel looks at her phone. It is not calling him."},
+				{"speaker": "", "text": "Daniel's phone keeps ringing. CALLER: MIA."},
+				{"speaker": "Daniel", "text": "...No.", "emotion": "shocked"},
+				{"speaker": "Mia", "text": "That's not me."},
+				{"speaker": "", "text": "The call answers. A voice plays."},
+				{"speaker": "Caller", "text": "Daniel, listen to me!!"},
+				{"speaker": "Daniel", "text": "Nooo...!!", "emotion": "shocked"},
+				{"speaker": "Caller", "text": "They're about to lock us out."},
+				{"speaker": "Security Assistant", "text": "Do not respond."},
+				{"speaker": "Caller", "text": "Daniel!! We need you to authorize one last thing!"}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The coordinated authorization chain is still active. Resume containment."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That link is cut, but the rest of the chain is still calling."}, {"speaker": "Daniel", "text": "Then let's cut all of it."}],
+			"threats": [
+				{
+					"id": "mod03_stage08_incident01", "module_id": "mod_03", "stage": 8, "title": "Five Phones", "bkt_skill": "vishing", "affected_system": "MULTI-PARTY INCIDENT RESPONSE",
+					"story": [
+						{"speaker": "Caller", "text": "BANK FRAUD: We need immediate confirmation of the recovery case."},
+						{"speaker": "Caller", "text": "SANTOS LOGISTICS: Daniel asked us to verify your accounting controls."},
+						{"speaker": "Caller", "text": "BLUETECH SECURITY: We are coordinating directly with Daniel."},
+						{"speaker": "Caller", "text": "UNKNOWN: Your supplier incident is spreading."},
+						{"speaker": "Daniel", "text": "They're telling all of us different parts of the same story...", "emotion": "worried"}
+					],
+					"situation": "Five separate calls hit the team at once, each claiming a different piece of the same unfolding incident, and each caller already knows real details from the earlier incidents.",
+					"evidence": ["Each caller has real details from earlier incidents", "No two callers are asking the exact same question", "Nobody has independently confirmed any of the five calls yet"],
+					"call": {"enabled": true, "caller": "MULTIPLE INBOUND CONTACTS", "number": "5 ACTIVE", "status": "RINGING", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Prioritize the BlueTech Security call because it appears to connect the bank, Santos Logistics, and BlueTech incidents.", "outcome": "CRITICAL", "consequence": "The most complete-sounding story is not necessarily the most trustworthy one — completeness can be manufactured.", "story_event": [{"type": "status", "title": "INCOMING CALLS", "text": "5 ACTIVE CONTACT ATTEMPTS"}, {"type": "dialogue", "speaker": "Daniel", "text": "They're trying to make us chase every phone!", "emotion": "frustrated"}]},
+						{"label": "Ignore inbound caller identities as proof, establish one trusted internal coordination channel, and independently contact each real organization.", "outcome": "SAFE", "consequence": "One coordinated, independently verified channel replaces five separate unverified conversations."},
+						{"label": "Split up so Daniel, Ana, Liza, and Mia each verify the caller speaking to them.", "outcome": "RISKY", "consequence": "Parallel checking sounds efficient, but each person stays inside a different attacker-controlled conversation."},
+						{"label": "Compare what all callers are saying and continue with whichever stories match.", "outcome": "RISKY", "consequence": "Coordinated attackers can deliberately hand out matching information."}
+					],
+					"explanation": "Five urgent callers at once is pressure by design. The safe move is one trusted channel, not five separate races to verify.", "breach_gold": 46, "next": "mod03_stage08_incident02"
+				},
+				{
+					"id": "mod03_stage08_incident02", "module_id": "mod_03", "stage": 8, "title": "They All Agree", "bkt_skill": "vishing", "affected_system": "CROSS-VERIFICATION / TRUST",
+					"story": [
+						{"speaker": "Reyes", "text": "Write down what each caller claimed."},
+						{"speaker": "Mia", "text": "They overlap."},
+						{"speaker": "Ana", "text": "A lot."},
+						{"speaker": "Daniel", "text": "That's supposed to make them look legitimate."},
+						{"speaker": "Security Assistant", "text": "Unless the overlap came from the attackers themselves."},
+						{"speaker": "", "text": "Ana reports someone claiming to be Daniel called her. Liza reports someone claiming to be BlueTech called her. Daniel took a bank call. BlueTech staff received a call claiming Santos Logistics needed help."},
+						{"speaker": "", "text": "Every account points to the same claim: an emergency authorization problem between Santos Logistics and BlueTech."},
+						{"speaker": "Daniel", "text": "Everyone's telling the same story now.", "emotion": "worried"}
+					],
+					"situation": "Multiple people — Ana, Liza, Daniel, and BlueTech staff — each received a different call, and every account converges on the same claim: an emergency authorization problem between Santos Logistics and BlueTech. The agreement itself looks like confirmation.",
+					"evidence": ["Several unrelated people report matching call content", "None of the matching accounts were obtained through an independently initiated channel", "The convergence looks like corroboration but traces back to inbound callers only"],
+					"investigation": {"enabled": true, "title": "IS THIS INDEPENDENT CONFIRMATION?", "prompt": "Which evidence actually comes from a source outside the callers' shared story?", "items": [
+						{"id": "mod03_s8_i2_same_description", "label": "Several callers give the same incident description", "valid": false, "analysis": "Multiple people repeating information can still trace back to the same coordinated source."},
+						{"id": "mod03_s8_i2_ana_liza_match", "label": "Ana and Liza both heard matching information", "valid": false, "analysis": "Matching information from two different people is not the same as either of them verifying it independently."},
+						{"id": "mod03_s8_i2_bluetech_mentions_santos", "label": "BlueTech received a call that also mentions Santos Logistics", "valid": false, "analysis": "A caller referencing another company by name still doesn't confirm anything beyond what the caller chose to say."},
+						{"id": "mod03_s8_i2_trusted_channel", "label": "Information obtained through an independently initiated trusted channel", "valid": true, "analysis": "Only information the team went out and confirmed themselves, through a channel they chose, counts as independent."}
+					], "resolved_story_event": [
+						{"type": "dialogue", "speaker": "Daniel", "text": "So five people agreeing can still mean one attacker talking.", "emotion": "shocked"},
+						{"type": "dialogue", "speaker": "Reyes", "text": "Exactly."},
+						{"type": "dialogue", "speaker": "Daniel", "text": "That's nasty...", "emotion": "frustrated"}
+					]},
+					"call": {"enabled": true, "caller": "INTERNAL REPORTS", "number": "MULTIPLE", "status": "COMPILING", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Treat the matching reports as confirmation because they came through multiple organizations and people.", "outcome": "CRITICAL", "consequence": "Coordinated social engineering can manufacture apparent consensus across organizations and people alike.", "story_event": [{"type": "status", "title": "CROSS-VERIFICATION", "text": "ACCEPTED AS CONFIRMED"}, {"type": "dialogue", "speaker": "Daniel", "text": "Wait, that's not proof!!", "emotion": "shocked"}]},
+						{"label": "Trace each claim back to its independently verified source before treating the stories as confirmation.", "outcome": "SAFE", "consequence": "Tracing each claim back to a source the team verified themselves is the only way agreement becomes meaningful.", "memory": {"mod03_s8_coordination_response": "source_tracing"}},
+						{"label": "Accept the story because both BlueTech and Santos personnel independently heard matching information.", "outcome": "RISKY", "consequence": "The people are different, but the information may still share one attacker source.", "memory": {"mod03_s8_coordination_response": "trusted_coordination"}},
+						{"label": "Proceed cautiously while asking each person exactly what their caller said.", "outcome": "RISKY", "consequence": "Useful for the investigation, but agreement alone still can't authorize anything.", "memory": {"mod03_s8_coordination_response": "workflow_crosscheck"}}
+					],
+					"explanation": "Agreement between people is not the same as independent confirmation when every account can be traced back to the same coordinated set of calls.", "breach_gold": 48, "next": "mod03_stage08_incident03"
+				},
+				{
+					"id": "mod03_stage08_incident03", "module_id": "mod_03", "stage": 8, "title": "The Authorization Chain", "bkt_skill": "vishing", "affected_system": "BLUETECH / SANTOS AUTHORIZATION WORKFLOW",
+					"story": [
+						{"speaker": "", "text": "Reyes and Security map the timestamps."},
+						{"speaker": "", "text": "CALL TIMELINE: 14:02 — Daniel contacted. 14:03 — Ana contacted. 14:03 — Liza contacted. 14:04 — BlueTech employee contacted. 14:04 — Mia contacted."},
+						{"speaker": "Daniel", "text": "Two minutes...", "emotion": "shocked"},
+						{"speaker": "Mia", "text": "This wasn't random."},
+						{"speaker": "Reyes", "text": "No."},
+						{"speaker": "Security Assistant", "text": "It was synchronized."},
+						{"speaker": "Daniel", "text": "They wanted all of us hearing the same story at the same time."},
+						{"speaker": "", "text": "BlueTech receives a genuine workflow notification tied to the existing Santos supplier relationship: EXTERNAL SUPPLIER VERIFICATION — MANUAL APPROVAL REQUESTED."},
+						{"speaker": "Caller", "text": "SANTOS LOGISTICS: Daniel already approved it."},
+						{"speaker": "Caller", "text": "BLUETECH SECURITY: Security already reviewed it."},
+						{"speaker": "Caller", "text": "BANK FRAUD: The payment issue requires the verification."},
+						{"speaker": "Daniel", "text": "They built a circle.", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "A circle isn't a chain of trust."}
+					],
+					"situation": "A genuine workflow notification — EXTERNAL SUPPLIER VERIFICATION, MANUAL APPROVAL REQUESTED — is now reinforced by three separate callers, each claiming a different link in the chain is already confirmed by someone else.",
+					"evidence": ["The workflow notification itself is genuine", "Three separate callers each claim a different link in the chain is already approved", "Every claim supports another claim instead of an independent source", "The five contacts were placed within a two-minute window"],
+					"call": {"enabled": true, "caller": "MULTIPLE INBOUND CONTACTS", "number": "3 ACTIVE", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"timer": {"enabled": true, "seconds": 15, "label": "MULTIPLE PARTIES ARE WAITING FOR APPROVAL", "timeout_outcome": "RISKY", "timeout_story_event": [{"type": "dialogue", "speaker": "Daniel", "text": "Everyone talking at once makes doing something feel safer than stopping...", "emotion": "worried"}]},
+					"choices": [
+						{"label": "Approve because the real workflow, BlueTech report, Santos report, and bank information all agree.", "outcome": "CRITICAL", "consequence": "The attackers deliberately synchronized a real artifact with false claims to manufacture consensus.", "story_event": [{"type": "status", "title": "AUTHORIZATION CHAIN", "text": "APPROVED"}, {"type": "dialogue", "speaker": "Daniel", "text": "No—STOP!!", "emotion": "shocked"}]},
+						{"label": "Freeze the pending action and rebuild the authorization chain using only independently verified participants and channels.", "outcome": "SAFE", "consequence": "Rebuilding the chain from independently verified links is the only way to know what's actually authorized."},
+						{"label": "Verify with one participant, then use that person's confirmation to continue.", "outcome": "RISKY", "consequence": "One verified person may still only be repeating information they received from an unverified caller."},
+						{"label": "Inspect the genuine workflow request and compare it against what all parties were told.", "outcome": "RISKY", "consequence": "Useful evidence, but a genuine workflow request never authenticates the voices driving it."}
+					],
+					"explanation": "A circle of callers each vouching for another link isn't a chain of trust — it's the same unverified claim, repeated.", "breach_gold": 50, "next": ""
+				}
+			]
+		},
+		{
+			"id": "mod03_stage9", "module_id": "mod_03", "stage": 9, "title": "Hang Up", "bkt_skill": "vishing", "company": "BlueTech Solutions",
+			"clear_title": "STAGE 9 COMPLETE", "clear_subtitle": "HANG UP", "next_stage_title": "Stage 10 — Post-Assessment", "breach_hp_multiplier": 1.00,
+			"opening": [
+				{"speaker": "", "text": "Daniel's phone keeps ringing. CALLER: MIA."},
+				{"speaker": "Caller", "text": "Daniel, listen to me!!"},
+				{"speaker": "Daniel", "text": "No...", "emotion": "shocked"},
+				{"speaker": "Mia", "text": "That's not me!"},
+				{"speaker": "Caller", "text": "They're about to lock us out. You need to authorize one last thing!"},
+				{"speaker": "Security Assistant", "text": "Do not respond."},
+				{"speaker": "Daniel", "text": "We already made one trusted channel. I'm not leaving it for this.", "emotion": "determined", "when": {"mod03_s8_coordination_response": "trusted_coordination"}},
+				{"speaker": "Daniel", "text": "Five people repeating the same story didn't make it true.", "emotion": "frustrated", "when": {"mod03_s8_coordination_response": "source_tracing"}},
+				{"speaker": "Daniel", "text": "Even the real workflow was part of their setup.", "emotion": "worried", "when": {"mod03_s8_coordination_response": "workflow_crosscheck"}},
+				{"speaker": "Caller", "text": "Daniel?! Answer me!!"},
+				{"speaker": "Daniel", "text": "No.", "emotion": "determined"}
+			],
+			"ending": [
+				{"speaker": "", "text": "Security freezes and removes the malicious callback-change request."},
+				{"speaker": "Daniel", "text": "So that's what all of this was for..."},
+				{"speaker": "Reyes", "text": "Not the eighteen thousand."},
+				{"speaker": "Mia", "text": "Not your bank account."},
+				{"speaker": "Security Assistant", "text": "The trusted callback."},
+				{"speaker": "Daniel", "text": "They wanted BlueTech to call them...", "emotion": "shocked"},
+				{"speaker": "Security Assistant", "text": "...and believe it had independently verified Santos Logistics."},
+				{"speaker": "Daniel", "text": "They weren't just spoofing trust."},
+				{"speaker": "", "text": "Pause."},
+				{"speaker": "Daniel", "text": "They were trying to get inside the process that creates trust.", "emotion": "determined"}
+			],
+			"resume_breach": [{"speaker": "Security Assistant", "text": "The malicious callback-change request is still pending. Resume containment."}],
+			"breach_contained": [{"speaker": "Security Assistant", "text": "That path is cut, but the coordinated callers are still active."}, {"speaker": "Daniel", "text": "Then let's shut all of it down."}],
+			"finale": {
+				"enabled": true,
+				"type": "tower_defense",
+				"affected_system": "BLUETECH / SANTOS TRUSTED CALLBACK CHANNEL",
+				"enemy_hp_multiplier": 1.00,
+				"deploy_label": "DEPLOY VOICE CHANNEL CONTAINMENT",
+				"victory_banner": "CONTAINMENT COMPLETE",
+				"failure_title": "CONTAINMENT FAILED",
+				"ending": [
+					{"speaker": "", "text": "The calls stop."},
+					{"speaker": "", "text": "Short silence."},
+					{"speaker": "Daniel", "text": "...That's it?", "emotion": "worried"},
+					{"speaker": "Security Assistant", "text": "For this channel."},
+					{"speaker": "Reyes", "text": "The contact change is blocked."},
+					{"speaker": "Mia", "text": "And Santos?"},
+					{"speaker": "Security Assistant", "text": "Original verification restored."},
+					{"speaker": "Daniel", "text": "Good."},
+					{"speaker": "", "text": "Pause."},
+					{"speaker": "Daniel", "text": "Because I am never trusting caller ID again.", "emotion": "relieved"},
+					{"speaker": "Mia", "text": "That's probably healthy."},
+					{"speaker": "Security Assistant", "text": "Trust the verified channel. Not the voice inside it."}
+				],
+				"case_summary": {
+					"title": "CASE CLOSED",
+					"subtitle": "THE VOICE ON THE LINE",
+					"items": [
+						"Malicious Callback Contact Blocked",
+						"Original Santos Verification Restored",
+						"Coordinated Caller Network Contained",
+						"Trusted Approval Channel Preserved",
+						"BlueTech Identity Verification Process Secured"
+					]
+				},
+				"closing": [
+					{"speaker": "Reyes", "text": "They knew your people."},
+					{"speaker": "Reyes", "text": "Your business."},
+					{"speaker": "Reyes", "text": "Your voices."},
+					{"speaker": "Reyes", "text": "Your workflows."},
+					{"speaker": "Daniel", "text": "And they used all of it to make every call look normal."},
+					{"speaker": "Security Assistant", "text": "Which means this wasn't random."},
+					{"speaker": "Daniel", "text": "BlueTech again.", "emotion": "determined"},
+					{"speaker": "Reyes", "text": "Part of it."},
+					{"speaker": "Mia", "text": "Part?"},
+					{"speaker": "Reyes", "text": "Calls are only one way to become someone you trust."},
+					{"speaker": "Daniel", "text": "...What does that mean?"},
+					{"speaker": "Reyes", "text": "It means whoever is doing this isn't finished."}
+				],
+				"complete_banner": "MODULE 3 STORY COMPLETE"
+			},
+			"threats": [
+				{
+					"id": "mod03_stage09_incident01", "module_id": "mod_03", "stage": 9, "title": "Mia Is Calling", "bkt_skill": "vishing", "affected_system": "BLUETECH / SANTOS TRUST CHANNEL",
+					"story": [
+						{"speaker": "", "text": "The fake-Mia caller references Stage 8's events, the ₱18,600 incident, Daniel, Ana, Liza, the real Investigator Reyes, the synchronized-call investigation, and the frozen BlueTech workflow."},
+						{"speaker": "", "text": "At the same time, BlueTech receives another call. Displayed identity: INTERNAL SECURITY."},
+						{"speaker": "", "text": "Both callers claim the same thing: the frozen request was legitimate and must be restored immediately."},
+						{"speaker": "Daniel", "text": "They know what we just did...", "emotion": "worried"},
+						{"speaker": "Mia", "text": "They could've learned that from the other calls."}
+					],
+					"situation": "A caller sounding like Mia, and a separate caller displayed as INTERNAL SECURITY, both insist the frozen BlueTech-Santos workflow was legitimate and must be restored immediately. The fake-Mia caller demonstrates detailed knowledge of everything the team has been through so far.",
+					"evidence": ["The caller knows real, specific details from every earlier Stage 8 incident", "Real Mia is standing beside Daniel while the call is happening", "Two separately displayed callers are both pushing the same urgent restoration request", "Nothing about either call has been independently verified"],
+					"call": {"enabled": true, "caller": "MIA", "number": "(SPOOFED)", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Trust the call because real Mia is physically present and can directly compare the caller's voice and knowledge against herself.", "outcome": "CRITICAL", "consequence": "Even the impersonated person can't authenticate an attacker-controlled channel just by recognizing the voice or the details in it.", "story_event": [{"type": "status", "title": "VOICE IDENTITY", "text": "ACCEPTED"}, {"type": "dialogue", "speaker": "Mia", "text": "No!! That's not me!", "emotion": "angry"}]},
+						{"label": "Ignore both inbound identities, terminate the calls, and coordinate only through the trusted channels already established.", "outcome": "SAFE", "consequence": "Hanging up and routing through the channel the team already independently verified removes the attacker's control over the conversation entirely.", "memory": {"mod03_s9_final_response": "trusted_channel"}},
+						{"label": "Keep fake Mia connected while real Mia challenges the caller with private details.", "outcome": "RISKY", "consequence": "Knowledge challenges can be answered using information the attacker already collected.", "memory": {"mod03_s9_final_response": "trusted_channel"}},
+						{"label": "Compare fake Mia's claims with the Internal Security caller before acting.", "outcome": "RISKY", "consequence": "Two coordinated callers can validate each other without either one being real.", "memory": {"mod03_s9_final_response": "trusted_channel"}}
+					],
+					"explanation": "Being physically present doesn't give anyone the power to authenticate a channel the attacker already controls — the fix is leaving the channel, not testing it from the inside.", "breach_gold": 56, "next": "mod03_stage09_incident02"
+				},
+				{
+					"id": "mod03_stage09_incident02", "module_id": "mod_03", "stage": 9, "title": "Verified Callback", "bkt_skill": "vishing", "affected_system": "BLUETECH SUPPLIER VERIFICATION",
+					"story": [
+						{"speaker": "", "text": "BlueTech Security uncovers what the frozen workflow actually changes. TRUSTED SUPPLIER CALLBACK — SANTOS LOGISTICS. CURRENT VERIFIED CONTACT: existing Santos business number. REQUESTED CONTACT: NEW \"EMERGENCY\" NUMBER. STATUS: PENDING APPROVAL."},
+						{"speaker": "Daniel", "text": "They're changing our number?", "emotion": "shocked"},
+						{"speaker": "Security Assistant", "text": "The number BlueTech calls when it needs to verify it's really you."},
+						{"speaker": "Mia", "text": "If they replace that..."},
+						{"speaker": "Daniel", "text": "...then next time BlueTech calls THEM.", "emotion": "shocked"}
+					],
+					"situation": "The frozen workflow would replace Santos Logistics' trusted callback contact inside BlueTech's own verification system with a new \"emergency\" number. This does not grant blanket BlueTech access — it poisons the specific communication route BlueTech uses to confirm it's really talking to Santos Logistics. A genuine BlueTech workflow still shows the change as pending, and fake callers insist Santos requested it because its phones were compromised.",
+					"evidence": ["The pending change is a real, genuine BlueTech workflow entry", "It targets the verification callback contact specifically, not account passwords or funds", "If approved, a future BlueTech verification call could reach an attacker-controlled number believing it reached Santos Logistics", "Callers claiming Santos requested the change cannot independently confirm anything beyond what they say"],
+					"investigation": {"enabled": true, "title": "WHAT DOES THE CHANGE ACTUALLY DO?", "prompt": "Why is replacing the trusted callback contact dangerous?", "items": [
+						{"id": "mod03_s9_i2_all_passwords", "label": "It immediately gives the attacker every BlueTech password", "valid": false, "analysis": "The change targets a verification contact, not credentials — nothing here hands over passwords."},
+						{"id": "mod03_s9_i2_auto_transfer", "label": "It automatically transfers money to the attacker", "valid": false, "analysis": "No funds move as part of this change — it isn't a payment action at all."},
+						{"id": "mod03_s9_i2_poisons_callback", "label": "It can cause future verification calls to reach an attacker-controlled contact that BlueTech believes belongs to Santos Logistics", "valid": true, "analysis": "The attack targets the verification channel itself, not direct account access — poisoning it means every future check through that channel is compromised."},
+						{"id": "mod03_s9_i2_proves_santos_fraud", "label": "It proves Santos Logistics caused the previous fraud", "valid": false, "analysis": "This change says nothing about who caused the earlier fraud — it's a separate, forward-looking attempt to poison verification."}
+					], "resolved_story_event": [
+						{"type": "dialogue", "speaker": "Daniel", "text": "So it's not about today's money.", "emotion": "worried"},
+						{"type": "dialogue", "speaker": "Security Assistant", "text": "It's about every verification after today."},
+						{"type": "dialogue", "speaker": "Daniel", "text": "That's worse.", "emotion": "frustrated"}
+					]},
+					"call": {"enabled": true, "caller": "SANTOS LOGISTICS / INTERNAL SECURITY", "number": "MULTIPLE", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"choices": [
+						{"label": "Approve because the request exists inside the genuine BlueTech system and multiple Santos/BlueTech callers confirmed it.", "outcome": "CRITICAL", "consequence": "A genuine workflow can carry an attacker-created request — the system being real never makes the request inside it real.", "story_event": [{"type": "status", "title": "TRUSTED SUPPLIER CALLBACK", "text": "CONTACT CHANGE APPROVED"}, {"type": "dialogue", "speaker": "Daniel", "text": "No—that's not us!!", "emotion": "shocked"}]},
+						{"label": "Reject and freeze the contact change, and verify Santos Logistics through its pre-existing, independently known records.", "outcome": "SAFE", "consequence": "The existing, independently known Santos contact is the one thing in this entire incident nobody had to hand the team — it was already trusted before any of this began.", "memory": {"mod03_s9_final_response": "existing_contact"}},
+						{"label": "Call the proposed new number and ask it to prove it belongs to Santos.", "outcome": "RISKY", "consequence": "The proposed contact is itself part of the untrusted change — asking it to vouch for itself proves nothing.", "memory": {"mod03_s9_final_response": "existing_contact"}},
+						{"label": "Inspect who submitted the genuine workflow request before deciding.", "outcome": "RISKY", "consequence": "Useful evidence, but knowing who filed the request still doesn't replace verifying through the existing trusted contact.", "memory": {"mod03_s9_final_response": "existing_contact"}}
+					],
+					"explanation": "This isn't an attempt to steal one payment — it's an attempt to poison the exact channel BlueTech would use to verify Santos Logistics in the future.", "breach_gold": 58, "next": "mod03_stage09_incident03"
+				},
+				{
+					"id": "mod03_stage09_incident03", "module_id": "mod_03", "stage": 9, "title": "One Last Thing", "bkt_skill": "vishing", "affected_system": "TRUSTED CALLBACK AUTHORIZATION",
+					"story": [
+						{"speaker": "", "text": "The attackers realize the team understands the objective. Everything happens together: fake Mia calling Daniel, a fake Internal Security caller reaching BlueTech, a fake Santos representative reaching another employee, the genuine pending callback-change workflow, correct case references, correct Santos information, real historical voice material, and a genuine BlueTech notification."},
+						{"speaker": "", "text": "A real BlueTech authorization prompt appears: TRUSTED CONTACT CHANGE — FINAL APPROVAL REQUIRED."},
+						{"speaker": "Daniel", "text": "It's real.", "emotion": "worried"},
+						{"speaker": "Security Assistant", "text": "The prompt is."},
+						{"speaker": "Daniel", "text": "Not the request.", "emotion": "determined"}
+					],
+					"situation": "A genuine BlueTech authorization prompt — TRUSTED CONTACT CHANGE, FINAL APPROVAL REQUIRED — appears while every attacker channel converges at once: fake Mia, fake Internal Security, a fake Santos representative, real historical voice material, and correct case and business details. The prompt itself is authentic; the request behind it is not.",
+					"evidence": ["The BlueTech authorization prompt itself is genuine", "Multiple attacker-controlled callers are converging at the same moment to reinforce the same request", "Every caller has real, accurate details from the entire campaign so far", "The prompt being real says nothing about whether the underlying request should be approved"],
+					"call": {"enabled": true, "caller": "MULTIPLE INBOUND CONTACTS", "number": "ALL ACTIVE", "status": "CONNECTED", "show_duration": true, "allow_end_call": false},
+					"timer": {"enabled": true, "seconds": 15, "label": "TRUSTED CONTACT CHANGE AWAITING FINAL APPROVAL", "timeout_outcome": "RISKY", "timeout_story_event": [
+						{"type": "dialogue", "speaker": "Caller", "text": "Daniel!! Do it now!!"},
+						{"type": "dialogue", "speaker": "Mia", "text": "Don't listen to me."},
+						{"type": "dialogue", "speaker": "Daniel", "text": "What?!", "emotion": "shocked"},
+						{"type": "dialogue", "speaker": "Mia", "text": "Not a voice that sounds like me. Verify me.", "emotion": "determined"}
+					]},
+					"choices": [
+						{"label": "Approve because the final BlueTech prompt is genuine and every involved party appears to confirm the same emergency.", "outcome": "CRITICAL", "consequence": "The attackers manufactured the context around a real authorization event — a genuine prompt only proves the prompt is real, never that the request behind it should be trusted.", "story_event": [{"type": "status", "title": "TRUSTED CALLBACK CONTACT", "text": "CHANGE APPROVED"}, {"type": "dialogue", "speaker": "Security Assistant", "text": "No!!"}, {"type": "dialogue", "speaker": "Daniel", "text": "Cancel it!!", "emotion": "angry"}]},
+						{"label": "Reject and freeze the change, terminate every attacker-controlled call, and rebuild the approval using the original trusted Santos/BlueTech channels.", "outcome": "SAFE", "consequence": "Leaving every compromised channel and rebuilding approval from the original trusted route is the only way out of a conversation the attacker controls.", "memory": {"mod03_s9_final_response": "rebuild_chain"}},
+						{"label": "Delay approval while comparing every current caller against previous verified information.", "outcome": "RISKY", "consequence": "The comparison helps, but staying inside attacker-controlled channels the whole time keeps the pressure working.", "memory": {"mod03_s9_final_response": "rebuild_chain"}},
+						{"label": "Contact one independently verified participant and ask whether the change should proceed.", "outcome": "RISKY", "consequence": "One person's knowledge may still trace back to the same coordinated attack — the full trusted chain needs rebuilding, not one more opinion.", "memory": {"mod03_s9_final_response": "rebuild_chain"}}
+					],
+					"explanation": "A real prompt sitting inside a real system proves nothing about the request typed into it. When the whole channel might be compromised, the answer is to leave it and rebuild trust independently — not to keep verifying from inside.", "breach_gold": 60, "next": ""
+				}
+			]
 		}
 	]
 }
