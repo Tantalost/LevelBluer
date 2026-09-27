@@ -252,6 +252,10 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(2)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 3 uses the reusable live decision scene")
 	check(router._scene_for_context(router._context_for_stage(3)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 4 uses the reusable live decision scene")
 	check(router._scene_for_context(router._context_for_stage(4)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 5 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(5)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 6 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(6)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 7 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(7)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 8 uses the reusable live decision scene")
+	check(router._scene_for_context(router._context_for_stage(8)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 9 (final story stage, with a finale) also routes to the same live decision scene")
 	var module3_stage2_context := Context.stage_one_live()
 	module3_stage2_context.module_id = "mod_03"
 	module3_stage2_context.stage_id = 2
@@ -313,6 +317,141 @@ func _run() -> void:
 	module3_stage5_game.advance_decision_timer(15.1)
 	check(not module3_stage5_game.decision_timer_active and module3_stage5_game.decision.is_breach_active(), "Module 3 Stage 5 Incident 3's timeout deterministically resolves the authored RISKY outcome and enters breach")
 	await unmount(module3_stage5_game)
+	var module3_stage6_context := Context.stage_one_live()
+	module3_stage6_context.module_id = "mod_03"
+	module3_stage6_context.stage_id = 6
+	var module3_stage6_account := Account.new()
+	var module3_stage6_game: Control = mount(module3_stage6_account, module3_stage6_context)
+	check(module3_stage6_game.decision.total_threats() == 3 and is_equal_approx(module3_stage6_game._enemy_health_scale(), 0.90), "Module 3 Stage 6 live scene loads three incidents at 0.90 HP")
+	read_page(module3_stage6_game)
+	check(module3_stage6_game.story_overlay._call_panel.visible, "Module 3 Stage 6 Incident 1 presents the fake Investigator Reyes call in call UI")
+	choose(module3_stage6_game, "SAFE")
+	check(module3_stage6_account.story_memory.get("mod03_s6_authority_response") == "independent_agency", "Module 3 Stage 6 Incident 1 SAFE commits the canonical authority-response memory")
+	if not module3_stage6_game.story_overlay._dialogue_done:
+		read_page(module3_stage6_game)
+	check(module3_stage6_game.story_overlay._investigation_panel.visible, "Module 3 Stage 6 Incident 2 shows its investigation once dialogue is read")
+	var stage6_valid_idx := -1
+	for i in module3_stage6_game.story_overlay._investigation_panel._items.size():
+		if str(module3_stage6_game.story_overlay._investigation_panel._items[i].get("id", "")) == "mod03_s6_i2_case_verification":
+			stage6_valid_idx = i
+			break
+	check(stage6_valid_idx != -1, "Module 3 Stage 6 Incident 2's valid investigation item is present")
+	var stage6_bkt_before_investigation: int = module3_stage6_account.bkt.size()
+	module3_stage6_game.story_overlay._investigation_panel._select(stage6_valid_idx)
+	module3_stage6_game.story_overlay._investigation_panel._analyze()
+	module3_stage6_game.story_overlay._investigation_panel._confirm_continue()
+	check(module3_stage6_account.bkt.size() == stage6_bkt_before_investigation, "Module 3 Stage 6 Incident 2's investigation applies zero BKT on its own")
+	# The investigation's own resolved_story_event follow-up (2 lines) is now
+	# playing — drain_until_dialogue_done() is the right-sized helper for
+	# exactly this short spliced-in tail (see its own doc comment).
+	drain_until_dialogue_done(module3_stage6_game)
+	choose(module3_stage6_game, "SAFE")
+	check(module3_stage6_game.decision.threat_index == 2, "Module 3 Stage 6 reaches Incident 3 (Confidential Cooperation) after resolving the investigation and two SAFE resolutions")
+	check(overlay_dialogue_contains(module3_stage6_game.story_overlay, "eleven minutes before"), "Module 3 Stage 6 Incident 3 opens with the public-complaint-workflow reveal")
+	await unmount(module3_stage6_game)
+	var module3_stage7_context := Context.stage_one_live()
+	module3_stage7_context.module_id = "mod_03"
+	module3_stage7_context.stage_id = 7
+	var module3_stage7_account := Account.new()
+	var module3_stage7_game: Control = mount(module3_stage7_account, module3_stage7_context)
+	check(module3_stage7_game.decision.total_threats() == 3 and is_equal_approx(module3_stage7_game._enemy_health_scale(), 0.95), "Module 3 Stage 7 live scene loads three incidents at 0.95 HP")
+	read_page(module3_stage7_game)
+	if not module3_stage7_game.story_overlay._dialogue_done:
+		read_page(module3_stage7_game)
+	check(module3_stage7_game.story_overlay._call_panel.visible, "Module 3 Stage 7 Incident 1 presents the supplier call in call UI")
+	check(module3_stage7_game.story_overlay._investigation_panel.visible, "Module 3 Stage 7 Incident 1 shows its investigation once dialogue is read")
+	var stage7_valid_idx := -1
+	for i in module3_stage7_game.story_overlay._investigation_panel._items.size():
+		if str(module3_stage7_game.story_overlay._investigation_panel._items[i].get("id", "")) == "mod03_s7_i1_needs_verification":
+			stage7_valid_idx = i
+			break
+	check(stage7_valid_idx != -1, "Module 3 Stage 7 Incident 1's valid investigation item is present")
+	var stage7_bkt_before_investigation: int = module3_stage7_account.bkt.size()
+	module3_stage7_game.story_overlay._investigation_panel._select(stage7_valid_idx)
+	module3_stage7_game.story_overlay._investigation_panel._analyze()
+	module3_stage7_game.story_overlay._investigation_panel._confirm_continue()
+	check(module3_stage7_account.bkt.size() == stage7_bkt_before_investigation, "Module 3 Stage 7 Incident 1's investigation applies zero BKT on its own")
+	# The investigation's own resolved_story_event follow-up (3 lines) is now
+	# playing — drain_until_dialogue_done() is the right-sized helper for
+	# exactly this short spliced-in tail (see its own doc comment).
+	drain_until_dialogue_done(module3_stage7_game)
+	choose(module3_stage7_game, "SAFE")
+	check(module3_stage7_account.story_memory.get("mod03_s7_audio_response") == "verified_process", "Module 3 Stage 7 Incident 1 SAFE commits the canonical audio-response memory")
+	check(module3_stage7_game.decision.threat_index == 1 and overlay_dialogue_contains(module3_stage7_game.story_overlay, "Caller ID: DANIEL SANTOS"), "Module 3 Stage 7 reaches Incident 2 (My Own Voice) with the spoofed Daniel caller ID")
+	choose(module3_stage7_game, "SAFE")
+	check(module3_stage7_game.decision.threat_index == 2 and overlay_dialogue_contains(module3_stage7_game.story_overlay, "delivery-schedule change"), "Module 3 Stage 7 reaches Incident 3 (Out of Context) with the out-of-context recording reveal")
+	# Incident 3's own story array (mid-stage beat + reveal) is long enough
+	# that choose()'s internal read_page() does not always finish it in one
+	# pass — drain the rest directly, same reveal-then-advance rhythm as
+	# read_page() itself (see the identical pattern used for Stage 5's
+	# Incident 3 above).
+	for i in 40:
+		if module3_stage7_game.story_overlay._dialogue_done:
+			break
+		if module3_stage7_game.story_overlay._typing:
+			module3_stage7_game.story_overlay._continue()
+		module3_stage7_game.story_overlay._continue()
+	check(module3_stage7_game.decision_timer_active, "Module 3 Stage 7 Incident 3's timer activates once its own dialogue is fully read")
+	module3_stage7_game.advance_decision_timer(15.1)
+	check(not module3_stage7_game.decision_timer_active and module3_stage7_game.decision.is_breach_active(), "Module 3 Stage 7 Incident 3's timeout deterministically resolves the authored RISKY outcome and enters breach")
+	await unmount(module3_stage7_game)
+	var module3_stage8_context := Context.stage_one_live()
+	module3_stage8_context.module_id = "mod_03"
+	module3_stage8_context.stage_id = 8
+	var module3_stage8_account := Account.new()
+	var module3_stage8_game: Control = mount(module3_stage8_account, module3_stage8_context)
+	check(module3_stage8_game.decision.total_threats() == 3 and is_equal_approx(module3_stage8_game._enemy_health_scale(), 1.00), "Module 3 Stage 8 live scene loads three incidents at 1.00 HP")
+	read_page(module3_stage8_game)
+	if not module3_stage8_game.story_overlay._dialogue_done:
+		read_page(module3_stage8_game)
+	check(module3_stage8_game.story_overlay._call_panel.visible, "Module 3 Stage 8 Incident 1 presents the five simultaneous calls in call UI")
+	choose(module3_stage8_game, "SAFE")
+	check(module3_stage8_game.decision.threat_index == 1 and overlay_dialogue_contains(module3_stage8_game.story_overlay, "They overlap."), "Module 3 Stage 8 reaches Incident 2 (They All Agree) with the post-incident overlap reveal")
+	if not module3_stage8_game.story_overlay._dialogue_done:
+		read_page(module3_stage8_game)
+	check(module3_stage8_game.story_overlay._investigation_panel.visible, "Module 3 Stage 8 Incident 2 shows its investigation once dialogue is read")
+	var stage8_valid_idx := -1
+	for i in module3_stage8_game.story_overlay._investigation_panel._items.size():
+		if str(module3_stage8_game.story_overlay._investigation_panel._items[i].get("id", "")) == "mod03_s8_i2_trusted_channel":
+			stage8_valid_idx = i
+			break
+	check(stage8_valid_idx != -1, "Module 3 Stage 8 Incident 2's valid investigation item is present")
+	var stage8_bkt_before_investigation: int = module3_stage8_account.bkt.size()
+	module3_stage8_game.story_overlay._investigation_panel._select(stage8_valid_idx)
+	module3_stage8_game.story_overlay._investigation_panel._analyze()
+	module3_stage8_game.story_overlay._investigation_panel._confirm_continue()
+	check(module3_stage8_account.bkt.size() == stage8_bkt_before_investigation, "Module 3 Stage 8 Incident 2's investigation applies zero BKT on its own")
+	# The investigation's own resolved_story_event follow-up (3 lines) is now
+	# playing — drain_until_dialogue_done() is the right-sized helper for
+	# exactly this short spliced-in tail (see its own doc comment).
+	drain_until_dialogue_done(module3_stage8_game)
+	choose(module3_stage8_game, "SAFE")
+	check(module3_stage8_account.story_memory.get("mod03_s8_coordination_response") == "source_tracing", "Module 3 Stage 8 Incident 2 SAFE commits the canonical coordination-response memory")
+	check(module3_stage8_game.decision.threat_index == 2 and overlay_dialogue_contains(module3_stage8_game.story_overlay, "synchronized"), "Module 3 Stage 8 reaches Incident 3 (The Authorization Chain) with the synchronized-call timeline reveal")
+	# Incident 3's own story array (timeline reveal + converging callers) is
+	# long enough that choose()'s internal read_page() does not always finish
+	# it in one pass — drain the rest directly (see the identical pattern
+	# used for Stage 7's Incident 3 above).
+	for i in 40:
+		if module3_stage8_game.story_overlay._dialogue_done:
+			break
+		if module3_stage8_game.story_overlay._typing:
+			module3_stage8_game.story_overlay._continue()
+		module3_stage8_game.story_overlay._continue()
+	check(module3_stage8_game.decision_timer_active, "Module 3 Stage 8 Incident 3's timer activates once its own dialogue is fully read")
+	module3_stage8_game.advance_decision_timer(15.1)
+	check(not module3_stage8_game.decision_timer_active and module3_stage8_game.decision.is_breach_active(), "Module 3 Stage 8 Incident 3's timeout deterministically resolves the authored RISKY outcome and enters breach")
+	await unmount(module3_stage8_game)
+	var module3_stage9_context := Context.stage_one_live()
+	module3_stage9_context.module_id = "mod_03"
+	module3_stage9_context.stage_id = 9
+	var module3_stage9_game: Control = mount(Account.new(), module3_stage9_context)
+	check(module3_stage9_game.decision.total_threats() == 3 and is_equal_approx(module3_stage9_game._enemy_health_scale(), 1.00), "Module 3 Stage 9 live scene loads three incidents at 1.00 HP")
+	read_page(module3_stage9_game)
+	if not module3_stage9_game.story_overlay._dialogue_done:
+		read_page(module3_stage9_game)
+	check(module3_stage9_game.story_overlay._call_panel.visible, "Module 3 Stage 9 Incident 1 presents the spoofed Mia call in call UI")
+	await unmount(module3_stage9_game)
 	router.active_module_id = "mod_04"
 	check(not router._context_for_stage(0).geometric, "A module with no decision content remains legacy")
 	router.active_module_id = "mod_01"

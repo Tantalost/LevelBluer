@@ -81,6 +81,10 @@ func _run() -> void:
 	await _test_module3_stage3()
 	await _test_module3_stage4()
 	await _test_module3_stage5()
+	await _test_module3_stage6()
+	await _test_module3_stage7()
+	await _test_module3_stage8()
+	await _test_module3_stage9()
 	await _test_module3_stage1_story_consequences()
 	await _test_legacy_story_memory_parity()
 	await _test_regression()
@@ -260,6 +264,10 @@ func _test_data_model(threats: Array[Dictionary]) -> void:
 	check(DecisionScenarios.is_decision_stage("mod_03", 3), "Module 3 Stage 3 is decision-based")
 	check(DecisionScenarios.is_decision_stage("mod_03", 4), "Module 3 Stage 4 is decision-based")
 	check(DecisionScenarios.is_decision_stage("mod_03", 5), "Module 3 Stage 5 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_03", 6), "Module 3 Stage 6 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_03", 7), "Module 3 Stage 7 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_03", 8), "Module 3 Stage 8 is decision-based")
+	check(DecisionScenarios.is_decision_stage("mod_03", 9), "Module 3 Stage 9 is decision-based")
 	var mod2_threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_02", 1)
 	check(mod2_threats.size() == 3, "[Mod2 Stage 1] Exactly 3 incidents")
 	var mod2_trivial: PackedStringArray = ["give.*password", "ignore it", "ignore everything", "looks safe", "trust it because it looks real"]
@@ -4562,7 +4570,653 @@ func _test_module3_stage5() -> void:
 	await settle()
 	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 5), "[Mod3 Stage 5] Ending completes mod_03:5")
 	check(root.get_node("StageManager").access_reason(6, "mod_03").is_empty(), "[Mod3 Stage 5] Completion unlocks Stage 6")
-	check(not DecisionScenarios.is_decision_stage("mod_03", 6), "[Mod3 Stage 5] Stage 6 remains non-decision (The Officer stays TRACE/post-assessment for now)")
+	check(DecisionScenarios.is_decision_stage("mod_03", 6), "[Mod3 Stage 5] Stage 6 (The Officer) is decision-based")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
+func _test_module3_stage6() -> void:
+	print("== Module 3 Stage 6: The Officer ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 6)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 6)
+	check(str(stage.get("title", "")) == "The Officer" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 0.90), "[Mod3 Stage 6] Title and 0.90 breach HP authored")
+	check(threats.size() == 3, "[Mod3 Stage 6] Three incidents")
+	check(not stage.has("reconstruction") and not stage.has("finale"), "[Mod3 Stage 6] No reconstruction or finale")
+	var investigation_count := 0
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		check(not threat.has("timer"), "[Mod3 Stage 6] Incident %d has no timed decision (this milestone explicitly avoids it)" % (i + 1))
+		if threat.has("investigation"):
+			investigation_count += 1
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+			if outcome == "CRITICAL":
+				check(not (choice as Dictionary).has("memory"), "[Mod3 Stage 6] Incident %d's CRITICAL choice authors no memory" % (i + 1))
+		check(int(threat.get("stage", -1)) == 6 and str(threat.get("module_id", "")) == "mod_03" and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 6] Incident %d has four scoped choices and 1S/2R/1C" % (i + 1))
+	check(investigation_count == 1 and bool((threats[1].get("investigation", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 6] Exactly one investigation, authored on Incident 2 (The Case Is Real)")
+	var memory_values: Dictionary = {}
+	for choice in (threats[0].get("choices", []) as Array):
+		var mem: Dictionary = (choice as Dictionary).get("memory", {}) as Dictionary
+		if mem.has("mod03_s6_authority_response"):
+			memory_values[str(mem["mod03_s6_authority_response"])] = true
+	check(memory_values.size() == 3 and memory_values.has("independent_agency") and memory_values.has("case_validation") and memory_values.has("limited_cooperation"),
+		"[Mod3 Stage 6] Incident 1 authors exactly the three canonical authority-response memory values")
+	for memory_value in ["verified_recovery", "case_crosscheck", "caller_explanation"]:
+		var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening", {"mod03_s5_recovery_response": memory_value})
+		var variants := 0
+		for line in lines:
+			var line_text: String = str(line.get("text", ""))
+			if line_text.contains("not following another voice") or line_text.contains("That still wasn't identity") or line_text.contains("convincing explanations from people"):
+				variants += 1
+		check(variants == 1, "[Mod3 Stage 6] Stage 5 memory %s selects exactly one reactive opening line" % memory_value)
+	var stage_text: String = JSON.stringify(stage)
+	check(stage_text.contains("18,600") and stage_text.contains("public directory") and stage_text.contains("public portal"), "[Mod3 Stage 6] Real identity/case checks are independently verified via public records, not the caller's own claim")
+	check(stage_text.contains("does not mean our systems were compromised") or stage_text.contains("Just the public form"), "[Mod3 Stage 6] The public complaint workflow reveal never implies the agency itself was compromised")
+	var ending_text: String = JSON.stringify(stage.get("ending", []))
+	check(ending_text.contains("earlier caller was not me") and ending_text.contains("You shouldn't know from my voice"), "[Mod3 Stage 6] Fake Reyes is explicitly distinguished from the independently verified real Reyes")
+	check(ending_text.contains("I authorize the change") and ending_text.contains("Maybe not like that") and not ending_text.to_lower().contains("ai-generated") and not ending_text.to_lower().contains("synthesized") and not ending_text.to_lower().contains("spliced"),
+		"[Mod3 Stage 6] Stage 7 cliffhanger audio plays with its mechanism left explicitly unresolved")
+	check(str(stage.get("next_stage_title", "")) == "Stage 7 — On the Record", "[Mod3 Stage 6] Points to Stage 7 — On the Record")
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	_router.active_module_id = "mod_03"
+	var level: Node = await _start_match("mod_03", 5)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	check(lm._decision != null and lm._decision.total_threats() == 3 and overlay._mode == &"story", "[Mod3 Stage 6] Generic decision engine opens The Officer")
+	await _skip_opening(overlay)
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 6] Four randomized choices display")
+	var before: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 6] SAFE resolves Incident 1 with one BKT step")
+	check(_player.get_story_memory("mod03_s6_authority_response") == "independent_agency", "[Mod3 Stage 6] SAFE commits the canonical authority-response memory immediately")
+	# Incident 2's investigation must never touch BKT/progression on its own.
+	before = _player.get_mastery("vishing")
+	check(bool((lm._decision.current_threat() as Dictionary).get("investigation", {}).get("enabled", false)), "[Mod3 Stage 6] Incident 2 presents its investigation")
+	await _pick(lm, overlay, "SAFE")
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 6] Incident 2's investigation itself applies zero BKT — only the operational SAFE choice grades once")
+	check(lm._decision.resolved_threats == 2, "[Mod3 Stage 6] SAFE resolves Incident 2")
+	check(_dialogue_contains(overlay, "The reference is valid") and _dialogue_contains(overlay, "eleven minutes before") and _dialogue_contains(overlay, "didn't submit it"), "[Mod3 Stage 6] Incident 3 opens with the public-complaint-workflow reveal")
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)) and overlay._banner.text == "BREACH DETECTED", "[Mod3 Stage 6] RISKY commits once and enters breach warning")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and is_equal_approx(lm._decision_breach_hp_scale(), 0.90), "[Mod3 Stage 6] Existing TD uses 0.90 breach HP")
+	await _force_td_win(lm)
+	check(lm._decision.resolved_threats == 3, "[Mod3 Stage 6] TD win resolves Incident 3")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and _dialogue_contains(overlay, "How do I know you're Reyes") and _dialogue_contains(overlay, "You shouldn't know from my voice"), "[Mod3 Stage 6] Ending opens with the real Reyes verification beat")
+	check(_dialogue_contains(overlay, "I authorize the change") and _dialogue_contains(overlay, "Maybe not like that"), "[Mod3 Stage 6] Stage 7 cliffhanger plays")
+	check(not _player.has_cleared_stage("mod_03", 6), "[Mod3 Stage 6] Stage does not clear before the ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 6), "[Mod3 Stage 6] Ending completes mod_03:6")
+	check(root.get_node("StageManager").access_reason(7, "mod_03").is_empty(), "[Mod3 Stage 6] Completion unlocks Stage 7")
+	check(DecisionScenarios.is_decision_stage("mod_03", 7), "[Mod3 Stage 6] Stage 7 (On the Record) is decision-based")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 5)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s6_authority_response") == null, "[Mod3 Stage 6] TD loss commits no memory — the abandoned RISKY attempt is never remembered")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 6] TD loss retries Incident 1")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	level = await _start_match("mod_03", 5)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)), "[Mod3 Stage 6] CRITICAL updates BKT once")
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s6_authority_response") == null, "[Mod3 Stage 6] CRITICAL Game Over commits no memory")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 6] CRITICAL retries Incident 1")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
+func _test_module3_stage7() -> void:
+	print("== Module 3 Stage 7: On the Record ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 7)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 7)
+	check(str(stage.get("title", "")) == "On the Record" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 0.95), "[Mod3 Stage 7] Title and 0.95 breach HP authored")
+	check(threats.size() == 3, "[Mod3 Stage 7] Three incidents")
+	check(not stage.has("reconstruction") and not stage.has("finale"), "[Mod3 Stage 7] No reconstruction or finale")
+	var investigation_count := 0
+	var timer_count := 0
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		if threat.has("investigation"):
+			investigation_count += 1
+		if threat.has("timer"):
+			timer_count += 1
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+			if outcome == "CRITICAL":
+				check(not (choice as Dictionary).has("memory"), "[Mod3 Stage 7] Incident %d's CRITICAL choice authors no memory" % (i + 1))
+		check(int(threat.get("stage", -1)) == 7 and str(threat.get("module_id", "")) == "mod_03" and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 7] Incident %d has four scoped choices and 1S/2R/1C" % (i + 1))
+	check(investigation_count == 1 and bool((threats[0].get("investigation", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 7] Exactly one investigation, authored on Incident 1 (The Recording)")
+	check(timer_count == 1 and bool((threats[2].get("timer", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 7] Exactly one timed decision, authored on Incident 3 (Out of Context)")
+	check(not threats[1].has("investigation") and not threats[1].has("timer"), "[Mod3 Stage 7] Incident 2 (My Own Voice) uses neither an investigation nor a timer")
+	var invalid_ai_item := false
+	for item in (threats[0].get("investigation", {}) as Dictionary).get("items", []) as Array:
+		var entry: Dictionary = item as Dictionary
+		if str(entry.get("label", "")).to_lower().contains("ai-generated"):
+			invalid_ai_item = bool(entry.get("valid", true)) == false
+	check(invalid_ai_item, "[Mod3 Stage 7] Incident 1's investigation explicitly rejects the 'must be AI-generated' oversimplification without confirming any other method")
+	var memory_values: Dictionary = {}
+	for choice in (threats[0].get("choices", []) as Array):
+		var mem: Dictionary = (choice as Dictionary).get("memory", {}) as Dictionary
+		if mem.has("mod03_s7_audio_response"):
+			memory_values[str(mem["mod03_s7_audio_response"])] = true
+	check(memory_values.size() == 3 and memory_values.has("verified_process") and memory_values.has("voice_comparison") and memory_values.has("limited_disclosure"),
+		"[Mod3 Stage 7] Incident 1 authors exactly the three canonical audio-response memory values")
+	for memory_value in ["independent_agency", "case_validation", "limited_cooperation"]:
+		var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening", {"mod03_s6_authority_response": memory_value})
+		var variants := 0
+		for line in lines:
+			var line_text: String = str(line.get("text", ""))
+			if line_text.contains("not making the same mistake with a recording") or line_text.contains("could work the same way") or line_text.contains("done assuming what something proves"):
+				variants += 1
+		check(variants == 1, "[Mod3 Stage 7] Stage 6 memory %s selects exactly one reactive opening line" % memory_value)
+	var stage_text: String = JSON.stringify(stage)
+	check(stage_text.contains("delivery-schedule change"), "[Mod3 Stage 7] Incident 3 distinguishes a genuinely Daniel recording from its original, unrelated context")
+	var ending_text: String = JSON.stringify(stage.get("ending", []))
+	check(not ending_text.to_lower().contains("ai-generated") and not ending_text.to_lower().contains("synthesized") and not ending_text.to_lower().contains("spliced") and not ending_text.to_lower().contains("replayed"),
+		"[Mod3 Stage 7] Resolution never confirms the audio-manipulation method")
+	check(ending_text.contains("source material") and ending_text.contains("Real voice. False context."), "[Mod3 Stage 7] Resolution establishes source material without forensic certainty")
+	check(ending_text.contains("Voice samples?") and ending_text.contains("haven't confirmed every source"), "[Mod3 Stage 7] Campaign clue is raised without overstating what's confirmed")
+	check(ending_text.contains("BANK FRAUD") and ending_text.contains("SANTOS LOGISTICS") and ending_text.contains("BLUETECH SECURITY") and ending_text.contains("UNKNOWN"), "[Mod3 Stage 7] Stage 8 cliffhanger shows four different displayed caller identities")
+	check(str(stage.get("next_stage_title", "")) == "Stage 8 — Everyone's Calling", "[Mod3 Stage 7] Points to Stage 8 — Everyone's Calling")
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	_router.active_module_id = "mod_03"
+	var level: Node = await _start_match("mod_03", 6)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	check(lm._decision != null and lm._decision.total_threats() == 3 and overlay._mode == &"story", "[Mod3 Stage 7] Generic decision engine opens On the Record")
+	await _skip_opening(overlay)
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 7] Four randomized choices display")
+	check(bool((lm._decision.current_threat() as Dictionary).get("investigation", {}).get("enabled", false)), "[Mod3 Stage 7] Incident 1 presents its investigation")
+	var before: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 7] SAFE resolves Incident 1 with one BKT step (its investigation applies zero BKT on its own)")
+	check(_player.get_story_memory("mod03_s7_audio_response") == "verified_process", "[Mod3 Stage 7] SAFE commits the canonical audio-response memory immediately")
+	check(_dialogue_contains(overlay, "Caller ID: DANIEL SANTOS"), "[Mod3 Stage 7] Incident 2 opens with the spoofed Daniel caller ID")
+	before = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 2 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 7] SAFE resolves Incident 2 (no investigation gating it)")
+	check(_dialogue_contains(overlay, "delivery-schedule change") and _dialogue_contains(overlay, "Again?!"), "[Mod3 Stage 7] Incident 3 opens with the out-of-context recording reveal")
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)) and overlay._banner.text == "BREACH DETECTED", "[Mod3 Stage 7] RISKY commits once and enters breach warning")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and is_equal_approx(lm._decision_breach_hp_scale(), 0.95), "[Mod3 Stage 7] Existing TD uses 0.95 breach HP")
+	await _force_td_win(lm)
+	check(lm._decision.resolved_threats == 3, "[Mod3 Stage 7] TD win resolves Incident 3")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and _dialogue_contains(overlay, "source material") and _dialogue_contains(overlay, "Real voice. False context."), "[Mod3 Stage 7] Ending opens with the resolution beat")
+	check(_dialogue_contains(overlay, "BANK FRAUD") and _dialogue_contains(overlay, "Nobody answer yet"), "[Mod3 Stage 7] Stage 8 cliffhanger plays")
+	check(not _player.has_cleared_stage("mod_03", 7), "[Mod3 Stage 7] Stage does not clear before the ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 7), "[Mod3 Stage 7] Ending completes mod_03:7")
+	check(root.get_node("StageManager").access_reason(8, "mod_03").is_empty(), "[Mod3 Stage 7] Completion unlocks Stage 8")
+	check(DecisionScenarios.is_decision_stage("mod_03", 8), "[Mod3 Stage 7] Stage 8 (Everyone's Calling) is decision-based")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 6)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s7_audio_response") == null, "[Mod3 Stage 7] TD loss commits no memory — the abandoned RISKY attempt is never remembered")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 7] TD loss retries Incident 1")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	level = await _start_match("mod_03", 6)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)), "[Mod3 Stage 7] CRITICAL updates BKT once")
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s7_audio_response") == null, "[Mod3 Stage 7] CRITICAL Game Over commits no memory")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 7] CRITICAL retries Incident 1")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
+func _test_module3_stage8() -> void:
+	print("== Module 3 Stage 8: Everyone's Calling ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 8)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 8)
+	check(str(stage.get("title", "")) == "Everyone's Calling" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 1.00), "[Mod3 Stage 8] Title and 1.00 breach HP authored")
+	check(threats.size() == 3, "[Mod3 Stage 8] Three incidents")
+	check(not stage.has("reconstruction") and not stage.has("finale"), "[Mod3 Stage 8] No reconstruction or finale")
+	var investigation_count := 0
+	var timer_count := 0
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		if threat.has("investigation"):
+			investigation_count += 1
+		if threat.has("timer"):
+			timer_count += 1
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+			if outcome == "CRITICAL":
+				check(not (choice as Dictionary).has("memory"), "[Mod3 Stage 8] Incident %d's CRITICAL choice authors no memory" % (i + 1))
+		check(int(threat.get("stage", -1)) == 8 and str(threat.get("module_id", "")) == "mod_03" and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 8] Incident %d has four scoped choices and 1S/2R/1C" % (i + 1))
+	check(investigation_count == 1 and bool((threats[1].get("investigation", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 8] Exactly one investigation, authored on Incident 2 (They All Agree)")
+	check(timer_count == 1 and bool((threats[2].get("timer", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 8] Exactly one timed decision, authored on Incident 3 (The Authorization Chain)")
+	check(not threats[0].has("investigation") and not threats[0].has("timer"), "[Mod3 Stage 8] Incident 1 (Five Phones) uses neither an investigation nor a timer")
+	var valid_channel_item := false
+	for item in (threats[1].get("investigation", {}) as Dictionary).get("items", []) as Array:
+		var entry: Dictionary = item as Dictionary
+		if str(entry.get("label", "")).to_lower().contains("independently initiated trusted channel"):
+			valid_channel_item = bool(entry.get("valid", false)) == true
+	check(valid_channel_item, "[Mod3 Stage 8] Incident 2's investigation only validates information from an independently initiated trusted channel")
+	var memory_values: Dictionary = {}
+	for choice in (threats[1].get("choices", []) as Array):
+		var mem: Dictionary = (choice as Dictionary).get("memory", {}) as Dictionary
+		if mem.has("mod03_s8_coordination_response"):
+			memory_values[str(mem["mod03_s8_coordination_response"])] = true
+	check(memory_values.size() == 3 and memory_values.has("trusted_coordination") and memory_values.has("source_tracing") and memory_values.has("workflow_crosscheck"),
+		"[Mod3 Stage 8] Incident 2 authors exactly the three canonical coordination-response memory values")
+	for memory_value in ["verified_process", "voice_comparison", "limited_disclosure"]:
+		var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening", {"mod03_s7_audio_response": memory_value})
+		var variants := 0
+		for line in lines:
+			var line_text: String = str(line.get("text", ""))
+			if line_text.contains("We use the process") or line_text.contains("still couldn't prove who was speaking") or line_text.contains("gave them something to work with"):
+				variants += 1
+		check(variants == 1, "[Mod3 Stage 8] Stage 7 memory %s selects exactly one reactive opening line" % memory_value)
+	var stage_text: String = JSON.stringify(stage)
+	check(stage_text.contains("synchronized") and stage_text.contains("14:02") and stage_text.contains("14:04"), "[Mod3 Stage 8] Incident 3 reveals the synchronized call timeline")
+	check(stage_text.contains("EXTERNAL SUPPLIER VERIFICATION") and stage_text.contains("MANUAL APPROVAL REQUESTED"), "[Mod3 Stage 8] Incident 3's workflow request is presented as genuine, not fabricated")
+	var ending_text: String = JSON.stringify(stage.get("ending", []))
+	check(ending_text.contains("You were a target.") and ending_text.contains("But maybe not the final one.") and ending_text.contains("...BlueTech."), "[Mod3 Stage 8] Resolution implies BlueTech is the next target without naming the exact final objective")
+	check(not ending_text.to_lower().contains("account number") and not ending_text.to_lower().contains("wire transfer") and not ending_text.to_lower().contains("target account"), "[Mod3 Stage 8] The exact final objective is never revealed")
+	check(ending_text.contains("CALLER: MIA") and ending_text.contains("That's not me.") and ending_text.contains("Daniel, listen to me!!"), "[Mod3 Stage 8] Stage 9 cliffhanger plays the spoofed-Mia call")
+	check(str(stage.get("next_stage_title", "")) == "Stage 9 — Hang Up", "[Mod3 Stage 8] Points to Stage 9 — Hang Up")
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	_router.active_module_id = "mod_03"
+	var level: Node = await _start_match("mod_03", 7)
+	var lm = _level_manager(level)
+	var overlay = lm._decision_overlay
+	check(lm._decision != null and lm._decision.total_threats() == 3 and overlay._mode == &"story", "[Mod3 Stage 8] Generic decision engine opens Everyone's Calling")
+	await _skip_opening(overlay)
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 8] Four randomized choices display")
+	var before: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 8] SAFE resolves Incident 1 with one BKT step")
+	check(_dialogue_contains(overlay, "They overlap.") and _dialogue_contains(overlay, "Write down what each caller claimed."), "[Mod3 Stage 8] Incident 2 opens with the post-incident overlap reveal")
+	check(bool((lm._decision.current_threat() as Dictionary).get("investigation", {}).get("enabled", false)), "[Mod3 Stage 8] Incident 2 presents its investigation")
+	before = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, true)), "[Mod3 Stage 8] Incident 2's investigation itself applies zero BKT — only the operational SAFE choice grades once")
+	check(lm._decision.resolved_threats == 2, "[Mod3 Stage 8] SAFE resolves Incident 2")
+	check(_player.get_story_memory("mod03_s8_coordination_response") == "source_tracing", "[Mod3 Stage 8] SAFE commits the canonical coordination-response memory immediately")
+	check(_dialogue_contains(overlay, "synchronized") and _dialogue_contains(overlay, "Two minutes..."), "[Mod3 Stage 8] Incident 3 opens with the synchronized-call timeline reveal")
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)) and overlay._banner.text == "BREACH DETECTED", "[Mod3 Stage 8] RISKY commits once and enters breach warning")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD and is_equal_approx(lm._decision_breach_hp_scale(), 1.00), "[Mod3 Stage 8] Existing TD uses 1.00 breach HP")
+	await _force_td_win(lm)
+	check(lm._decision.resolved_threats == 3, "[Mod3 Stage 8] TD win resolves Incident 3")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and _dialogue_contains(overlay, "manufactured chain of trust") and _dialogue_contains(overlay, "But maybe not the final one."), "[Mod3 Stage 8] Ending opens with the manufactured-consensus resolution beat")
+	check(_dialogue_contains(overlay, "CALLER: MIA") and _dialogue_contains(overlay, "Do not respond."), "[Mod3 Stage 8] Stage 9 cliffhanger plays")
+	check(not _player.has_cleared_stage("mod_03", 8), "[Mod3 Stage 8] Stage does not clear before the ending")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 8), "[Mod3 Stage 8] Ending completes mod_03:8")
+	check(root.get_node("StageManager").access_reason(9, "mod_03").is_empty(), "[Mod3 Stage 8] Completion unlocks Stage 9")
+	check(DecisionScenarios.is_decision_stage("mod_03", 9), "[Mod3 Stage 8] Stage 9 (Hang Up) is decision-based")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_03"])
+	level = await _start_match("mod_03", 7)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s8_coordination_response") == null, "[Mod3 Stage 8] TD loss commits no memory — the abandoned RISKY attempt on Incident 2 is never remembered")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 1, "[Mod3 Stage 8] TD loss retries Incident 2 (Incident 1's SAFE resolution was already committed)")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	level = await _start_match("mod_03", 7)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	before = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, before, false)), "[Mod3 Stage 8] CRITICAL updates BKT once")
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s8_coordination_response") == null, "[Mod3 Stage 8] CRITICAL Game Over commits no memory")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 8] CRITICAL retries Incident 1")
+	await _stop_match()
+	_router.active_module_id = "mod_01"
+
+
+func _test_module3_stage9() -> void:
+	print("== Module 3 Stage 9: Hang Up (final story stage, with CONTAINMENT finale) ==")
+	var stage: Dictionary = DecisionScenarios.get_stage("mod_03", 9)
+	var threats: Array[Dictionary] = DecisionScenarios.get_threats("mod_03", 9)
+	check(str(stage.get("title", "")) == "Hang Up" and is_equal_approx(float(stage.get("breach_hp_multiplier", 0.0)), 1.00), "[Mod3 Stage 9] Title and 1.00 breach HP authored")
+	check(threats.size() == 3, "[Mod3 Stage 9] Three incidents")
+	check(DecisionScenarios.has_finale(stage), "[Mod3 Stage 9] Uses the existing generic finale system, from data only")
+	check(not stage.has("reconstruction"), "[Mod3 Stage 9] No reconstruction")
+	var investigation_count := 0
+	var timer_count := 0
+	for i in threats.size():
+		var threat: Dictionary = threats[i]
+		if threat.has("investigation"):
+			investigation_count += 1
+		if threat.has("timer"):
+			timer_count += 1
+		var choices: Array = threat.get("choices", []) as Array
+		var counts: Dictionary = {"SAFE": 0, "RISKY": 0, "CRITICAL": 0}
+		for choice in choices:
+			var outcome: String = str((choice as Dictionary).get("outcome", ""))
+			counts[outcome] = int(counts.get(outcome, 0)) + 1
+			if outcome == "CRITICAL":
+				check(not (choice as Dictionary).has("memory"), "[Mod3 Stage 9] Incident %d's CRITICAL choice authors no memory" % (i + 1))
+		check(int(threat.get("stage", -1)) == 9 and str(threat.get("module_id", "")) == "mod_03" and choices.size() == 4 and counts == {"SAFE": 1, "RISKY": 2, "CRITICAL": 1}, "[Mod3 Stage 9] Incident %d has four scoped choices and 1S/2R/1C" % (i + 1))
+	check(investigation_count == 1 and bool((threats[1].get("investigation", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 9] Exactly one investigation, authored on Incident 2 (Verified Callback)")
+	check(timer_count == 1 and bool((threats[2].get("timer", {}) as Dictionary).get("enabled", false)), "[Mod3 Stage 9] Exactly one timed decision, authored on Incident 3 (One Last Thing)")
+	check(not threats[0].has("investigation") and not threats[0].has("timer"), "[Mod3 Stage 9] Incident 1 (Mia Is Calling) uses neither an investigation nor a timer")
+	var valid_poison_item := false
+	for item in (threats[1].get("investigation", {}) as Dictionary).get("items", []) as Array:
+		var entry: Dictionary = item as Dictionary
+		if str(entry.get("label", "")).contains("attacker-controlled contact"):
+			valid_poison_item = bool(entry.get("valid", false)) == true
+	check(valid_poison_item, "[Mod3 Stage 9] Incident 2's investigation only validates the poisoned-callback-channel conclusion")
+	check(str(threats[1].get("situation", "")).contains("does not grant blanket BlueTech access"), "[Mod3 Stage 9] Incident 2 explicitly denies the change grants blanket BlueTech access")
+	check(str(threats[2].get("situation", "")).contains("prompt itself is authentic") and str(threats[2].get("situation", "")).contains("request behind it is not"), "[Mod3 Stage 9] Incident 3 distinguishes a genuine authorization prompt from an illegitimate request")
+	var safe1_memory := ""
+	for choice in (threats[0].get("choices", []) as Array):
+		if str((choice as Dictionary).get("outcome", "")) == "SAFE":
+			safe1_memory = str(((choice as Dictionary).get("memory", {}) as Dictionary).get("mod03_s9_final_response", ""))
+	check(safe1_memory == "trusted_channel", "[Mod3 Stage 9] Incident 1's SAFE commits the canonical trusted_channel memory value")
+	var safe2_memory := ""
+	for choice in (threats[1].get("choices", []) as Array):
+		if str((choice as Dictionary).get("outcome", "")) == "SAFE":
+			safe2_memory = str(((choice as Dictionary).get("memory", {}) as Dictionary).get("mod03_s9_final_response", ""))
+	check(safe2_memory == "existing_contact", "[Mod3 Stage 9] Incident 2's SAFE commits the canonical existing_contact memory value")
+	var safe3_memory := ""
+	for choice in (threats[2].get("choices", []) as Array):
+		if str((choice as Dictionary).get("outcome", "")) == "SAFE":
+			safe3_memory = str(((choice as Dictionary).get("memory", {}) as Dictionary).get("mod03_s9_final_response", ""))
+	check(safe3_memory == "rebuild_chain", "[Mod3 Stage 9] Incident 3's SAFE commits the canonical rebuild_chain memory value")
+	# RISKY must carry the SAME canonical value as its incident's SAFE choice
+	# (never a distinct RISKY-only value) so a RISKY choice that survives its
+	# breach via TD win still resolves the incident's own canonical memory —
+	# only CRITICAL commits nothing.
+	for i in threats.size():
+		var expected_value: String = [safe1_memory, safe2_memory, safe3_memory][i]
+		for choice in (threats[i].get("choices", []) as Array):
+			if str((choice as Dictionary).get("outcome", "")) == "RISKY":
+				var risky_value: String = str(((choice as Dictionary).get("memory", {}) as Dictionary).get("mod03_s9_final_response", ""))
+				check(risky_value == expected_value, "[Mod3 Stage 9] Incident %d's RISKY choice holds the same canonical memory value as its SAFE choice (pending until TD win)" % (i + 1))
+	for memory_value in ["trusted_coordination", "source_tracing", "workflow_crosscheck"]:
+		var lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening", {"mod03_s8_coordination_response": memory_value})
+		var variants := 0
+		for line in lines:
+			var line_text: String = str(line.get("text", ""))
+			if line_text.contains("not leaving it for this") or line_text.contains("didn't make it true") or line_text.contains("part of their setup"):
+				variants += 1
+		check(variants == 1, "[Mod3 Stage 9] Stage 8 memory %s selects exactly one reactive opening line" % memory_value)
+	var finale: Dictionary = DecisionScenarios.finale_config(stage)
+	check(str(finale.get("deploy_label", "")) == "DEPLOY VOICE CHANNEL CONTAINMENT", "[Mod3 Stage 9] Finale deploy label frames the voice-channel containment narrative")
+	check(str((finale.get("case_summary", {}) as Dictionary).get("subtitle", "")) == "THE VOICE ON THE LINE", "[Mod3 Stage 9] Case summary names THE VOICE ON THE LINE arc")
+	check(str(finale.get("complete_banner", "")) == "MODULE 3 STORY COMPLETE", "[Mod3 Stage 9] Finale closing shows MODULE 3 STORY COMPLETE")
+	var closing_text: String = JSON.stringify(finale.get("closing", []))
+	check(closing_text.contains("isn't finished") and not closing_text.to_lower().contains("pretext"), "[Mod3 Stage 9] Closing points toward the next campaign phase without naming Pretexting")
+	check(str(stage.get("next_stage_title", "")) == "Stage 10 — Post-Assessment", "[Mod3 Stage 9] Points to Stage 10 — Post-Assessment")
+
+	_player.reset_to_defaults()
+	# Stage 10 is the shared post-assessment template, whose req_lesson is
+	# authored as "mod_01" regardless of active module (see
+	# _test_module2_stage9()) — grant it too so the real mod_03:9 -> mod_03:10
+	# progression unlock is exercised, not an unrelated lesson-gate quirk.
+	_player.completed_lessons.assign(["mod_01", "mod_02", "mod_03"])
+	_router.active_module_id = "mod_03"
+
+	var level: Node = await _start_match("mod_03", 8)
+	var lm = _level_manager(level)
+	check(lm._decision != null, "[Mod3 Stage 9] Uses the same decision controller, not TRACE")
+	check(lm.current_phase == lm.GamePhase.PRE_MATCH and not lm._quiz_modal.visible, "[Mod3 Stage 9] No TRACE quiz opened")
+	check(lm._decision.total_threats() == 3, "[Mod3 Stage 9] Exactly 3 incidents load")
+	check(lm._decision.has_finale, "[Mod3 Stage 9] Controller reports a finale is configured for this stage, from data only")
+	var overlay = lm._decision_overlay
+	check(overlay != null and overlay.visible and overlay._mode == &"story", "[Mod3 Stage 9] Opening story shown in the reusable overlay")
+	check(_dialogue_contains(overlay, "CALLER: MIA"), "[Mod3 Stage 9] Opening continues directly from Stage 8's spoofed-Mia cliffhanger")
+	check(_dialogue_contains(overlay, "That's not me!"), "[Mod3 Stage 9] Real Mia denies being the caller")
+	await _skip_opening(overlay)
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Mod3 Stage 9] Incident 1 shown after opening")
+	check(lm._decision.current_threat_for_display().get("choices", []).size() == 4, "[Mod3 Stage 9] Incident 1 displays all 4 randomized choices")
+
+	var mastery_before_safe: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(lm._decision.resolved_threats == 1 and overlay._header_right.text == "INCIDENT 2 / 3", "[Mod3 Stage 9] SAFE resolves Incident 1 and advances")
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, mastery_before_safe, true)), "[Mod3 Stage 9] SAFE updates BKT positively exactly once")
+	check(_player.get_story_memory("mod03_s9_final_response") == "trusted_channel", "[Mod3 Stage 9] SAFE commits the canonical trusted_channel memory immediately")
+	check(_dialogue_contains(overlay, "CURRENT VERIFIED CONTACT") and _dialogue_contains(overlay, "NEW \"EMERGENCY\" NUMBER"), "[Mod3 Stage 9] Incident 2 reveals the trusted callback contact change")
+
+	var mastery_before_risky: float = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._banner.text == "BREACH DETECTED" and _dialogue_contains(overlay, "BLUETECH SUPPLIER VERIFICATION"), "[Mod3 Stage 9] Breach warning names Incident 2's affected system")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Mod3 Stage 9] RISKY launches the existing Tower Defense flow")
+	check(is_equal_approx(lm._decision_breach_hp_scale(), 1.00), "[Mod3 Stage 9] Active breach uses only its authored 1.00 HP multiplier")
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, mastery_before_risky, false)), "[Mod3 Stage 9] RISKY updates BKT negatively exactly once")
+	var mastery_before_td: float = _player.get_mastery("vishing")
+	await _force_td_win(lm)
+	check(is_equal_approx(_player.get_mastery("vishing"), mastery_before_td), "[Mod3 Stage 9] Normal RISKY TD win does not update BKT")
+	check(lm._decision.resolved_threats == 2 and overlay._banner.text == "BREACH CONTAINED", "[Mod3 Stage 9] TD win resolves Incident 2 and shows BREACH CONTAINED")
+	check(_player.get_story_memory("mod03_s9_final_response") == "existing_contact", "[Mod3 Stage 9] Incident 2's RISKY memory was only pending through the breach — TD win now persists it")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Mod3 Stage 9] TD win continues to Incident 3")
+	check(_dialogue_contains(overlay, "FINAL APPROVAL REQUIRED") and _dialogue_contains(overlay, "Not the request."), "[Mod3 Stage 9] Incident 3 opens with the genuine-prompt-vs-illegitimate-request beat")
+
+	var mastery_before_final_pick: float = _player.get_mastery("vishing")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "DEPLOY VOICE CHANNEL CONTAINMENT", "[Mod3 Stage 9] All 3 incidents resolved shows the finale deploy prompt, not FILE REPORT")
+	check(lm.current_phase != lm.GamePhase.VICTORY, "[Mod3 Stage 9] Stage does not complete before the finale is played")
+	check(not _player.has_cleared_stage("mod_03", 9), "[Mod3 Stage 9] Stage is not marked cleared before the finale is played")
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, mastery_before_final_pick, true)), "[Mod3 Stage 9] Incident 3's SAFE commit applies exactly one BKT update (the finale adds none)")
+	check(_player.get_story_memory("mod03_s9_final_response") == "rebuild_chain", "[Mod3 Stage 9] Incident 3's SAFE overwrites the canonical memory to rebuild_chain")
+	check(_dialogue_contains(overlay, "the process that creates trust"), "[Mod3 Stage 9] Ending reveals the attackers were targeting BlueTech's verification process itself")
+
+	var mastery_before_finale_loss: float = _player.get_mastery("vishing")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Mod3 Stage 9] DEPLOY VOICE CHANNEL CONTAINMENT starts the finale Tower Defense")
+	check(lm._decision.is_finale_active(), "[Mod3 Stage 9] Controller reports the finale encounter is active")
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Mod3 Stage 9] Finale TD loss is Game Over")
+	var finale_defeat_card = level.get_node_or_null("BaseDefeatOverlay")
+	check(finale_defeat_card != null and finale_defeat_card._title.text == "CONTAINMENT FAILED", "[Mod3 Stage 9] CONTAINMENT FAILED shown on finale TD loss")
+	check(finale_defeat_card != null and finale_defeat_card._stage.text == "BLUETECH / SANTOS TRUSTED CALLBACK CHANNEL", "[Mod3 Stage 9] Finale defeat card names the finale's affected system, from data")
+	check(is_equal_approx(_player.get_mastery("vishing"), mastery_before_finale_loss), "[Mod3 Stage 9] Finale TD loss applies zero BKT updates")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(lm._decision.resolved_threats == 3, "[Mod3 Stage 9] Retry after finale loss keeps all 3 incidents resolved")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "DEPLOY VOICE CHANNEL CONTAINMENT", "[Mod3 Stage 9] Retry after finale loss replays the finale prompt, never Incident 3")
+
+	var mastery_before_finale_win: float = _player.get_mastery("vishing")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.PHASE_2_BUILD, "[Mod3 Stage 9] Retrying the finale prompt restarts the finale Tower Defense")
+	await _force_td_win(lm)
+	check(is_equal_approx(_player.get_mastery("vishing"), mastery_before_finale_win), "[Mod3 Stage 9] Finale TD win applies zero BKT updates (no duplicate reward from the retry)")
+	check(overlay._mode == &"story" and overlay._banner.text == "CONTAINMENT COMPLETE", "[Mod3 Stage 9] Finale win shows CONTAINMENT COMPLETE")
+	check(lm.current_phase != lm.GamePhase.VICTORY, "[Mod3 Stage 9] Stage still not complete before the case-closed epilogue plays")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and overlay._banner.text == "CASE CLOSED", "[Mod3 Stage 9] Case summary shows CASE CLOSED")
+	check(_dialogue_contains(overlay, "THE VOICE ON THE LINE"), "[Mod3 Stage 9] Case summary subtitle names THE VOICE ON THE LINE arc")
+	check(_dialogue_contains(overlay, "Malicious Callback Contact Blocked"), "[Mod3 Stage 9] Case summary lists the authored case-closed items")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(overlay._mode == &"story" and overlay._banner.text == "MODULE 3 STORY COMPLETE" and overlay._continue_button.text == "FILE REPORT", "[Mod3 Stage 9] Closing dialogue shows MODULE 3 STORY COMPLETE with FILE REPORT")
+	check(_dialogue_contains(overlay, "isn't finished"), "[Mod3 Stage 9] Closing dialogue delivers the unresolved-campaign teaser")
+	check(not _dialogue_contains(overlay, "Pretexting") and not _dialogue_contains(overlay, "PRETEXTING"), "[Mod3 Stage 9] Closing dialogue never names Pretexting directly")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 9), "[Mod3 Stage 9] Stage 9 clears only after the finale and its epilogue")
+	check(root.get_node("StageManager").access_reason(10, "mod_03").is_empty(), "[Mod3 Stage 9] Completion unlocks mod_03:10")
+	check(not DecisionScenarios.is_decision_stage("mod_03", 10), "[Mod3 Stage 9] Stage 10 remains a non-decision (TRACE/post-assessment) stage")
+	var clear_overlay9m3 = level.get_node_or_null("StageClearOverlay")
+	check(clear_overlay9m3 != null and clear_overlay9m3._title.text == "STAGE 9 COMPLETE", "[Mod3 Stage 9] Stage clear card uses the authored title")
+	check(clear_overlay9m3 != null and clear_overlay9m3._advisory.text.contains("STAGE 10"), "[Mod3 Stage 9] Stage clear card points to Stage 10")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	_player.completed_lessons.assign(["mod_01", "mod_02", "mod_03"])
+	level = await _start_match("mod_03", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 2 / 3", "[Mod3 Stage 9] All-SAFE run: Incident 1 resolved via SAFE")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._header_right.text == "INCIDENT 3 / 3", "[Mod3 Stage 9] All-SAFE run: Incident 2 resolved via SAFE with no breach")
+	await _pick(lm, overlay, "SAFE")
+	check(overlay._mode == &"story" and overlay._continue_button.text == "DEPLOY VOICE CHANNEL CONTAINMENT", "[Mod3 Stage 9] All-SAFE run still reaches the finale deploy prompt")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	await _force_td_win(lm)
+	check(overlay._mode == &"story" and overlay._banner.text == "CONTAINMENT COMPLETE", "[Mod3 Stage 9] All-SAFE run's finale still wins normally")
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.VICTORY and _player.has_cleared_stage("mod_03", 9), "[Mod3 Stage 9] All-SAFE run still clears the stage normally")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	level = await _start_match("mod_03", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	overlay._choice_buttons[_button_for_outcome(lm, "RISKY")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	await _force_td_loss(lm)
+	check(lm.current_phase == lm.GamePhase.GAME_OVER and _player.get_story_memory("mod03_s9_final_response") == null, "[Mod3 Stage 9] TD loss commits no memory — the abandoned RISKY attempt is never remembered")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	check(lm._decision.threat_index == 0, "[Mod3 Stage 9] TD loss retries Incident 1")
+	await _stop_match()
+
+	_player.reset_to_defaults()
+	level = await _start_match("mod_03", 8)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	await _skip_opening(overlay)
+	var mastery_before_critical: float = _player.get_mastery("vishing")
+	overlay._choice_buttons[_button_for_outcome(lm, "CRITICAL")].pressed.emit()
+	await settle()
+	overlay._continue_button.pressed.emit()
+	await settle()
+	check(lm.current_phase == lm.GamePhase.GAME_OVER, "[Mod3 Stage 9] CRITICAL reaches Game Over")
+	check(is_equal_approx(_player.get_mastery("vishing"), one_bkt_step(_player, mastery_before_critical, false)), "[Mod3 Stage 9] CRITICAL updates BKT negatively exactly once")
+	check(_player.get_story_memory("mod03_s9_final_response") == null, "[Mod3 Stage 9] CRITICAL Game Over commits no memory")
+	level = await _restart_from_game_over(level)
+	lm = _level_manager(level)
+	overlay = lm._decision_overlay
+	check(overlay._mode == &"threat" and overlay._header_right.text == "INCIDENT 1 / 3", "[Mod3 Stage 9] CRITICAL retry restores the same incident")
 	await _stop_match()
 	_router.active_module_id = "mod_01"
 
@@ -4592,10 +5246,13 @@ func _test_regression() -> void:
 	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ and lm._quiz_modal.visible, "Module 2 Stage 10 still opens the TRACE post-assessment quiz")
 	check(not lm.current_question.is_empty() and str(lm.current_question.get("module_id", "")) == "mod_02", "Module 2 selects Smishing questions")
 	await _stop_match()
-	# Module 3 Stages 1-5 are decision-based. Stage 6 remains TRACE.
-	level = await _start_match("mod_03", 5)
+	# Module 3 Stages 1-9 are decision-based (Stage 9 is the module's final
+	# story stage, with a generic finale — see _test_module3_stage9()).
+	# Stage 10 remains the existing summative post-assessment and is the
+	# correct "still normal" baseline.
+	level = await _start_match("mod_03", 9)
 	lm = _level_manager(level)
-	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ, "Module 3 Stage 6 still opens the TRACE quiz")
+	check(lm._decision == null and lm.current_phase == lm.GamePhase.PHASE_1_QUIZ, "Module 3 Stage 10 still opens the TRACE post-assessment quiz")
 	check(not lm.current_question.is_empty() and str(lm.current_question.get("module_id", "")) == "mod_03", "Module 3 selects Vishing questions")
 	await _stop_match()
 	_router.active_module_id = "mod_01"
