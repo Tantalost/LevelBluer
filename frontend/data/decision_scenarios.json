@@ -9,6 +9,17 @@
 			"company": "Harbor High School",
 			"scene_header": "HARBOR HIGH // MONDAY, 07:35",
 			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"phone": {
+				"contacts": [
+					{"title": "School IT", "evidence_id": "directory", "body": "help@harborhigh.example\nSaved from the school handbook, before today's emails."},
+					{"title": "Ms. Reyes", "body": "reyes@harborhigh.example\nYour class adviser. You can also speak to her at school."}
+				],
+				"pages": [
+					{"title": "School portal", "body": "https://portal.harborhigh.example\nYour saved school portal. This is an offline story preview, not a live website."},
+					{"title": "Class project page", "body": "Your usual class-page bookmark. Use it to check project reminders independently of links in new emails."}
+				]
+			},
 			"locations": {"opening": "school_gate_morning", "ending": "classroom_day", "resume_breach": "classroom_day", "breach_contained": "classroom_day"},
 			"containment_note": "CONTAINMENT SIMULATION / A visualization of protecting the account while a trusted adult helps. Alex is not operating the school's security systems.",
 			"clear_title": "STAGE 1 COMPLETE",
@@ -36,6 +47,7 @@
 			"threats": [
 				{
 					"id": "mod01_s1_t1",
+					"timer": {"enabled": true, "seconds": 45, "label": "DECIDE", "timeout_outcome": "CRITICAL", "pause_in_logs": false},
 					"background": "hallway_day",
 					"display": {
 						"presentation": "email",
@@ -72,7 +84,7 @@
 						"items": [
 							{"id": "sender", "label": "View sender details", "analysis": "DISPLAY NAME: School IT\nACTUAL ADDRESS: support@harbor-high-help.example\nA display name can be typed by anyone.", "valid": true},
 							{"id": "destination", "label": "Preview verification link", "analysis": "DESTINATION: https://harbor-high-help.example/verify\nREQUEST: Enter your school password before first period.\nPreview only: no page has been opened.", "valid": true},
-							{"id": "directory", "label": "Open saved school contact card", "analysis": "SAVED SCHOOL CONTACT\nSchool IT: help@harborhigh.example\nSchool portal: https://portal.harborhigh.example\nThis card came from your school handbook, not the email. Compare harborhigh.example with harbor-high-help.example.", "valid": true}
+							{"id": "directory", "phone_app": "contacts", "label": "Compare school contact card", "analysis": "SAVED SCHOOL CONTACT\nSchool IT: help@harborhigh.example\nSchool portal: https://portal.harborhigh.example\nThis card came from your school handbook, not the email. Compare harborhigh.example with harbor-high-help.example.", "valid": true}
 						]
 					},
 					"evidence": [
@@ -104,6 +116,7 @@
 				},
 				{
 					"id": "mod01_s1_t2",
+					"timer": {"enabled": true, "seconds": 45, "label": "DECIDE", "timeout_outcome": "CRITICAL", "pause_in_logs": false},
 					"background": "hallway_day",
 					"module_id": "mod_01",
 					"stage": 1,
@@ -154,6 +167,7 @@
 				},
 				{
 					"id": "mod01_s1_t3",
+					"timer": {"enabled": true, "seconds": 45, "label": "DECIDE", "timeout_outcome": "CRITICAL", "pause_in_logs": false},
 					"background": "classroom_day",
 					"module_id": "mod_01",
 					"stage": 1,

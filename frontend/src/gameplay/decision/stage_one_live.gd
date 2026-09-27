@@ -16,6 +16,11 @@ var mastery_frozen := false
 # Reopening an already-graded breach is a story review, not another assessment.
 # Persist this marker through exits before the player chooses again.
 var reviewed_breach_index := -1
+var story_hp: int = 3
+var _timeout_failure: bool = false
+
+func _has_story_lives() -> bool:
+	return int(story.get("decision_lives", 0)) > 0
 ## Optional per-threat countdown (see DecisionScenarios.has_timer). Most
 ## threats are untimed, so decision_timer_active stays false for the whole
 ## incident in the common case — see _decision_ready(). The fallback here
@@ -67,6 +72,12 @@ func _configure_match() -> void:
 	decision = DecisionStageController.new()
 	decision.setup(match_context.module_id, match_context.stage_id, DecisionScenarios.get_threats(match_context.module_id, match_context.stage_id), DecisionScenarios.has_finale(story))
 	var checkpoint: Dictionary = account.get_decision_stage_state(_key())
+	if _has_story_lives():
+		story_hp = clampi(int(checkpoint.get("story_hp", 3)), -1, 3)
+		if story_hp < 0:
+			account.clear_decision_stage_state(_key())
+			checkpoint = {}
+			story_hp = 3
 	decision.restore(checkpoint)
 	var reviewed_index := int(checkpoint.get("reviewed_breach_index", -1))
 	if reviewed_index == decision.threat_index:
@@ -101,12 +112,15 @@ func _ready() -> void:
 	story_overlay.name = "DecisionOverlay"
 	hud.body.add_child(story_overlay)
 	story_overlay.set_story_art(match_context.module_id, str(story.get("guide_speaker", "Security Assistant")))
+	story_overlay.configure_phone(story.get("phone", {}) as Dictionary)
+	story_overlay.set_story_hp(story_hp if _has_story_lives() else -1)
 	story_overlay.hide()
 	story_overlay.story_continued.connect(_story_continued)
 	story_overlay.choice_selected.connect(_choice_selected)
 	story_overlay.consequence_continued.connect(_consequence_continued)
 	story_overlay.decision_ready.connect(_decision_ready)
 	story_overlay.end_call_requested.connect(_end_call_requested)
+	story_overlay.pause_requested.connect(toggle_pause)
 
 func _process(delta: float) -> void:
 	super._process(delta)
@@ -153,7 +167,7 @@ func _decision_ready() -> void:
 	_save_checkpoint()
 
 func advance_decision_timer(delta: float) -> void:
-	if not decision_timer_active or paused or phase != "Incident" or story_overlay._review_open:
+	if not decision_timer_active or paused or phase != "Incident" or _logs_pause_timer():
 		return
 	decision_seconds_left = maxf(0, decision_seconds_left - maxf(0, delta))
 	story_overlay.update_decision_timer(decision_seconds_left, decision_seconds_total, DecisionScenarios.timer_label(decision.current_threat()))
@@ -175,7 +189,7 @@ func advance_decision_timer(delta: float) -> void:
 ## screen a manual choice uses, before continuing through the unchanged
 ## SAFE/RISKY/CRITICAL flow in _consequence_continued().
 func _expire_decision() -> void:
-	if not decision_timer_active or paused or story_overlay._review_open:
+	if not decision_timer_active or paused or _logs_pause_timer():
 		return
 	decision_timer_active = false
 	var threat: Dictionary = decision.current_threat()
@@ -184,6 +198,13 @@ func _expire_decision() -> void:
 		return
 	var result: Dictionary = _commit_decision()
 	if result.is_empty():
+		return
+	if _has_story_lives() and outcome == DecisionScenarios.OUTCOME_CRITICAL:
+		_timeout_failure = true
+		if story_hp < 0:
+			_finish(false)
+			return
+		story_overlay.show_consequence(outcome, "Time ran out before Alex chose a response. One story HP was lost.", "Review the evidence, then try this incident again.", _header(), "TRY AGAIN", "TIME EXPIRED / HP %d OF 3" % story_hp)
 		return
 	var banner: String = "TIME EXPIRED"
 	var continue_text: String = "CONTINUE"
@@ -199,6 +220,9 @@ func _expire_decision() -> void:
 		str(result.threat.get("explanation", "")),
 		_header(), continue_text, banner,
 		DecisionScenarios.timer_timeout_story_event_lines(threat, _memory()))
+
+func _logs_pause_timer() -> bool:
+	return story_overlay._review_open and bool(DecisionScenarios.timer_config(decision.current_threat()).get("pause_in_logs", true))
 
 ## Shows/hides and (re)configures the call presentation for whatever threat
 ## is about to be shown — called unconditionally from _show_threat() so a
@@ -296,6 +320,8 @@ func _key() -> String:
 
 func _save_checkpoint() -> void:
 	var checkpoint := decision.checkpoint_state()
+	if _has_story_lives():
+		checkpoint["story_hp"] = story_hp
 	if reviewed_breach_index == decision.threat_index:
 		checkpoint["reviewed_breach_index"] = reviewed_breach_index
 	# Only ever present while a timed decision is actually counting down (see
@@ -322,6 +348,7 @@ func _memory() -> Dictionary:
 func _present_story() -> void:
 	decision_timer_active = false
 	_set_phase("Incident")
+	hud.set_story_layout(story_overlay._school_cast)
 	Engine.time_scale = 1.0
 	hud.battle.enabled = false
 	hud.battle.world.process_mode = Node.PROCESS_MODE_DISABLED
@@ -395,12 +422,24 @@ func _choice_selected(index: int) -> void:
 	if result.is_empty():
 		return
 	decision_timer_active = false
+	if _has_story_lives() and str(result.outcome) == DecisionScenarios.OUTCOME_CRITICAL:
+		result = _commit_decision()
+		if result.is_empty():
+			return
+		if story_hp < 0:
+			_finish(false)
+			return
+		story_overlay.show_consequence(str(result.outcome), str(result.choice.get("consequence", "")), str(result.threat.get("explanation", "")), _header(), "TRY AGAIN", "FAILED DECISION / HP %d OF 3" % story_hp)
+		return
 	story_overlay.show_consequence(str(result.outcome), str(result.choice.get("consequence", "")), str(result.threat.get("explanation", "")), _header(), "DAMAGE REPORT" if result.outcome == DecisionScenarios.OUTCOME_CRITICAL else "CONTINUE", "", DecisionScenarios.story_event_lines(result.choice as Dictionary, _memory()))
 
 func _commit_decision() -> Dictionary:
 	var result := decision.commit()
 	if result.is_empty():
 		return result
+	if _has_story_lives() and str(result.outcome) == DecisionScenarios.OUTCOME_CRITICAL:
+		story_hp = maxi(-1, story_hp - 1)
+		story_overlay.set_story_hp(maxi(0, story_hp))
 	# Capture the committed threat's skill, not the next threat after SAFE advances.
 	var skill := str(result.threat.get("bkt_skill", story.get("bkt_skill", "phishing")))
 	if not mastery_frozen and int(result.threat_index) != reviewed_breach_index:
@@ -433,7 +472,13 @@ func _consequence_continued() -> void:
 		# whatever that already-locked-in outcome leads to next; it must
 		# never call commit()/grade BKT again.
 		if decision.last_outcome == DecisionScenarios.OUTCOME_CRITICAL:
-			_finish(false)
+			if _has_story_lives() and story_hp >= 0:
+				decision.restore_retry_checkpoint()
+				_timeout_failure = false
+				_save_checkpoint()
+				_show_threat(true)
+			else:
+				_finish(false)
 		else:
 			_show_threat()
 		return
@@ -591,6 +636,7 @@ func _show_reconstruction_or_finish() -> void:
 	_present_story()
 	story_overlay.hide()
 	_reconstruction_panel.configure(data)
+	hud.set_story_layout(false)
 
 func _finish_investigation() -> void:
 	if decision.is_complete():
@@ -641,6 +687,9 @@ func _result_data(won: bool) -> Dictionary:
 				"subtitle": "MAP A%d / " % stage_id + ("CRITICAL DECISION" if critical else "SYSTEM BREACH"),
 				"body": decision.fail_tip if critical else str(decision.current_threat().get("explanation", "Containment failed.")),
 				"tip": decision.game_over_tip()}, true)
+		if _has_story_lives() and story_hp < 0:
+			account.clear_decision_stage_state(_key())
+			data.merge({"title": "NO CHANCES LEFT", "subtitle": "TIME EXPIRED" if _timeout_failure else "STAGE ATTEMPT ENDED", "retry_label": "RESTART STAGE", "body": "Four failed decisions used all your chances. Restart from the opening and use what you learned.", "tip": "Story HP resets to 3. This stage starts again at the first incident."}, true)
 	return data
 
 func _pause_title() -> String:

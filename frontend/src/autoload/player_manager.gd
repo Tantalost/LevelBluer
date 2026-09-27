@@ -329,6 +329,12 @@ func _normalize_decision_state(raw: Variant) -> Dictionary:
 		var reviewed_index := int(row.get("reviewed_breach_index", -1))
 		if reviewed_index >= 0 and reviewed_index == int(row.get("threat_index", 0)):
 			result[str(key)]["reviewed_breach_index"] = reviewed_index
+		if row.has("story_hp"):
+			result[str(key)]["story_hp"] = clampi(int(row["story_hp"]), -1, 3)
+		if row.has("timer_seconds_left") and str(row.get("flow_state", "")) == "THREAT":
+			var seconds: float = float(row["timer_seconds_left"])
+			if is_finite(seconds):
+				result[str(key)]["timer_seconds_left"] = maxf(0.0, seconds)
 	return result
 
 

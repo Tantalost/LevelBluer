@@ -6,12 +6,22 @@ signal choice_selected(index: int)
 signal consequence_continued
 signal decision_ready
 signal end_call_requested
+signal pause_requested
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Portrait = preload("res://src/gameplay/decision/dialogue_portrait.gd")
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
 const ScreenShake = preload("res://src/gameplay/decision/dialogue_screen_shake.gd")
 const CallPanel = preload("res://src/gameplay/decision/decision_call_panel.gd")
 const InvestigationPanel = preload("res://src/gameplay/decision/decision_investigation_panel.gd")
+const StoryPhone = preload("res://src/gameplay/decision/story_phone.gd")
+var _phone: Control
+var _phone_enabled: bool = false
+var _phone_prompt: VBoxContainer
+
+func configure_phone(data: Dictionary) -> void:
+	_phone_enabled = not data.is_empty()
+	_phone.configure(data)
+	_story_pause.visible = _school_cast and not _phone_enabled
 # Future art can be assigned by exact authored speaker name, without changing story data.
 var portrait_textures: Dictionary = {}
 var _illustrated: bool = false
@@ -23,11 +33,29 @@ var _school_cast: bool = false
 var _portrait_stage: Control
 var _guide_speaker: String = "Security Assistant"
 var _content_columns: HBoxContainer
+var _layout: VBoxContainer
+var _story_pause: Button
+var _review_scrim: ColorRect
+var _review_hint: Label
+var _story_hp_label: Label
+var _story_hp: int = -1
+
+func set_story_hp(value: int) -> void:
+	_story_hp = value
+	_story_hp_label.text = "HP %d / 3%s" % [maxi(0, value), " / LAST CHANCE" if value == 0 else ""]
+	_story_hp_label.add_theme_color_override("font_color", Color("FFB648") if value <= 1 else UI.TEAL)
+var _mail_generation: int = 0
+var _notice_offset: float = 0.0:
+	set(value):
+		_notice_offset = value
+		_fit_school_portraits()
 
 func set_story_art(module_id: String, guide_speaker: String = "Security Assistant") -> void:
 	_illustrated = module_id == "mod_01"
 	_guide_speaker = guide_speaker
 	_school_cast = module_id == "mod_01" and guide_speaker == "Ms. Reyes"
+	_header.visible = not _school_cast
+	_story_pause.visible = _school_cast
 	set_background("")
 	_background.visible = _illustrated
 	_portrait_stage.visible = _illustrated
@@ -150,6 +178,7 @@ func _ready() -> void:
 	_window = UI.panel(self, Color("101c24"))
 	_window.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	var layout := UI.column(_window, 14)
+	_layout = layout
 	_header = UI.label("", 26, UI.TEAL)
 	_header.add_theme_color_override("font_outline_color", Color("050B18"))
 	_header.add_theme_constant_override("outline_size", 5)
@@ -158,10 +187,27 @@ func _ready() -> void:
 	layout.add_child(top)
 	_header.size_flags_horizontal = SIZE_EXPAND_FILL
 	top.add_child(_header)
-	_review_button = UI.button("DIALOGUE REVIEW", _open_review)
+	_story_hp_label = UI.label("", 26, UI.TEAL)
+	_story_hp_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	_story_hp_label.hide()
+	top.add_child(_story_hp_label)
+	_review_button = UI.button("LOGS", _open_review)
 	_review_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	top.add_child(_review_button)
+	top.alignment = BoxContainer.ALIGNMENT_END
+	_story_pause = UI.button("", func() -> void: pause_requested.emit())
+	_story_pause.tooltip_text = "Pause"
+	_story_pause.accessibility_name = "Pause story"
+	top.add_child(_story_pause)
+	var pause_icon: Control = preload("res://src/gameplay/preview/resource_icon.gd").new()
+	pause_icon.kind = "pause"
+	pause_icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_story_pause.add_child(pause_icon)
+	_story_pause.hide()
 	_mail_notice = UI.button("", _open_mail)
+	_mail_notice.set_meta("owns_responsive_metrics", true)
+	_mail_notice.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_mail_notice.clip_text = true
 	_mail_notice.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	for style_name: String in ["normal", "hover", "pressed", "disabled"]:
 		var notice_style: StyleBoxFlat = _mail_notice.get_theme_stylebox(style_name).duplicate() as StyleBoxFlat
@@ -204,6 +250,10 @@ func _ready() -> void:
 	_investigation_panel.investigation_resolved.connect(_on_investigation_resolved)
 	_investigation_panel.hide()
 	var columns := HBoxContainer.new()
+	_phone_prompt = UI.column(layout)
+	_phone_prompt.add_child(UI.label("Check the message and compare your saved school details before deciding.", 26, UI.TEAL))
+	_phone_prompt.add_child(UI.button("OPEN PHONE", _open_phone_investigation, true))
+	_phone_prompt.hide()
 	_content_columns = columns
 	columns.size_flags_vertical = SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 24)
@@ -226,31 +276,56 @@ func _ready() -> void:
 	_mail_close = UI.button("BACK TO CONVERSATION", _close_mail, true)
 	mail_layout.add_child(_mail_close)
 	_mail_panel.hide()
-	_review_panel = UI.panel(self, Color("101c24"))
+	_review_scrim = ColorRect.new()
+	_review_scrim.color = Color("050B18", 0.6)
+	_review_scrim.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_review_scrim.mouse_filter = MOUSE_FILTER_STOP
+	add_child(_review_scrim)
+	_review_scrim.hide()
+	_review_panel = UI.panel(self, Color("0A1730", 0.97))
+	_review_panel.add_theme_stylebox_override("panel", _dialogue_frame(Color("0A1730", 0.97), Color("85d9c3")))
 	_review_panel.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_review_panel.mouse_filter = MOUSE_FILTER_STOP
 	var review_layout := UI.column(_review_panel)
 	var review_top := HBoxContainer.new()
 	review_layout.add_child(review_top)
-	var review_title := UI.label("DIALOGUE REVIEW", 28, UI.GOLD)
+	var review_title := UI.label("LOGS", 28, UI.GOLD)
+	review_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	review_title.size_flags_horizontal = SIZE_EXPAND_FILL
 	review_top.add_child(review_title)
-	_review_close = UI.button("RETURN", _close_review)
+	_review_close = UI.button("X", _close_review)
+	_review_close.accessibility_name = "Close Logs"
 	_review_close.autowrap_mode = TextServer.AUTOWRAP_OFF
 	review_top.add_child(_review_close)
-	review_layout.add_child(UI.label("Conversation so far / Decision timer paused", 26, UI.MUTED))
+	_review_hint = UI.label("Conversation so far", 26, UI.MUTED)
+	review_layout.add_child(_review_hint)
 	_review_content = UI.scroll_column(review_layout)
 	_review_panel.hide()
+	_phone = StoryPhone.new()
+	_phone.name = "StoryPhone"
+	add_child(_phone)
+	_phone.closed.connect(_close_mail)
+	_phone.message_read.connect(_record_phone_mail)
+	_phone.investigation_confirmed.connect(_finish_phone_investigation)
+	_phone.detail_inspected.connect(_log_phone_detail)
 	resized.connect(_metrics)
 	if _assets != null:
 		_assets.sync_finished.connect(_on_story_assets_ready)
 
 func _reset(mode: StringName, header: String, caption: String) -> void:
+	# Detach the shared action before freeing the previous dialogue container.
+	if _continue_button.get_parent() != _layout:
+		_continue_button.reparent(_layout)
+	_continue_button.size_flags_horizontal = SIZE_FILL
+	_continue_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_window.show()
 	_clear_mail()
+	_phone.reset_incident()
 	_mode = mode
 	_locked = false
 	_review_open = false
 	_review_panel.hide()
+	_review_scrim.hide()
 	_timer_row.hide()
 	_timer_visible_for_threat = false
 	_call_panel.hide()
@@ -369,6 +444,7 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 		_line_counter.add_theme_color_override("font_outline_color", Color("050B18"))
 		_line_counter.add_theme_constant_override("outline_size", 4)
 	heading.add_child(_line_counter)
+	_line_counter.visible = not _school_cast
 	_speech = RichTextLabel.new()
 	_speech.bbcode_enabled = false
 	_speech.fit_content = true
@@ -379,6 +455,10 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 	_speech.mouse_filter = MOUSE_FILTER_STOP
 	_speech.gui_input.connect(_speech_input)
 	body.add_child(_speech)
+	if _school_cast:
+		_continue_button.reparent(body)
+		_continue_button.size_flags_horizontal = SIZE_SHRINK_END
+		_continue_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_show_line()
 
 func _dialogue_frame(fill: Color, border: Color) -> StyleBoxFlat:
@@ -398,17 +478,20 @@ func _dialogue_frame(fill: Color, border: Color) -> StyleBoxFlat:
 func _fit_school_portraits() -> void:
 	if not _school_cast or not is_instance_valid(_conversation) or not is_inside_tree():
 		return
-	var top: float = maxf(_header.get_global_rect().end.y, _review_button.get_global_rect().end.y) - _portrait_stage.global_position.y + 6.0
+	var top: float = _review_button.get_global_rect().end.y - _portrait_stage.global_position.y + 6.0
 	var bottom: float = _conversation.global_position.y - _portrait_stage.global_position.y
 	var side: float = minf(_portrait_stage.size.x * 0.30, maxf(0, bottom - top))
 	if _mail_notice.visible:
+		var factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 		var speaker_left: bool = str(_lines[_line_index].get("speaker", "")) == _cast[0]
-		_mail_notice.size = Vector2(_portrait_stage.size.x * 0.57, _mail_notice.get_combined_minimum_size().y)
-		_mail_notice.position = Vector2(_portrait_stage.size.x - _mail_notice.size.x - 20.0 if speaker_left else 20.0, top)
+		_mail_notice.custom_minimum_size = Vector2(0, maxf(64, ceilf(72.0 / factor)))
+		_mail_notice.size = Vector2(minf(_portrait_stage.size.x * 0.54, 480.0 / factor), _mail_notice.custom_minimum_size.y)
+		_mail_notice.pivot_offset = _mail_notice.size * 0.5
+		_mail_notice.position = Vector2(_portrait_stage.size.x - _mail_notice.size.x - 20.0 if speaker_left else 20.0, top + _notice_offset)
 	for index: int in _portraits.size():
 		var seat: Control = _portraits[index].get_parent() as Control
 		seat.set_anchors_preset(PRESET_TOP_LEFT)
-		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - side - 20.0, top)
+		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - side - 20.0, bottom - side)
 		seat.size = Vector2(side, side)
 
 func _show_line() -> void:
@@ -416,12 +499,10 @@ func _show_line() -> void:
 	var line := _lines[_line_index]
 	_mail = (line.get("mail", {}) as Dictionary).duplicate(true)
 	if not _mail.is_empty():
+		if _phone_enabled:
+			_phone.receive_message(_mail)
 		_mail_notice.text = "NEW EMAIL\nOPEN MESSAGE  >"
-		var settings_node: Node = get_node_or_null("/root/SettingsService")
-		if settings_node == null or not bool(settings_node.get("reduced_motion")):
-			_mail_notice.modulate.a = 0.0
-			_mail_tween = create_tween()
-			_mail_tween.tween_property(_mail_notice, "modulate:a", 1.0, 0.24)
+		_animate_notice.call_deferred(_mail_generation)
 	var who := str(line.get("speaker", ""))
 	var line_emotion := Emotion.of(line)
 	_speaker_label.text = who.to_upper() if not who.is_empty() else "SCENE"
@@ -443,6 +524,24 @@ func _show_line() -> void:
 	if speed_mode == "instant" and _typing:
 		_reveal_line()
 	_fit_school_portraits.call_deferred()
+
+func _animate_notice(generation: int) -> void:
+	if generation != _mail_generation or _mail.is_empty():
+		return
+	var settings: Node = get_node_or_null("/root/SettingsService")
+	if settings != null and bool(settings.get("reduced_motion")):
+		return
+	_fit_school_portraits()
+	_notice_offset = -_mail_notice.position.y - _mail_notice.size.y
+	_mail_notice.modulate.a = 0.0
+	_mail_tween = create_tween()
+	_mail_tween.set_parallel(true)
+	_mail_tween.tween_property(self, "_notice_offset", 0.0, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_mail_tween.tween_property(_mail_notice, "modulate:a", 1.0, 0.20)
+	_mail_tween.chain().tween_property(_mail_notice, "scale", Vector2.ONE * 1.025, 0.10)
+	_mail_tween.chain().tween_property(_mail_notice, "scale", Vector2.ONE, 0.12)
+	if _locked or _review_open:
+		_mail_tween.pause()
 
 ## Screen-level emotion FX (see DialogueEmotion.shake_profile) fire exactly
 ## once here, at the moment a new line begins — never repeated by the
@@ -516,6 +615,7 @@ func _speech_input(event: InputEvent) -> void:
 		_speech.accept_event()
 
 func _refresh_controls() -> void:
+	_window.visible = not _review_open and not (_phone_enabled and _mail_open)
 	var choices_were_visible: bool = _choices_scroll.visible
 	var investigating := _mode == &"threat" and _dialogue_done and not _investigation_config.is_empty()
 	# Choices (and the decision timer) only ever become actionable once any
@@ -523,11 +623,16 @@ func _refresh_controls() -> void:
 	# _on_investigation_resolved()) — an incident with no investigation at
 	# all behaves exactly as before this system existed.
 	var deciding := _mode == &"threat" and _dialogue_done and not investigating
+	_story_hp_label.visible = deciding and _story_hp >= 0
+	_narrative.get_parent().visible = not (deciding and _phone_enabled)
+	_choices_scroll.size_flags_stretch_ratio = 1.0
 	if _illustrated:
-		_portrait_stage.visible = not deciding and not investigating and not _review_open
-		_window.add_theme_stylebox_override("panel", UI.box(Color("101c24", 0.95 if deciding or investigating else 0.16)))
+		_portrait_stage.visible = not deciding and not investigating
+		var fill: Color = Color("101c24", (0.62 if _phone_enabled else 0.95) if deciding or investigating else 0.10)
+		_window.add_theme_stylebox_override("panel", UI.box(fill, Color.TRANSPARENT if _school_cast and not deciding and not investigating else Color("3b626a")))
 	_narrative.alignment = BoxContainer.ALIGNMENT_BEGIN if (deciding or investigating) else BoxContainer.ALIGNMENT_END
-	_investigation_panel.visible = investigating
+	_investigation_panel.visible = investigating and not _phone_enabled
+	_phone_prompt.visible = investigating and _phone_enabled
 	_content_columns.visible = not (investigating and str(_investigation_config.get("mode", "")) == "inspect")
 	_investigation_panel.interaction_locked = _locked or _review_open
 	_choices_scroll.visible = deciding
@@ -540,21 +645,24 @@ func _refresh_controls() -> void:
 	_timer_row.visible = deciding and _timer_visible_for_threat
 	_review_button.disabled = _locked or _history.is_empty()
 	_review_close.disabled = _locked
+	_story_pause.disabled = _locked or _review_open
 	if _conversation != null:
 		_conversation.visible = not deciding and not investigating
 	_continue_button.visible = _mode != &"threat" or not _dialogue_done
 	_continue_button.disabled = _locked
 	_continue_button.text = "SHOW TEXT" if _typing else ("NEXT LINE  >" if not _dialogue_done and _line_index + 1 < _lines.size() else _caption)
+	if _school_cast:
+		_continue_button.text = "REVEAL  >" if _typing else ("NEXT  >" if not _dialogue_done and _line_index + 1 < _lines.size() else _caption)
 	if not _typing and not _mail.is_empty() and not _mail_read:
 		_continue_button.text = "OPEN EMAIL  >"
-	_mail_notice.visible = not _mail.is_empty() and not _dialogue_done
+	_mail_notice.visible = not _mail.is_empty() and not _dialogue_done and not _review_open
 	_mail_notice.disabled = _locked or _review_open or _mail_open
 	_mail_close.disabled = _locked
 	_review_button.disabled = _review_button.disabled or _mail_open
 	for button in _choice_buttons:
-		button.disabled = _locked or not _dialogue_done or investigating
+		button.disabled = _locked or _review_open or not _dialogue_done or investigating
 	if _choice_hint != null:
-		_choice_hint.text = "Choose your response" if _dialogue_done else "Listen, then choose your response"
+		_choice_hint.text = "What should Alex do?" if _phone_enabled else ("Choose your response" if _dialogue_done else "Listen, then choose your response")
 	if _evidence != null:
 		_evidence.visible = _dialogue_done and not investigating
 
@@ -591,12 +699,14 @@ func show_threat(threat: Dictionary, story_lines: Array[Dictionary], number: int
 	details.add_child(UI.label("EVIDENCE", 26, UI.GOLD))
 	for clue in threat.get("evidence", []):
 		details.add_child(UI.label(str(clue), 26))
-	_actions.add_child(UI.label("INCIDENT %d / %d" % [number, total], 26, UI.MUTED))
+	if not _phone_enabled:
+		_actions.add_child(UI.label("INCIDENT %d / %d" % [number, total], 26, UI.MUTED))
 	_choice_hint = UI.label("", 30, UI.TEAL)
 	_actions.add_child(_choice_hint)
 	var choices: Array = threat.get("choices", [])
 	for i in choices.size():
 		var button := UI.button(str(choices[i].get("label", "")), _choose.bind(i))
+		button.set_meta("story_decision_card", _phone_enabled)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		_actions.add_child(button)
 		_choice_buttons.append(button)
@@ -624,6 +734,7 @@ func show_consequence(outcome: String, consequence: String, explanation: String,
 
 func set_interaction_locked(locked: bool) -> void:
 	_locked = locked
+	_phone.set_locked(locked)
 	if _mail_tween != null and _mail_tween.is_valid():
 		if locked:
 			_mail_tween.pause()
@@ -634,7 +745,7 @@ func set_interaction_locked(locked: bool) -> void:
 		_update_portraits()
 
 func _choose(index: int) -> void:
-	if _locked or _review_open or _mode != &"threat" or not _dialogue_done or not _investigation_config.is_empty() or index < 0 or index >= _choice_buttons.size():
+	if _locked or _review_open or _mail_open or _mode != &"threat" or not _dialogue_done or not _investigation_config.is_empty() or index < 0 or index >= _choice_buttons.size():
 		return
 	_history.append({"speaker": "Your response", "text": _choice_buttons[index].text})
 	set_interaction_locked(true)
@@ -675,6 +786,9 @@ func _open_decision() -> void:
 	_refresh_controls()
 	(_narrative.get_parent() as ScrollContainer).scroll_vertical = 0
 	if not _investigation_config.is_empty():
+		if _phone_enabled:
+			_open_phone_investigation()
+			return
 		_investigation_panel.configure(_investigation_config)
 		_refresh_controls()
 		return
@@ -713,6 +827,8 @@ func _on_investigation_resolved() -> void:
 func set_investigation(config: Dictionary, followup_lines: Array[Dictionary] = []) -> void:
 	_investigation_config = config
 	_investigation_followup_lines = followup_lines
+	if _phone_enabled:
+		_phone.set_investigation(config)
 	if not config.is_empty():
 		_caption = "OPEN EVIDENCE"
 		_refresh_controls()
@@ -733,6 +849,8 @@ func update_decision_timer(seconds: float, total: float, label: String = "DECIDE
 	_timer_bar.value = clamped
 	_timer_text.text = "%s / %02ds%s" % [label if not label.is_empty() else "DECIDE", whole, "  !" if urgent else ""]
 	_timer_text.add_theme_color_override("font_color", Color("ff3b3b") if urgent else (Color("ef9292") if clamped <= 10.0 else UI.GOLD))
+	if _phone_enabled:
+		_review_hint.text = _timer_text.text + " / Timer running"
 
 
 ## Called once per threat by the caller (see DecisionScenarios.has_timer) —
@@ -785,18 +903,19 @@ func _open_review() -> void:
 	if _locked or _review_open or _mail_open or _history.is_empty():
 		return
 	_review_open = true
+	if not _timer_visible_for_threat:
+		_review_hint.text = "Conversation and inspected evidence"
 	if _mail_tween != null and _mail_tween.is_valid():
 		_mail_tween.pause()
 	UI.clear(_review_content)
 	for line in _history:
-		var entry := UI.panel(_review_content, Color("142731"))
-		var text := UI.column(entry, 8)
-		text.add_child(UI.label(str(line.get("speaker", "")).to_upper() if not str(line.get("speaker", "")).is_empty() else "SCENE", 26, UI.GOLD))
-		text.add_child(UI.label(str(line.get("text", "")), 28))
+		_add_log_entry(line)
+	_review_scrim.show()
 	_review_panel.show()
 	(_review_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	if not _lines.is_empty():
 		_update_portraits()
+	_refresh_controls()
 	_metrics()
 	_review_close.grab_focus()
 
@@ -807,14 +926,74 @@ func _close_review() -> void:
 	if _mail_tween != null and _mail_tween.is_valid():
 		_mail_tween.play()
 	_review_panel.hide()
+	_review_scrim.hide()
 	if not _lines.is_empty():
 		_update_portraits()
+	_refresh_controls()
 	_review_button.grab_focus()
+	_fit_school_portraits.call_deferred()
+
+func _add_log_entry(line: Dictionary) -> void:
+	var who: String = str(line.get("speaker", ""))
+	var player_side: bool = who == "Alex" or who == "Your response"
+	var is_mail: bool = who.begins_with("Inbox / ")
+	var row: HBoxContainer = HBoxContainer.new()
+	row.set_meta("player_side", player_side)
+	row.add_theme_constant_override("separation", 12)
+	_review_content.add_child(row)
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = SIZE_EXPAND_FILL
+	spacer.size_flags_stretch_ratio = 0.12
+	spacer.mouse_filter = MOUSE_FILTER_IGNORE
+	row.add_child(spacer)
+	var avatar_frame: PanelContainer = UI.panel(row, Color("102040"))
+	avatar_frame.set_meta("log_avatar", true)
+	avatar_frame.size_flags_vertical = SIZE_SHRINK_BEGIN
+	avatar_frame.clip_contents = true
+	var avatar_style: StyleBoxFlat = UI.box(Color("102040"), UI.TEAL, 2)
+	avatar_style.set_corner_radius_all(32)
+	avatar_frame.add_theme_stylebox_override("panel", avatar_style)
+	if who.is_empty() or is_mail or who == "Your response":
+		var icon: IntelPixelIcon = IntelPixelIcon.new()
+		icon.kind = IntelPixelIcon.Kind.ENVELOPE if is_mail else IntelPixelIcon.Kind.CHAT
+		icon.ink_override = UI.TEAL
+		icon.mouse_filter = MOUSE_FILTER_IGNORE
+		avatar_frame.add_child(icon)
+	else:
+		var portrait: Control = Portrait.new()
+		portrait.frameless = true
+		portrait.custom_minimum_size = Vector2.ZERO
+		portrait.portrait_texture = portrait_textures.get(who)
+		if _school_cast and portrait.portrait_texture == null:
+			portrait.portrait_texture = Portrait.school_expression(who, Emotion.of(line))
+		avatar_frame.add_child(portrait)
+		portrait.configure(who, true, false, Emotion.of(line))
+		portrait.set_process(false)
+	var bubble: PanelContainer = UI.panel(row, Color("153B37") if player_side else Color("102040"))
+	bubble.size_flags_horizontal = SIZE_EXPAND_FILL
+	bubble.size_flags_stretch_ratio = 0.88
+	var bubble_style: StyleBoxFlat = UI.box(Color("153B37") if player_side else Color("102040"), UI.TEAL if player_side else Color("3b626a"), 14)
+	bubble_style.set_corner_radius_all(12)
+	bubble.add_theme_stylebox_override("panel", bubble_style)
+	var content: VBoxContainer = UI.column(bubble, 6)
+	var nameplate: Label = UI.label(who.to_upper() if not who.is_empty() else "EVENT", 26, UI.GOLD)
+	nameplate.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if player_side else HORIZONTAL_ALIGNMENT_LEFT
+	content.add_child(nameplate)
+	content.add_child(UI.label(str(line.get("text", "")), 28))
+	if player_side:
+		row.move_child(bubble, 1)
+		row.move_child(avatar_frame, 2)
+	else:
+		row.move_child(spacer, 2)
 
 func _clear_mail() -> void:
+	_mail_generation += 1
+	_phone.stop()
 	if _mail_tween != null and _mail_tween.is_valid():
 		_mail_tween.kill()
 	_mail_tween = null
+	_notice_offset = 0.0
+	_mail_notice.scale = Vector2.ONE
 	_mail.clear()
 	_mail_read = false
 	_mail_open = false
@@ -829,6 +1008,10 @@ func _open_mail() -> void:
 	if _typing:
 		_reveal_line()
 	_mail_open = true
+	if _phone_enabled:
+		_phone.open_phone()
+		_refresh_controls()
+		return
 	UI.clear(_mail_content)
 	_mail_content.add_child(UI.label("FROM / " + str(_mail.get("sender", "")), 26, UI.MUTED))
 	_mail_content.add_child(UI.label(str(_mail.get("subject", "")), 30, UI.GOLD))
@@ -843,27 +1026,71 @@ func _open_mail() -> void:
 func _close_mail() -> void:
 	if _locked or not _mail_open:
 		return
-	if not _mail_read:
+	if not _mail_read and not _phone_enabled:
 		_history.append({"speaker": "Inbox / " + str(_mail.get("sender", "")), "text": str(_mail.get("subject", "")) + "\n\n" + str(_mail.get("body", ""))})
-	_mail_read = true
+		_mail_read = true
 	_mail_open = false
+	_phone.stop()
 	_mail_panel.hide()
-	_mail_notice.text = "EMAIL READ\nOPEN AGAIN  >"
+	_mail_notice.text = "EMAIL READ\nOPEN AGAIN  >" if _mail_read else "NEW EMAIL\nOPEN PHONE  >"
 	_refresh_controls()
-	_continue_button.grab_focus()
+	if _continue_button.is_visible_in_tree():
+		_continue_button.grab_focus()
+
+func _record_phone_mail() -> void:
+	if _locked or not _mail_open or _mail_read or _mail.is_empty():
+		return
+	_history.append({"speaker": "Inbox / " + str(_mail.get("sender", "")), "text": str(_mail.get("subject", "")) + "\n\n" + str(_mail.get("body", ""))})
+	_mail_read = true
+
+func _log_phone_detail(id: String) -> void:
+	for item: Dictionary in _investigation_config.get("items", []):
+		if str(item.get("id", "")) == id:
+			_history.append({"speaker": "Evidence / " + str(item.get("label", "")), "text": str(item.get("analysis", ""))})
+			return
+
+func _open_phone_investigation() -> void:
+	if _locked or _review_open or not _phone_enabled or not _dialogue_done or _investigation_config.is_empty():
+		return
+	_mail_open = true
+	_phone.open_phone(true)
+	_refresh_controls()
+
+func _finish_phone_investigation() -> void:
+	if _locked or not _mail_open or _investigation_config.is_empty() or not _phone.is_complete():
+		return
+	_mail_open = false
+	_phone.stop()
+	_on_investigation_resolved()
+	_focus_first_choice.call_deferred()
 
 func _metrics() -> void:
 	_fit_school_portraits.call_deferred()
 	var factor := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	var font := maxi(26, ceili(16 / factor))
+	var inset_x: float = minf(size.x * 0.07, 60.0)
+	var inset_y: float = minf(size.y * 0.06, 32.0)
+	_review_panel.offset_left = inset_x
+	_review_panel.offset_right = -inset_x
+	_review_panel.offset_top = inset_y
+	_review_panel.offset_bottom = -inset_y
+	if _school_cast:
+		_mail_panel.offset_top = _review_button.get_global_rect().end.y - global_position.y + 14.0
 	for portrait in _portraits:
 		portrait.custom_minimum_size = Vector2.ZERO if _illustrated else Vector2(80, 90 if get_viewport_rect().size.y < 500 else 130)
 	for node in find_children("*", "Control", true, false):
+		if node == _phone or _phone.is_ancestor_of(node):
+			continue # Phone sizes independently for short landscape screens.
+		if node == _mail_notice:
+			node.add_theme_font_size_override("font_size", font)
+			continue
+		if node.get_meta("log_avatar", false):
+			node.custom_minimum_size = Vector2.ONE * maxf(64.0, ceilf(40.0 / factor))
 		if _call_panel != null and _call_panel.is_ancestor_of(node):
 			continue # Preserve the compact phone header instead of inflating it to dialogue size.
 		if node is Label or node is Button:
 			node.add_theme_font_size_override("font_size", font)
 		if node is Button:
-			node.custom_minimum_size.y = maxf(64, ceilf(48 / factor))
+			node.custom_minimum_size.y = maxf(64, ceilf((72.0 if bool(node.get_meta("story_decision_card", false)) else 48.0) / factor))
 		if node is RichTextLabel:
 			node.add_theme_font_size_override("normal_font_size", font)

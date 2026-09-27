@@ -54,6 +54,8 @@ var build_content: VBoxContainer
 var build_actions: VBoxContainer
 var _phase_tween: Tween
 var _shown_phase := ""
+var _header_panel: PanelContainer
+var _phase_row: HBoxContainer
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
@@ -68,6 +70,7 @@ func _ready() -> void:
 	add_child(safe)
 	var layout := UI.column(safe, 8)
 	var top := UI.panel(layout, Color("132127"))
+	_header_panel = top
 	top.add_theme_stylebox_override("panel", UI.box(Color("132127"), Color("30494d"), 10))
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
@@ -95,6 +98,7 @@ func _ready() -> void:
 	pause_button.add_child(pause_icon)
 	_crt(top)
 	var phases := HBoxContainer.new()
+	_phase_row = phases
 	layout.add_child(phases)
 	phase_label = UI.label("", 24, UI.TEAL)
 	phase_label.set_meta("font_boost", 14)
@@ -197,6 +201,8 @@ func _responsive() -> void:
 	_apply_metrics(self)
 
 func _apply_metrics(node: Node) -> void:
+	if bool(node.get_meta("owns_responsive_metrics", false)):
+		return
 	if node is CanvasLayer:
 		return # Result overlays own their typography and responsive layout.
 	if node is Button:
@@ -325,6 +331,8 @@ func set_phase(phase: String) -> void:
 	if phase == _shown_phase:
 		return
 	_shown_phase = phase
+	if phase != "Incident":
+		set_story_layout(false)
 	# Story, briefing and results do not use the battlefield resources.
 	# Hide complete badge groups so icons cannot linger without their values.
 	var gameplay_visible: bool = phase in ["Trace", "Build", "Defend"]
@@ -341,6 +349,11 @@ func set_phase(phase: String) -> void:
 	phase_label.modulate.a = 0.35
 	_phase_tween = create_tween()
 	_phase_tween.tween_property(phase_label, "modulate:a", 1.0, 0.3)
+
+## The story workspace owns compact pause/log controls. Combat keeps its HUD.
+func set_story_layout(enabled: bool) -> void:
+	_header_panel.visible = not enabled
+	_phase_row.visible = not enabled
 
 func _build_intro() -> void:
 	intro = UI.panel(body, Color("101e25"))
