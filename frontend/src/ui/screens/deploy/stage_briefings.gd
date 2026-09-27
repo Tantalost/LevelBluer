@@ -19,6 +19,11 @@ const NOTES := {
 }
 
 const MODULE_NOTES := {
+	"mod_01:1": [
+		"BEFORE THE BELL",
+		"One week before the school fair, Alex's inbox interrupts a morning with Mia. A familiar name, a worrying deadline — what should you trust before first period?",
+		"Inspect the message. Check a trusted source. Then decide.",
+	],
 	"mod_01:2": [
 		"THEY KNOW WHO WE ARE",
 		"The phishing campaign becomes more targeted. Investigate messages that use real BlueTech information before employees trust the wrong source.",

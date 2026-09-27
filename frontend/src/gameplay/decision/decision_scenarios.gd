@@ -128,6 +128,7 @@ static func _lines_from(stored: Variant) -> Array[Dictionary]:
 				"speaker": str(line.get("speaker", "")).strip_edges(),
 				"text": str(line.get("text", "")).strip_edges(),
 				"emotion": str(line.get("emotion", "")).strip_edges(),
+				"mail": (line.get("mail", {}) as Dictionary).duplicate(true) if typeof(line.get("mail", {})) == TYPE_DICTIONARY else {},
 				"when": (line.get("when", {}) as Dictionary) if typeof(line.get("when", {})) == TYPE_DICTIONARY else {},
 			})
 	return result

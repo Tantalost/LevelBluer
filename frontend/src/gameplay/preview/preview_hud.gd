@@ -325,6 +325,14 @@ func set_phase(phase: String) -> void:
 	if phase == _shown_phase:
 		return
 	_shown_phase = phase
+	# Story, briefing and results do not use the battlefield resources.
+	# Hide complete badge groups so icons cannot linger without their values.
+	var gameplay_visible: bool = phase in ["Trace", "Build", "Defend"]
+	(gold_label.get_parent() as Control).visible = gameplay_visible
+	(health_label.get_parent() as Control).visible = gameplay_visible
+	_resource_gap.visible = gameplay_visible
+	speed_button.visible = phase in ["Build", "Defend"]
+	wave_progress.visible = gameplay_visible
 	phase_label.text = phase.to_upper() + (" PHASE" if phase in ["Trace", "Build", "Defend"] else "")
 	phase_label.add_theme_color_override("font_color", UI.GOLD if phase == "Defend" else UI.TEAL)
 	_footer.visible = phase in ["Build", "Defend"]

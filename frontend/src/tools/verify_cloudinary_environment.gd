@@ -1,5 +1,6 @@
 extends SceneTree
-## --download validates only the seven supplied URLs and populates the asset cache.
+## --download validates the supplied URLs and populates the asset cache.
+## --story selects the 15 school story assets instead of the seven environment assets.
 ## Default mode verifies offline cache reuse and real scene bindings; no saves.
 var failures := 0
 
@@ -14,6 +15,11 @@ func _check(value: bool, message: String) -> void:
 func _run() -> void:
 	var assets := root.get_node("AssetManager")
 	assets._ensure_assets_dir()
+	if "--story" in OS.get_cmdline_user_args():
+		await _verify_school_story(assets)
+		print("[CLOUD STORY] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
 	var entries: Array = assets._map_environment_catalog()
 	_check(entries.size() == 7, "Seven environment assets registered")
 	if not "--download" in OS.get_cmdline_user_args():
@@ -60,3 +66,51 @@ func _run() -> void:
 	module.free()
 	print("[CLOUD ENVIRONMENT] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func _verify_school_story(assets: Node) -> void:
+	var entries: Array[Dictionary] = assets._school_story_catalog()
+	_check(entries.size() == 15, "Three portraits and twelve locations registered")
+	for entry: Dictionary in entries:
+		var id: String = str(entry.asset_id)
+		if "--download" in OS.get_cmdline_user_args():
+			var success: bool = await assets._download_and_store(entry)
+			_check(success and assets._is_cache_current(id, entry.cloudinary_url, entry.version, entry.local_path), "Remote story asset cached and versioned: " + id)
+		# Force the same disk-only load used on the next offline launch.
+		assets._textures.erase(id)
+		var texture: Texture2D = assets.get_texture(id)
+		_check(texture != null, "Offline story texture available: " + id)
+		if texture == null:
+			continue
+		var portrait: bool = id.begins_with("story_portrait_")
+		_check(texture.get_size() == (Vector2(2172, 724) if portrait else Vector2(800, 400)), "Original dimensions retained: " + id)
+		if portrait:
+			_check(texture.get_image().get_pixel(0, 0).a == 0.0, "Portrait transparency retained: " + id)
+	if failures > 0:
+		return
+	var portrait_script: GDScript = load("res://src/gameplay/decision/dialogue_portrait.gd")
+	var workspace: Control = load("res://src/gameplay/decision/decision_workspace.gd").new()
+	root.add_child(workspace)
+	workspace.set_story_art("mod_01", "Ms. Reyes")
+	workspace.set_background("hallway_day")
+	var lines: Array[Dictionary] = [{"speaker": "Alex", "text": "My inbox just buzzed."}]
+	workspace.show_story(lines, "School story cache check")
+	_check(workspace._background_art.texture == assets.get_texture("story_bg_hallway_day"), "Scene binds cached location")
+	for who: String in ["Alex", "Mia", "Ms. Reyes"]:
+		for mood: String in ["neutral", "worried", "relieved"]:
+			_check(portrait_script.school_expression(who, mood) is AtlasTexture, "Cached expression available: " + who + "/" + mood)
+	# Simulate a first-launch cache miss in memory only; never delete a user's cache.
+	var sheet: Texture2D = assets.get_texture("story_portrait_alex")
+	var background: Texture2D = assets.get_texture("story_bg_hallway_day")
+	assets._textures["story_portrait_alex"] = null
+	assets._textures["story_bg_hallway_day"] = null
+	assets.sync_finished.emit(false)
+	_check(workspace._portraits[0].portrait_texture == null, "Missing portrait uses procedural fallback")
+	_check(workspace._background_art.texture == null and not workspace._background_art.visible, "Missing location uses the themed panel")
+	assets._textures["story_portrait_alex"] = sheet
+	assets._textures["story_bg_hallway_day"] = background
+	assets.sync_finished.emit(true)
+	_check(workspace._portraits[0].portrait_texture is AtlasTexture and workspace._background_art.texture == background, "Late cache arrival refreshes the open scene")
+	_check(workspace._line_index == 0 and workspace._typing, "Asset refresh never advances or restarts dialogue")
+	var subscribers: int = assets.sync_finished.get_connections().size()
+	workspace.free()
+	_check(assets.sync_finished.get_connections().size() == subscribers - 1, "Freed workspace disconnects its cache signal")

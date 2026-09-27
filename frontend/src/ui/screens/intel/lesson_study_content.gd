@@ -89,6 +89,8 @@ static func build(module_id: String, index: int) -> Dictionary:
 		result.options.append(options[original])
 		if original in correct:
 			result.correct.append(i)
+	if module_id == "mod_01" and index == 0:
+		result["simulation_id"] = "sender_cross_check"
 	return result
 
 static func _scenario(source: Dictionary) -> String:

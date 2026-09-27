@@ -4,151 +4,200 @@
 			"id": "mod01_stage1",
 			"module_id": "mod_01",
 			"stage": 1,
-			"title": "The First Warning",
+			"title": "Before the Bell",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
+			"scene_header": "HARBOR HIGH // MONDAY, 07:35",
+			"guide_speaker": "Ms. Reyes",
+			"locations": {"opening": "school_gate_morning", "ending": "classroom_day", "resume_breach": "classroom_day", "breach_contained": "classroom_day"},
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of protecting the account while a trusted adult helps. Alex is not operating the school's security systems.",
 			"clear_title": "STAGE 1 COMPLETE",
-			"clear_subtitle": "THE FIRST WARNING",
-			"next_stage_title": "Stage 2 — They Know Who We Are",
+			"clear_subtitle": "BEFORE THE BELL",
+			"next_stage_title": "Stage 2",
 			"opening": [
-				{"speaker": "", "text": "BlueTech Solutions. 08:52. A normal Monday."},
-				{"speaker": "Security Assistant", "text": "Morning shift. Ticket queue is quiet. Keep an eye on the inbox."},
-				{"speaker": "Mia", "text": "Quiet is good. Let's keep it that way."}
+				{"speaker": "Alex", "text": "Mia, the school fair is next week. Please tell me our poster has a title now.", "emotion": "worried"},
+				{"speaker": "Mia", "text": "Does 'Untitled, but with amazing drawings' count?", "emotion": "relieved"},
+				{"speaker": "Alex", "text": "Only if we want that on the display board. I saved our draft in my school account."},
+				{"speaker": "Mia", "text": "Let's check the deadline. Ms. Reyes said she'd email the project reminder today."},
+				{"speaker": "Alex", "text": "Okay, I've got my inbox open. We can check it before the bell."}
 			],
 			"ending": [
-				{"speaker": "Security Assistant", "text": "I pulled the logs. These messages weren't random."},
-				{"speaker": "Mia", "text": "So someone is targeting the company?"},
-				{"speaker": "Security Assistant", "text": "Yes. And they already know more about us than they should."}
+				{"speaker": "Mia", "text": "One real reminder and two messages pretending to help. They all looked like school mail."},
+				{"speaker": "Alex", "text": "The names looked familiar. The addresses and requests told a different story.", "emotion": "determined"},
+				{"speaker": "Ms. Reyes", "text": "You don't have to handle a suspicious message alone. Save it, report it, and ask someone you trust. Now, let's see that poster.", "emotion": "relieved"}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{"speaker": "Ms. Reyes", "text": "We're helping secure the account. This defense simulation shows the containment work; you don't need to repair school systems yourself.", "emotion": "determined"}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. The workstation is clean, but that was too close."},
-				{"speaker": "Mia", "text": "Next time we verify first."}
+				{"speaker": "Ms. Reyes", "text": "The immediate threat is contained. We'll finish the account checks together. Asking for help was the right thing to do.", "emotion": "relieved"},
+				{"speaker": "Alex", "text": "Next time I'll check where the message came from before replying.", "emotion": "determined"}
 			],
 			"threats": [
 				{
 					"id": "mod01_s1_t1",
+					"background": "hallway_day",
 					"display": {
 						"presentation": "email",
 						"metadata": [
-							{"label": "FROM", "value": "it-support@bluetech-secure-login.com"},
-							{"label": "SUBJECT", "value": "URGENT: Account suspension in 2 hours"},
-							{"label": "LINK", "value": "http://bluetech-verify.net/login"}
+							{"label": "FROM", "value": "School IT <support@harbor-high-help.example>"},
+							{"label": "SUBJECT", "value": "Your school account closes before first period"},
+							{"label": "LINK PREVIEW — NOT OPENED", "value": "https://harbor-high-help.example/verify"}
 						]
 					},
 					"module_id": "mod_01",
 					"stage": 1,
-					"title": "Account Suspension Notice",
+					"title": "A Warning Before Class",
 					"bkt_skill": "phishing",
-					"affected_system": "WORKSTATION-07",
-					"story": [
-						{"speaker": "Mia", "text": "I got an email saying my account will be disabled in two hours. Should I use the link?"}
+					"affected_system": "ALEX'S SCHOOL ACCOUNT",
+					"resume": [
+						{"speaker": "Alex", "text": "Our fair poster is saved in my school account. I was checking for Ms. Reyes's project reminder."},
+						{"speaker": "Mia", "text": "Let's look at the message in your inbox together."}
 					],
-					"situation": "An email claiming to be from IT Support says Mia's account will be suspended unless she verifies it right now.",
+					"story": [
+						{"speaker": "Alex", "text": "My phone just buzzed. That was quick.", "mail": {"sender": "School IT <support@harbor-high-help.example>", "subject": "Your school account closes before first period", "body": "Your account is scheduled to close before first period. Verify your school password to keep access.\n\nVerification address: harbor-high-help.example/verify"}},
+						{"speaker": "Mia", "text": "School IT? I thought we were waiting for the project reminder."},
+						{"speaker": "Alex", "text": "It says I'll lose my account before class. The poster, our notes... they're all there.", "emotion": "worried"},
+						{"speaker": "Mia", "text": "Were you expecting an account warning?"},
+						{"speaker": "Alex", "text": "No. It worked last night. But what if I wait and we lose everything?", "emotion": "worried"},
+						{"speaker": "Mia", "text": "Before you sign in, can we look at who's actually sending it?"},
+						{"speaker": "Alex", "text": "Yeah. I've got the school contact card saved too. Let's compare them.", "emotion": "determined"}
+					],
+					"situation": "The message claims to be School IT. It asks Alex to enter a school password through its verification link before class. What should Alex do?",
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "Investigate / New school email",
+						"prompt": "Open each detail. Compare what the message claims with the school's trusted contact card. Nothing here opens a real link.",
+						"items": [
+							{"id": "sender", "label": "View sender details", "analysis": "DISPLAY NAME: School IT\nACTUAL ADDRESS: support@harbor-high-help.example\nA display name can be typed by anyone.", "valid": true},
+							{"id": "destination", "label": "Preview verification link", "analysis": "DESTINATION: https://harbor-high-help.example/verify\nREQUEST: Enter your school password before first period.\nPreview only: no page has been opened.", "valid": true},
+							{"id": "directory", "label": "Open saved school contact card", "analysis": "SAVED SCHOOL CONTACT\nSchool IT: help@harborhigh.example\nSchool portal: https://portal.harborhigh.example\nThis card came from your school handbook, not the email. Compare harborhigh.example with harbor-high-help.example.", "valid": true}
+						]
+					},
 					"evidence": [
-						"FROM  it-support@bluetech-secure-login.com",
-						"SUBJ  URGENT: Account suspension in 2 hours",
-						"LINK  http://bluetech-verify.net/login",
-						"BlueTech's real IT domain is bluetech.com"
+						"Email domain: harbor-high-help.example",
+						"Trusted school domain: harborhigh.example",
+						"The email asks for a password through its own link",
+						"The deadline pressures Alex to act before class"
 					],
 					"choices": [
 						{
 							"label": "Open the verification link and sign in before the deadline",
 							"outcome": "CRITICAL",
-							"consequence": "The link opened a cloned sign-in page. Mia's credentials were captured within seconds and the attacker gained critical access."
+							"consequence": "The page copied the school login screen. Entering the password gave the attacker access to Alex's account. Stop here, tell a trusted adult, and secure the account through the real school portal."
 						},
 						{
-							"label": "Check the account status through the official employee portal",
+							"label": "Use the saved school portal and show the message to Ms. Reyes",
 							"outcome": "SAFE",
-							"consequence": "The official portal shows no warning. The email has been reported to Security and the lookalike domain is blocked."
+							"consequence": "The saved portal shows Alex's account is active. Ms. Reyes helps report the message to school IT. The group can keep working without giving the sender a password."
 						},
 						{
 							"label": "Reply to the sender and ask if the message is legitimate",
 							"outcome": "RISKY",
-							"consequence": "The reply confirmed the mailbox is live. A follow-up message carrying a payload reached Mia's workstation."
+							"consequence": "The same sender replies with a 'support' message asking for more access. Asking the suspicious sender did not verify their identity. Alex pauses and asks Ms. Reyes for help; the containment simulation begins."
 						}
 					],
-					"explanation": "Urgency plus a lookalike domain is the phishing signature. Verify through a channel you already trust, never through the message itself.",
+					"explanation": "The address differs from the school contact card, and the message asks for a password through its own link. Verify through a route you already trust. HTTPS or a familiar display name alone does not prove who sent an email.",
 					"breach_gold": 12,
 					"next": "mod01_s1_t2"
 				},
 				{
 					"id": "mod01_s1_t2",
+					"background": "hallway_day",
 					"module_id": "mod_01",
 					"stage": 1,
-					"title": "Overdue Invoice",
+					"title": "The Helpful Reply",
 					"bkt_skill": "phishing",
-					"affected_system": "FINANCE-WS-03",
-					"story": [
-						{"speaker": "Ramon (Finance)", "text": "A vendor says we're thirty days overdue. There's an invoice attached. They want it paid today."},
-						{"speaker": "Mia", "text": "Which vendor? We just settled Northwind last week."}
+					"affected_system": "ALEX'S SCHOOL MAILBOX",
+					"resume": [
+						{"speaker": "Alex", "text": "I came to school worrying about our fair poster. Then an email threatened to close the account it's saved in."},
+						{"speaker": "Mia", "text": "And now someone else is contacting you about that warning. Let's see what they want."}
 					],
-					"situation": "Finance received an 'overdue invoice' from a supplier BlueTech actually uses. The attachment is a .zip named like an invoice, and the sender address differs slightly from the vendor's usual domain.",
+					"story": [
+						{"speaker": "Mia", "text": "Another email just popped up. This one mentions the account warning.", "mail": {"sender": "School Account Helper <helper@harbor-high-help.example>", "subject": "I can fix your account warning", "body": "Hi Alex, I can help your class keep its fair project online. Reply with your school password so I can remove the warning.\n\nKeep this between us; your teacher is busy. You can also use our sign-in page: harbor-high-help.example/verify"}},
+						{"speaker": "Alex", "text": "An account helper? I didn't ask this person for help."},
+						{"speaker": "Mia", "text": "They know your class. And that we're doing a fair project."},
+						{"speaker": "Alex", "text": "That makes it feel real. Maybe they can sort this out before class.", "emotion": "worried"},
+						{"speaker": "Mia", "text": "Wait. Read the part about what they need from you."},
+						{"speaker": "Alex", "text": "My password. And they don't want me to tell Ms. Reyes?", "emotion": "worried"},
+						{"speaker": "Mia", "text": "Our class project is on the public activities page too. Knowing about it might not mean they know us."},
+						{"speaker": "Alex", "text": "Let's put their request next to the school contact details before I reply.", "emotion": "determined"}
+					],
+					"situation": "A second email claims to be the school's account helper. It mentions Alex's class and offers to remove the warning if Alex replies with a password. The sender says not to bother the teacher.",
 					"evidence": [
-						"FROM  billing@northwind-supplies.co",
-						"Usual vendor domain: northwind-supplies.com",
-						"ATTACHMENT  INV-4471.zip  (contains INV-4471.pdf.exe)",
-						"Tone: 'Pay today to avoid service interruption'"
+						"FROM: School Account Helper <helper@harbor-high-help.example>",
+						"REQUEST: Reply with your school password so I can fix it",
+						"Says: Keep this between us; your teacher is busy",
+						"Alex's class and fair project are listed on the public school activity page"
 					],
 					"choices": [
 						{
-							"label": "Open the attachment to check the invoice details",
+							"label": "Reply with the password because the helper knows the class",
 							"outcome": "CRITICAL",
-							"consequence": "The archive launched an executable disguised as a PDF. The Finance workstation is now under attacker control."
+							"consequence": "The sender uses the password to sign in as Alex. Knowing a class name was not proof of identity. Alex needs help securing the account, not another reply to the sender."
 						},
 						{
-							"label": "Call the vendor using the number on the existing contract to confirm",
+							"label": "Show Ms. Reyes the email and contact IT using the saved school details",
 							"outcome": "SAFE",
-							"consequence": "Northwind confirms no invoice was sent. The message has been quarantined and Finance has been warned."
+							"consequence": "Ms. Reyes confirms that school staff never need a student's password by email. Together you report the impersonation through the school contact in the handbook."
 						},
 						{
-							"label": "Ignore the email without checking whether the invoice is real",
+							"label": "Forward the helper's sign-in link to the project group to try",
 							"outcome": "RISKY",
-							"consequence": "The message was never reported. A second copy reached another Finance mailbox and was opened."
+							"consequence": "A classmate opens the forwarded page, thinking Alex checked it. Alex warns the group to stop and gets Ms. Reyes. The containment simulation represents limiting the spread while adults help."
 						}
 					],
-					"explanation": "Attachments plus payment pressure is how invoice fraud lands. Confirm through the vendor's known channel and report it so nobody else opens it.",
+					"explanation": "A class name or project detail can come from a public page. It does not prove the sender is school staff. Do not share passwords or circulate a suspicious sign-in link; ask for help through a trusted channel.",
 					"breach_gold": 14,
 					"next": "mod01_s1_t3"
 				},
 				{
 					"id": "mod01_s1_t3",
+					"background": "classroom_day",
 					"module_id": "mod_01",
 					"stage": 1,
-					"title": "Password Reset Notice",
+					"title": "A Reminder You Can Check",
 					"bkt_skill": "phishing",
-					"affected_system": "EMPLOYEE ACCOUNT / MAIL SYSTEM",
-					"story": [
-						{"speaker": "Security Assistant", "text": "This one is different. It names our real HR platform, our HR lead, and the maintenance window from Friday's all-hands."},
-						{"speaker": "Mia", "text": "It looks like it came from inside."}
+					"affected_system": "CLASS PROJECT ACCOUNTS",
+					"resume": [
+						{"speaker": "Alex", "text": "Two emails interrupted our fair project: an account warning and a stranger offering to fix it."},
+						{"speaker": "Ms. Reyes", "text": "Let's look at the project reminder you were waiting for. You can compare the messages."}
 					],
-					"situation": "An employee receives a password-reset notice that references BlueTech's real HR platform, the real HR lead, and an actual scheduled maintenance window. The reset link points to a domain registered last week.",
+					"story": [
+						{"speaker": "Alex", "text": "Ms. Reyes, your project reminder just arrived. Can I check something with you?", "mail": {"sender": "Ms. Reyes <reyes@harborhigh.example>", "subject": "Fair project: poster title by lunch", "body": "Please submit your group's poster title by lunch using our usual class page. The same deadline is on the classroom notice board.\n\nUse your saved class-page bookmark. No password reply or attachment is needed."}},
+						{"speaker": "Ms. Reyes", "text": "Of course. What's bothering you?"},
+						{"speaker": "Alex", "text": "The other messages wanted me to hurry. This one has a deadline too. Should I report it?", "emotion": "worried"},
+						{"speaker": "Ms. Reyes", "text": "A deadline alone doesn't tell you who's behind a message. What else can you check?"},
+						{"speaker": "Alex", "text": "The sender address. And whether it's asking me to do something unusual."},
+						{"speaker": "Ms. Reyes", "text": "You also have our saved class page and the notice board. Those don't depend on trusting this email."},
+						{"speaker": "Alex", "text": "Right. I'll compare them, then work out which message actually needs reporting.", "emotion": "determined"}
+					],
+					"situation": "The real project reminder asks the group to submit its poster title by lunch through the class page they already use. It does not ask for passwords or a new sign-in link. The earlier fake account warning is still in Alex's inbox.",
 					"evidence": [
-						"FROM  HR Notifications <hr-notify@bluetech.com>   reply-to: reset@bluetech-hr-portal.com",
-						"Mentions: 'Workday maintenance, Saturday 02:00'  (a real event)",
-						"LINK  https://bluetech-hr-portal.com/reset  (registered 6 days ago)",
-						"Asks for: current password AND new password"
+						"FROM: Ms. Reyes <reyes@harborhigh.example> — matches the saved staff contact",
+						"Class notice board independently lists the same lunch deadline",
+						"REQUEST: Submit the poster title using your existing class-page bookmark",
+						"No password by reply, no attachment, and no new verification link"
 					],
 					"choices": [
 						{
-							"label": "Follow the link and complete the reset since the details match",
+							"label": "Use the earlier account-warning link and enter the password first",
 							"outcome": "CRITICAL",
-							"consequence": "The reset form forwarded the current password straight to the attacker. HR system access was hijacked."
+							"consequence": "The real project deadline did not make the earlier warning genuine. The fake verification page captures Alex's password. Stop and ask for help securing the account."
 						},
 						{
-							"label": "Change nothing, report it to Security, and open the HR platform directly to check",
+							"label": "Open the saved class page and submit the title; report the fake warning separately",
 							"outcome": "SAFE",
-							"consequence": "HR confirms no reset was requested. Security flags the domain and blocks it company-wide."
+							"consequence": "The title reaches Ms. Reyes through the real class page. Alex handles the genuine reminder and reports the unrelated fake warning without mixing them up."
 						},
 						{
-							"label": "Forward the message to a coworker to ask whether they received it too",
+							"label": "Tell the group to try the account-warning link before submitting",
 							"outcome": "RISKY",
-							"consequence": "The forward spread the lure. A coworker clicked before Security could respond."
+							"consequence": "A teammate follows the unverified link. Alex stops the group and alerts Ms. Reyes. The containment simulation shows the work needed to limit that exposure."
 						}
 					],
-					"explanation": "Real details do not prove a message is real. Attackers research their targets. A legitimate reset never asks for your current password through a link.",
+					"explanation": "Not every school email is an attack. Here, independent confirmation and an ordinary request through a known class page support trusting the reminder. An address match alone is not a guarantee, and a real deadline never validates a separate suspicious link.",
 					"breach_gold": 16,
 					"next": ""
 				}
@@ -323,7 +372,7 @@
 			"opening": [
 				{"speaker": "Security Assistant", "text": "Mia, we have a problem. Ramon's account just sent out a shared document."},
 				{"speaker": "Mia", "text": "Ramon from Finance? He's on leave this week."},
-				{"speaker": "Security Assistant", "text": "That's what worries me. The email came from his real address — his actual mailbox."},
+				{"speaker": "Security Assistant", "text": "That's what worries me. The email came from his real address — his actual mailbox.", "emotion": "worried"},
 				{"speaker": "Mia", "text": "So his account was compromised, not spoofed."},
 				{"speaker": "Security Assistant", "text": "Exactly. And a real account is far more dangerous than a fake one."}
 			],
@@ -974,7 +1023,7 @@
 				{"speaker": "Security Assistant", "text": "We're tracing it now."},
 				{"speaker": "Mia", "text": "So they're still inside."},
 				{"speaker": "Security Assistant", "text": "Yes."},
-				{"speaker": "Mia", "text": "Then we finish this."}
+				{"speaker": "Mia", "text": "Then we finish this.", "emotion": "determined"}
 			],
 			"resume_breach": [
 				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
@@ -1089,7 +1138,7 @@
 				{"speaker": "Security Assistant", "text": "Cloud storage. Mail. One endpoint. And at least one persistence mechanism."},
 				{"speaker": "Mia", "text": "So blocking another domain won't finish this."},
 				{"speaker": "Security Assistant", "text": "No."},
-				{"speaker": "Mia", "text": "Then we cut every path they have left."},
+				{"speaker": "Mia", "text": "Then we cut every path they have left.", "emotion": "determined"},
 				{"speaker": "Security Assistant", "text": "Exactly. Cut the line."}
 			],
 			"ending": [

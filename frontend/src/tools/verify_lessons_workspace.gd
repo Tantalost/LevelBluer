@@ -1,6 +1,73 @@
 extends SceneTree
 ## In-memory validation only. Never invokes the save/finish operation.
 var failures := 0
+var investigation_passes: int = 0
+
+func record_investigation_pass() -> void:
+	investigation_passes += 1
+
+func test_investigation(sim: Control) -> void:
+	sim.passed.connect(record_investigation_pass)
+	var payload: Dictionary = {"kind": "policy_email", "source": sim}
+	check(not sim._can_quarantine_drop(Vector2.ZERO, payload), "Cannot quarantine without evidence")
+	sim._select_mail()
+	sim._tap_quarantine()
+	check(not sim._passed, "Tap quarantine also requires evidence")
+	sim._act("verify")
+	sim._act("report")
+	check(not sim._passed and not sim._verified, "Legacy shortcuts cannot bypass investigation")
+	sim._open_app("Directory")
+	sim._search_directory("")
+	sim._search_directory("School")
+	check(not sim._directory_found, "Directory requires matching department search")
+	sim._search_directory("  UNIVERSITY   IT  ")
+	check(sim._directory_found, "Department search tolerates capitalization and spacing")
+	sim._compare_domains(true)
+	check(not sim._verified, "Directory alone cannot prove mismatch")
+	sim._open_app("Inbox")
+	sim._inspect_sender()
+	sim._compare_domains(false)
+	check(not sim._verified, "Wrong comparison cannot unlock quarantine")
+	sim._compare_domains(true)
+	check(sim._verified, "Both sources and correct comparison establish mismatch")
+	check(not sim._can_quarantine_drop(Vector2.ZERO, {"kind": "policy_email", "source": self}), "Reject email from another desktop")
+	check(not sim._can_quarantine_drop(Vector2.ZERO, "invalid"), "Reject unrelated drag payload")
+	check(sim._can_quarantine_drop(Vector2.ZERO, payload), "Evidence unlocks native drop")
+	check(not sim._passed, "Collecting evidence does not automatically complete")
+	sim._tap_quarantine()
+	sim._drop_quarantine(Vector2.ZERO, payload)
+	sim._tap_quarantine()
+	check(sim._passed and investigation_passes == 1, "Quarantine emits passed exactly once")
+
+func mouse_move_to(point: Vector2, relative: Vector2 = Vector2.ZERO, held: bool = false) -> void:
+	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
+	motion.position = point
+	motion.global_position = point
+	motion.relative = relative
+	motion.button_mask = MOUSE_BUTTON_MASK_LEFT if held else 0
+	root.push_input(motion, true)
+
+func mouse_left_at(point: Vector2, pressed: bool) -> void:
+	var event: InputEventMouseButton = InputEventMouseButton.new()
+	event.position = point
+	event.global_position = point
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.button_mask = MOUSE_BUTTON_MASK_LEFT if pressed else 0
+	event.pressed = pressed
+	root.push_input(event, true)
+
+func drag_email(sim: Control, target: Vector2) -> void:
+	var origin: Vector2 = sim._mail_card.get_global_rect().get_center()
+	mouse_move_to(origin)
+	mouse_left_at(origin, true)
+	await settle()
+	mouse_move_to(origin + Vector2(28, 0), Vector2(28, 0), true)
+	await settle()
+	check(root.gui_is_dragging(), "Native email drag starts")
+	mouse_move_to(target, target - origin, true)
+	await settle()
+	mouse_left_at(target, false)
+	await settle()
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -103,9 +170,13 @@ func _run() -> void:
 			sim._act("unsafe")
 			check(not screen._simulation_passed, "Unsafe action cannot pass")
 			check(sim._answer_effect._active and sim._answer_effect._ink == screen.Feedback.ERROR, "Unsafe simulation shows red feedback")
-			sim._act("inspect")
-			sim._act("verify")
-			sim._act("report")
+			if id == "mod_01" and index == 0:
+				test_investigation(sim)
+			else:
+				check(not sim._investigation, "Other lesson simulations unchanged")
+				sim._act("inspect")
+				sim._act("verify")
+				sim._act("report")
 			check(screen._simulation_passed, "Safe sequence passes")
 			check(sim._answer_effect._ink == screen.Feedback.SUCCESS, "Safe simulation turns green")
 			screen._on_continue()
@@ -140,6 +211,26 @@ func _run() -> void:
 	screen._simulation._act("open")
 	await settle()
 	await capture("lessons_desktop_sim")
+	var desktop: Control = screen._simulation
+	check(not desktop._inspected and not desktop._directory_found and not desktop._passed, "Reentry starts a fresh investigation")
+	desktop._inspect_sender()
+	desktop._open_app("Directory")
+	desktop._search_directory("University IT")
+	desktop._compare_domains(true)
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		check(desktop.size.x <= screen._content.size.x + 1, "Desktop has no required horizontal scrolling")
+		check(root.get_visible_rect().encloses(desktop._mail_card.get_global_rect()), "Email stays visible at %s" % dimensions)
+		check(root.get_visible_rect().encloses(desktop._quarantine.get_global_rect()), "Quarantine stays visible at %s" % dimensions)
+		await capture("lessons_investigation_%dx%d" % [dimensions.x, dimensions.y])
+	await drag_email(desktop, desktop._task.get_global_rect().get_center())
+	check(not desktop._passed, "Cancelled native drag cannot complete investigation")
+	await drag_email(desktop, desktop._quarantine.get_global_rect().get_center())
+	check(desktop._passed and screen._simulation_passed, "Native drag completes the validated investigation")
+	check(root.gui_is_drag_successful(), "Godot accepts the native quarantine drop")
+	check(root.get_visible_rect().encloses(screen._submit_button.get_global_rect()), "Result action fits the phone after quarantine")
+	await capture("lessons_investigation_quarantined")
 	root.size = Vector2i(960, 600)
 	await settle()
 	check(root.get_visible_rect().encloses(screen._submit_button.get_global_rect()), "Compact CTA remains visible")

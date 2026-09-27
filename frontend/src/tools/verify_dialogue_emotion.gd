@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_authored_emotion_survives_dialogue_line_normalization()
 	_test_module1_and_module2_still_load()
 	_test_existing_dialogue_without_emotion_renders_normally()
+	await _test_illustrated_workspace()
 	await _test_daniel_supported_generically()
 
 	# Milestone: emotion pacing & presentation.
@@ -193,17 +194,54 @@ func _test_module1_and_module2_still_load() -> void:
 
 
 func _test_existing_dialogue_without_emotion_renders_normally() -> void:
-	print("== 19. Existing Module 1/2 dialogue (no 'emotion' key) still renders normally ==")
+	print("== 19. Untagged dialogue stays neutral; Module 1 artwork follows authored emotions ==")
 	var mod1_raw_opening: Array = DecisionScenarios.get_stage("mod_01", 1).get("opening", []) as Array
 	for raw_line in mod1_raw_opening:
-		check(not (raw_line as Dictionary).has("emotion"), "[Regression] Existing Module 1 line's authored JSON carries no 'emotion' key")
+		if not (raw_line as Dictionary).has("emotion"):
+			check(Emotion.of(raw_line) == Emotion.NEUTRAL, "[Regression] Untagged Module 1 line stays neutral")
 	var mod1_opening: Array[Dictionary] = DecisionScenarios.dialogue_lines(DecisionScenarios.get_stage("mod_01", 1), "opening")
 	check(not mod1_opening.is_empty(), "[Regression] Module 1 Stage 1 opening dialogue is present")
 	for line in mod1_opening:
-		check(Emotion.of(line) == Emotion.NEUTRAL, "[Regression] Existing Module 1 line resolves to neutral")
+		check(Emotion.VALID_EMOTIONS.has(Emotion.of(line)), "Module 1 presentation tags normalize correctly")
 	var mod2_opening: Array[Dictionary] = DecisionScenarios.dialogue_lines(DecisionScenarios.get_stage("mod_02", 1), "opening")
 	for line in mod2_opening:
 		check(Emotion.of(line) == Emotion.NEUTRAL, "[Regression] Existing Module 2 line resolves to neutral")
+
+
+func _test_illustrated_workspace() -> void:
+	var workspace: Control = Workspace.new()
+	root.add_child(workspace)
+	workspace.set_story_art("mod_01", "Ms. Reyes")
+	for location: String in ["rooftop_day", "music_room", "hallway_day", "library_room", "infirmary", "science_lab", "gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day"]:
+		workspace.set_background(location)
+		check(workspace._background_art.texture != null and workspace._background_art.visible, "Supplied location loads offline: " + location)
+	workspace.set_background("../outside")
+	check(workspace._background_art.texture == null and not workspace._background_art.visible, "Unknown location clears old art safely")
+	workspace.set_background("classroom_day")
+	for who: String in ["Alex", "Mia", "Ms. Reyes"]:
+		for mood: String in ["neutral", "worried", "relieved"]:
+			var lines: Array[Dictionary] = [{"speaker": who, "text": "Let's verify the source together.", "emotion": mood}]
+			workspace.show_story(lines, "HARBOR HIGH / PORTRAIT VALIDATION")
+			workspace._reveal_line()
+			await settle(4)
+			var shown: Texture2D = workspace._portraits[0].portrait_texture
+			check(shown is AtlasTexture and shown == Portrait.school_expression(who, mood), "School expression atlas uses " + who + "/" + mood)
+			var atlas: AtlasTexture = shown as AtlasTexture
+			check(atlas != null and atlas.filter_clip and is_equal_approx(atlas.region.size.x * 3, atlas.atlas.get_width()), "Three equal cells with clipped boundaries")
+			check(workspace._portraits[0].frameless, "Illustrated portrait is not boxed in a placeholder frame")
+			check(workspace._speaker_label.autowrap_mode == TextServer.AUTOWRAP_OFF, "Speaker tab never stacks name letters vertically")
+			check(workspace._portraits[0].texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, "Pixel portraits retain crisp nearest-neighbor sampling")
+			if "--render" in OS.get_cmdline_user_args():
+				await RenderingServer.frame_post_draw
+				root.get_texture().get_image().save_png("res://.godot/story_art_%s_%s.png" % [who.to_snake_case().replace(" (", "_").replace(")", ""), mood])
+	workspace.set_story_art("mod_02")
+	workspace.set_background("classroom_day")
+	check(not workspace._illustrated and not workspace._background.visible and workspace._background_art.texture == null, "Other modules do not receive school art")
+	check(Portrait.school_expression("Unknown", "neutral") == null, "Unillustrated characters retain fallback")
+	check(Portrait.school_expression("Alex", "unknown") == Portrait.school_expression("Alex", "neutral"), "Unknown emotion is neutral")
+	check(Portrait.school_expression("Alex", "worried") != Portrait.school_expression("Alex", "neutral"), "Concerned and neutral use distinct cached frames")
+	workspace.queue_free()
+	await settle()
 
 
 func _test_daniel_supported_generically() -> void:

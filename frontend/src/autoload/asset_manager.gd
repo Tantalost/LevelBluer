@@ -267,6 +267,17 @@ func _gameplay_catalog() -> Array[Dictionary]:
 		["death_top", "PHISHERMAN top-down death"],
 	]))
 	catalog.append_array(_ui_catalog())
+	catalog.append_array(_school_story_catalog())
+	return catalog
+
+
+func _school_story_catalog() -> Array[Dictionary]:
+	var catalog: Array[Dictionary] = []
+	for character: String in ["alex", "mia", "ms_reyes"]:
+		catalog.append(_catalog_entry("story_portrait_" + character, "School portrait / " + character, "sprite_sheet", "%s/v1790436023/%s_expressions.png" % [CLOUD_ROOT, character]))
+	for location: String in ["gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day", "rooftop_day", "music_room", "hallway_day", "library_room", "infirmary", "science_lab"]:
+		var version: String = "1790432520" if location in ["gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day"] else "1790432521"
+		catalog.append(_catalog_entry("story_bg_" + location, "School location / " + location, "image", "%s/v%s/%s.png" % [CLOUD_ROOT, version, location]))
 	return catalog
 
 
@@ -423,6 +434,9 @@ func _download_and_store(entry: Dictionary) -> bool:
 		return _use_local_fallback(asset_id, local_path, false)
 	if asset_id == "map_industrial_atlas" and image.get_size() != Vector2i(2048, 2048):
 		push_warning("AssetManager: industrial atlas must be the packed 2048x2048 runtime texture.")
+		return _use_local_fallback(asset_id, local_path, false)
+	if asset_id.begins_with("story_portrait_") and image.get_width() != image.get_height() * 3:
+		push_warning("AssetManager: school expression sheets must contain three square cells.")
 		return _use_local_fallback(asset_id, local_path, false)
 	var png: PackedByteArray = image.save_png_to_buffer()
 	if png.is_empty():

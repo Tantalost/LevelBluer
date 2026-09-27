@@ -298,12 +298,22 @@ func _previous_page() -> void:
 		_set_phase(Phase.DEFINITION)
 
 func _fit_readability() -> void:
+	# A desktop has independently scrolling windows and pinned transfer controls;
+	# do not nest those windows inside the ordinary scrolling reading page.
+	var desktop_active: bool = _in_lesson and _phase == Phase.SIMULATION and str(_data.get("simulation_id", "")) == "sender_cross_check"
+	_progress_label.visible = not desktop_active
+	_phase_label.visible = not desktop_active
+	_submit_button.visible = not desktop_active or _simulation_passed
+	_content.size_flags_vertical = SIZE_EXPAND_FILL if desktop_active else SIZE_FILL
+	(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if desktop_active else ScrollContainer.SCROLL_MODE_AUTO
+	if desktop_active and is_instance_valid(_simulation):
+		_simulation.size_flags_vertical = SIZE_EXPAND_FILL
 	# Godot stretches the logical canvas on phones. Keep text and taps usable
 	# in physical pixels; overflowing content scrolls instead of shrinking.
 	var physical_scale := minf(float(get_window().size.x) / get_viewport_rect().size.x, float(get_window().size.y) / get_viewport_rect().size.y)
 	physical_scale = maxf(0.5, physical_scale)
 	for control in find_children("*", "Control", true, false):
-		if control is Label or control is Button:
+		if control is Label or control is Button or control is LineEdit:
 			if not control.has_meta("lesson_font_size"):
 				control.set_meta("lesson_font_size", control.get_theme_font_size("font_size"))
 			var base_size := int(control.get_meta("lesson_font_size"))
@@ -369,6 +379,7 @@ func _set_phase(phase: Phase) -> void:
 		Phase.SIMULATION:
 			_simulation = Desktop.new()
 			_content.add_child(_simulation)
+			_simulation.content_changed.connect(_fit_readability)
 			_simulation.setup(_data)
 			_simulation.passed.connect(_on_simulation_passed)
 			_submit_button.text = "COMPLETE THE SIMULATION"

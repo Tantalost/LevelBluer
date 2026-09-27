@@ -14,6 +14,38 @@ const CallPanel = preload("res://src/gameplay/decision/decision_call_panel.gd")
 const InvestigationPanel = preload("res://src/gameplay/decision/decision_investigation_panel.gd")
 # Future art can be assigned by exact authored speaker name, without changing story data.
 var portrait_textures: Dictionary = {}
+var _illustrated: bool = false
+var _background: ColorRect
+var _background_art: TextureRect
+var _background_location: String = ""
+var _assets: Node
+var _school_cast: bool = false
+var _portrait_stage: Control
+var _guide_speaker: String = "Security Assistant"
+var _content_columns: HBoxContainer
+
+func set_story_art(module_id: String, guide_speaker: String = "Security Assistant") -> void:
+	_illustrated = module_id == "mod_01"
+	_guide_speaker = guide_speaker
+	_school_cast = module_id == "mod_01" and guide_speaker == "Ms. Reyes"
+	set_background("")
+	_background.visible = _illustrated
+	_portrait_stage.visible = _illustrated
+
+## Read only the startup asset cache; never request a download during dialogue.
+func set_background(location: String) -> void:
+	const LOCATIONS: PackedStringArray = ["rooftop_day", "music_room", "hallway_day", "library_room", "infirmary", "science_lab", "gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day"]
+	_background_art.texture = null
+	_background_location = location
+	if _school_cast and location in LOCATIONS and _assets != null:
+		_background_art.texture = _assets.get_texture("story_bg_" + location)
+	_background_art.visible = _background_art.texture != null
+
+func _on_story_assets_ready(_success: bool) -> void:
+	set_background(_background_location)
+	if _school_cast and not _lines.is_empty() and is_instance_valid(_speech):
+		_update_portraits()
+
 var _lines: Array[Dictionary] = []
 var _line_index := 0
 var _typing := false
@@ -37,6 +69,8 @@ var _portrait_names: Array[Label] = []
 var _cast: Array[String] = []
 var _conversation: HBoxContainer
 var _speech_box: PanelContainer
+var _speaker_heading: HBoxContainer
+var _speaker_tab: PanelContainer
 var _history: Array[Dictionary] = []
 var _line_recorded := false
 var _review_open := false
@@ -78,14 +112,47 @@ var _actions: VBoxContainer
 var _choices_scroll: ScrollContainer
 var _continue_button: Button
 var _choice_buttons: Array[Button] = []
+## Local presentation only: opening a message never follows a URL or grades a choice.
+var _mail: Dictionary = {}
+var _mail_read: bool = false
+var _mail_open: bool = false
+var _mail_notice: Button
+var _mail_panel: PanelContainer
+var _mail_content: VBoxContainer
+var _mail_close: Button
+var _mail_tween: Tween
 
 func _ready() -> void:
+	_assets = get_node_or_null("/root/AssetManager")
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	mouse_filter = MOUSE_FILTER_STOP
+	_background = ColorRect.new()
+	_background.name = "StoryBackground"
+	_background.color = Color("0A1730")
+	_background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_background.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(_background)
+	_background.hide()
+	_background_art = TextureRect.new()
+	_background_art.name = "LocationArt"
+	_background_art.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_background_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_background_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_background_art.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_background_art.mouse_filter = MOUSE_FILTER_IGNORE
+	_background.add_child(_background_art)
+	_portrait_stage = Control.new()
+	_portrait_stage.name = "CharacterStage"
+	_portrait_stage.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_portrait_stage.mouse_filter = MOUSE_FILTER_IGNORE
+	_portrait_stage.clip_contents = true
+	add_child(_portrait_stage)
 	_window = UI.panel(self, Color("101c24"))
 	_window.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	var layout := UI.column(_window, 14)
 	_header = UI.label("", 26, UI.TEAL)
+	_header.add_theme_color_override("font_outline_color", Color("050B18"))
+	_header.add_theme_constant_override("outline_size", 5)
 	var top := HBoxContainer.new()
 	top.add_theme_constant_override("separation", 16)
 	layout.add_child(top)
@@ -94,6 +161,26 @@ func _ready() -> void:
 	_review_button = UI.button("DIALOGUE REVIEW", _open_review)
 	_review_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	top.add_child(_review_button)
+	_mail_notice = UI.button("", _open_mail)
+	_mail_notice.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	for style_name: String in ["normal", "hover", "pressed", "disabled"]:
+		var notice_style: StyleBoxFlat = _mail_notice.get_theme_stylebox(style_name).duplicate() as StyleBoxFlat
+		notice_style.content_margin_left = 64
+		_mail_notice.add_theme_stylebox_override(style_name, notice_style)
+	var envelope: IntelPixelIcon = IntelPixelIcon.new()
+	envelope.kind = IntelPixelIcon.Kind.ENVELOPE
+	envelope.ink_override = UI.TEAL
+	envelope.mouse_filter = MOUSE_FILTER_IGNORE
+	_mail_notice.add_child(envelope)
+	envelope.anchor_top = 0.5
+	envelope.anchor_bottom = 0.5
+	envelope.offset_left = 14
+	envelope.offset_right = 46
+	envelope.offset_top = -16
+	envelope.offset_bottom = 16
+	# Float beside the speaker; never consume the short landscape portrait band.
+	add_child(_mail_notice)
+	_mail_notice.hide()
 	_call_panel = CallPanel.new()
 	layout.add_child(_call_panel)
 	_call_panel.end_call_requested.connect(func() -> void: end_call_requested.emit())
@@ -117,6 +204,7 @@ func _ready() -> void:
 	_investigation_panel.investigation_resolved.connect(_on_investigation_resolved)
 	_investigation_panel.hide()
 	var columns := HBoxContainer.new()
+	_content_columns = columns
 	columns.size_flags_vertical = SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 24)
 	layout.add_child(columns)
@@ -127,6 +215,17 @@ func _ready() -> void:
 	_choices_scroll = _actions.get_parent()
 	_continue_button = UI.button("CONTINUE", _continue, true)
 	layout.add_child(_continue_button)
+	_mail_panel = UI.panel(self, Color("0A1730"))
+	_mail_panel.name = "EmailReader"
+	_mail_panel.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_mail_panel.mouse_filter = MOUSE_FILTER_STOP
+	var mail_layout: VBoxContainer = UI.column(_mail_panel)
+	mail_layout.add_child(UI.label("INBOX / MESSAGE", 28, UI.TEAL))
+	_mail_content = UI.scroll_column(mail_layout)
+	mail_layout.add_child(UI.label("Message preview only / Links and replies are inactive", 26, UI.MUTED))
+	_mail_close = UI.button("BACK TO CONVERSATION", _close_mail, true)
+	mail_layout.add_child(_mail_close)
+	_mail_panel.hide()
 	_review_panel = UI.panel(self, Color("101c24"))
 	_review_panel.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_review_panel.mouse_filter = MOUSE_FILTER_STOP
@@ -143,8 +242,11 @@ func _ready() -> void:
 	_review_content = UI.scroll_column(review_layout)
 	_review_panel.hide()
 	resized.connect(_metrics)
+	if _assets != null:
+		_assets.sync_finished.connect(_on_story_assets_ready)
 
 func _reset(mode: StringName, header: String, caption: String) -> void:
+	_clear_mail()
 	_mode = mode
 	_locked = false
 	_review_open = false
@@ -170,6 +272,7 @@ func _reset(mode: StringName, header: String, caption: String) -> void:
 	_portraits.clear()
 	_portrait_names.clear()
 	_cast.clear()
+	UI.clear(_portrait_stage)
 	UI.clear(_narrative)
 	UI.clear(_actions)
 	_choice_buttons.clear()
@@ -197,33 +300,74 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 	if _cast.is_empty():
 		_cast.append("Mia")
 	if _cast.size() == 1:
-		_cast.append("Security Assistant" if _cast[0] == "Mia" else "Mia")
+		_cast.append(_guide_speaker if _cast[0] != _guide_speaker else "Mia")
 	_conversation = HBoxContainer.new()
 	_conversation.add_theme_constant_override("separation", 20)
+	_conversation.item_rect_changed.connect(_fit_school_portraits, CONNECT_DEFERRED)
 	_narrative.add_child(_conversation)
 	for who in _cast:
-		var seat := UI.column(_conversation, 6)
-		seat.custom_minimum_size.x = 150
+		var seat: Control
+		if _illustrated:
+			seat = Control.new()
+			seat.mouse_filter = MOUSE_FILTER_IGNORE
+			_portrait_stage.add_child(seat)
+			var on_left: bool = _portraits.is_empty()
+			seat.anchor_left = 0.03 if on_left else 0.61
+			seat.anchor_right = 0.39 if on_left else 0.97
+			seat.anchor_top = 0.06
+			seat.anchor_bottom = 0.80
+		else:
+			seat = UI.column(_conversation, 6)
+			seat.custom_minimum_size.x = 150
 		var portrait := Portrait.new()
 		seat.add_child(portrait)
+		if _illustrated:
+			portrait.frameless = true
+			portrait.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		_portraits.append(portrait)
 		var nameplate := UI.label(who, 24, UI.MUTED)
 		nameplate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		seat.add_child(nameplate)
+		nameplate.visible = not _illustrated
 		_portrait_names.append(nameplate)
-	_speech_box = UI.panel(_conversation, Color("172d38"))
+	var dialogue_parent: Control = _conversation
+	if _illustrated:
+		dialogue_parent = UI.column(_conversation, 0)
+		dialogue_parent.size_flags_horizontal = SIZE_EXPAND_FILL
+	_speech_box = UI.panel(dialogue_parent, Color("172d38"))
 	_speech_box.size_flags_horizontal = SIZE_EXPAND_FILL
-	var body := UI.column(_speech_box, 10)
-	var heading := HBoxContainer.new()
+	if _illustrated:
+		_speech_box.add_theme_stylebox_override("panel", _dialogue_frame(Color("173058"), Color("F3ECD6")))
+	var body: VBoxContainer = UI.column(_speech_box, 10)
+	var heading: HBoxContainer = HBoxContainer.new()
+	_speaker_heading = heading
 	heading.add_theme_constant_override("separation", 18)
-	body.add_child(heading)
+	if _illustrated:
+		dialogue_parent.add_child(heading)
+		dialogue_parent.move_child(heading, 0)
+	else:
+		body.add_child(heading)
 	_speaker_label = UI.label("", 26, UI.TEAL)
 	_speaker_label.size_flags_horizontal = SIZE_EXPAND_FILL
 	_speaker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	heading.add_child(_speaker_label)
+	if _illustrated:
+		_speaker_tab = PanelContainer.new()
+		var tab_style: StyleBoxFlat = _dialogue_frame(Color("F3ECD6"), Color("8FF0E6"))
+		tab_style.content_margin_top = 6
+		tab_style.content_margin_bottom = 6
+		_speaker_tab.add_theme_stylebox_override("panel", tab_style)
+		heading.add_child(_speaker_tab)
+		_speaker_tab.add_child(_speaker_label)
+		_speaker_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_speaker_label.add_theme_color_override("font_color", Color("101623"))
+	else:
+		heading.add_child(_speaker_label)
 	_line_counter = UI.label("", 24, UI.MUTED)
 	_line_counter.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_line_counter.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if _illustrated:
+		_line_counter.add_theme_color_override("font_outline_color", Color("050B18"))
+		_line_counter.add_theme_constant_override("outline_size", 4)
 	heading.add_child(_line_counter)
 	_speech = RichTextLabel.new()
 	_speech.bbcode_enabled = false
@@ -237,8 +381,47 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 	body.add_child(_speech)
 	_show_line()
 
+func _dialogue_frame(fill: Color, border: Color) -> StyleBoxFlat:
+	var frame: StyleBoxFlat = UI.box(fill, border, 3)
+	frame.set_border_width_all(3)
+	frame.set_corner_radius_all(4)
+	frame.content_margin_left = 18
+	frame.content_margin_right = 18
+	frame.content_margin_top = 14
+	frame.content_margin_bottom = 14
+	frame.shadow_color = Color("050B18", 0.7)
+	frame.shadow_size = 3
+	return frame
+
+## These are face portraits, not waist-up cutouts. Fit the whole face in the
+## space above the dialogue rather than hiding its mouth behind the text box.
+func _fit_school_portraits() -> void:
+	if not _school_cast or not is_instance_valid(_conversation) or not is_inside_tree():
+		return
+	var top: float = maxf(_header.get_global_rect().end.y, _review_button.get_global_rect().end.y) - _portrait_stage.global_position.y + 6.0
+	var bottom: float = _conversation.global_position.y - _portrait_stage.global_position.y
+	var side: float = minf(_portrait_stage.size.x * 0.30, maxf(0, bottom - top))
+	if _mail_notice.visible:
+		var speaker_left: bool = str(_lines[_line_index].get("speaker", "")) == _cast[0]
+		_mail_notice.size = Vector2(_portrait_stage.size.x * 0.57, _mail_notice.get_combined_minimum_size().y)
+		_mail_notice.position = Vector2(_portrait_stage.size.x - _mail_notice.size.x - 20.0 if speaker_left else 20.0, top)
+	for index: int in _portraits.size():
+		var seat: Control = _portraits[index].get_parent() as Control
+		seat.set_anchors_preset(PRESET_TOP_LEFT)
+		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - side - 20.0, top)
+		seat.size = Vector2(side, side)
+
 func _show_line() -> void:
+	_clear_mail()
 	var line := _lines[_line_index]
+	_mail = (line.get("mail", {}) as Dictionary).duplicate(true)
+	if not _mail.is_empty():
+		_mail_notice.text = "NEW EMAIL\nOPEN MESSAGE  >"
+		var settings_node: Node = get_node_or_null("/root/SettingsService")
+		if settings_node == null or not bool(settings_node.get("reduced_motion")):
+			_mail_notice.modulate.a = 0.0
+			_mail_tween = create_tween()
+			_mail_tween.tween_property(_mail_notice, "modulate:a", 1.0, 0.24)
 	var who := str(line.get("speaker", ""))
 	var line_emotion := Emotion.of(line)
 	_speaker_label.text = who.to_upper() if not who.is_empty() else "SCENE"
@@ -259,6 +442,7 @@ func _show_line() -> void:
 	_apply_line_emotion_fx(line_emotion)
 	if speed_mode == "instant" and _typing:
 		_reveal_line()
+	_fit_school_portraits.call_deferred()
 
 ## Screen-level emotion FX (see DialogueEmotion.shake_profile) fire exactly
 ## once here, at the moment a new line begins — never repeated by the
@@ -286,16 +470,22 @@ func _update_portraits() -> void:
 	for i in _portraits.size():
 		_portraits[i].get_parent().visible = who == _cast[i]
 		_portraits[i].portrait_texture = portrait_textures.get(_cast[i])
+		if _school_cast and _portraits[i].portrait_texture == null:
+			_portraits[i].portrait_texture = Portrait.school_expression(_cast[i], line_emotion if who == _cast[i] else Emotion.NEUTRAL)
 		_portraits[i].configure(_cast[i], who == _cast[i], who == _cast[i] and _typing and not _locked and not _review_open, line_emotion)
 		_portrait_names[i].text = _cast[i]
 		_portrait_names[i].add_theme_color_override("font_color", UI.TEAL if who == _cast[i] else UI.MUTED)
-	_conversation.move_child(_portraits[0].get_parent(), 0)
-	_conversation.move_child(_speech_box, 1)
-	_conversation.move_child(_portraits[1].get_parent(), 2)
+	if not _illustrated:
+		_conversation.move_child(_portraits[0].get_parent(), 0)
+		_conversation.move_child(_speech_box, 1)
+		_conversation.move_child(_portraits[1].get_parent(), 2)
 	_speaker_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT if who == _cast[1] else HORIZONTAL_ALIGNMENT_LEFT
+	if _illustrated:
+		_speaker_heading.alignment = BoxContainer.ALIGNMENT_END if who == _cast[1] else BoxContainer.ALIGNMENT_BEGIN
+		_speaker_heading.move_child(_speaker_tab, 1 if who == _cast[1] else 0)
 
 func _process(delta: float) -> void:
-	if not _typing or _locked or _review_open or not is_visible_in_tree():
+	if not _typing or _locked or _review_open or _mail_open or not is_visible_in_tree():
 		return
 	if _pause_remaining > 0.0:
 		# Skip-safe hold before revealing starts (see DialogueEmotion.pause_before)
@@ -319,7 +509,7 @@ func _reveal_line() -> void:
 	_refresh_controls()
 
 func _speech_input(event: InputEvent) -> void:
-	if _locked or _review_open or not _typing:
+	if _locked or _review_open or _mail_open or not _typing:
 		return
 	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed) or (event is InputEventScreenTouch and event.pressed):
 		_reveal_line()
@@ -333,11 +523,16 @@ func _refresh_controls() -> void:
 	# _on_investigation_resolved()) — an incident with no investigation at
 	# all behaves exactly as before this system existed.
 	var deciding := _mode == &"threat" and _dialogue_done and not investigating
+	if _illustrated:
+		_portrait_stage.visible = not deciding and not investigating and not _review_open
+		_window.add_theme_stylebox_override("panel", UI.box(Color("101c24", 0.95 if deciding or investigating else 0.16)))
 	_narrative.alignment = BoxContainer.ALIGNMENT_BEGIN if (deciding or investigating) else BoxContainer.ALIGNMENT_END
 	_investigation_panel.visible = investigating
+	_content_columns.visible = not (investigating and str(_investigation_config.get("mode", "")) == "inspect")
+	_investigation_panel.interaction_locked = _locked or _review_open
 	_choices_scroll.visible = deciding
 	if deciding and not choices_were_visible and not _choice_buttons.is_empty():
-		_choice_buttons[0].grab_focus.call_deferred()
+		_focus_first_choice.call_deferred()
 	# Most decisions are untimed (see DecisionScenarios.has_timer) — the
 	# countdown row only ever shows when the caller has explicitly enabled
 	# it for the current threat via set_decision_timer_visible(), never by
@@ -350,8 +545,14 @@ func _refresh_controls() -> void:
 	_continue_button.visible = _mode != &"threat" or not _dialogue_done
 	_continue_button.disabled = _locked
 	_continue_button.text = "SHOW TEXT" if _typing else ("NEXT LINE  >" if not _dialogue_done and _line_index + 1 < _lines.size() else _caption)
+	if not _typing and not _mail.is_empty() and not _mail_read:
+		_continue_button.text = "OPEN EMAIL  >"
+	_mail_notice.visible = not _mail.is_empty() and not _dialogue_done
+	_mail_notice.disabled = _locked or _review_open or _mail_open
+	_mail_close.disabled = _locked
+	_review_button.disabled = _review_button.disabled or _mail_open
 	for button in _choice_buttons:
-		button.disabled = _locked or not _dialogue_done
+		button.disabled = _locked or not _dialogue_done or investigating
 	if _choice_hint != null:
 		_choice_hint.text = "Choose your response" if _dialogue_done else "Listen, then choose your response"
 	if _evidence != null:
@@ -364,6 +565,11 @@ func show_story(lines: Array[Dictionary], header: String, continue_text: String 
 	_dialogue(lines)
 	_metrics.call_deferred()
 
+func _focus_first_choice() -> void:
+	# A scene can reset before the deferred container layout finishes.
+	if not _choice_buttons.is_empty() and is_instance_valid(_choice_buttons[0]) and _choice_buttons[0].is_visible_in_tree() and not _choice_buttons[0].disabled:
+		_choice_buttons[0].grab_focus()
+
 ## story_lines: the threat's own opening dialogue, already resolved by the
 ## caller (see stage_one_live.gd's _show_threat()) — this never calls
 ## DecisionScenarios.dialogue_lines() itself, so it stays account-agnostic
@@ -371,7 +577,10 @@ func show_story(lines: Array[Dictionary], header: String, continue_text: String 
 ## and show_consequence() already take their lines as a parameter.
 func show_threat(threat: Dictionary, story_lines: Array[Dictionary], number: int, total: int, header: String) -> void:
 	_reset(&"threat", header, "VIEW SCENARIO / START DECISION")
-	_narrative.add_child(UI.label(str(threat.get("title", "INCIDENT")), 30, UI.TEAL))
+	if _school_cast:
+		_header.text = str(threat.get("title", "INCIDENT")).to_upper()
+	else:
+		_narrative.add_child(UI.label(str(threat.get("title", "INCIDENT")), 30, UI.TEAL))
 	_dialogue(story_lines)
 	_evidence = UI.column(_narrative)
 	var inspection: VBoxContainer = UI.column(_evidence, 10)
@@ -407,30 +616,38 @@ func show_consequence(outcome: String, consequence: String, explanation: String,
 	_narrative.add_child(UI.label(banner_override if not banner_override.is_empty() else DecisionOverlay.outcome_banner(outcome), 30, ink))
 	var lines: Array[Dictionary] = [{"speaker": "", "text": consequence}]
 	if not explanation.is_empty():
-		lines.append({"speaker": "Security Assistant", "text": explanation})
+		lines.append({"speaker": _guide_speaker, "text": explanation})
 	lines.append_array(story_lines)
 	_dialogue(lines)
-	_window.add_theme_stylebox_override("panel", UI.box(Color("101c24"), ink))
+	_window.add_theme_stylebox_override("panel", UI.box(Color("101c24", 0.16 if _illustrated else 1.0), ink))
 	_metrics.call_deferred()
 
 func set_interaction_locked(locked: bool) -> void:
 	_locked = locked
+	if _mail_tween != null and _mail_tween.is_valid():
+		if locked:
+			_mail_tween.pause()
+		else:
+			_mail_tween.play()
 	_refresh_controls()
 	if not _lines.is_empty():
 		_update_portraits()
 
 func _choose(index: int) -> void:
-	if _locked or _review_open or _mode != &"threat" or not _dialogue_done or index < 0 or index >= _choice_buttons.size():
+	if _locked or _review_open or _mode != &"threat" or not _dialogue_done or not _investigation_config.is_empty() or index < 0 or index >= _choice_buttons.size():
 		return
 	_history.append({"speaker": "Your response", "text": _choice_buttons[index].text})
 	set_interaction_locked(true)
 	choice_selected.emit(index)
 
 func _continue() -> void:
-	if _locked or _review_open:
+	if _locked or _review_open or _mail_open:
 		return
 	if _typing:
 		_reveal_line()
+		return
+	if not _mail.is_empty() and not _mail_read:
+		_open_mail()
 		return
 	if not _dialogue_done:
 		if _line_index + 1 < _lines.size():
@@ -496,6 +713,9 @@ func _on_investigation_resolved() -> void:
 func set_investigation(config: Dictionary, followup_lines: Array[Dictionary] = []) -> void:
 	_investigation_config = config
 	_investigation_followup_lines = followup_lines
+	if not config.is_empty():
+		_caption = "OPEN EVIDENCE"
+		_refresh_controls()
 
 ## Only ever called by the caller for a threat that actually has an
 ## enabled, authored timer (see set_decision_timer_visible()) — this method
@@ -562,9 +782,11 @@ func end_call(story_lines: Array[Dictionary] = []) -> void:
 	_refresh_controls()
 
 func _open_review() -> void:
-	if _locked or _review_open or _history.is_empty():
+	if _locked or _review_open or _mail_open or _history.is_empty():
 		return
 	_review_open = true
+	if _mail_tween != null and _mail_tween.is_valid():
+		_mail_tween.pause()
 	UI.clear(_review_content)
 	for line in _history:
 		var entry := UI.panel(_review_content, Color("142731"))
@@ -582,16 +804,60 @@ func _close_review() -> void:
 	if _locked or not _review_open:
 		return
 	_review_open = false
+	if _mail_tween != null and _mail_tween.is_valid():
+		_mail_tween.play()
 	_review_panel.hide()
 	if not _lines.is_empty():
 		_update_portraits()
 	_review_button.grab_focus()
 
+func _clear_mail() -> void:
+	if _mail_tween != null and _mail_tween.is_valid():
+		_mail_tween.kill()
+	_mail_tween = null
+	_mail.clear()
+	_mail_read = false
+	_mail_open = false
+	_mail_notice.hide()
+	_mail_notice.modulate = Color.WHITE
+	_mail_panel.hide()
+	UI.clear(_mail_content)
+
+func _open_mail() -> void:
+	if _locked or _review_open or _mail_open or _mail.is_empty() or _dialogue_done:
+		return
+	if _typing:
+		_reveal_line()
+	_mail_open = true
+	UI.clear(_mail_content)
+	_mail_content.add_child(UI.label("FROM / " + str(_mail.get("sender", "")), 26, UI.MUTED))
+	_mail_content.add_child(UI.label(str(_mail.get("subject", "")), 30, UI.GOLD))
+	var body: PanelContainer = UI.panel(_mail_content, Color("102040"))
+	body.add_child(UI.label(str(_mail.get("body", "")), 28))
+	(_mail_content.get_parent() as ScrollContainer).scroll_vertical = 0
+	_mail_panel.show()
+	_refresh_controls()
+	_metrics()
+	_mail_close.grab_focus()
+
+func _close_mail() -> void:
+	if _locked or not _mail_open:
+		return
+	if not _mail_read:
+		_history.append({"speaker": "Inbox / " + str(_mail.get("sender", "")), "text": str(_mail.get("subject", "")) + "\n\n" + str(_mail.get("body", ""))})
+	_mail_read = true
+	_mail_open = false
+	_mail_panel.hide()
+	_mail_notice.text = "EMAIL READ\nOPEN AGAIN  >"
+	_refresh_controls()
+	_continue_button.grab_focus()
+
 func _metrics() -> void:
+	_fit_school_portraits.call_deferred()
 	var factor := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	var font := maxi(26, ceili(16 / factor))
 	for portrait in _portraits:
-		portrait.custom_minimum_size = Vector2(80, 90 if get_viewport_rect().size.y < 500 else 130)
+		portrait.custom_minimum_size = Vector2.ZERO if _illustrated else Vector2(80, 90 if get_viewport_rect().size.y < 500 else 130)
 	for node in find_children("*", "Control", true, false):
 		if _call_panel != null and _call_panel.is_ancestor_of(node):
 			continue # Preserve the compact phone header instead of inflating it to dialogue size.

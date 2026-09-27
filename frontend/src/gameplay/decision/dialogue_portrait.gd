@@ -1,7 +1,35 @@
 extends Control
-## Temporary pixel busts. Set portrait_texture when final character art arrives.
+## Expression atlases for the school cast; other speakers keep the pixel fallback.
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
+static var _expression_frames: Dictionary = {}
+
+static func school_expression(who: String, mood: String) -> Texture2D:
+	var file: String = str({"Alex": "alex", "Mia": "mia", "Ms. Reyes": "ms_reyes"}.get(who, ""))
+	if file.is_empty():
+		return null
+	var frame_index: int = 0
+	match Emotion.normalize(mood):
+		"worried", "scared", "shocked", "sad", "crying", "angry", "frustrated": frame_index = 1
+		"relieved", "determined": frame_index = 2
+	var key: String = "%s/%d" % [file, frame_index]
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var assets: Node = tree.root.get_node_or_null("AssetManager") if tree != null else null
+	var sheet: Texture2D = assets.get_texture("story_portrait_" + file) if assets != null else null
+	if sheet == null or sheet.get_width() != sheet.get_height() * 3:
+		return null
+	var cached: AtlasTexture = _expression_frames.get(key) as AtlasTexture
+	# Rebuild a frame when catalog synchronization replaces the cached sheet.
+	if cached == null or cached.atlas != sheet:
+		var frame: AtlasTexture = AtlasTexture.new()
+		frame.atlas = sheet
+		var width: float = sheet.get_width() / 3.0
+		frame.region = Rect2(frame_index * width, 0, width, sheet.get_height())
+		frame.filter_clip = true
+		_expression_frames[key] = frame
+	return _expression_frames[key] as Texture2D
+
 var portrait_texture: Texture2D
+var frameless: bool = false
 var speaker := "Mia"
 var speaking := false
 var talking := false
@@ -16,6 +44,7 @@ var _emotion_clock := 0.0
 
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	resized.connect(queue_redraw)
 
 func _process(delta: float) -> void:
@@ -78,13 +107,21 @@ func _emotion_transform() -> Dictionary:
 			return {}
 
 func _draw() -> void:
+	if size.x <= 12.0 or size.y <= 12.0:
+		return
 	var ink := Color("85d9c3") if speaking else Color("46606b")
 	var frame := Rect2(Vector2.ZERO, size)
-	draw_style_box(_frame(ink), frame)
+	if not frameless:
+		draw_style_box(_frame(ink), frame)
 	if portrait_texture != null:
 		var fitted := portrait_texture.get_size()
 		fitted *= minf((size.x - 12) / fitted.x, (size.y - 12) / fitted.y)
-		draw_texture_rect(portrait_texture, Rect2((size - fitted) / 2, fitted), false, Color.WHITE if speaking else Color(0.5, 0.6, 0.6))
+		var art_offset: Vector2 = Vector2((size.x - fitted.x) / 2, size.y - fitted.y)
+		# Texture portraits retain the existing reduced-motion preference and
+		# restrained emotion motion without ever moving a Container child.
+		if speaking and not _reduced_motion():
+			art_offset += _emotion_transform().get("offset", Vector2.ZERO)
+		draw_texture_rect(portrait_texture, Rect2(art_offset, fitted), false, Color.WHITE if speaking else Color(0.5, 0.6, 0.6))
 		return
 	var scale_factor := minf((size.x - 12) / 48.0, (size.y - 8) / 48.0)
 	var offset := Vector2((size.x - 48 * scale_factor) / 2, size.y - 48 * scale_factor - 4)
@@ -108,6 +145,12 @@ func _draw() -> void:
 	elif speaker == "Mia":
 		coat = Color("487e77")
 		hair = Color("394153")
+	elif speaker == "Alex":
+		coat = Color("476b9e")
+		hair = Color("382f2d")
+	elif speaker == "Ms. Reyes":
+		coat = Color("8a675b")
+		hair = Color("302c39")
 	elif speaker == "Leah":
 		# Leah is not a BlueTech employee: a warm, non-corporate palette keeps
 		# her visually distinct from Mia/Ramon's teal-and-slate work attire.
@@ -137,7 +180,7 @@ func _draw() -> void:
 	draw_rect(Rect2(28, 36, 5, 3), ink)
 	if speaker == "Mia":
 		draw_rect(Rect2(12, 16, 4, 18), hair)
-	elif speaker.begins_with("Ramon"):
+	elif speaker.begins_with("Ramon") or speaker == "Ms. Reyes":
 		draw_rect(Rect2(16, 17, 8, 6), ink, false, 1)
 		draw_rect(Rect2(25, 17, 8, 6), ink, false, 1)
 	elif speaker == "Leah":
@@ -145,7 +188,7 @@ func _draw() -> void:
 		# Mia's single-side hair and Ramon's glasses.
 		draw_rect(Rect2(11, 15, 5, 21), hair)
 		draw_rect(Rect2(32, 15, 5, 21), hair)
-	else:
+	elif speaker != "Alex":
 		draw_rect(Rect2(12, 17, 4, 9), ink)
 		draw_line(Vector2(14, 25), Vector2(20, 28), ink, 2)
 	draw_set_transform(Vector2.ZERO)
