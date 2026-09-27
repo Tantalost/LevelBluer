@@ -100,6 +100,7 @@ func _ready() -> void:
 	story_overlay = preload("res://src/gameplay/decision/decision_workspace.gd").new()
 	story_overlay.name = "DecisionOverlay"
 	hud.body.add_child(story_overlay)
+	story_overlay.set_story_art(match_context.module_id, str(story.get("guide_speaker", "Security Assistant")))
 	story_overlay.hide()
 	story_overlay.story_continued.connect(_story_continued)
 	story_overlay.choice_selected.connect(_choice_selected)
@@ -255,7 +256,7 @@ func advance_briefing(delta: float) -> void:
 	elif account.get_decision_stage_state(_key()).is_empty():
 		_show_story("opening", _show_threat)
 	else:
-		_show_threat()
+		_show_threat(true)
 
 ## The stage's authored "ending" beat is shared by two outcomes, decided
 ## purely from data (DecisionScenarios.has_finale): a plain stage finishes
@@ -307,6 +308,8 @@ func _save_checkpoint() -> void:
 	account.set_decision_stage_state(_key(), checkpoint)
 
 func _header() -> String:
+	if story.has("scene_header"):
+		return str(story.scene_header)
 	return str(story.get("company", "BlueTech Solutions")).to_upper() + " // SECURITY DESK"
 
 ## Read-only snapshot for reactive dialogue's condition checks (see
@@ -330,6 +333,8 @@ func _show_story(key: String, next: Callable, caption: String = "CONTINUE") -> v
 		next.call()
 		return
 	_present_story()
+	var locations: Dictionary = story.get("locations", {})
+	story_overlay.set_background(str(locations.get(key, "")))
 	story_next = next
 	story_overlay.show_story(lines, _header(), caption)
 
@@ -341,7 +346,7 @@ func _story_continued() -> void:
 	if next.is_valid():
 		next.call()
 
-func _show_threat() -> void:
+func _show_threat(resuming: bool = false) -> void:
 	if decision.all_threats_resolved():
 		_show_ending_or_finale()
 		return
@@ -355,6 +360,11 @@ func _show_threat() -> void:
 	_save_checkpoint()
 	_present_story()
 	var threat_lines: Array[Dictionary] = DecisionScenarios.dialogue_lines(decision.current_threat(), "story", _memory())
+	if resuming:
+		var recap: Array[Dictionary] = DecisionScenarios.dialogue_lines(decision.current_threat(), "resume", _memory())
+		recap.append_array(threat_lines)
+		threat_lines = recap
+	story_overlay.set_background(str(decision.current_threat().get("background", "")))
 	story_overlay.show_threat(display_threat, threat_lines, decision.current_threat_number(), decision.total_threats(), _header())
 	_configure_call(decision.current_threat())
 	# An authored investigation (see DecisionScenarios.has_investigation)
@@ -436,7 +446,7 @@ func _consequence_continued() -> void:
 		DecisionScenarios.OUTCOME_RISKY:
 			story_overlay.show_consequence(DecisionScenarios.OUTCOME_RISKY,
 				"Malicious activity has been detected on %s." % _affected_system(),
-				"The threat is attempting to spread through the internal network.", _header(), "DEPLOY DEFENSES", "BREACH DETECTED")
+				str(story.get("containment_note", "The threat is attempting to spread through the internal network.")), _header(), "DEPLOY DEFENSES", "BREACH DETECTED")
 		DecisionScenarios.OUTCOME_CRITICAL:
 			_finish(false)
 

@@ -4,8 +4,8 @@ extends VBoxContainer
 ## module/stage can enable it via an authored "investigation" block on a
 ## threat; no per-stage branching lives here or in the caller.
 ##
-## First version, deliberately small: single-selection only (no drag/drop,
-## no free-form linking, no Case Board connections). Never grades BKT, never
+## Authored inspection mode reveals details; the original mode analyzes a
+## single selected conclusion. No drag/drop or Case Board. Never grades BKT, never
 ## triggers Tower Defense/Game Over, never clears an incident, never selects
 ## or biases SAFE/RISKY/CRITICAL — it only gates when the operational
 ## decision's choices become actionable. Investigation asks "what does the
@@ -28,6 +28,14 @@ var _items: Array[Dictionary] = []
 var _selected_index := -1
 var _confirmed := false
 var _display_column: VBoxContainer
+var _inspection_mode: bool = false
+var _inspected: Dictionary = {}
+var _legacy_panel: PanelContainer
+var _inspection_panel: PanelContainer
+var _inspection_body: VBoxContainer
+var _inspection_progress: Label
+var _inspection_continue: Button
+var interaction_locked: bool = false
 
 
 ## The same text-only view is also embedded in a threat's existing scrollable
@@ -56,6 +64,7 @@ static func render_display(parent: VBoxContainer, source: Dictionary) -> void:
 func _ready() -> void:
 	add_theme_constant_override("separation", 14)
 	var panel := UI.panel(self, Color("14232b"))
+	_legacy_panel = panel
 	var body := UI.column(panel, 12)
 	_title_label = UI.label("", 28, UI.GOLD)
 	body.add_child(_title_label)
@@ -79,6 +88,15 @@ func _ready() -> void:
 	_continue_button = UI.button("CONTINUE", _confirm_continue, true)
 	_continue_button.hide()
 	body.add_child(_continue_button)
+	_inspection_panel = UI.panel(self, Color("102040"))
+	_inspection_panel.size_flags_vertical = SIZE_EXPAND_FILL
+	var inspection_layout: VBoxContainer = UI.column(_inspection_panel, 10)
+	_inspection_body = UI.scroll_column(inspection_layout)
+	_inspection_progress = UI.label("", 26, UI.TEAL)
+	inspection_layout.add_child(_inspection_progress)
+	_inspection_continue = UI.button("DECIDE / USE YOUR FINDINGS", _confirm_continue, true)
+	inspection_layout.add_child(_inspection_continue)
+	_inspection_panel.hide()
 
 
 ## Resets all state for a NEW investigation — every threat with an enabled
@@ -89,6 +107,11 @@ func _ready() -> void:
 func configure(config: Dictionary) -> void:
 	_selected_index = -1
 	_confirmed = false
+	_inspected.clear()
+	_inspection_mode = str(config.get("mode", "")) == "inspect"
+	_legacy_panel.visible = not _inspection_mode
+	_inspection_panel.visible = _inspection_mode
+	size_flags_vertical = SIZE_EXPAND_FILL if _inspection_mode else SIZE_FILL
 	_title_label.text = str(config.get("title", "INVESTIGATION")).strip_edges().to_upper()
 	_prompt_label.text = str(config.get("prompt", "")).strip_edges()
 	render_display(_display_column, config)
@@ -101,6 +124,9 @@ func configure(config: Dictionary) -> void:
 				_items.append(entry as Dictionary)
 	UI.clear(_items_column)
 	_item_buttons.clear()
+	if _inspection_mode:
+		_build_inspection(config)
+		return
 	for i in _items.size():
 		var button := UI.button(_item_text(false, str(_items[i].get("label", ""))), _select.bind(i))
 		button.toggle_mode = true
@@ -117,6 +143,44 @@ func configure(config: Dictionary) -> void:
 	_continue_button.disabled = false
 	if not _item_buttons.is_empty():
 		_item_buttons[0].grab_focus.call_deferred()
+
+## Evidence is revealed, not graded. Reopening a detail never counts twice.
+## All content stays available until the player explicitly enters the decision.
+func _build_inspection(config: Dictionary) -> void:
+	UI.clear(_inspection_body)
+	_inspection_body.add_child(UI.label(str(config.get("title", "INVESTIGATE")).to_upper(), 28, UI.GOLD))
+	_inspection_body.add_child(UI.label(str(config.get("prompt", "")), 26))
+	for index: int in _items.size():
+		var card: PanelContainer = UI.panel(_inspection_body, Color("0A1730"))
+		var content: VBoxContainer = UI.column(card, 10)
+		var button: Button = UI.button("+ " + str(_items[index].get("label", "Inspect detail")), func() -> void: pass)
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		content.add_child(button)
+		var detail: Label = UI.label(str(_items[index].get("analysis", "")), 26)
+		content.add_child(detail)
+		detail.hide()
+		button.pressed.connect(_inspect.bind(index, detail, button))
+		_item_buttons.append(button)
+	_inspection_continue.disabled = true
+	_inspection_progress.text = "DETAILS INSPECTED / 0 OF %d" % _items.size()
+
+func _inspect(index: int, detail: Label, button: Button) -> void:
+	if interaction_locked or not _inspection_mode or index < 0 or index >= _items.size():
+		return
+	_inspected[index] = true
+	button.text = "CHECKED / " + str(_items[index].get("label", "Detail"))
+	button.add_theme_color_override("font_color", UI.TEAL)
+	# No external links, OS applications, rewards or account writes.
+	if not detail.visible:
+		detail.show()
+		var settings: Node = get_node_or_null("/root/SettingsService")
+		if settings == null or not bool(settings.get("reduced_motion")):
+			detail.modulate.a = 0.0
+			var reveal: Tween = detail.create_tween()
+			reveal.tween_property(detail, "modulate:a", 1.0, 0.16)
+	_confirmed = _inspected.size() == _items.size()
+	_inspection_continue.disabled = not _confirmed
+	_inspection_progress.text = "DETAILS INSPECTED / %d OF %d" % [_inspected.size(), _items.size()]
 
 
 func is_resolved() -> bool:
@@ -167,6 +231,14 @@ func _analyze() -> void:
 
 
 func _confirm_continue() -> void:
+	if interaction_locked:
+		return
+	if _inspection_mode:
+		if not _confirmed or _inspection_continue.disabled:
+			return
+		_inspection_continue.disabled = true
+		investigation_resolved.emit()
+		return
 	if not _confirmed or _continue_button.disabled:
 		return
 	_continue_button.disabled = true

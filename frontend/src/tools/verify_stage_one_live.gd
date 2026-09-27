@@ -106,6 +106,7 @@ func choose(match_node: Control, outcome: String) -> void:
 		read_page(match_node)
 	if not match_node.story_overlay._dialogue_done:
 		read_page(match_node)
+	inspect_school_email(match_node)
 	# Choices are shown in a randomized order (see DecisionStageController.
 	# current_threat_for_display); find the outcome in THAT order, matching
 	# what the overlay's buttons (and thus _choose(i)) actually display.
@@ -119,11 +120,32 @@ func choose(match_node: Control, outcome: String) -> void:
 
 func read_page(match_node: Control) -> void:
 	var overlay: Control = match_node.story_overlay
-	var line_count: int = maxi(1, overlay._lines.size())
+	var line_count: int = maxi(1, overlay._lines.size() - overlay._line_index)
 	for i in line_count:
 		if overlay._typing:
 			overlay._continue() # Reveal without skipping or committing a choice.
+		if not overlay._mail.is_empty() and not overlay._mail_read:
+			overlay._open_mail()
+			overlay._close_mail()
 		overlay._continue()
+
+func inspect_school_email(match_node: Control) -> void:
+	var panel: Control = match_node.story_overlay._investigation_panel
+	if not panel.visible:
+		return
+	if panel._inspection_mode:
+		for button: Button in panel._item_buttons:
+			button.pressed.emit()
+	else:
+		# Later-module test playthroughs must also use their actual evidence
+		# gate instead of invoking an invisible decision button directly.
+		for index: int in panel._items.size():
+			if bool(panel._items[index].get("valid", false)):
+				panel._select(index)
+				panel._analyze()
+				break
+	panel._confirm_continue()
+	drain_until_dialogue_done(match_node)
 
 ## read_page()'s line_count is _lines.size() at call time — correct when a
 ## fresh screen just replaced _lines outright, but an investigation's
@@ -141,6 +163,9 @@ func drain_until_dialogue_done(match_node: Control) -> void:
 			return
 		if overlay._typing:
 			overlay._continue()
+		if not overlay._mail.is_empty() and not overlay._mail_read:
+			overlay._open_mail()
+			overlay._close_mail()
 		overlay._continue()
 
 func shot(match_node: Control, name: String) -> void:
@@ -151,6 +176,10 @@ func shot(match_node: Control, name: String) -> void:
 		check(rect.encloses(match_node.hud.pause_button.get_global_rect()), name + ": pause fits")
 	if match_node.story_overlay.is_visible_in_tree():
 		check(rect.encloses(match_node.story_overlay._window.get_global_rect()), name + ": story fits")
+		if match_node.story_overlay._school_cast and is_instance_valid(match_node.story_overlay._conversation) and match_node.story_overlay._conversation.visible:
+			for portrait: Control in match_node.story_overlay._portraits:
+				if portrait.is_visible_in_tree():
+					check(portrait.get_global_rect().end.y <= match_node.story_overlay._speech_box.global_position.y, name + ": face stays above dialogue")
 		if match_node.story_overlay._review_open:
 			check(rect.encloses(match_node.story_overlay._review_panel.get_global_rect()), name + ": review fits")
 			check(rect.encloses(match_node.story_overlay._review_close.get_global_rect()), name + ": review return fits")
@@ -404,11 +433,18 @@ func _run() -> void:
 	check(router._scene_for_context(Context.stage_one_preview()) == router.PREVIEW_SCENE, "Preview remains separate")
 	var account := Account.new()
 	var game := mount(account)
+	check(not game.hud.gold_label.is_visible_in_tree() and not game.hud.health_icon.is_visible_in_tree(), "Story hides gold and health badges")
+	check(not game.hud.speed_button.visible and not game.hud.wave_progress.visible, "Story hides battle speed and empty wave meter")
+	check(game.hud.pause_button.visible, "Pause remains available during story")
 	check(game.story_overlay._mode == &"story", "Fresh launch includes opening dialogue")
-	check(game.config.name == "The First Warning", "Uses authored story title")
+	check(game.config.name == "Before the Bell", "Uses the approved high-school story title")
 	var dialogue: Control = game.story_overlay
 	dialogue.set_process(false)
-	check(dialogue._portraits.size() == 2 and dialogue._typing, "Two temporary portraits and typewriter are mounted")
+	check(dialogue._portraits.size() == 2 and dialogue._typing, "Two portraits and typewriter are mounted")
+	check(dialogue._illustrated and dialogue._background is ColorRect, "Module 1 no longer loads corporate artwork")
+	check(dialogue._background_art.texture != null and dialogue._background_art.texture == root.get_node("AssetManager").get_texture("story_bg_school_gate_morning"), "Opening arrives at the cached school gate")
+	check(dialogue._portraits[0].portrait_texture is AtlasTexture, "School character uses expressive portrait atlas")
+	check(dialogue._guide_speaker == "Ms. Reyes" and not game._header().contains("SECURITY DESK"), "Teacher guides the school story")
 	dialogue._process(0.15)
 	check(dialogue._speech.visible_characters > 0 and dialogue._typing, "Text reveals progressively")
 	var revealed: int = dialogue._speech.visible_characters
@@ -420,9 +456,8 @@ func _run() -> void:
 	dialogue._continue()
 	check(not dialogue._typing and dialogue._line_index == 0, "First tap reveals full line without skipping")
 	await shot(game, "opening")
-	dialogue._continue()
-	check(dialogue._portraits[0].speaking and dialogue._portraits[0].get_parent().visible and not dialogue._portraits[1].get_parent().visible, "First speaker Security Assistant appears on the left")
-	dialogue._continue()
+	check(dialogue._portraits[0].speaking and dialogue._portraits[0].speaker == "Alex" and dialogue._portraits[0].get_parent().visible and not dialogue._portraits[1].get_parent().visible, "Alex appears on the left")
+	check(not dialogue._speaker_label.text.contains("SCENE"), "Opening stays in the character's viewpoint")
 	dialogue._continue()
 	check(dialogue._portraits[1].speaking and dialogue._portraits[1].get_parent().visible and not dialogue._portraits[0].get_parent().visible, "Second speaker Mia appears on the right")
 	dialogue._continue()
@@ -431,14 +466,68 @@ func _run() -> void:
 		root.size = dimensions
 		await shot(game, "conversation_%dx%d" % [dimensions.x, dimensions.y])
 	root.size = Vector2i(1280, 720)
-	dialogue._continue()
+	read_page(game)
 	check(dialogue._mode == &"threat" and not dialogue._dialogue_done, "Opening completes before incident dialogue")
+	check(dialogue._background_art.texture == root.get_node("AssetManager").get_texture("story_bg_hallway_day"), "First incident moves into the cached hallway")
 	check(not dialogue._choices_scroll.visible and not dialogue._timer_row.visible, "Choices and timer are hidden during conversation")
 	game.advance_decision_timer(90)
 	check(not game.decision_timer_active and account.bkt.is_empty(), "Dialogue has no running decision timer")
 	dialogue._choose(0)
 	check(game.decision.pending_choice_index == -1, "Choices cannot skip unread dialogue")
+	check(not dialogue._mail.is_empty() and dialogue._mail_notice.visible, "Authored email arrives alongside the character's reaction")
+	var mail_writes: int = account.writes
+	dialogue._reveal_line()
+	await shot(game, "email_arrival")
+	for dimensions: Vector2i in [Vector2i(960, 600), Vector2i(844, 390)]:
+		root.size = dimensions
+		await shot(game, "email_arrival_%dx%d" % [dimensions.x, dimensions.y])
+		check(root.get_visible_rect().encloses(dialogue._mail_notice.get_global_rect()), "Email notification fits at " + str(dimensions))
+		for portrait: Control in dialogue._portraits:
+			if portrait.is_visible_in_tree():
+				check(not portrait.get_global_rect().intersects(dialogue._mail_notice.get_global_rect()), "Notification does not cover the speaker")
+		check(dialogue._mail_notice.get_global_rect().end.y <= dialogue._conversation.global_position.y, "Notification stays above dialogue")
+	root.size = Vector2i(1280, 720)
+	dialogue._continue()
+	check(dialogue._mail_open and dialogue._line_index == 0, "Continue opens unread mail instead of skipping it")
+	dialogue._continue()
+	check(dialogue._line_index == 0 and not dialogue._dialogue_done, "Reader blocks dialogue and decision advancement")
+	game.toggle_pause()
+	dialogue._close_mail()
+	check(dialogue._mail_open, "Pause blocks closing the email")
+	game.toggle_pause()
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
+		root.size = dimensions
+		await shot(game, "email_reader_%dx%d" % [dimensions.x, dimensions.y])
+		check(root.get_visible_rect().encloses(dialogue._mail_close.get_global_rect()), "Email return fits at " + str(dimensions))
+	root.size = Vector2i(1280, 720)
+	dialogue._close_mail()
+	var mail_history: int = dialogue._history.size()
+	dialogue._open_mail()
+	dialogue._close_mail()
+	check(dialogue._history.size() == mail_history, "Reopening email does not duplicate review entries")
+	check(account.writes == mail_writes and account.bkt.is_empty() and not game.decision_timer_active, "Email inspection does not grade, save, or start the decision timer")
 	read_page(game)
+	check(dialogue._mail.is_empty() and not dialogue._mail_panel.visible, "Email UI clears on later dialogue lines")
+	check(dialogue._investigation_panel.visible and not dialogue._choices_scroll.visible, "School email requires investigation before deciding")
+	var inspection_writes: int = account.writes
+	var inspection: Control = dialogue._investigation_panel
+	inspection._confirm_continue()
+	dialogue._choose(0)
+	check(game.decision.pending_choice_index == -1 and inspection._inspection_continue.disabled, "Unread evidence cannot be skipped by Continue or a choice")
+	inspection._item_buttons[0].pressed.emit()
+	inspection._item_buttons[0].pressed.emit()
+	check(inspection._inspected.size() == 1 and inspection._inspection_continue.disabled, "Repeated inspection counts once")
+	game.toggle_pause()
+	inspection._item_buttons[1].pressed.emit()
+	check(inspection._inspected.size() == 1, "Pause blocks evidence interaction")
+	game.toggle_pause()
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
+		root.size = dimensions
+		await shot(game, "school_inspection_%dx%d" % [dimensions.x, dimensions.y])
+		check(root.get_visible_rect().encloses(inspection._inspection_continue.get_global_rect()), "Inspection action fits at " + str(dimensions))
+	root.size = Vector2i(1280, 720)
+	inspect_school_email(game)
+	check(account.writes == inspection_writes and account.bkt.is_empty(), "Evidence inspection has no account or mastery effects")
 	check(dialogue._dialogue_done and dialogue._evidence.visible and not dialogue._choice_buttons[0].disabled, "Evidence and choices unlock after dialogue")
 	# Module 1 Stage 1's incidents author no "timer" block — untimed is the
 	# overwhelming default (see DecisionScenarios.has_timer). Choices open
@@ -454,7 +543,7 @@ func _run() -> void:
 		await shot(game, "decision_%dx%d" % [dimensions.x, dimensions.y])
 	root.size = Vector2i(1280, 720)
 	dialogue._open_review()
-	check(dialogue._review_open and dialogue._review_content.get_child_count() == 4, "Review contains only revealed opening and incident lines")
+	check(dialogue._review_open and dialogue._review_content.get_child_count() == 13, "Review contains five opening lines, seven incident lines, and the opened email")
 	await shot(game, "dialogue_review")
 	root.size = Vector2i(844, 390)
 	await shot(game, "dialogue_review_844x390")
@@ -467,6 +556,7 @@ func _run() -> void:
 	for i in game.decision.total_threats():
 		choose(game, "SAFE")
 	check(account.clears == 0, "Must file ending report before stage clear")
+	check(game.story_overlay._background_art.texture == root.get_node("AssetManager").get_texture("story_bg_classroom_day"), "Ending returns to the cached classroom")
 	game._story_continued()
 	check(game.phase == "Results", "All SAFE completes story")
 	check(account.bkt.size() == game.decision.total_threats(), "Exactly one BKT update per decision")
@@ -492,6 +582,7 @@ func _run() -> void:
 	check(game.phase == "Incident" and game.decision.awaiting_breach_deploy(), "Risky warning waits for Deploy Defenses")
 	game._consequence_continued()
 	check(game.phase == "Build" and game.health == 5 and game.gold == int(game.decision.current_threat().breach_gold), "Breach uses authored health and gold reset")
+	check(game.hud.gold_label.is_visible_in_tree() and game.hud.health_icon.is_visible_in_tree() and game.hud.speed_button.visible, "Combat restores resource badges and speed control")
 	check(game.match_context.persistent and game.match_context.footprint == 1, "Normal context uses one-cell gameplay")
 	check(game._enemy_health_scale() == 0.6, "Existing Stage 1 breach HP scaling retained")
 	check(game.hud.battle.track.curve.point_count > 1, "Preview route is mounted")
@@ -555,6 +646,7 @@ func _run() -> void:
 	check(game.match_kills == 1, "Enemy death reaches live match bounty accounting")
 	game._wave_cleared()
 	check(game.phase == "Incident" and game.decision.resolved_threats == 1, "Containment returns to story, not preview quiz loop")
+	check(not game.hud.gold_label.is_visible_in_tree() and not game.hud.health_icon.is_visible_in_tree(), "Returning from combat hides resources again")
 	check(game.story_overlay._mode == &"story", "Containment dialogue renders before next incident")
 	game._story_continued()
 	choose(game, "RISKY")
@@ -580,6 +672,8 @@ func _run() -> void:
 	var count := account.bkt.size()
 	game = mount(account)
 	check(game.phase == "Incident" and game.story_overlay._mode == &"threat", "Saved breach reopens original incident choices")
+	check(str(game.story_overlay._lines[0].text).contains("fair poster") and game.story_overlay._lines.size() == 10, "Incident 2 resume adds two character-led context lines before its conversation")
+	check(game.story_overlay._mail.is_empty() and not game.decision_timer_active, "Resume recap does not fire its later email or decision early")
 	check(game.decision.threat_index == 1 and game.decision.resolved_threats == 1 and game.decision.safe_count == 1, "Review preserves completed incident progress")
 	check(not game.decision.is_breach_active() and not game.hud.battle.enabled, "Review does not start combat")
 	check(game.story_overlay._choice_buttons.size() == game.decision.current_threat().choices.size(), "All authored decisions are visible on resume")

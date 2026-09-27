@@ -43,7 +43,8 @@ func check_layout(match_node: Control, label: String) -> void:
 	check(hud.speed_button.size.y * scale_y >= 47.9, label + ": control height at least 48 physical pixels")
 	check(hud.pause_button.size.x * scale_y >= 47.9 and hud.pause_button.size.y * scale_y >= 47.9, label + ": icon-only Pause retains a full touch target")
 	check(hud.pause_button.text.is_empty() and hud.pause_button.get_child(0).kind == "pause", label + ": Pause uses a code-drawn twin-bar symbol")
-	check((hud.health_icon.get_global_rect().position.x - hud.gold_label.get_global_rect().end.x) * scale_y >= 20, label + ": gold and health have visible separation")
+	if hud.gold_label.is_visible_in_tree():
+		check((hud.health_icon.get_global_rect().position.x - hud.gold_label.get_global_rect().end.x) * scale_y >= 20, label + ": gold and health have visible separation")
 	if is_instance_valid(hud.tower_grid) and hud.tower_grid.is_inside_tree() and hud.side.visible:
 		check(hud.side_content.size.y <= hud.side_content.get_parent().size.y + 2, label + ": entire picker is visible without scrolling")
 		check(hud.tower_grid.get_global_rect().end.x <= hud.side_content.get_parent().get_global_rect().end.x + 1, label + ": all card borders fit inside the panel")
