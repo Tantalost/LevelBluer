@@ -68,11 +68,11 @@
 					],
 					"story": [
 						{"speaker": "Alex", "text": "My phone just buzzed. That was quick.", "mail": {"sender": "School IT <support@harbor-high-help.example>", "subject": "Your school account closes before first period", "body": "Your account is scheduled to close before first period. Verify your school password to keep access.\n\nVerification address: harbor-high-help.example/verify"}},
-						{"speaker": "Mia", "text": "School IT? I thought we were waiting for the project reminder."},
-						{"speaker": "Alex", "text": "It says I'll lose my account before class. The poster, our notes... they're all there.", "emotion": "worried"},
+						{"speaker": "Mia", "text": "School IT? I thought we were waiting for the project reminder.", "emotion": "worried"},
+						{"speaker": "Alex", "text": "It says I'll lose my account before class. The poster, our notes... they're all there.", "emotion": "shocked"},
 						{"speaker": "Mia", "text": "Were you expecting an account warning?"},
 						{"speaker": "Alex", "text": "No. It worked last night. But what if I wait and we lose everything?", "emotion": "worried"},
-						{"speaker": "Mia", "text": "Before you sign in, can we look at who's actually sending it?"},
+						{"speaker": "Mia", "text": "Before you sign in, can we look at who's actually sending it?", "emotion": "determined"},
 						{"speaker": "Alex", "text": "Yeah. I've got the school contact card saved too. Let's compare them.", "emotion": "determined"}
 					],
 					"situation": "The message claims to be School IT. It asks Alex to enter a school password through its verification link before class. What should Alex do?",
@@ -129,11 +129,11 @@
 					],
 					"story": [
 						{"speaker": "Mia", "text": "Another email just popped up. This one mentions the account warning.", "mail": {"sender": "School Account Helper <helper@harbor-high-help.example>", "subject": "I can fix your account warning", "body": "Hi Alex, I can help your class keep its fair project online. Reply with your school password so I can remove the warning.\n\nKeep this between us; your teacher is busy. You can also use our sign-in page: harbor-high-help.example/verify"}},
-						{"speaker": "Alex", "text": "An account helper? I didn't ask this person for help."},
+						{"speaker": "Alex", "text": "An account helper? I didn't ask this person for help.", "emotion": "frustrated"},
 						{"speaker": "Mia", "text": "They know your class. And that we're doing a fair project."},
 						{"speaker": "Alex", "text": "That makes it feel real. Maybe they can sort this out before class.", "emotion": "worried"},
-						{"speaker": "Mia", "text": "Wait. Read the part about what they need from you."},
-						{"speaker": "Alex", "text": "My password. And they don't want me to tell Ms. Reyes?", "emotion": "worried"},
+						{"speaker": "Mia", "text": "Wait. Read the part about what they need from you.", "emotion": "worried"},
+						{"speaker": "Alex", "text": "My password. And they don't want me to tell Ms. Reyes?", "emotion": "shocked"},
 						{"speaker": "Mia", "text": "Our class project is on the public activities page too. Knowing about it might not mean they know us."},
 						{"speaker": "Alex", "text": "Let's put their request next to the school contact details before I reply.", "emotion": "determined"}
 					],
@@ -180,11 +180,11 @@
 					],
 					"story": [
 						{"speaker": "Alex", "text": "Ms. Reyes, your project reminder just arrived. Can I check something with you?", "mail": {"sender": "Ms. Reyes <reyes@harborhigh.example>", "subject": "Fair project: poster title by lunch", "body": "Please submit your group's poster title by lunch using our usual class page. The same deadline is on the classroom notice board.\n\nUse your saved class-page bookmark. No password reply or attachment is needed."}},
-						{"speaker": "Ms. Reyes", "text": "Of course. What's bothering you?"},
+						{"speaker": "Ms. Reyes", "text": "Of course. What's bothering you?", "emotion": "worried"},
 						{"speaker": "Alex", "text": "The other messages wanted me to hurry. This one has a deadline too. Should I report it?", "emotion": "worried"},
 						{"speaker": "Ms. Reyes", "text": "A deadline alone doesn't tell you who's behind a message. What else can you check?"},
 						{"speaker": "Alex", "text": "The sender address. And whether it's asking me to do something unusual."},
-						{"speaker": "Ms. Reyes", "text": "You also have our saved class page and the notice board. Those don't depend on trusting this email."},
+						{"speaker": "Ms. Reyes", "text": "You also have our saved class page and the notice board. Those don't depend on trusting this email.", "emotion": "determined"},
 						{"speaker": "Alex", "text": "Right. I'll compare them, then work out which message actually needs reporting.", "emotion": "determined"}
 					],
 					"situation": "The real project reminder asks the group to submit its poster title by lunch through the class page they already use. It does not ask for passwords or a new sign-in link. The earlier fake account warning is still in Alex's inbox.",
@@ -221,156 +221,509 @@
 			"id": "mod01_stage2",
 			"module_id": "mod_01",
 			"stage": 2,
-			"title": "They Know Who We Are",
+			"title": "They Know Our Project",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 2 COMPLETE",
-			"clear_subtitle": "THEY KNOW WHO WE ARE",
-			"next_stage_title": "Stage 3 — Someone Got In",
+			"clear_subtitle": "THEY KNOW OUR PROJECT",
+			"next_stage_title": "Stage 3",
 			"breach_hp_multiplier": 0.65,
 			"opening": [
-				{"speaker": "Security Assistant", "text": "The domains from yesterday are already offline. But the campaign didn't stop."},
-				{"speaker": "Mia", "text": "Another batch?"},
-				{"speaker": "Security Assistant", "text": "Worse. These messages know who works here."},
-				{"speaker": "Mia", "text": "What do you mean?"},
-				{"speaker": "Security Assistant", "text": "Names. Departments. Meetings. Someone has been researching BlueTech."}
+				{
+					"speaker": "Alex",
+					"text": "We finally have a title: Water Wise. Much better than 'Untitled poster'.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And I put it on the school-fair board. Now we just need to finish the research.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I've saved our class page and Ms. Reyes's contact on my phone.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Good. After those strange emails, let's check new requests against what we already trust.",
+					"emotion": "determined"
+				}
 			],
 			"ending": [
-				{"speaker": "Security Assistant", "text": "Names. Meetings. Departments. Internal projects."},
-				{"speaker": "Mia", "text": "They're not guessing anymore."},
-				{"speaker": "Security Assistant", "text": "No. Someone has been collecting information about BlueTech."},
-				{"speaker": "Mia", "text": "So the next messages could look even more real."},
-				{"speaker": "Security Assistant", "text": "Exactly."}
+				{
+					"speaker": "Alex",
+					"text": "They knew our title and our teacher's name. That made the messages feel personal.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Our title was on the public fair board. Knowing it didn't prove who sent anything.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "Exactly. Use saved contacts and class pages to check requests, especially before sharing files.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Okay. Back to the poster. The real one, in our own folder.",
+					"emotion": "relieved"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "Let's finish securing the account and checking shared access together. The simulation shows that containment work.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. But they knew enough about us to almost make it work."},
-				{"speaker": "Mia", "text": "Next time we verify first."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate threat is contained. We'll check the account and sharing settings together.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I can ask for help without trusting the person who sent the request.",
+					"emotion": "determined"
+				}
 			],
 			"threats": [
 				{
 					"id": "mod01_stage02_incident01",
 					"module_id": "mod_01",
 					"stage": 2,
-					"title": "The Meeting Follow-Up",
+					"title": "Notes for Our Poster",
 					"bkt_skill": "phishing",
-					"affected_system": "MARKETING-WS-04",
+					"affected_system": "ALEX'S SCHOOL ACCOUNT",
 					"story": [
-						{"speaker": "Mia", "text": "I just received a document about the marketing meeting we had this morning."},
-						{"speaker": "Mia", "text": "It even mentions the campaign we discussed."},
-						{"speaker": "Security Assistant", "text": "Accurate information can still be used in a phishing attack."}
+						{
+							"speaker": "Mia",
+							"text": "I found a source about saving water. Did you share your notes yet?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Not yet. Wait—my phone just buzzed.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "Class Projects <notes@harbor-projects.example>",
+								"subject": "Water Wise: notes from today's planning",
+								"body": "Hi Alex and Mia! Here are the research notes for your Water Wise poster. Sign in with your school account to open the shared document before Friday."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "This email says it has notes for Water Wise. It even knows both our names.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "That sounds like us, but our names and title are on the fair board.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll check the sender and link, then compare our saved class page.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "An email claims to contain notes from a real BlueTech marketing meeting. The message includes Mia's name, the real project name, today's meeting, and a link to a shared document.",
+					"situation": "Someone knows our poster title and wants a school sign-in. How should Alex handle the document?",
 					"evidence": [
-						"Uses Mia's real name",
-						"References the real marketing campaign",
-						"References today's real meeting",
-						"LINK  \"shared document\" hosted outside the company drive"
+						"The sender uses harbor-projects.example, not the saved school domain harborhigh.example.",
+						"The document asks for a school password at harbor-projects.example. A familiar project title does not verify a login page.",
+						"The saved class page has no new shared notes. The title is public, so knowing it is not proof of identity."
 					],
 					"choices": [
 						{
-							"label": "Open the document because the meeting details are correct.",
+							"label": "Open the linked document and sign in",
 							"outcome": "CRITICAL",
-							"consequence": "The document redirects Mia to a fake company login page, allowing the attacker to capture her credentials."
+							"consequence": "The copied login page receives Alex's password. Tell a trusted adult and secure the account through the saved school portal."
 						},
 						{
-							"label": "Open the official company drive and check whether the document was actually shared with me.",
+							"label": "Check the saved class page and report the email",
 							"outcome": "SAFE",
-							"consequence": "The document does not exist in the official company drive. Security confirms the email was impersonating an internal collaboration request."
+							"consequence": "There are no new notes on the class page. Ms. Reyes confirms the link is not a class resource and helps report it."
 						},
 						{
-							"label": "Forward the email to another team member and ask if they recognize it.",
+							"label": "Forward the link to Mia to check",
 							"outcome": "RISKY",
-							"consequence": "The suspicious link is spread to another employee before the message has been verified."
+							"consequence": "The unverified link reaches another student. Alex warns Mia not to open it and asks Ms. Reyes for help containing the risk."
 						}
 					],
-					"explanation": "Attackers can use publicly available or stolen information to make phishing messages appear legitimate.",
+					"explanation": "Correct names and project details can come from public posts. Verify the sender and destination through a source you already trust.",
 					"breach_gold": 12,
-					"next": "mod01_stage02_incident02"
+					"next": "mod01_stage02_incident02",
+					"background": "library_room",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I still have the message and our saved details. I'll check them before choosing.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's compare the actual account, not just the name.",
+							"emotion": "neutral"
+						}
+					],
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Class Projects <notes@harbor-projects.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise: notes from today's planning"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://harbor-projects.example/water-wise"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE REQUEST",
+						"prompt": "Inspect the message, then compare your saved school information.",
+						"items": [
+							{
+								"id": "sender",
+								"label": "View sender details",
+								"analysis": "The sender uses harbor-projects.example, not the saved school domain harborhigh.example.",
+								"valid": true
+							},
+							{
+								"id": "destination",
+								"label": "Preview document link",
+								"analysis": "The document asks for a school password at harbor-projects.example. A familiar project title does not verify a login page.",
+								"valid": true
+							},
+							{
+								"id": "class_page",
+								"label": "Open the saved Class project page",
+								"analysis": "The saved class page has no new shared notes. The title is public, so knowing it is not proof of identity.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					}
 				},
 				{
 					"id": "mod01_stage02_incident02",
 					"module_id": "mod_01",
 					"stage": 2,
-					"title": "HR Benefits Update",
+					"title": "The Fair Registration",
 					"bkt_skill": "phishing",
-					"affected_system": "HR PORTAL / EMPLOYEE ACCOUNTS",
+					"affected_system": "SCHOOL FAIR / STUDENT ACCOUNT",
 					"story": [
-						{"speaker": "Mia", "text": "This one says it's from HR."},
-						{"speaker": "Mia", "text": "And that's actually our HR manager's name."},
-						{"speaker": "Security Assistant", "text": "Check the source, not just the name."}
+						{
+							"speaker": "Mia",
+							"text": "I'd love a table near the courtyard. More people might try our quiz.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "There's a registration email now. Ms. Reyes's name is at the bottom.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Ms. Reyes — Fair Team <register@harbor-fair.example>",
+								"subject": "Last chance: confirm your Water Wise table",
+								"body": "Water Wise team: confirm your table in the next ten minutes! Use your school password on this registration form. Ms. Reyes / Harbor High School Fair Team."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "It has the school badge, too. But why only ten minutes?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I don't want us to lose our table. I also don't want to hand over my password.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Open her saved contact. Not the reply address in that email.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Employees receive an email announcing an urgent benefits update. It uses the real HR manager's name, copies BlueTech branding, asks employees to sign in before the end of the day, and links to an external login page.",
+					"situation": "The email threatens to give away our table. What should Alex do?",
 					"evidence": [
-						"Uses the real HR manager's name",
-						"Copies BlueTech branding",
-						"Urgency: 'sign in before the end of the day'",
-						"LINK  external login page, not the official HR portal"
+						"The display name says Ms. Reyes, but register@harbor-fair.example is not her saved school address.",
+						"harbor-fair.example is not the saved portal.harborhigh.example. The short deadline creates pressure.",
+						"Ms. Reyes confirms through the saved contact that registration is on the usual portal, not a separate sign-in form."
 					],
 					"choices": [
 						{
-							"label": "Use the login link because the HR manager's name is correct.",
+							"label": "Sign in through the email's registration link",
 							"outcome": "CRITICAL",
-							"consequence": "The fake portal captures the employee's BlueTech credentials."
+							"consequence": "The look-alike form captures Alex's school password. The school badge and teacher's name did not make it trustworthy."
 						},
 						{
-							"label": "Open the official HR portal manually and check for the announcement.",
+							"label": "Use the saved portal and report the fake form",
 							"outcome": "SAFE",
-							"consequence": "There is no benefits announcement in the official HR portal. The email is reported and blocked."
+							"consequence": "The real portal shows the table is already reserved. Ms. Reyes helps report the impersonation."
 						},
 						{
-							"label": "Reply to the message and ask HR if the update is legitimate.",
+							"label": "Reply to the sender to confirm the deadline",
 							"outcome": "RISKY",
-							"consequence": "The reply goes back to the attacker's mailbox, confirming that Mia's address is active and monitored."
+							"consequence": "The impersonator replies with more pressure and another link. Alex stops the conversation and asks Ms. Reyes for help."
 						}
 					],
-					"explanation": "Display names and company branding are easy to imitate.",
+					"explanation": "Names and school branding can be copied. Check urgent requests through an independently saved contact or portal.",
 					"breach_gold": 14,
-					"next": "mod01_stage02_incident03"
+					"next": "mod01_stage02_incident03",
+					"background": "courtyard",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I still have the message and our saved details. I'll check them before choosing.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's compare the actual account, not just the name.",
+							"emotion": "neutral"
+						}
+					],
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Ms. Reyes — Fair Team <register@harbor-fair.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Last chance: confirm your Water Wise table"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://harbor-fair.example/register"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE REQUEST",
+						"prompt": "Inspect the message, then compare your saved school information.",
+						"items": [
+							{
+								"id": "sender",
+								"label": "View sender details",
+								"analysis": "The display name says Ms. Reyes, but register@harbor-fair.example is not her saved school address.",
+								"valid": true
+							},
+							{
+								"id": "destination",
+								"label": "Preview registration link",
+								"analysis": "harbor-fair.example is not the saved portal.harborhigh.example. The short deadline creates pressure.",
+								"valid": true
+							},
+							{
+								"id": "adviser",
+								"label": "Open the saved Ms. Reyes contact",
+								"analysis": "Ms. Reyes confirms through the saved contact that registration is on the usual portal, not a separate sign-in form.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					}
 				},
 				{
 					"id": "mod01_stage02_incident03",
 					"module_id": "mod_01",
 					"stage": 2,
-					"title": "Manager Access Request",
+					"title": "Who Gets Our Folder?",
 					"bkt_skill": "phishing",
-					"affected_system": "MARKETING SHARED DRIVE",
+					"affected_system": "WATER WISE / PROJECT FOLDER",
 					"story": [
-						{"speaker": "Mia", "text": "My manager is asking for access to our campaign folder."},
-						{"speaker": "Mia", "text": "The email even uses the project code."},
-						{"speaker": "Security Assistant", "text": "A familiar name doesn't replace verification."}
+						{
+							"speaker": "Alex",
+							"text": "The poster is nearly finished. I just need Ms. Reyes to check the facts.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Mia",
+							"text": "She already has viewing access, right?",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Ms. Reyes <reyes.review@school-projects.example>",
+								"subject": "Water Wise: approve folder access",
+								"body": "I need to review Water Wise before the fair. Approve my editor request for your entire project folder now. Please include the contact sheet."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "Yes. But a new email says she needs to edit the whole folder.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Our group contact sheet is in there. Who exactly is asking?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's open the saved sharing settings and compare the account and permissions.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Even a real sharing page can have a request from the wrong person.",
+							"emotion": "neutral"
+						}
 					],
-					"situation": "An email appears to come from Mia's manager. It requests immediate access to a confidential marketing folder. The message contains the manager's real name, the real project code, an urgent deadline, and a request for folder permissions.",
+					"situation": "A new account asks for our entire folder. What access should Alex allow?",
 					"evidence": [
-						"Uses the manager's real name",
-						"References the real project code",
-						"Urgency: immediate deadline",
-						"Requests folder permission changes"
+						"reyes.review@school-projects.example is different from Ms. Reyes's saved reyes@harborhigh.example address.",
+						"The link names the real school portal. That alone does not verify the person requesting access.",
+						"The saved settings show Ms. Reyes already has viewer access. A different account wants editor access to the entire folder and contact sheet."
 					],
 					"choices": [
 						{
-							"label": "Grant the requested access because the project information is correct.",
+							"label": "Give the new account editor access",
 							"outcome": "CRITICAL",
-							"consequence": "The attacker gains access to confidential marketing documents and internal company information."
+							"consequence": "An unverified account can read and change the folder, including the contact sheet. Ask a trusted adult to revoke access and review changes."
 						},
 						{
-							"label": "Confirm the request through the normal internal communication channel before changing access.",
+							"label": "Keep access unchanged and check with Ms. Reyes",
 							"outcome": "SAFE",
-							"consequence": "Mia's manager confirms that they never requested access. The phishing attempt is contained."
+							"consequence": "Ms. Reyes confirms she can already view the poster and did not request broader access. Alex rejects and reports the unknown account."
 						},
 						{
-							"label": "Grant view-only access so the requester cannot edit anything.",
+							"label": "Give the new account view-only access",
 							"outcome": "RISKY",
-							"consequence": "Sensitive company documents are still exposed to an unverified account."
+							"consequence": "View-only still lets the unknown account read and copy the contact sheet. Alex asks Ms. Reyes to help revoke access and contain the exposure."
 						}
 					],
-					"explanation": "Access requests must be verified independently, even when the request contains accurate internal information.",
+					"explanation": "A legitimate sharing service does not prove the requester's identity. Verify the account and give only necessary access.",
 					"breach_gold": 16,
-					"next": ""
+					"next": "",
+					"background": "clubroom",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I still have the message and our saved details. I'll check them before choosing.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's compare the actual account, not just the name.",
+							"emotion": "neutral"
+						}
+					],
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Ms. Reyes <reyes.review@school-projects.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise: approve folder access"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://portal.harborhigh.example/sharing/water-wise"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE REQUEST",
+						"prompt": "Inspect the message, then compare your saved school information.",
+						"items": [
+							{
+								"id": "sender",
+								"label": "View requester details",
+								"analysis": "reyes.review@school-projects.example is different from Ms. Reyes's saved reyes@harborhigh.example address.",
+								"valid": true
+							},
+							{
+								"id": "destination",
+								"label": "Preview sharing link",
+								"analysis": "The link names the real school portal. That alone does not verify the person requesting access.",
+								"valid": true
+							},
+							{
+								"id": "permissions",
+								"label": "Open saved Project sharing",
+								"analysis": "The saved settings show Ms. Reyes already has viewer access. A different account wants editor access to the entire folder and contact sheet.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					}
 				}
-			]
+			],
+			"scene_header": "HARBOR HIGH // PROJECT WEEK",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of protecting the account while a trusted adult helps. Alex is not operating the school's security systems.",
+			"map_route": [[0, 5], [9, 5], [9, 3], [3, 3], [3, 1], [12, 1]],
+			"locations": {
+				"opening": "library_room",
+				"ending": "clubroom",
+				"resume_breach": "classroom_day",
+				"breach_contained": "classroom_day"
+			},
+			"phone": {
+				"contacts": [
+					{
+						"title": "Ms. Reyes",
+						"evidence_id": "adviser",
+						"body": "reyes@harborhigh.example\nSaved at the start of term. Ms. Reyes says: Fair registration is on our usual school portal. I have not sent a separate sign-in form."
+					},
+					{
+						"title": "School IT",
+						"body": "help@harborhigh.example\nSaved from the school handbook."
+					}
+				],
+				"pages": [
+					{
+						"title": "Class project page",
+						"evidence_id": "class_page",
+						"body": "https://portal.harborhigh.example/class-projects\nSaved bookmark: Water Wise poster, Alex and Mia. Draft due Friday. No new research document has been shared. Project titles also appear on the public school-fair board."
+					},
+					{
+						"title": "Project sharing",
+						"evidence_id": "permissions",
+						"body": "Water Wise / Sharing settings\nOwner: Alex\nMia: editor\nMs. Reyes (reyes@harborhigh.example): viewer\nPending request: reyes.review@school-projects.example asks for EDITOR access to the entire folder, including the group contact sheet."
+					}
+				]
+			}
 		},
 		{
 			"id": "mod01_stage3",

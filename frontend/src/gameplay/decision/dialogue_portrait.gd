@@ -2,33 +2,67 @@ extends Control
 ## Expression atlases for the school cast; other speakers keep the pixel fallback.
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
 static var _expression_frames: Dictionary = {}
+const BODY_CANVAS: Vector2 = Vector2(408, 1024)
+const SCHOOL_EXPRESSIONS: PackedStringArray = ["neutral", "worried", "shocked", "frustrated", "sad", "determined", "relieved", "scared"]
+## Source crops and attachment rectangles belong to the asset, not the scene.
+## All cast members share the same rendering and expression lifecycle.
+const SCHOOL_ATLASES: Dictionary = {
+	"Alex": {"asset_id": "story_dialogue_alex", "body": Rect2(0, 160, 408, 824), "head": Rect2(70, 0, 236, 270), "origin": Vector2(416, 160), "cell": Vector2(280, 320), "row_step": 400},
+	"Mia": {"asset_id": "story_dialogue_mia", "body": Rect2(0, 150, 384, 840), "head": Rect2(60, 0, 276, 315), "origin": Vector2(395, 160), "cell": Vector2(280, 320), "row_step": 400},
+	"Ms. Reyes": {"asset_id": "story_dialogue_ms_reyes", "body": Rect2(0, 140, 392, 852), "head": Rect2(72, 0, 248, 310), "origin": Vector2(400, 150), "cell": Vector2(280, 350), "row_step": 380},
+}
 
-static func school_expression(who: String, mood: String) -> Texture2D:
-	var file: String = str({"Alex": "alex", "Mia": "mia", "Ms. Reyes": "ms_reyes"}.get(who, ""))
-	if file.is_empty():
-		return null
-	var frame_index: int = 0
-	match Emotion.normalize(mood):
-		"worried", "scared", "shocked", "sad", "crying", "angry", "frustrated": frame_index = 1
-		"relieved", "determined": frame_index = 2
-	var key: String = "%s/%d" % [file, frame_index]
+static func _school_frame(who: String, key: String, region: Rect2) -> Texture2D:
 	var tree: SceneTree = Engine.get_main_loop() as SceneTree
 	var assets: Node = tree.root.get_node_or_null("AssetManager") if tree != null else null
-	var sheet: Texture2D = assets.get_texture("story_portrait_" + file) if assets != null else null
-	if sheet == null or sheet.get_width() != sheet.get_height() * 3:
+	if assets == null:
 		return null
-	var cached: AtlasTexture = _expression_frames.get(key) as AtlasTexture
-	# Rebuild a frame when catalog synchronization replaces the cached sheet.
-	if cached == null or cached.atlas != sheet:
+	var spec: Dictionary = SCHOOL_ATLASES[who]
+	# AssetManager owns disk loading and downloads. Never retain a null cache
+	# result here: an open workspace can refresh after startup sync completes.
+	var atlas: Texture2D = assets.get_texture(str(spec["asset_id"]))
+	if atlas == null:
+		return null
+	key = who + "/" + key
+	if not _expression_frames.has(key):
 		var frame: AtlasTexture = AtlasTexture.new()
-		frame.atlas = sheet
-		var width: float = sheet.get_width() / 3.0
-		frame.region = Rect2(frame_index * width, 0, width, sheet.get_height())
+		frame.atlas = atlas
+		frame.region = region
 		frame.filter_clip = true
 		_expression_frames[key] = frame
-	return _expression_frames[key] as Texture2D
+	var cached_frame: AtlasTexture = _expression_frames[key] as AtlasTexture
+	cached_frame.atlas = atlas
+	return cached_frame
+
+static func school_body(who: String) -> Texture2D:
+	if not SCHOOL_ATLASES.has(who):
+		return null
+	var spec: Dictionary = SCHOOL_ATLASES[who]
+	return _school_frame(who, "body", spec["body"] as Rect2)
+
+static func school_expression(who: String, mood: String) -> Texture2D:
+	if not SCHOOL_ATLASES.has(who):
+		return null
+	var spec: Dictionary = SCHOOL_ATLASES[who]
+	var expression: String = Emotion.normalize(mood)
+	if expression == "angry":
+		expression = "frustrated"
+	elif expression == "crying":
+		expression = "sad"
+	var index: int = maxi(0, SCHOOL_EXPRESSIONS.find(expression))
+	var cell: Vector2 = spec["cell"] as Vector2
+	var origin: Vector2 = spec["origin"] as Vector2
+	origin += Vector2((index % 4) * cell.x, 0 if index < 4 else int(spec["row_step"]))
+	return _school_frame(who, "expression/" + expression, Rect2(origin, cell))
 
 var portrait_texture: Texture2D
+var body_texture: Texture2D
+var retain_expression: bool = false
+var _light: float = 0.48:
+	set(value):
+		_light = value
+		queue_redraw()
+var _light_tween: Tween
 var frameless: bool = false
 var speaker := "Mia"
 var speaking := false
@@ -52,20 +86,46 @@ func _process(delta: float) -> void:
 		return
 	clock += delta
 	_emotion_clock += delta
-	if talking or emotion != Emotion.NEUTRAL:
+	if speaking and (talking or emotion != Emotion.NEUTRAL):
 		queue_redraw()
 
 func configure(who: String, active: bool, animated: bool, p_emotion: String = Emotion.NEUTRAL) -> void:
+	var changed_character: bool = speaker != who
+	var changed_focus: bool = speaking != active
 	speaker = who
 	speaking = active
 	talking = animated
-	# Emotion belongs to whoever is actually speaking the line; a portrait
-	# that isn't currently active always presents neutral.
-	var next_emotion: String = Emotion.normalize(p_emotion) if active else Emotion.NEUTRAL
+	# School listeners keep their last authored reaction; legacy callers retain
+	# the neutral inactive behavior. Only active speakers run emotion motion.
+	var next_emotion: String = Emotion.normalize(p_emotion) if active or retain_expression else Emotion.NEUTRAL
 	if next_emotion != emotion:
 		emotion = next_emotion
 		_emotion_clock = 0.0
+	if changed_character or changed_focus:
+		if _light_tween != null and _light_tween.is_valid():
+			_light_tween.kill()
+		var target_light: float = 1.0 if active else 0.48
+		if retain_expression and not changed_character and is_inside_tree() and not _reduced_motion():
+			_light_tween = create_tween()
+			_light_tween.tween_property(self, "_light", target_light, 0.18)
+		else:
+			_light = target_light
 	queue_redraw()
+
+func _exit_tree() -> void:
+	if _light_tween != null and _light_tween.is_valid():
+		_light_tween.kill()
+
+func _draw_full_body() -> void:
+	var factor: float = minf((size.x - 12.0) / BODY_CANVAS.x, (size.y - 12.0) / BODY_CANVAS.y)
+	var origin: Vector2 = Vector2((size.x - BODY_CANVAS.x * factor) * 0.5, size.y - BODY_CANVAS.y * factor)
+	var spec: Dictionary = SCHOOL_ATLASES.get(speaker, SCHOOL_ATLASES["Alex"])
+	var head: Rect2 = spec["head"] as Rect2
+	if speaking and not _reduced_motion():
+		origin += _emotion_transform().get("offset", Vector2.ZERO) as Vector2
+	var tint: Color = Color(_light, _light, _light, 1.0)
+	draw_texture_rect(body_texture, Rect2(origin + Vector2(0, 200) * factor, Vector2(408, 824) * factor), false, tint)
+	draw_texture_rect(portrait_texture, Rect2(origin + head.position * factor, head.size * factor), false, tint)
 
 ## Pure function of (emotion, time-since-emotion-began): offset/rotation/scale
 ## to apply around the drawing's own pivot, plus whether to suppress the
@@ -113,6 +173,9 @@ func _draw() -> void:
 	var frame := Rect2(Vector2.ZERO, size)
 	if not frameless:
 		draw_style_box(_frame(ink), frame)
+	if body_texture != null and portrait_texture != null:
+		_draw_full_body()
+		return
 	if portrait_texture != null:
 		var fitted := portrait_texture.get_size()
 		fitted *= minf((size.x - 12) / fitted.x, (size.y - 12) / fitted.y)
@@ -121,7 +184,7 @@ func _draw() -> void:
 		# restrained emotion motion without ever moving a Container child.
 		if speaking and not _reduced_motion():
 			art_offset += _emotion_transform().get("offset", Vector2.ZERO)
-		draw_texture_rect(portrait_texture, Rect2(art_offset, fitted), false, Color.WHITE if speaking else Color(0.5, 0.6, 0.6))
+		draw_texture_rect(portrait_texture, Rect2(art_offset, fitted), false, Color(_light, _light, _light, 1.0))
 		return
 	var scale_factor := minf((size.x - 12) / 48.0, (size.y - 8) / 48.0)
 	var offset := Vector2((size.x - 48 * scale_factor) / 2, size.y - 48 * scale_factor - 4)

@@ -81,12 +81,14 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -100.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
 [node name="Art" type="TextureRect" parent="ArtClip"]
 unique_name_in_owner = true
+texture_filter = 1
 layout_mode = 0
 offset_right = 1280.0
 offset_bottom = 720.0
@@ -134,9 +136,9 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 48.0
-offset_top = -168.0
+offset_top = -88.0
 offset_right = -48.0
-offset_bottom = -28.0
+offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
@@ -147,6 +149,7 @@ layout_mode = 2
 theme_override_constants/separation = 18
 
 [node name="PortraitFrame" type="Panel" parent="DialogueBox/Row"]
+visible = false
 custom_minimum_size = Vector2(112, 112)
 layout_mode = 2
 size_flags_vertical = 4
@@ -214,9 +217,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -180.0
-offset_top = -96.0
+offset_top = -80.0
 offset_right = 180.0
-offset_bottom = -38.0
+offset_bottom = -22.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.952941, 0.92549, 0.839216, 1)

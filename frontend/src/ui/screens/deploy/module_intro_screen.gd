@@ -1,7 +1,8 @@
 extends BaseScreen
-## Module 1 comic intro: panel 1 → 2 → 3, zoom out, then Start Module.
+## Alex's school morning: five comic panels, zoom out, then Start Module.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
+const COMIC_ASSET_ID: String = "ui_module1_morning_comic"
 const MOVE_SEC := 0.7
 const ZOOM_OUT_SEC := 1.05
 const LINE_HOLD_SEC := 1.55
@@ -12,12 +13,16 @@ const DIALOGUE_KEYS: PackedStringArray = [
 	"MODULE_INTRO_LINE_1",
 	"MODULE_INTRO_LINE_2",
 	"MODULE_INTRO_LINE_3",
+	"MODULE_INTRO_LINE_4",
+	"MODULE_INTRO_LINE_5",
 ]
-## Normalized page rects: top-left, bottom-left, right horizontal panel.
+## Reading order: three upper panels, then two lower panels.
 const PANELS: Array[Rect2] = [
-	Rect2(0.02, 0.03, 0.48, 0.46),
-	Rect2(0.02, 0.51, 0.48, 0.46),
-	Rect2(0.52, 0.12, 0.46, 0.76),
+	Rect2(0.01, 0.01, 0.32, 0.48),
+	Rect2(0.34, 0.01, 0.32, 0.48),
+	Rect2(0.67, 0.01, 0.32, 0.48),
+	Rect2(0.01, 0.51, 0.48, 0.48),
+	Rect2(0.51, 0.51, 0.48, 0.48),
 ]
 
 @onready var _art_clip: Control = %ArtClip
@@ -42,6 +47,7 @@ func _ready() -> void:
 	_load_font()
 	_start_button.pressed.connect(_on_start_pressed)
 	_skip_button.pressed.connect(_on_skip_pressed)
+	AssetManager.sync_finished.connect(_on_assets_ready)
 
 
 func on_enter(args: Dictionary) -> void:
@@ -58,11 +64,6 @@ func on_enter(args: Dictionary) -> void:
 	_apply_copy()
 	_refresh_skip()
 	_load_art()
-	if _art.texture == null:
-		await AssetManager.ensure_ready()
-		if not _still(token):
-			return
-		_load_art()
 	await get_tree().process_frame
 	if not _still(token):
 		return
@@ -78,7 +79,15 @@ func on_exit() -> void:
 
 func _play_sequence(token: int) -> void:
 	if _art.texture == null:
+		# A first offline launch still presents the premise, not an empty page.
+		for key: String in DIALOGUE_KEYS:
+			if not _still(token):
+				return
+			await _play_line(tr(key), token)
+		if not _still(token):
+			return
 		_show_start()
+		_start_button.modulate.a = 1.0
 		return
 	_apply_camera(_camera_for(PANELS[0]))
 	for i in PANELS.size():
@@ -175,8 +184,18 @@ func _tween_camera(cam: Dictionary, duration: float) -> void:
 
 
 func _load_art() -> void:
-	AssetManager.bind_texture(_art, "ui_module1_intro")
+	_art.texture = AssetManager.get_texture(COMIC_ASSET_ID)
 	_refresh_portrait()
+
+
+func _on_assets_ready(_success: bool) -> void:
+	if _art.texture != null:
+		return
+	_load_art()
+	if _art.texture != null and is_visible_in_tree():
+		_layout_page()
+		_apply_camera(_camera_full())
+	# Do not restart the sequence or change player progress on late arrival.
 
 
 func _refresh_portrait() -> void:

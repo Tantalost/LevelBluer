@@ -1,6 +1,6 @@
 extends SceneTree
 ## --download validates the supplied URLs and populates the asset cache.
-## --story selects the 15 school story assets instead of the seven environment assets.
+## --story selects the 19 school story assets instead of the seven environment assets.
 ## Default mode verifies offline cache reuse and real scene bindings; no saves.
 var failures := 0
 
@@ -69,7 +69,7 @@ func _run() -> void:
 
 func _verify_school_story(assets: Node) -> void:
 	var entries: Array[Dictionary] = assets._school_story_catalog()
-	_check(entries.size() == 15, "Three portraits and twelve locations registered")
+	_check(entries.size() == 19, "Three portraits, three dialogue atlases, comic and twelve locations registered")
 	for entry: Dictionary in entries:
 		var id: String = str(entry.asset_id)
 		if "--download" in OS.get_cmdline_user_args():
@@ -82,8 +82,14 @@ func _verify_school_story(assets: Node) -> void:
 		if texture == null:
 			continue
 		var portrait: bool = id.begins_with("story_portrait_")
-		_check(texture.get_size() == (Vector2(2172, 724) if portrait else Vector2(800, 400)), "Original dimensions retained: " + id)
-		if portrait:
+		var dialogue_atlas: bool = id.begins_with("story_dialogue_")
+		var expected_size: Vector2 = Vector2(2172, 724) if portrait else Vector2(800, 400)
+		if dialogue_atlas:
+			expected_size = Vector2(1536, 1024)
+		elif id == "ui_module1_morning_comic":
+			expected_size = Vector2(1672, 941)
+		_check(texture.get_size() == expected_size, "Original dimensions retained: " + id)
+		if portrait or dialogue_atlas:
 			_check(texture.get_image().get_pixel(0, 0).a == 0.0, "Portrait transparency retained: " + id)
 	if failures > 0:
 		return
@@ -96,17 +102,19 @@ func _verify_school_story(assets: Node) -> void:
 	workspace.show_story(lines, "School story cache check")
 	_check(workspace._background_art.texture == assets.get_texture("story_bg_hallway_day"), "Scene binds cached location")
 	for who: String in ["Alex", "Mia", "Ms. Reyes"]:
-		for mood: String in ["neutral", "worried", "relieved"]:
+		_check(portrait_script.school_body(who) is AtlasTexture, "Cached body available: " + who)
+		for mood: String in portrait_script.SCHOOL_EXPRESSIONS:
 			_check(portrait_script.school_expression(who, mood) is AtlasTexture, "Cached expression available: " + who + "/" + mood)
 	# Simulate a first-launch cache miss in memory only; never delete a user's cache.
-	var sheet: Texture2D = assets.get_texture("story_portrait_alex")
+	var sheet: Texture2D = assets.get_texture("story_dialogue_alex")
 	var background: Texture2D = assets.get_texture("story_bg_hallway_day")
-	assets._textures["story_portrait_alex"] = null
+	assets._textures["story_dialogue_alex"] = null
 	assets._textures["story_bg_hallway_day"] = null
 	assets.sync_finished.emit(false)
 	_check(workspace._portraits[0].portrait_texture == null, "Missing portrait uses procedural fallback")
+	_check(workspace._portraits[0].body_texture == null, "Missing atlas does not leave a stale body")
 	_check(workspace._background_art.texture == null and not workspace._background_art.visible, "Missing location uses the themed panel")
-	assets._textures["story_portrait_alex"] = sheet
+	assets._textures["story_dialogue_alex"] = sheet
 	assets._textures["story_bg_hallway_day"] = background
 	assets.sync_finished.emit(true)
 	_check(workspace._portraits[0].portrait_texture is AtlasTexture and workspace._background_art.texture == background, "Late cache arrival refreshes the open scene")
@@ -114,3 +122,18 @@ func _verify_school_story(assets: Node) -> void:
 	var subscribers: int = assets.sync_finished.get_connections().size()
 	workspace.free()
 	_check(assets.sync_finished.get_connections().size() == subscribers - 1, "Freed workspace disconnects its cache signal")
+	var intro: Control = load("res://src/ui/screens/deploy/module_intro_screen.tscn").instantiate()
+	root.add_child(intro)
+	intro._load_art()
+	var comic: Texture2D = assets.get_texture("ui_module1_morning_comic")
+	_check(intro._art.texture == comic, "Comic uses the hosted morning art, not the old company comic")
+	assets._textures["ui_module1_morning_comic"] = null
+	intro._load_art()
+	_check(intro._art.texture == null, "Missing comic does not reference a removed local file")
+	assets._textures["ui_module1_morning_comic"] = comic
+	var sequence: int = intro._seq
+	assets.sync_finished.emit(true)
+	_check(intro._art.texture == comic and intro._seq == sequence, "Late comic arrival does not restart the sequence")
+	subscribers = assets.sync_finished.get_connections().size()
+	intro.free()
+	_check(assets.sync_finished.get_connections().size() == subscribers - 1, "Freed intro disconnects its cache signal")

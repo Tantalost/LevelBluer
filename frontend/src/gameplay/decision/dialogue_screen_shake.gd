@@ -11,11 +11,16 @@ extends RefCounted
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
 
 static func apply(node: Control, emotion: String) -> void:
+	_apply_profile(node, Emotion.shake_profile(emotion))
+
+static func buzz(node: Control) -> void:
+	_apply_profile(node, {"intensity": 3.0, "duration": 0.16})
+
+static func _apply_profile(node: Control, profile: Dictionary) -> void:
 	cancel(node)
 	var settings: Node = Engine.get_main_loop().root.get_node_or_null("SettingsService")
 	if settings != null and bool(settings.reduced_motion):
 		return
-	var profile: Dictionary = Emotion.shake_profile(emotion)
 	if profile.is_empty():
 		return
 	var intensity: float = float(profile.get("intensity", 0.0))

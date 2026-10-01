@@ -107,6 +107,16 @@ func _ready() -> void:
 	super._ready()
 	if hud == null:
 		return
+	var route_data: Array = story.get("map_route", []) as Array
+	if not route_data.is_empty():
+		var route: Array[Vector2i] = []
+		for coordinates: Variant in route_data:
+			if not coordinates is Array or coordinates.size() != 2:
+				route.clear()
+				break
+			route.append(Vector2i(int(coordinates[0]), int(coordinates[1])))
+		if not hud.battle.configure_route(route):
+			push_warning("Invalid story map route; keeping the default battlefield.")
 	hud.preview_label.text = "MODULE 01 / STORY MISSION"
 	story_overlay = preload("res://src/gameplay/decision/decision_workspace.gd").new()
 	story_overlay.name = "DecisionOverlay"

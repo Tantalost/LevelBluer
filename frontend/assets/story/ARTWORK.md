@@ -2,7 +2,7 @@
 
 ## Sources and use
 
-Backgrounds supplied by the user. The images are hosted on Cloudinary, not bundled in the repository. `AssetManager._school_story_catalog()` registers all 15 images in the existing startup synchronization. Gameplay reads `user://assets/story_bg_<location>.png` and `user://assets/story_portrait_<character>.png`; no HTTP request occurs during story playback. First-time artwork requires an online startup, then remains available offline. If a download is unavailable, the themed background and procedural portraits keep dialogue playable. A finished synchronization refreshes an open story without advancing dialogue.
+Backgrounds supplied by the user. The images are hosted on Cloudinary, not bundled in the repository. `AssetManager._school_story_catalog()` registers 19 images in the existing startup synchronization: twelve backgrounds, three legacy portraits, three full-body dialogue atlases, and the morning comic. Gameplay reads `user://assets/story_bg_<location>.png`, `user://assets/story_portrait_<character>.png`, and `user://assets/story_dialogue_<character>.png`; no HTTP request occurs during story playback. First-time artwork requires an online startup, then remains available offline. If a download is unavailable, the themed background and procedural portraits keep dialogue playable. A finished synchronization refreshes an open story without advancing dialogue.
 
 The current Stage 1 uses school_gate_morning for its opening, hallway_day for incidents 1–2, and classroom_day for incident 3 and its ending. Other supplied locations remain in the requested location catalog; other chapters are not rewritten by this milestone. The source filenames below are archival labels, not local resource paths. All downloaded pixels were verified against the original images before the 15 PNGs and their import descriptors were removed. An external ZIP backup of the originals was also verified by SHA-256.
 
@@ -23,6 +23,21 @@ Cache verification: run `res://src/tools/verify_cloudinary_environment.gd` with 
 
 ## Character sheets
 
+### Full-body dialogue and morning comic
+
+The current school cast uses the full-body atlases below (1536x1024, transparent), with one shared body and eight expression crops. `dialogue_portrait.gd` owns the unchanged crop coordinates and nearest-neighbor rendering. Separate cache IDs prevent collisions with the older three-expression portraits. Atlas dimensions are checked before caching. Missing atlases use procedural portraits and refresh after asset synchronization.
+
+- `story_dialogue_alex`: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790828276/alex_dialogue_atlas.png
+- `story_dialogue_mia`: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790828276/mia_dialogue_atlas.png
+- `story_dialogue_ms_reyes`: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790828276/ms_reyes_dialogue_atlas.png
+- `ui_module1_morning_comic`: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790828295/module1_morning_comic.png
+
+The morning comic is 1672x941 and cached as `user://assets/ui_module1_morning_comic.png`. The five-panel intro keeps its existing timing and camera framing. A first offline launch without the comic still presents Alex's dialogue; a late download displays the art without restarting the intro.
+
+These four Cloudinary originals were verified byte-for-byte with SHA-256 before removing their repository PNGs and import descriptors. No change to Git history is required: these files were untracked.
+
+### Legacy head portraits
+
 - Alex: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790436023/alex_expressions.png
 - Mia: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790436023/mia_expressions.png
 - Ms. Reyes: https://res.cloudinary.com/nfd5bhkz/image/upload/v1790436023/ms_reyes_expressions.png
@@ -40,4 +55,3 @@ Use case: illustration-story. Input image 1 is the exact PIXEL ART STYLE and por
 ### portraits/ms_reyes_expressions.png — final prompt
 
 Use case: illustration-story. Input image 1 is the exact pixel portrait ART STYLE reference only. Create Ms. Reyes, a warm high-school teacher in her late thirties, medium brown skin, dark hair tied in a neat low bun with side-parted bangs, brown eyes, small rectangular glasses, muted warm terracotta cardigan over cream blouse. Production dialogue expression atlas with exactly THREE equal square cells side by side, wide 3:1 canvas, transparent alpha background. Reference style: small 64x64 classic JRPG/anime face portraits enlarged with hard crisp pixel blocks, expressive eyes, delicate angular pixel outlines, flat 3-tone shading, limited palette, clear tiny eye highlights and warm cheeks. Adult teacher proportions, not a child or chibi body. Head and upper shoulders only; full head with bun fits in every cell. Left expression calm attentive; center concerned eyebrows with slightly open speaking mouth; right reassuring gentle smile. IDENTICAL face identity, glasses, hairstyle, eye-line, head size, outfit, pose across all three; facial expression is the only change. Each portrait fully inside its equal-width third with a transparent gap, no crop across cell boundaries. NO smooth painted anime, no photorealism, no fine realistic texture, no gradients, no blur or antialiasing. No background, glow, opaque shadow, checkerboard, dividers, labels, text or watermark. Flat ready-to-use sprite atlas.
-

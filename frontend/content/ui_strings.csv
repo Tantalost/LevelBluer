@@ -72,9 +72,11 @@ INTRO_START_GAME,START GAME,MAGSIMULA
 INTRO_PRESS_HINT,PRESS TO INITIALIZE,PINDUTIN PARA MAG-INITIALIZE
 MODULE_INTRO_START,START MODULE,SIMULAN ANG MODULE
 MODULE_INTRO_SKIP,SKIP,LAKTAWAN
-MODULE_INTRO_LINE_1,A fake email just landed.,May pekeng email na dumating.
-MODULE_INTRO_LINE_2,One click opens the gate.,Isang click, bukas na ang gate.
-MODULE_INTRO_LINE_3,The city network is exposed.,Nakalantad na ang network.
+MODULE_INTRO_LINE_1,Alex: Just five more minutes...,Alex: Limang minuto pa...
+MODULE_INTRO_LINE_2,Alex: It's already 7:20?! I'm late!,Alex: Alas-siyete bente na?! Huli na ako!
+MODULE_INTRO_LINE_3,Alex: Shirt. Jacket. Bag. Come on!,Alex: Damit. Jacket. Bag. Bilis!
+MODULE_INTRO_LINE_4,Alex: Please don't let me miss the bell!,Alex: Sana umabot ako bago tumunog ang bell!
+MODULE_INTRO_LINE_5,You got mail,May bago kang email
 TUTORIAL_NPC_NAME,HANDLER,HANDLER
 TUTORIAL_NEXT,NEXT,SUNOD
 TUTORIAL_CHOICE_DEPLOY,DEPLOY,DEPLOY

@@ -11,10 +11,19 @@ var _content: VBoxContainer
 var _title: Label
 var _status: Label
 var _back: Button
-var _home: Button
+var _nav: HBoxContainer
+var _unlock_button: Button
+var _unlocked: bool = false
+var _zoom_tween: Tween
+var _zoom: float = 0.0:
+	set(value):
+		_zoom = value
+		_fit_shell()
 var _close: Button
 var _confirm: Button
-var _guide: Label
+var _guide: RichTextLabel
+var _guide_panel: PanelContainer
+var _wallpaper_clip: PackedVector2Array = []
 var _data: Dictionary = {}
 var _message: Dictionary = {}
 var _items: Array[Dictionary] = []
@@ -41,35 +50,45 @@ func _ready() -> void:
 	_shell = UI.panel(self, Color("0A1730"))
 	_shell.name = "PixelPhone"
 	var frame: StyleBoxEmpty = StyleBoxEmpty.new()
-	frame.content_margin_left = 26
-	frame.content_margin_right = 26
-	frame.content_margin_top = 44
-	frame.content_margin_bottom = 26
+	frame.content_margin_left = 28
+	frame.content_margin_right = 28
+	frame.content_margin_top = 50
+	frame.content_margin_bottom = 28
 	_shell.add_theme_stylebox_override("panel", frame)
 	_shell.draw.connect(_draw_frame)
 	var layout: VBoxContainer = UI.column(_shell, 8)
-	_status = UI.label("ALEX'S PHONE", 18, UI.TEAL)
-	_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_status = UI.label("07:35", 18, Color("F3ECD6"))
+	_status.autowrap_mode = TextServer.AUTOWRAP_OFF
 	layout.add_child(_status)
 	_title = UI.label("HOME", 24, UI.GOLD)
 	layout.add_child(_title)
-	_guide = UI.label("", 22, Color("8FF0E6"))
-	layout.add_child(_guide)
+	_guide = RichTextLabel.new()
+	_guide.bbcode_enabled = true
+	_guide.add_theme_font_override("normal_font", UI.FONT)
+	_guide.add_theme_color_override("default_color", Color("8FF0E6"))
+	_guide.size_flags_vertical = SIZE_EXPAND_FILL
+	_guide.scroll_active = true
+	_guide.focus_mode = FOCUS_ALL
+	_guide.accessibility_name = "Phone investigation checklist"
 	_content = UI.scroll_column(layout)
+	_guide_panel = UI.panel(self, Color("0A1730"))
+	_guide_panel.name = "PhoneGuide"
+	var guide_layout: VBoxContainer = UI.column(_guide_panel, 14)
+	guide_layout.add_child(UI.label("CHECKLIST", 22, Color("F3ECD6")))
+	guide_layout.add_child(_guide)
 	_confirm = UI.button("", _finish, true)
-	layout.add_child(_confirm)
-	var nav: HBoxContainer = HBoxContainer.new()
-	nav.add_theme_constant_override("separation", 8)
-	layout.add_child(nav)
+	guide_layout.add_child(_confirm)
+	_nav = HBoxContainer.new()
+	_nav.add_theme_constant_override("separation", 12)
+	add_child(_nav)
 	_back = UI.button("< BACK", _go_back)
-	_home = UI.button("HOME", _navigate.bind("home"))
 	_close = UI.button("CLOSE", _request_close)
 	_close.accessibility_name = "Close phone and return to story"
-	for button: Button in [_back, _home, _close]:
+	for button: Button in [_back, _close]:
 		button.size_flags_horizontal = SIZE_EXPAND_FILL
 		button.custom_minimum_size.x = 0
 		button.autowrap_mode = TextServer.AUTOWRAP_OFF
-		nav.add_child(button)
+		_nav.add_child(button)
 	resized.connect(_queue_metrics)
 	get_viewport().size_changed.connect(_queue_metrics)
 	hide()
@@ -79,6 +98,7 @@ func _queue_metrics() -> void:
 
 func configure(data: Dictionary) -> void:
 	_data = data.duplicate(true)
+	_unlocked = false
 
 func reset_incident(config: Dictionary = {}) -> void:
 	stop()
@@ -101,25 +121,47 @@ func receive_message(message: Dictionary) -> void:
 	_message = message.duplicate(true)
 	_read = false
 	_sender_revealed = false
+	if visible:
+		_render()
 
 func open_phone(investigating: bool = false) -> void:
 	if _locked or visible:
 		return
 	_investigating = investigating
 	show()
-	_navigate("home")
+	_app = "home" if _unlocked else "lock"
+	_zoom = 0.0
+	_reading = false
+	_card_open = false
+	_render()
 	_metrics()
 	var settings: Node = get_node_or_null("/root/SettingsService")
 	if settings == null or not bool(settings.get("reduced_motion")):
 		_shell.modulate.a = 0.0
 		_transition = create_tween()
 		_transition.tween_property(_shell, "modulate:a", 1.0, 0.18)
-	_home.grab_focus()
+	if _app == "lock":
+		_unlock_button.grab_focus()
+	else:
+		_close.grab_focus()
+
+func _unlock() -> void:
+	if _locked or not visible or _app != "lock":
+		return
+	_unlocked = true
+	_navigate("home")
+
+func _reduced_motion() -> bool:
+	var settings: Node = get_node_or_null("/root/SettingsService")
+	return settings != null and bool(settings.get("reduced_motion"))
 
 func stop() -> void:
 	if _transition != null and _transition.is_valid():
 		_transition.kill()
 	_transition = null
+	if _zoom_tween != null and _zoom_tween.is_valid():
+		_zoom_tween.kill()
+	_zoom_tween = null
 	_shell.modulate = Color.WHITE
 	hide()
 
@@ -130,36 +172,74 @@ func set_locked(value: bool) -> void:
 			_transition.pause()
 		else:
 			_transition.play()
+	if _zoom_tween != null and _zoom_tween.is_valid():
+		if value:
+			_zoom_tween.pause()
+		else:
+			_zoom_tween.play()
 	_refresh()
 
 func is_complete() -> bool:
 	return not _items.is_empty() and _inspected.size() == _items.size()
 
 func _navigate(app: String) -> void:
-	if _locked or not visible:
+	if _locked or not visible or (not _unlocked and app != "lock"):
+		return
+	if app not in ["lock", "home", "mail", "contacts", "pages"]:
 		return
 	_app = app
 	_reading = false
 	_card_open = false
 	_render()
+	if _zoom_tween != null and _zoom_tween.is_valid():
+		_zoom_tween.kill()
+	var target: float = 0.0 if app in ["lock", "home"] else 1.0
+	if _reduced_motion():
+		_zoom = target
+	else:
+		_zoom_tween = create_tween()
+		_zoom_tween.tween_property(self, "_zoom", target, 0.24).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 func _render() -> void:
 	UI.clear(_content)
+	_content.size_flags_vertical = SIZE_EXPAND_FILL if _app in ["lock", "home"] else SIZE_FILL
 	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	_title.text = {"home": "HOME", "mail": "MAIL", "contacts": "SCHOOL CONTACTS", "pages": "SAVED PAGES"}.get(_app, "PHONE")
 	match _app:
-		"home":
-			var apps: GridContainer = GridContainer.new()
-			apps.columns = 3
-			apps.add_theme_constant_override("h_separation", 10)
-			_content.add_child(apps)
-			_app_tile(apps, "mail", "Mail", IntelPixelIcon.Kind.ENVELOPE, Color("4FE0D4"))
-			_app_tile(apps, "contacts", "Contacts", IntelPixelIcon.Kind.BADGE, Color("FFB648"))
-			_app_tile(apps, "pages", "Saved", IntelPixelIcon.Kind.BOOKS, Color("8faef5"))
-			if not _message.is_empty():
-				var notice: Button = UI.button(("NEW MAIL / " if not _read else "MAIL / ") + str(_message.get("subject", "")), _navigate.bind("mail"))
-				notice.alignment = HORIZONTAL_ALIGNMENT_LEFT
-				_content.add_child(notice)
+		"lock", "home":
+			var time: Label = UI.label("07:35", 64, Color("F3ECD6"))
+			time.set_meta("phone_clock", true)
+			time.add_theme_color_override("font_outline_color", Color("173058"))
+			time.add_theme_constant_override("outline_size", 4)
+			time.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_content.add_child(time)
+			var date: Label = UI.label("MONDAY", 20, Color("F3ECD6"))
+			date.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			_content.add_child(date)
+			var space: CenterContainer = CenterContainer.new()
+			space.size_flags_vertical = SIZE_EXPAND_FILL
+			space.mouse_filter = MOUSE_FILTER_IGNORE
+			_content.add_child(space)
+			if _app == "lock":
+				var lock_icon: IntelPixelIcon = IntelPixelIcon.new()
+				lock_icon.kind = IntelPixelIcon.Kind.LOCK
+				lock_icon.ink_override = Color("F3ECD6")
+				lock_icon.custom_minimum_size = Vector2(48, 48)
+				space.add_child(lock_icon)
+				_unlock_button = UI.button("TAP TO UNLOCK", _unlock, true)
+				_unlock_button.accessibility_name = "Unlock Alex's phone"
+				_content.add_child(_unlock_button)
+				_style_navigation(_unlock_button, true)
+			else:
+				var dock: PanelContainer = UI.panel(_content)
+				dock.add_theme_stylebox_override("panel", _raised_style(Color("0A1730", 0.88), Color("8FF0E6", 0.6), 8))
+				var apps: GridContainer = GridContainer.new()
+				apps.columns = 3
+				apps.add_theme_constant_override("h_separation", 10)
+				dock.add_child(apps)
+				_app_tile(apps, "mail", "Mail", IntelPixelIcon.Kind.ENVELOPE, Color("4FE0D4"))
+				_app_tile(apps, "contacts", "Contacts", IntelPixelIcon.Kind.BADGE, Color("FFB648"))
+				_app_tile(apps, "pages", "Saved", IntelPixelIcon.Kind.TERMINAL, Color("8faef5"))
 		"mail":
 			if _message.is_empty():
 				_content.add_child(UI.label("No new messages yet.", 22, UI.MUTED))
@@ -185,9 +265,11 @@ func _app_tile(parent: Control, app: String, caption: String, kind: IntelPixelIc
 	button.size_flags_horizontal = SIZE_EXPAND_FILL
 	button.custom_minimum_size = Vector2(0, 104)
 	button.accessibility_name = caption
+	button.tooltip_text = caption
+	button.set_meta("phone_app", app)
 	parent.add_child(button)
 	_guide_button(button, app)
-	var face: VBoxContainer = VBoxContainer.new()
+	var face: Control = Control.new()
 	face.mouse_filter = MOUSE_FILTER_IGNORE
 	face.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	face.offset_top = 8
@@ -195,22 +277,28 @@ func _app_tile(parent: Control, app: String, caption: String, kind: IntelPixelIc
 	button.add_child(face)
 	var icon: IntelPixelIcon = IntelPixelIcon.new()
 	icon.kind = kind
-	icon.ink_override = ink
-	icon.custom_minimum_size.y = 48
-	icon.size_flags_vertical = SIZE_EXPAND_FILL
+	icon.ink_override = Color("F3ECD6")
+	icon.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	icon.offset_left = 8
+	icon.offset_right = -8
 	face.add_child(icon)
-	var label: Label = UI.label(caption, 22)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	face.add_child(label)
+	var app_style: StyleBoxFlat = _raised_style(ink.darkened(0.38), ink.lightened(0.25), 4)
+	button.add_theme_stylebox_override("normal", app_style)
+	button.add_theme_stylebox_override("hover", _raised_style(ink.darkened(0.15), Color("F3ECD6"), 4))
+	button.add_theme_stylebox_override("pressed", _raised_style(ink.darkened(0.5), ink, 4))
+	button.add_theme_stylebox_override("focus", _raised_style(Color.TRANSPARENT, Color("FFB648"), 0))
 	if app == "mail" and not _message.is_empty() and not _read:
-		var badge: ColorRect = ColorRect.new()
-		badge.color = Color("FF5C5C")
+		var badge: Panel = Panel.new()
+		badge.name = "UnreadBadge"
+		var badge_style: StyleBoxFlat = UI.box(Color("FF5C5C"), Color("F3ECD6"), 0)
+		badge_style.set_corner_radius_all(10)
+		badge.add_theme_stylebox_override("panel", badge_style)
 		badge.mouse_filter = MOUSE_FILTER_IGNORE
 		badge.set_anchors_and_offsets_preset(PRESET_TOP_RIGHT)
-		badge.offset_left = -18
-		badge.offset_right = -8
-		badge.offset_top = 8
-		badge.offset_bottom = 18
+		badge.offset_left = -16
+		badge.offset_right = 4
+		badge.offset_top = -4
+		badge.offset_bottom = 16
 		button.add_child(badge)
 
 func _open_message() -> void:
@@ -307,18 +395,68 @@ func _finish() -> void:
 func _refresh() -> void:
 	for node: Node in find_children("*", "Button", true, false):
 		(node as Button).disabled = _locked
-	_back.disabled = _locked or _app == "home"
-	_confirm.visible = _investigating
+	_back.visible = _app not in ["lock", "home"]
+	_back.disabled = _locked
+	_title.visible = _app not in ["lock", "home"]
+	_confirm.visible = _investigating and _app != "lock"
 	_confirm.disabled = _locked or not is_complete()
 	_confirm.text = "DECIDE / USE FINDINGS" if is_complete() else "INSPECTED %d / %d" % [_inspected.size(), _items.size()]
 	var next: String = _next_step()
-	var instructions: Dictionary = {"mail": "Open Mail", "message": "Tap the message to read it", "sender": "Scroll down to sender details", "destination": "Preview the link below", "contacts": "Go Home, then open Contacts", "directory": "Open the saved School IT card", "decide": "Ready? Use your findings below", "close": "Close the phone to continue talking"}
-	_guide.text = "> NEXT / " + str(instructions.get(next, "Explore your saved details"))
-	_guide_button(_home, next if _app != "home" and next in ["mail", "contacts"] else "")
+	_refresh_checklist()
+	_guide_button(_back, next if _app != "home" and next in ["mail", "contacts", "pages"] else "")
 	_guide_button(_close, "close")
 	_guide_button(_confirm, "decide")
+	_style_navigation(_back, false)
+	_style_navigation(_close, next == "close")
+
+## Completion comes from real phone actions, not a second progress state.
+func _checklist_tasks() -> Array[Dictionary]:
+	var tasks: Array[Dictionary] = [
+		{"id": "unlock", "text": "Unlock your phone", "done": _unlocked},
+		{"id": "read", "text": "Mail: read the message", "done": _read},
+	]
+	for item: Dictionary in _items:
+		var id: String = str(item.get("id", ""))
+		var app: String = str(item.get("phone_app", "mail"))
+		var caption: String = str({"mail": "Mail", "contacts": "Contacts", "pages": "Saved"}.get(app, "Phone"))
+		tasks.append({"id": id, "text": caption + ": " + str(item.get("label", "Inspect details")), "done": _inspected.has(id)})
+	return tasks
+
+func _refresh_checklist() -> void:
+	var scroll_position: float = _guide.get_v_scroll_bar().value
+	_guide.clear()
+	for task: Dictionary in _checklist_tasks():
+		var done: bool = bool(task["done"])
+		_guide.push_color(Color("33D17A") if done else Color("F3ECD6"))
+		_guide.add_text("[x] " if done else "[ ] ")
+		if done:
+			_guide.push_underline()
+		_guide.add_text(str(task["text"]))
+		if done:
+			_guide.pop()
+		_guide.pop()
+		_guide.add_text("\n\n")
+	_guide.get_v_scroll_bar().set_deferred("value", scroll_position)
+
+func _raised_style(fill: Color, edge: Color, padding: int) -> StyleBoxFlat:
+	var style: StyleBoxFlat = UI.box(fill, edge, padding)
+	style.set_corner_radius_all(4)
+	style.set_border_width_all(2)
+	style.border_width_bottom = 4
+	style.shadow_offset = Vector2(0, 3)
+	style.shadow_size = 0
+	return style
+
+func _style_navigation(button: Button, primary: bool) -> void:
+	var fill: Color = Color("8FF0E6") if primary else Color("F3ECD6")
+	button.add_theme_stylebox_override("normal", _raised_style(fill, Color("8c9d9b"), 8))
+	button.add_theme_stylebox_override("hover", _raised_style(Color("8FF0E6"), Color("F3ECD6"), 8))
+	button.add_theme_stylebox_override("pressed", _raised_style(Color("4FE0D4"), Color("173058"), 8))
+	button.add_theme_color_override("font_color", Color("101623"))
 
 func _next_step() -> String:
+	if _app == "lock":
+		return "unlock"
 	if not _read:
 		return "message" if _app == "mail" else "mail"
 	for item: Dictionary in _items:
@@ -338,47 +476,125 @@ func _guide_button(button: Button, action: String) -> void:
 	var style: StyleBoxFlat = UI.box(Color("153B37") if highlighted else Color("102040"), Color("4FE0D4") if highlighted else Color("173058"), 10)
 	style.set_border_width_all(3 if highlighted else 1)
 	button.add_theme_stylebox_override("normal", style)
-	button.tooltip_text = "Next step" if highlighted else ""
+	button.tooltip_text = ("Next: " if highlighted else "") + button.accessibility_name
 
 func _metrics() -> void:
 	if not is_instance_valid(_shell):
 		return
 	var scale_factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_guide.add_theme_font_size_override("normal_font_size", maxi(22, ceili(16.0 / scale_factor)))
 	for node: Node in find_children("*", "Control", true, false):
 		if node is Label or node is Button:
-			(node as Control).add_theme_font_size_override("font_size", maxi(22, ceili(16.0 / scale_factor)))
+			(node as Control).add_theme_font_size_override("font_size", maxi(22, ceili((40.0 if node.has_meta("phone_clock") else 16.0) / scale_factor)))
 		if node is Button:
-			(node as Button).custom_minimum_size.y = maxf(48.0 / scale_factor, 52.0 if (node as Button).accessibility_name not in ["Mail", "Contacts", "Saved"] else 104.0)
+			(node as Button).custom_minimum_size.y = maxf(48.0 / scale_factor, 52.0)
 	_fit_shell.call_deferred()
 	_shell.queue_redraw()
 
 func _fit_shell() -> void:
+	if not is_instance_valid(_shell) or not is_instance_valid(_nav):
+		return
 	var scale_factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-	var compact: bool = size.y * scale_factor < 500.0
-	var height: float = maxf(0.0, size.y - 32.0)
-	var width: float = minf(size.x - 32.0, (720.0 if compact else 420.0) / scale_factor)
-	_shell.position = Vector2(floorf((size.x - width) * 0.5), 12)
+	var nav_height: float = maxf(52.0, 48.0 / scale_factor)
+	var gap: float = 24.0 / scale_factor
+	var side_guide: bool = size.x >= size.y
+	var guide_width: float = minf(240.0 / scale_factor, size.x * 0.29) if side_guide else size.x - 40.0
+	var guide_height: float = minf(420.0 / scale_factor, size.y - 120.0 / scale_factor) if side_guide else minf(240.0 / scale_factor, size.y * 0.35)
+	_guide_panel.size = Vector2(guide_width, guide_height)
+	var available_width: float = size.x - 40.0 - (guide_width + gap if side_guide else 0.0)
+	var height: float = maxf(160.0, size.y - nav_height - 36.0 - (0.0 if side_guide else guide_height + gap))
+	var home_width: float = minf(available_width, maxf(230.0 / scale_factor, height * 0.52))
+	var app_width: float = minf(available_width, maxf(home_width * 1.6, 520.0 / scale_factor))
+	var width: float = lerpf(home_width, app_width, _zoom)
+	var group_width: float = width + (guide_width + gap if side_guide else 0.0)
+	var group_left: float = floorf((size.x - group_width) * 0.5)
+	# Keep the phone clear of the story hearts at the top-left on small screens.
+	_shell.position = Vector2(group_left + (guide_width + gap if side_guide else 0.0), 12.0)
 	_shell.size = Vector2(width, height)
+	var nav_width: float = width - 24.0
+	_nav.position = Vector2(_shell.position.x + 12.0, height + 26.0)
+	_nav.size = Vector2(nav_width, nav_height)
+	_guide_panel.position = Vector2(group_left, maxf(100.0 / scale_factor, (size.y - guide_height) * 0.5)) if side_guide else Vector2(20.0, _nav.position.y + nav_height + gap)
+	for node: Node in _content.find_children("*", "Button", true, false):
+		if node.has_meta("phone_app"):
+			(node as Button).custom_minimum_size.y = maxf(48.0 / scale_factor, minf(96.0, (width - 92.0) / 3.0))
+	_shell.queue_redraw()
 
 func _draw_frame() -> void:
 	if not is_instance_valid(_shell):
 		return
-	var rect: Rect2 = Rect2(Vector2.ZERO, _shell.size)
-	_shell.draw_colored_polygon(_bezel(Rect2(rect.position + Vector2(4, 7), rect.size).grow(3), 24), Color("050B18"))
-	_shell.draw_colored_polygon(_bezel(rect, 24), Color("748d91"))
-	_shell.draw_colored_polygon(_bezel(rect.grow(-3), 22), Color("F3ECD6"))
-	_shell.draw_colored_polygon(_bezel(rect.grow(-9), 17), Color("253c48"))
-	_shell.draw_colored_polygon(_bezel(rect.grow(-13), 14), Color("0A1730"))
-	_shell.draw_rect(Rect2(Vector2(rect.size.x * 0.5 - 30, 22), Vector2(48, 5)), Color("748d91"))
-	_shell.draw_rect(Rect2(Vector2(rect.size.x * 0.5 + 28, 20), Vector2(7, 7)), Color("4FE0D4"))
-	_shell.draw_rect(Rect2(Vector2(rect.size.x * 0.5 - 24, rect.size.y - 18), Vector2(48, 4)), Color("748d91"))
-	# Sparse pixel wallpaper keeps Home recognizable without obscuring evidence.
-	if _app == "home":
-		for i: int in 6:
-			var step: float = 16.0 * float(i)
-			_shell.draw_rect(Rect2(Vector2(rect.size.x - 100 - step, rect.size.y * 0.58 + step), Vector2(64, 8)), Color("153B37", 0.6))
+	# Only the decorative device continues below the viewport in close-up;
+	# scrollable app content and navigation remain inside the safe area.
+	var rect: Rect2 = Rect2(Vector2.ZERO, _shell.size + Vector2(0, 220.0 * _zoom))
+	_shell.draw_colored_polygon(_bezel(Rect2(rect.position + Vector2(4, 7), rect.size).grow(3), 36), Color("050B18"))
+	_shell.draw_colored_polygon(_bezel(rect, 36), Color("727a83"))
+	_shell.draw_colored_polygon(_bezel(rect.grow(-3), 32), Color("b4b3a7"))
+	_shell.draw_colored_polygon(_bezel(Rect2(Vector2(3, 3), rect.size - Vector2(10, 12)), 30), Color("F3ECD6"))
+	_shell.draw_colored_polygon(_bezel(rect.grow(-8), 26), Color("fff7e4"))
+	_shell.draw_colored_polygon(_bezel(rect.grow(-14), 22), Color("101623"))
+	_shell.draw_colored_polygon(_bezel(rect.grow(-20), 16), Color("0A1730") if _app not in ["lock", "home"] else Color("235789"))
+	# Static, code-drawn wallpaper: no texture downloads or idle animation.
+	if _app in ["lock", "home"]:
+		_draw_wallpaper(rect.grow(-26))
+	# Thin rails catch light on one side and shade the other.
+	_shell.draw_rect(Rect2(Vector2(5, 42), Vector2(3, rect.size.y - 84)), Color("fff7e4"))
+	_shell.draw_rect(Rect2(Vector2(rect.size.x - 8, 42), Vector2(3, rect.size.y - 84)), Color("727a83"))
+	# Hardware and status marks sit above the wallpaper, never underneath it.
+	_shell.draw_colored_polygon(_bezel(Rect2(Vector2(rect.size.x * 0.5 - 42, 24), Vector2(84, 17)), 6), Color("101623"))
+	_shell.draw_rect(Rect2(Vector2(rect.size.x * 0.5 - 24, 30), Vector2(36, 3)), Color("748d91"))
+	_shell.draw_rect(Rect2(Vector2(rect.size.x * 0.5 + 23, 29), Vector2(5, 5)), Color("4FE0D4"))
+	_shell.draw_rect(Rect2(Vector2(rect.size.x * 0.5 - 24, rect.size.y - 16), Vector2(48, 4)), Color("748d91"))
+	for i: int in 3:
+		_shell.draw_rect(Rect2(Vector2(rect.size.x - 80 + i * 6, 66 - i * 4), Vector2(4, 5 + i * 4)), Color("F3ECD6"))
+	_shell.draw_rect(Rect2(Vector2(rect.size.x - 53, 57), Vector2(21, 12)), Color("F3ECD6"), false, 2)
+	_shell.draw_rect(Rect2(Vector2(rect.size.x - 50, 60), Vector2(13, 6)), Color("8FF0E6"))
+	_shell.draw_rect(Rect2(Vector2(rect.size.x - 31, 61), Vector2(3, 4)), Color("F3ECD6"))
 	_shell.draw_rect(Rect2(Vector2(-4, 88), Vector2(4, 32)), Color("748d91"))
 	_shell.draw_rect(Rect2(Vector2(rect.end.x, 100), Vector2(4, 46)), Color("748d91"))
+
+func _draw_wallpaper(screen: Rect2) -> void:
+	_wallpaper_clip = _bezel(screen, 16.0)
+	for i: int in 24:
+		var y: float = screen.position.y + floorf(screen.size.y * float(i) / 24.0)
+		var band: Color = Color("173058").lerp(Color("74b6ba"), float(i) / 24.0)
+		_wallpaper_rect(Rect2(Vector2(screen.position.x, y), Vector2(screen.size.x, ceilf(screen.size.y / 24.0))), band)
+	var unit: float = maxf(2.0, floorf(screen.size.x / 64.0))
+	var sun: Vector2 = (screen.position + screen.size * Vector2(0.76, 0.36)).floor()
+	_wallpaper_rect(Rect2(sun + Vector2(-3, -5) * unit, Vector2(6, 10) * unit), Color("f3dba8"))
+	_wallpaper_rect(Rect2(sun + Vector2(-5, -3) * unit, Vector2(10, 6) * unit), Color("f3dba8"))
+	for i: int in 7:
+		var star: Vector2 = screen.position + Vector2(fmod(float(i * 37 + 12), screen.size.x - 12), screen.size.y * (0.27 + float(i % 3) * 0.06))
+		_wallpaper_rect(Rect2(star.floor(), Vector2.ONE * unit), Color("F3ECD6", 0.65))
+	_draw_ridge(screen, PackedFloat32Array([0.66, 0.60, 0.55, 0.50, 0.44, 0.40, 0.45, 0.49, 0.54, 0.59, 0.55, 0.51, 0.47, 0.52, 0.56, 0.62]), Color("3b798a"))
+	_draw_ridge(screen, PackedFloat32Array([0.60, 0.63, 0.65, 0.68, 0.71, 0.73, 0.77, 0.74, 0.71, 0.66, 0.61, 0.56, 0.52, 0.55, 0.57, 0.61]), Color("235b70"))
+	var water_y: float = floorf(screen.position.y + screen.size.y * 0.78)
+	_wallpaper_rect(Rect2(Vector2(screen.position.x, water_y), Vector2(screen.size.x, screen.end.y - water_y)), Color("173b57"))
+	for i: int in 8:
+		var at: Vector2 = Vector2(screen.position.x + screen.size.x * (0.10 + float(i % 4) * 0.21), water_y + float(i + 1) * (screen.size.y * 0.02))
+		_wallpaper_rect(Rect2(at.floor(), Vector2(unit * (5 + i % 3), unit)), Color("4e969c"))
+
+func _wallpaper_rect(rect: Rect2, ink: Color) -> void:
+	_wallpaper_polygon(PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)]), ink)
+
+func _wallpaper_polygon(points: PackedVector2Array, ink: Color) -> void:
+	for clipped: PackedVector2Array in Geometry2D.intersect_polygons(points, _wallpaper_clip):
+		_shell.draw_colored_polygon(clipped, ink)
+
+func _draw_ridge(screen: Rect2, heights: PackedFloat32Array, ink: Color) -> void:
+	var points: PackedVector2Array = [Vector2(screen.position.x, screen.end.y)]
+	var step: float = screen.size.x / float(heights.size())
+	for i: int in heights.size():
+		var y: float = floorf(screen.position.y + screen.size.y * heights[i])
+		points.append(Vector2(floorf(screen.position.x + i * step), y))
+		points.append(Vector2(floorf(screen.position.x + (i + 1) * step), y))
+	points.append(screen.end)
+	_wallpaper_polygon(points, ink)
+
+func _exit_tree() -> void:
+	if _transition != null and _transition.is_valid():
+		_transition.kill()
+	if _zoom_tween != null and _zoom_tween.is_valid():
+		_zoom_tween.kill()
 
 func _bezel(rect: Rect2, corner: float) -> PackedVector2Array:
 	var a: Vector2 = rect.position

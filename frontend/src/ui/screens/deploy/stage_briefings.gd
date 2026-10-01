@@ -25,8 +25,8 @@ const MODULE_NOTES := {
 		"Inspect the message. Check a trusted source. Then decide.",
 	],
 	"mod_01:2": [
-		"THEY KNOW WHO WE ARE",
-		"The phishing campaign becomes more targeted. Investigate messages that use real BlueTech information before employees trust the wrong source.",
+		"THEY KNOW OUR PROJECT",
+		"Alex and Mia finally have a school-fair project title. Now unfamiliar messages know it too. Check shared notes, fair registration, and folder access before trusting a familiar name.",
 		"Real details do not prove a message is real.",
 	],
 }
