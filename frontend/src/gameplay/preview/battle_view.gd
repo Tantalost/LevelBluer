@@ -56,6 +56,14 @@ func _ready() -> void:
 	gui_input.connect(_handle_input)
 	call_deferred("recenter")
 
+## Configure before spawning enemies; do not move a live PathFollow2D's route.
+func configure_route(points: Array[Vector2i]) -> bool:
+	if track.get_child_count() > 0 or not board.configure_route(points):
+		return false
+	track.curve = board.curve()
+	recenter()
+	return true
+
 func recenter() -> void:
 	if camera == null:
 		return

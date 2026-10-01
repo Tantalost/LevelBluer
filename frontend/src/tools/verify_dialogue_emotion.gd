@@ -227,7 +227,8 @@ func _test_illustrated_workspace() -> void:
 			var shown: Texture2D = workspace._portraits[0].portrait_texture
 			check(shown is AtlasTexture and shown == Portrait.school_expression(who, mood), "School expression atlas uses " + who + "/" + mood)
 			var atlas: AtlasTexture = shown as AtlasTexture
-			check(atlas != null and atlas.filter_clip and is_equal_approx(atlas.region.size.x * 3, atlas.atlas.get_width()), "Three equal cells with clipped boundaries")
+			check(atlas != null and atlas.filter_clip and atlas.region.size == Portrait.SCHOOL_ATLASES[who]["cell"], who + " uses clipped expression overlays")
+			check(workspace._portraits[0].body_texture != null, who + " has a reusable full-body layer")
 			check(workspace._portraits[0].frameless, "Illustrated portrait is not boxed in a placeholder frame")
 			check(workspace._speaker_label.autowrap_mode == TextServer.AUTOWRAP_OFF, "Speaker tab never stacks name letters vertically")
 			check(workspace._portraits[0].texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST, "Pixel portraits retain crisp nearest-neighbor sampling")
@@ -240,6 +241,45 @@ func _test_illustrated_workspace() -> void:
 	check(Portrait.school_expression("Unknown", "neutral") == null, "Unillustrated characters retain fallback")
 	check(Portrait.school_expression("Alex", "unknown") == Portrait.school_expression("Alex", "neutral"), "Unknown emotion is neutral")
 	check(Portrait.school_expression("Alex", "worried") != Portrait.school_expression("Alex", "neutral"), "Concerned and neutral use distinct cached frames")
+	for who: String in ["Alex", "Mia", "Ms. Reyes"]:
+		var distinct_frames: Array[Texture2D] = []
+		for mood: String in Portrait.SCHOOL_EXPRESSIONS:
+			var expression: AtlasTexture = Portrait.school_expression(who, mood) as AtlasTexture
+			check(expression != null and expression not in distinct_frames, "Distinct " + who + " face: " + mood)
+			distinct_frames.append(expression)
+			check(expression != null and Rect2(Vector2.ZERO, expression.atlas.get_size()).encloses(expression.region), who + "/" + mood + " crop stays inside atlas")
+		check(Portrait.school_body(who) != null and Portrait.school_body(who) == Portrait.school_body(who), who + " body layer is reused, not copied per expression")
+		check(Portrait.school_expression(who, "angry") == Portrait.school_expression(who, "frustrated"), who + " angry uses frustrated art")
+		check(Portrait.school_expression(who, "crying") == Portrait.school_expression(who, "sad"), who + " crying uses sad art")
+		check(Portrait.school_expression(who, "unknown") == Portrait.school_expression(who, "neutral"), who + " unknown mood falls back to neutral")
+	workspace.set_story_art("mod_01", "Ms. Reyes")
+	var turn_lines: Array[Dictionary] = [
+		{"speaker": "Alex", "text": "My account?", "emotion": "shocked"},
+		{"speaker": "Mia", "text": "Let's check.", "emotion": "determined"},
+		{"speaker": "Ms. Reyes", "text": "I can help.", "emotion": "relieved"},
+	]
+	workspace.show_story(turn_lines, "")
+	workspace._reveal_line()
+	workspace._continue()
+	await settle(4)
+	check(workspace._portraits[0].emotion == "shocked" and not workspace._portraits[0].speaking, "Alex retains his last expression as listener")
+	check(workspace._portraits[0].get_parent().visible and workspace._portraits[1].get_parent().visible, "Both conversation partners stay visible")
+	if workspace._portraits[0]._light_tween != null:
+		workspace._portraits[0]._light_tween.custom_step(0.3)
+	check(workspace._portraits[0]._light < 0.6, "Listener lighting fades down")
+	workspace._reveal_line()
+	workspace._continue()
+	check("Mia" in workspace._cast and "Ms. Reyes" in workspace._cast, "Third speaker keeps the immediately previous speaker on stage")
+	for portrait: Control in workspace._portraits:
+		check(portrait.body_texture == Portrait.school_body(portrait.speaker), "Speaker swap binds the correct body: " + portrait.speaker)
+		if portrait._light_tween != null:
+			portrait._light_tween.custom_step(0.3)
+		check(is_equal_approx(portrait._light, 1.0 if portrait.speaking else 0.48), "Speaker swap applies correct lighting: " + portrait.speaker)
+		check(portrait.emotion == ("relieved" if portrait.speaker == "Ms. Reyes" else "determined"), "Mia/Reyes retain authored expressions")
+	var solo_lines: Array[Dictionary] = [{"speaker": "Alex", "text": "Let me think."}]
+	workspace.show_story(solo_lines, "")
+	check(not workspace._portraits[1].get_parent().visible, "Solo lines do not invent a second participant")
+	check(workspace._portraits[0].emotion == "neutral", "A new scene resets expression memory")
 	workspace.queue_free()
 	await settle()
 

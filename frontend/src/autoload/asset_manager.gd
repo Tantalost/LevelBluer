@@ -275,6 +275,8 @@ func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
 	for character: String in ["alex", "mia", "ms_reyes"]:
 		catalog.append(_catalog_entry("story_portrait_" + character, "School portrait / " + character, "sprite_sheet", "%s/v1790436023/%s_expressions.png" % [CLOUD_ROOT, character]))
+		catalog.append(_catalog_entry("story_dialogue_" + character, "School full-body dialogue / " + character, "sprite_sheet", "%s/v1790828276/%s_dialogue_atlas.png" % [CLOUD_ROOT, character]))
+	catalog.append(_catalog_entry("ui_module1_morning_comic", "Alex's school morning comic", "image", "%s/v1790828295/module1_morning_comic.png" % CLOUD_ROOT))
 	for location: String in ["gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day", "rooftop_day", "music_room", "hallway_day", "library_room", "infirmary", "science_lab"]:
 		var version: String = "1790432520" if location in ["gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day"] else "1790432521"
 		catalog.append(_catalog_entry("story_bg_" + location, "School location / " + location, "image", "%s/v%s/%s.png" % [CLOUD_ROOT, version, location]))
@@ -298,7 +300,6 @@ func _ui_catalog() -> Array[Dictionary]:
 	return [
 		_catalog_entry("ui_intro", "Intro cinematic art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338103/Gemini_Generated_Image_3bwb7g3bwb7g3bwb.jpg"),
 		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
-		_catalog_entry("ui_module1_intro", "Module 1 comic intro", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788339918/Gemini_Generated_Image_fhsnvyfhsnvyfhsn.jpg"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
 		_catalog_entry("ui_dashboard_scenic", "Command outpost dashboard", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1789109666/command_outpost_v1.png"),
 		_catalog_entry("ui_background", "Login background", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/background.png"),
@@ -437,6 +438,9 @@ func _download_and_store(entry: Dictionary) -> bool:
 		return _use_local_fallback(asset_id, local_path, false)
 	if asset_id.begins_with("story_portrait_") and image.get_width() != image.get_height() * 3:
 		push_warning("AssetManager: school expression sheets must contain three square cells.")
+		return _use_local_fallback(asset_id, local_path, false)
+	if asset_id.begins_with("story_dialogue_") and image.get_size() != Vector2i(1536, 1024):
+		push_warning("AssetManager: school dialogue atlases require the original 1536x1024 crop layout.")
 		return _use_local_fallback(asset_id, local_path, false)
 	var png: PackedByteArray = image.save_png_to_buffer()
 	if png.is_empty():

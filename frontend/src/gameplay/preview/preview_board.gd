@@ -5,6 +5,7 @@ const CELL := 64
 const GRID := Vector2i(13, 7)
 const WAYPOINTS := [Vector2i(0, 1), Vector2i(9, 1), Vector2i(9, 3), Vector2i(3, 3), Vector2i(3, 5), Vector2i(12, 5)]
 var path_cells: Array[Vector2i] = []
+var waypoints: Array[Vector2i] = []
 var selected := Vector2i(-1, -1)
 var ghost := ""
 var range_radius := 100.0
@@ -34,37 +35,62 @@ func play_home_destruction() -> void:
 	if image.load_svg_from_string(svg) == OK:
 		var effect := preload("res://src/gameplay/base_destruction.gd").new()
 		effect.name = "BaseDestruction"
-		effect.position = center(WAYPOINTS.back())
+		effect.position = center(waypoints.back())
 		effect.configure(ImageTexture.create_from_image(image), Vector2(64, 64))
 		add_child(effect)
 	queue_redraw()
 
 func _init() -> void:
-	for i in WAYPOINTS.size() - 1:
-		var cell: Vector2i = WAYPOINTS[i]
-		var end: Vector2i = WAYPOINTS[i + 1]
-		var direction := Vector2i(signi(end.x - cell.x), signi(end.y - cell.y))
+	var defaults: Array[Vector2i] = []
+	defaults.assign(WAYPOINTS)
+	configure_route(defaults)
+
+## Reject malformed routes atomically, before replacing the terrain or enemy path.
+func configure_route(points: Array[Vector2i]) -> bool:
+	if points.size() < 2:
+		return false
+	for point: Vector2i in points:
+		if point.x < 0 or point.y < 0 or point.x >= GRID.x or point.y >= GRID.y:
+			return false
+	var cells: Array[Vector2i] = []
+	for i: int in range(points.size() - 1):
+		var cell: Vector2i = points[i]
+		var end: Vector2i = points[i + 1]
+		if cell == end or (cell.x != end.x and cell.y != end.y):
+			return false
+		var direction: Vector2i = Vector2i(signi(end.x - cell.x), signi(end.y - cell.y))
 		while cell != end:
-			if not path_cells.has(cell):
-				path_cells.append(cell)
+			if cells.has(cell):
+				return false
+			cells.append(cell)
 			cell += direction
-	path_cells.append(WAYPOINTS.back())
+	if cells.has(points.back()):
+		return false
+	cells.append(points.back())
+	waypoints = points.duplicate()
+	path_cells = cells
+	var terrain: Node2D = get_node_or_null("Terrain") as Node2D
+	if terrain != null:
+		terrain.set("path_cells", path_cells.duplicate())
+		terrain.queue_redraw()
+	queue_redraw()
+	return true
 
 static func center(cell: Vector2i) -> Vector2:
 	return Vector2(cell) * CELL + Vector2.ONE * CELL * 0.5
 
 func curve() -> Curve2D:
 	var result := Curve2D.new()
-	for cell in WAYPOINTS:
+	for cell: Vector2i in waypoints:
 		result.add_point(center(cell))
 	return result
 
 func cell_reason(cell: Vector2i) -> String:
 	if cell.x < 0 or cell.y < 0 or cell.x >= GRID.x or cell.y >= GRID.y:
 		return "Choose a tile inside the battlefield."
-	if cell == WAYPOINTS[0]:
+	if cell == waypoints[0]:
 		return "Enemy entry: keep this terminal clear."
-	if cell == WAYPOINTS.back():
+	if cell == waypoints.back():
 		return "Home base: towers cannot occupy the server."
 	if path_cells.has(cell):
 		return "Enemy route: choose a floor tile beside the path."
@@ -93,14 +119,14 @@ func _draw() -> void:
 	_draw_endpoints()
 
 func _draw_endpoints() -> void:
-	var at := center(WAYPOINTS[0])
+	var at := center(waypoints[0])
 	draw_rect(Rect2(at - Vector2(22, 18), Vector2(44, 31)), Color("201c25"))
 	draw_rect(Rect2(at - Vector2(22, 18), Vector2(44, 31)), Color("e58d8e"), false, 3)
 	draw_polyline(PackedVector2Array([at + Vector2(2, -17), at + Vector2(-5, -3), at + Vector2(6, 0), at + Vector2(-2, 12)]), Color("e58d8e"), 3)
 	draw_line(at + Vector2(-17, 20), at + Vector2(17, 20), Color("e58d8e"), 4)
 	if home_destroyed:
 		return
-	at = center(WAYPOINTS.back())
+	at = center(waypoints.back())
 	var tint := Color("85d9c3") if health > 3 else (Color("e5c88a") if health > 1 else Color("e58d8e"))
 	draw_set_transform(at)
 	Glyphs.bevel(self, PackedVector2Array([Vector2(-25,-25),Vector2(25,-25),Vector2(25,25),Vector2(-25,25)]), tint.darkened(0.35))

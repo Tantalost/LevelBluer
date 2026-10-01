@@ -25,9 +25,39 @@ const MODULE_NOTES := {
 		"Inspect the message. Check a trusted source. Then decide.",
 	],
 	"mod_01:2": [
-		"THEY KNOW WHO WE ARE",
-		"The phishing campaign becomes more targeted. Investigate messages that use real BlueTech information before employees trust the wrong source.",
+		"THEY KNOW OUR PROJECT",
+		"Alex and Mia finally have a school-fair project title. Now unfamiliar messages know it too. Check shared notes, fair registration, and folder access before trusting a familiar name.",
 		"Real details do not prove a message is real.",
+	],
+	"mod_01:3": [
+		"SOMEONE GOT IN",
+		"Alex receives a finished poster from Mia's usual address. But Mia is right beside him, still working on it. Check the request, account activity, and messages reaching classmates.",
+		"A familiar account does not guarantee a safe request.",
+	],
+	"mod_01:4": [
+		"THE IMPOSTOR INSIDE",
+		"The Water Wise poster is ready, but official-sounding requests keep changing the plan. Check a printing payment, private folder access, and an urgent security instruction before acting.",
+		"Verify the request, not just the title behind it.",
+	],
+	"mod_01:5": [
+		"THE SECOND KEY",
+		"The poster is ready, but Alex's phone keeps asking about sign-ins he never started. Compare approval requests, active devices, and a suspicious shared-file page before letting anyone in.",
+		"Check whose sign-in you are approving.",
+	],
+	"mod_01:6": [
+		"TRUSTED FILES",
+		"A chart, an animation app, and a rehearsal timetable should finish the group's preparations. Inspect files, permissions, and QR destinations before trusting the next shortcut.",
+		"A familiar name or real sign-in page does not approve every request.",
+	],
+	"mod_01:7": [
+		"TRUSTED SUPPLIER",
+		"The display stands are ordered, but familiar-looking messages keep changing the plan. Compare payment details, supplier identities, and adviser approval before risking the group's budget.",
+		"Real order details do not authorize a new payment.",
+	],
+	"mod_01:8": [
+		"ALL HANDS",
+		"Other project groups are receiving the same dangerous update. Help Alex warn classmates safely, pause affected sharing, and preserve the evidence while Ms. Reyes and School IT help.",
+		"Protect people as well as files. Report without blame.",
 	],
 }
 

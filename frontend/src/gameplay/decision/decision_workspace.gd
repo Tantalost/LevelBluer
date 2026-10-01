@@ -38,12 +38,19 @@ var _story_pause: Button
 var _review_scrim: ColorRect
 var _review_hint: Label
 var _story_hp_label: Label
+var _story_hp_row: HBoxContainer
+var _story_hearts: Array[Control] = []
 var _story_hp: int = -1
 
 func set_story_hp(value: int) -> void:
 	_story_hp = value
-	_story_hp_label.text = "HP %d / 3%s" % [maxi(0, value), " / LAST CHANCE" if value == 0 else ""]
+	_story_hp_label.text = "LAST CHANCE" if value == 0 else "%d / 3" % maxi(0, value)
 	_story_hp_label.add_theme_color_override("font_color", Color("FFB648") if value <= 1 else UI.TEAL)
+	_story_hp_row.visible = value >= 0
+	_story_hp_row.accessibility_name = "Story health: %d of 3. %s" % [maxi(0, value), "Next failed decision restarts the stage." if value == 0 else "Failed decisions cost one heart."]
+	for i: int in _story_hearts.size():
+		_story_hearts[i].health = 1 if i < value else 0
+		_story_hearts[i].queue_redraw()
 var _mail_generation: int = 0
 var _notice_offset: float = 0.0:
 	set(value):
@@ -95,6 +102,9 @@ var _speech: RichTextLabel
 var _portraits: Array[Control] = []
 var _portrait_names: Array[Label] = []
 var _cast: Array[String] = []
+var _cast_emotions: Dictionary = {}
+var _scene_speakers: PackedStringArray = []
+var _last_speaker: String = ""
 var _conversation: HBoxContainer
 var _speech_box: PanelContainer
 var _speaker_heading: HBoxContainer
@@ -188,9 +198,7 @@ func _ready() -> void:
 	_header.size_flags_horizontal = SIZE_EXPAND_FILL
 	top.add_child(_header)
 	_story_hp_label = UI.label("", 26, UI.TEAL)
-	_story_hp_label.size_flags_horizontal = SIZE_EXPAND_FILL
-	_story_hp_label.hide()
-	top.add_child(_story_hp_label)
+	_story_hp_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_review_button = UI.button("LOGS", _open_review)
 	_review_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 	top.add_child(_review_button)
@@ -308,6 +316,21 @@ func _ready() -> void:
 	_phone.message_read.connect(_record_phone_mail)
 	_phone.investigation_confirmed.connect(_finish_phone_investigation)
 	_phone.detail_inspected.connect(_log_phone_detail)
+	_story_hp_row = HBoxContainer.new()
+	_story_hp_row.name = "StoryHearts"
+	_story_hp_row.position = Vector2(24, 24)
+	_story_hp_row.mouse_filter = MOUSE_FILTER_IGNORE
+	_story_hp_row.add_theme_constant_override("separation", 6)
+	add_child(_story_hp_row)
+	for i: int in 3:
+		var heart: Control = preload("res://src/gameplay/preview/resource_icon.gd").new()
+		heart.kind = "health"
+		_story_hp_row.add_child(heart)
+		_story_hearts.append(heart)
+	_story_hp_label.add_theme_color_override("font_outline_color", Color("050B18"))
+	_story_hp_label.add_theme_constant_override("outline_size", 5)
+	_story_hp_row.add_child(_story_hp_label)
+	_story_hp_row.hide()
 	resized.connect(_metrics)
 	if _assets != null:
 		_assets.sync_finished.connect(_on_story_assets_ready)
@@ -347,6 +370,9 @@ func _reset(mode: StringName, header: String, caption: String) -> void:
 	_portraits.clear()
 	_portrait_names.clear()
 	_cast.clear()
+	_cast_emotions.clear()
+	_scene_speakers.clear()
+	_last_speaker = ""
 	UI.clear(_portrait_stage)
 	UI.clear(_narrative)
 	UI.clear(_actions)
@@ -368,10 +394,10 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 	# First named speaker takes the left, the second the right for this scene.
 	for line in lines:
 		var who := str(line.get("speaker", ""))
-		if not who.is_empty() and who not in _cast:
+		if not who.is_empty() and who not in _scene_speakers:
+			_scene_speakers.append(who)
+		if not who.is_empty() and who not in _cast and _cast.size() < 2:
 			_cast.append(who)
-			if _cast.size() == 2:
-				break
 	if _cast.is_empty():
 		_cast.append("Mia")
 	if _cast.size() == 1:
@@ -473,26 +499,30 @@ func _dialogue_frame(fill: Color, border: Color) -> StyleBoxFlat:
 	frame.shadow_size = 3
 	return frame
 
-## These are face portraits, not waist-up cutouts. Fit the whole face in the
-## space above the dialogue rather than hiding its mouth behind the text box.
+## Full-body art is staged behind the dialogue so faces remain readable on
+## phones. Other cast members retain their head portraits until art approval.
 func _fit_school_portraits() -> void:
 	if not _school_cast or not is_instance_valid(_conversation) or not is_inside_tree():
 		return
 	var top: float = _review_button.get_global_rect().end.y - _portrait_stage.global_position.y + 6.0
 	var bottom: float = _conversation.global_position.y - _portrait_stage.global_position.y
-	var side: float = minf(_portrait_stage.size.x * 0.30, maxf(0, bottom - top))
+	var body_bottom: float = minf(_portrait_stage.size.y - 12.0, _speech_box.get_global_rect().end.y - _portrait_stage.global_position.y - 6.0)
+	var height: float = maxf(0.0, body_bottom - top)
+	var width: float = minf(_portrait_stage.size.x * 0.25, height * 0.48)
 	if _mail_notice.visible:
 		var factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-		var speaker_left: bool = str(_lines[_line_index].get("speaker", "")) == _cast[0]
 		_mail_notice.custom_minimum_size = Vector2(0, maxf(64, ceilf(72.0 / factor)))
-		_mail_notice.size = Vector2(minf(_portrait_stage.size.x * 0.54, 480.0 / factor), _mail_notice.custom_minimum_size.y)
+		var middle_width: float = maxf(1.0, _portrait_stage.size.x - 2.0 * (width + 32.0))
+		_mail_notice.size = Vector2(minf(middle_width, 480.0 / factor), _mail_notice.custom_minimum_size.y)
 		_mail_notice.pivot_offset = _mail_notice.size * 0.5
-		_mail_notice.position = Vector2(_portrait_stage.size.x - _mail_notice.size.x - 20.0 if speaker_left else 20.0, top + _notice_offset)
+		_mail_notice.position = Vector2((_portrait_stage.size.x - _mail_notice.size.x) * 0.5, top + _notice_offset)
 	for index: int in _portraits.size():
 		var seat: Control = _portraits[index].get_parent() as Control
 		seat.set_anchors_preset(PRESET_TOP_LEFT)
-		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - side - 20.0, bottom - side)
-		seat.size = Vector2(side, side)
+		var full_body: bool = _portraits[index].body_texture != null
+		var seat_size: Vector2 = Vector2(width, height) if full_body else Vector2.ONE * minf(width, minf(height * 0.28, maxf(0.0, bottom - top)))
+		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - seat_size.x - 20.0, top)
+		seat.size = seat_size
 
 func _show_line() -> void:
 	_clear_mail()
@@ -517,7 +547,13 @@ func _show_line() -> void:
 	_line_recorded = false
 	_typing = not _speech.text.is_empty()
 	if not who.is_empty() and who not in _cast:
-		_cast[1] = who
+		# A third participant replaces the older listener, not the person who
+		# just spoke. For other modules retain their existing seat behavior.
+		var seat_index: int = 0 if _school_cast and _cast[1] == _last_speaker else 1
+		_cast[seat_index] = who
+	if not who.is_empty():
+		_cast_emotions[who] = line_emotion
+		_last_speaker = who
 	_update_portraits()
 	_refresh_controls()
 	_apply_line_emotion_fx(line_emotion)
@@ -528,9 +564,12 @@ func _show_line() -> void:
 func _animate_notice(generation: int) -> void:
 	if generation != _mail_generation or _mail.is_empty():
 		return
+	ScreenShake.cancel(_background)
 	var settings: Node = get_node_or_null("/root/SettingsService")
 	if settings != null and bool(settings.get("reduced_motion")):
 		return
+	# Incoming mail is the authored buzz cue, not a text-string match.
+	ScreenShake.buzz(_background)
 	_fit_school_portraits()
 	_notice_offset = -_mail_notice.position.y - _mail_notice.size.y
 	_mail_notice.modulate.a = 0.0
@@ -567,11 +606,15 @@ func _update_portraits() -> void:
 	var who := str(line.get("speaker", ""))
 	var line_emotion := Emotion.of(line)
 	for i in _portraits.size():
-		_portraits[i].get_parent().visible = who == _cast[i]
+		var active: bool = who == _cast[i]
+		var mood: String = str(_cast_emotions.get(_cast[i], Emotion.NEUTRAL)) if _school_cast else line_emotion
+		_portraits[i].get_parent().visible = _cast[i] in _scene_speakers if _school_cast else active
+		_portraits[i].retain_expression = _school_cast
 		_portraits[i].portrait_texture = portrait_textures.get(_cast[i])
+		_portraits[i].body_texture = Portrait.school_body(_cast[i]) if _school_cast and _portraits[i].portrait_texture == null else null
 		if _school_cast and _portraits[i].portrait_texture == null:
-			_portraits[i].portrait_texture = Portrait.school_expression(_cast[i], line_emotion if who == _cast[i] else Emotion.NEUTRAL)
-		_portraits[i].configure(_cast[i], who == _cast[i], who == _cast[i] and _typing and not _locked and not _review_open, line_emotion)
+			_portraits[i].portrait_texture = Portrait.school_expression(_cast[i], mood)
+		_portraits[i].configure(_cast[i], active, active and _typing and not _locked and not _review_open, mood)
 		_portrait_names[i].text = _cast[i]
 		_portrait_names[i].add_theme_color_override("font_color", UI.TEAL if who == _cast[i] else UI.MUTED)
 	if not _illustrated:
@@ -623,7 +666,7 @@ func _refresh_controls() -> void:
 	# _on_investigation_resolved()) — an incident with no investigation at
 	# all behaves exactly as before this system existed.
 	var deciding := _mode == &"threat" and _dialogue_done and not investigating
-	_story_hp_label.visible = deciding and _story_hp >= 0
+	_story_hp_row.visible = _story_hp >= 0
 	_narrative.get_parent().visible = not (deciding and _phone_enabled)
 	_choices_scroll.size_flags_stretch_ratio = 1.0
 	if _illustrated:
@@ -665,6 +708,9 @@ func _refresh_controls() -> void:
 		_choice_hint.text = "What should Alex do?" if _phone_enabled else ("Choose your response" if _dialogue_done else "Listen, then choose your response")
 	if _evidence != null:
 		_evidence.visible = _dialogue_done and not investigating
+	# Phone inspection hides this root. Refit when it returns as compact choices,
+	# rather than retaining the previous dialogue/investigation minimum height.
+	_window.set_deferred("size", size)
 
 func show_story(lines: Array[Dictionary], header: String, continue_text: String = "CONTINUE", banner: String = "") -> void:
 	_reset(&"story", header, continue_text)
@@ -987,6 +1033,7 @@ func _add_log_entry(line: Dictionary) -> void:
 		row.move_child(spacer, 2)
 
 func _clear_mail() -> void:
+	ScreenShake.cancel(_background)
 	_mail_generation += 1
 	_phone.stop()
 	if _mail_tween != null and _mail_tween.is_valid():
@@ -1094,3 +1141,6 @@ func _metrics() -> void:
 			node.custom_minimum_size.y = maxf(64, ceilf((72.0 if bool(node.get_meta("story_decision_card", false)) else 48.0) / factor))
 		if node is RichTextLabel:
 			node.add_theme_font_size_override("normal_font_size", font)
+	# Long consequence copy can temporarily grow the non-container root.
+	# Refit after the replacement dialogue's minimum sizes have settled.
+	_window.set_deferred("size", size)
