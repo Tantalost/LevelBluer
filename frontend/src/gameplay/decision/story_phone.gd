@@ -28,6 +28,9 @@ var _data: Dictionary = {}
 var _message: Dictionary = {}
 var _items: Array[Dictionary] = []
 var _inspected: Dictionary = {}
+var _revealed_fields: Dictionary = {}
+var _expanded_id: String = ""
+var _card_data: Dictionary = {}
 var _app: String = "home"
 var _reading: bool = false
 var _card_open: bool = false
@@ -114,6 +117,9 @@ func reset_incident(config: Dictionary = {}) -> void:
 func set_investigation(config: Dictionary) -> void:
 	_items.clear()
 	_inspected.clear()
+	_revealed_fields.clear()
+	_expanded_id = ""
+	_card_data = {}
 	for entry: Dictionary in config.get("items", []):
 		_items.append(entry.duplicate(true))
 
@@ -190,6 +196,7 @@ func _navigate(app: String) -> void:
 	_app = app
 	_reading = false
 	_card_open = false
+	_expanded_id = ""
 	_render()
 	if _zoom_tween != null and _zoom_tween.is_valid():
 		_zoom_tween.kill()
@@ -205,6 +212,11 @@ func _render() -> void:
 	_content.size_flags_vertical = SIZE_EXPAND_FILL if _app in ["lock", "home"] else SIZE_FILL
 	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	_title.text = {"home": "HOME", "mail": "MAIL", "contacts": "SCHOOL CONTACTS", "pages": "SAVED PAGES"}.get(_app, "PHONE")
+	if _card_open:
+		_render_card()
+		_refresh()
+		_metrics()
+		return
 	match _app:
 		"lock", "home":
 			var time: Label = UI.label("07:35", 64, Color("F3ECD6"))
@@ -311,6 +323,10 @@ func _open_message() -> void:
 	_render()
 
 func _render_message() -> void:
+	for item: Dictionary in _items:
+		if str(item.get("id", "")) == _expanded_id and not (item.get("fields", []) as Array).is_empty():
+			_render_evidence(item)
+			return
 	_content.add_child(UI.label(str(_message.get("subject", "")), 24, UI.GOLD))
 	_content.add_child(UI.label("From: " + str(_message.get("sender", "")).get_slice("<", 0).strip_edges(), 22, UI.TEAL))
 	_content.add_child(UI.label(str(_message.get("body", "")), 22))
@@ -335,9 +351,55 @@ func _add_details(app: String) -> void:
 		var detail_button: Button = UI.button(("[+] " if _inspected.has(id) else "") + str(item.get("label", "Inspect")), _inspect.bind(id))
 		_content.add_child(detail_button)
 		_guide_button(detail_button, id)
-		if _inspected.has(id):
-			var panel: PanelContainer = UI.panel(_content, Color("153B37"))
-			panel.add_child(UI.label(str(item.get("analysis", "")), 22))
+		if _inspected.has(id) or _expanded_id == id:
+			_render_evidence(item)
+
+## Optional source fields add inspection without a second grading system.
+## Revealing a preview never executes an attachment or follows a URL.
+func _render_evidence(item: Dictionary) -> void:
+	var id: String = str(item.get("id", ""))
+	var fields: Array = item.get("fields", [])
+	var panel: PanelContainer = UI.panel(_content, Color("102040"))
+	var column: VBoxContainer = UI.column(panel, 12)
+	if not fields.is_empty():
+		column.add_child(UI.label(str(item.get("view_title", "EVIDENCE PREVIEW")), 22, UI.GOLD))
+		var seen: Array = _revealed_fields.get(id, [])
+		for index: int in fields.size():
+			var field: Dictionary = fields[index]
+			var revealed: bool = index in seen
+			var button: Button = UI.button(("[x] " if revealed else "[ ] ") + str(field.get("label", "Detail")), _reveal_field.bind(id, index))
+			column.add_child(button)
+			_guide_button(button, "%s:%d" % [id, index])
+			if revealed:
+				column.add_child(UI.label(str(field.get("value", "")), 22, Color("8FF0E6")))
+	if _inspected.has(id):
+		# Structured source values stay visible; the interpretation lives in Logs
+		# instead of repeating a paragraph underneath the same evidence.
+		column.add_child(UI.label(str(item.get("analysis", "")) if fields.is_empty() else "DETAILS RECORDED IN LOGS", 22, UI.TEXT if fields.is_empty() else Color("33D17A")))
+
+func _reveal_field(id: String, index: int) -> void:
+	if _locked or not visible:
+		return
+	for item: Dictionary in _items:
+		if str(item.get("id", "")) != id or str(item.get("phone_app", "mail")) != _app:
+			continue
+		if (_app == "mail" and (not _reading or _expanded_id != id)) or (_app != "mail" and (not _card_open or str(_card_data.get("evidence_id", "")) != id)):
+			return
+		var fields: Array = item.get("fields", [])
+		if index < 0 or index >= fields.size():
+			return
+		var seen: Array = _revealed_fields.get(id, [])
+		if index not in seen:
+			seen.append(index)
+		_revealed_fields[id] = seen
+		if seen.size() == fields.size() and not _inspected.has(id):
+			_inspected[id] = true
+			detail_inspected.emit(id)
+		var scroll: ScrollContainer = _content.get_parent() as ScrollContainer
+		var previous_scroll: int = scroll.scroll_vertical
+		_render()
+		scroll.set_deferred("scroll_vertical", previous_scroll)
+		return
 
 func _inspect(id: String) -> void:
 	if _locked or not visible:
@@ -345,7 +407,9 @@ func _inspect(id: String) -> void:
 	for item: Dictionary in _items:
 		if str(item.get("id", "")) != id or str(item.get("phone_app", "mail")) != _app or (_app == "mail" and not _reading):
 			continue
-		if not _inspected.has(id):
+		var fields: Array = item.get("fields", [])
+		_expanded_id = id if not fields.is_empty() else ""
+		if fields.is_empty() and not _inspected.has(id):
 			_inspected[id] = true
 			detail_inspected.emit(id)
 		var scroll: ScrollContainer = _content.get_parent() as ScrollContainer
@@ -355,26 +419,29 @@ func _inspect(id: String) -> void:
 		return
 
 func _open_card(card: Dictionary) -> void:
-	if _locked or not visible:
+	if _locked or not visible or _app not in ["contacts", "pages"] or card not in _data.get(_app, []):
 		return
+	_card_data = card.duplicate(true)
 	var evidence_id: String = str(card.get("evidence_id", ""))
 	if not evidence_id.is_empty():
 		_inspect(evidence_id)
 	_card_open = true
-	UI.clear(_content)
-	_content.add_child(UI.label(str(card.get("title", "")), 24, UI.GOLD))
-	_content.add_child(UI.label(str(card.get("body", "")), 22))
+	_render()
+
+func _render_card() -> void:
+	_content.add_child(UI.label(str(_card_data.get("title", "")), 24, UI.GOLD))
+	_content.add_child(UI.label(str(_card_data.get("body", "")), 22))
 	for item: Dictionary in _items:
-		if str(item.get("id", "")) == evidence_id:
-			var evidence: PanelContainer = UI.panel(_content, Color("153B37"))
-			evidence.add_child(UI.label(str(item.get("analysis", "")), 22))
-	_refresh()
-	_metrics()
+		if str(item.get("id", "")) == str(_card_data.get("evidence_id", "")):
+			_render_evidence(item)
 
 func _go_back() -> void:
 	if _locked:
 		return
-	if _card_open:
+	if _app == "mail" and _reading and not _expanded_id.is_empty():
+		_expanded_id = ""
+		_render()
+	elif _card_open:
 		_navigate(_app)
 	elif _reading:
 		_navigate("mail")
@@ -403,7 +470,7 @@ func _refresh() -> void:
 	_confirm.text = "DECIDE / USE FINDINGS" if is_complete() else "INSPECTED %d / %d" % [_inspected.size(), _items.size()]
 	var next: String = _next_step()
 	_refresh_checklist()
-	_guide_button(_back, next if _app != "home" and next in ["mail", "contacts", "pages"] else "")
+	_guide_button(_back, next if _app != "home" and next in ["mail", "contacts", "pages", "evidence_back"] else "")
 	_guide_button(_close, "close")
 	_guide_button(_confirm, "decide")
 	_style_navigation(_back, false)
@@ -420,6 +487,11 @@ func _checklist_tasks() -> Array[Dictionary]:
 		var app: String = str(item.get("phone_app", "mail"))
 		var caption: String = str({"mail": "Mail", "contacts": "Contacts", "pages": "Saved"}.get(app, "Phone"))
 		tasks.append({"id": id, "text": caption + ": " + str(item.get("label", "Inspect details")), "done": _inspected.has(id)})
+		var fields: Array = item.get("fields", [])
+		var seen: Array = _revealed_fields.get(id, [])
+		for index: int in fields.size():
+			var field: Dictionary = fields[index]
+			tasks.append({"id": "%s:%d" % [id, index], "text": "  Reveal " + str(field.get("label", "detail")).to_lower(), "done": index in seen})
 	return tasks
 
 func _refresh_checklist() -> void:
@@ -468,6 +540,14 @@ func _next_step() -> String:
 			return app
 		if app == "mail" and not _reading:
 			return "message"
+		if (app == "mail" and not _expanded_id.is_empty() and _expanded_id != id) or (app != "mail" and _card_open and str(_card_data.get("evidence_id", "")) != id):
+			return "evidence_back"
+		if (app == "mail" and _expanded_id == id) or (app != "mail" and _card_open and str(_card_data.get("evidence_id", "")) == id):
+			var fields: Array = item.get("fields", [])
+			var seen: Array = _revealed_fields.get(id, [])
+			for index: int in fields.size():
+				if index not in seen:
+					return "%s:%d" % [id, index]
 		return id
 	return "decide" if _investigating else "close"
 

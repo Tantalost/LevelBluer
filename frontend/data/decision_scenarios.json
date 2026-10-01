@@ -731,154 +731,589 @@
 			"stage": 3,
 			"title": "Someone Got In",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 3 COMPLETE",
 			"clear_subtitle": "SOMEONE GOT IN",
 			"next_stage_title": "Stage 4 — The Impostor Inside",
 			"breach_hp_multiplier": 0.7,
 			"opening": [
-				{"speaker": "Security Assistant", "text": "Mia, we have a problem. Ramon's account just sent out a shared document."},
-				{"speaker": "Mia", "text": "Ramon from Finance? He's on leave this week."},
-				{"speaker": "Security Assistant", "text": "That's what worries me. The email came from his real address — his actual mailbox.", "emotion": "worried"},
-				{"speaker": "Mia", "text": "So his account was compromised, not spoofed."},
-				{"speaker": "Security Assistant", "text": "Exactly. And a real account is far more dangerous than a fake one."}
+				{
+					"speaker": "Alex",
+					"text": "Our Water Wise poster finally has more pictures than empty boxes.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Please tell me you kept my tiny frog in the corner.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The frog stays. I just need your final paragraph.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "I'll send it after I check the numbers. I haven't shared anything yet.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Okay. Let's finish here before we take it to Ms. Reyes.",
+					"emotion": "determined"
+				}
 			],
 			"ending": [
-				{"speaker": "Security Assistant", "text": "Ramon's account is locked. Sessions revoked. The team's been warned."},
-				{"speaker": "Mia", "text": "So we're clear?"},
-				{"speaker": "Security Assistant", "text": "For now. But whoever did this had real access, even briefly."},
-				{"speaker": "Mia", "text": "What could they have learned?"},
-				{"speaker": "Security Assistant", "text": "Enough to sound like one of us. That's what worries me next."}
+				{
+					"speaker": "Mia",
+					"text": "I hated seeing my name on something I didn't send.",
+					"emotion": "sad"
+				},
+				{
+					"speaker": "Alex",
+					"text": "It looked real to me, too. I'm glad I asked you instead of guessing.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "You spoke up. That helped us secure the account and warn the class.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And the real poster is still in our saved folder?",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Yes. Frog included. Let's show the class that version.",
+					"emotion": "relieved"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "We'll keep working on the account together. Finish the containment simulation, then review what needs checking.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. The account is locked down, but that intrusion window is still under review."},
-				{"speaker": "Mia", "text": "One down. Let's make sure nothing else got through."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate risk is contained. We still need to check account activity and messages already sent.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "I'll stay with Alex while we check. I don't want anyone else caught by this.",
+					"emotion": "worried"
+				}
 			],
 			"threats": [
 				{
 					"id": "mod01_stage03_incident01",
 					"module_id": "mod_01",
 					"stage": 3,
-					"title": "The Compromised Colleague",
+					"title": "But That's Your Address",
 					"bkt_skill": "phishing",
-					"affected_system": "RAMON'S MAILBOX / SHARED DRIVE",
+					"affected_system": "MIA'S SCHOOL ACCOUNT / PROJECT GROUP",
 					"story": [
-						{"speaker": "Mia", "text": "Ramon just sent me a document link. But... he's on leave this week."},
-						{"speaker": "Mia", "text": "The email looks completely real. Same address, same signature."},
-						{"speaker": "Security Assistant", "text": "That's because it is his real address. His account may be compromised."}
+						{
+							"speaker": "Alex",
+							"text": "My phone just buzzed. Did you finish that paragraph already?",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "Mia <mia@harborhigh.example>",
+								"subject": "Water Wise: the finished poster",
+								"body": "Here's the final version! Sign in with your school account to see the poster. Please send this to the rest of our group, too."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "No, I'm still editing. What did you get?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "A finished poster. From you. It even uses your usual email address.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I didn't send that. And our poster is in the school folder, not a new website.",
+							"emotion": "shocked"
+						},
+						{
+							"speaker": "Alex",
+							"text": "So matching your address isn't enough this time?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Check it against my saved details. I'm right here if you need to ask me.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll inspect the link without opening it, then decide what to do.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Ramon's verified BlueTech mailbox sends Mia a link to a shared document while he is confirmed to be on approved leave. Nothing about the sender address is fake.",
+					"situation": "The message uses Mia's real address, but she says she did not send it. What should Alex do?",
 					"evidence": [
-						"FROM  ramon.santos@bluetech.com (verified real mailbox, not spoofed)",
-						"Ramon is confirmed on approved leave through Friday",
-						"LINK  \"shared document\" hosted on an external file-sharing domain",
-						"No prior message from Ramon about this document"
+						"The full sender address matches Mia's saved school address.",
+						"Mia, standing beside Alex, says she did not send the message.",
+						"The preview points to poster-share.example and asks for a school sign-in, not the saved school portal."
 					],
 					"choices": [
 						{
-							"label": "Allow the request and open the document normally because it came from an authenticated internal mailbox.",
+							"label": "Sign in to see the poster",
 							"outcome": "CRITICAL",
-							"consequence": "The document silently loads a credential-harvesting script through Mia's already-open session, widening the attacker's access without a single new password entered."
+							"consequence": "The copied login form receives Alex's password. A familiar sender did not make the new sign-in page trustworthy. Ask a trusted adult for help securing the account."
 						},
 						{
-							"label": "Contact Ramon through another trusted channel to confirm, and report the account to Security for immediate containment.",
+							"label": "Ask Mia and report it to Ms. Reyes",
 							"outcome": "SAFE",
-							"consequence": "Ramon confirms by phone that he never sent it. Security locks the account before any other message goes out."
+							"consequence": "Mia confirms in person that she did not send it. They show Ms. Reyes the message without opening the link, and she contacts school IT with them."
 						},
 						{
-							"label": "Open the document in preview/sandbox mode without downloading it, planning to report it afterward.",
+							"label": "Forward the link to the group to check",
 							"outcome": "RISKY",
-							"consequence": "Preview mode still renders an embedded script. The account's compromise spreads a step further before containment begins."
+							"consequence": "The suspicious link reaches more students. Alex warns them not to open it and asks Ms. Reyes to help contain the risk."
 						}
 					],
-					"explanation": "An authenticated internal sender proves the account is real, not that the request is authorized. A compromised account is trusted by every filter that only checks whether the address is genuine.",
+					"explanation": "A familiar address does not prove a request is authorized. Check an unexpected request with the person through a separate trusted channel before signing in or sharing it.",
 					"breach_gold": 14,
-					"next": "mod01_stage03_incident02"
+					"next": "mod01_stage03_incident02",
+					"background": "clubroom",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "Mia still says she didn't send this. I'll compare the address and destination again.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's check what we know before we choose.",
+							"emotion": "worried"
+						}
+					],
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Mia <mia@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise: the finished poster"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://poster-share.example/water-wise"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK WHO SENT IT",
+						"prompt": "Read the message and compare it with your trusted contacts and saved pages.",
+						"items": [
+							{
+								"id": "sender",
+								"label": "View the full sender",
+								"analysis": "mia@harborhigh.example matches Mia's known address. That identifies the account, not who is using it.",
+								"valid": true
+							},
+							{
+								"id": "destination",
+								"label": "Preview the poster link",
+								"analysis": "Destination: https://poster-share.example/water-wise. It asks for a school sign-in away from the saved school portal. The link has not been opened.",
+								"valid": true
+							},
+							{
+								"id": "mia_contact",
+								"label": "Compare Mia's saved contact",
+								"analysis": "The saved address matches. Mia has already told Alex in person that she did not send this request.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					}
 				},
 				{
 					"id": "mod01_stage03_incident02",
 					"module_id": "mod_01",
 					"stage": 3,
-					"title": "Session Left Open",
+					"title": "Still Signed In",
 					"bkt_skill": "phishing",
-					"affected_system": "RAMON'S ACCOUNT SESSION",
+					"affected_system": "MIA'S ACCOUNT / ACTIVE SESSIONS",
 					"story": [
-						{"speaker": "Security Assistant", "text": "I found something. Ramon's account is still logged in from a device we don't recognize."},
-						{"speaker": "Mia", "text": "Didn't we already reset his password?"},
-						{"speaker": "Security Assistant", "text": "We did. That doesn't always end an existing session."}
+						{
+							"speaker": "Mia",
+							"text": "Ms. Reyes, I changed my password on the saved school portal. Is that everything?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "It's a good start. Let's check whether any unfamiliar device is still signed in.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "School IT sent the review Mia requested. I'll bring it up.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "School IT <help@harborhigh.example>",
+								"subject": "Account review: a session is still active",
+								"body": "Mia asked us to review her account. The password was changed, but the account activity page still lists an unfamiliar active session. Open the school portal from your saved bookmark with Ms. Reyes; do not send passwords or codes by email."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "I said you could help me read it, Alex. Just don't show anyone my password.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Of course. The activity list says 'Unknown browser — active after password change'.",
+							"emotion": "shocked"
+						},
+						{
+							"speaker": "Mia",
+							"text": "That isn't my phone or the library computer I used.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "A location can be approximate. But Mia doesn't recognize this device, and this portal still lists its session as active.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll compare the timestamps and the saved recovery steps before we choose.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "While containing the first incident, Security finds Ramon's account still has an active session from an unfamiliar device and location. Ramon has not traveled and remains on leave.",
+					"situation": "Mia changed her password, but the portal still shows an unfamiliar active session. How should they respond?",
 					"evidence": [
-						"Active session location: unrecognized device, outside BlueTech's usual regions",
-						"Ramon has not traveled and is on leave",
-						"Password was reset 10 minutes ago; the session token was not",
-						"Sign-in history shows continuous activity across the reset"
+						"Mia recognizes her phone and the library computer, but not the third browser.",
+						"The unfamiliar session was active after the password change; this portal has not signed it out.",
+						"The saved recovery checklist says to review sessions and use Sign out everywhere with trusted adult or school IT help."
 					],
 					"choices": [
 						{
-							"label": "Message the active session directly to ask who is signed in before taking any action.",
+							"label": "Trust the password reset and keep working",
 							"outcome": "CRITICAL",
-							"consequence": "The message tips off the attacker, who copies additional files before the session can be revoked."
+							"consequence": "The unfamiliar session keeps access to Mia's account. Changing the password did not end it in this portal; leaving it active leaves the account exposed."
 						},
 						{
-							"label": "Revoke the active session, force a sign-out everywhere, and require Ramon to re-authenticate with a new password.",
+							"label": "Ask for help signing out every session",
 							"outcome": "SAFE",
-							"consequence": "The session ends immediately. Ramon re-authenticates cleanly, and the account is fully contained."
+							"consequence": "With Mia's permission, Ms. Reyes helps her use the saved portal to sign out all sessions. School IT confirms the unfamiliar session has ended and helps review recovery settings."
 						},
 						{
-							"label": "Reset Ramon's password again, without revoking the existing active session.",
+							"label": "Change the password again, then wait",
 							"outcome": "RISKY",
-							"consequence": "The password changes, but the attacker's session token still works. Access continues uninterrupted."
+							"consequence": "This portal still lists the old session as active. They ask Ms. Reyes and school IT to help end that access instead of relying on another password change."
 						}
 					],
-					"explanation": "Resetting a password does not end sessions that were authenticated before the reset. Full containment requires revoking active sessions, not just changing credentials.",
+					"explanation": "In this school's portal, changing the password has not ended the unfamiliar session. Check active sessions, sign out unrecognized access, and ask a trusted adult or school IT to help with recovery.",
 					"breach_gold": 16,
-					"next": "mod01_stage03_incident03"
+					"next": "mod01_stage03_incident03",
+					"background": "classroom_day",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "Mia has asked us to help review her account. I'll check which sessions actually ended.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's check what we know before we choose.",
+							"emotion": "worried"
+						}
+					],
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School IT <help@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Account review: a session is still active"
+							},
+							{
+								"label": "SAVED PORTAL — OPEN FROM BOOKMARK",
+								"value": "https://portal.harborhigh.example/account/activity"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK ACCOUNT ACTIVITY",
+						"prompt": "Read the message and compare it with your trusted contacts and saved pages.",
+						"items": [
+							{
+								"id": "activity",
+								"label": "Inspect the device list",
+								"analysis": "Mia's shared review: personal phone — recognized; library computer — recognized; unknown browser — not recognized. A location estimate alone would not prove an intrusion.",
+								"valid": true
+							},
+							{
+								"id": "timeline",
+								"label": "Compare activity timestamps",
+								"analysis": "Password change: 07:29. Unknown browser last active: 07:32. The portal explicitly marks that session ACTIVE after the reset.",
+								"valid": true
+							},
+							{
+								"id": "recovery",
+								"label": "Read the saved recovery checklist",
+								"analysis": "Check sessions in the saved school portal. Sign out all sessions with Mia and a trusted adult; confirm they end and review recovery details with school IT.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					}
 				},
 				{
 					"id": "mod01_stage03_incident03",
 					"module_id": "mod_01",
 					"stage": 3,
-					"title": "The Second Invite",
+					"title": "The Invite Is Still There",
 					"bkt_skill": "phishing",
-					"affected_system": "FINANCE TEAM MAILBOXES",
+					"affected_system": "CLASS FAIR GROUP / EARLIER MESSAGES",
 					"story": [
-						{"speaker": "Mia", "text": "Finance just got a calendar invite. From Ramon's account. Right now."},
-						{"speaker": "Security Assistant", "text": "His account isn't locked yet?"},
-						{"speaker": "Mia", "text": "Not for a few more minutes."}
+						{
+							"speaker": "Alex",
+							"text": "Another notification. Someone in our class forwarded a meeting invite.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "Class Fair Group <fair-group@harborhigh.example>",
+								"subject": "Fwd: Mia's Water Wise presentation invite",
+								"body": "Is this our meeting? Someone forwarded an invite from Mia's account: 'Water Wise team: open the agenda and sign in before the presentation.' Several classmates still have the earlier invite in their inboxes."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "That has my name on it, too? I haven't planned a meeting.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The original was sent before we asked for help. The forward arrived just now.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "So even if we secure my account, people can still open an old message?",
+							"emotion": "shocked"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Yes. Messages already delivered can remain in inboxes, and people may forward them.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Some classmates haven't seen the warning. Should I send them the invite so they know which one?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Check who received it and our saved reporting steps first. We want a warning, not another copy of the link.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I can help tell them. I'd rather they hear it from us before they sign in.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "While the compromised account is being locked, it sends a calendar invite with a linked 'meeting agenda' to the entire Finance distribution list, minutes before the scheduled lockout completes.",
+					"situation": "An earlier invite from Mia's account is being forwarded. How should Alex help protect classmates?",
 					"evidence": [
-						"Calendar invite sent from Ramon's account to the full Finance distribution list",
-						"Sent 6 minutes before the scheduled account lockout",
-						"LINK  \"meeting agenda\" pointing to an unfamiliar external domain",
-						"Several Finance staff have not yet opened the invite"
+						"The original invite was sent before the account review; a classmate has forwarded it since.",
+						"The agenda preview points to fair-agenda.example and asks for a school sign-in.",
+						"The saved class channel reaches the whole group. School IT can investigate the original reported message; removing it from one inbox does not remove everyone else's copy."
 					],
 					"choices": [
 						{
-							"label": "Let the invite stand since the account is already scheduled to be locked out shortly.",
+							"label": "Assume account recovery made the invite safe",
 							"outcome": "CRITICAL",
-							"consequence": "Several Finance employees open the invite in the minutes before lockout, and the compromise spreads into their mailboxes too."
+							"consequence": "Classmates trust the reassurance and use the false sign-in page. Securing an account does not make its earlier links safe."
 						},
 						{
-							"label": "Alert the Finance team immediately, quarantine the message across all mailboxes, and confirm the lockout completes before anyone responds.",
+							"label": "Warn the class without sharing the link",
 							"outcome": "SAFE",
-							"consequence": "The invite is pulled from every inbox before it's opened, and the account lockout completes cleanly."
+							"consequence": "Alex names the subject in the trusted class channel, says not to open it, and asks Ms. Reyes to report the original to school IT. Classmates can identify it without receiving another live link."
 						},
 						{
-							"label": "Ask Finance team members individually to avoid the invite while the lockout finishes on schedule.",
+							"label": "Warn only Mia and one close friend",
 							"outcome": "RISKY",
-							"consequence": "The warning reaches most of the team, but one employee opens the invite before hearing it, just before the lockout takes effect."
+							"consequence": "The warning misses part of the group. They expand the alert through the trusted class channel and ask Ms. Reyes to help contain the remaining risk."
 						}
 					],
-					"explanation": "A scheduled fix is not a completed one. Until an account is confirmed locked, every message it sends is still coming from a live attacker foothold.",
+					"explanation": "Securing the sender's account does not remove messages already delivered or forwarded. Warn the affected group without spreading the link, and report the original message through a trusted channel.",
 					"breach_gold": 18,
-					"next": ""
+					"next": "",
+					"background": "hallway_day",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "The earlier invite is still in classmates' inboxes. I'll check who needs the warning.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's check what we know before we choose.",
+							"emotion": "worried"
+						}
+					],
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Class Fair Group <fair-group@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Fwd: Mia's Water Wise presentation invite"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://fair-agenda.example/water-wise"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "STOP THE FORWARD",
+						"prompt": "Read the message and compare it with your trusted contacts and saved pages.",
+						"items": [
+							{
+								"id": "recipients",
+								"label": "Inspect the forwarded invite",
+								"analysis": "The original was sent before the account review. The forward reached the full class-fair group; some classmates have not read the warning.",
+								"valid": true
+							},
+							{
+								"id": "destination",
+								"label": "Preview the agenda link",
+								"analysis": "Destination: https://fair-agenda.example/water-wise. It asks for a school sign-in. Account recovery cannot change what this old link leads to.",
+								"valid": true
+							},
+							{
+								"id": "class_warning",
+								"label": "Check the saved class reporting steps",
+								"analysis": "Use the trusted class announcement channel to warn the whole group. Identify the subject without reposting the link; show the original to Ms. Reyes so school IT can investigate.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					}
 				}
-			]
+			],
+			"scene_header": "HARBOR HIGH // PROJECT WEEK",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of protecting accounts while a trusted adult helps. Alex is not operating the school's security systems.",
+			"map_route": [
+				[
+					0,
+					3
+				],
+				[
+					2,
+					3
+				],
+				[
+					2,
+					1
+				],
+				[
+					10,
+					1
+				],
+				[
+					10,
+					5
+				],
+				[
+					4,
+					5
+				],
+				[
+					4,
+					3
+				],
+				[
+					8,
+					3
+				]
+			],
+			"locations": {
+				"opening": "clubroom",
+				"ending": "courtyard",
+				"resume_breach": "classroom_day",
+				"breach_contained": "classroom_day"
+			},
+			"phone": {
+				"contacts": [
+					{
+						"title": "Mia / saved school contact",
+						"evidence_id": "mia_contact",
+						"body": "mia@harborhigh.example\nSaved when Alex and Mia formed their project group. Ask Mia in person or use her previously saved number to check an unexpected request. Do not rely on a reply from the account you are investigating."
+					},
+					{
+						"title": "Ms. Reyes",
+						"body": "reyes@harborhigh.example\nSaved class adviser contact. Show her unexpected messages and ask for help with account recovery."
+					},
+					{
+						"title": "School IT",
+						"body": "help@harborhigh.example\nSaved from the school handbook. Report suspicious messages with a trusted adult; never share your password or sign-in codes."
+					}
+				],
+				"pages": [
+					{
+						"title": "School portal / recovery checklist",
+						"evidence_id": "recovery",
+						"body": "https://portal.harborhigh.example/account\nSaved school bookmark.\n1. Ask a trusted adult for help.\n2. Change the password through the saved portal.\n3. Review active sessions and sign out everywhere.\n4. Confirm unfamiliar access ended; review recovery settings with school IT.\nThese steps belong to the account owner, with their permission."
+					},
+					{
+						"title": "Class channel / reporting steps",
+						"evidence_id": "class_warning",
+						"body": "https://portal.harborhigh.example/class-announcements\nSaved class channel.\nWarn the whole affected group using the message subject, without posting its link.\nAsk Ms. Reyes to report the original to school IT.\nDon't assume removing your copy removes everyone else's."
+					}
+				]
+			}
 		},
 		{
 			"id": "mod01_stage4",
@@ -886,119 +1321,588 @@
 			"stage": 4,
 			"title": "The Impostor Inside",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 4 COMPLETE",
 			"clear_subtitle": "THE IMPOSTOR INSIDE",
 			"next_stage_title": "Stage 5 — The Second Key",
 			"breach_hp_multiplier": 0.75,
 			"opening": [
-				{"speaker": "Mia", "text": "You said whoever got into Ramon's account learned enough to sound like one of us."},
-				{"speaker": "Security Assistant", "text": "They did. And now we're seeing requests that sound exactly right — the right names, the right tone, the right internal process."},
-				{"speaker": "Mia", "text": "But they're not actually coming from the people they claim to be."},
-				{"speaker": "Security Assistant", "text": "Some of them might be. That's what makes this harder than last time."},
-				{"speaker": "Mia", "text": "So we can't just trust the name in the message anymore."},
-				{"speaker": "Security Assistant", "text": "Not without checking. Authority can be borrowed just as easily as an inbox."}
+				{
+					"speaker": "Alex",
+					"text": "Mia, your real poster is finally ready to print.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Good. I'd like the fair to remember our water-saving ideas, not those messages.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Next on our list: printing, submitting the poster, and keeping our group updated.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "I've saved the fair guide this time. No more guessing which instructions are real.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "If someone changes the plan, check with me or the school office. You don't have to handle it alone.",
+					"emotion": "relieved"
+				}
 			],
 			"ending": [
-				{"speaker": "Security Assistant", "text": "Three requests, three borrowed identities. Payroll, permissions, and now 'security' itself."},
-				{"speaker": "Mia", "text": "They never had to break in loudly. They just asked, and hoped nobody would check."},
-				{"speaker": "Security Assistant", "text": "That's the pattern. They're not exploiting a system flaw. They're exploiting how much we trust internal titles."},
-				{"speaker": "Mia", "text": "So the real defense isn't a better filter. It's verification, every time."},
-				{"speaker": "Security Assistant", "text": "Exactly. And whoever is behind this isn't finished. There's still a second key they haven't used yet."}
+				{
+					"speaker": "Alex",
+					"text": "They sounded like people who could tell us what to do: the committee, a coordinator, then security.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Mia",
+					"text": "But their requests didn't match what we had agreed to share or pay.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "You checked the request, not just the title attached to it. That protected the group.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "And asking you wasn't wasting time. It was part of getting it right.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Now can we get the actual poster printed? The frog has waited long enough.",
+					"emotion": "relieved"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "We'll review the request together. Finish the containment simulation before we continue.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. But the request that caused it was never legitimate to begin with."},
-				{"speaker": "Mia", "text": "Then let's find out who's really asking before anything else gets through."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate risk is contained. We'll review any payments, sharing, or account access affected by the request.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Next time I'll check through a trusted route before acting on a title.",
+					"emotion": "worried"
+				}
 			],
 			"threats": [
 				{
 					"id": "mod01_stage04_incident01",
 					"module_id": "mod_01",
 					"stage": 4,
-					"title": "Payroll Change",
 					"bkt_skill": "phishing",
-					"affected_system": "PAYROLL / BANKING RECORDS",
+					"title": "The Payment Has Moved",
+					"affected_system": "GROUP PRINTING FEE / PAYMENT INSTRUCTIONS",
+					"background": "clubroom",
 					"story": [
-						{"speaker": "Mia", "text": "Payroll just got a request to change an employee's direct-deposit account."},
-						{"speaker": "Security Assistant", "text": "From who?"},
-						{"speaker": "Mia", "text": "The employee's own mailbox. Real address, real signature, urgent tone."}
+						{
+							"speaker": "Mia",
+							"text": "The frog is ready for its big printed debut.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "My phone just buzzed. It's the fair committee, about our printing fee.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "Fair Committee <fair@harborhigh.example>",
+								"subject": "Water Wise: printing payment has moved",
+								"body": "Hi Alex. The cashier's payment system is down. Send your group's poster-printing fee to a personal wallet named 'Fair Print Desk' before the print queue closes. Don't wait for the office to reply; use this replacement destination."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "Didn't Ms. Reyes say to use the school cashier?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "This says the system is down. It gives a personal wallet instead.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "The address looks like the school one. Maybe they really changed it?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Maybe. But if we send it to the wrong place, we can't just undo it.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's compare the request with the payment instructions we saved.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "A genuine internal mailbox emails Payroll asking to update the employee's bank-account details before the next pay cycle, citing a closed old account and urgency.",
+					"situation": "A school-looking message changes where the group should pay. What should Alex do before sending the printing fee?",
 					"evidence": [
-						"FROM  the employee's verified BlueTech mailbox",
-						"Request asks for a bank-account number change before the next pay run",
-						"Message cites urgency: \"old account is closed, please process before Friday\"",
-						"No phone call or in-person confirmation has occurred"
+						"The request comes from fair@harborhigh.example, a familiar school-domain address. That does not independently authorize new payment details.",
+						"It replaces the school cashier with a personal wallet and discourages checking with the office.",
+						"Saved fair instructions say payment changes must be confirmed with the cashier through the school office or with the adviser."
 					],
 					"choices": [
-						{"label": "Apply the change temporarily and reverse it later if the employee reports a problem.", "outcome": "CRITICAL", "consequence": "The next payroll cycle deposits the employee's wages into the attacker's account before anyone notices the reversal never happened."},
-						{"label": "Verify using the normal payroll identity-verification procedure before changing any financial information.", "outcome": "SAFE", "consequence": "The verification call reaches the real employee, who confirms they never sent the request. The account change is blocked."},
-						{"label": "Place the change on hold and reply through the same internal email thread asking for confirmation.", "outcome": "RISKY", "consequence": "The attacker replies through the same compromised mailbox confirming their own request, and the change proceeds unverified."}
+						{
+							"label": "Send the fee to the replacement wallet",
+							"outcome": "CRITICAL",
+							"consequence": "The group's printing money goes to an unauthorized destination. Alex tells Ms. Reyes immediately so a trusted adult can help report it and contact the payment provider; recovery is not guaranteed."
+						},
+						{
+							"label": "Check with the cashier through Ms. Reyes",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes checks with the school cashier through the office. The payment destination has not changed. Alex keeps the money safe and reports the message."
+						},
+						{
+							"label": "Use the sender's reply as confirmation",
+							"outcome": "RISKY",
+							"consequence": "The same sender confirms its own instructions. No payment has been sent, but the destination is still unverified. Ms. Reyes helps stop the replacement details from spreading while checking them independently."
+						}
 					],
-					"explanation": "Confirming a request through the same channel it arrived on only proves the channel is consistent, not that the requester is legitimate. Financial changes require verification through an independent, pre-established procedure.",
+					"explanation": "Confirming a payment change in the same email thread is not an independent check. Use a contact or procedure you already trusted before the request arrived.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Fair Committee <fair@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise: printing payment has moved"
+							},
+							{
+								"label": "PAYMENT CHANGE",
+								"value": "School cashier -> personal wallet (simulation only)"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "VERIFY THE PAYMENT CHANGE",
+						"prompt": "Inspect the request and compare the saved school payment procedure.",
+						"items": [
+							{
+								"id": "sender",
+								"label": "View the full sender",
+								"analysis": "fair@harborhigh.example uses the school domain. A familiar address alone does not approve a change in payment destination.",
+								"valid": true
+							},
+							{
+								"id": "payment_change",
+								"label": "Inspect the replacement details",
+								"analysis": "The message replaces the cashier with a personal wallet and says not to contact the office. No payment has been made; this is a simulated request.",
+								"valid": true
+							},
+							{
+								"id": "payment_rules",
+								"label": "Read the saved payment procedure",
+								"analysis": "The saved fair guide directs payments to the school cashier. Confirm any replacement destination through the school office or Ms. Reyes before paying.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "The printing money hasn't been sent in this retry. I'll check who approved the change.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's use our saved instructions, not just another reply from the same sender.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 20,
-					"next": "mod01_stage04_incident02"
+					"next": "mod01_stage04_incident02",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage04_incident02",
 					"module_id": "mod_01",
 					"stage": 4,
-					"title": "Confidential Folder Access",
 					"bkt_skill": "phishing",
-					"affected_system": "CONFIDENTIAL PROJECT FOLDER",
+					"title": "A Title Is Not Permission",
+					"affected_system": "GROUP CONTACT SHEET / PRIVATE FOLDER",
+					"background": "library_room",
 					"story": [
-						{"speaker": "Security Assistant", "text": "A manager's account just requested access to the confidential project folder."},
-						{"speaker": "Mia", "text": "Which manager?"},
-						{"speaker": "Security Assistant", "text": "One who isn't on that project. And the account's behavior doesn't match their usual pattern."}
+						{
+							"speaker": "Alex",
+							"text": "There's another request. This one wants to review our project folder.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Fair Coordinator <council@harborhigh.example>",
+								"subject": "Coordinator review: share your whole group folder",
+								"body": "We need a last-minute review of Water Wise. Give this account access to the entire group folder, including your contact sheet. I'm the fair coordinator, so you don't need to ask your adviser first. Temporary access is fine."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "The poster is ready. Why do they need the whole folder?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "They say they're the fair coordinator. It sounds official.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Our contact sheet is in there. Everyone gave us their numbers for group planning, not for this.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "What if I make it view-only, just until the review is finished?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "View-only still lets someone read the contents. What does the fair guide actually ask you to submit?",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll compare the requested access with the saved submission rules.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "An authenticated manager-level account, not normally associated with the project, requests permissions to a confidential folder, citing a last-minute review need.",
+					"situation": "Someone claiming to coordinate the fair wants the private group folder. What should Alex share?",
 					"evidence": [
-						"Requesting account belongs to a real manager, verified and authenticated",
-						"That manager has no prior involvement with this project",
-						"Request cites a \"last-minute leadership review\" with no ticket or approval reference",
-						"Account's recent login pattern differs from its normal working hours"
+						"The sender uses a school council address and claims coordinator authority; neither proves approval for this folder.",
+						"The requested folder includes classmates' contact details, not just the final poster.",
+						"The saved fair guide requests only the final poster through the class submission page. Extra access needs adviser confirmation."
 					],
 					"choices": [
-						{"label": "Grant temporary full access with an expiration time.", "outcome": "CRITICAL", "consequence": "The expiring grant is enough time for every confidential file to be copied out before it ever lapses."},
-						{"label": "Verify the request through the normal approval channel before modifying permissions.", "outcome": "SAFE", "consequence": "The project lead confirms no such review was requested. The account is flagged and the access request is denied."},
-						{"label": "Grant view-only access while waiting for confirmation.", "outcome": "RISKY", "consequence": "View-only access is still enough to read and exfiltrate every confidential document before confirmation ever comes back."}
+						{
+							"label": "Give temporary access to the whole folder",
+							"outcome": "CRITICAL",
+							"consequence": "The unverified requester can open the private contact sheet before the permission expires. Alex tells Ms. Reyes and helps revoke access; removing access cannot guarantee that no copies were made."
+						},
+						{
+							"label": "Confirm with Ms. Reyes before sharing",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes confirms that only the final poster is required through the saved submission page. Alex keeps the private folder restricted and reports the extra-access request."
+						},
+						{
+							"label": "Give view-only access while checking",
+							"outcome": "RISKY",
+							"consequence": "View-only access still reveals the contact sheet to an unverified requester. Alex stops sharing and asks Ms. Reyes to help review the exposure during containment."
+						}
 					],
-					"explanation": "A manager's title grants authority in the org chart, not automatic authorization for any specific resource. Access to sensitive material must be approved through its own channel, regardless of who is asking.",
+					"explanation": "An official-sounding title does not grant permission to every file. Verify the purpose and approval first, and share only the material needed through the established route.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Fair Coordinator <council@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Coordinator review: share your whole group folder"
+							},
+							{
+								"label": "REQUESTED ACCESS",
+								"value": "Entire Water Wise folder, including the private contact sheet"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK WHAT YOU WOULD SHARE",
+						"prompt": "Compare the requested permissions with the saved submission rules.",
+						"items": [
+							{
+								"id": "requester",
+								"label": "Inspect the requester's claim",
+								"analysis": "council@harborhigh.example claims to be the fair coordinator. The message gives no adviser approval for access to private group information.",
+								"valid": true
+							},
+							{
+								"id": "folder_contents",
+								"label": "Inspect the folder contents",
+								"analysis": "Folder preview: final poster, research drafts, group contact sheet. View-only access would still expose names and contact details. Nothing has been shared by inspecting this preview.",
+								"valid": true
+							},
+							{
+								"id": "sharing_rules",
+								"label": "Read saved submission rules",
+								"analysis": "The fair guide asks for the final poster on the class submission page, not the group's private folder. Ask Ms. Reyes before granting additional access.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll review the folder preview again before changing any permissions.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "The poster and our private contact sheet don't need the same audience.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 22,
-					"next": "mod01_stage04_incident03"
+					"next": "mod01_stage04_incident03",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage04_incident03",
 					"module_id": "mod_01",
 					"stage": 4,
-					"title": "Emergency Security Request",
 					"bkt_skill": "phishing",
-					"affected_system": "COMPANY-WIDE ACCOUNT SECURITY",
+					"title": "Security Says Hurry",
+					"affected_system": "STUDENT ACCOUNTS / FAIR PROJECT ACCESS",
+					"background": "hallway_day",
 					"story": [
-						{"speaker": "Mia", "text": "Everyone just got a message claiming to be from Security. It says to verify our accounts immediately."},
-						{"speaker": "Security Assistant", "text": "That message didn't come from us."},
-						{"speaker": "Mia", "text": "It says delaying could lock people out of their work for the day."}
+						{
+							"speaker": "Mia",
+							"text": "I'm starting to feel like every official message wants something from us.",
+							"emotion": "frustrated"
+						},
+						{
+							"speaker": "Alex",
+							"text": "This one says it's a security check because of what happened to your account.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "School Safety Team <safety@harborhigh.example>",
+								"subject": "Urgent security check before fair access closes",
+								"body": "After the recent account incident, all fair participants must verify their school sign-in at the recovery link below. Do it now or your project-folder access may be removed. Forward this check to your group so nobody misses the deadline."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "It says we'll lose our project access. I don't want to go through that again.",
+							"emotion": "scared"
+						},
+						{
+							"speaker": "Alex",
+							"text": "And it wants me to send the check to everyone else.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "You can ask for help without following the message's instructions. Let's compare it with our saved school contacts.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "So we don't have to choose between rushing and doing nothing?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Right. I'll preview the destination and check the official notices before deciding.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "A company-wide message, sent from an internal account claiming to represent management/security, instructs employees to perform an urgent account-security action right away or risk losing access.",
+					"situation": "An urgent message claims to protect school accounts and threatens lost access. How should Alex respond?",
 					"evidence": [
-						"Message sent from an internal account impersonating Security/Management authority",
-						"No corresponding entry exists in the official security-incident log",
-						"Message pressures immediate action, warning of lost access if delayed",
-						"The \"security action\" requested is not part of any documented procedure"
+						"The message uses a school-domain address but claims security authority without independent confirmation.",
+						"The recovery link points to account-repair.example, not the saved school portal.",
+						"The saved notice board has no matching directive. That absence is a clue, not proof by itself.",
+						"The handbook's saved School IT contact is help@harborhigh.example. Use that contact or Ms. Reyes to verify the request, not the message's reply address."
 					],
 					"choices": [
-						{"label": "Comply with the internal request because delaying could disrupt everyone's work for the day.", "outcome": "CRITICAL", "consequence": "Employees follow the fraudulent instructions company-wide, handing the attacker exactly the account access the message was designed to harvest."},
-						{"label": "Verify the request through the official security workflow before anyone acts on it.", "outcome": "SAFE", "consequence": "The verification confirms no such directive was issued. The message is blocked company-wide before anyone acts on it."},
-						{"label": "Ask employees to partially comply now while confirmation is still pending.", "outcome": "RISKY", "consequence": "Partial compliance is enough for the attacker to capture what they needed from the employees who acted before confirmation arrived."}
+						{
+							"label": "Use the message's link to keep access",
+							"outcome": "CRITICAL",
+							"consequence": "The imitation recovery page collects Alex's school password. He tells Ms. Reyes and begins account recovery through the saved school portal, not through the message."
+						},
+						{
+							"label": "Check with School IT using saved details",
+							"outcome": "SAFE",
+							"consequence": "School IT confirms through the saved contact that it issued no such check. Ms. Reyes helps report the message and warn the class without forwarding the link."
+						},
+						{
+							"label": "Forward the check while waiting for advice",
+							"outcome": "RISKY",
+							"consequence": "More classmates receive the unverified sign-in link before confirmation arrives. Alex warns them not to use it and asks Ms. Reyes to help contain the spread."
+						}
 					],
-					"explanation": "Urgency and claimed authority are the two levers every impersonation depends on. A genuine security directive will always survive being verified through the official workflow before anyone acts.",
+					"explanation": "A message claiming to protect you still needs verification. Compare its instructions with trusted school sources, and do not spread a sign-in link while its legitimacy is uncertain.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School Safety Team <safety@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Urgent security check before fair access closes"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://account-repair.example/fair-check"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "VERIFY THE SECURITY REQUEST",
+						"prompt": "Inspect the sender and destination, then check your saved school sources.",
+						"items": [
+							{
+								"id": "sender",
+								"label": "View the full sender",
+								"analysis": "safety@harborhigh.example is a school-domain address claiming security authority. The display name and domain do not independently authorize these instructions.",
+								"valid": true
+							},
+							{
+								"id": "destination",
+								"label": "Preview the recovery link",
+								"analysis": "Destination: https://account-repair.example/fair-check. It asks for a school sign-in outside the saved school portal. This preview does not open the link.",
+								"valid": true
+							},
+							{
+								"id": "it_contact",
+								"label": "Compare the saved IT contact",
+								"analysis": "The handbook lists help@harborhigh.example. Contact that saved address or ask Ms. Reyes; do not use contact details supplied only by the suspicious message.",
+								"valid": true,
+								"phone_app": "contacts"
+							},
+							{
+								"id": "school_notices",
+								"label": "Check the saved notice board",
+								"analysis": "There is no matching directive on the school's notice board. A missing notice is not conclusive, so confirm through the saved IT contact before acting.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Mia",
+							"text": "The warning still feels urgent. Let's use the contacts we already trust.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll check the evidence again before following or forwarding anything.",
+							"emotion": "determined"
+						}
+					],
 					"breach_gold": 24,
-					"next": ""
+					"next": "",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				}
-			]
+			],
+			"scene_header": "HARBOR HIGH // FAIR PREPARATIONS",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of limiting risk while a trusted adult helps. Alex is not operating school security systems or making real payments.",
+			"map_route": [
+				[
+					0,
+					1
+				],
+				[
+					3,
+					1
+				],
+				[
+					3,
+					6
+				],
+				[
+					6,
+					6
+				],
+				[
+					6,
+					0
+				],
+				[
+					9,
+					0
+				],
+				[
+					9,
+					5
+				],
+				[
+					12,
+					5
+				]
+			],
+			"locations": {
+				"opening": "clubroom",
+				"ending": "courtyard",
+				"resume_breach": "classroom_day",
+				"breach_contained": "classroom_day"
+			},
+			"phone": {
+				"contacts": [
+					{
+						"title": "Ms. Reyes / class adviser",
+						"body": "reyes@harborhigh.example\nSaved class adviser contact. Ask Ms. Reyes to help confirm unexpected payment changes with the school cashier and requests for private group information."
+					},
+					{
+						"title": "School IT / handbook contact",
+						"evidence_id": "it_contact",
+						"body": "help@harborhigh.example\nSaved from the school handbook before these messages arrived. Ask here or speak to Ms. Reyes to verify a security request. Do not send your password or sign-in codes."
+					}
+				],
+				"pages": [
+					{
+						"title": "Fair guide / printing payment",
+						"evidence_id": "payment_rules",
+						"body": "https://portal.harborhigh.example/fair/printing\nSaved fair guide: use the school cashier for the printing fee.\nIf payment details change, verify with the school office or through Ms. Reyes first.\nAn email reply alone does not approve a replacement destination."
+					},
+					{
+						"title": "Fair guide / project submission",
+						"evidence_id": "sharing_rules",
+						"body": "https://portal.harborhigh.example/fair/submit\nSubmit the final poster through the saved class page.\nKeep drafts and group contact details private.\nAsk Ms. Reyes to verify any request for additional access before changing permissions."
+					},
+					{
+						"title": "School notice board",
+						"evidence_id": "school_notices",
+						"body": "https://portal.harborhigh.example/notices\nSaved school notice board.\nCurrent notices: fair setup instructions and usual account-help contacts.\nNo matching urgent fair-account check is posted. Confirm unexpected instructions with the saved IT contact; this page alone cannot prove a message is false."
+					}
+				]
+			}
 		},
 		{
 			"id": "mod01_stage5",
@@ -1006,115 +1910,594 @@
 			"stage": 5,
 			"title": "The Second Key",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 5 COMPLETE",
 			"clear_subtitle": "THE SECOND KEY",
 			"next_stage_title": "Stage 6 — Trusted Files",
 			"breach_hp_multiplier": 0.8,
+			"scene_header": "HARBOR HIGH // KEEPING OUR ACCOUNTS SAFE",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of limiting account risk while Ms. Reyes and School IT help. Alex is not operating school security systems.",
+			"map_route": [
+				[
+					0,
+					5
+				],
+				[
+					2,
+					5
+				],
+				[
+					2,
+					0
+				],
+				[
+					6,
+					0
+				],
+				[
+					6,
+					6
+				],
+				[
+					9,
+					6
+				],
+				[
+					9,
+					1
+				],
+				[
+					12,
+					1
+				]
+			],
+			"locations": {
+				"opening": "library_room",
+				"ending": "courtyard",
+				"resume_breach": "library_room",
+				"breach_contained": "library_room"
+			},
 			"opening": [
-				{"speaker": "Security Assistant", "text": "The attacker keeps losing access, but they keep coming back."},
-				{"speaker": "Mia", "text": "We changed the passwords. How are they still getting in?"},
-				{"speaker": "Security Assistant", "text": "A password is only the first key."},
-				{"speaker": "Mia", "text": "And the second?"},
-				{"speaker": "Security Assistant", "text": "Authentication approval. Sessions. Tokens. That's what they're after now."}
+				{
+					"speaker": "Alex",
+					"text": "The poster is printed. I almost don't trust how normal that sounds.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Our frog finally escaped the draft folder.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "School IT helped me turn on a second sign-in check after those fake security messages.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "The one where your phone asks if it's really you?",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Yes. I want our next problem to be where to hang the poster, not losing the account.",
+					"emotion": "determined"
+				}
 			],
 			"ending": [
-				{"speaker": "Mia", "text": "So even changing the password isn't always enough."},
-				{"speaker": "Security Assistant", "text": "Not if the attacker already has an authenticated session."},
-				{"speaker": "Mia", "text": "They're trying to stay signed in."},
-				{"speaker": "Security Assistant", "text": "And their next step may not look like a login attack at all."}
+				{
+					"speaker": "Alex",
+					"text": "A real alert can still be asking about someone else's sign-in.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And a page saying I'm logged out doesn't make it true.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "You checked your actual activity through a saved route. Keep that habit.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Next job: our slideshow. No more emergency logins just to open a file.",
+					"emotion": "determined"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "School IT is helping with the account. Finish the containment simulation, then we'll review the next request.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. The session is gone, but the attacker is still probing for a way to stay authenticated."},
-				{"speaker": "Mia", "text": "Then let's make sure the next key doesn't turn either."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate risk is contained. We'll check the affected account through the saved school portal.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I can ask for help without approving something I didn't start.",
+					"emotion": "relieved"
+				}
 			],
+			"phone": {
+				"contacts": [
+					{
+						"title": "School IT / saved contact",
+						"evidence_id": "it_contact",
+						"body": "help@harborhigh.example\nSaved from the school handbook. Ask Ms. Reyes or contact School IT here about unexpected sign-in requests. Never send passwords or approval codes."
+					}
+				],
+				"pages": [
+					{
+						"title": "My account / sign-in activity",
+						"evidence_id": "session_activity",
+						"body": "https://portal.harborhigh.example/account/activity\nOpened through your saved bookmark. Inspect the time and device records below; viewing them does not sign anything out."
+					},
+					{
+						"title": "School portal / my shared files",
+						"evidence_id": "portal_files",
+						"body": "https://portal.harborhigh.example/files\nYour saved school portal. Check the current session and the shared-file record below."
+					}
+				]
+			},
 			"threats": [
 				{
 					"id": "mod01_stage05_incident01",
 					"module_id": "mod_01",
 					"stage": 5,
-					"title": "Unexpected MFA Prompt",
 					"bkt_skill": "phishing",
-					"affected_system": "EMPLOYEE SSO / MFA",
+					"title": "I Didn't Sign In",
+					"affected_system": "ALEX'S ACCOUNT / SIGN-IN APPROVAL",
+					"background": "library_room",
 					"story": [
-						{"speaker": "Mia", "text": "My phone just buzzed with an MFA approval request. I'm not signing in anywhere."},
-						{"speaker": "Security Assistant", "text": "Don't approve it."},
-						{"speaker": "Mia", "text": "I wasn't going to. But it's the third one this hour."}
+						{
+							"speaker": "Mia",
+							"text": "Can you hold the poster? The corners keep curling.",
+							"emotion": "frustrated"
+						},
+						{
+							"speaker": "Alex",
+							"text": "My phone just buzzed. It wants me to approve a sign-in.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "School Account Alerts <alerts@harborhigh.example>",
+								"subject": "Was this you? Sign-in approval pending",
+								"body": "A sign-in to Alex's school account is waiting for approval in the authenticator. If you did not start this request, do not approve it. This email contains no approval link."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "Were you opening the portal?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "No. I've been holding this frog for five minutes.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Then let's check what the request is actually for.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "And use our saved contact if someone else is trying to get in.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Mia receives an MFA approval notification on her authenticator app even though she is not currently attempting to sign in anywhere.",
+					"situation": "Alex did not start a sign-in, but an approval request is waiting. What should he do?",
 					"evidence": [
-						"MFA approval push received with no matching sign-in attempt by Mia",
-						"This is the third unsolicited approval prompt in the last hour",
-						"Prompt originates from Mia's real SSO account, not a spoofed one",
-						"No travel or new device has been added to Mia's account recently"
+						"The request is for Alex's real account, but he did not start it. Approving would authorize someone else's sign-in.",
+						"The alert itself asks Alex to deny an unrequested sign-in; it does not ask for a password or contain an approval link. A genuine alert is not proof that the attempted sign-in is yours.",
+						"The school handbook lists help@harborhigh.example. Deny the unexpected request and ask School IT, with Ms. Reyes, to review account activity."
 					],
 					"choices": [
-						{"label": "Approve the request once, then immediately change the password if any suspicious activity appears.", "outcome": "CRITICAL", "consequence": "The single approval hands the attacker a fully authenticated session, and the later password change does nothing to remove it."},
-						{"label": "Deny the request, review recent sign-ins and active sessions, and report the account to Security.", "outcome": "SAFE", "consequence": "The review turns up a login attempt from an unrecognized location. Security locks it down before another prompt goes out."},
-						{"label": "Deny the request and wait to see whether another approval prompt appears.", "outcome": "RISKY", "consequence": "Denying stops this attempt, but with no review or report, the attacker simply tries again from a different angle."}
+						{
+							"label": "Approve once to stop the buzzing",
+							"outcome": "CRITICAL",
+							"consequence": "That approval authorizes an unwanted sign-in. Alex tells Ms. Reyes immediately and uses the official recovery route to end the unauthorized access."
+						},
+						{
+							"label": "Deny it and ask School IT to review",
+							"outcome": "SAFE",
+							"consequence": "Alex denies the prompt and reports it using his saved contact. School IT reviews the repeated attempts and helps secure his account before he signs in again."
+						},
+						{
+							"label": "Deny this one, then mute further alerts",
+							"outcome": "RISKY",
+							"consequence": "This denial blocks the current attempt, but muting the alerts hides further attempts without reviewing the account. Ms. Reyes helps Alex address the unresolved risk in containment."
+						}
 					],
-					"explanation": "An MFA prompt is a request for permission, not a login itself. Denying one attempt only closes that single door; the account still needs to be reviewed and the compromise attempt reported before it recurs.",
+					"explanation": "A genuine approval prompt can represent an unwanted sign-in. Deny requests you did not initiate and report repeated attempts through a trusted route.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School Account Alerts <alerts@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Was this you? Sign-in approval pending"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "INVESTIGATE BEFORE YOU DECIDE",
+						"prompt": "Inspect the message and compare it with your saved sources.",
+						"items": [
+							{
+								"id": "approval",
+								"label": "Inspect the pending approval",
+								"analysis": "The request is for Alex's real account, but he did not start it. Approving would authorize someone else's sign-in.",
+								"valid": true,
+								"view_title": "SIGN-IN REQUEST / PENDING",
+								"fields": [
+									{
+										"label": "ACCOUNT",
+										"value": "alex@harborhigh.example"
+									},
+									{
+										"label": "DEVICE",
+										"value": "New desktop browser. Alex is using his phone and has not opened a new session."
+									},
+									{
+										"label": "RECENT REQUESTS",
+										"value": "Three approval requests in five minutes. None were started by Alex."
+									}
+								]
+							},
+							{
+								"id": "alert",
+								"label": "Check what the alert asks",
+								"analysis": "The alert itself asks Alex to deny an unrequested sign-in; it does not ask for a password or contain an approval link. A genuine alert is not proof that the attempted sign-in is yours.",
+								"valid": true
+							},
+							{
+								"id": "it_contact",
+								"label": "Find the saved account-help contact",
+								"analysis": "The school handbook lists help@harborhigh.example. Deny the unexpected request and ask School IT, with Ms. Reyes, to review account activity.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll reopen the evidence before choosing again.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We still have our saved school contacts. Let's check together.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 26,
-					"next": "mod01_stage05_incident02"
+					"next": "mod01_stage05_incident02",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage05_incident02",
 					"module_id": "mod_01",
 					"stage": 5,
-					"title": "Password Reset Isn't Enough",
 					"bkt_skill": "phishing",
-					"affected_system": "CLOUD ACCOUNT / ACTIVE SESSION",
+					"title": "Still Signed In",
+					"affected_system": "ALEX'S ACCOUNT / ACTIVE DEVICES",
+					"background": "library_room",
 					"story": [
-						{"speaker": "Security Assistant", "text": "We reset the employee's password an hour ago. Their cloud account still shows an active session we don't recognize."},
-						{"speaker": "Mia", "text": "Didn't the reset kick them out?"},
-						{"speaker": "Security Assistant", "text": "A reset changes the key. It doesn't always close the door that's already open."}
+						{
+							"speaker": "Alex",
+							"text": "School IT helped me change my password. Can we get back to the slideshow?",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Mia",
+							"text": "They sent a follow-up: check the active devices too.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "School IT <help@harborhigh.example>",
+								"subject": "Account review: check your active devices",
+								"body": "Your password change is recorded. Open the school portal using your saved bookmark and review active devices with your adviser. Do not send us your password."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "I thought changing the password would sign everything out.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "It depends on the service. Let's check what your portal shows, rather than assume.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "There's a desktop session I don't recognize. The last activity time is after the reset.",
+							"emotion": "shocked"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We can compare the records without touching any of our files.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "An employee's password was reset after a suspected compromise, but Security still observes an unfamiliar authenticated session actively connected to the cloud account.",
+					"situation": "The saved portal still shows an unfamiliar active session after the password change. How should Alex respond?",
 					"evidence": [
-						"Password was reset 60 minutes ago",
-						"Cloud account still shows one active session from an unrecognized device",
-						"That session has continued making requests after the reset",
-						"No sign-out or session revocation has occurred yet"
+						"The follow-up sends Alex to his existing bookmark and asks for no password. Its instructions can be checked independently.",
+						"The password changed five minutes ago; the unknown desktop accessed the project folder two minutes ago and is still active. In this case, the reset did not end that session.",
+						"Use Ms. Reyes and the saved School IT contact to end unfamiliar access and review the account. Do not leave a confirmed unknown session active just to watch it."
 					],
 					"choices": [
-						{"label": "Leave the suspicious session active temporarily so Security can observe what actions it performs.", "outcome": "CRITICAL", "consequence": "While Security watches, the session downloads sensitive files, and the observation comes at the cost of the very data it was meant to protect."},
-						{"label": "Revoke all active sessions, reset credentials if needed, and require fresh authentication.", "outcome": "SAFE", "consequence": "Every session is terminated immediately. The employee re-authenticates cleanly and the account is fully contained."},
-						{"label": "Reset the password again using a stronger password and continue monitoring.", "outcome": "RISKY", "consequence": "The stronger password changes nothing for a session that was never re-authenticated. The unfamiliar session keeps working."}
+						{
+							"label": "Leave it active to see what it opens",
+							"outcome": "CRITICAL",
+							"consequence": "The unfamiliar session remains able to view the project folder. Alex reports the exposure immediately instead of continuing his own investigation on a live account."
+						},
+						{
+							"label": "Ask School IT to end access and review",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes helps Alex contact School IT. They revoke affected sessions, check connected access, and help him sign in safely again; legitimate devices may need to sign in again too."
+						},
+						{
+							"label": "Change the password again and stop there",
+							"outcome": "RISKY",
+							"consequence": "The portal still shows the unfamiliar session as active. Another password change alone has not addressed the observed access; Alex asks for help during containment."
+						}
 					],
-					"explanation": "A password reset only affects future authentication attempts. A session already granted before the reset keeps its access until it is explicitly revoked.",
+					"explanation": "Services handle password changes differently. Here, the activity record proves that access continued after the reset. Verify session status and get trusted help to end unauthorized access.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School IT <help@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Account review: check your active devices"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "INVESTIGATE BEFORE YOU DECIDE",
+						"prompt": "Inspect the message and compare it with your saved sources.",
+						"items": [
+							{
+								"id": "followup",
+								"label": "Inspect the recovery instructions",
+								"analysis": "The follow-up sends Alex to his existing bookmark and asks for no password. Its instructions can be checked independently.",
+								"valid": true
+							},
+							{
+								"id": "session_activity",
+								"label": "Compare reset and session times",
+								"analysis": "The password changed five minutes ago; the unknown desktop accessed the project folder two minutes ago and is still active. In this case, the reset did not end that session.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "ACTIVE DEVICE RECORDS",
+								"fields": [
+									{
+										"label": "PASSWORD CHANGE",
+										"value": "5 minutes ago / completed through the saved portal with School IT."
+									},
+									{
+										"label": "THIS PHONE",
+										"value": "Alex's phone / recognized device / current session."
+									},
+									{
+										"label": "UNKNOWN DESKTOP",
+										"value": "Last active 2 minutes ago / project folder viewed / still signed in. Alex does not recognize this device."
+									}
+								]
+							},
+							{
+								"id": "it_contact",
+								"label": "Check the saved recovery contact",
+								"analysis": "Use Ms. Reyes and the saved School IT contact to end unfamiliar access and review the account. Do not leave a confirmed unknown session active just to watch it.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll reopen the evidence before choosing again.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We still have our saved school contacts. Let's check together.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 28,
-					"next": "mod01_stage05_incident03"
+					"next": "mod01_stage05_incident03",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage05_incident03",
 					"module_id": "mod_01",
 					"stage": 5,
-					"title": "Session Expired",
 					"bkt_skill": "phishing",
-					"affected_system": "CLOUD DOCUMENT SYSTEM",
+					"title": "Logged Out Again?",
+					"affected_system": "PROJECT FILES / IMITATION SIGN-IN",
+					"background": "classroom_day",
 					"story": [
-						{"speaker": "Mia", "text": "I got a shared-document notification from a coworker. When I opened it, it says my session expired and I need to sign in again."},
-						{"speaker": "Security Assistant", "text": "Does the login page look right?"},
-						{"speaker": "Mia", "text": "It looks exactly like our real cloud portal."}
+						{
+							"speaker": "Mia",
+							"text": "I've got the frog picture ready for slide one.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "A message says the slides are ready already, but my session expired.",
+							"emotion": "worried",
+							"mail": {
+								"sender": "Fair Files <files@harborhigh.example>",
+								"subject": "Water Wise slides: your session expired",
+								"body": "The slideshow is ready. Your school session has expired. Sign in again through the attached access page to continue: https://harborhigh-session.example/slides"
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "Already? I haven't uploaded the picture yet.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The preview has our school name and the same blue sign-in button.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "That's easy to copy. What does your saved portal show?",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll compare both before typing anything.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Mia opens a legitimate-looking shared-document notification from a known internal contact. The linked page displays \"Your session has expired. Authenticate again to continue,\" styled to closely resemble BlueTech's real cloud login.",
+					"situation": "A shared-file message asks Alex to sign in again on a different site. What should he do?",
 					"evidence": [
-						"Notification appears to come from a known internal contact",
-						"Linked page visually matches BlueTech's real cloud login page",
-						"Page prompts re-authentication, citing an \"expired session\"",
-						"Mia has not independently opened the company cloud portal to compare"
+						"The preview asks for school credentials at harborhigh-session.example, not the saved school portal. School branding does not validate that destination.",
+						"The saved portal at portal.harborhigh.example shows Alex signed in. Shared files contain the approved poster, but no new slideshow share. Missing files alone are not proof; the mismatched destination also needs checking.",
+						"The message asks Alex to enter his password through its own access page. Use the independently saved portal and contact the known sender through a trusted route instead."
 					],
 					"choices": [
-						{"label": "Authenticate through the page because the document notification came from a known internal contact.", "outcome": "CRITICAL", "consequence": "The credentials are entered directly into the attacker's lookalike page, handing over a fresh authenticated session on the spot."},
-						{"label": "Close the page and open the official company cloud portal independently to check the shared document.", "outcome": "SAFE", "consequence": "The independent portal shows no expired session and no such document pending. The lookalike page is reported and blocked."},
-						{"label": "Compare the page URL and certificate details before deciding whether to authenticate.", "outcome": "RISKY", "consequence": "The URL and certificate look convincing enough to pass a quick check, and the credentials are entered into a page that was never verified as the real workflow."}
+						{
+							"label": "Sign in through the message's page",
+							"outcome": "CRITICAL",
+							"consequence": "The imitation page collects Alex's credentials. He stops using it and asks Ms. Reyes to help recover the account through the official portal."
+						},
+						{
+							"label": "Use the saved portal and report the mismatch",
+							"outcome": "SAFE",
+							"consequence": "Alex leaves the imitation page alone, checks the saved portal, and asks Ms. Reyes about the missing share. School IT confirms the message was not an authorized sign-in request."
+						},
+						{
+							"label": "Forward the access page to our group first",
+							"outcome": "RISKY",
+							"consequence": "The unverified sign-in page reaches classmates. Alex warns them not to use it and asks Ms. Reyes to help contain the spread."
+						}
 					],
-					"explanation": "Visual and technical inspection can confirm a page looks legitimate, but it cannot confirm that the login prompt itself is a genuine step in a trusted workflow. Independently reopening a known-good entry point is the only way to be sure.",
+					"explanation": "An expired-session message is a claim to verify, not an instruction to obey. Compare the destination and workflow with a known-good portal before entering credentials.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Fair Files <files@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise slides: your session expired"
+							},
+							{
+								"label": "LINK PREVIEW — NOT OPENED",
+								"value": "https://harborhigh-session.example/slides"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "INVESTIGATE BEFORE YOU DECIDE",
+						"prompt": "Inspect the message and compare it with your saved sources.",
+						"items": [
+							{
+								"id": "access_preview",
+								"label": "Inspect the sign-in preview",
+								"analysis": "The preview asks for school credentials at harborhigh-session.example, not the saved school portal. School branding does not validate that destination.",
+								"valid": true,
+								"view_title": "ACCESS PAGE / INERT PREVIEW",
+								"fields": [
+									{
+										"label": "PAGE CLAIM",
+										"value": "Your session has expired. Enter your school password to view Water Wise slides."
+									},
+									{
+										"label": "DESTINATION",
+										"value": "https://harborhigh-session.example/slides\nPreview only; this site is not opened."
+									}
+								]
+							},
+							{
+								"id": "portal_files",
+								"label": "Compare the saved portal",
+								"analysis": "The saved portal at portal.harborhigh.example shows Alex signed in. Shared files contain the approved poster, but no new slideshow share. Missing files alone are not proof; the mismatched destination also needs checking.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "SAVED PORTAL / CURRENT RECORDS",
+								"fields": [
+									{
+										"label": "ACCOUNT STATUS",
+										"value": "Alex / signed in. No reauthentication request on the saved portal."
+									},
+									{
+										"label": "SHARED FILES",
+										"value": "Water Wise poster.pdf / Ms. Reyes. No new slideshow share listed."
+									}
+								]
+							},
+							{
+								"id": "request",
+								"label": "Check the action being requested",
+								"analysis": "The message asks Alex to enter his password through its own access page. Use the independently saved portal and contact the known sender through a trusted route instead.",
+								"valid": true
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll reopen the evidence before choosing again.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We still have our saved school contacts. Let's check together.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 30,
-					"next": ""
+					"next": "",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				}
 			]
 		},
@@ -1124,119 +2507,606 @@
 			"stage": 6,
 			"title": "Trusted Files",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 6 COMPLETE",
 			"clear_subtitle": "TRUSTED FILES",
 			"next_stage_title": "Stage 7 — Trusted Supplier",
 			"breach_hp_multiplier": 0.85,
+			"scene_header": "HARBOR HIGH // BUILDING OUR FAIR DISPLAY",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of limiting file and sharing risks while a trusted adult helps. Previews never run files, grant access, or open real links.",
+			"map_route": [
+				[
+					0,
+					6
+				],
+				[
+					3,
+					6
+				],
+				[
+					3,
+					0
+				],
+				[
+					7,
+					0
+				],
+				[
+					7,
+					5
+				],
+				[
+					10,
+					5
+				],
+				[
+					10,
+					0
+				],
+				[
+					12,
+					0
+				]
+			],
+			"locations": {
+				"opening": "science_lab",
+				"ending": "clubroom",
+				"resume_breach": "science_lab",
+				"breach_contained": "science_lab"
+			},
 			"opening": [
-				{"speaker": "Security Assistant", "text": "We've been watching the authentication attacks."},
-				{"speaker": "Mia", "text": "So they'll try another login page?"},
-				{"speaker": "Security Assistant", "text": "Maybe. Or they may stop asking for passwords directly."},
-				{"speaker": "Mia", "text": "What would they ask for instead?"},
-				{"speaker": "Security Assistant", "text": "Trust."},
-				{"speaker": "Mia", "text": "Trust in what?"},
-				{"speaker": "Security Assistant", "text": "Files. Apps. Shared documents. Things employees use every day."}
+				{
+					"speaker": "Mia",
+					"text": "The display needs one last chart. Our frog can't explain water use all by itself.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I've saved the class drive. We can get the chart there without chasing another email link.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And maybe a tool to make the slideshow less... rectangle-heavy?",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "Show me before you connect a new app to your school account. We can check what it needs.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Files, a slideshow tool, then rehearsal. That's a plan I can follow.",
+					"emotion": "relieved"
+				}
 			],
 			"ending": [
-				{"speaker": "Mia", "text": "They don't even need to make the login page look fake anymore."},
-				{"speaker": "Security Assistant", "text": "Correct."},
-				{"speaker": "Mia", "text": "They can use real cloud services and still lead us into the wrong action."},
-				{"speaker": "Security Assistant", "text": "Trusting the platform isn't enough. You have to trust the request."},
-				{"speaker": "Mia", "text": "And if they know who we work with..."},
-				{"speaker": "Security Assistant", "text": "Then suppliers are the next obvious target."}
+				{
+					"speaker": "Mia",
+					"text": "A file, an app, and a QR code. None looked like the first warning email.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "But each wanted me to trust something before I checked it.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "You checked where the file came from and what the app would be allowed to do.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And our slideshow still works without giving a stranger my inbox.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The frog stays. The suspicious extras don't.",
+					"emotion": "relieved"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "We'll review the affected sharing or account access together. Finish the containment simulation first.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. The file, the app, or the page is gone, but the workflow it hid behind is still worth reviewing."},
-				{"speaker": "Mia", "text": "Then let's check what else came through that same kind of channel."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate risk is contained. Keep the suspicious item unopened while we check through School IT.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I'll use the saved class drive for the real project files.",
+					"emotion": "relieved"
+				}
 			],
+			"phone": {
+				"contacts": [
+					{
+						"title": "Ms. Reyes / class adviser",
+						"body": "reyes@harborhigh.example\nSaved class adviser contact. Ask in person or through this saved contact to verify unexpected files and app requests."
+					}
+				],
+				"pages": [
+					{
+						"title": "Class drive / approved project files",
+						"evidence_id": "class_files",
+						"body": "https://portal.harborhigh.example/class/water-wise\nSaved class drive. Inspect the approved file record below."
+					},
+					{
+						"title": "School tools / app approval",
+						"evidence_id": "app_catalog",
+						"body": "https://portal.harborhigh.example/tools\nSaved list: Class Slides and the school drive. Ask Ms. Reyes or School IT before connecting another app. No listing is not proof of malware; it means approval has not been confirmed."
+					},
+					{
+						"title": "Fair guide / rehearsal schedule",
+						"evidence_id": "rehearsal",
+						"body": "https://portal.harborhigh.example/fair/rehearsal\nSaved official schedule. Friday, 13:00, music room. The timetable is readable here without a new sign-in or QR code."
+					}
+				]
+			},
 			"threats": [
 				{
 					"id": "mod01_stage06_incident01",
 					"module_id": "mod_01",
 					"stage": 6,
-					"title": "Shared Proposal",
 					"bkt_skill": "phishing",
-					"affected_system": "CLOUD DRIVE / MARKETING FILES",
+					"title": "The Chart Attachment",
+					"affected_system": "CLASS PROJECT / SHARED FILE",
+					"background": "science_lab",
 					"story": [
-						{"speaker": "Mia", "text": "I just got a shared-document notification from the vendor we're discussing the marketing proposal with."},
-						{"speaker": "Security Assistant", "text": "Does the proposal match what you're actually expecting?"},
-						{"speaker": "Mia", "text": "Yes, it's the real project. The link opens what looks like our usual cloud-sharing page."}
+						{
+							"speaker": "Alex",
+							"text": "One water-use chart and our display is done.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Your phone buzzed. That looks like Ms. Reyes's chart email.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Ms. Reyes <reyes@harborhigh.example>",
+								"subject": "Water Wise: open the final water-use chart",
+								"body": "Here is the chart for your display. Open Water_Use_Chart.pdf.html, then enter your school password to unlock the file. The filename may appear shortened in your inbox."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "The inbox calls it Water_Use_Chart.pdf. It wants a sign-in after I open it.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Wasn't the chart already on the class drive?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll expand the filename and compare it with the saved copy.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Good. I want a chart, not another recovery appointment.",
+							"emotion": "worried"
+						}
 					],
-					"situation": "Mia receives a shared-document notification from a known external business contact, referencing a real proposal currently under discussion. The link opens a page that looks like a legitimate cloud-sharing service.",
+					"situation": "An expected chart arrives with an unexpected unlock step. Which delivery route should Alex use?",
 					"evidence": [
-						"Sender is a known external business contact with an active project relationship",
-						"The referenced proposal is genuinely being discussed between both parties",
-						"Link opens what appears to be a standard cloud-sharing login page",
-						"Mia has not independently confirmed the file was actually shared through the platform"
+						"The full name ends in .html, not .pdf. Its preview asks for a school password; a document name is not proof of its real format or origin.",
+						"The message shows reyes@harborhigh.example and references the real project. Even a familiar address does not prove this attachment or password request was authorized.",
+						"The saved drive contains Water_Use_Chart.pdf, posted by Ms. Reyes, and displays the chart without an extra unlock form. Verify the unexpected attachment with her through a saved contact."
 					],
 					"choices": [
-						{"label": "Use the shared link because the sender and proposal are both legitimate, then authenticate only if the cloud service asks.", "outcome": "CRITICAL", "consequence": "The cloud service does ask, and the credentials entered on the linked page go straight to the attacker's collection point."},
-						{"label": "Open the approved company cloud platform independently and check whether the proposal is actually listed in my shared files.", "outcome": "SAFE", "consequence": "The independent platform shows no such file was ever shared. The link is reported and blocked before anyone signs in through it."},
-						{"label": "Open the link in a browser sandbox and inspect the document before deciding whether to sign in.", "outcome": "RISKY", "consequence": "The sandbox limits damage from the file itself, but the login prompt it eventually shows still captures credentials when entered."}
+						{
+							"label": "Open the attachment and enter my password",
+							"outcome": "CRITICAL",
+							"consequence": "The attachment's imitation unlock page collects Alex's password. He stops and tells Ms. Reyes so School IT can help recover the account."
+						},
+						{
+							"label": "Use the saved drive and check with Ms. Reyes",
+							"outcome": "SAFE",
+							"consequence": "Alex uses the chart already in the class drive. Ms. Reyes confirms she did not send the unlock attachment and helps report it."
+						},
+						{
+							"label": "Forward the attachment to our group to check",
+							"outcome": "RISKY",
+							"consequence": "An unverified attachment reaches classmates. Alex warns them not to open it and asks Ms. Reyes to help contain the spread."
+						}
 					],
-					"explanation": "A real sender relationship and a real project do not validate the delivery path. The document being genuine says nothing about whether this particular link is the platform's actual sharing mechanism.",
+					"explanation": "Inspect the full filename and verify unexpected delivery steps. HTML files are not automatically malicious; the credential request and mismatch with the approved file are the important evidence.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Ms. Reyes <reyes@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise: open the final water-use chart"
+							},
+							{
+								"label": "ATTACHMENT / NOT OPENED",
+								"value": "Water_Use_Chart.pdf.html"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "INSPECT THE REQUEST",
+						"prompt": "Compare the preview with your independently saved school sources.",
+						"items": [
+							{
+								"id": "attachment",
+								"label": "Expand the attachment details",
+								"analysis": "The full name ends in .html, not .pdf. Its preview asks for a school password; a document name is not proof of its real format or origin.",
+								"valid": true,
+								"view_title": "ATTACHMENT PROPERTIES / NOT EXECUTED",
+								"fields": [
+									{
+										"label": "FULL FILENAME",
+										"value": "Water_Use_Chart.pdf.html"
+									},
+									{
+										"label": "FILE TYPE",
+										"value": "HTML document / web page. The .pdf text is part of the name, not its actual extension."
+									},
+									{
+										"label": "PREVIEW",
+										"value": "School-branded password form. No chart data visible. Preview only: no file runs and no password can be entered."
+									}
+								]
+							},
+							{
+								"id": "sender",
+								"label": "Inspect the sender and request",
+								"analysis": "The message shows reyes@harborhigh.example and references the real project. Even a familiar address does not prove this attachment or password request was authorized.",
+								"valid": true
+							},
+							{
+								"id": "class_files",
+								"label": "Compare the approved class-drive file",
+								"analysis": "The saved drive contains Water_Use_Chart.pdf, posted by Ms. Reyes, and displays the chart without an extra unlock form. Verify the unexpected attachment with her through a saved contact.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "APPROVED FILE RECORD",
+								"fields": [
+									{
+										"label": "FILE",
+										"value": "Water_Use_Chart.pdf / PDF document / posted by Ms. Reyes."
+									},
+									{
+										"label": "PREVIEW",
+										"value": "Water-use chart visible in the saved class drive. No separate password form."
+									}
+								]
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll look at the preview again. No opening files or granting access while I check.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "And we can still ask Ms. Reyes if the request doesn't add up.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 32,
-					"next": "mod01_stage06_incident02"
+					"next": "mod01_stage06_incident02",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage06_incident02",
 					"module_id": "mod_01",
 					"stage": 6,
-					"title": "Collaboration App Access",
 					"bkt_skill": "phishing",
-					"affected_system": "MAILBOX / CLOUD STORAGE",
+					"title": "A Slideshow Wants My Inbox",
+					"affected_system": "STUDENT ACCOUNT / APP PERMISSIONS",
+					"background": "clubroom",
 					"story": [
-						{"speaker": "Mia", "text": "A new collaboration app is asking me to sign in through our normal cloud provider to authorize it."},
-						{"speaker": "Security Assistant", "text": "What is it asking for?"},
-						{"speaker": "Mia", "text": "Read my profile, read email, access shared files, view contacts. But the login screen is definitely ours."}
+						{
+							"speaker": "Mia",
+							"text": "Imagine the frog hopping onto the first slide.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "This app says it can animate the slideshow. It wants my school account.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "SlideSpark <welcome@slidespark.example>",
+								"subject": "Make Water Wise sparkle: connect your school account",
+								"body": "Create a free animated slideshow. Continue with your school account, then approve the requested access. The sign-in uses your school's genuine account provider."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "Is the sign-in page fake this time?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The provider is real. But the app wants permissions after sign-in.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Why would an animation tool need to read our mail?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Let's inspect each permission before we connect it. A real sign-in page doesn't approve the app for us.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "A collaboration app requests authorization through BlueTech's real cloud authentication provider. Requested permissions include reading Mia's profile, reading email, accessing shared files, and viewing contacts. The login page itself is the genuine provider page.",
+					"situation": "The sign-in provider is genuine, but the new app wants account access. What should Alex authorize?",
 					"evidence": [
-						"Authorization flow runs through BlueTech's real, unmodified cloud login page",
-						"Requested scopes: read profile, read email, access shared files, view contacts",
-						"The app is not listed in any previously approved software inventory",
-						"No password field is shown anywhere in the flow"
+						"The school identity provider is genuine. The app receiving access is SlideSpark, a separate service. No fake login page is needed for an app to request excessive access.",
+						"SlideSpark requests profile details, email, and drive files. The page's legitimacy does not establish the app's approval or need for those permissions.",
+						"SlideSpark is not listed in the saved school tools catalog. That is not proof of malware; ask Ms. Reyes or School IT to verify its publisher, purpose, and permissions before connecting it."
 					],
 					"choices": [
-						{"label": "Approve the request because authentication happens through BlueTech's legitimate cloud provider and no password is given directly to the app.", "outcome": "CRITICAL", "consequence": "The granted scopes hand the app standing access to Mia's email and files, all without the attacker ever needing a password."},
-						{"label": "Reject the request and verify the app through BlueTech's approved application catalog or Security team.", "outcome": "SAFE", "consequence": "The app is not in the catalog and Security confirms it was never vetted. The authorization request is denied company-wide."},
-						{"label": "Approve only the minimum permissions needed and review the app's publisher afterward.", "outcome": "RISKY", "consequence": "Even the reduced scope still grants standing read access to email, which the unreviewed publisher begins pulling from immediately."}
+						{
+							"label": "Approve all the requested permissions",
+							"outcome": "CRITICAL",
+							"consequence": "The unverified app receives access to Alex's mail and drive files. Ms. Reyes helps him revoke its access and ask School IT to review what may have been exposed."
+						},
+						{
+							"label": "Cancel and ask Ms. Reyes to verify the app",
+							"outcome": "SAFE",
+							"consequence": "No access is granted. Ms. Reyes helps check the publisher and permissions, and the group uses the approved Class Slides tool meanwhile."
+						},
+						{
+							"label": "Grant profile access now; verify it later",
+							"outcome": "RISKY",
+							"consequence": "Even reduced access shares Alex's profile with an unverified app. He cancels further permissions and asks Ms. Reyes to help revoke and review the access already granted."
+						}
 					],
-					"explanation": "A genuine login page only proves the identity provider is real, not that the application requesting access should be trusted. OAuth-style consent can grant lasting access without ever touching a password.",
+					"explanation": "A real identity provider authenticates you; it does not guarantee every app is safe. Check the receiving app and the necessity of its permissions before granting access.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "SlideSpark <welcome@slidespark.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Make Water Wise sparkle: connect your school account"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "INSPECT THE REQUEST",
+						"prompt": "Compare the preview with your independently saved school sources.",
+						"items": [
+							{
+								"id": "provider",
+								"label": "Check who receives the permission",
+								"analysis": "The school identity provider is genuine. The app receiving access is SlideSpark, a separate service. No fake login page is needed for an app to request excessive access.",
+								"valid": true
+							},
+							{
+								"id": "permissions",
+								"label": "Expand the requested permissions",
+								"analysis": "SlideSpark requests profile details, email, and drive files. The page's legitimacy does not establish the app's approval or need for those permissions.",
+								"valid": true,
+								"view_title": "CONSENT REQUEST / NOT GRANTED",
+								"fields": [
+									{
+										"label": "PROFILE",
+										"value": "Read your name and school email address. This shares personal information with the app."
+									},
+									{
+										"label": "MAIL",
+										"value": "Read email messages. This includes private conversations unrelated to the slideshow."
+									},
+									{
+										"label": "FILES",
+										"value": "Read all drive files you can access, not just the slides selected for this project."
+									}
+								]
+							},
+							{
+								"id": "app_catalog",
+								"label": "Check school-approved tools",
+								"analysis": "SlideSpark is not listed in the saved school tools catalog. That is not proof of malware; ask Ms. Reyes or School IT to verify its publisher, purpose, and permissions before connecting it.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll look at the preview again. No opening files or granting access while I check.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "And we can still ask Ms. Reyes if the request doesn't add up.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 34,
-					"next": "mod01_stage06_incident03"
+					"next": "mod01_stage06_incident03",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage06_incident03",
 					"module_id": "mod_01",
 					"stage": 6,
-					"title": "Secure Document QR",
 					"bkt_skill": "phishing",
-					"affected_system": "EMPLOYEE ACCOUNT / MOBILE SESSION",
+					"title": "The Rehearsal QR",
+					"affected_system": "FAIR SCHEDULE / QR DESTINATION",
+					"background": "music_room",
 					"story": [
-						{"speaker": "Mia", "text": "This email says a document can't open on my workstation, and I need to scan a QR code with my phone instead."},
-						{"speaker": "Security Assistant", "text": "Does it reference a real file?"},
-						{"speaker": "Mia", "text": "Yes, one I actually expect. And it has our branding."}
+						{
+							"speaker": "Mia",
+							"text": "Can we rehearse once without me saying 'uh' on every slide?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "A new message says our rehearsal time changed. It has a QR access card.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Fair Schedule <schedule@harborhigh.example>",
+								"subject": "Water Wise rehearsal: mobile-only timetable",
+								"body": "Your rehearsal slot has changed. The timetable no longer opens on school computers. Use the QR access card in this message on your phone, then sign in to confirm your slot."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "We're already on a phone. Why can't it just show the time?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "It says the timetable is mobile-only now. The school logo looks right.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We saved the schedule yesterday. Let's compare it.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll preview the QR destination without opening the site.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "An email states \"Your secure document cannot be opened on this workstation. Scan the QR code with your phone to continue.\" The email uses BlueTech branding and references a real internal file Mia is expecting.",
+					"situation": "A QR message changes the rehearsal instructions and asks for a new sign-in. What should Alex do?",
 					"evidence": [
-						"Email references a real, currently expected internal file",
-						"Message uses BlueTech's visual branding and formatting",
-						"QR code is the only way offered to \"continue\" viewing the document",
-						"No workstation-access limitation of this kind has ever applied to this file type before"
+						"The QR payload leads to fair-access.example/rehearsal, not the saved school portal. Previewing the address does not open it or authenticate Alex.",
+						"The official saved schedule still shows Friday, 13:00 in the music room, with no mobile-only restriction. A stale schedule is possible, so confirm any change with Ms. Reyes before following the new route.",
+						"The message claims that ordinary timetable access no longer works and substitutes a new sign-in route. A QR code is just another way to carry a destination; it is not a trust badge."
 					],
 					"choices": [
-						{"label": "Scan the QR code and continue if it opens the company's normal authentication page.", "outcome": "CRITICAL", "consequence": "The page matches the company's look exactly, and Mia's phone authenticates straight into a session the attacker now controls."},
-						{"label": "Verify the document request through the official company file system before scanning anything.", "outcome": "SAFE", "consequence": "The file system shows no such restriction and no pending document matching the claim. The QR code is reported before it's ever scanned."},
-						{"label": "Scan the QR code using a separate device, but do not submit credentials unless the destination appears legitimate.", "outcome": "RISKY", "consequence": "The destination appears legitimate enough to pass that judgment, and the credentials are submitted on the separate device instead."}
+						{
+							"label": "Use the QR page and sign in",
+							"outcome": "CRITICAL",
+							"consequence": "The imitation timetable collects Alex's school credentials. He tells Ms. Reyes and uses the saved portal to begin recovery instead of returning to the QR page."
+						},
+						{
+							"label": "Confirm the change with Ms. Reyes",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes checks the official schedule and confirms no such change. Alex reports the QR message and the group keeps its rehearsal slot."
+						},
+						{
+							"label": "Send the QR card to classmates first",
+							"outcome": "RISKY",
+							"consequence": "The unverified sign-in route reaches more students. Alex warns the group not to use it and asks Ms. Reyes to help contain the spread."
+						}
 					],
-					"explanation": "Moving the request to a second device changes where the attack happens, not whether the underlying request is trustworthy. The claim itself — that a workstation suddenly can't open a normal file — needs to be verified before any device engages with it.",
+					"explanation": "QR codes carry destinations, including untrusted ones. Preview the destination and verify unexpected changes through an independent source before entering credentials.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Fair Schedule <schedule@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise rehearsal: mobile-only timetable"
+							},
+							{
+								"label": "QR DESTINATION / NOT OPENED",
+								"value": "https://fair-access.example/rehearsal"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "INSPECT THE REQUEST",
+						"prompt": "Compare the preview with your independently saved school sources.",
+						"items": [
+							{
+								"id": "qr_destination",
+								"label": "Reveal the QR destination",
+								"analysis": "The QR payload leads to fair-access.example/rehearsal, not the saved school portal. Previewing the address does not open it or authenticate Alex.",
+								"valid": true,
+								"view_title": "QR ACCESS CARD / SAFE PREVIEW",
+								"fields": [
+									{
+										"label": "DECODED DESTINATION",
+										"value": "https://fair-access.example/rehearsal\nDecoded in this simulation; no browser or camera is opened."
+									},
+									{
+										"label": "LANDING-PAGE CLAIM",
+										"value": "Harbor High timetable. Enter school password to confirm your new slot. Copied branding does not verify the site."
+									}
+								]
+							},
+							{
+								"id": "rehearsal",
+								"label": "Compare the saved timetable",
+								"analysis": "The official saved schedule still shows Friday, 13:00 in the music room, with no mobile-only restriction. A stale schedule is possible, so confirm any change with Ms. Reyes before following the new route.",
+								"valid": true,
+								"phone_app": "pages"
+							},
+							{
+								"id": "request",
+								"label": "Check what changed",
+								"analysis": "The message claims that ordinary timetable access no longer works and substitutes a new sign-in route. A QR code is just another way to carry a destination; it is not a trust badge.",
+								"valid": true
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll look at the preview again. No opening files or granting access while I check.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "And we can still ask Ms. Reyes if the request doesn't add up.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 36,
-					"next": ""
+					"next": "",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				}
 			]
 		},
@@ -1246,118 +3116,591 @@
 			"stage": 7,
 			"title": "Trusted Supplier",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 7 COMPLETE",
 			"clear_subtitle": "TRUSTED SUPPLIER",
 			"next_stage_title": "Stage 8 — All Hands",
 			"breach_hp_multiplier": 0.9,
+			"scene_header": "HARBOR HIGH // FAIR SUPPLIES",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of limiting payment and sharing risks with a trusted adult. No money is transferred and no attachments are executed.",
+			"map_route": [
+				[
+					0,
+					0
+				],
+				[
+					2,
+					0
+				],
+				[
+					2,
+					6
+				],
+				[
+					5,
+					6
+				],
+				[
+					5,
+					1
+				],
+				[
+					9,
+					1
+				],
+				[
+					9,
+					6
+				],
+				[
+					12,
+					6
+				]
+			],
+			"locations": {
+				"opening": "clubroom",
+				"ending": "courtyard",
+				"resume_breach": "clubroom",
+				"breach_contained": "clubroom"
+			},
 			"opening": [
-				{"speaker": "Mia", "text": "If they know our files, projects, and apps, they probably know who we work with too."},
-				{"speaker": "Security Assistant", "text": "Exactly."},
-				{"speaker": "Mia", "text": "Suppliers?"},
-				{"speaker": "Security Assistant", "text": "Suppliers. Purchase orders. Payment schedules. Anything employees expect to receive."},
-				{"speaker": "Mia", "text": "So now the phishing looks like normal business."},
-				{"speaker": "Security Assistant", "text": "That's what makes it dangerous."}
+				{
+					"speaker": "Mia",
+					"text": "Slideshow ready. Poster ready. Our table still looks very empty.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The display stands are on order. Ms. Reyes asked me to keep the confirmation for pickup.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And the supplier is the shop our class always uses?",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Paper Trail. I've saved their original receipt and contact details.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "Bring any changes to me before paying or collecting anything. The group's money is not yours to risk alone.",
+					"emotion": "neutral"
+				}
 			],
 			"ending": [
-				{"speaker": "Mia", "text": "They knew the suppliers, invoice numbers, even the payment amounts."},
-				{"speaker": "Security Assistant", "text": "They've been collecting information throughout the campaign."},
-				{"speaker": "Mia", "text": "So every compromise gave them more context for the next attack."},
-				{"speaker": "Security Assistant", "text": "Exactly."},
-				{"speaker": "Mia", "text": "What happens if they stop targeting one person at a time?"},
-				{"speaker": "Security Assistant", "text": "Then we have a company-wide incident."}
+				{
+					"speaker": "Mia",
+					"text": "They knew our order number and what Ms. Reyes was doing.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Those details made the requests sound normal. The changes still needed checking.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "You protected the group's money by using contacts we already knew.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Next stop: setting up the display. Preferably without another emergency fee.",
+					"emotion": "relieved"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "We'll check any affected payments or shared files together. Finish the containment simulation first.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. The payment never went through, but the business context they used to build it is still worth reviewing."},
-				{"speaker": "Mia", "text": "Then let's see how much of our own information they actually have."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate risk is contained. We'll verify what was shared or paid through our saved records.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "A familiar conversation isn't enough to approve a new request.",
+					"emotion": "worried"
+				}
 			],
+			"phone": {
+				"contacts": [
+					{
+						"title": "Paper Trail / original order contact",
+						"evidence_id": "supplier_contact",
+						"body": "orders@papertrail.example\nOriginal receipt: Paper Trail shop counter. The school office also keeps the supplier's verified telephone number from its purchase records. Ask Ms. Reyes to use that number or speak at the counter; emailing the same possibly compromised account is not an independent check."
+					},
+					{
+						"title": "Ms. Reyes / class adviser",
+						"evidence_id": "adviser_contact",
+						"body": "reyes@harborhigh.example\nSaved adviser contact. For urgent fair payments, speak to Ms. Reyes in person or use this existing school contact, not a replacement supplied by a message."
+					}
+				],
+				"pages": [
+					{
+						"title": "Paper Trail / order PT-204",
+						"evidence_id": "order_record",
+						"body": "https://papertrail.example/orders/PT-204\nSaved original confirmation: two display stands, 240 credits. Ms. Reyes approved payment at pickup to Paper Trail. No revised order is listed here."
+					},
+					{
+						"title": "Fair budget / approval record",
+						"evidence_id": "budget_record",
+						"body": "https://portal.harborhigh.example/fair/budget\nSaved class record: display stands approved; additional payments need Ms. Reyes's confirmation. There is no approved emergency courier fee."
+					}
+				]
+			},
 			"threats": [
 				{
 					"id": "mod01_stage07_incident01",
 					"module_id": "mod_01",
 					"stage": 7,
-					"title": "Updated Bank Details",
 					"bkt_skill": "phishing",
-					"affected_system": "FINANCE / VENDOR PAYMENTS",
+					"title": "Same Thread, New Payee",
+					"affected_system": "GROUP BUDGET / SUPPLIER PAYMENT",
+					"background": "clubroom",
 					"story": [
-						{"speaker": "Mia", "text": "Our regular supplier just emailed. They say their banking details changed and want the next payment on the new account."},
-						{"speaker": "Security Assistant", "text": "Is it the same thread you've been using?"},
-						{"speaker": "Mia", "text": "Yes. Same contact name, same invoice number we're already expecting."}
+						{
+							"speaker": "Alex",
+							"text": "The stands are ready. We might actually finish setup on time.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Your phone buzzed. Is that the pickup confirmation?",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Paper Trail Orders <orders@papertrail.example>",
+								"subject": "Re: PT-204 — display stand payment update",
+								"body": "Your two stands are ready. Our shop payment account is unavailable. Send the 240 credits to 'PT Collections - Personal' instead. Reply in this thread if you need confirmation; please don't delay pickup."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "Same order thread, same total. But it wants us to pay a different account.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We checked the cashier change before. Does an old supplier thread make this different?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "It makes it look more convincing. It doesn't tell us who wrote the newest reply.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's compare the payee with the original order, then find the saved shop contact.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "BlueTech receives an email from a regular supplier stating their banking details have changed. The email continues an existing conversation thread, references a real outstanding invoice, uses the correct supplier contact name, and asks for the next payment to go to a new account.",
+					"situation": "The supplier's existing thread requests a new payment destination. How should Alex handle the group's money?",
 					"evidence": [
-						"Message continues an existing, genuine email thread with this supplier",
-						"References a real outstanding invoice currently awaiting payment",
-						"Uses the supplier's correct contact name and signature",
-						"Requests the next payment be redirected to a new bank account"
+						"The order and total match, but the payee changes from Paper Trail at pickup to a personal collection account. Matching order details do not authorize that change.",
+						"The latest request appears in the existing orders@papertrail.example thread. If that conversation is compromised, a reply asking whether it is genuine goes back to the same untrusted source.",
+						"The original receipt identifies the Paper Trail shop counter; the school office has its verified phone number. Ms. Reyes can call that previously recorded number or visit the shop. A new email to the same account would not be independent."
 					],
 					"choices": [
-						{"label": "Send a small test payment to the new account before transferring the remaining balance.", "outcome": "CRITICAL", "consequence": "The test payment clears straight into the attacker's account, confirming the account works before the remaining balance follows it."},
-						{"label": "Hold the payment and verify the banking change using the supplier contact information already stored in BlueTech's vendor records.", "outcome": "SAFE", "consequence": "The verified contact confirms no banking change was requested. The payment is held on the original account and the fraudulent email is reported."},
-						{"label": "Reply within the existing email thread and ask the supplier contact to confirm the new account details.", "outcome": "RISKY", "consequence": "The reply reaches the same compromised or spoofed thread, which confirms its own request right back."}
+						{
+							"label": "Send a small test payment to the new payee",
+							"outcome": "CRITICAL",
+							"consequence": "Even the small test payment transfers group money to an unverified destination. Alex tells Ms. Reyes immediately; she helps report it and contact the payment provider, but recovery is not guaranteed."
+						},
+						{
+							"label": "Hold payment and verify with Ms. Reyes",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes calls the shop using the number already held by the school office. Paper Trail has not changed its pickup payment process. The group keeps its money and reports the request."
+						},
+						{
+							"label": "Accept a confirmation in the same thread",
+							"outcome": "RISKY",
+							"consequence": "The same conversation confirms its own new payee, so the change is still unverified. Before proceeding further, Alex asks Ms. Reyes to help contain the risk and check independently."
+						}
 					],
-					"explanation": "A continuing thread, a real invoice, and a correct contact name only confirm the business relationship is genuine — they say nothing about who controls the account requesting a change. Bank-detail changes require verification through contact information independent of the message itself.",
+					"explanation": "Real order details show knowledge of the transaction, not authority to change it. A test payment is still a payment; verify a new destination independently before sending money.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Paper Trail Orders <orders@papertrail.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Re: PT-204 — display stand payment update"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE SOURCES",
+						"prompt": "Inspect the new request and compare it with your independently saved records.",
+						"items": [
+							{
+								"id": "payment_change",
+								"label": "Compare the old and new payment details",
+								"analysis": "The order and total match, but the payee changes from Paper Trail at pickup to a personal collection account. Matching order details do not authorize that change.",
+								"valid": true,
+								"view_title": "PAYMENT COMPARISON / NOTHING SENT",
+								"fields": [
+									{
+										"label": "ORIGINAL ORDER",
+										"value": "PT-204 / two display stands / 240 credits / pay Paper Trail at pickup."
+									},
+									{
+										"label": "NEW REQUEST",
+										"value": "PT-204 / 240 credits / pay 'PT Collections - Personal' before pickup."
+									}
+								]
+							},
+							{
+								"id": "thread",
+								"label": "Inspect the conversation source",
+								"analysis": "The latest request appears in the existing orders@papertrail.example thread. If that conversation is compromised, a reply asking whether it is genuine goes back to the same untrusted source.",
+								"valid": true
+							},
+							{
+								"id": "supplier_contact",
+								"label": "Find the independently saved shop contact",
+								"analysis": "The original receipt identifies the Paper Trail shop counter; the school office has its verified phone number. Ms. Reyes can call that previously recorded number or visit the shop. A new email to the same account would not be independent.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll compare the evidence again before acting.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We've still got our saved records. We don't have to guess.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 38,
-					"next": "mod01_stage07_incident02"
+					"next": "mod01_stage07_incident02",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage07_incident02",
 					"module_id": "mod_01",
 					"stage": 7,
-					"title": "Purchase Order",
 					"bkt_skill": "phishing",
-					"affected_system": "PROCUREMENT-WS-02",
+					"title": "One Letter, Different Shop",
+					"affected_system": "SUPPLIER IDENTITY / REVISED ORDER",
+					"background": "hallway_day",
 					"story": [
-						{"speaker": "Security Assistant", "text": "Procurement got an updated purchase order from a known supplier."},
-						{"speaker": "Mia", "text": "Does the order match something real?"},
-						{"speaker": "Security Assistant", "text": "It does. But the sender's domain is off by a single character."}
+						{
+							"speaker": "Mia",
+							"text": "I'll collect the stands while you find our table.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Wait. A revised pickup slip just arrived. It still says PT-204.",
+							"emotion": "worried",
+							"mail": {
+								"sender": "Paper Trail Orders <orders@papertrai1.example>",
+								"subject": "PT-204: revised pickup slip attached",
+								"body": "Please use the revised pickup slip for your two display stands. Open Pickup_PT-204.pdf.exe to view the new counter assignment. The order number and total are unchanged."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "Then it must be ours, right?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The full address looks a little different from the saved receipt.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let me see both. Those tiny letters are easy to miss.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll expand the sender and file details before either of us opens anything.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "A known supplier sends an updated purchase order. The sender address is visually almost identical to the supplier's normal domain. The attachment is unexpected but refers to a real order currently being processed.",
+					"situation": "The new slip knows the real order number, but its sender differs from the saved supplier. What should Alex use?",
 					"evidence": [
-						"Sender domain is nearly identical to the supplier's real domain, differing by one character",
-						"Attachment was not requested or expected as part of the normal update cycle",
-						"Order number and line items match an order currently in active processing",
-						"No prior notice from the supplier's verified contacts about a revised order"
+						"The message uses papertrai1.example with the digit 1. The saved supplier is papertrail.example with the letter l. The accurate order number does not explain or authorize this mismatch.",
+						"Pickup_PT-204.pdf.exe is an executable, not a PDF pickup slip. This inspection does not download or run it.",
+						"The saved Paper Trail page lists the original pickup confirmation and no revised slip. This absence alone is not proof, but combined with the different sender and executable it calls for independent verification."
 					],
 					"choices": [
-						{"label": "Open the attachment because the order number and supplier details match an active purchase.", "outcome": "CRITICAL", "consequence": "The attachment matches on paper, but opening it on the procurement workstation runs the payload the lookalike domain was built to deliver."},
-						{"label": "Retrieve the purchase order through the supplier's established portal or confirm it using the contact details already on record.", "outcome": "SAFE", "consequence": "The established portal shows no revised order was issued. The lookalike domain is reported and the attachment is never opened."},
-						{"label": "Download the attachment into an isolated environment and inspect it before opening it on the procurement workstation.", "outcome": "RISKY", "consequence": "The isolated inspection looks clean, but the file was never confirmed to come from the supplier at all before it eventually reaches procurement."}
+						{
+							"label": "Run the new slip because PT-204 matches",
+							"outcome": "CRITICAL",
+							"consequence": "The supposed pickup slip runs an untrusted program rather than displaying a PDF. Alex stops using the affected device and asks Ms. Reyes and School IT for help."
+						},
+						{
+							"label": "Use the original order and verify with the shop",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes checks with Paper Trail through its established contact. No revised executable slip was sent. Alex keeps the attachment unopened and uses the verified order."
+						},
+						{
+							"label": "Send the slip to Mia to open instead",
+							"outcome": "RISKY",
+							"consequence": "Moving the attachment to Mia's device does not verify it. Alex warns her not to run it and asks Ms. Reyes to help contain the exposure."
+						}
 					],
-					"explanation": "Correct order numbers and line items can be copied from a real transaction into a malicious request. Verifying the sending domain and channel matters as much as verifying the content of the document itself.",
+					"explanation": "Compare the complete address and file extension, not just the display name or order number. A real transaction can be copied into a message from someone else.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Paper Trail Orders <orders@papertrai1.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "PT-204: revised pickup slip attached"
+							},
+							{
+								"label": "ATTACHMENT / NOT OPENED",
+								"value": "Pickup_PT-204.pdf.exe"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE SOURCES",
+						"prompt": "Inspect the new request and compare it with your independently saved records.",
+						"items": [
+							{
+								"id": "identity",
+								"label": "Compare the two supplier addresses",
+								"analysis": "The message uses papertrai1.example with the digit 1. The saved supplier is papertrail.example with the letter l. The accurate order number does not explain or authorize this mismatch.",
+								"valid": true,
+								"view_title": "SENDER COMPARISON",
+								"fields": [
+									{
+										"label": "THIS MESSAGE",
+										"value": "orders@papertrai1.example\nThe final character before .example is the digit 1."
+									},
+									{
+										"label": "ORIGINAL RECEIPT",
+										"value": "orders@papertrail.example\nThe final character before .example is the letter l."
+									}
+								]
+							},
+							{
+								"id": "pickup_file",
+								"label": "Expand the pickup file properties",
+								"analysis": "Pickup_PT-204.pdf.exe is an executable, not a PDF pickup slip. This inspection does not download or run it.",
+								"valid": true,
+								"view_title": "ATTACHMENT / NOT OPENED",
+								"fields": [
+									{
+										"label": "FULL NAME",
+										"value": "Pickup_PT-204.pdf.exe"
+									},
+									{
+										"label": "ACTUAL TYPE",
+										"value": "Executable program. The .pdf text does not change the final .exe extension."
+									}
+								]
+							},
+							{
+								"id": "order_record",
+								"label": "Check the original order record",
+								"analysis": "The saved Paper Trail page lists the original pickup confirmation and no revised slip. This absence alone is not proof, but combined with the different sender and executable it calls for independent verification.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll compare the evidence again before acting.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We've still got our saved records. We don't have to guess.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 40,
-					"next": "mod01_stage07_incident03"
+					"next": "mod01_stage07_incident03",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage07_incident03",
 					"module_id": "mod_01",
 					"stage": 7,
-					"title": "Executive Payment Request",
 					"bkt_skill": "phishing",
-					"affected_system": "FINANCE PAYMENT SYSTEM",
+					"title": "Don't Interrupt My Meeting",
+					"affected_system": "ADVISER IDENTITY / URGENT FAIR PAYMENT",
+					"background": "courtyard",
 					"story": [
-						{"speaker": "Mia", "text": "Finance just got a message from an executive. Urgent payment, no calls, confirm afterward."},
-						{"speaker": "Security Assistant", "text": "Does it match their schedule?"},
-						{"speaker": "Mia", "text": "Exactly. They really are in back-to-back client meetings today."}
+						{
+							"speaker": "Mia",
+							"text": "Our table is by the courtyard. We even got a spot with shade.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Ms. Reyes just messaged. She says we need to pay a courier now.",
+							"emotion": "worried",
+							"mail": {
+								"sender": "Ms. Reyes <reyes.fair@harborhigh-help.example>",
+								"subject": "Alex — cover the courier fee now",
+								"body": "I'm in the fair briefing. Send 60 credits to 'Express Fair Runner' so the stands aren't delayed. Don't call or come to the meeting; I'll approve it afterward. Keep this between us until pickup."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "She really is in the fair briefing.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "It says not to interrupt her, and to keep it between us.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I don't want the stands delayed. But why keep a group expense secret?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll compare it with her saved contact and the approved budget.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Finance receives an urgent internal message apparently from a BlueTech executive: \"I'm entering a client meeting. The supplier needs this payment completed before noon. Please process it now. Don't call — I'll confirm afterward.\" The request references a real supplier, a real invoice, the correct payment amount, and the executive's current travel schedule.",
+					"situation": "A message uses Ms. Reyes's real schedule to pressure Alex into an unapproved payment. What should he do?",
 					"evidence": [
-						"Message references a real supplier, real invoice, and correct payment amount",
-						"Executive's travel and meeting schedule genuinely matches the message's claims",
-						"Message explicitly discourages a phone call to confirm",
-						"No entry for this payment exists in the standard approval queue yet"
+						"The message demands money before approval, discourages independent contact, and asks for secrecy. A correct meeting schedule does not prove who sent it.",
+						"Saved adviser: reyes@harborhigh.example. This request uses reyes.fair@harborhigh-help.example. Reach Ms. Reyes through her saved contact, in person, or through the school office.",
+						"The saved budget has no emergency courier payment. A missing entry could be an update delay, so wait for independent adviser approval instead of treating the email as approval."
 					],
 					"choices": [
-						{"label": "Process only part of the payment now so the supplier is not delayed, then verify the rest afterward.", "outcome": "CRITICAL", "consequence": "The partial payment still reaches the unverified destination in full working order, and 'the rest' never needs verifying because the first part already succeeded."},
-						{"label": "Pause the payment and complete the company's required independent approval and vendor-verification process.", "outcome": "SAFE", "consequence": "The verification process reaches the executive through a separate channel, who confirms no such request was sent. The payment is blocked before submission."},
-						{"label": "Prepare the payment in the finance system but hold final submission until another authorized employee reviews it.", "outcome": "RISKY", "consequence": "The second reviewer sees a request that matches every real detail and, under the same time pressure, approves the submission before the impersonation is caught."}
+						{
+							"label": "Send part of the fee to avoid a delay",
+							"outcome": "CRITICAL",
+							"consequence": "Part of the group's money goes to an unverified recipient. Alex tells Ms. Reyes and asks for help reporting the payment; sending less did not make the recipient trustworthy."
+						},
+						{
+							"label": "Wait for independent adviser confirmation",
+							"outcome": "SAFE",
+							"consequence": "Alex contacts Ms. Reyes through the saved school route. She confirms she did not request a courier payment. The stands remain on their original pickup plan."
+						},
+						{
+							"label": "Treat Mia's agreement as enough approval",
+							"outcome": "RISKY",
+							"consequence": "Mia has only the same unverified message, not independent approval from Ms. Reyes. Alex pauses the plan and asks a trusted adult to help verify before the group goes further."
+						}
 					],
-					"explanation": "Accurate business details and real urgency describe the target, not the legitimacy of the request. A message that specifically discourages verification is asking to bypass the exact control designed to catch this scenario.",
+					"explanation": "Urgency, secrecy, and accurate personal details can all be used to impersonate someone. A friend's agreement with the same message is not independent confirmation from the person being impersonated.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "Ms. Reyes <reyes.fair@harborhigh-help.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Alex — cover the courier fee now"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE SOURCES",
+						"prompt": "Inspect the new request and compare it with your independently saved records.",
+						"items": [
+							{
+								"id": "pressure",
+								"label": "Inspect the payment conditions",
+								"analysis": "The message demands money before approval, discourages independent contact, and asks for secrecy. A correct meeting schedule does not prove who sent it.",
+								"valid": true,
+								"view_title": "REQUEST CONDITIONS / PAYMENT NOT SENT",
+								"fields": [
+									{
+										"label": "TIMING",
+										"value": "Send 60 credits now; adviser approval is promised only afterward."
+									},
+									{
+										"label": "CONTACT RESTRICTION",
+										"value": "Do not call or come to the meeting. Keep the request between us."
+									}
+								]
+							},
+							{
+								"id": "adviser_contact",
+								"label": "Compare Ms. Reyes's saved identity",
+								"analysis": "Saved adviser: reyes@harborhigh.example. This request uses reyes.fair@harborhigh-help.example. Reach Ms. Reyes through her saved contact, in person, or through the school office.",
+								"valid": true,
+								"phone_app": "contacts"
+							},
+							{
+								"id": "budget_record",
+								"label": "Check the approved fair budget",
+								"analysis": "The saved budget has no emergency courier payment. A missing entry could be an update delay, so wait for independent adviser approval instead of treating the email as approval.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll compare the evidence again before acting.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We've still got our saved records. We don't have to guess.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 42,
-					"next": ""
+					"next": "",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				}
 			]
 		},
@@ -1367,122 +3710,606 @@
 			"stage": 8,
 			"title": "All Hands",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 8 COMPLETE",
 			"clear_subtitle": "ALL HANDS",
 			"next_stage_title": "Stage 9 — Cut the Line",
 			"breach_hp_multiplier": 0.95,
+			"scene_header": "HARBOR HIGH // PROTECTING THE GROUP",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / A visualization of stopping the spread while Ms. Reyes and School IT handle accounts and systems. Alex does not operate school-wide security controls.",
+			"map_route": [
+				[
+					0,
+					0
+				],
+				[
+					10,
+					0
+				],
+				[
+					10,
+					2
+				],
+				[
+					4,
+					2
+				],
+				[
+					4,
+					4
+				],
+				[
+					9,
+					4
+				],
+				[
+					9,
+					6
+				],
+				[
+					10,
+					6
+				]
+			],
+			"locations": {
+				"opening": "gymnasium",
+				"ending": "classroom_sunset",
+				"resume_breach": "classroom_day",
+				"breach_contained": "classroom_day"
+			},
 			"opening": [
-				{"speaker": "Security Assistant", "text": "Thirty-seven suspicious messages in two minutes."},
-				{"speaker": "Mia", "text": "Thirty-seven?"},
-				{"speaker": "Security Assistant", "text": "Marketing. Finance. HR. Operations. Different messages, same infrastructure."},
-				{"speaker": "Mia", "text": "So they're not targeting one person anymore."},
-				{"speaker": "Security Assistant", "text": "No."},
-				{"speaker": "Mia", "text": "They're hitting everyone."},
-				{"speaker": "Security Assistant", "text": "All hands."}
+				{
+					"speaker": "Alex",
+					"text": "The stands fit. The poster is up. I was just starting to relax.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Two groups asked me about the same security update. Now the class chat is filling up.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "So it isn't just our inbox anymore?",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "We'll check the verified school notices together. If anyone already interacted, help them report it without blame.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Good. If I were scared, I'd want someone to help, not make fun of me.",
+					"emotion": "worried"
+				}
 			],
 			"ending": [
-				{"speaker": "Mia", "text": "Sessions revoked. Domains blocked. Accounts isolated."},
-				{"speaker": "Security Assistant", "text": "Most of them."},
-				{"speaker": "Mia", "text": "Most?"},
-				{"speaker": "Security Assistant", "text": "One session is still active."},
-				{"speaker": "Mia", "text": "Whose?"},
-				{"speaker": "Security Assistant", "text": "We're tracing it now."},
-				{"speaker": "Mia", "text": "So they're still inside."},
-				{"speaker": "Security Assistant", "text": "Yes."},
-				{"speaker": "Mia", "text": "Then we finish this.", "emotion": "determined"}
+				{
+					"speaker": "Mia",
+					"text": "The class has the warning, and School IT is reviewing the affected access.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "We paused the upload, but we can still rehearse from our saved copy.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "That was the right priority. We'll check the remaining access before restoring shared work.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Alex",
+					"text": "So quieter notifications don't automatically mean it's over.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "Exactly. We'll use the evidence to check what still needs attention.",
+					"emotion": "determined"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "School IT is handling the affected systems. Finish the containment simulation so we can review our next step.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. That front is closed, but the rest of this attack is still moving."},
-				{"speaker": "Mia", "text": "Then let's get to the next one before they do."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The immediate risk is contained. Keep the verified warning available and let me help anyone who already interacted.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "We can protect the project without blaming the people who got caught.",
+					"emotion": "relieved"
+				}
 			],
+			"phone": {
+				"contacts": [
+					{
+						"title": "School IT / saved help route",
+						"evidence_id": "it_contact",
+						"body": "help@harborhigh.example\nSaved school handbook contact. Tell Ms. Reyes promptly if an account shows unfamiliar activity. Do not send passwords or keep suspicious access active to investigate it yourself."
+					}
+				],
+				"pages": [
+					{
+						"title": "School notices / verified warnings",
+						"evidence_id": "verified_warning",
+						"body": "https://portal.harborhigh.example/notices\nSaved official notice board. Open the verified warning below instead of forwarding a suspicious email."
+					},
+					{
+						"title": "Class drive / activity record",
+						"evidence_id": "drive_activity",
+						"body": "https://portal.harborhigh.example/class/water-wise/activity\nSaved group project activity page. Only the group's relevant records are shown; no private messages or other students' files are exposed."
+					},
+					{
+						"title": "Fair rehearsal / backup plan",
+						"evidence_id": "backup_plan",
+						"body": "https://portal.harborhigh.example/fair/backup\nSaved adviser plan: if shared access is unsafe, pause uploads and use the approved offline slideshow for rehearsal. School IT handles account restrictions and restoration."
+					},
+					{
+						"title": "Account incident / reporting steps",
+						"evidence_id": "report_steps",
+						"body": "https://portal.harborhigh.example/help/report\nSaved school procedure: stop using affected shares, preserve the message and relevant activity records, and contact Ms. Reyes or School IT. Do not delete evidence, forward private data to classmates, or investigate a live compromise yourself."
+					}
+				]
+			},
 			"threats": [
 				{
 					"id": "mod01_stage08_incident01",
 					"module_id": "mod_01",
 					"stage": 8,
-					"title": "Emergency Security Update",
 					"bkt_skill": "phishing",
-					"affected_system": "COMPANY-WIDE MAIL / EMPLOYEE ENDPOINTS",
+					"title": "Everyone Got the Update",
+					"affected_system": "CLASS COMMUNICATIONS / MALICIOUS UPDATE",
+					"background": "gymnasium",
 					"story": [
-						{"speaker": "Security Assistant", "text": "Employees across every department just got a message demanding they follow 'critical security update' instructions immediately."},
-						{"speaker": "Mia", "text": "Is it real?"},
-						{"speaker": "Security Assistant", "text": "No. It's confirmed malicious. But it's already everywhere, and some people may have already clicked."}
+						{
+							"speaker": "Mia",
+							"text": "Another group has the update too. Some people think they have to install it.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Now it's in my inbox. It asks me to send the attachment to everyone.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "School Security Update <updates@harborhigh-security.example>",
+								"subject": "Critical fair security update — send to every group",
+								"body": "Install Fair_Security_Update.exe before using the class drive. Forward this message and attachment to every project group so nobody loses access. Do not wait for an adviser announcement."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "If it's dangerous, shouldn't we show them exactly what it looks like?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "School IT has posted a verified warning. Let's check what it says before we send anything.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I can compare the email with the notice and keep the dangerous file out of our warning.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "And tell people how to get help if they already opened it.",
+							"emotion": "worried"
+						}
 					],
-					"situation": "Multiple BlueTech employees across departments receive an urgent message demanding they follow attached 'critical security update' instructions. Security confirms the messages are malicious. Copies are already spread across departments, some employees may have already interacted, and external email is still needed for normal operations.",
+					"situation": "The official notice confirms this update is malicious. How should Alex warn classmates without spreading it?",
 					"evidence": [
-						"Message confirmed malicious and already delivered to multiple departments",
-						"Unknown number of employees may have already interacted with it",
-						"External email remains required for ongoing business operations",
-						"No company-wide warning has been issued yet"
+						"The email asks recipients to install an executable and forward the attachment. Passing on the original message would distribute the same risky file.",
+						"The saved notice board identifies this exact subject and attachment as malicious. It says not to install or forward it, and directs anyone who interacted to Ms. Reyes or School IT.",
+						"Copies have already reached several groups. Deleting Alex's copy cannot recall their messages or help anyone who already installed the file. Avoid naming or blaming students when warning the class."
 					],
 					"choices": [
-						{"label": "Remove the known malicious messages first and continue monitoring before issuing a company-wide warning to avoid unnecessary disruption.", "outcome": "CRITICAL", "consequence": "Employees who already received the message before removal act on it while everyone else remains unwarned, and the delay lets the campaign keep working."},
-						{"label": "Block the confirmed malicious indicators, issue a verified company-wide warning, and begin targeted investigation of employees who interacted.", "outcome": "SAFE", "consequence": "The warning reaches every department before more employees act on it, and the targeted investigation quickly finds the handful who already had."},
-						{"label": "Temporarily disable inbound external email while Security searches for every copy and affected account.", "outcome": "RISKY", "consequence": "The search proceeds safely, but disabling all external mail halts legitimate business communication company-wide for the duration."}
+						{
+							"label": "Forward the original update as my warning",
+							"outcome": "CRITICAL",
+							"consequence": "Classmates receive the malicious attachment along with Alex's warning. Some may act on the original instructions. He stops forwarding and asks Ms. Reyes to help issue a clear warning without the file."
+						},
+						{
+							"label": "Share the verified notice and help route",
+							"outcome": "SAFE",
+							"consequence": "Alex shares the independently opened school notice, without the suspicious attachment or its link. Ms. Reyes helps classmates who interacted report privately to School IT."
+						},
+						{
+							"label": "Delete only my copy and stay quiet",
+							"outcome": "RISKY",
+							"consequence": "Alex removes his own copy, but classmates still have theirs and may act on them. Ms. Reyes helps him warn the group and contain the ongoing spread."
+						}
 					],
-					"explanation": "Containment has to reach the people already affected, not just the messages still sitting in inboxes. Blocking indicators without warning users leaves earlier recipients exposed for as long as the warning is delayed.",
+					"explanation": "A useful warning identifies the issue and provides trusted next steps without redistributing a malicious file. Include a private help route for anyone who already interacted.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School Security Update <updates@harborhigh-security.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Critical fair security update — send to every group"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "PROTECT THE GROUP",
+						"prompt": "Compare the message, verified notices, and relevant activity before deciding.",
+						"items": [
+							{
+								"id": "spread",
+								"label": "Inspect how the message spreads",
+								"analysis": "The email asks recipients to install an executable and forward the attachment. Passing on the original message would distribute the same risky file.",
+								"valid": true,
+								"view_title": "UPDATE REQUEST / NOT INSTALLED",
+								"fields": [
+									{
+										"label": "ATTACHMENT",
+										"value": "Fair_Security_Update.exe / executable installer. No file is run in this preview."
+									},
+									{
+										"label": "FORWARDING REQUEST",
+										"value": "Send this attachment to every project group before checking with an adviser."
+									}
+								]
+							},
+							{
+								"id": "verified_warning",
+								"label": "Read the independently opened school notice",
+								"analysis": "The saved notice board identifies this exact subject and attachment as malicious. It says not to install or forward it, and directs anyone who interacted to Ms. Reyes or School IT.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "VERIFIED SCHOOL NOTICE",
+								"fields": [
+									{
+										"label": "MATCHED MESSAGE",
+										"value": "Critical fair security update / Fair_Security_Update.exe. School IT confirms this is not an authorized update."
+									},
+									{
+										"label": "SAFE WARNING",
+										"value": "Do not install or forward the update. Use the saved school notice and contact School IT or your adviser if you interacted."
+									}
+								]
+							},
+							{
+								"id": "help",
+								"label": "Check who may still need help",
+								"analysis": "Copies have already reached several groups. Deleting Alex's copy cannot recall their messages or help anyone who already installed the file. Avoid naming or blaming students when warning the class.",
+								"valid": true
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll reopen the records before choosing our next step.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's check what is actually happening, not just what the message wants us to believe.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 44,
-					"next": "mod01_stage08_incident02"
+					"next": "mod01_stage08_incident02",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage08_incident02",
 					"module_id": "mod_01",
 					"stage": 8,
-					"title": "Compromised Employee",
 					"bkt_skill": "phishing",
-					"affected_system": "SALES ACCOUNT / CLOUD SESSION",
+					"title": "The Upload Can Wait",
+					"affected_system": "GROUP PROJECT ACCESS / ACTIVE SESSION",
+					"background": "music_room",
 					"story": [
-						{"speaker": "Security Assistant", "text": "A Sales account is sending malicious links internally."},
-						{"speaker": "Mia", "text": "Did they notice?"},
-						{"speaker": "Security Assistant", "text": "They already changed their password. But one session is still active, and they're in the middle of a live customer transaction."}
+						{
+							"speaker": "Alex",
+							"text": "Our turn is next. The backup slideshow is on the classroom laptop.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "School IT just sent this. It says to pause the group-drive upload.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "School IT <help@harborhigh.example>",
+								"subject": "Water Wise shared access: please pause the upload",
+								"body": "Unfamiliar activity is using an account with access to your group drive. A password reset is recorded, but a session is still sending unauthorized shares. Pause the upload and speak to Ms. Reyes while we contain the affected access."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "But the account was reset. Are they sure something is still happening?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Let's check the activity record. We can use the approved offline copy for rehearsal.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I'd rather explain a delay than send another bad link to the class.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I'll compare the reset and sharing records, then choose how we continue.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Security identifies a Sales account sending malicious links internally. The employee has already changed their password, but logs show one suspicious session is still active. The account is currently needed for a live customer transaction, and immediately disabling it will interrupt that work.",
+					"situation": "The group drive is still being used for unauthorized sharing. Should Alex keep uploading to meet the rehearsal deadline?",
 					"evidence": [
-						"Employee has already reset their own password",
-						"One suspicious session remains active despite the reset",
-						"Account is currently mid-transaction with a live customer",
-						"No session revocation has occurred yet"
+						"The password reset preceded another unauthorized share, and the affected session remains active. These records show this reset did not end the unwanted access.",
+						"The adviser-approved offline slideshow lets the group rehearse while shared access is restricted. Alex does not need to leave the affected account available to finish the presentation.",
+						"Use Ms. Reyes or help@harborhigh.example from the saved handbook. School IT handles restricting access, revoking affected sessions, and confirming when it is safe to resume."
 					],
 					"choices": [
-						{"label": "Leave the account active until the transaction is complete, then isolate it immediately afterward.", "outcome": "CRITICAL", "consequence": "The transaction finishes, but so does whatever the still-active session was doing the entire time it was left running."},
-						{"label": "Revoke active sessions, temporarily restrict the account, and require a clean re-authentication before restoring access.", "outcome": "SAFE", "consequence": "The suspicious session ends immediately. The employee re-authenticates cleanly and finishes the transaction from a verified, contained account."},
-						{"label": "Reset the password again and allow the employee to finish the customer transaction while Security watches the session.", "outcome": "RISKY", "consequence": "The extra reset changes nothing for a session that was never tied to the password, and 'watching' it does not stop it from continuing to act."}
+						{
+							"label": "Keep using the affected access until we finish",
+							"outcome": "CRITICAL",
+							"consequence": "The group continues sharing through access known to be compromised. Unauthorized shares continue during the delay, and Alex asks Ms. Reyes to stop the upload and help recover safely."
+						},
+						{
+							"label": "Pause sharing and use the approved offline copy",
+							"outcome": "SAFE",
+							"consequence": "Alex pauses the upload and tells Ms. Reyes. School IT restricts the affected access and reviews sessions while the group rehearses from its approved offline copy."
+						},
+						{
+							"label": "Use my account but leave the affected access open",
+							"outcome": "RISKY",
+							"consequence": "Changing who uploads does not end the other account's unwanted access to the shared drive. Alex asks Ms. Reyes to help contain it before putting more work there."
+						}
 					],
-					"explanation": "A password reset does not end a session that was authenticated before it. Letting a confirmed-active compromise continue, even briefly and even for a legitimate business reason, keeps the attacker's access live the entire time.",
+					"explanation": "Base the response on observed activity, not the assumption that a password reset fixed everything. A safe backup can keep schoolwork moving while authorized staff contain affected access.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School IT <help@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise shared access: please pause the upload"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "PROTECT THE GROUP",
+						"prompt": "Compare the message, verified notices, and relevant activity before deciding.",
+						"items": [
+							{
+								"id": "timeline",
+								"label": "Compare the reset and sharing activity",
+								"analysis": "The password reset preceded another unauthorized share, and the affected session remains active. These records show this reset did not end the unwanted access.",
+								"valid": true,
+								"view_title": "SCHOOL IT / RELEVANT ACTIVITY",
+								"fields": [
+									{
+										"label": "RESET",
+										"value": "Password reset completed five minutes ago."
+									},
+									{
+										"label": "AFTER RESET",
+										"value": "An unauthorized project-share message was sent two minutes ago. The session is still active."
+									},
+									{
+										"label": "OWNER CHECK",
+										"value": "The account owner confirmed they did not send that share. School IT has requested a pause."
+									}
+								]
+							},
+							{
+								"id": "backup_plan",
+								"label": "Check the safe rehearsal alternative",
+								"analysis": "The adviser-approved offline slideshow lets the group rehearse while shared access is restricted. Alex does not need to leave the affected account available to finish the presentation.",
+								"valid": true,
+								"phone_app": "pages"
+							},
+							{
+								"id": "it_contact",
+								"label": "Verify the help route",
+								"analysis": "Use Ms. Reyes or help@harborhigh.example from the saved handbook. School IT handles restricting access, revoking affected sessions, and confirming when it is safe to resume.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll reopen the records before choosing our next step.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's check what is actually happening, not just what the message wants us to believe.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 46,
-					"next": "mod01_stage08_incident03"
+					"next": "mod01_stage08_incident03",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage08_incident03",
 					"module_id": "mod_01",
 					"stage": 8,
-					"title": "The Attacker's Exit",
 					"bkt_skill": "phishing",
-					"affected_system": "CLOUD STORAGE / MAIL / ACTIVE SESSIONS",
+					"title": "More Than One Door",
+					"affected_system": "GROUP DRIVE / DOWNLOADS AND FORWARDING",
+					"background": "classroom_day",
 					"story": [
-						{"speaker": "Security Assistant", "text": "Several compromised accounts just spiked. Large file access, mailbox searches, forwarding rules changing."},
-						{"speaker": "Mia", "text": "They're gathering everything they can before we shut it down."},
-						{"speaker": "Security Assistant", "text": "That's what it looks like. The tokens are still live right now."}
+						{
+							"speaker": "Mia",
+							"text": "We can rehearse offline. Is there anything else we should check?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The group drive sent an activity notice. There are downloads I didn't start.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "School Drive Activity <activity@harborhigh.example>",
+								"subject": "Water Wise: unusual group-access activity",
+								"body": "Your group workspace recorded a burst of downloads and a new notification-forwarding destination. Open your saved group activity page to review. Do not send credentials or use a new sign-in link."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "Is that just the same bad email being sent again?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "There's a forwarding change too. I'll open the saved activity page.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Keep the relevant records. Don't test the access yourself or share private logs with the class.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's work out what is still exposed, then get it to the people who can stop it.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Security detects a burst of activity across several compromised accounts: large cloud-file access, mailbox searches, unusual forwarding activity, and authentication tokens still in active use. The attacker may be preparing to leave with collected information.",
+					"situation": "The saved activity page shows ongoing downloads and an unfamiliar forwarding change. What should Alex do next?",
 					"evidence": [
-						"Simultaneous large-volume file access across multiple compromised accounts",
-						"Mailbox search activity consistent with information gathering",
-						"New, unauthorized forwarding rules recently added",
-						"Authentication tokens for these accounts remain live right now"
+						"The group record shows unfamiliar bulk downloads, forwarding of project notifications to outside-copy.example, and access still active. Blocking one email sender would not address these separate access paths.",
+						"The activity notice asks Alex to use his already-saved group page, not a new login link. The important evidence comes from that independently opened page, not just the email's claim.",
+						"The school procedure says to stop using affected shares and provide the relevant records privately to Ms. Reyes or School IT. Staff can revoke access and review forwarding while preserving evidence."
 					],
 					"choices": [
-						{"label": "Keep the sessions active briefly so Security can map the attacker's remaining access before beginning containment.", "outcome": "CRITICAL", "consequence": "The mapping proceeds, but every minute the tokens stay live is another minute of forwarding rules and file downloads completing successfully."},
-						{"label": "Revoke suspicious sessions, block confirmed attacker infrastructure, and isolate affected accounts while preserving logs for investigation.", "outcome": "SAFE", "consequence": "The live tokens are cut immediately, stopping the exfiltration in progress, while the preserved logs still give investigators everything they need afterward."},
-						{"label": "Block the known external infrastructure first and continue monitoring the active sessions to identify any additional compromised accounts.", "outcome": "RISKY", "consequence": "The blocked infrastructure slows the attacker down, but the still-active sessions keep pulling files and mail through channels that were never cut off."}
+						{
+							"label": "Leave the access open to watch what happens",
+							"outcome": "CRITICAL",
+							"consequence": "The unwanted access remains active while Alex tries to investigate on his own. He stops the delay and brings the records to Ms. Reyes for urgent help."
+						},
+						{
+							"label": "Stop sharing and report the records privately",
+							"outcome": "SAFE",
+							"consequence": "Alex stops using the affected shares and brings the relevant records to Ms. Reyes. School IT begins coordinated containment of sessions and forwarding, preserving the records for follow-up."
+						},
+						{
+							"label": "Block the email sender and assume it's handled",
+							"outcome": "RISKY",
+							"consequence": "Blocking the sender changes what reaches Alex's inbox, not who can access the drive or receive forwarded notifications. He asks Ms. Reyes to help address those remaining paths."
+						}
 					],
-					"explanation": "Once tokens are confirmed live during active exfiltration, every additional minute of observation has a real cost measured in data leaving the company. Logs preserved at the moment of containment provide the investigative value without extending a confirmed compromise.",
+					"explanation": "An inbox block cannot end account access or remove forwarding. When records show an active problem, preserve relevant evidence and get authorized help promptly instead of experimenting with the access yourself.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School Drive Activity <activity@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Water Wise: unusual group-access activity"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "PROTECT THE GROUP",
+						"prompt": "Compare the message, verified notices, and relevant activity before deciding.",
+						"items": [
+							{
+								"id": "drive_activity",
+								"label": "Inspect the related activity records",
+								"analysis": "The group record shows unfamiliar bulk downloads, forwarding of project notifications to outside-copy.example, and access still active. Blocking one email sender would not address these separate access paths.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "GROUP ACTIVITY / RELEVANT RECORDS",
+								"fields": [
+									{
+										"label": "DOWNLOADS",
+										"value": "1 minute ago / repeated downloads from the group folder / not recognized by Alex or Mia."
+									},
+									{
+										"label": "FORWARDING CHANGE",
+										"value": "Project notifications now copy archive@outside-copy.example. The group did not authorize that destination."
+									},
+									{
+										"label": "CURRENT STATUS",
+										"value": "The unfamiliar access is still active. School IT has not yet confirmed that all related access is contained."
+									}
+								]
+							},
+							{
+								"id": "alert",
+								"label": "Inspect the notice's instructions",
+								"analysis": "The activity notice asks Alex to use his already-saved group page, not a new login link. The important evidence comes from that independently opened page, not just the email's claim.",
+								"valid": true
+							},
+							{
+								"id": "report_steps",
+								"label": "Check what to preserve and report",
+								"analysis": "The school procedure says to stop using affected shares and provide the relevant records privately to Ms. Reyes or School IT. Staff can revoke access and review forwarding while preserving evidence.",
+								"valid": true,
+								"phone_app": "pages"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll reopen the records before choosing our next step.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's check what is actually happening, not just what the message wants us to believe.",
+							"emotion": "worried"
+						}
+					],
 					"breach_gold": 48,
-					"next": ""
+					"next": "",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				}
 			]
 		},

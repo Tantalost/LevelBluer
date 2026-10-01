@@ -10,6 +10,7 @@ class Account extends RefCounted:
 	var writes := 0
 	var credits := 0
 	var clears := 0
+	var clear_keys: Array[String] = []
 	var cleared := false
 	var intel_uses := 0
 	var stage_tasks := 0
@@ -47,6 +48,7 @@ class Account extends RefCounted:
 		return bonus
 	func mark_stage_cleared(_module_id: String, _id: int) -> void:
 		clears += 1
+		clear_keys.append("%s:%d" % [_module_id, _id])
 		cleared = true
 	func add_credits(value: int) -> void:
 		credits += value
@@ -153,6 +155,9 @@ func inspect_school_email(match_node: Control) -> void:
 					if str(card.get("evidence_id", "")) == id:
 						phone._open_card(card)
 						break
+			var fields: Array = item.get("fields", [])
+			for field_index: int in fields.size():
+				phone._reveal_field(id, field_index)
 		check(phone.is_complete(), "All authored phone evidence must be inspected")
 		phone._finish()
 		drain_until_dialogue_done(match_node)
@@ -227,6 +232,327 @@ func shot(match_node: Control, name: String) -> void:
 	if "--render" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/live_stage_" + name + ".png")
+
+func _verify_school_stage_three() -> void:
+	print("-- [School Stage 3] Phone investigation, recovery, class warning and distinct map --")
+	var context: MatchContext = Context.stage_one_live()
+	context.stage_id = 3
+	context.module_id = "mod_01"
+	var account: Account = Account.new()
+	var game: Control = mount(account, context)
+	check(game.config.name == "Someone Got In" and game._key() == "mod_01:3", "[School Stage 3] Correct story and isolated checkpoint")
+	check(game.story_overlay._mode == &"story" and game.story_overlay._phone_enabled and game.story_hp == 3, "[School Stage 3] Opening, phone and three hearts enabled")
+	check(game.story.guide_speaker == "Ms. Reyes" and is_equal_approx(game._enemy_health_scale(), 0.7), "[School Stage 3] School cast with existing difficulty")
+	var board: Node2D = game.hud.battle.board
+	check(board.path_cells.size() == 29 and board.waypoints.size() == 8, "[School Stage 3] New inward route preserves travel distance")
+	check(board.waypoints[0] == Vector2i(0, 3) and board.waypoints.back() == Vector2i(8, 3), "[School Stage 3] Distinct entry and inner home position")
+	check(board.cell_reason(Vector2i(2, 2)) != "" and board.cell_reason(Vector2i(6, 2)) == "", "[School Stage 3] Placement follows new path")
+	check(game.hud.battle.track.curve.get_point_position(7) == board.center(Vector2i(8, 3)), "[School Stage 3] Enemy path reaches the visible home")
+	check(board.get_node("Terrain").path_cells == board.path_cells, "[School Stage 3] Shared geometric terrain uses the authored route")
+	await shot(game, "stage3_school_opening")
+	read_page(game)
+	read_page(game)
+	check(not game.decision_timer_active and not game.story_overlay._choices_scroll.visible, "[School Stage 3] Reading and inspection precede timed choices")
+	var phone: Control = game.story_overlay._phone
+	phone._finish()
+	check(not game.decision_timer_active and phone._confirm.disabled, "[School Stage 3] Cannot skip the evidence checklist")
+	inspect_school_email(game)
+	check(game.decision_timer_active and phone.is_complete(), "[School Stage 3] Checklist confirmation starts decision timer")
+	await shot(game, "stage3_school_decision")
+	choose(game, "SAFE")
+	check(game.decision.threat_index == 1 and account.bkt.size() == 1, "[School Stage 3] SAFE advances once")
+	choose(game, "RISKY")
+	check(game.decision.awaiting_breach_deploy() and game.story_hp == 3, "[School Stage 3] RISKY preserves hearts and waits for deployment")
+	game._consequence_continued()
+	check(game.phase == "Build" and game.gold == 16, "[School Stage 3] Incident 2 retains its gold budget")
+	await shot(game, "stage3_school_map")
+	game.begin_defend()
+	game._wave_cleared()
+	check(game.decision.resolved_threats == 2 and game.story_overlay._mode == &"story", "[School Stage 3] Containment returns to dialogue")
+	check(account.bkt.size() == 2, "[School Stage 3] Containment does not double-grade")
+	read_page(game)
+	check(game.decision.threat_index == 2, "[School Stage 3] Earlier forwarded invite follows recovery")
+	choose(game, "CRITICAL")
+	check(game.story_hp == 2 and account.checkpoint.threat_index == 2 and account.clears == 0, "[School Stage 3] Failure keeps Incident 3 with one less heart")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.story_hp == 2 and game.decision.threat_index == 2, "[School Stage 3] Reload preserves hearts and current incident")
+	read_page(game)
+	check(not game.decision_timer_active and game.story_overlay._phone._inspected.is_empty(), "[School Stage 3] Retry requires fresh inspection")
+	inspect_school_email(game)
+	game.story_overlay._review_button.pressed.emit()
+	check(game.story_overlay._review_open, "[School Stage 3] Logs open while deciding")
+	game.advance_decision_timer(44.0)
+	check(game.story_hp == 2, "[School Stage 3] Full 45-second allowance")
+	game.advance_decision_timer(1.1)
+	check(game.story_hp == 1 and not game.decision.is_breach_active(), "[School Stage 3] Timer runs in Logs; expiry costs one heart")
+	read_page(game)
+	choose(game, "CRITICAL")
+	check(game.story_hp == 0, "[School Stage 3] Third failure leaves the established last chance")
+	choose(game, "CRITICAL")
+	check(game.phase == "Results" and account.checkpoint.is_empty() and account.clears == 0, "[School Stage 3] Fourth failure discards attempt even at Incident 3")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.story_hp == 3 and game.decision.threat_index == 0 and game.story_overlay._mode == &"story", "[School Stage 3] Exhaustion restarts at the opening")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	for incident: int in range(3):
+		if game.story_overlay._mode == &"story":
+			read_page(game)
+		read_page(game)
+		check(not game.decision_timer_active, "[School Stage 3] Incident %d waits for inspection" % incident)
+		var evidence_phone: Control = game.story_overlay._phone
+		evidence_phone._unlock()
+		var reference: Dictionary = evidence_phone._items[2]
+		var app: String = str(reference.phone_app)
+		evidence_phone._navigate(app)
+		for card: Dictionary in evidence_phone._data[app]:
+			if str(card.get("evidence_id", "")) == str(reference.id):
+				evidence_phone._open_card(card)
+				break
+		root.size = Vector2i(844, 390)
+		await shot(game, "stage3_school_phone_%d" % incident)
+		check(root.get_visible_rect().encloses(evidence_phone._guide_panel.get_global_rect()), "[School Stage 3] Checklist fits small landscape")
+		check(root.get_visible_rect().encloses(evidence_phone._close.get_global_rect()), "[School Stage 3] Phone Close remains reachable")
+		root.size = Vector2i(1280, 720)
+		inspect_school_email(game)
+		check(game.story_overlay._phone.is_complete(), "[School Stage 3] All evidence cards reachable for incident %d" % incident)
+		await shot(game, "stage3_school_choices_%d" % incident)
+		choose(game, "SAFE")
+	read_page(game)
+	check(game.phase == "Results" and account.clears == 1 and account.bkt.size() == 3, "[School Stage 3] All SAFE reaches ending and completes once")
+	check(account.stage_tasks == 1 and account.credits == 50 + game.gold, "[School Stage 3] Standard rewards preserved")
+	await unmount(game)
+
+func _verify_school_stage_four() -> void:
+	print("-- [School Stage 4] Authority checks, private sharing, timers and switchback map --")
+	var context: MatchContext = Context.stage_one_live()
+	context.stage_id = 4
+	context.module_id = "mod_01"
+	var account: Account = Account.new()
+	var game: Control = mount(account, context)
+	check(game._key() == "mod_01:4" and game.config.name == "The Impostor Inside", "[School Stage 4] Isolated stage and school story")
+	check(game.story_overlay._mode == &"story" and game.story_overlay._phone_enabled and game.story_hp == 3, "[School Stage 4] Opening, phone and three hearts enabled")
+	check(game.story.guide_speaker == "Ms. Reyes" and is_equal_approx(game._enemy_health_scale(), 0.75), "[School Stage 4] Existing cast and combat difficulty")
+	var board: Node2D = game.hud.battle.board
+	check(board.path_cells.size() == 29 and board.waypoints.size() == 8 and board.waypoints != board.WAYPOINTS, "[School Stage 4] Distinct switchbacks preserve route length")
+	check(board.cell_reason(Vector2i(3, 4)) != "" and board.cell_reason(Vector2i(4, 4)) == "", "[School Stage 4] Placement follows the new route")
+	check(game.hud.battle.track.curve.get_point_position(7) == board.center(Vector2i(12, 5)), "[School Stage 4] Enemy path reaches the displayed home")
+	check(board.get_node("Terrain").path_cells == board.path_cells, "[School Stage 4] Painted path and gameplay path agree")
+	await shot(game, "stage4_school_opening")
+	for incident: int in range(3):
+		if game.story_overlay._mode == &"story":
+			read_page(game)
+		read_page(game)
+		check(not game.decision_timer_active and not game.story_overlay._choices_scroll.visible, "[School Stage 4] Investigation gates choices and timer")
+		var phone: Control = game.story_overlay._phone
+		phone._finish()
+		check(phone._confirm.disabled and not game.decision_timer_active, "[School Stage 4] Unfinished checklist cannot be skipped")
+		phone._unlock()
+		var reference: Dictionary = phone._items.back()
+		var app: String = str(reference.phone_app)
+		phone._navigate(app)
+		for card: Dictionary in phone._data[app]:
+			if str(card.get("evidence_id", "")) == str(reference.id):
+				phone._open_card(card)
+				break
+		root.size = Vector2i(844, 390)
+		await shot(game, "stage4_school_phone_%d" % incident)
+		check(root.get_visible_rect().encloses(phone._guide_panel.get_global_rect()), "[School Stage 4] Side checklist fits small landscape")
+		check(root.get_visible_rect().encloses(phone._close.get_global_rect()), "[School Stage 4] Phone Close is reachable")
+		inspect_school_email(game)
+		check(phone.is_complete() and game.decision_timer_active, "[School Stage 4] All authored evidence reachable before deciding")
+		check(phone._items.size() == (4 if incident == 2 else 3), "[School Stage 4] Security request includes both trusted sources")
+		await shot(game, "stage4_school_choices_%d" % incident)
+		root.size = Vector2i(1280, 720)
+		choose(game, "SAFE")
+		check(account.bkt.size() == incident + 1, "[School Stage 4] Each safe choice grades exactly once")
+	read_page(game)
+	check(game.phase == "Results" and account.clears == 1 and account.stage_tasks == 1, "[School Stage 4] Ending completes stage once")
+	check(account.credits == 50 + game.gold, "[School Stage 4] Standard reward preserved")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	for incident: int in range(3):
+		choose(game, "RISKY")
+		check(game.decision.awaiting_breach_deploy() and game.story_hp == 3, "[School Stage 4] Risky choices preserve story hearts")
+		game._consequence_continued()
+		check(game.phase == "Build" and game.gold == 20 + incident * 2, "[School Stage 4] Original incident gold budgets preserved")
+		if incident == 0:
+			await shot(game, "stage4_school_map")
+		game.begin_defend()
+		game._wave_cleared()
+		check(game.decision.resolved_threats == incident + 1 and account.bkt.size() == incident + 1, "[School Stage 4] Containment resolves once without double grading")
+		read_page(game)
+	if game.phase != "Results":
+		read_page(game)
+	check(game.phase == "Results" and account.clears == 1, "[School Stage 4] Risky/containment route can finish all incidents")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	choose(game, "SAFE")
+	choose(game, "SAFE")
+	choose(game, "CRITICAL")
+	check(game.story_hp == 2 and account.checkpoint.threat_index == 2 and account.clears == 0, "[School Stage 4] Failed decision costs one heart at Incident 3")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.story_hp == 2 and game.decision.threat_index == 2, "[School Stage 4] Reload retains current incident and HP")
+	read_page(game)
+	check(not game.decision_timer_active and game.story_overlay._phone._inspected.is_empty(), "[School Stage 4] Retry clears evidence, not earlier incident progress")
+	inspect_school_email(game)
+	game.story_overlay._review_button.pressed.emit()
+	check(game.story_overlay._review_open, "[School Stage 4] Logs remain available while deciding")
+	game.advance_decision_timer(44.0)
+	check(game.story_hp == 2, "[School Stage 4] Full 45-second allowance")
+	game.advance_decision_timer(1.1)
+	check(game.story_hp == 1 and not game.decision.is_breach_active(), "[School Stage 4] Expiry in Logs costs one heart, not containment")
+	read_page(game)
+	choose(game, "CRITICAL")
+	check(game.story_hp == 0, "[School Stage 4] Third failure leaves last chance")
+	choose(game, "CRITICAL")
+	check(game.phase == "Results" and account.checkpoint.is_empty() and account.clears == 0, "[School Stage 4] Fourth failure discards the whole attempt")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.story_hp == 3 and game.decision.threat_index == 0 and game.story_overlay._mode == &"story", "[School Stage 4] Exhausted attempt restarts at opening")
+	await unmount(game)
+
+func _verify_school_inspection_stage(stage_id: int) -> void:
+	var prefix: String = "[School Stage %d] " % stage_id
+	print("-- " + prefix + "Source inspection, decisions, checkpoints and geometric map --")
+	var context: MatchContext = Context.stage_one_live()
+	context.stage_id = stage_id
+	context.module_id = "mod_01"
+	var account: Account = Account.new()
+	var game: Control = mount(account, context)
+	check(game._key() == "mod_01:%d" % stage_id and game.story.company == "Harbor High School", prefix + "School story routes to its own save key")
+	check(game.story_hp == 3 and game.story_overlay._phone_enabled and game.story.guide_speaker == "Ms. Reyes", prefix + "Existing hearts, phone and cast")
+	var health_scales: Dictionary = {5: 0.8, 6: 0.85, 7: 0.9, 8: 0.95}
+	var starting_budgets: Dictionary = {5: 26, 6: 32, 7: 38, 8: 44}
+	check(is_equal_approx(game._enemy_health_scale(), float(health_scales[stage_id])), prefix + "Combat difficulty retained")
+	check(game.story.map_route != DecisionScenarios.get_stage("mod_01", stage_id - 1).map_route, prefix + "Map layout differs from the preceding stage")
+	var board: Node2D = game.hud.battle.board
+	check(board.path_cells.size() == 29 and board.waypoints.size() == 8 and board.waypoints != board.WAYPOINTS, prefix + "Distinct 28-cell-distance route accepted")
+	check(board.get_node("Terrain").path_cells == board.path_cells, prefix + "Painted and actual route agree")
+	check(game.hud.battle.track.curve.get_point_position(7) == board.center(board.waypoints.back()), prefix + "Enemy endpoint follows new route")
+	for threat: Dictionary in game.story.threats:
+		check(threat.story.size() >= 5 and threat.story.size() <= 7, prefix + "Short conversational beats")
+		for line: Dictionary in threat.story:
+			check(str(line.text).length() <= 160 and str(line.speaker) in ["Alex", "Mia", "Ms. Reyes"], prefix + "Teen cast without text walls")
+	await shot(game, "stage%d_school_opening" % stage_id)
+	for incident: int in range(3):
+		if game.story_overlay._mode == &"story":
+			read_page(game)
+		read_page(game)
+		check(not game.decision_timer_active and not game.story_overlay._choices_scroll.visible, prefix + "Reading and investigation stay untimed")
+		var phone: Control = game.story_overlay._phone
+		phone._unlock()
+		var structured: Dictionary = {}
+		for item: Dictionary in phone._items:
+			if item.has("fields"):
+				structured = item
+				break
+		check(not structured.is_empty(), prefix + "Each incident has inspectable source fields")
+		var id: String = str(structured.id)
+		var app: String = str(structured.get("phone_app", "mail"))
+		phone._navigate("home")
+		phone._reveal_field(id, 0)
+		check(not phone._revealed_fields.has(id), prefix + "Hidden fields cannot be inspected from home")
+		phone._navigate(app)
+		if app == "mail":
+			phone._open_message()
+			phone._inspect(id)
+		else:
+			for card: Dictionary in phone._data[app]:
+				if str(card.get("evidence_id", "")) == id:
+					phone._open_card(card)
+					break
+		check(not phone._inspected.has(id), prefix + "Opening a panel alone does not complete its evidence")
+		phone.set_locked(true)
+		phone._reveal_field(id, 0)
+		check(not phone._revealed_fields.has(id), prefix + "Locked phone rejects field actions")
+		phone.set_locked(false)
+		# Activate an actual visible button as well as testing guarded callbacks.
+		for node: Node in phone._content.find_children("*", "Button", true, false):
+			var field_button: Button = node as Button
+			if field_button.text == "[ ] " + str(structured.fields[0].label):
+				field_button.pressed.emit()
+				break
+		phone._reveal_field(id, 0)
+		phone._reveal_field(id, 99)
+		check(phone._revealed_fields[id].size() == 1 and not phone._inspected.has(id), prefix + "Repeated or invalid taps cannot complete unseen fields")
+		phone._finish()
+		check(not game.decision_timer_active, prefix + "Partial evidence cannot start decision")
+		root.size = Vector2i(844, 390)
+		await shot(game, "stage%d_school_inspection_%d" % [stage_id, incident])
+		check(root.get_visible_rect().encloses(phone._guide_panel.get_global_rect()) and root.get_visible_rect().encloses(phone._close.get_global_rect()), prefix + "Checklist and navigation fit small landscape")
+		phone.stop()
+		phone.open_phone(true)
+		check(phone._revealed_fields[id].size() == 1, prefix + "Closing the prop preserves current investigation")
+		if app == "mail":
+			phone._navigate("mail")
+			phone._open_message()
+			phone._inspect(id)
+			phone._go_back()
+			check(phone._reading and phone._expanded_id.is_empty(), prefix + "Back from details returns to the email, not home")
+		inspect_school_email(game)
+		check(phone.is_complete() and game.decision_timer_active and is_equal_approx(game.decision_seconds_total, 45.0), prefix + "Evidence gate opens the 45-second decision")
+		await shot(game, "stage%d_school_choices_%d" % [stage_id, incident])
+		root.size = Vector2i(1280, 720)
+		choose(game, "SAFE")
+		check(account.bkt.size() == incident + 1, prefix + "One mastery update per decision")
+	read_page(game)
+	check(game.phase == "Results" and account.clears == 1 and account.stage_tasks == 1 and account.credits == 50 + game.gold, prefix + "Safe path completes and rewards once")
+	check(account.clear_keys == ["mod_01:%d" % stage_id], prefix + "Completion targets this module and stage only")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	for incident: int in range(3):
+		choose(game, "RISKY")
+		check(game.decision.awaiting_breach_deploy() and game.story_hp == 3, prefix + "Risky response starts containment without heart loss")
+		game._consequence_continued()
+		check(game.phase == "Build" and game.gold == int(starting_budgets[stage_id]) + incident * 2, prefix + "Original incident gold budget retained")
+		if incident == 0:
+			await shot(game, "stage%d_school_map" % stage_id)
+		game.begin_defend()
+		game._wave_cleared()
+		check(game.decision.resolved_threats == incident + 1 and account.bkt.size() == incident + 1, prefix + "Containment resolves once")
+		read_page(game)
+	if game.phase != "Results":
+		read_page(game)
+	check(game.phase == "Results" and account.clears == 1, prefix + "Containment path can finish all incidents")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	choose(game, "SAFE")
+	choose(game, "SAFE")
+	choose(game, "CRITICAL")
+	check(game.story_hp == 2 and account.checkpoint.threat_index == 2, prefix + "Failed decision costs one heart without losing earlier incidents")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.story_hp == 2 and game.decision.threat_index == 2, prefix + "Reload retains HP and incident")
+	read_page(game)
+	check(game.story_overlay._phone._revealed_fields.is_empty(), prefix + "Retry starts a fresh evidence inspection")
+	inspect_school_email(game)
+	game.story_overlay._review_button.pressed.emit()
+	game.advance_decision_timer(44.0)
+	check(game.story_hp == 2, prefix + "No early expiry")
+	game.advance_decision_timer(1.1)
+	check(game.story_hp == 1 and not game.decision.is_breach_active(), prefix + "Timeout in Logs costs a heart, not containment")
+	read_page(game)
+	choose(game, "CRITICAL")
+	check(game.story_hp == 0, prefix + "Third failure leaves last chance")
+	choose(game, "CRITICAL")
+	check(game.phase == "Results" and account.checkpoint.is_empty() and account.clears == 0, prefix + "Fourth failure clears this attempt")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.story_hp == 3 and game.decision.threat_index == 0 and game.story_overlay._mode == &"story", prefix + "Exhausted attempt restarts at opening")
+	await unmount(game)
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
@@ -1038,6 +1364,10 @@ func _run() -> void:
 	await unmount(game)
 
 	check(DecisionScenarios.stage_key("mod_01", 1) != DecisionScenarios.stage_key("mod_01", 2), "[Stage 2] Stage 1 and Stage 2 checkpoint keys never collide")
+	await _verify_school_stage_three()
+	await _verify_school_stage_four()
+	for stage_id: int in range(5, 9):
+		await _verify_school_inspection_stage(stage_id)
 
 	# Module 3 Stage 1 introduces the reusable dialogue-emotion system (see
 	# DialogueEmotion / DialogueScreenShake / DialoguePortrait). The legacy
