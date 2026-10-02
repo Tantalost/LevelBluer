@@ -83,6 +83,9 @@ func _research_bonus(_kind: String) -> Dictionary:
 func _enemy_health_scale() -> float:
 	return 1.0
 
+func _enemy_task_gateway() -> Object:
+	return null
+
 func _exit_tree() -> void:
 	Engine.time_scale = 1.0
 
@@ -449,12 +452,17 @@ func _spawn_enemy() -> void:
 	var kind: String = str(mix[spawned % mix.size()]) if not mix.is_empty() else str(data.get("enemy_type", "basic"))
 	var enemy := ENEMY.instantiate() as EnemyBase
 	enemy.match_context = match_context
+	enemy.task_gateway = _enemy_task_gateway()
 	enemy.initialize_stats(kind, float(data.get("health_multiplier", 1)) * _enemy_health_scale())
 	enemy.enemy_died.connect(_enemy_died)
 	enemy.reached_base.connect(_enemy_leaked)
+	var route_index: int = spawned
+	var schedule: Array = data.get("spawn_routes", [])
+	if not schedule.is_empty():
+		route_index = int(schedule[spawned % schedule.size()])
 	spawned += 1
 	active_enemies += 1
-	hud.battle.track.add_child(enemy)
+	hud.battle.spawn_track(route_index).add_child(enemy)
 
 func _enemy_died(bounty: int) -> void:
 	if phase != "Defend":
@@ -521,9 +529,10 @@ func _finish(won: bool) -> void:
 	hud.battle.world.process_mode = Node.PROCESS_MODE_DISABLED
 	# Combat freezes behind the result reveal, but temporary residue must still
 	# finish fading instead of being left permanently suspended on the map.
-	for effect in hud.battle.track.get_children():
-		if effect.has_meta("preview_death_burst") or effect.has_meta("preview_death_stain"):
-			effect.process_mode = Node.PROCESS_MODE_ALWAYS
+	for route: Path2D in hud.battle.tracks:
+		for effect: Node in route.get_children():
+			if effect.has_meta("preview_death_burst") or effect.has_meta("preview_death_stain"):
+				effect.process_mode = Node.PROCESS_MODE_ALWAYS
 	if not won and _destroy_home_on_loss():
 		hud.battle.board.play_home_destruction()
 		AudioManager.play_sfx("explosion")

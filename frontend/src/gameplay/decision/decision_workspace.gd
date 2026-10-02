@@ -17,6 +17,39 @@ const StoryPhone = preload("res://src/gameplay/decision/story_phone.gd")
 var _phone: Control
 var _phone_enabled: bool = false
 var _phone_prompt: VBoxContainer
+var _college_cast: bool = false
+var _college_background: Texture2D
+
+func configure_presentation(story: Dictionary) -> void:
+	_college_cast = str(story.get("visual_theme", "")) == "college"
+	if not _college_cast:
+		return
+	_college_background = load("res://assets/story/college_commons.png") as Texture2D
+	_illustrated = true
+	_school_cast = true # Reuse the illustrated dialogue layout and listener reactions.
+	_header.hide()
+	_background.show()
+	_portrait_stage.show()
+	set_background("college_commons")
+
+func configure_laptop(data: Dictionary) -> void:
+	remove_child(_phone)
+	_phone.queue_free()
+	_phone = preload("res://src/gameplay/decision/story_laptop.gd").new()
+	_phone.name = "StoryLaptop"
+	add_child(_phone)
+	_phone.closed.connect(_close_mail)
+	_phone.message_read.connect(_record_phone_mail)
+	_phone.investigation_confirmed.connect(_finish_phone_investigation)
+	_phone.detail_inspected.connect(_log_phone_detail)
+	_phone.pause_requested.connect(func() -> void: pause_requested.emit())
+	configure_phone(data)
+	_story_pause.show()
+	for node: Node in _phone_prompt.get_children():
+		if node is Button:
+			(node as Button).text = "OPEN LAPTOP / CHECK EVIDENCE"
+		elif node is Label:
+			(node as Label).text = "Use your laptop to check the message against trusted campus sources."
 
 func configure_phone(data: Dictionary) -> void:
 	_phone_enabled = not data.is_empty()
@@ -72,6 +105,10 @@ func set_background(location: String) -> void:
 	const LOCATIONS: PackedStringArray = ["rooftop_day", "music_room", "hallway_day", "library_room", "infirmary", "science_lab", "gymnasium", "courtyard", "school_gate_morning", "classroom_sunset", "clubroom", "classroom_day"]
 	_background_art.texture = null
 	_background_location = location
+	if _college_cast:
+		_background_art.texture = _college_background
+		_background_art.show()
+		return
 	if _school_cast and location in LOCATIONS and _assets != null:
 		_background_art.texture = _assets.get_texture("story_bg_" + location)
 	_background_art.visible = _background_art.texture != null
@@ -519,7 +556,7 @@ func _fit_school_portraits() -> void:
 	for index: int in _portraits.size():
 		var seat: Control = _portraits[index].get_parent() as Control
 		seat.set_anchors_preset(PRESET_TOP_LEFT)
-		var full_body: bool = _portraits[index].body_texture != null
+		var full_body: bool = _portraits[index].body_texture != null or _college_cast
 		var seat_size: Vector2 = Vector2(width, height) if full_body else Vector2.ONE * minf(width, minf(height * 0.28, maxf(0.0, bottom - top)))
 		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - seat_size.x - 20.0, top)
 		seat.size = seat_size
@@ -531,7 +568,7 @@ func _show_line() -> void:
 	if not _mail.is_empty():
 		if _phone_enabled:
 			_phone.receive_message(_mail)
-		_mail_notice.text = "NEW EMAIL\nOPEN MESSAGE  >"
+		_mail_notice.text = "NEW SMS\nOPEN LAPTOP  >" if _college_cast else "NEW EMAIL\nOPEN MESSAGE  >"
 		_animate_notice.call_deferred(_mail_generation)
 	var who := str(line.get("speaker", ""))
 	var line_emotion := Emotion.of(line)
@@ -611,8 +648,10 @@ func _update_portraits() -> void:
 		_portraits[i].get_parent().visible = _cast[i] in _scene_speakers if _school_cast else active
 		_portraits[i].retain_expression = _school_cast
 		_portraits[i].portrait_texture = portrait_textures.get(_cast[i])
-		_portraits[i].body_texture = Portrait.school_body(_cast[i]) if _school_cast and _portraits[i].portrait_texture == null else null
-		if _school_cast and _portraits[i].portrait_texture == null:
+		_portraits[i].body_texture = Portrait.school_body(_cast[i]) if _school_cast and not _college_cast and _portraits[i].portrait_texture == null else null
+		if _college_cast:
+			_portraits[i].portrait_texture = Portrait.college_expression(_cast[i], mood)
+		elif _school_cast and _portraits[i].portrait_texture == null:
 			_portraits[i].portrait_texture = Portrait.school_expression(_cast[i], mood)
 		_portraits[i].configure(_cast[i], active, active and _typing and not _locked and not _review_open, mood)
 		_portrait_names[i].text = _cast[i]
@@ -697,7 +736,7 @@ func _refresh_controls() -> void:
 	if _school_cast:
 		_continue_button.text = "REVEAL  >" if _typing else ("NEXT  >" if not _dialogue_done and _line_index + 1 < _lines.size() else _caption)
 	if not _typing and not _mail.is_empty() and not _mail_read:
-		_continue_button.text = "OPEN EMAIL  >"
+		_continue_button.text = "OPEN LAPTOP  >" if _college_cast else "OPEN EMAIL  >"
 	_mail_notice.visible = not _mail.is_empty() and not _dialogue_done and not _review_open
 	_mail_notice.disabled = _locked or _review_open or _mail_open
 	_mail_close.disabled = _locked
@@ -1010,7 +1049,9 @@ func _add_log_entry(line: Dictionary) -> void:
 		portrait.frameless = true
 		portrait.custom_minimum_size = Vector2.ZERO
 		portrait.portrait_texture = portrait_textures.get(who)
-		if _school_cast and portrait.portrait_texture == null:
+		if _college_cast:
+			portrait.portrait_texture = Portrait.college_expression(who, Emotion.of(line), true)
+		elif _school_cast and portrait.portrait_texture == null:
 			portrait.portrait_texture = Portrait.school_expression(who, Emotion.of(line))
 		avatar_frame.add_child(portrait)
 		portrait.configure(who, true, false, Emotion.of(line))
@@ -1079,7 +1120,10 @@ func _close_mail() -> void:
 	_mail_open = false
 	_phone.stop()
 	_mail_panel.hide()
-	_mail_notice.text = "EMAIL READ\nOPEN AGAIN  >" if _mail_read else "NEW EMAIL\nOPEN PHONE  >"
+	if _college_cast:
+		_mail_notice.text = "MESSAGE READ\nOPEN AGAIN  >" if _mail_read else "NEW SMS\nOPEN LAPTOP  >"
+	else:
+		_mail_notice.text = "EMAIL READ\nOPEN AGAIN  >" if _mail_read else "NEW EMAIL\nOPEN PHONE  >"
 	_refresh_controls()
 	if _continue_button.is_visible_in_tree():
 		_continue_button.grab_focus()

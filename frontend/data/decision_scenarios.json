@@ -4473,149 +4473,546 @@
 			"id": "mod02_stage1",
 			"module_id": "mod_02",
 			"stage": 1,
-			"title": "Unknown Number",
+			"title": "First Login",
+			"content_version": 2,
 			"bkt_skill": "smishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor College",
+			"scene_header": "HARBOR COLLEGE // ORIENTATION, 09:10",
+			"guide_speaker": "Mia",
+			"visual_theme": "college",
+			"decision_lives": 3,
+			"breach_hp_multiplier": 0.45,
 			"clear_title": "STAGE 1 COMPLETE",
-			"clear_subtitle": "UNKNOWN NUMBER",
-			"next_stage_title": "Stage 2 — Expected Delivery",
-			"breach_hp_multiplier": 0.65,
+			"clear_subtitle": "FIRST LOGIN",
+			"next_stage_title": "Stage 2",
+			"locations": {
+				"opening": "college_commons",
+				"ending": "college_commons",
+				"resume_breach": "college_commons",
+				"breach_contained": "college_commons"
+			},
+			"containment_note": "LAPTOP DEFENSE SIMULATION / Practice protecting your device with campus IT guidance. Alex is not operating the college network.",
+			"laptop": {
+				"time": "09:10",
+				"day": "ORIENTATION DAY",
+				"contacts": [
+					{
+						"title": "Campus IT / verified directory",
+						"evidence_id": "directory",
+						"body": "help@harborcollege.example\nLibrary help desk, ground floor.\nSaved from your enrollment pack before today's SMS."
+					}
+				],
+				"pages": [
+					{
+						"title": "My campus portal / saved bookmark",
+						"evidence_id": "portal",
+						"body": "https://portal.harborcollege.example\nSaved during in-person enrollment. Offline story simulation; no website is opened."
+					}
+				]
+			},
+			"map_routes": [
+				[
+					[
+						0,
+						1
+					],
+					[
+						5,
+						1
+					],
+					[
+						5,
+						3
+					],
+					[
+						12,
+						3
+					]
+				],
+				[
+					[
+						0,
+						5
+					],
+					[
+						5,
+						5
+					],
+					[
+						5,
+						3
+					],
+					[
+						12,
+						3
+					]
+				]
+			],
+			"breach_waves": [
+				{
+					"enemy_count": 6,
+					"spawn_delay": 1.5,
+					"health_multiplier": 1,
+					"enemy_type": "basic",
+					"spawn_routes": [
+						0,
+						0,
+						1,
+						1,
+						0,
+						1
+					]
+				}
+			],
 			"opening": [
-				{"speaker": "Leah", "text": "Mia, can I ask you something?"},
-				{"speaker": "Mia", "text": "Sure. What's going on?"},
-				{"speaker": "Leah", "text": "Probably nothing. I keep getting weird texts."},
-				{"speaker": "Mia", "text": "What kind of texts?"},
-				{"speaker": "Leah", "text": "Account warnings. Verification messages."},
-				{"speaker": "Mia", "text": "From who?"},
-				{"speaker": "Leah", "text": "That's the problem. I don't know."},
-				{"speaker": "", "text": "Leah sends screenshots."},
-				{"speaker": "Mia", "text": "Don't click anything."},
-				{"speaker": "Leah", "text": "I know what a scam looks like."},
-				{"speaker": "Mia", "text": "Then humor me."},
-				{"speaker": "", "text": "Mia brings the Security Assistant into the conversation."},
-				{"speaker": "Security Assistant", "text": "Let's see the messages before we decide what they are."}
+				{
+					"speaker": "Alex",
+					"text": "Post-assessment finished. After everything we learned in high school, I thought a new campus login would be the easy part.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "We learned to verify the situation, not just trust the message. That still counts here.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "New timetable, new buildings, and my first assignment already. At least the library has somewhere to plug in my laptop.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Leah",
+					"text": "Is this seat free? I'm Leah, from your first-year seminar. Have you found the registration page yet?",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Alex. This is Mia. I bookmarked the campus portal when I enrolled. My phone messages sync to this laptop.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Let's check your schedule before orientation starts.",
+					"emotion": "neutral"
+				}
 			],
 			"ending": [
-				{"speaker": "Leah", "text": "This isn't normal spam."},
-				{"speaker": "Security Assistant", "text": "No."},
-				{"speaker": "Mia", "text": "They knew your name."},
-				{"speaker": "Leah", "text": "My phone number."},
-				{"speaker": "Mia", "text": "And when you opened the first message."},
-				{"speaker": "Leah", "text": "So somebody is watching me?"},
-				{"speaker": "Security Assistant", "text": "We don't know that yet."},
-				{"speaker": "Leah", "text": "But?"},
-				{"speaker": "Security Assistant", "text": "The messages are adapting."},
-				{"speaker": "Mia", "text": "Which means they're paying attention."},
-				{"speaker": "Leah", "text": "I was expecting this to be one stupid scam text."},
-				{"speaker": "Security Assistant", "text": "It may have started with one text."},
-				{"speaker": "Security Assistant", "text": "But this looks targeted."}
+				{
+					"speaker": "Alex",
+					"text": "My timetable is there, and the report went through the campus directory. I didn't need either text's link.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Leah",
+					"text": "Could we try the laptop safety exercise before we head to class? It says threats can arrive through two entrances.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "It's a practice simulation, even if you handled every message safely. Look for A and B: both paths join before your laptop.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I'll place Basic Nodes beside the shared path so they can cover both entrances. Then I'll press Start.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "The first wave introduces each entrance in turn. The second mixes them. You can adjust your towers between waves.",
+					"emotion": "neutral"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Mia",
+					"text": "Let's revisit the message and evidence before restarting the laptop defense exercise.",
+					"emotion": "neutral"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. That link is isolated, but Leah's other accounts still need checking."},
-				{"speaker": "Leah", "text": "Great. What's next?"}
+				{
+					"speaker": "Alex",
+					"text": "The practice threat is contained. Now back to checking the source.",
+					"emotion": "relieved"
+				}
 			],
+			"finale": {
+				"enabled": true,
+				"type": "tower_defense",
+				"affected_system": "ALEX'S LAPTOP / ORIENTATION PRACTICE",
+				"gold": 8,
+				"enemy_hp_multiplier": 0.45,
+				"deploy_label": "START LAPTOP PRACTICE",
+				"victory_banner": "BOTH ENTRANCES SECURED",
+				"failure_title": "PRACTICE INCOMPLETE",
+				"complete_banner": "ORIENTATION COMPLETE",
+				"waves": [
+					{
+						"enemy_count": 6,
+						"spawn_delay": 1.8,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							0,
+							0,
+							0,
+							1,
+							1,
+							1
+						]
+					},
+					{
+						"enemy_count": 8,
+						"spawn_delay": 1.4,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"enemy_mix": [
+							"basic",
+							"basic",
+							"fast",
+							"basic"
+						],
+						"spawn_routes": [
+							0,
+							1,
+							0,
+							1
+						]
+					}
+				],
+				"ending": [
+					{
+						"speaker": "Leah",
+						"text": "Both entrances, one laptop. Covering the shared path made a difference.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Mia",
+						"text": "And checking the real portal kept a fake deadline from deciding for us.",
+						"emotion": "neutral"
+					}
+				],
+				"closing": [
+					{
+						"speaker": "Alex",
+						"text": "Registration confirmed. Next up: our first group assignment.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Leah",
+						"text": "I'll join your group. Let's agree where we share project messages before everyone starts sending links.",
+						"emotion": "neutral"
+					},
+					{
+						"speaker": "Mia",
+						"text": "Good idea. One deadline at a time.",
+						"emotion": "neutral"
+					}
+				],
+				"case_summary": {
+					"title": "FIRST LOGIN / FIELD NOTES",
+					"subtitle": "VERIFY THROUGH A SOURCE YOU ALREADY TRUST",
+					"items": [
+						"Inspected the SMS without opening its link",
+						"Compared the claim with the saved campus portal",
+						"Used the enrollment directory to report it",
+						"Protected both entrances in the laptop simulation"
+					]
+				},
+				"failure_body": "The practice laptop was overwhelmed. Try placing Basic Nodes beside the shared approach, covering both A and B. Your completed story choices stay saved."
+			},
 			"threats": [
 				{
 					"id": "mod02_stage01_incident01",
 					"module_id": "mod_02",
 					"stage": 1,
-					"title": "Mobile Account Warning",
+					"title": "A deadline in a text",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S MOBILE ACCOUNT",
+					"affected_system": "ALEX'S CAMPUS ACCOUNT",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "This is the first one. It says there's suspicious activity on my mobile account."},
-						{"speaker": "Mia", "text": "Does it look like it's really from your carrier?"},
-						{"speaker": "Leah", "text": "The name looks right, but it's not anyone I have saved."}
+						{
+							"speaker": "Alex",
+							"text": "A text says my course registration will disappear in ten minutes.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "That sounds stressful. What does the portal you already saved say?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's look at the message on my laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "HC-REG <unverified SMS sender ID>",
+								"subject": "Registration expires in 10 minutes",
+								"body": "Alex, your Harbor College registration is on hold. Verify now: https://harborcollege-register.example/confirm. Do not miss today's classes."
+							}
+						}
 					],
-					"situation": "Leah receives an SMS saying suspicious activity was detected on her mobile account. The message contains Leah's real first and last name, her correct mobile carrier, the last four digits of her phone number, a case/reference number, and a link to \"review activity.\" The sender name resembles her carrier but is not saved in her contacts.",
+					"situation": "Alex, your Harbor College registration is on hold. Verify now: https://harborcollege-register.example/confirm. Do not miss today's classes.",
 					"evidence": [
-						"Sender name resembles Leah's mobile carrier but is not a saved contact",
-						"Message includes Leah's real first and last name",
-						"Correct mobile carrier and the last four digits of her phone number",
-						"Includes a case/reference number and a link to \"review activity\""
+						"A familiar-looking sender label is not proof of identity.",
+						"The portal bookmark predates this SMS."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE SOURCE",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the SMS destination",
+								"analysis": "The sender label is unverified. The link points to harborcollege-register.example; do not use it to establish the college's identity.",
+								"fields": [
+									{
+										"label": "Sender label",
+										"value": "HC-REG — an SMS label, not a verified campus contact."
+									},
+									{
+										"label": "Destination preview",
+										"value": "https://harborcollege-register.example/confirm\nPreview only; the link has not been opened."
+									}
+								],
+								"view_title": "INSPECT THE SMS DESTINATION"
+							},
+							{
+								"id": "portal",
+								"phone_app": "pages",
+								"label": "Check actual registration status",
+								"analysis": "The portal saved during enrollment shows active registration and no verification request.",
+								"fields": [
+									{
+										"label": "Saved address",
+										"value": "https://portal.harborcollege.example"
+									},
+									{
+										"label": "Registration record",
+										"value": "ACTIVE / First-year seminar, 10:00 / No verification hold."
+									}
+								],
+								"view_title": "CHECK ACTUAL REGISTRATION STATUS"
+							}
+						]
+					},
 					"choices": [
-						{"label": "Open the link but avoid entering credentials unless the account information shown on the page matches Leah's actual details.", "outcome": "CRITICAL", "consequence": "Attacker-controlled pages may already know those details, so a matching page proves nothing. The page loads and begins harvesting information the moment it opens."},
-						{"label": "Open the carrier's official app or manually visit the known carrier website/account portal and check account alerts there.", "outcome": "SAFE", "consequence": "The official app shows no such alert. The message is reported as fraud before Leah interacts with it further."},
-						{"label": "Inspect the SMS link carefully and compare the domain with the carrier's normal website before deciding whether to open it.", "outcome": "RISKY", "consequence": "The domain looks close enough to pass a quick visual check, and opening it anyway still lands on a convincing lookalike page."},
-						{"label": "Reply to the SMS asking the sender to provide the case number and more information before opening anything.", "outcome": "RISKY", "consequence": "The reply reaches the same untrusted channel, which happily supplies a convincing, fabricated case number right back."}
+						{
+							"label": "Keep the SMS closed and use my saved campus portal to confirm registration.",
+							"outcome": "SAFE",
+							"consequence": "Alex checks the enrollment bookmark. Registration is active; he keeps the suspicious SMS as evidence."
+						},
+						{
+							"label": "Reply with my student number and ask whether the hold is real.",
+							"outcome": "RISKY",
+							"consequence": "The reply sends personal information back to an unverified sender. Alex stops the exchange and asks campus IT for help; the next defense is a practice visualization."
+						},
+						{
+							"label": "Use the text's link and enter my campus password to remove the hold.",
+							"outcome": "CRITICAL",
+							"consequence": "Entering a password into the lookalike site would expose it. Pause and retry using a source obtained independently of the message."
+						}
 					],
-					"explanation": "A sender name that resembles the carrier, and even accurate personal details, do not confirm the message actually came from the carrier. Verifying through a channel Leah already trusts — the official app or a manually typed address — is the only way to know if the alert is real.",
-					"breach_gold": 12,
+					"explanation": "An urgent SMS and a familiar sender label do not establish identity. Check the claim through the portal you saved during enrollment.",
+					"breach_gold": 8,
 					"next": "mod02_stage01_incident02"
 				},
 				{
 					"id": "mod02_stage01_incident02",
 					"module_id": "mod_02",
 					"stage": 1,
-					"title": "Transaction Alert",
+					"title": "A real reminder",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S E-WALLET",
+					"affected_system": "ALEX'S CAMPUS ACCOUNT",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "Another one. This time it says a transaction was attempted on my e-wallet."},
-						{"speaker": "Mia", "text": "Do you recognize the amount?"},
-						{"speaker": "Leah", "text": "Honestly? It's small enough I might have just forgotten about it."}
+						{
+							"speaker": "Leah",
+							"text": "Mine says our seminar room changed. Are all college texts fake now?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's check the actual timetable instead of guessing from the sender name.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's look at the message on my laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "HC-NOTICES <SMS sender ID>",
+								"subject": "First-year seminar room update",
+								"body": "First-year seminar now meets in Library 204 at 10:00. Check your usual campus timetable. No reply needed."
+							}
+						}
 					],
-					"situation": "A second SMS claims a small transaction was attempted against Leah's e-wallet and offers a link: \"Not you? Secure your account.\" The amount is believable and small enough that Leah isn't sure whether she simply forgot about it. She checks her phone and is still logged into her real e-wallet app.",
+					"situation": "First-year seminar now meets in Library 204 at 10:00. Check your usual campus timetable. No reply needed.",
 					"evidence": [
-						"Claimed transaction amount is small and plausible, so Leah isn't certain it's fake",
-						"SMS includes a \"Not you? Secure your account.\" link",
-						"Leah's real e-wallet app is still logged in and reachable right now",
-						"No call has been made to any independently verified support line yet"
+						"The message requests no password or payment.",
+						"Its room-change claim still needs an independent check."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE SOURCE",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Read the request",
+								"analysis": "This text asks students to check their usual timetable; it supplies no login link and asks for no secrets.",
+								"fields": [
+									{
+										"label": "Requested action",
+										"value": "Check your usual campus timetable. No reply, link, password or payment requested."
+									}
+								],
+								"view_title": "READ THE REQUEST"
+							},
+							{
+								"id": "portal",
+								"phone_app": "pages",
+								"label": "Compare the official timetable",
+								"analysis": "The saved portal confirms Library 204 at 10:00. The claim is corroborated independently, regardless of its sender label.",
+								"fields": [
+									{
+										"label": "Official timetable",
+										"value": "First-year seminar / 10:00 / Library 204"
+									},
+									{
+										"label": "Notice posted",
+										"value": "09:12 / Room updated by the seminar office."
+									}
+								],
+								"view_title": "COMPARE THE OFFICIAL TIMETABLE"
+							}
+						]
+					},
 					"choices": [
-						{"label": "Use the SMS security link because Leah is still logged into the real app and can immediately change the password afterward if anything looks wrong.", "outcome": "CRITICAL", "consequence": "The link itself remains untrusted — being logged into the real app elsewhere doesn't make an attacker-controlled link safe, and opening it hands over the very session Leah was trying to protect."},
-						{"label": "Open the real e-wallet app independently and review recent activity, security settings, and logged-in devices there.", "outcome": "SAFE", "consequence": "The real app shows no such transaction, confirming the SMS was fake. Leah reports it directly from an account she knows is genuine."},
-						{"label": "Call the phone number printed in the SMS and ask support to verify whether the transaction exists.", "outcome": "RISKY", "consequence": "The printed number connects straight to the attacker's own call center, which happily \"confirms\" the fake transaction."},
-						{"label": "Open the SMS link in a private/incognito browser only to compare the transaction details with the real app.", "outcome": "RISKY", "consequence": "Browser isolation does not establish legitimacy. The lookalike page still captures whatever Leah enters while making the comparison."}
+						{
+							"label": "Use the room shown in my saved portal; the text agrees with that independent record.",
+							"outcome": "SAFE",
+							"consequence": "The timetable confirms the change. Alex and Leah save the correct room without treating the SMS sender as proof."
+						},
+						{
+							"label": "Reply with a screenshot of my full timetable and student ID to confirm attendance.",
+							"outcome": "RISKY",
+							"consequence": "The reply unnecessarily shares private details with a sender whose identity has not been established. Alex stops and reviews what was exposed."
+						},
+						{
+							"label": "Share my campus password in a reply so the sender can update my timetable.",
+							"outcome": "CRITICAL",
+							"consequence": "A room notice never needs your password. Sharing it would expose the account; retry using the timetable you already checked."
+						}
 					],
-					"explanation": "Being logged into a real account elsewhere does not make an unrelated link safe, and a phone number or browser window supplied by the same suspicious message is still part of the untrusted channel. Verification has to start from an entry point Leah already knows independently.",
-					"breach_gold": 14,
+					"explanation": "Verification is not the same as assuming every text is fake. A claim can be useful when an independent campus record confirms it.",
+					"breach_gold": 8,
 					"next": "mod02_stage01_incident03"
 				},
 				{
 					"id": "mod02_stage01_incident03",
 					"module_id": "mod_02",
 					"stage": 1,
-					"title": "Support Follow-Up",
+					"title": "Help from the right place",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S PERSONAL ACCOUNTS",
+					"affected_system": "ALEX'S CAMPUS ACCOUNT",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Mia", "text": "Leah?"},
-						{"speaker": "Leah", "text": "What?"},
-						{"speaker": "Mia", "text": "You're not telling me something."},
-						{"speaker": "Leah", "text": "...It's nothing."},
-						{"speaker": "Mia", "text": "You only say that when it isn't nothing."},
-						{"speaker": "Leah", "text": "I opened one of the messages earlier."},
-						{"speaker": "Mia", "text": "You clicked it?"},
-						{"speaker": "Leah", "text": "I didn't enter my password."},
-						{"speaker": "Security Assistant", "text": "Which message?"},
-						{"speaker": "Leah", "text": "The first one."},
-						{"speaker": "Mia", "text": "Why didn't you tell us?"},
-						{"speaker": "Leah", "text": "Because I closed it. I thought that meant nothing happened."},
-						{"speaker": "Security Assistant", "text": "Maybe nothing did. But now we treat that interaction as evidence."},
-						{"speaker": "", "text": "Shortly after, another text arrives claiming to be from mobile support."},
-						{"speaker": "Leah", "text": "How do they know I opened it?"},
-						{"speaker": "Mia", "text": "That's what I want to know."}
+						{
+							"speaker": "Alex",
+							"text": "Now someone claiming to be support says they can fix the first warning.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "We haven't contacted support yet. Find the contact in your enrollment directory, not in this text.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Leah",
+							"text": "And keep the first message for the report. That will help the real help desk.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's look at the message on my laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "HC-HELP <unverified SMS sender ID>",
+								"subject": "Finish your security review",
+								"body": "We can remove your registration hold. Reply with the next login code you receive, or call the number in this text. Case HC-1042."
+							}
+						}
 					],
-					"situation": "A new SMS claims to be from mobile support: \"We detected that you opened a suspicious verification page. Your account has been temporarily protected. Complete the security review below.\" It is alarming because it appears to know Leah interacted with the earlier link. It includes the correct carrier, Leah's name, the approximate time of her earlier interaction, and a new security-case number.",
+					"situation": "We can remove your registration hold. Reply with the next login code you receive, or call the number in this text. Case HC-1042.",
 					"evidence": [
-						"Message references the approximate time Leah opened the earlier SMS link",
-						"Uses the correct carrier name and Leah's real name",
-						"Provides a new security-case number, different from the first message's",
-						"No verified carrier system has ever contacted Leah about this before now"
+						"No support request was made through campus IT.",
+						"A login code is a credential, not a support reference."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CHECK THE SOURCE",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the support request",
+								"analysis": "The message asks for a login code and supplies its own contact. Neither the case number nor sender label verifies the sender.",
+								"fields": [
+									{
+										"label": "Requested secret",
+										"value": "Reply with the next login code you receive."
+									},
+									{
+										"label": "Case origin",
+										"value": "HC-1042 appears only in this unsolicited SMS. You did not open a support case."
+									}
+								],
+								"view_title": "INSPECT THE SUPPORT REQUEST"
+							},
+							{
+								"id": "directory",
+								"phone_app": "contacts",
+								"label": "Find a verified reporting channel",
+								"analysis": "Use help@harborcollege.example from the enrollment directory, or visit the library help desk. Do not share passwords or login codes.",
+								"fields": [
+									{
+										"label": "Directory source",
+										"value": "Enrollment pack saved before these messages."
+									},
+									{
+										"label": "Report destination",
+										"value": "Campus IT: help@harborcollege.example / Library help desk, ground floor.\nInclude message screenshots; exclude passwords and login codes."
+									}
+								],
+								"view_title": "FIND A VERIFIED REPORTING CHANNEL"
+							}
+						]
+					},
 					"choices": [
-						{"label": "Follow the security-review link because the sender accurately knows about Leah's earlier interaction, then stop if it requests sensitive information.", "outcome": "CRITICAL", "consequence": "Knowledge of an event does not prove identity. The page begins harvesting information the moment it opens, well before Leah gets the chance to decide to stop."},
-						{"label": "Use a separately obtained carrier support channel or official app to verify whether any security case actually exists and review account access.", "outcome": "SAFE", "consequence": "The verified channel confirms no such case was ever opened, and Leah's account is checked clean through a source she actually trusts."},
-						{"label": "Compare the new case number with the reference number from the first SMS and continue only if the records appear consistent.", "outcome": "RISKY", "consequence": "Both numbers came from the same attacker, so of course they line up. Leah continues straight into the fake review."},
-						{"label": "Ask the sender to explain what activity triggered the warning without opening the new link.", "outcome": "RISKY", "consequence": "Still interacting with the attacker-controlled channel, and replying only confirms the number is active and being watched."}
+						{
+							"label": "Report the texts using the saved campus directory, without sharing any login code.",
+							"outcome": "SAFE",
+							"consequence": "In this story simulation, Alex sends the message screenshots through the verified campus help channel. Campus IT confirms there is no registration hold and explains how to block the sender."
+						},
+						{
+							"label": "Call the number supplied by the text to check its case number.",
+							"outcome": "RISKY",
+							"consequence": "The number comes from the same unverified message. Alex ends the call without sharing secrets and returns to the enrollment directory."
+						},
+						{
+							"label": "Reply with my login code so support can close the case.",
+							"outcome": "CRITICAL",
+							"consequence": "A login code could let someone access your account. Real reporting does not require sending it to an unsolicited contact. Retry using the independent directory."
+						}
 					],
-					"explanation": "Knowing that Leah opened an earlier message only proves the attacker was watching that first interaction — it says nothing about who they actually are. Real verification has to come from a channel Leah reached on her own, never from the same thread that already proved it can't be trusted.",
-					"breach_gold": 16,
+					"explanation": "Report through a contact obtained independently. Do not send passwords or login codes, even when a message claims to be helping.",
+					"breach_gold": 8,
 					"next": ""
 				}
 			]

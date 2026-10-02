@@ -7,6 +7,7 @@ var board: Node2D
 var world: Node2D
 var camera: Camera2D
 var track: Path2D
+var tracks: Array[Path2D] = []
 var enabled := true
 var _pressed := false
 var _dragged := false
@@ -49,6 +50,7 @@ func _ready() -> void:
 	track = Path2D.new()
 	track.curve = board.curve()
 	world.add_child(track)
+	tracks.append(track)
 	camera = Camera2D.new()
 	camera.position = Vector2(416, 224)
 	world.add_child(camera)
@@ -58,11 +60,42 @@ func _ready() -> void:
 
 ## Configure before spawning enemies; do not move a live PathFollow2D's route.
 func configure_route(points: Array[Vector2i]) -> bool:
-	if track.get_child_count() > 0 or not board.configure_route(points):
+	return configure_routes([points])
+
+func configure_routes(routes: Array) -> bool:
+	for existing: Path2D in tracks:
+		if existing.get_child_count() > 0:
+			return false
+	if not board.configure_routes(routes):
 		return false
-	track.curve = board.curve()
+	while tracks.size() > routes.size():
+		var obsolete: Path2D = tracks.pop_back() as Path2D
+		world.remove_child(obsolete)
+		obsolete.queue_free()
+	while tracks.size() < routes.size():
+		var entrance: Path2D = Path2D.new()
+		world.add_child(entrance)
+		tracks.append(entrance)
+	for index: int in tracks.size():
+		tracks[index].name = "EnemyRoute%d" % (index + 1)
+		tracks[index].curve = board.curve(index)
 	recenter()
 	return true
+
+func spawn_track(index: int) -> Path2D:
+	return tracks[posmod(index, tracks.size())]
+
+func clear_combat() -> void:
+	for child: Node in world.get_children():
+		if child == board or child == camera or (child is Path2D and tracks.has(child)):
+			continue
+		world.remove_child(child)
+		child.queue_free()
+	for route: Path2D in tracks:
+		for child: Node in route.get_children():
+			route.remove_child(child)
+			child.queue_free()
+	board.home_destroyed = false
 
 func recenter() -> void:
 	if camera == null:

@@ -211,7 +211,8 @@ func _render() -> void:
 	UI.clear(_content)
 	_content.size_flags_vertical = SIZE_EXPAND_FILL if _app in ["lock", "home"] else SIZE_FILL
 	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
-	_title.text = {"home": "HOME", "mail": "MAIL", "contacts": "SCHOOL CONTACTS", "pages": "SAVED PAGES"}.get(_app, "PHONE")
+	var titles: Dictionary = _data.get("app_titles", {"home": "HOME", "mail": "MAIL", "contacts": "SCHOOL CONTACTS", "pages": "SAVED PAGES"})
+	_title.text = str(titles.get(_app, "PHONE"))
 	if _card_open:
 		_render_card()
 		_refresh()
@@ -219,13 +220,13 @@ func _render() -> void:
 		return
 	match _app:
 		"lock", "home":
-			var time: Label = UI.label("07:35", 64, Color("F3ECD6"))
+			var time: Label = UI.label(str(_data.get("time", "07:35")), 64, Color("F3ECD6"))
 			time.set_meta("phone_clock", true)
 			time.add_theme_color_override("font_outline_color", Color("173058"))
 			time.add_theme_constant_override("outline_size", 4)
 			time.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_content.add_child(time)
-			var date: Label = UI.label("MONDAY", 20, Color("F3ECD6"))
+			var date: Label = UI.label(str(_data.get("day", "MONDAY")), 20, Color("F3ECD6"))
 			date.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_content.add_child(date)
 			var space: CenterContainer = CenterContainer.new()
@@ -239,7 +240,7 @@ func _render() -> void:
 				lock_icon.custom_minimum_size = Vector2(48, 48)
 				space.add_child(lock_icon)
 				_unlock_button = UI.button("TAP TO UNLOCK", _unlock, true)
-				_unlock_button.accessibility_name = "Unlock Alex's phone"
+				_unlock_button.accessibility_name = "Unlock Alex's " + str(_data.get("device_name", "phone"))
 				_content.add_child(_unlock_button)
 				_style_navigation(_unlock_button, true)
 			else:
@@ -249,7 +250,7 @@ func _render() -> void:
 				apps.columns = 3
 				apps.add_theme_constant_override("h_separation", 10)
 				dock.add_child(apps)
-				_app_tile(apps, "mail", "Mail", IntelPixelIcon.Kind.ENVELOPE, Color("4FE0D4"))
+				_app_tile(apps, "mail", str(_data.get("message_app", "Mail")), IntelPixelIcon.Kind.ENVELOPE, Color("4FE0D4"))
 				_app_tile(apps, "contacts", "Contacts", IntelPixelIcon.Kind.BADGE, Color("FFB648"))
 				_app_tile(apps, "pages", "Saved", IntelPixelIcon.Kind.TERMINAL, Color("8faef5"))
 		"mail":
@@ -264,7 +265,7 @@ func _render() -> void:
 			else:
 				_render_message()
 		"contacts", "pages":
-			_content.add_child(UI.label("Saved from the school handbook" if _app == "contacts" else "Bookmarks saved before this message", 22, UI.MUTED))
+			_content.add_child(UI.label(str(_data.get("contacts_origin", "Saved from the school handbook")) if _app == "contacts" else "Bookmarks saved before this message", 22, UI.MUTED))
 			for card: Dictionary in _data.get(_app, []):
 				var card_button: Button = UI.button(str(card.get("title", "")), _open_card.bind(card))
 				_content.add_child(card_button)
