@@ -179,6 +179,11 @@ func progress_mastery_snapshot() -> Array[Dictionary]:
 	var normalized: Dictionary = {}
 	for key in _mastery:
 		normalized[str(key).strip_edges().to_lower()] = _mastery[key]
+	# Display-only freshness: while this signed-in participant has an
+	# unsynced local change (StudentDatabase.needs_cloud_sync), prefer
+	# PlayerManager's live mastery_matrix over this possibly-stale cached
+	# copy — no BKT calculation, no queueing, no network call, no mutation.
+	var local_sync_pending: bool = _signed_in and StudentDatabase.has_pending_sync(_participant_code)
 	var topics := ["Phishing", "Smishing", "Vishing", "Pretexting", "Baiting"]
 	for i in topics.size():
 		var topic: String = topics[i]
@@ -190,6 +195,9 @@ func progress_mastery_snapshot() -> Array[Dictionary]:
 				pending = true
 				if PlayerManager.mastery_matrix.has(key):
 					raw = PlayerManager.mastery_matrix[key]
+		if local_sync_pending and PlayerManager.mastery_matrix.has(key):
+			pending = true
+			raw = PlayerManager.mastery_matrix[key]
 		var numeric := (raw is float or raw is int) and is_finite(float(raw))
 		var assessed := numeric and (float(raw) > 0.0 or pending or has_module_pretest("mod_%02d" % (i + 1)))
 		result.append({"id": key, "name": topic, "assessed": assessed,

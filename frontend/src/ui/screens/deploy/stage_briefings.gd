@@ -29,6 +29,11 @@ const MODULE_NOTES := {
 		"The Water Wise team is ready for the fair. Now apply what you learned on your own: fifteen short evidence challenges, with five before each defense wave.",
 		"Defend through all three waves and score at least 75% (12 of 15). Answers award no gold.",
 	],
+	"mod_02:1": [
+		"FIRST LOGIN",
+		"College orientation brings a new timetable, a new classmate, and an urgent text. Help Alex check the campus portal on his laptop, then protect two entrances in a guided defense simulation.",
+		"Check an independent source. Cover both routes.",
+	],
 	"mod_01:1": [
 		"BEFORE THE BELL",
 		"One week before the school fair, Alex's inbox interrupts a morning with Mia. A familiar name, a worrying deadline — what should you trust before first period?",

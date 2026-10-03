@@ -72,6 +72,9 @@ func _configure_match() -> void:
 	decision = DecisionStageController.new()
 	decision.setup(match_context.module_id, match_context.stage_id, DecisionScenarios.get_threats(match_context.module_id, match_context.stage_id), DecisionScenarios.has_finale(story))
 	var checkpoint: Dictionary = account.get_decision_stage_state(_key())
+	if story.has("content_version") and not checkpoint.is_empty() and checkpoint.get("content_version", 0) != story.content_version:
+		account.clear_decision_stage_state(_key())
+		checkpoint = {}
 	if _has_story_lives():
 		story_hp = clampi(int(checkpoint.get("story_hp", 3)), -1, 3)
 		if story_hp < 0:
@@ -117,12 +120,32 @@ func _ready() -> void:
 			route.append(Vector2i(int(coordinates[0]), int(coordinates[1])))
 		if not hud.battle.configure_route(route):
 			push_warning("Invalid story map route; keeping the default battlefield.")
-	hud.preview_label.text = "MODULE 01 / STORY MISSION"
+	var authored_routes: Array = story.get("map_routes", [])
+	if not authored_routes.is_empty():
+		var routes: Array = []
+		for entry: Array in authored_routes:
+			var points: Array[Vector2i] = []
+			for coordinates: Array in entry:
+				if coordinates.size() != 2:
+					points.clear()
+					break
+				points.append(Vector2i(int(coordinates[0]), int(coordinates[1])))
+			routes.append(points)
+		if not hud.battle.configure_routes(routes):
+			push_error("Invalid story routes; refusing to start a misconfigured mission.")
+			set_process(false)
+			return
+	hud.battle.board.set_campus_style(str(story.get("visual_theme", "")) == "college")
+	hud.preview_label.text = "MODULE %02d / STORY MISSION" % int(match_context.module_id.trim_prefix("mod_"))
 	story_overlay = preload("res://src/gameplay/decision/decision_workspace.gd").new()
 	story_overlay.name = "DecisionOverlay"
 	hud.body.add_child(story_overlay)
 	story_overlay.set_story_art(match_context.module_id, str(story.get("guide_speaker", "Security Assistant")))
-	story_overlay.configure_phone(story.get("phone", {}) as Dictionary)
+	story_overlay.configure_presentation(story)
+	if story.has("laptop"):
+		story_overlay.configure_laptop(story.laptop as Dictionary)
+	else:
+		story_overlay.configure_phone(story.get("phone", {}) as Dictionary)
 	story_overlay.set_story_hp(story_hp if _has_story_lives() else -1)
 	story_overlay.hide()
 	story_overlay.story_continued.connect(_story_continued)
@@ -310,9 +333,14 @@ func _update_hud() -> void:
 	super._update_hud()
 	if decision != null:
 		hud.status.text = "STAGE %02d / INCIDENT %d/%d" % [match_context.stage_id, decision.current_threat_number(), decision.total_threats()]
+		if phase in ["Build", "Defend"] and story.get("visual_theme", "") == "college":
+			hud.status.text = "ENTRANCES A + B / WAVE %d/%d" % [wave + 1, config.waves.size()]
 
 func _capacity(kind: String) -> int:
 	return account.tower_capacity(kind)
+
+func _enemy_task_gateway() -> Object:
+	return tasks
 
 func _access_reason(kind: String) -> String:
 	return "" if account.is_tower_unlocked(kind) else "Unlock this tower in Upgrades before deploying it."
@@ -330,6 +358,8 @@ func _key() -> String:
 
 func _save_checkpoint() -> void:
 	var checkpoint := decision.checkpoint_state()
+	if story.has("content_version"):
+		checkpoint["content_version"] = story.content_version
 	if _has_story_lives():
 		checkpoint["story_hp"] = story_hp
 	if reviewed_breach_index == decision.threat_index:
@@ -513,6 +543,7 @@ func _begin_breach() -> void:
 	if paused or not decision.is_breach_active() or phase not in ["Incident", "Briefing"]:
 		return
 	var budget := int(decision.current_threat().get("breach_gold", 0))
+	config["waves"] = story.get("breach_waves", StageManager.get_stage_config(match_context.stage_id).waves).duplicate(true)
 	_reset_combat_runtime(budget)
 
 ## Starts the stage-level FINAL CONTAINMENT encounter (see
@@ -526,6 +557,7 @@ func _begin_finale() -> void:
 		return
 	var finale: Dictionary = story.get("finale", {}) as Dictionary
 	var budget := int(finale.get("gold", 0))
+	config["waves"] = finale.get("waves", StageManager.get_stage_config(match_context.stage_id).waves).duplicate(true)
 	_reset_combat_runtime(budget)
 	_save_checkpoint()
 
@@ -535,13 +567,7 @@ func _begin_finale() -> void:
 ## gold or damage carry into the next incident.
 func _reset_combat_runtime(budget: int) -> void:
 	cancel_selection()
-	for child in hud.battle.world.get_children():
-		if child != hud.battle.board and child != hud.battle.track and child != hud.battle.camera:
-			hud.battle.world.remove_child(child)
-			child.queue_free()
-	for child in hud.battle.track.get_children():
-		hud.battle.track.remove_child(child)
-		child.queue_free()
+	hud.battle.clear_combat()
 	occupied.clear()
 	global_patch = false
 	wave = 0
@@ -567,6 +593,12 @@ func begin_defend() -> void:
 
 func _wave_cleared() -> void:
 	if decision.is_finale_active() and phase == "Defend":
+		var finale: Dictionary = story.get("finale", {})
+		if finale.has("waves") and wave + 1 < (config.waves as Array).size():
+			waves_completed += 1
+			wave += 1
+			_set_phase("Build")
+			return
 		_finale_cleared()
 		return
 	if not decision.is_breach_active() or phase != "Defend":
@@ -689,7 +721,7 @@ func _result_data(won: bool) -> Dictionary:
 			data.merge({"is_decision": true, "retry_label": "RETRY", "exit_label": "EXIT MISSION",
 				"title": str(finale.get("failure_title", "CONTAINMENT FAILED")),
 				"subtitle": system_name.to_upper() if not system_name.is_empty() else "FINAL CONTAINMENT",
-				"body": "Malicious processes were still active when containment failed. Deploy final defenses again and stop them before they spread.",
+				"body": str(finale.get("failure_body", "Malicious processes were still active when containment failed. Deploy final defenses again and stop them before they spread.")),
 				"tip": decision.game_over_tip()}, true)
 		else:
 			data.merge({"is_decision": true, "retry_label": "RETRY", "exit_label": "EXIT MISSION",

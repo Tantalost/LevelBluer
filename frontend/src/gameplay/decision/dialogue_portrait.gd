@@ -2,6 +2,27 @@ extends Control
 ## Expression atlases for the school cast; other speakers keep the pixel fallback.
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
 static var _expression_frames: Dictionary = {}
+static var _college_atlas: Texture2D
+
+static func college_expression(who: String, mood: String, head_only: bool = false) -> Texture2D:
+	var row: int = ["Alex", "Mia", "Leah"].find(who)
+	if row < 0:
+		return null
+	if _college_atlas == null:
+		_college_atlas = load("res://assets/story/college_cast.png") as Texture2D
+	var column: int = 1 if mood in ["worried", "shocked", "scared", "sad", "crying", "angry", "frustrated"] else (2 if mood in ["relieved", "determined"] else 0)
+	var key: String = "college/%s/%d/%s" % [who, column, str(head_only)]
+	if not _expression_frames.has(key):
+		var frame: AtlasTexture = AtlasTexture.new()
+		frame.atlas = _college_atlas
+		var top: float = [0.0, 434.0, 839.0][row]
+		var height: float = [434.0, 405.0, 415.0][row]
+		frame.region = Rect2(100 + column * 400, top, 256, height)
+		if head_only:
+			frame.region = Rect2(124 + column * 400, top, 208, 170)
+		frame.filter_clip = true
+		_expression_frames[key] = frame
+	return _expression_frames[key] as Texture2D
 const BODY_CANVAS: Vector2 = Vector2(408, 1024)
 const SCHOOL_EXPRESSIONS: PackedStringArray = ["neutral", "worried", "shocked", "frustrated", "sad", "determined", "relieved", "scared"]
 ## Source crops and attachment rectangles belong to the asset, not the scene.

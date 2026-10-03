@@ -695,7 +695,20 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 		"[BKT] local %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"
 		% [key, "hit" if is_correct else "miss", p_learned, new_mastery, p_guess, p_slip, p_transit]
 	)
+	# Exactly one BKT calculation path: this local update, persisted here and
+	# uploaded as-is by the existing cloud progress sync. Never also submit
+	# this same answer to AuthService's official-BKT queue/endpoint — that
+	# would be a second, server-side BKT calculation for one gameplay event.
 	SaveService.save_game()
+
+
+## True only when this account has local changes SaveService hasn't
+## confirmed as synced yet (StudentDatabase.needs_cloud_sync — the same
+## signal SaveService.fetch_cloud_save() already checks before it will
+## overwrite anything). While true, local mastery_matrix is authoritative:
+## no cached or remote BKT value may replace it, network-unavailable or not.
+func _has_pending_local_sync() -> bool:
+	return AuthService.is_signed_in() and StudentDatabase.has_pending_sync(AuthService.participant_code())
 
 
 func apply_official_mastery(skill_id: String, probability_known: float) -> void:
@@ -703,6 +716,12 @@ func apply_official_mastery(skill_id: String, probability_known: float) -> void:
 	mastery_matrix[key] = clampf(probability_known, MIN_MASTERY, MAX_MASTERY)
 
 
+## Seeds mastery_matrix from AuthService's cached/official values. Callable
+## even while a local sync is pending — an intentional local seed (e.g. a
+## just-computed pretest diagnostic handed to AuthService, then read back
+## here) is not "stale cached data clobbering newer gameplay"; only
+## pull_official_bkt()'s unsolicited remote/cached refresh needs to defer to
+## pending local state (see its own guard).
 func seed_from_official_mastery() -> void:
 	var official: Dictionary = AuthService.mastery()
 	var changed := false
@@ -720,6 +739,9 @@ func seed_from_official_mastery() -> void:
 
 
 func pull_official_bkt() -> void:
+	if _has_pending_local_sync():
+		print("[BKT] pending local sync — keeping local mastery_matrix, skipping official BKT pull")
+		return
 	if not AuthService.is_signed_in():
 		seed_from_official_mastery()
 		return

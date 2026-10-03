@@ -54,7 +54,7 @@ class DecisionScenarioDataTest(unittest.TestCase):
             expected_next = threats[index + 1]["id"] if index + 1 < len(threats) else ""
             self.assertEqual(threat["next"], expected_next)
 
-    def _assert_module2_four_choice_threats(self, stage: dict, module_id: str = "mod_02", bkt_skill: str = "smishing") -> None:
+    def _assert_module2_four_choice_threats(self, stage: dict, module_id: str = "mod_02", bkt_skill: str = "smishing", choice_count: int = 4) -> None:
         threats = stage["threats"]
         self.assertEqual(len(threats), 3)
         ids = [threat["id"] for threat in threats]
@@ -70,14 +70,14 @@ class DecisionScenarioDataTest(unittest.TestCase):
             self.assertTrue(threat["evidence"])
             self.assertGreater(int(threat["breach_gold"]), 0)
             choices = threat["choices"]
-            self.assertEqual(len(choices), 4)
+            self.assertEqual(len(choices), choice_count)
             outcomes = [choice["outcome"] for choice in choices]
             self.assertEqual(outcomes.count("SAFE"), 1)
-            self.assertEqual(outcomes.count("RISKY"), 2)
+            self.assertEqual(outcomes.count("RISKY"), choice_count - 2)
             self.assertEqual(outcomes.count("CRITICAL"), 1)
             risky_labels = [choice["label"] for choice in choices if choice["outcome"] == "RISKY"]
-            self.assertEqual(len(risky_labels), 2)
-            self.assertNotEqual(risky_labels[0], risky_labels[1])
+            self.assertEqual(len(risky_labels), choice_count - 2)
+            self.assertEqual(len(set(risky_labels)), len(risky_labels))
             for choice in choices:
                 self.assertTrue(choice["label"].strip())
                 self.assertTrue(choice["consequence"].strip())
@@ -381,25 +381,48 @@ class DecisionScenarioDataTest(unittest.TestCase):
         module_1_stage_numbers = sorted(s["stage"] for s in _load()["stages"] if s["module_id"] == "mod_01")
         self.assertEqual(module_1_stage_numbers, list(range(1, 10)))
 
-    def test_module_2_stage_1_is_decision_based_with_the_new_four_choice_format(self):
+    def test_module_2_stage_1_continues_into_college_with_laptop_evidence(self):
         stage = self._stage(1, module_id="mod_02")
-        self.assertEqual(stage["title"], "Unknown Number")
+        self.assertEqual(stage["title"], "First Login")
         self.assertEqual(stage["bkt_skill"], "smishing")
-        self.assertEqual(stage["breach_hp_multiplier"], 0.65)
+        self.assertEqual(stage["breach_hp_multiplier"], 0.45)
+        self.assertEqual(stage["visual_theme"], "college")
+        self.assertTrue(stage["laptop"]["pages"])
+        self.assertTrue(stage["laptop"]["contacts"])
+        self.assertIn("Post-assessment", stage["opening"][0]["text"])
         self.assertTrue(stage["opening"])
         self.assertTrue(stage["ending"])
         for line in [*stage["opening"], *stage["ending"], *stage["resume_breach"]]:
             self.assertIn("speaker", line)
             self.assertTrue(str(line["text"]).strip())
 
-    def test_module_2_stage_1_has_three_incidents_with_four_choices_each(self):
-        self._assert_module2_four_choice_threats(self._stage(1, module_id="mod_02"))
+    def test_module_2_stage_1_has_three_incidents_with_inspection_and_three_choices(self):
+        stage = self._stage(1, module_id="mod_02")
+        self._assert_module2_four_choice_threats(stage, choice_count=3)
+        for threat in stage["threats"]:
+            self.assertEqual(threat["investigation"]["mode"], "inspect")
+            self.assertTrue(threat["investigation"]["enabled"])
+            for item in threat["investigation"]["items"]:
+                self.assertTrue(item["fields"])
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [card["evidence_id"] for card in stage["laptop"][item["phone_app"]]])
+
+    def test_college_practice_requires_both_entrances_and_gradual_waves(self):
+        stage = self._stage(1, module_id="mod_02")
+        routes = stage["map_routes"]
+        self.assertEqual(len(routes), 2)
+        self.assertNotEqual(routes[0][0], routes[1][0])
+        self.assertEqual(routes[0][-1], routes[1][-1])
+        self.assertTrue(stage["finale"]["enabled"])
+        waves = stage["finale"]["waves"]
+        self.assertEqual(len(waves), 2)
+        self.assertLess(waves[0]["enemy_count"], waves[1]["enemy_count"])
+        for wave in [*waves, *stage["breach_waves"]]:
+            self.assertEqual(set(wave["spawn_routes"]), {0, 1})
 
     def test_module_2_stage_1_threat_topics_match_the_brief(self):
         threats = self._stage(1, module_id="mod_02")["threats"]
-        self.assertIn("Mobile Account Warning", threats[0]["title"])
-        self.assertIn("Transaction Alert", threats[1]["title"])
-        self.assertIn("Support Follow-Up", threats[2]["title"])
+        self.assertEqual([t["title"] for t in threats], ["A deadline in a text", "A real reminder", "Help from the right place"])
 
     def test_module_2_stage_1_choices_avoid_trivial_wording(self):
         trivial_patterns = [
@@ -1013,10 +1036,11 @@ class DecisionScenarioDataTest(unittest.TestCase):
         self.assertTrue(summary.get("title"))
         self.assertEqual(summary.get("subtitle"), "SIGNAL LOST")
         self.assertTrue(summary.get("items"))
-        for stage_number in range(1, 9):
+        # Stage 1 reuses this encounter mechanism for mandatory orientation practice.
+        for stage_number in range(2, 9):
             self.assertNotIn(
                 "finale", self._stage(stage_number, module_id="mod_02"),
-                "Only Stage 9 authors a finale in Module 2",
+                "Unchanged Stages 2-8 do not author a final encounter",
             )
 
     def test_module_2_stage_9_topics_and_continuity_match_the_brief(self):

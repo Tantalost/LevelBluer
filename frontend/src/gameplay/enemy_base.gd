@@ -6,6 +6,7 @@ extends PathFollow2D
 
 signal enemy_died(bounty_amount: int)
 signal reached_base
+var task_gateway: Object
 
 const TARGET_SPRITE_HEIGHT := 28.0
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
@@ -371,7 +372,7 @@ func _begin_death() -> void:
 		if vfx != null:
 			vfx.call("spawn_vfx", "death", global_position)
 	if match_context.persistent:
-		var task_manager: Node = _autoload("TaskManager")
+		var task_manager: Object = task_gateway if task_gateway != null else _autoload("TaskManager")
 		if task_manager != null:
 			task_manager.call("record_enemy_defeated", _type_id)
 	enemy_died.emit(bounty)
