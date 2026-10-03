@@ -24,8 +24,10 @@ func configure(data: Dictionary) -> void:
 	var settings: Dictionary = data.duplicate(true)
 	settings["device_name"] = "laptop"
 	settings["message_app"] = "Messages"
-	settings["contacts_origin"] = "Campus directory saved during enrollment"
-	settings["app_titles"] = {"home": "DESKTOP", "mail": "MESSAGES / SMS SYNC", "contacts": "CAMPUS DIRECTORY", "pages": "CAMPUS PORTAL", "lock": "ALEX'S LAPTOP"}
+	settings["contacts_origin"] = str(data.get("contacts_origin", "Campus directory saved during enrollment"))
+	var titles: Dictionary = {"home": "DESKTOP", "mail": "MESSAGES / SMS SYNC", "contacts": "CAMPUS DIRECTORY", "pages": "CAMPUS PORTAL", "lock": "ALEX'S LAPTOP"}
+	titles.merge(data.get("app_titles", {}) as Dictionary, true)
+	settings["app_titles"] = titles
 	super.configure(settings)
 	_status.text = "CAMPUS WORKSPACE / OFFLINE STORY"
 

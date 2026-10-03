@@ -24,7 +24,7 @@ func configure_presentation(story: Dictionary) -> void:
 	_college_cast = str(story.get("visual_theme", "")) == "college"
 	if not _college_cast:
 		return
-	_college_background = load("res://assets/story/college_commons.png") as Texture2D
+	_college_background = AssetManager.get_texture("story_college_commons")
 	_illustrated = true
 	_school_cast = true # Reuse the illustrated dialogue layout and listener reactions.
 	_header.hide()
@@ -438,7 +438,10 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 	if _cast.is_empty():
 		_cast.append("Mia")
 	if _cast.size() == 1:
-		_cast.append(_guide_speaker if _cast[0] != _guide_speaker else "Mia")
+		var listener: String = _guide_speaker
+		if listener == _cast[0]:
+			listener = "Alex" if _cast[0] == "Mia" else "Mia"
+		_cast.append(listener)
 	_conversation = HBoxContainer.new()
 	_conversation.add_theme_constant_override("separation", 20)
 	_conversation.item_rect_changed.connect(_fit_school_portraits, CONNECT_DEFERRED)
@@ -467,6 +470,9 @@ func _dialogue(lines: Array[Dictionary]) -> void:
 		nameplate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		seat.add_child(nameplate)
 		nameplate.visible = not _illustrated
+		if _college_cast:
+			nameplate.add_theme_stylebox_override("normal", UI.box(Color("0A1730", 0.94), Color("173058"), 6))
+			nameplate.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_portrait_names.append(nameplate)
 	var dialogue_parent: Control = _conversation
 	if _illustrated:
@@ -560,6 +566,10 @@ func _fit_school_portraits() -> void:
 		var seat_size: Vector2 = Vector2(width, height) if full_body else Vector2.ONE * minf(width, minf(height * 0.28, maxf(0.0, bottom - top)))
 		seat.position = Vector2(20.0 if index == 0 else _portrait_stage.size.x - seat_size.x - 20.0, top)
 		seat.size = seat_size
+		if _college_cast:
+			var nameplate: Label = _portrait_names[index]
+			nameplate.position = Vector2(0, maxf(0, _speaker_heading.global_position.y - seat.global_position.y))
+			nameplate.size = Vector2(seat_size.x, nameplate.get_minimum_size().y)
 
 func _show_line() -> void:
 	_clear_mail()
@@ -654,7 +664,8 @@ func _update_portraits() -> void:
 		elif _school_cast and _portraits[i].portrait_texture == null:
 			_portraits[i].portrait_texture = Portrait.school_expression(_cast[i], mood)
 		_portraits[i].configure(_cast[i], active, active and _typing and not _locked and not _review_open, mood)
-		_portrait_names[i].text = _cast[i]
+		_portrait_names[i].text = _cast[i].to_upper() if _college_cast else _cast[i]
+		_portrait_names[i].visible = not active if _college_cast else not _illustrated
 		_portrait_names[i].add_theme_color_override("font_color", UI.TEAL if who == _cast[i] else UI.MUTED)
 	if not _illustrated:
 		_conversation.move_child(_portraits[0].get_parent(), 0)
@@ -1159,6 +1170,7 @@ func _metrics() -> void:
 	_fit_school_portraits.call_deferred()
 	var factor := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	var font := maxi(26, ceili(16 / factor))
+	var decision_height: float = 48.0 if _choice_buttons.size() > 3 else 72.0
 	var inset_x: float = minf(size.x * 0.07, 60.0)
 	var inset_y: float = minf(size.y * 0.06, 32.0)
 	_review_panel.offset_left = inset_x
@@ -1182,7 +1194,7 @@ func _metrics() -> void:
 		if node is Label or node is Button:
 			node.add_theme_font_size_override("font_size", font)
 		if node is Button:
-			node.custom_minimum_size.y = maxf(64, ceilf((72.0 if bool(node.get_meta("story_decision_card", false)) else 48.0) / factor))
+			node.custom_minimum_size.y = maxf(64, ceilf((decision_height if bool(node.get_meta("story_decision_card", false)) else 48.0) / factor))
 		if node is RichTextLabel:
 			node.add_theme_font_size_override("normal_font_size", font)
 	# Long consequence copy can temporarily grow the non-container root.

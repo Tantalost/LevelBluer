@@ -230,7 +230,7 @@ func shot(match_node: Control, name: String) -> void:
 			check(rect.encloses(match_node.story_overlay._story_pause.get_global_rect()), name + ": compact story pause fits")
 		if match_node.story_overlay._phone_enabled and match_node.story_overlay._choices_scroll.is_visible_in_tree():
 			for card: Button in match_node.story_overlay._choice_buttons:
-				check(rect.encloses(card.get_global_rect()), name + ": all three decision cards fit without scrolling")
+				check(rect.encloses(card.get_global_rect()), name + ": all decision cards fit without scrolling")
 	check(not match_node.hud.preview_label.text.contains("NOTHING SAVED"), "Normal session is not labeled preview")
 	if "--render" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
@@ -562,12 +562,39 @@ func _run() -> void:
 	var tower_script = load("res://src/gameplay/tower_base.gd")
 	var before := fingerprint()
 	scene = load("res://src/gameplay/decision/stage_one_live.tscn")
-	await _verify_college_stage_one()
+	await _verify_college_cast_identity()
+	if "--college-cast-only" in OS.get_cmdline_user_args():
+		check(fingerprint() == before, "Cast checks leave real account state unchanged")
+		print("[COLLEGE CAST] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-four-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(4)
+		check(fingerprint() == before, "College Stage 4 leaves real account state unchanged")
+		print("[COLLEGE STAGE FOUR] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-three-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(3)
+		check(fingerprint() == before, "College Stage 3 leaves real account state unchanged")
+		print("[COLLEGE STAGE THREE] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-two-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(2)
+		check(fingerprint() == before, "College Stage 2 leaves real account state unchanged")
+		print("[COLLEGE STAGE TWO] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	await _verify_college_stage(1)
 	if "--college-only" in OS.get_cmdline_user_args():
 		check(fingerprint() == before, "College tests leave real account state unchanged")
 		print("[COLLEGE STAGE ONE] failures=%d" % failures)
 		quit(0 if failures == 0 else 1)
 		return
+	await _verify_college_stage(2)
+	await _verify_college_stage(3)
+	await _verify_college_stage(4)
 	var router := root.get_node("Router")
 	router.active_module_id = "mod_01"
 	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Normal Stage 1 routes to the live decision scene")
@@ -1995,29 +2022,98 @@ func _run() -> void:
 	print("[LIVE STAGE ONE] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
 
-func _verify_college_stage_one() -> void:
-	print("-- College Stage 1: laptop gates, both paths, real combat, recovery and layout --")
+func _verify_college_cast_identity() -> void:
 	var context: MatchContext = Context.stage_one_live()
 	context.module_id = "mod_02"
+	context.stage_id = 2
+	var account: Account = Account.new()
+	var game: Control = mount(account, context)
+	read_page(game)
+	var overlay: Control = game.story_overlay
+	for index: int in 2:
+		overlay._reveal_line()
+		overlay._continue()
+	overlay._reveal_line()
+	check(overlay._speech.text.begins_with("Start with the order receipt"), "Reproduce the reported Mia/Leah dialogue")
+	check(overlay._cast == ["Mia", "Leah"], "Reported dialogue assigns Mia and Leah distinct slots")
+	var mia_frame: AtlasTexture = overlay._portraits[0].portrait_texture as AtlasTexture
+	var leah_frame: AtlasTexture = overlay._portraits[1].portrait_texture as AtlasTexture
+	check(mia_frame != leah_frame and mia_frame.region.position.y != leah_frame.region.position.y, "Mia and Leah use different atlas rows")
+	for viewport_size: Vector2i in [Vector2i(1280, 720), Vector2i(1338, 641), Vector2i(844, 390)]:
+		root.size = viewport_size
+		await settle()
+		check(overlay._speaker_label.text == "MIA", "Speaker tab names Mia")
+		check(overlay._portrait_names[1].is_visible_in_tree() and overlay._portrait_names[1].text == "LEAH", "Listener is explicitly identified as Leah")
+		check(not overlay._portrait_names[0].visible, "Active speaker does not get a second name tag")
+		check(root.get_visible_rect().encloses(overlay._portrait_names[1].get_global_rect()), "Listener name stays in the viewport")
+		check(not overlay._portrait_names[1].get_global_rect().intersects(overlay._speech_box.get_global_rect()), "Listener name does not overlap the dialogue")
+		await shot(game, "college_cast_identity_%dx%d" % [viewport_size.x, viewport_size.y])
+	overlay._on_story_assets_ready(true)
+	check(overlay._portraits[1].speaker == "Leah" and overlay._portrait_names[1].text == "LEAH", "Asset refresh preserves the listener identity")
+	overlay._continue()
+	check(overlay._cast == ["Mia", "Alex"] and overlay._portrait_names[0].text == "MIA", "Next speaker replaces the older listener and updates names")
+	for speaker: String in ["Mia", "Alex", "Leah"]:
+		var solo: Array[Dictionary] = [{"speaker": speaker, "text": "One speaker should appear only once."}]
+		overlay.show_story(solo, "COLLEGE CAST CHECK")
+		overlay._reveal_line()
+		await settle()
+		var visible_count: int = 0
+		for portrait: Control in overlay._portraits:
+			if portrait.is_visible_in_tree():
+				visible_count += 1
+				check(portrait.speaker == speaker, "Solo portrait belongs to the authored speaker")
+		check(overlay._cast[0] != overlay._cast[1], "Fallback cannot put the same person in both slots")
+		check(visible_count == 1, "Solo dialogue displays exactly one character")
+		if speaker == "Mia":
+			await shot(game, "college_mia_solo")
+	await unmount(game)
+	root.size = Vector2i(1280, 720)
+
+func _verify_college_stage(stage_number: int) -> void:
+	print("-- College Stage %d: laptop gates, both paths, real combat, recovery and layout --" % stage_number)
+	var context: MatchContext = Context.stage_one_live()
+	context.module_id = "mod_02"
+	context.stage_id = stage_number
+	var stage_two: bool = stage_number == 2
+	var stage_three: bool = stage_number == 3
+	var stage_four: bool = stage_number == 4
+	var titles: Array[String] = ["First Login", "Expected Delivery", "Someone You Know", "The Code"]
+	var title: String = titles[stage_number - 1]
+	var shot_prefix: String = "college_stage%d_" % stage_number if stage_number > 1 else "college_"
 	var account: Account = Account.new()
 	var game: Control = mount(account, context)
 	await settle()
-	check(game.config.name == "First Login" and game._key() == "mod_02:1", "College content and checkpoint are isolated")
+	check(game.config.name == title and game._key() == "mod_02:%d" % stage_number, "College content and checkpoint are isolated")
 	check(game.story_overlay._college_cast and game.story_overlay._background_art.texture != null, "College background and cast are active")
 	check(game.story_overlay._phone.name == "StoryLaptop", "Laptop uses the existing evidence signal contract")
 	check(game.hud.preview_label.text.begins_with("MODULE 02"), "Module label identifies the correct module")
 	check(game.hud.battle.tracks.size() == 2, "Two real Path2D entrances exist")
 	var route_a: Path2D = game.hud.battle.tracks[0]
 	var route_b: Path2D = game.hud.battle.tracks[1]
-	check(is_equal_approx(route_a.curve.get_baked_length(), route_b.curve.get_baked_length()), "Intro routes offer equal travel time")
+	if stage_three:
+		check(route_b.curve.get_baked_length() > route_a.curve.get_baked_length(), "Stage 3 lower detour has longer travel time")
+	else:
+		check(is_equal_approx(route_a.curve.get_baked_length(), route_b.curve.get_baked_length()), "Authored routes offer equal travel distance")
 	check(route_a.curve.get_point_position(0) != route_b.curve.get_point_position(0), "Entrances are physically distinct")
 	var original_curve: Curve2D = route_b.curve
 	check(not game.hud.battle.configure_routes([[Vector2i(0, 0), Vector2i(1, 1)]]), "Diagonal route is rejected")
 	check(route_b.curve == original_curve and game.hud.battle.tracks.size() == 2, "Invalid route rejection is atomic")
 	for cell: Vector2i in [Vector2i(0, 1), Vector2i(0, 5), Vector2i(5, 4), Vector2i(12, 3)]:
 		check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Both paths and the laptop block placement")
+	if stage_two:
+		check(not game.hud.battle.board.cell_reason(Vector2i(7, 2)).is_empty(), "Upper inner bend blocks placement")
+		check(not game.hud.battle.board.cell_reason(Vector2i(7, 4)).is_empty(), "Lower inner bend blocks placement")
+		check(game.hud.battle.board.cell_reason(Vector2i(6, 3)).is_empty(), "Gap before the later merge is buildable")
+	if stage_three:
+		for cell: Vector2i in [Vector2i(4, 2), Vector2i(6, 5), Vector2i(9, 4)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Both uneven approaches block tower placement")
+		check(game.hud.battle.board.cell_reason(Vector2i(8, 3)).is_empty(), "Space beside the new merge supports a shared defense")
+	if stage_four:
+		for cell: Vector2i in [Vector2i(7, 1), Vector2i(10, 2), Vector2i(10, 4)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 4 winding approaches block placement")
+		check(game.hud.battle.board.cell_reason(Vector2i(9, 3)).is_empty(), "Stage 4 meeting point supports shared coverage")
 	game.story_overlay._reveal_line()
-	await shot(game, "college_opening")
+	await shot(game, shot_prefix + "opening")
 	read_page(game)
 	game.story_overlay._choose(0)
 	check(game.decision.pending_choice_index == -1, "Unread dialogue cannot select a response")
@@ -2027,6 +2123,45 @@ func _verify_college_stage_one() -> void:
 	laptop._finish()
 	check(not game.story_overlay._investigation_config.is_empty(), "Empty inspection cannot unlock choices")
 	laptop._unlock()
+	if stage_two:
+		laptop._navigate("pages")
+		check(laptop._title.text == "PROJECT / DELIVERY RECORDS", "Laptop displays Stage 2 record workspace")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("tracking", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Similar suffix on wrong parcel cannot inspect the camera record")
+		check(not laptop.is_complete(), "Reading the wrong parcel cannot unlock decisions")
+	if stage_three:
+		laptop._navigate("contacts")
+		check(laptop._title.text == "CONTACTS / CHECK THE SOURCE", "Stage 3 contact workspace is active")
+		laptop._open_card(laptop._data.contacts[1])
+		laptop._reveal_field("mia", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Unverified imported contact cannot count as established Mia verification")
+		await shot(game, shot_prefix + "unverified_contact")
+		laptop._navigate("contacts")
+		laptop._open_card(laptop._data.contacts[0])
+		laptop._reveal_field("mia", 0)
+		check(not laptop._inspected.has("mia"), "Contact provenance alone does not record a reply")
+		game.toggle_pause()
+		laptop._reveal_field("mia", 1)
+		check(not laptop._inspected.has("mia"), "Paused contact verification cannot reveal a reply")
+		game.toggle_pause()
+		laptop._reveal_field("mia", 1)
+		check(laptop._inspected.has("mia") and not laptop.is_complete(), "Saved contact reply still requires checking the request and workspace")
+		await shot(game, shot_prefix + "verified_contact")
+	if stage_four:
+		laptop._navigate("pages")
+		check(laptop._data.app_titles.lock == "LEAH'S LAPTOP", "Stage 4 identifies the account owner's laptop")
+		check(laptop._title.text == "PORTAL / ACTIVITY TIMELINE", "Stage 4 timeline workspace is active")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("activity", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Archived sign-in cannot satisfy today's activity check")
+		laptop._navigate("pages")
+		laptop._open_card(laptop._data.pages[0])
+		laptop._reveal_field("activity", 0)
+		check(not laptop._inspected.has("activity"), "Request status alone still requires checking the known session")
+		laptop._reveal_field("activity", 1)
+		check(laptop._inspected.has("activity") and not laptop.is_complete(), "Current activity still requires message and support checks")
+		await shot(game, shot_prefix + "activity_timeline")
 	laptop._navigate("mail")
 	laptop._open_message()
 	laptop._inspect("message")
@@ -2046,7 +2181,7 @@ func _verify_college_stage_one() -> void:
 		check(view_rect.encloses(laptop._nav.get_global_rect()), "Laptop navigation fits " + str(viewport_size))
 		check(view_rect.encloses(laptop._guide_panel.get_global_rect()), "Checklist fits " + str(viewport_size))
 		check(laptop._confirm.get_global_rect().end.y <= view_rect.end.y, "Evidence confirm stays reachable")
-		await shot(game, "college_laptop_%dx%d" % [viewport_size.x, viewport_size.y])
+		await shot(game, shot_prefix + "laptop_%dx%d" % [viewport_size.x, viewport_size.y])
 	root.size = Vector2i(1280, 720)
 	await settle()
 	game.toggle_pause()
@@ -2060,15 +2195,23 @@ func _verify_college_stage_one() -> void:
 	for viewport_size: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
 		root.size = viewport_size
 		await settle()
-		await shot(game, "college_choices_%dx%d" % [viewport_size.x, viewport_size.y])
+		await shot(game, shot_prefix + "choices_%dx%d" % [viewport_size.x, viewport_size.y])
 	root.size = Vector2i(1280, 720)
 	for incident_index: int in 3:
+		if stage_number > 1:
+			if not game.story_overlay._dialogue_done:
+				read_page(game)
+			inspect_school_email(game)
+			check(game.story_overlay._choice_buttons.size() == 4, "Each later college incident offers four distinct decisions")
+			root.size = Vector2i(844, 390)
+			await shot(game, shot_prefix + "incident%d_choices_mobile" % (incident_index + 1))
+			root.size = Vector2i(1280, 720)
 		choose(game, "SAFE")
 	check(account.bkt.size() == 3 and game.decision.finale_pending(), "All safe choices still require laptop practice")
 	check(account.clears == 0, "Story completion alone cannot clear the stage")
 	read_page(game)
 	check(game.phase == "Build" and game.config.waves.size() == 2, "Practice has two authored waves")
-	await shot(game, "college_map")
+	await shot(game, shot_prefix + "map")
 	game.begin_defend()
 	game._spawn_enemy()
 	game._spawn_enemy()
@@ -2090,34 +2233,62 @@ func _verify_college_stage_one() -> void:
 	read_page(game)
 	check(game.phase == "Build" and game.hud.battle.tracks.size() == 2, "Retry restores both paths and the practice prompt")
 	check(game.occupied.is_empty() and game.gold == 8 and game.health == 5, "Retry discards old combat state")
-	for cell: Vector2i in [Vector2i(6, 2), Vector2i(8, 4), Vector2i(10, 2)]:
+	var placement_cells: Array[Vector2i] = [Vector2i(6, 2), Vector2i(8, 4), Vector2i(10, 2)]
+	if stage_two:
+		placement_cells.assign([Vector2i(6, 3), Vector2i(9, 2), Vector2i(10, 4)])
+	elif stage_three:
+		placement_cells.assign([Vector2i(6, 3), Vector2i(8, 3), Vector2i(10, 4)])
+	elif stage_four:
+		placement_cells.assign([Vector2i(6, 3), Vector2i(9, 3), Vector2i(11, 4)])
+	for cell: Vector2i in placement_cells:
 		game.select_cell(cell)
 		game.pick_tower("base")
 		check(game.place_tower(), "Intro is buildable using only unlocked Basic Nodes")
-	await shot(game, "college_defenses")
+	await shot(game, shot_prefix + "defenses")
 	game.speed = 1 if "--college-real-time" in OS.get_cmdline_user_args() else 8
+	# Later college routes need spawn time + up to 29.3 s of heavy-packet
+	# travel + the existing 2 s intermission. Keep a bounded margin.
+	var wave_timeout_ms: int = 45000 if game.speed == 1 else 30000
 	game.set_process(true)
 	game.begin_defend()
 	var seen_a: bool = false
 	var seen_b: bool = false
 	var started: int = Time.get_ticks_msec()
-	while game.phase == "Defend" and Time.get_ticks_msec() - started < 30000:
+	while game.phase == "Defend" and Time.get_ticks_msec() - started < wave_timeout_ms:
 		seen_a = seen_a or game.hud.battle.tracks[0].get_child_count() > 0
 		seen_b = seen_b or game.hud.battle.tracks[1].get_child_count() > 0
 		await create_timer(0.05, true, false, true).timeout
 	game.set_process(false)
+	print("[COLLEGE WAVE %d/1] elapsed=%.2f phase=%s" % [stage_number, game.defend_clock, game.phase])
 	check(game.phase == "Build" and game.wave == 1, "Real tower targeting clears wave one and opens build break")
 	check(seen_a and seen_b, "Real simulation exercised both entrances")
+	if game.phase != "Build":
+		await unmount(game)
+		return
+	var saw_heavy: bool = false
 	if game.phase == "Build":
 		game.begin_defend()
 		game.set_process(true)
 		started = Time.get_ticks_msec()
-		while game.phase == "Defend" and Time.get_ticks_msec() - started < 30000:
+		while game.phase == "Defend" and Time.get_ticks_msec() - started < wave_timeout_ms:
+			if stage_four and not saw_heavy:
+				for route: Path2D in game.hud.battle.tracks:
+					for enemy: Node in route.get_children():
+						if enemy is EnemyBase and (enemy as EnemyBase)._type_id == "heavy":
+							saw_heavy = true
+							check((enemy as EnemyBase).max_health == 8, "Stage 4 heavy packet uses the authored health scale")
+							await shot(game, shot_prefix + "heavy_packet")
 			await create_timer(0.05, true, false, true).timeout
 		game.set_process(false)
+	if stage_four:
+		check(saw_heavy, "Stage 4 second wave actually spawns its tougher packet")
+	print("[COLLEGE WAVE %d/2] elapsed=%.2f phase=%s remaining=%d intermission=%.2f" % [stage_number, game.defend_clock, game.phase, game.active_enemies, game.intermission])
 	check(game.decision.finale_won and game.phase == "Incident", "Real combat wins the second wave")
-	print("[COLLEGE COMBAT] health=%d kills=%d waves=%d" % [game.health, game.match_kills, game.waves_completed])
-	check(game.health >= 3 and game.match_kills >= 12, "Baseline loadout provides a forgiving but functional defense")
+	if not game.decision.finale_won:
+		await unmount(game)
+		return
+	print("[COLLEGE COMBAT %d] health=%d kills=%d waves=%d" % [stage_number, game.health, game.match_kills, game.waves_completed])
+	check(game.health >= 3 and game.match_kills >= 10 + stage_number * 2, "Baseline loadout provides a forgiving but functional defense")
 	check(account.bkt.size() == 3 and account.clears == 0, "Combat cannot regrade story or skip closing")
 	for page: int in 6:
 		if game.phase == "Results":
@@ -2128,8 +2299,9 @@ func _verify_college_stage_one() -> void:
 	game._finish(true)
 	check(account.clears == 1 and account.credits == credits, "Repeated completion cannot award twice")
 	game.hud.result_overlay.finish_reveal()
-	check(game.hud.result_overlay.results_ready and game.hud.result_overlay._title.text == "STAGE 1 COMPLETE", "Result reveal exposes the stage completion controls")
-	await shot(game, "college_complete")
+	check(game.hud.result_overlay.results_ready and game.hud.result_overlay._title.text == "STAGE %d COMPLETE" % stage_number, "Result reveal exposes the stage completion controls")
+	check(account.clear_keys == ["mod_02:%d" % stage_number], "Completion credits only the played stage")
+	await shot(game, shot_prefix + "complete")
 	await unmount(game)
 	account = Account.new()
 	game = mount(account, context)
@@ -2163,3 +2335,41 @@ func _verify_college_stage_one() -> void:
 	check(game.decision.threat_index == 0, "Old workplace checkpoint cannot skip new college evidence")
 	await unmount(game)
 	root.size = Vector2i(1280, 720)
+	if stage_number > 1:
+		await _verify_college_unsafe_branches(context)
+
+func _verify_college_unsafe_branches(context: MatchContext) -> void:
+	# Exercise both risky responses and the critical response in every incident.
+	# Real tower combat is covered above; these checks isolate outcome routing.
+	for incident_index: int in 3:
+		for branch: int in 3:
+			var account: Account = Account.new()
+			var game: Control = mount(account, context)
+			read_page(game)
+			for previous: int in incident_index:
+				choose(game, "SAFE")
+			if not game.story_overlay._dialogue_done:
+				read_page(game)
+			inspect_school_email(game)
+			var outcome: String = "CRITICAL" if branch == 2 else "RISKY"
+			var indices: Array[int] = []
+			var choices: Array = game.decision.current_threat_for_display().choices
+			for index: int in choices.size():
+				if str(choices[index].outcome) == outcome:
+					indices.append(index)
+			game.story_overlay._choose(indices[0 if branch == 2 else branch])
+			read_page(game)
+			check(account.bkt.size() == incident_index + 1 and not bool(account.bkt[-1][1]), "Each unsafe delivery response grades exactly once")
+			read_page(game)
+			if outcome == "CRITICAL":
+				check(game.story_hp == 2 and game.decision.threat_index == incident_index, "Critical response retries the same delivery record")
+				check(not game.story_overlay._investigation_config.is_empty(), "Critical retry restores the laptop gate")
+			else:
+				check(game.phase == "Build" and game.gold == 8 and game.hud.battle.tracks.size() == 2, "Either risky response starts the authored two-route breach")
+				game.begin_defend()
+				game._wave_cleared()
+				read_page(game)
+				check(game.decision.threat_index == incident_index + 1, "Contained breach advances exactly one incident")
+				check(account.bkt.size() == incident_index + 1, "Containment never grades the response twice")
+			check(account.clears == 0, "Unsafe branches cannot bypass mandatory final practice")
+			await unmount(game)

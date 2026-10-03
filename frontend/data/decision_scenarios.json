@@ -5022,89 +5022,401 @@
 			"module_id": "mod_02",
 			"stage": 2,
 			"title": "Expected Delivery",
+			"content_version": 2,
 			"bkt_skill": "smishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor College",
+			"scene_header": "HARBOR COLLEGE // FIRST PROJECT, 10:40",
+			"guide_speaker": "Mia",
+			"visual_theme": "college",
+			"decision_lives": 3,
+			"breach_hp_multiplier": 0.45,
 			"clear_title": "STAGE 2 COMPLETE",
 			"clear_subtitle": "EXPECTED DELIVERY",
 			"next_stage_title": "Stage 3 — Someone You Know",
-			"breach_hp_multiplier": 0.7,
+			"locations": {
+				"opening": "college_commons",
+				"ending": "college_commons",
+				"resume_breach": "college_commons",
+				"breach_contained": "college_commons"
+			},
+			"containment_note": "LAPTOP DEFENSE SIMULATION / Practice protecting your device with campus IT guidance. Alex is not operating the college network.",
+			"laptop": {
+				"time": "10:40",
+				"day": "FIRST PROJECT / WEEK ONE",
+				"app_titles": {
+					"pages": "PROJECT / DELIVERY RECORDS",
+					"contacts": "CAMPUS COLLECTION DESK"
+				},
+				"contacts": [
+					{
+						"title": "Parcel desk / enrollment directory",
+						"evidence_id": "desk",
+						"body": "Harbor College parcel desk, Library ground floor. Saved during enrollment, before these delivery texts."
+					}
+				],
+				"pages": [
+					{
+						"title": "Project order / camera",
+						"evidence_id": "order",
+						"body": "CampusKit order history / saved merchant bookmark. Group purchase approved together yesterday."
+					},
+					{
+						"title": "Tracking / HOME-6381",
+						"evidence_id": "old_parcel",
+						"body": "Northline saved tracking / HOME-6381 / personal headphones. Delivered Tuesday. This is a different parcel from the project camera."
+					},
+					{
+						"title": "Tracking / EDU-6381",
+						"evidence_id": "tracking",
+						"body": "Northline saved tracking / EDU-6381. Opened through the merchant order, not the incoming SMS."
+					}
+				]
+			},
+			"map_routes": [
+				[
+					[
+						0,
+						1
+					],
+					[
+						3,
+						1
+					],
+					[
+						3,
+						2
+					],
+					[
+						8,
+						2
+					],
+					[
+						8,
+						3
+					],
+					[
+						12,
+						3
+					]
+				],
+				[
+					[
+						0,
+						5
+					],
+					[
+						5,
+						5
+					],
+					[
+						5,
+						4
+					],
+					[
+						8,
+						4
+					],
+					[
+						8,
+						3
+					],
+					[
+						12,
+						3
+					]
+				]
+			],
+			"breach_waves": [
+				{
+					"enemy_count": 7,
+					"spawn_delay": 1.5,
+					"health_multiplier": 1,
+					"enemy_type": "basic",
+					"spawn_routes": [
+						0,
+						1,
+						1,
+						0
+					]
+				}
+			],
 			"opening": [
-				{"speaker": "Leah", "text": "I got another one."},
-				{"speaker": "Mia", "text": "Another account warning?"},
-				{"speaker": "Leah", "text": "No."},
-				{"speaker": "Leah", "text": "It's about my package."},
-				{"speaker": "Mia", "text": "What package?"},
-				{"speaker": "Leah", "text": "The headphones I ordered three days ago."},
-				{"speaker": "Security Assistant", "text": "Are you actually expecting them today?"},
-				{"speaker": "Leah", "text": "Between nine and noon."},
-				{"speaker": "Mia", "text": "And the text knows that?"},
-				{"speaker": "Leah", "text": "It knows the store too."},
-				{"speaker": "Security Assistant", "text": "Show us everything."},
-				{"speaker": "Leah", "text": "This is what I don't understand."},
-				{"speaker": "Leah", "text": "How would a scammer know what I'm waiting for?"},
-				{"speaker": "Security Assistant", "text": "That's what we're going to find out."}
+				{
+					"speaker": "Alex",
+					"text": "Registration is sorted. Leah, are we still using the seminar workspace for our group assignment?",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Leah",
+					"text": "Yes. Our campus-accessibility presentation is due Friday. I saved the shared notes and the camera order on your laptop.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "One place for the project, like we agreed after orientation. That should help us keep track.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The camera arrives today. We need it for our interviews after lunch.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Leah",
+					"text": "A delivery text just appeared in your synced messages. It knows the shop and the last four tracking digits.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Let's compare the whole record. Knowing part of an order does not prove someone can change it.",
+					"emotion": "neutral"
+				}
 			],
 			"ending": [
-				{"speaker": "Leah", "text": "They knew before it arrived."},
-				{"speaker": "Mia", "text": "And they knew after."},
-				{"speaker": "Security Assistant", "text": "The messages followed the real delivery almost in real time."},
-				{"speaker": "Leah", "text": "So somebody has access to my shopping account?"},
-				{"speaker": "Security Assistant", "text": "Maybe."},
-				{"speaker": "Mia", "text": "Or the courier?"},
-				{"speaker": "Security Assistant", "text": "Maybe."},
-				{"speaker": "Leah", "text": "That's comforting."},
-				{"speaker": "Security Assistant", "text": "I'm not going to guess."},
-				{"speaker": "Security Assistant", "text": "We need to identify what information they actually have."},
-				{"speaker": "", "text": "Leah's phone vibrates. She checks it."},
-				{"speaker": "Leah", "text": "...Mia?"},
-				{"speaker": "Mia", "text": "What now?"},
-				{"speaker": "Leah", "text": "This one's from you."},
-				{"speaker": "Mia", "text": "I didn't send you anything."}
+				{
+					"speaker": "Leah",
+					"text": "The camera is at the parcel desk. No extra fee, and no login code sent to a stranger.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I nearly matched the text to my old headphones parcel. Both references end in 6381.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "We checked the full reference, the payment record, and the collection instructions. Familiar details were only part of the picture.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "One more laptop practice before we collect it. This map keeps A and B separate for longer.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Cover the inner bends and the shared approach. Wave one alternates entrances; wave two sends short groups. Recheck coverage during the build break.",
+					"emotion": "neutral"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "The delivery lure is still active. Bring containment back online."}
+				{
+					"speaker": "Mia",
+					"text": "Reopen the saved order and tracking record. Then we can retry the delivery exercise with fresh defenses.",
+					"emotion": "neutral"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. That delivery path is isolated, but we still need to find out where the real details came from."},
-				{"speaker": "Leah", "text": "Then let's keep going."}
+				{
+					"speaker": "Alex",
+					"text": "Practice contained. Let's use the real delivery record to decide what happens next.",
+					"emotion": "relieved"
+				}
 			],
+			"finale": {
+				"enabled": true,
+				"type": "tower_defense",
+				"affected_system": "ALEX'S LAPTOP / PROJECT DELIVERY PRACTICE",
+				"gold": 8,
+				"enemy_hp_multiplier": 0.45,
+				"deploy_label": "START DELIVERY PRACTICE",
+				"victory_banner": "DELIVERY ROUTES SECURED",
+				"failure_title": "PRACTICE INCOMPLETE",
+				"complete_banner": "PROJECT DELIVERY VERIFIED",
+				"waves": [
+					{
+						"enemy_count": 7,
+						"spawn_delay": 1.7,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							0,
+							1
+						]
+					},
+					{
+						"enemy_count": 9,
+						"spawn_delay": 1.4,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							0,
+							0,
+							1,
+							1
+						],
+						"enemy_mix": [
+							"basic",
+							"basic",
+							"fast",
+							"basic"
+						]
+					}
+				],
+				"ending": [
+					{
+						"speaker": "Leah",
+						"text": "Both routes stayed covered, even when the arrivals came in groups.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Mia",
+						"text": "The later merge gave the towers less shared space. Watching both approaches helped.",
+						"emotion": "neutral"
+					}
+				],
+				"closing": [
+					{
+						"speaker": "Alex",
+						"text": "Camera collected. Now we can record the interviews and finish our first presentation.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Leah",
+						"text": "A new message just arrived in our project chat. Mia, this one's from you.",
+						"emotion": "neutral"
+					},
+					{
+						"speaker": "Mia",
+						"text": "I didn't send you anything. Let's check it together before anyone opens the shared file.",
+						"emotion": "worried"
+					}
+				],
+				"case_summary": {
+					"title": "EXPECTED DELIVERY / FIELD NOTES",
+					"subtitle": "MATCH THE REQUEST TO THE WHOLE RECORD",
+					"items": [
+						"Matched EDU-6381 to the project camera, not HOME-6381",
+						"Compared the claimed fee with the saved order and courier record",
+						"Kept the account login code separate from parcel collection",
+						"Covered both later-merging routes through two waves"
+					]
+				},
+				"failure_body": "The practice laptop was overwhelmed. Cover the inner bends and the shared approach, then adjust towers between waves. Your completed story decisions stay saved."
+			},
 			"threats": [
 				{
 					"id": "mod02_stage02_incident01",
-					"display": {
-						"presentation": "mobile",
-						"metadata": [
-							{"label": "SMS", "value": "Delivery attempt delayed. Address verification required before 12:00 PM."},
-							{"label": "MESSAGE DETAILS", "value": "Merchant, delivery date, tracking suffix and neighborhood match Leah's order."},
-							{"label": "DELIVERY APP", "value": "Out for Delivery"}
-						]
-					},
 					"module_id": "mod_02",
 					"stage": 2,
 					"title": "Delivery Delayed",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S DELIVERY ACCOUNT",
+					"affected_system": "ALEX'S PROJECT DELIVERY ACCOUNT",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "Here. It says the delivery was delayed and they need my address before noon."},
-						{"speaker": "Mia", "text": "But your delivery app still says it's on the way."},
-						{"speaker": "Leah", "text": "The store, date, tracking digits, even my neighborhood are right."},
-						{"speaker": "Security Assistant", "text": "Real delivery information can still arrive through a false message."}
+						{
+							"speaker": "Alex",
+							"text": "The text says our camera is delayed. We have interviews booked this afternoon.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Leah",
+							"text": "Your saved records have two parcels ending in 6381. Which full reference belongs to the camera?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Start with the order receipt, then open that exact tracking record. The text is a claim to check.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's compare the message with the saved records on my laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Northline-Delivery <unverified SMS label>",
+								"subject": "Address check before noon",
+								"body": "CampusKit parcel ending 6381 is delayed. Update your college delivery address before noon: https://northline-address.example/update"
+							}
+						}
 					],
-					"situation": "Leah is genuinely expecting a package today. An SMS says: \"Delivery attempt delayed. Address verification required before 12:00 PM.\" It includes the correct merchant, delivery date, last four characters of the real tracking number, Leah's neighborhood, and a link to update delivery details. Her real delivery app still shows the package as \"Out for Delivery.\"",
+					"situation": "CampusKit parcel ending 6381 is delayed. Update your college delivery address before noon: https://northline-address.example/update",
 					"evidence": [
-						"Correct merchant name and expected delivery date",
-						"Last four characters match the real tracking number",
-						"SMS names Leah's neighborhood and demands action before noon",
-						"Known delivery app still reports the package as Out for Delivery"
+						"Two saved parcels share suffix 6381.",
+						"The project receipt identifies the full reference."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "MATCH THE DELIVERY RECORD",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the claimed parcel",
+								"analysis": "The text provides only a suffix and an unverified address-change link.",
+								"fields": [
+									{
+										"label": "Reference supplied",
+										"value": "...6381 only / CampusKit"
+									},
+									{
+										"label": "Requested change",
+										"value": "Submit your address at northline-address.example before noon. Preview only; no link is opened."
+									}
+								],
+								"view_title": "INSPECT THE CLAIMED PARCEL"
+							},
+							{
+								"id": "order",
+								"phone_app": "pages",
+								"label": "Find the project parcel reference",
+								"analysis": "The camera is EDU-6381. HOME-6381 is a different order; matching the suffix alone would select the wrong parcel.",
+								"fields": [
+									{
+										"label": "Item and full reference",
+										"value": "CampusKit / interview camera / EDU-6381"
+									},
+									{
+										"label": "Delivery arrangement",
+										"value": "Today, 11:00–12:00 / Harbor College parcel desk / delivery prepaid"
+									}
+								],
+								"view_title": "FIND THE PROJECT PARCEL REFERENCE"
+							},
+							{
+								"id": "tracking",
+								"phone_app": "pages",
+								"label": "Compare the camera tracking record",
+								"analysis": "The saved tracking record for EDU-6381 has no address hold. Matching a few digits in an SMS does not authorize a new request.",
+								"fields": [
+									{
+										"label": "Full reference and status",
+										"value": "EDU-6381 / 10:35 / OUT FOR DELIVERY"
+									},
+									{
+										"label": "Address and exceptions",
+										"value": "Harbor College parcel desk / address confirmed / no action required"
+									}
+								],
+								"view_title": "COMPARE THE CAMERA TRACKING RECORD"
+							}
+						]
+					},
 					"choices": [
-						{"label": "Use the link to review the address because the tracking details match, but leave without submitting if anything looks unfamiliar.", "outcome": "CRITICAL", "consequence": "The matching details were already known to the attacker. Opening the page confirms Leah is responsive and exposes her to a convincing address-verification workflow."},
-						{"label": "Open the delivery company's known app or manually access its normal tracking service and check for an address problem there.", "outcome": "SAFE", "consequence": "The established tracking record shows no address problem. Leah reports the false message without touching its delivery path."},
-						{"label": "Compare the tracking digits and delivery details in the SMS against the real order before deciding whether to open the link.", "outcome": "RISKY", "consequence": "Every visible detail matches because the attacker already has the order information. The comparison creates false confidence without validating the sender."},
-						{"label": "Reply to the message and ask the driver to confirm which part of the address needs correction before using the link.", "outcome": "RISKY", "consequence": "Verification remains inside the untrusted SMS channel. The attacker supplies a plausible correction and learns that Leah's number is active."}
+						{
+							"label": "Use the saved EDU-6381 record: the camera has no address hold. Keep the text for a report.",
+							"outcome": "SAFE",
+							"consequence": "Alex matches the whole reference and keeps the existing delivery arrangement. The real record shows no address problem."
+						},
+						{
+							"label": "Send our full campus address in reply because the merchant and suffix match.",
+							"outcome": "RISKY",
+							"consequence": "The suffix did not establish identity. Alex has shared delivery information with an unverified sender; he stops and reports through the saved courier service."
+						},
+						{
+							"label": "Call the number in the SMS to ask which parcel needs the correction.",
+							"outcome": "RISKY",
+							"consequence": "The number came from the same unverified message. A convincing answer would not independently establish which parcel needs action."
+						},
+						{
+							"label": "Submit my campus address and account password through the SMS form to avoid the delay.",
+							"outcome": "CRITICAL",
+							"consequence": "The form would expose personal information and an account password. Retry by matching the full reference inside the saved records."
+						}
 					],
-					"explanation": "Accurate order details prove that someone knows about the delivery, not that the message came from the courier. The request must be checked through the delivery service Leah reaches independently.",
-					"breach_gold": 14,
+					"explanation": "A real merchant and matching suffix do not authenticate a change request. Match the full reference and check the current status through an independently opened record.",
+					"breach_gold": 8,
 					"next": "mod02_stage02_incident02"
 				},
 				{
@@ -5113,28 +5425,122 @@
 					"stage": 2,
 					"title": "Redelivery Fee",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S E-WALLET / PAYMENT DETAILS",
+					"affected_system": "ALEX'S PROJECT DELIVERY ACCOUNT",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "Now it says the package couldn't be delivered. They want thirty-eight pesos for redelivery."},
-						{"speaker": "Mia", "text": "That's exactly why people pay it without thinking."},
-						{"speaker": "Leah", "text": "I've paid delivery fees before."},
-						{"speaker": "Security Assistant", "text": "The amount is small. The access behind the payment page may not be."}
+						{
+							"speaker": "Leah",
+							"text": "Now it has the full camera reference. It wants thirty-eight pesos to release the parcel.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I paid a fee for my headphones on Tuesday. Is this the same thing?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "A real fee on a different order cannot approve this one. Compare today's order and tracking record before paying.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's compare the message with the saved records on my laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Northline-Billing <unverified SMS label>",
+								"subject": "Release parcel for PHP 38",
+								"body": "Parcel EDU-6381 requires a PHP 38 redelivery fee. Pay before 11:00 at https://northline-address.example/pay. Card or wallet login accepted."
+							}
+						}
 					],
-					"situation": "A second SMS says Leah's package could not be delivered because of an address issue. It demands a small ₱38 redelivery fee through a page offering familiar e-wallet, debit-card, and mobile-payment options.",
+					"situation": "Parcel EDU-6381 requires a PHP 38 redelivery fee. Pay before 11:00 at https://northline-address.example/pay. Card or wallet login accepted.",
 					"evidence": [
-						"Requested redelivery fee is only ₱38",
-						"Payment page offers familiar e-wallet, debit-card, and mobile-payment options",
-						"Fee notice arrived through the same unverified delivery workflow",
-						"No fee appears in Leah's established merchant or courier account"
+						"The full reference now matches, but the claimed fee still needs verification.",
+						"An older fee receipt belongs to a different parcel."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "MATCH THE DELIVERY RECORD",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the payment request",
+								"analysis": "Even a correct full reference cannot authorize a charge. The payment request must exist in the independently opened account.",
+								"fields": [
+									{
+										"label": "Parcel and charge",
+										"value": "EDU-6381 / PHP 38 / due 11:00"
+									},
+									{
+										"label": "Payment destination",
+										"value": "northline-address.example/pay / asks for card details or wallet login"
+									}
+								],
+								"view_title": "INSPECT THE PAYMENT REQUEST"
+							},
+							{
+								"id": "order",
+								"phone_app": "pages",
+								"label": "Check the camera payment record",
+								"analysis": "Delivery for the camera is prepaid. The earlier PHP 38 charge belongs to HOME-6381, not EDU-6381.",
+								"fields": [
+									{
+										"label": "Current order",
+										"value": "EDU-6381 / camera / delivery PAID / balance PHP 0"
+									},
+									{
+										"label": "Earlier receipt",
+										"value": "HOME-6381 / headphones / Tuesday redelivery PHP 38 PAID"
+									}
+								],
+								"view_title": "CHECK THE CAMERA PAYMENT RECORD"
+							},
+							{
+								"id": "tracking",
+								"phone_app": "pages",
+								"label": "Check for a current courier charge",
+								"analysis": "The independent camera record still shows delivery in progress and no redelivery charge.",
+								"fields": [
+									{
+										"label": "Full reference and status",
+										"value": "EDU-6381 / 10:50 / OUT FOR DELIVERY"
+									},
+									{
+										"label": "Current charges",
+										"value": "No failed attempt / no redelivery fee / no payment action"
+									}
+								],
+								"view_title": "CHECK FOR A CURRENT COURIER CHARGE"
+							}
+						]
+					},
 					"choices": [
-						{"label": "Pay the small amount through the page because the loss is limited, then replace the card or e-wallet credentials if anything looks suspicious.", "outcome": "CRITICAL", "consequence": "The risk was never limited to ₱38. The page captures payment details and account information before Leah can decide whether anything looks wrong."},
-						{"label": "Check the order through the merchant or courier account and pay only through its established payment workflow if a real fee appears.", "outcome": "SAFE", "consequence": "Neither established account shows a fee. Leah avoids the false payment page and reports the request through the real courier workflow."},
-						{"label": "Use a disposable or virtual payment method with a very low spending limit to pay without exposing Leah's main card.", "outcome": "RISKY", "consequence": "The limited payment method reduces direct card exposure but still confirms Leah as a responsive target and shares information with an unverified page."},
-						{"label": "Call the courier using the phone number shown on the SMS payment page and ask whether the ₱38 charge is legitimate.", "outcome": "RISKY", "consequence": "The phone number came from the suspicious workflow. The attacker answers as courier support and validates the charge they invented."}
+						{
+							"label": "Keep the camera delivery unchanged; neither its order nor courier record shows a fee.",
+							"outcome": "SAFE",
+							"consequence": "Alex verifies both current records. The old headphones fee cannot justify a new camera payment, so the group keeps its budget intact."
+						},
+						{
+							"label": "Send the small amount using a low-limit virtual card through the text's payment page.",
+							"outcome": "RISKY",
+							"consequence": "A spending limit does not establish who receives the payment or protect other details requested by the page. Alex stops the unverified payment route."
+						},
+						{
+							"label": "Send the old headphones receipt to the SMS sender and ask them to transfer the payment.",
+							"outcome": "RISKY",
+							"consequence": "The old receipt concerns another parcel and exposes order details to an unverified contact. Alex switches to the independently saved support channel."
+						},
+						{
+							"label": "Enter my wallet login and one-time payment code on the SMS page to release the camera.",
+							"outcome": "CRITICAL",
+							"consequence": "The page could use those credentials to access the wallet or authorize a transaction. The risk is not limited to the advertised fee; retry with the saved records."
+						}
 					],
-					"explanation": "A small charge is designed to lower suspicion, but the attacker-controlled page can collect far more than the fee. Payment and support must begin inside an independently reached merchant or courier account.",
-					"breach_gold": 16,
+					"explanation": "Payment status belongs to a specific order. Check the full reference and current balance; a small amount, familiar checkout, or old receipt does not authorize a new fee.",
+					"breach_gold": 8,
 					"next": "mod02_stage02_incident03"
 				},
 				{
@@ -5143,44 +5549,122 @@
 					"stage": 2,
 					"title": "Proof of Delivery",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S PERSONAL ACCOUNTS",
+					"affected_system": "ALEX'S PROJECT DELIVERY ACCOUNT",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "", "text": "Leah's real delivery app sends a notification: her package has just been delivered."},
-						{"speaker": "Leah", "text": "Wait."},
-						{"speaker": "Mia", "text": "What?"},
-						{"speaker": "Leah", "text": "The package is here."},
-						{"speaker": "Mia", "text": "But the text said delivery failed."},
-						{"speaker": "Leah", "text": "So they knew the delivery existed..."},
-						{"speaker": "Security Assistant", "text": "...but they weren't the courier."},
-						{"speaker": "Leah", "text": "How?"},
-						{"speaker": "Security Assistant", "text": "We still don't know."},
-						{"speaker": "Leah", "text": "Someone knows what I buy now?"},
-						{"speaker": "Mia", "text": "Leah—"},
-						{"speaker": "Leah", "text": "No, seriously. My name was one thing. My phone number was one thing."},
-						{"speaker": "Leah", "text": "But my orders?"},
-						{"speaker": "Security Assistant", "text": "Don't jump to conclusions yet."},
-						{"speaker": "Leah", "text": "You're telling me not to panic while someone is reading my life."},
-						{"speaker": "", "text": "A final SMS arrives from a different number."},
-						{"speaker": "Leah", "text": "They know it arrived."},
-						{"speaker": "Mia", "text": "Don't open it."},
-						{"speaker": "Leah", "text": "What if it's actually the driver this time?"},
-						{"speaker": "Security Assistant", "text": "That's the decision."}
+						{
+							"speaker": "Leah",
+							"text": "The package is here. The campus desk has recorded it at 11:15.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "And a new text knows the time. It wants a login code to show a delivery photo.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "The delivery can be real while this request is unsafe. Check how the parcel desk actually releases the camera.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's compare the message with the saved records on my laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Northline-Confirm <unsaved SMS number>",
+								"subject": "Confirm receipt with your account code",
+								"body": "EDU-6381 delivered to Harbor College at 11:15. Reply with the next Northline account login code to release the proof-of-delivery photo."
+							}
+						}
 					],
-					"situation": "A new SMS says: \"Your delivery has been completed. View proof-of-delivery photo.\" It arrives just after Leah's real package is delivered and includes the correct merchant, delivery time within a few minutes, neighborhood, and a short link to a supposed delivery photo.",
+					"situation": "EDU-6381 delivered to Harbor College at 11:15. Reply with the next Northline account login code to release the proof-of-delivery photo.",
 					"evidence": [
-						"SMS arrived within minutes of the real delivery",
-						"Correct merchant, delivery time, and neighborhood",
-						"Message came from a different, unsaved number",
-						"Proof-of-delivery photo is hidden behind a shortened link"
+						"A real delivery time does not authenticate a request for a login code.",
+						"The saved campus directory provides the collection procedure."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "MATCH THE DELIVERY RECORD",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Separate the delivery claim from the code request",
+								"analysis": "A delivery timestamp does not authorize someone to request an account login code.",
+								"fields": [
+									{
+										"label": "Claim",
+										"value": "EDU-6381 delivered to Harbor College at 11:15"
+									},
+									{
+										"label": "Requested secret",
+										"value": "The next Northline ACCOUNT LOGIN code, sent back by SMS"
+									}
+								],
+								"view_title": "SEPARATE THE DELIVERY CLAIM FROM THE CODE REQUEST"
+							},
+							{
+								"id": "tracking",
+								"phone_app": "pages",
+								"label": "Check the recorded handover",
+								"analysis": "The independently opened courier record confirms delivery to the desk and has no pending login-code request.",
+								"fields": [
+									{
+										"label": "Full reference and handover",
+										"value": "EDU-6381 / 11:15 / delivered to Harbor College parcel desk"
+									},
+									{
+										"label": "Proof and action",
+										"value": "Desk handover recorded / no reply or account code required"
+									}
+								],
+								"view_title": "CHECK THE RECORDED HANDOVER"
+							},
+							{
+								"id": "desk",
+								"phone_app": "contacts",
+								"label": "Check the saved collection procedure",
+								"analysis": "The college desk verifies a student card in person. Its procedure does not require sending a courier account login code.",
+								"fields": [
+									{
+										"label": "Desk record",
+										"value": "EDU-6381 / camera / ready for collection by Alex"
+									},
+									{
+										"label": "Collection procedure",
+										"value": "Library ground floor / show student card in person / never send account login codes to an SMS sender"
+									}
+								],
+								"view_title": "CHECK THE SAVED COLLECTION PROCEDURE"
+							}
+						]
+					},
 					"choices": [
-						{"label": "Open the proof-of-delivery page because the arrival time matches, but avoid downloading the image or entering credentials.", "outcome": "CRITICAL", "consequence": "Opening attacker-controlled content is enough to expose Leah to tracking, redirects, and a follow-up flow tailored to the confirmed delivery."},
-						{"label": "Open the courier's established app or website independently and check for a proof-of-delivery image in the shipment record.", "outcome": "SAFE", "consequence": "The established shipment record contains the real delivery status and no linked photo. Leah reports the impersonating message without opening it."},
-						{"label": "Preview the shortened URL destination without fully opening it and compare the domain with the courier's legitimate service.", "outcome": "RISKY", "consequence": "The preview reduces uncertainty about the destination but cannot prove the message belongs to Leah's shipment or that the redirect chain will remain safe."},
-						{"label": "Ask the sender to state the delivery address or driver identifier before opening the photo.", "outcome": "RISKY", "consequence": "The attacker already has enough delivery detail to answer convincingly, and Leah's reply confirms her number is active at the exact delivery time."}
+						{
+							"label": "Collect the camera using the saved desk procedure and report the code request through the courier account.",
+							"outcome": "SAFE",
+							"consequence": "Alex collects the camera in person and reports the SMS through the saved courier service. He shares no account code."
+						},
+						{
+							"label": "Send the sender a photo of my student card to prove I am the recipient instead.",
+							"outcome": "RISKY",
+							"consequence": "The substitution still exposes identity information to an unverified contact. Alex stops and uses the in-person desk procedure."
+						},
+						{
+							"label": "Ask the sender to name the desk attendant before deciding whether to send the code.",
+							"outcome": "RISKY",
+							"consequence": "Another matching detail would not authorize account access. Alex returns to the verified handover record instead of testing the sender with facts they may know."
+						},
+						{
+							"label": "Reply with the Northline account login code because the delivery time matches.",
+							"outcome": "CRITICAL",
+							"consequence": "A login code can grant account access. It is not proof of parcel ownership to share with an unsolicited sender. Retry using the collection procedure."
+						}
 					],
-					"explanation": "Near-real-time delivery information makes the message persuasive, but it still does not authenticate the sender or link. The shipment record reached independently is the trusted source.",
-					"breach_gold": 18,
+					"explanation": "Verify the requested action as well as the delivery. A correct timestamp does not justify sharing login codes. Use the independent handover record and campus collection procedure.",
+					"breach_gold": 8,
 					"next": ""
 				}
 			]
@@ -5190,56 +5674,298 @@
 			"module_id": "mod_02",
 			"stage": 3,
 			"title": "Someone You Know",
+			"content_version": 2,
 			"bkt_skill": "smishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor College",
+			"scene_header": "HARBOR COLLEGE // INTERVIEW PREPARATION, 13:20",
+			"guide_speaker": "Mia",
+			"visual_theme": "college",
+			"decision_lives": 3,
+			"breach_hp_multiplier": 0.45,
 			"clear_title": "STAGE 3 COMPLETE",
 			"clear_subtitle": "SOMEONE YOU KNOW",
 			"next_stage_title": "Stage 4 — The Code",
-			"breach_hp_multiplier": 0.75,
+			"locations": {
+				"opening": "college_commons",
+				"ending": "college_commons",
+				"resume_breach": "college_commons",
+				"breach_contained": "college_commons"
+			},
+			"containment_note": "LAPTOP DEFENSE SIMULATION / Practice protecting your device with campus IT guidance. Alex is not operating the college network.",
+			"laptop": {
+				"time": "13:20",
+				"day": "FIRST PROJECT / INTERVIEW PREPARATION",
+				"app_titles": {
+					"contacts": "CONTACTS / CHECK THE SOURCE",
+					"pages": "SEMINAR WORKSPACE"
+				},
+				"contacts_origin": "Check where each contact came from before using it. All replies are part of this offline story.",
+				"contacts": [
+					{
+						"title": "Mia / contact saved in high school",
+						"evidence_id": "mia",
+						"body": "The contact Alex used before college. This entry predates the new-number request."
+					},
+					{
+						"title": "Mia? / card supplied by the new message",
+						"evidence_id": "unverified",
+						"body": "Unverified contact preview. Supplied by the sender being checked today; not saved as Mia. Calling this entry would return to the same unverified source."
+					},
+					{
+						"title": "Leah's family / saved before enrollment",
+						"evidence_id": "family",
+						"body": "Leah opens her existing family contact from her own address book. Her permission is given in the dialogue; the laptop shows only the scripted result."
+					}
+				],
+				"pages": [
+					{
+						"title": "Seminar workspace / existing bookmark",
+						"evidence_id": "workspace",
+						"body": "The project channel agreed during orientation. The group opened this bookmark independently of the incoming message."
+					},
+					{
+						"title": "Interview folder / sharing settings",
+						"evidence_id": "sharing",
+						"body": "The group project folder opened through the existing seminar workspace. Inspect access before sharing interview material."
+					}
+				]
+			},
+			"map_routes": [
+				[
+					[
+						0,
+						1
+					],
+					[
+						4,
+						1
+					],
+					[
+						4,
+						2
+					],
+					[
+						9,
+						2
+					],
+					[
+						9,
+						3
+					],
+					[
+						12,
+						3
+					]
+				],
+				[
+					[
+						0,
+						5
+					],
+					[
+						3,
+						5
+					],
+					[
+						3,
+						4
+					],
+					[
+						6,
+						4
+					],
+					[
+						6,
+						5
+					],
+					[
+						9,
+						5
+					],
+					[
+						9,
+						3
+					],
+					[
+						12,
+						3
+					]
+				]
+			],
+			"breach_waves": [
+				{
+					"enemy_count": 8,
+					"spawn_delay": 1.5,
+					"health_multiplier": 1,
+					"enemy_type": "basic",
+					"spawn_routes": [
+						1,
+						0,
+						1,
+						0
+					],
+					"enemy_mix": [
+						"basic",
+						"basic",
+						"basic",
+						"fast"
+					]
+				}
+			],
 			"opening": [
-				{"speaker": "Leah", "text": "This one's from you."},
-				{"speaker": "Mia", "text": "I didn't send you anything."},
-				{"speaker": "Security Assistant", "text": "Don't reply yet."},
-				{"speaker": "Mia", "text": "What does it say?"},
-				{"speaker": "Leah", "text": "Just... 'Hey. New number. Save this one.'"},
-				{"speaker": "Mia", "text": "That's not me."},
-				{"speaker": "Leah", "text": "It knows what I call you."},
-				{"speaker": "Mia", "text": "What?"},
-				{"speaker": "Leah", "text": "It says 'Mims.'"},
-				{"speaker": "", "text": "Pause."},
-				{"speaker": "Mia", "text": "Only a few people call me that."},
-				{"speaker": "Security Assistant", "text": "Now we know the attacker isn't only collecting account details."},
-				{"speaker": "Leah", "text": "They're collecting people."}
+				{
+					"speaker": "Leah",
+					"text": "This one's from you, Mia. That's what the message I pasted into our project chat claims.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "I didn't send you anything. The camera is collected; I was just setting up our interview questions.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The delivery texts taught us to match the whole record. Now we need to check who is asking.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Leah",
+					"text": "The text calls you Mims and mentions our campus-accessibility presentation. It sounds like someone from our group.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Mia",
+					"text": "I used that nickname in our public seminar introduction. Knowing it does not make this my message.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "I'll compare it on my laptop. We still have the contacts and project channel we used before this text.",
+					"emotion": "neutral"
+				}
 			],
 			"ending": [
-				{"speaker": "Leah", "text": "...She's fine."},
-				{"speaker": "Mia", "text": "Your mom?"},
-				{"speaker": "Leah", "text": "She's at home."},
-				{"speaker": "", "text": "Silence."},
-				{"speaker": "Leah", "text": "They used my mother."},
-				{"speaker": "Mia", "text": "Leah—"},
-				{"speaker": "Leah", "text": "No."},
-				{"speaker": "Leah", "text": "Fake delivery messages were one thing."},
-				{"speaker": "Leah", "text": "But this?"},
-				{"speaker": "Security Assistant", "text": "They're testing what makes you react."},
-				{"speaker": "Leah", "text": "And now they know."},
-				{"speaker": "Security Assistant", "text": "They know what they've collected."},
-				{"speaker": "Leah", "text": "Then I want to know what they have."},
-				{"speaker": "", "text": "Leah's phone buzzes. A real SMS arrives: \"Your verification code is 481927. Do not share this code.\""},
-				{"speaker": "Leah", "text": "I didn't request anything."},
-				{"speaker": "", "text": "Another OTP arrives. Then another."},
-				{"speaker": "Mia", "text": "Someone's trying to sign in."},
-				{"speaker": "Security Assistant", "text": "Or recover an account."},
-				{"speaker": "Leah", "text": "Which account?"},
-				{"speaker": "Security Assistant", "text": "We're about to find out."}
+				{
+					"speaker": "Leah",
+					"text": "They used my mother to rush me. She's at home; checking our saved family contact helped me slow down.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The project details were familiar too. But the new number, the access request, and the payment needed their own checks.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "We can support each other without letting a stranger replace our contacts or open the interview folder.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "The next laptop exercise has a shorter route A and a bendier route B. Enemies sent earlier can arrive later.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Cover both inner approaches and the merge. Watch where the packets are now, then adjust during the build break.",
+					"emotion": "neutral"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "The impersonation is still active. Bring containment back online."}
+				{
+					"speaker": "Mia",
+					"text": "Return to the established contact and review the request. The identity practice will restart with fresh defenses.",
+					"emotion": "neutral"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. That channel is isolated, but they're still impersonating people you trust."},
-				{"speaker": "Leah", "text": "Then let's cut off the next one before it starts."}
+				{
+					"speaker": "Alex",
+					"text": "Practice contained. Back to checking the person and the requested action.",
+					"emotion": "relieved"
+				}
 			],
+			"finale": {
+				"enabled": true,
+				"type": "tower_defense",
+				"affected_system": "ALEX'S LAPTOP / IDENTITY PRACTICE",
+				"gold": 8,
+				"enemy_hp_multiplier": 0.45,
+				"deploy_label": "START IDENTITY PRACTICE",
+				"victory_banner": "BOTH APPROACHES SECURED",
+				"failure_title": "PRACTICE INCOMPLETE",
+				"complete_banner": "TRUSTED CONTACTS PRESERVED",
+				"waves": [
+					{
+						"enemy_count": 8,
+						"spawn_delay": 1.7,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							1,
+							0
+						]
+					},
+					{
+						"enemy_count": 10,
+						"spawn_delay": 1.4,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							1,
+							1,
+							0,
+							0
+						],
+						"enemy_mix": [
+							"basic",
+							"basic",
+							"fast",
+							"basic"
+						]
+					}
+				],
+				"ending": [
+					{
+						"speaker": "Alex",
+						"text": "The routes had different travel times. Coverage near their meeting point caught arrivals from both sides.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Leah",
+						"text": "And a familiar name did not get to choose our contacts or our sharing settings.",
+						"emotion": "neutral"
+					}
+				],
+				"closing": [
+					{
+						"speaker": "Mia",
+						"text": "Interview questions ready. We can keep the raw recordings private and share the finished presentation with the class.",
+						"emotion": "neutral"
+					},
+					{
+						"speaker": "Leah",
+						"text": "Another SMS. It's a verification code for my campus account, but I didn't request a sign-in.",
+						"emotion": "worried"
+					},
+					{
+						"speaker": "Alex",
+						"text": "Don't send it to anyone. Let's check the account through the saved portal before we continue.",
+						"emotion": "neutral"
+					}
+				],
+				"case_summary": {
+					"title": "SOMEONE YOU KNOW / FIELD NOTES",
+					"subtitle": "VERIFY THE PERSON AND THE REQUEST",
+					"items": [
+						"Used a contact established before the new-number message",
+						"Kept raw interview recordings limited to the agreed group",
+						"Checked an urgent family claim through a saved family contact",
+						"Protected routes with different travel times"
+					]
+				},
+				"failure_body": "The practice laptop was overwhelmed. Route A is shorter; route B adds a detour. Cover both inner approaches and the merge, and adjust between waves. Completed story decisions remain saved."
+			},
 			"threats": [
 				{
 					"id": "mod02_stage03_incident01",
@@ -5247,29 +5973,122 @@
 					"stage": 3,
 					"title": "New Number",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S PERSONAL MESSAGING",
+					"affected_system": "LAPTOP IDENTITY PRACTICE",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "It says: 'Hey, it's Mia. Phone died. New number for now. Save this one.'"},
-						{"speaker": "Mia", "text": "I'm right here. That's not from me."},
-						{"speaker": "Security Assistant", "text": "Does it reference anything only you two would know?"},
-						{"speaker": "Leah", "text": "It mentions the place we went last week. And it says 'Mims.'"}
+						{
+							"speaker": "Leah",
+							"text": "Here is the SMS I pasted into our project chat. It wants us to replace your contact before opening a file.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Please keep the contact you already have. I haven't changed numbers.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The laptop has my old contact and the card supplied in this text. Only one was established before the request.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's inspect the request and the established contacts on the laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Mia? <new SMS number>",
+								"subject": "Mims here — save this number",
+								"body": "Hey, Mims here. New number for our campus-accessibility project. Save this contact and use my new file link: https://seminar-share.example/interviews. You can delete the old number later."
+							}
+						}
 					],
-					"situation": "Leah receives a message claiming to be Mia from an unfamiliar number: \"Hey, it's Mia. Phone died. New number for now. Save this one.\" The sender uses Mia's nickname, mentions a place Leah and Mia visited recently, writes in a style similar to Mia, and asks Leah to delete the old number later. The real Mia is currently talking to Leah through the already-known channel.",
+					"situation": "Hey, Mims here. New number for our campus-accessibility project. Save this contact and use my new file link: https://seminar-share.example/interviews. You can delete the old number later.",
 					"evidence": [
-						"Message uses Mia's nickname \"Mims,\" which only a few people use",
-						"References a place Leah and Mia visited recently",
-						"Writing style and phrasing closely match how Mia normally texts",
-						"Asks Leah to delete the old number later",
-						"The real Mia is messaging Leah right now through the already-known number"
+						"The new contact comes from the same message being checked.",
+						"A nickname and project topic were already visible in the seminar introduction."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "VERIFY THE PERSON AND REQUEST",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the identity switch",
+								"analysis": "The sender asks to replace an established contact and follow a new file link.",
+								"view_title": "INSPECT THE IDENTITY SWITCH",
+								"fields": [
+									{
+										"label": "Claim and request",
+										"value": "Calls itself Mia / uses Mims / replace old number and open seminar-share.example"
+									},
+									{
+										"label": "Source of the new contact",
+										"value": "The same incoming SMS. A supplied contact card is not independent verification."
+									}
+								]
+							},
+							{
+								"id": "mia",
+								"phone_app": "contacts",
+								"label": "Confirm through saved Mia contact",
+								"analysis": "Mia denies the number change through the contact Alex used in high school.",
+								"view_title": "CONFIRM THROUGH SAVED MIA CONTACT",
+								"fields": [
+									{
+										"label": "Check contact provenance",
+										"value": "Saved in high school / used before this SMS / not imported from the new message"
+									},
+									{
+										"label": "Ask Mia through the saved channel",
+										"value": "Scripted reply from the established conversation: I have not changed my number or sent that link. Keep our original project channel."
+									}
+								]
+							},
+							{
+								"id": "workspace",
+								"phone_app": "pages",
+								"label": "Check the agreed project channel",
+								"analysis": "The group has not moved its files. The nickname and project title appeared in a public introduction.",
+								"view_title": "CHECK THE AGREED PROJECT CHANNEL",
+								"fields": [
+									{
+										"label": "Current group agreement",
+										"value": "Alex, Mia and Leah / original seminar workspace / no new file service agreed"
+									},
+									{
+										"label": "Public context",
+										"value": "Seminar introduction: Mia (Mims), campus-accessibility presentation. These details do not establish identity."
+									}
+								]
+							}
+						]
+					},
 					"choices": [
-						{"label": "Continue the conversation because the sender knows private context, but avoid sharing passwords, codes, or financial details.", "outcome": "CRITICAL", "consequence": "The danger isn't limited to credentials. Continuing to engage builds a trusted relationship with an unverified identity, one the attacker can draw on later."},
-						{"label": "Contact Mia through the already-known contact/channel and confirm whether she actually changed numbers before saving or trusting the new one.", "outcome": "SAFE", "consequence": "The real Mia confirms through the known channel that she never sent it. The new number is never saved or trusted."},
-						{"label": "Ask the new number a personal question that only Mia should know.", "outcome": "RISKY", "consequence": "The sender answers convincingly, likely drawing on Leah and Mia's own social media or past conversations, and the improvised test passes."},
-						{"label": "Save the new number temporarily but keep the old number until Mia confirms.", "outcome": "RISKY", "consequence": "The unverified number is now stored as a contact, and any message it sends afterward inherits that half-granted trust immediately."}
+						{
+							"label": "Keep the established Mia contact and project channel; the saved conversation rejects this change.",
+							"outcome": "SAFE",
+							"consequence": "Alex keeps the original contact and saves the suspicious text for reporting. No project file is opened through the new link."
+						},
+						{
+							"label": "Ask the new number a personal question about our seminar before saving it.",
+							"outcome": "RISKY",
+							"consequence": "A fact-based challenge stays inside the unverified channel. Knowing another detail would not establish that this is Mia."
+						},
+						{
+							"label": "Save the new number under Mia for now and check with her after the interviews.",
+							"outcome": "RISKY",
+							"consequence": "An unverified number would inherit a trusted contact name. Alex stops before treating future messages from it as Mia."
+						},
+						{
+							"label": "Replace Mia's old contact and upload our interview plan through the new file link.",
+							"outcome": "CRITICAL",
+							"consequence": "That would both replace the trusted verification route and disclose the plan to an unverified service. Retry using the contact established before the message."
+						}
 					],
-					"explanation": "A familiar nickname and accurate personal context prove the attacker has studied this relationship, not that the message came from Mia. Verification has to happen through the channel already known to be hers, never the new one presenting itself.",
-					"breach_gold": 18,
+					"explanation": "Check identity through a channel established before the suspicious request. A forwarded contact card, nickname, or matching writing style cannot independently verify the sender.",
+					"breach_gold": 8,
 					"next": "mod02_stage03_incident02"
 				},
 				{
@@ -5278,28 +6097,122 @@
 					"stage": 3,
 					"title": "I Need a Favor",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S E-WALLET / PERSONAL CONTACTS",
+					"affected_system": "LAPTOP IDENTITY PRACTICE",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "Now it's asking for money. 'I'm stuck outside, my wallet app isn't letting me transfer, send ₱1,200 to this number, I'll send it back tonight.'"},
-						{"speaker": "Leah", "text": "That's exactly how you text me."},
-						{"speaker": "Mia", "text": "Except I'm sitting right here."}
+						{
+							"speaker": "Leah",
+							"text": "The same sender wants our raw interview folder. It knows the deadline and says the tutor is waiting.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I asked for a draft slide outline in our real project channel, not public access to interview recordings.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The requests sound related, but their permissions are very different. I will check the actual sharing settings.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's inspect the request and the established contacts on the laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Mia? <unverified SMS number>",
+								"subject": "Make the interview folder public for review",
+								"body": "The tutor needs our raw interviews before class. Change the folder to Anyone with the link can edit and text me the link. I know we promised to finish by Friday; please help me out."
+							}
+						}
 					],
-					"situation": "Another message arrives from the same \"Mia\" number: \"I'm stuck outside. My wallet app isn't letting me transfer. Can you send ₱1,200 to this number? I'll send it back tonight.\" The message references Mia's real schedule, the café she normally visits, a believable amount, and a casual speaking style similar to Mia's.",
+					"situation": "The tutor needs our raw interviews before class. Change the folder to Anyone with the link can edit and text me the link. I know we promised to finish by Friday; please help me out.",
 					"evidence": [
-						"References Mia's real schedule for today",
-						"Names the café Mia normally visits",
-						"Requested amount (₱1,200) is a believable, unremarkable sum",
-						"Casual phrasing matches Mia's normal texting style",
-						"The real Mia is sitting next to Leah right now, not stuck anywhere"
+						"A genuine task can be altered into a much broader sharing request.",
+						"Public edit links can be forwarded beyond the intended recipient."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "VERIFY THE PERSON AND REQUEST",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the requested access",
+								"analysis": "The SMS asks for public edit access to raw recordings, exceeding the real request for a slide outline.",
+								"view_title": "INSPECT THE REQUESTED ACCESS",
+								"fields": [
+									{
+										"label": "Material requested",
+										"value": "Raw campus interview recordings, including participants' voices"
+									},
+									{
+										"label": "Permission requested",
+										"value": "Anyone with the link can EDIT / send the link to this new number"
+									}
+								]
+							},
+							{
+								"id": "mia",
+								"phone_app": "contacts",
+								"label": "Check the real request with Mia",
+								"analysis": "The saved conversation confirms a different, limited task. Identity verification must include the requested action.",
+								"view_title": "CHECK THE REAL REQUEST WITH MIA",
+								"fields": [
+									{
+										"label": "Existing-channel request",
+										"value": "Mia: Add the draft slide outline to our private seminar workspace."
+									},
+									{
+										"label": "Confirm the scope",
+										"value": "Scripted reply: Keep recordings private to our group. I did not request a public edit link or a new upload service."
+									}
+								]
+							},
+							{
+								"id": "sharing",
+								"phone_app": "pages",
+								"label": "Inspect the folder permissions",
+								"analysis": "The agreed group already has access. Raw recordings should stay within the permission participants agreed to.",
+								"view_title": "INSPECT THE FOLDER PERMISSIONS",
+								"fields": [
+									{
+										"label": "Current access",
+										"value": "Restricted / Alex, Mia, Leah / no public link"
+									},
+									{
+										"label": "Agreed use",
+										"value": "Interview notes: raw recordings stay within the project group; class presentation uses agreed excerpts. No public editing requested."
+									}
+								]
+							}
+						]
+					},
 					"choices": [
-						{"label": "Send the requested amount because the context matches Mia's real plans, then contact her afterward if anything seems unusual.", "outcome": "CRITICAL", "consequence": "Accurate context is being used to create false trust. The money reaches an account with no connection to Mia before any afterward-check ever happens."},
-						{"label": "Confirm the request through the known Mia contact or voice/video channel before sending money.", "outcome": "SAFE", "consequence": "Reaching the real Mia directly confirms she never sent the request, and no money goes to the impersonating number."},
-						{"label": "Send a much smaller amount first and wait for confirmation before sending the rest.", "outcome": "RISKY", "consequence": "Reducing the amount does not verify the recipient. The smaller amount still reaches the same unverified account before any confirmation arrives."},
-						{"label": "Ask the sender to provide another personal detail before transferring.", "outcome": "RISKY", "consequence": "The sender supplies another convincing detail drawn from the same research, and the transfer proceeds on confidence that was never actually earned."}
+						{
+							"label": "Keep the recordings restricted and share only the draft outline through the existing project workspace.",
+							"outcome": "SAFE",
+							"consequence": "The group completes Mia's real request while preserving the agreed access to the recordings."
+						},
+						{
+							"label": "Make a public view-only link instead and send it to the SMS number.",
+							"outcome": "RISKY",
+							"consequence": "Removing edit permission still exposes private recordings through an unverified, forwardable link."
+						},
+						{
+							"label": "Send a short raw recording to the new number to check whether it is the right folder.",
+							"outcome": "RISKY",
+							"consequence": "A sample still discloses a participant's recording before the recipient and permission have been established."
+						},
+						{
+							"label": "Enable public editing and send the whole interview folder because the tutor deadline sounds urgent.",
+							"outcome": "CRITICAL",
+							"consequence": "The request would expose and allow changes to the group's raw recordings beyond their agreed use. Retry with the limited task confirmed in the established channel."
+						}
 					],
-					"explanation": "Matching someone's real schedule and speaking style shows the attacker has studied the relationship, not that they are the person being impersonated. Only a channel independently known to reach the real Mia can confirm a request like this.",
-					"breach_gold": 20,
+					"explanation": "Verify what a known person actually requested, including the material and access level. A legitimate project task does not authorize public access to private recordings.",
+					"breach_gold": 8,
 					"next": "mod02_stage03_incident03"
 				},
 				{
@@ -5308,42 +6221,127 @@
 					"stage": 3,
 					"title": "Family Emergency",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S FAMILY CONTACTS / MOBILE PAYMENT",
+					"affected_system": "LAPTOP IDENTITY PRACTICE",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "How do they know this much about us?"},
-						{"speaker": "Mia", "text": "Maybe from social media."},
-						{"speaker": "Leah", "text": "I don't post everything."},
-						{"speaker": "Mia", "text": "Neither do I."},
-						{"speaker": "Security Assistant", "text": "They may not need everything."},
-						{"speaker": "Leah", "text": "What does that mean?"},
-						{"speaker": "Security Assistant", "text": "A few messages. A public photo. A delivery notification. A contact name."},
-						{"speaker": "Security Assistant", "text": "Small pieces become believable stories."},
-						{"speaker": "Leah", "text": "So they're building versions of us."},
-						{"speaker": "Mia", "text": "Good enough versions."},
-						{"speaker": "Leah", "text": "That's worse."},
-						{"speaker": "", "text": "Leah's phone buzzes with a new text from a number claiming to be her cousin."},
-						{"speaker": "Leah", "text": "'Leah, don't panic. I'm at the clinic with Mom. Her phone's dead. Can you send money for the initial payment?'"},
-						{"speaker": "Leah", "text": "'Please don't call Mom. She's already scared.'"},
-						{"speaker": "Mia", "text": "Leah."},
-						{"speaker": "Leah", "text": "What if it's real?"},
-						{"speaker": "Security Assistant", "text": "That's why we verify."}
+						{
+							"speaker": "Leah",
+							"text": "Now a text says it is my cousin. Mum is stranded and needs money. I want to help, but it asks me not to call her.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "We can pause the assignment while you check. You do not have to handle this on your own.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Leah",
+							"text": "I will use the family contact saved on my own phone. You can show my confirmation here, without opening my private messages.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Check the claim through that existing contact before sending money. A different callback number in this text would still belong to the same claim.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let's inspect the request and the established contacts on the laptop.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Cousin? <unsaved SMS number>",
+								"subject": "Please help Mum get home",
+								"body": "Leah, Mum is stranded after her phone broke. Send PHP 1200 to this new wallet for a ride home. Please do not call her; she is upset. I know you are preparing the campus interviews, but this cannot wait."
+							}
+						}
 					],
-					"situation": "A text claiming to be from Leah's cousin says: \"Leah, don't panic. I'm at the clinic with Mom. Her phone's dead. Can you send money for the initial payment?\" It adds: \"Please don't call Mom. She's already scared.\" The sender knows Leah's cousin's name, her mother's first name, the hospital/clinic the family normally uses, and a recent family event.",
+					"situation": "Leah, Mum is stranded after her phone broke. Send PHP 1200 to this new wallet for a ride home. Please do not call her; she is upset. I know you are preparing the campus interviews, but this cannot wait.",
 					"evidence": [
-						"Knows Leah's cousin's name",
-						"Knows her mother's first name",
-						"References the hospital/clinic the family normally uses",
-						"References a recent family event",
-						"Explicitly asks Leah not to call her mother to confirm"
+						"The sender asks Leah to avoid the contact that could verify the claim.",
+						"Project pressure does not require an unverified payment."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "VERIFY THE PERSON AND REQUEST",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the pressure and payment destination",
+								"analysis": "The message combines personal context with a new payment destination and a request not to check independently.",
+								"view_title": "INSPECT THE PRESSURE AND PAYMENT DESTINATION",
+								"fields": [
+									{
+										"label": "Pressure",
+										"value": "References today's interviews / says Mum is stranded / asks Leah not to call"
+									},
+									{
+										"label": "Money destination",
+										"value": "PHP 1200 / newly supplied wallet / recipient not confirmed through a saved contact"
+									}
+								]
+							},
+							{
+								"id": "family",
+								"phone_app": "contacts",
+								"label": "Let Leah check her saved family contact",
+								"analysis": "Leah confirms through an established family contact that her mother is at home and did not request money.",
+								"view_title": "LET LEAH CHECK HER SAVED FAMILY CONTACT",
+								"fields": [
+									{
+										"label": "Contact source",
+										"value": "Leah's address book from before enrollment. Used with her permission; no number is copied from the incoming SMS."
+									},
+									{
+										"label": "Check through the saved channel",
+										"value": "Scripted result: Mum answers the usual family call, is at home, and has not requested a ride or payment."
+									}
+								]
+							},
+							{
+								"id": "workspace",
+								"phone_app": "pages",
+								"label": "Pause the project without exposing the message",
+								"analysis": "The group can adjust its work without reposting private family details or acting on the unverified payment request.",
+								"view_title": "PAUSE THE PROJECT WITHOUT EXPOSING THE MESSAGE",
+								"fields": [
+									{
+										"label": "Group response",
+										"value": "Alex: I can organize the interview questions while you check in with your family."
+									},
+									{
+										"label": "Privacy choice",
+										"value": "Share only that Leah needs a short break. Keep the suspicious text for a private report; do not post family or payment details in the class channel."
+									}
+								]
+							}
+						]
+					},
 					"choices": [
-						{"label": "Send the requested amount immediately because delaying a real medical emergency could cause harm, then verify afterward.", "outcome": "CRITICAL", "consequence": "Urgency is being used specifically to bypass verification. The money is gone before \"afterward\" ever arrives, whether or not the emergency is real."},
-						{"label": "Contact the cousin or another family member through a previously known number/channel before taking any financial action.", "outcome": "SAFE", "consequence": "Reaching a family member through a number already known to be real confirms there is no emergency, and no money is sent based on the fake message."},
-						{"label": "Call the number that sent the emergency message and judge whether the speaker sounds like Leah's cousin.", "outcome": "RISKY", "consequence": "A voice can be faked or simply misjudged under stress, and the number itself was never established as belonging to the cousin in the first place."},
-						{"label": "Send only enough money for the supposed initial fee while separately trying to contact the family.", "outcome": "RISKY", "consequence": "Even a small amount sent to an unverified recipient is still an unverified payment, and it goes out before the separate contact attempt resolves anything."}
+						{
+							"label": "Use the saved family confirmation, send no money, and keep private details out of the class chat.",
+							"outcome": "SAFE",
+							"consequence": "Leah confirms her mother is safe at home. The group gives her time to recover and reports the suspicious message privately."
+						},
+						{
+							"label": "Call the number in the text and judge whether the voice sounds like my cousin.",
+							"outcome": "RISKY",
+							"consequence": "The callback returns to the unverified source. A familiar-sounding voice alone would not establish the claim or wallet recipient."
+						},
+						{
+							"label": "Send a small amount to the new wallet while waiting for the family contact to answer.",
+							"outcome": "RISKY",
+							"consequence": "A smaller transfer still reaches an unverified recipient before the claim is checked."
+						},
+						{
+							"label": "Transfer the full amount to the new wallet before checking because the sender knows our plans.",
+							"outcome": "CRITICAL",
+							"consequence": "Personal context and urgency would direct money to an unverified recipient. Retry using the saved family contact before any payment."
+						}
 					],
-					"explanation": "A request that specifically asks you not to verify is telling you exactly what it's afraid of. A genuine emergency survives a two-minute call to a number you already know is real; only a fabricated one depends on you skipping that call.",
-					"breach_gold": 22,
+					"explanation": "An urgent personal claim deserves independent verification and support. Use an established contact, check the recipient before paying, and avoid spreading private family information.",
+					"breach_gold": 8,
 					"next": ""
 				}
 			]
@@ -5353,67 +6351,305 @@
 			"module_id": "mod_02",
 			"stage": 4,
 			"title": "The Code",
+			"content_version": 2,
 			"bkt_skill": "smishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor College",
+			"scene_header": "HARBOR COLLEGE // BEFORE THE SEMINAR, 13:35",
+			"guide_speaker": "Mia",
+			"visual_theme": "college",
+			"decision_lives": 3,
+			"breach_hp_multiplier": 0.45,
 			"clear_title": "STAGE 4 COMPLETE",
 			"clear_subtitle": "THE CODE",
 			"next_stage_title": "Stage 5 — Locked Out",
-			"breach_hp_multiplier": 0.8,
+			"locations": {
+				"opening": "college_commons",
+				"ending": "college_commons",
+				"resume_breach": "college_commons",
+				"breach_contained": "college_commons"
+			},
+			"containment_note": "LAPTOP DEFENSE SIMULATION / Practice protecting your device with campus IT guidance. Alex is not operating the college network.",
+			"laptop": {
+				"time": "13:35",
+				"day": "FIRST PROJECT / ACCOUNT ACTIVITY",
+				"app_titles": {
+					"lock": "LEAH'S LAPTOP",
+					"contacts": "SAVED CAMPUS SUPPORT",
+					"pages": "PORTAL / ACTIVITY TIMELINE"
+				},
+				"contacts_origin": "Campus IT details saved during orientation. Replies are scripted; no real messages or codes are sent.",
+				"contacts": [
+					{
+						"title": "Campus IT / orientation directory",
+						"evidence_id": "support",
+						"body": "The support desk listed in the existing campus directory. Leah opens it herself; Alex sees only the activity she chooses to share."
+					}
+				],
+				"pages": [
+					{
+						"title": "Campus account / current activity",
+						"evidence_id": "activity",
+						"body": "Leah opens her saved campus portal on her own laptop. Compare the action, time and result; a request is not a completed sign-in."
+					},
+					{
+						"title": "Orientation sign-in / archived receipt",
+						"evidence_id": "archive",
+						"body": "An older successful sign-in from orientation day. This archive cannot confirm the status of today's request."
+					},
+					{
+						"title": "Campus account / sessions and recovery",
+						"evidence_id": "sessions",
+						"body": "Current session and recovery settings, opened from inside the saved portal. No secret code or recovery address is displayed."
+					}
+				]
+			},
+			"map_routes": [
+				[
+					[
+						0,
+						1
+					],
+					[
+						3,
+						1
+					],
+					[
+						3,
+						2
+					],
+					[
+						7,
+						2
+					],
+					[
+						7,
+						1
+					],
+					[
+						10,
+						1
+					],
+					[
+						10,
+						3
+					],
+					[
+						12,
+						3
+					]
+				],
+				[
+					[
+						0,
+						5
+					],
+					[
+						3,
+						5
+					],
+					[
+						3,
+						4
+					],
+					[
+						6,
+						4
+					],
+					[
+						6,
+						5
+					],
+					[
+						10,
+						5
+					],
+					[
+						10,
+						3
+					],
+					[
+						12,
+						3
+					]
+				]
+			],
+			"breach_waves": [
+				{
+					"enemy_count": 9,
+					"spawn_delay": 1.5,
+					"health_multiplier": 1,
+					"enemy_type": "basic",
+					"spawn_routes": [
+						0,
+						1
+					],
+					"enemy_mix": [
+						"basic",
+						"basic",
+						"fast",
+						"basic"
+					]
+				}
+			],
 			"opening": [
-				{"speaker": "Leah", "text": "Another one."},
-				{"speaker": "Mia", "text": "Another message from your cousin?"},
-				{"speaker": "Leah", "text": "No."},
-				{"speaker": "Leah", "text": "It's a verification code."},
-				{"speaker": "Security Assistant", "text": "Did you request it?"},
-				{"speaker": "Leah", "text": "No."},
-				{"speaker": "", "text": "Another SMS arrives."},
-				{"speaker": "Leah", "text": "There's another."},
-				{"speaker": "Mia", "text": "For the same account?"},
-				{"speaker": "Leah", "text": "Yeah."},
-				{"speaker": "Security Assistant", "text": "Don't delete them."},
-				{"speaker": "Leah", "text": "Why?"},
-				{"speaker": "Security Assistant", "text": "Because these aren't necessarily fake messages."},
-				{"speaker": "Mia", "text": "Someone's actually trying to sign in?"},
-				{"speaker": "Security Assistant", "text": "That's what we need to determine."},
-				{"speaker": "Leah", "text": "So the scam message can be real now?"},
-				{"speaker": "Security Assistant", "text": "The code can be real."},
-				{"speaker": "Security Assistant", "text": "The person trying to make you use it is the problem."}
+				{
+					"speaker": "Leah",
+					"text": "It's a verification code for my campus account. I was writing our interview introduction, not signing in.",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Alex",
+					"text": "We checked the fake family message together. This time, let us check what the account itself says happened.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "The code can be real even when someone else started the request. We need the action and its status, not just the sender name.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Leah",
+					"text": "I will use the campus bookmark on my own laptop. You can help compare the activity; my codes stay private.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Our draft is saved locally. The presentation can wait while we check this properly.",
+					"emotion": "neutral"
+				}
 			],
 			"ending": [
-				{"speaker": "Security Assistant", "text": "Recovery methods checked."},
-				{"speaker": "Mia", "text": "Unknown sessions?"},
-				{"speaker": "Security Assistant", "text": "Removed."},
-				{"speaker": "Leah", "text": "So we're done?"},
-				{"speaker": "Security Assistant", "text": "For this account."},
-				{"speaker": "Leah", "text": "That's not reassuring."},
-				{"speaker": "Mia", "text": "At least you're still in."},
-				{"speaker": "", "text": "Leah looks at her phone."},
-				{"speaker": "Leah", "text": "...No."},
-				{"speaker": "Mia", "text": "What?"},
-				{"speaker": "Leah", "text": "It just logged me out."},
-				{"speaker": "", "text": "Leah tries again."},
-				{"speaker": "Leah", "text": "My password doesn't work."},
-				{"speaker": "Security Assistant", "text": "Try account recovery."},
-				{"speaker": "Leah", "text": "It says my recovery number was changed."},
-				{"speaker": "", "text": "Silence."},
-				{"speaker": "Mia", "text": "Changed to what?"},
-				{"speaker": "Leah", "text": "I don't know."},
-				{"speaker": "Leah", "text": "I'm locked out."},
-				{"speaker": "Security Assistant", "text": "Don't keep trying."},
-				{"speaker": "Leah", "text": "It's my account."},
-				{"speaker": "Security Assistant", "text": "And someone may have changed how the account proves you're you."},
-				{"speaker": "Leah", "text": "So what do I do?"},
-				{"speaker": "Security Assistant", "text": "First, we find out what they changed."},
-				{"speaker": "Leah", "text": "And then?"},
-				{"speaker": "Security Assistant", "text": "We take it back."}
+				{
+					"speaker": "Leah",
+					"text": "A sign-in request, a reset request, and an older session were three different events. The timeline stopped them blurring together.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And a code for resetting a password cannot become a cancellation code just because a text calls it one.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Alex",
+					"text": "Campus IT is reviewing the older session. While we wait, this offline practice adds a slower, tougher packet in wave two.",
+					"emotion": "neutral"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Both routes bend before meeting near the laptop. Cover the inner approaches and the meeting point; adjust your towers during the build break.",
+					"emotion": "neutral"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "The authentication attempt is still active. Bring containment back online."}
+				{
+					"speaker": "Mia",
+					"text": "Reopen the activity record and compare the action with its result. The account practice restarts with fresh defenses.",
+					"emotion": "neutral"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. That access attempt is cut off, but we still need to check what else they reached."},
-				{"speaker": "Leah", "text": "Then let's check."}
+				{
+					"speaker": "Alex",
+					"text": "Practice contained. Return to the activity timeline before deciding what the code would authorize.",
+					"emotion": "relieved"
+				}
 			],
+			"finale": {
+				"enabled": true,
+				"type": "tower_defense",
+				"affected_system": "LAPTOP / ACCOUNT ACTIVITY PRACTICE",
+				"gold": 8,
+				"enemy_hp_multiplier": 0.45,
+				"deploy_label": "START ACCOUNT PRACTICE",
+				"victory_banner": "BOTH ROUTES SECURED",
+				"failure_title": "PRACTICE INCOMPLETE",
+				"complete_banner": "ACCOUNT RESPONSE RECORDED",
+				"waves": [
+					{
+						"enemy_count": 9,
+						"spawn_delay": 1.7,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							0,
+							1
+						],
+						"enemy_mix": [
+							"basic"
+						]
+					},
+					{
+						"enemy_count": 11,
+						"spawn_delay": 1.4,
+						"health_multiplier": 1,
+						"enemy_type": "basic",
+						"spawn_routes": [
+							1,
+							0,
+							1,
+							0
+						],
+						"enemy_mix": [
+							"basic",
+							"basic",
+							"heavy",
+							"basic",
+							"fast",
+							"basic",
+							"basic",
+							"fast",
+							"basic",
+							"basic",
+							"basic"
+						]
+					}
+				],
+				"ending": [
+					{
+						"speaker": "Alex",
+						"text": "The tougher packet needed more hits. Covering the meeting point helped the same defense handle both routes.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Mia",
+						"text": "Back to Leah's account. Let us read the response inside the support case we opened.",
+						"emotion": "neutral"
+					}
+				],
+				"closing": [
+					{
+						"speaker": "Leah",
+						"text": "Campus IT has put a temporary protective hold on sign-in while it verifies my identity. The case says the unrequested reset did not complete.",
+						"emotion": "neutral"
+					},
+					{
+						"speaker": "Alex",
+						"text": "The hold is recorded in your existing support case. It is not an instruction from the suspicious SMS.",
+						"emotion": "neutral"
+					},
+					{
+						"speaker": "Leah",
+						"text": "I'm locked out for now, but I know why. We stopped the current request and saved the draft. I will follow the recovery steps in this case.",
+						"emotion": "worried"
+					},
+					{
+						"speaker": "Mia",
+						"text": "I will tell our tutor we need time, without posting your account details. We can work through the verified recovery process together.",
+						"emotion": "neutral"
+					}
+				],
+				"case_summary": {
+					"title": "THE CODE / FIELD NOTES",
+					"subtitle": "MATCH THE ACTION, TIME AND RESULT",
+					"items": [
+						"Separated a pending request from a completed sign-in",
+						"Checked the purpose of a reset code before acting",
+						"Reviewed sessions and recovery settings through the saved portal",
+						"Kept the draft and used the existing support case for recovery"
+					]
+				},
+				"failure_body": "The practice laptop was overwhelmed. A tougher packet joins wave two. Cover both inner approaches and the meeting point, and adjust between waves. Completed story decisions remain saved."
+			},
 			"threats": [
 				{
 					"id": "mod02_stage04_incident01",
@@ -5421,27 +6657,123 @@
 					"stage": 4,
 					"title": "Unrequested Code",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S PERSONAL ACCOUNT / AUTHENTICATION",
+					"affected_system": "LAPTOP ACCOUNT ACTIVITY PRACTICE",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "It's from the same thread my real codes always come from. 'Your verification code is 481927. Do not share this code.'"},
-						{"speaker": "Mia", "text": "Can you still get into the account normally?"},
-						{"speaker": "Leah", "text": "Yeah. Nothing looks different yet."}
+						{
+							"speaker": "Leah",
+							"text": "The notification names my campus account, but my laptop is already signed in. Does receiving a code mean someone got in?",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Check today's event and result. The orientation receipt is older, even though it also says successful sign-in.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Compare the request with the current session. We can report an attempt without claiming a completed takeover.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let us compare the message, the current account record, and the saved support case.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Campus account / SMS notification",
+								"subject": "Sign-in code you did not request",
+								"body": "13:34 — A code was requested to sign in to your campus account. The code is hidden in this exercise. A separate text offers a link to check whether the attempt succeeded."
+							}
+						}
 					],
-					"situation": "Leah receives several legitimate OTPs from a service she actually uses, arriving in the same sender thread where genuine codes have appeared before. She is still able to access the account normally, and there is currently no visible unauthorized transaction.",
+					"situation": "13:34 — A code was requested to sign in to your campus account. The code is hidden in this exercise. A separate text offers a link to check whether the attempt succeeded.",
 					"evidence": [
-						"Messages come from the same legitimate sender thread as past genuine codes",
-						"Multiple OTPs arrived without Leah requesting any of them",
-						"Leah can still log into the account normally right now",
-						"No unauthorized transaction or change is currently visible"
+						"The SMS reports a code request, not proof of a completed sign-in.",
+						"The current record shows a pending verification that did not create a new session.",
+						"The directory procedure distinguishes a reported attempt from confirmed access."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "MATCH ACTION, TIME AND RESULT",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Read the request time",
+								"analysis": "The SMS reports a code request, not proof of a completed sign-in.",
+								"view_title": "READ THE REQUEST TIME",
+								"fields": [
+									{
+										"label": "Requested action",
+										"value": "13:34 today / campus sign-in / Leah did not initiate it / code hidden"
+									},
+									{
+										"label": "Follow-up instruction",
+										"value": "A separate SMS supplies an activity-check link. Open the saved portal independently instead."
+									}
+								]
+							},
+							{
+								"id": "activity",
+								"phone_app": "pages",
+								"label": "Compare today's event result",
+								"analysis": "The current record shows a pending verification that did not create a new session.",
+								"view_title": "COMPARE TODAY'S EVENT RESULT",
+								"fields": [
+									{
+										"label": "Request versus result",
+										"value": "13:34 today / sign-in challenge issued / pending verification / no completed sign-in for this request"
+									},
+									{
+										"label": "Known session",
+										"value": "13:05 today / Leah's laptop / active before the SMS / matches her own library study session"
+									}
+								]
+							},
+							{
+								"id": "support",
+								"phone_app": "contacts",
+								"label": "Check the established support procedure",
+								"analysis": "The directory procedure distinguishes a reported attempt from confirmed access.",
+								"view_title": "CHECK THE ESTABLISHED SUPPORT PROCEDURE",
+								"fields": [
+									{
+										"label": "Support source",
+										"value": "Campus IT / directory saved during orientation / opened without using the incoming SMS"
+									},
+									{
+										"label": "Procedure for an unrequested challenge",
+										"value": "Keep the code private; review current activity and sessions through the saved portal; report the time and result, not the code."
+									}
+								]
+							}
+						]
+					},
 					"choices": [
-						{"label": "Use the security link from a follow-up SMS to review the attempted login, since the OTP itself came through the account's legitimate message thread.", "outcome": "CRITICAL", "consequence": "A legitimate OTP thread doesn't make a separate follow-up link legitimate. The link leads to a lookalike page built to harvest the very credentials Leah is trying to protect."},
-						{"label": "Open the service independently, review recent sign-in activity and security settings, and secure the account if an unfamiliar authentication attempt appears.", "outcome": "SAFE", "consequence": "The independent review turns up an unfamiliar sign-in attempt from an unrecognized device, which is closed before it goes any further."},
-						{"label": "Change the account password immediately but leave existing sessions and recovery settings unchanged.", "outcome": "RISKY", "consequence": "The new password blocks new attempts, but a session or recovery method already in motion is left completely untouched by a password change alone."},
-						{"label": "Wait for the OTP attempts to stop because whoever is trying to sign in cannot finish authentication without the code.", "outcome": "RISKY", "consequence": "The attempts eventually stop, but not because the danger passed. Whoever was behind them simply moved to a different entry point that doesn't need this OTP at all."}
+						{
+							"label": "Report the pending 13:34 request through saved campus support; keep the code private and review sessions.",
+							"outcome": "SAFE",
+							"consequence": "Leah reports an unrequested pending challenge through the established portal. She does not approve it or label it a completed sign-in."
+						},
+						{
+							"label": "Use the successful orientation receipt as proof that today's notification is harmless.",
+							"outcome": "RISKY",
+							"consequence": "The archived receipt describes another day. It cannot establish the result of today's request."
+						},
+						{
+							"label": "Wait for a completed sign-in alert before reviewing any account activity.",
+							"outcome": "RISKY",
+							"consequence": "A pending attempt is enough reason to inspect and report. Waiting would delay checks that do not require sharing the code."
+						},
+						{
+							"label": "Enter the code into the follow-up SMS page to check whether the attempt succeeded.",
+							"outcome": "CRITICAL",
+							"consequence": "The unverified page could use the code to finish the sign-in. Retry by comparing today's status inside the independently opened portal."
+						}
 					],
-					"explanation": "Holding onto the OTP prevented this one attempt, but repeated authentication requests are themselves evidence that something needs to be investigated and secured, not simply outlasted or resolved by a password change alone.",
-					"breach_gold": 24,
+					"explanation": "Match a code to an action you initiated and check the current event result. A pending request is not proof of completed access; an older successful receipt cannot explain today's attempt.",
+					"breach_gold": 8,
 					"next": "mod02_stage04_incident02"
 				},
 				{
@@ -5450,28 +6782,123 @@
 					"stage": 4,
 					"title": "Cancel the Request",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S E-WALLET / ACCOUNT RECOVERY",
+					"affected_system": "LAPTOP ACCOUNT ACTIVITY PRACTICE",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "Leah", "text": "The e-wallet just sent a real code. But now a different number is texting: 'We detected an unauthorized account recovery request. To CANCEL this request, verify the six-digit code that was just sent to your registered number.'"},
-						{"speaker": "Leah", "text": "Wait. They want the code to cancel it?"},
-						{"speaker": "Mia", "text": "That's backwards, right?"},
-						{"speaker": "Security Assistant", "text": "Think about who generated the code."}
+						{
+							"speaker": "Leah",
+							"text": "A second code arrived. This one says password reset. Then this other number told me to send it back to cancel.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "The first code was for a sign-in. This newer one authorizes a different action; the word cancel does not change its purpose.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Check the reset status and the procedure inside the support case you opened yourself.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let us compare the message, the current account record, and the saved support case.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Campus support? / separate SMS",
+								"subject": "Reply with the code to cancel",
+								"body": "Another text says: Your account reset is in progress. Reply CANCEL followed by your newest code so support can stop it. Do not open the campus portal during cancellation."
+							}
+						}
 					],
-					"situation": "A legitimate OTP arrives from Leah's e-wallet. Seconds later, a different number sends: \"We detected an unauthorized account recovery request. To CANCEL this request, verify the six-digit code that was just sent to your registered number.\" The message doesn't claim the code will authorize access — it claims providing it will cancel the attack.",
+					"situation": "Another text says: Your account reset is in progress. Reply CANCEL followed by your newest code so support can stop it. Do not open the campus portal during cancellation.",
 					"evidence": [
-						"Legitimate OTP arrived from the e-wallet's own verified sender",
-						"A second, different number claims a recovery request must be \"cancelled\"",
-						"The cancellation message asks Leah to verify the code that was just sent to her",
-						"No genuine fraud-prevention process asks a customer to supply their own OTP"
+						"The follow-up calls an authorization code a cancellation tool and discourages independent checking.",
+						"The reset is awaiting verification. No reset has completed at this point.",
+						"The independently opened support case says not to supply codes to a person or SMS reply."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "MATCH ACTION, TIME AND RESULT",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Compare code purpose with the claim",
+								"analysis": "The follow-up calls an authorization code a cancellation tool and discourages independent checking.",
+								"view_title": "COMPARE CODE PURPOSE WITH THE CLAIM",
+								"fields": [
+									{
+										"label": "Original code purpose",
+										"value": "13:37 today / PASSWORD RESET / authorizes a reset / hidden in this exercise"
+									},
+									{
+										"label": "Follow-up claim",
+										"value": "Send CANCEL plus the newest code to a separate number; stay away from the campus portal."
+									}
+								]
+							},
+							{
+								"id": "activity",
+								"phone_app": "pages",
+								"label": "Inspect the current reset event",
+								"analysis": "The reset is awaiting verification. No reset has completed at this point.",
+								"view_title": "INSPECT THE CURRENT RESET EVENT",
+								"fields": [
+									{
+										"label": "Current request",
+										"value": "13:37 today / password reset requested / awaiting verification / not initiated by Leah"
+									},
+									{
+										"label": "Current result",
+										"value": "No completed password reset / current study session still active / report this request through the existing case"
+									}
+								]
+							},
+							{
+								"id": "support",
+								"phone_app": "contacts",
+								"label": "Read the response in the existing case",
+								"analysis": "The independently opened support case says not to supply codes to a person or SMS reply.",
+								"view_title": "READ THE RESPONSE IN THE EXISTING CASE",
+								"fields": [
+									{
+										"label": "Case continuity",
+										"value": "Case HC-104 / opened by Leah after the 13:34 attempt / response viewed inside the saved portal"
+									},
+									{
+										"label": "Cancellation procedure",
+										"value": "Do not send the reset code. Report the event in this case; staff can review the pending request without asking for its code."
+									}
+								]
+							}
+						]
+					},
 					"choices": [
-						{"label": "Provide the OTP because the message says it will CANCEL rather than approve the recovery request.", "outcome": "CRITICAL", "consequence": "The wording is reversed, not the outcome. Whoever generated the recovery request now has the exact code needed to complete it."},
-						{"label": "Ignore the follow-up instructions and independently open/contact the e-wallet through its known app or support channel to investigate the recovery attempt.", "outcome": "SAFE", "consequence": "The e-wallet's own support confirms the recovery attempt and cancels it directly, with no code ever leaving Leah's phone."},
-						{"label": "Call the support number included in the cancellation message and ask them to verify the recovery request before discussing the code.", "outcome": "RISKY", "consequence": "The number belongs to the same attacker, who happily \"confirms\" their own fabricated case."},
-						{"label": "Reply that Leah did not request the recovery, but refuse to provide the OTP unless the sender proves the case is legitimate.", "outcome": "RISKY", "consequence": "No code is given, but replying confirms the number is active and keeps the conversation going through the same untrusted channel."}
+						{
+							"label": "Report the pending reset in case HC-104 without sending its code; keep using the independently opened portal.",
+							"outcome": "SAFE",
+							"consequence": "Leah reports the reset through her existing case. The code stays private and the suspicious cancellation instruction receives no reply."
+						},
+						{
+							"label": "Reply CANCEL without the code and assume the reset is now stopped.",
+							"outcome": "RISKY",
+							"consequence": "An unverified SMS reply cannot establish that the portal request has been cancelled. The account status still needs an independent check."
+						},
+						{
+							"label": "Call the number in this new text and ask whether the code is really needed.",
+							"outcome": "RISKY",
+							"consequence": "The supplied callback returns to the same unverified source. Leah already has an independently opened support case."
+						},
+						{
+							"label": "Send the newest code with CANCEL so the sender can stop the reset before the seminar.",
+							"outcome": "CRITICAL",
+							"consequence": "A reset code authorizes the reset; sending it would not make the request a cancellation. Retry using the established support case without sharing the code."
+						}
 					],
-					"explanation": "Whoever generated the request is the only one who benefits from the code, no matter which direction the message claims it moves the process. A wallet provider's real fraud team never needs the customer to supply a code that was sent to stop something.",
-					"breach_gold": 26,
+					"explanation": "Read what a code authorizes. A password-reset code cannot safely be repurposed by a separate message that calls it cancellation. Confirm the result through the service you opened independently.",
+					"breach_gold": 8,
 					"next": "mod02_stage04_incident03"
 				},
 				{
@@ -5480,36 +6907,123 @@
 					"stage": 4,
 					"title": "Recovery Race",
 					"bkt_skill": "smishing",
-					"affected_system": "LEAH'S PRIMARY EMAIL / RECOVERY METHODS",
+					"affected_system": "LAPTOP ACCOUNT ACTIVITY PRACTICE",
+					"background": "college_commons",
 					"story": [
-						{"speaker": "", "text": "Leah stares at the e-wallet thread for a long moment."},
-						{"speaker": "Leah", "text": "I almost sent it."},
-						{"speaker": "Mia", "text": "But you didn't."},
-						{"speaker": "Leah", "text": "Only because you asked who generated the code."},
-						{"speaker": "Security Assistant", "text": "That's the part they're counting on you to skip."},
-						{"speaker": "Leah", "text": "They took the rule I knew..."},
-						{"speaker": "Leah", "text": "...and changed the reason."},
-						{"speaker": "Security Assistant", "text": "Same rule. Different story. That's the whole trick."},
-						{"speaker": "Leah", "text": "My email just sent a real notice: 'A password reset was requested.' Then another code. Then a recovery alert. There's a device on my account I don't recognize."},
-						{"speaker": "Leah", "text": "Now there's a text from their 'Account Protection Team': 'We are securing your account. Do not change your password while the investigation is active, or you may interrupt recovery.'"},
-						{"speaker": "Mia", "text": "It's telling you not to fix it?"},
-						{"speaker": "Leah", "text": "It says changing anything might interrupt them removing the device."}
+						{
+							"speaker": "Leah",
+							"text": "The sessions page shows a browser from yesterday that I do not recognize. That is older than either code today.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Alex",
+							"text": "So today's pending codes do not explain that session. Record the times and let the verified support case investigate.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Keep your existing session while you check recovery settings. A password change alone may not remove other sessions.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Let us compare the message, the current account record, and the saved support case.",
+							"emotion": "neutral",
+							"mail": {
+								"sender": "Campus support? / unverified SMS",
+								"subject": "Wait and turn off verification",
+								"body": "Support says: We are fixing the account. Turn off sign-in verification and wait until after class. Do not remove any devices while we investigate."
+							}
+						}
 					],
-					"situation": "Leah receives a legitimate notification from her primary email provider: \"A password reset was requested.\" Immediately afterward, another OTP arrives, a recovery notification appears, Leah is still signed into the account on her phone, and an unfamiliar device appears in recent account activity. An SMS claiming to be the provider's \"Account Protection Team\" then says: \"We are securing your account. Do not change your password while the investigation is active, or you may interrupt recovery,\" recommending Leah temporarily disable some security features while support \"removes the unauthorized device.\"",
+					"situation": "Support says: We are fixing the account. Turn off sign-in verification and wait until after class. Do not remove any devices while we investigate.",
 					"evidence": [
-						"Legitimate \"password reset requested\" notification from the real provider",
-						"An unfamiliar device recently appeared in account activity",
-						"Leah remains signed in on her own phone right now",
-						"A follow-up SMS claims to be the provider's \"Account Protection Team\" and asks Leah to avoid changing her password or security settings"
+						"An unverified message asks Leah to weaken protection and leave an unknown session active.",
+						"An older unrecognized session needs action even though today's code requests did not complete.",
+						"The established case recommends securing sessions and keeping verification on, with a possible protective hold."
 					],
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "MATCH ACTION, TIME AND RESULT",
+						"items": [
+							{
+								"id": "message",
+								"phone_app": "mail",
+								"label": "Inspect the proposed delay",
+								"analysis": "An unverified message asks Leah to weaken protection and leave an unknown session active.",
+								"view_title": "INSPECT THE PROPOSED DELAY",
+								"fields": [
+									{
+										"label": "Security change requested",
+										"value": "Turn off sign-in verification / leave all devices connected"
+									},
+									{
+										"label": "Delay requested",
+										"value": "Wait until after class / do not use existing account controls"
+									}
+								]
+							},
+							{
+								"id": "sessions",
+								"phone_app": "pages",
+								"label": "Review sessions and recovery settings",
+								"analysis": "An older unrecognized session needs action even though today's code requests did not complete.",
+								"view_title": "REVIEW SESSIONS AND RECOVERY SETTINGS",
+								"fields": [
+									{
+										"label": "Session timeline",
+										"value": "Yesterday 20:10 / browser Leah does not recognize / active. Today 13:05 / current study laptop / recognized."
+									},
+									{
+										"label": "Recovery settings",
+										"value": "Recovery contact unchanged / sign-in verification on / preserve these settings. Revoke the unrecognized session using current account controls."
+									}
+								]
+							},
+							{
+								"id": "support",
+								"phone_app": "contacts",
+								"label": "Read the verified response plan",
+								"analysis": "The established case recommends securing sessions and keeping verification on, with a possible protective hold.",
+								"view_title": "READ THE VERIFIED RESPONSE PLAN",
+								"fields": [
+									{
+										"label": "Response in case HC-104",
+										"value": "Record the unknown session; revoke it, set a unique password, and review recovery settings through the existing session. Keep verification on."
+									},
+									{
+										"label": "Recovery preparation",
+										"value": "Keep the locally saved assignment. Campus IT may temporarily hold sign-in while it verifies identity; the case will explain any hold and the next steps."
+									}
+								]
+							}
+						]
+					},
 					"choices": [
-						{"label": "Follow the \"Account Protection Team\" instruction to avoid changing credentials until support finishes removing the suspicious device.", "outcome": "CRITICAL", "consequence": "There is no real support process waiting in the background. The delay is the entire point, keeping the unfamiliar device authenticated for as long as Leah can be convinced to wait."},
-						{"label": "Use the account's existing authenticated session to secure the account: change credentials through the provider directly, review/revoke unfamiliar sessions, and verify recovery methods.", "outcome": "SAFE", "consequence": "Acting through the still-active session cuts off the unfamiliar device immediately and confirms the recovery methods haven't already been altered."},
-						{"label": "Change the password immediately through the real provider, but postpone reviewing sessions and recovery methods until the reset attempts stop.", "outcome": "RISKY", "consequence": "The new password stops new attempts, but the unfamiliar device's existing session and any already-changed recovery method are left completely untouched."},
-						{"label": "Keep the current password temporarily and monitor the unfamiliar device while independently contacting the provider's real support channel.", "outcome": "RISKY", "consequence": "The verification itself is genuine, but the unfamiliar device stays authenticated and able to act the entire time contact and confirmation are pending."}
+						{
+							"label": "Use the existing session to revoke the unknown device, set a unique password, review recovery settings and update HC-104.",
+							"outcome": "SAFE",
+							"consequence": "Leah revokes the unrecognized session, secures her password and confirms recovery settings with verification still on. Her support case records the earlier event for investigation."
+						},
+						{
+							"label": "Change the password, then return to the assignment without reviewing devices or recovery settings.",
+							"outcome": "RISKY",
+							"consequence": "A password change alone may leave existing sessions or unwanted recovery settings in place. The older unrecognized session still needs explicit review."
+						},
+						{
+							"label": "Log out of the only recognized session and wait for the unverified number to send recovery instructions.",
+							"outcome": "RISKY",
+							"consequence": "This abandons the working account controls and makes the unverified sender the recovery route. The established support case is already available."
+						},
+						{
+							"label": "Disable verification and leave the unknown session connected as the SMS requests.",
+							"outcome": "CRITICAL",
+							"consequence": "This would weaken protection while an unrecognized session remains active. Retry using the verified case and current session controls."
+						}
 					],
-					"explanation": "A real account-protection team never asks the account owner to leave a suspicious session running. The urgency to \"not interfere\" is what keeps the actual foothold — the authenticated session — alive the longest.",
-					"breach_gold": 28,
+					"explanation": "Compare event times rather than assuming one message explains every session. Review and revoke unknown sessions, secure the password and recovery settings, and use an established support case for any protective recovery hold.",
+					"breach_gold": 8,
 					"next": ""
 				}
 			]

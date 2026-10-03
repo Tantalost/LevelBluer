@@ -268,7 +268,15 @@ func _gameplay_catalog() -> Array[Dictionary]:
 	]))
 	catalog.append_array(_ui_catalog())
 	catalog.append_array(_school_story_catalog())
+	catalog.append_array(_college_story_catalog())
 	return catalog
+
+
+func _college_story_catalog() -> Array[Dictionary]:
+	return [
+		_catalog_entry("story_college_cast", "College story cast atlas (Alex/Mia/Leah)", "image", "%s/v1791030251/mia_and_alex.png" % CLOUD_ROOT),
+		_catalog_entry("story_college_commons", "College commons background", "image", "%s/v1791030176/temp.jpg" % CLOUD_ROOT),
+	]
 
 
 func _school_story_catalog() -> Array[Dictionary]:
@@ -759,6 +767,10 @@ func _bundled_path(asset_id: String) -> String:
 			return "res://assets/ui/halfheart.png"
 		"ui_heart_empty":
 			return "res://assets/ui/emptyheart.png"
+		"story_college_cast":
+			return "res://assets/story/college_cast.png"
+		"story_college_commons":
+			return "res://assets/story/college_commons.png"
 		_:
 			var character_id: String = asset_id.get_slice("_", 0)
 			if character_id.is_empty():

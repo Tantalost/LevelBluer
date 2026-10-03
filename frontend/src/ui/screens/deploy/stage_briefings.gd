@@ -19,6 +19,21 @@ const NOTES := {
 }
 
 const MODULE_NOTES := {
+	"mod_02:4": [
+		"THE CODE",
+		"Leah receives a campus verification code she did not request. Compare the action, time and result on her laptop, then defend two winding routes as a tougher packet joins the practice.",
+		"Check what the code authorizes. Cover both approaches and their meeting point.",
+	],
+	"mod_02:3": [
+		"SOMEONE YOU KNOW",
+		"A message in the project chat claims to be Mia. Check an established contact before changing numbers or sharing the group's interview recordings, then defend routes with different travel times.",
+		"Verify the person and the requested access. Watch both approaches.",
+	],
+	"mod_02:2": [
+		"EXPECTED DELIVERY",
+		"The group's first college project needs a camera, but delivery texts keep changing the plan. Match the full parcel reference, check the payment record, and protect two routes that meet closer to the laptop.",
+		"Match the whole record. Familiar details do not authorize a request.",
+	],
 	"mod_02:1": [
 		"FIRST LOGIN",
 		"College orientation brings a new timetable, a new classmate, and an urgent text. Help Alex check the campus portal on his laptop, then protect two entrances in a guided defense simulation.",
