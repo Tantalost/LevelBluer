@@ -247,7 +247,7 @@ func _fit_readability() -> void:
 		return
 	# A desktop has independently scrolling windows and pinned transfer controls;
 	# do not nest those windows inside the ordinary scrolling reading page.
-	var desktop_active: bool = _in_lesson and _phase == Phase.SIMULATION and str(_data.get("simulation_id", "")) == "sender_cross_check"
+	var desktop_active: bool = _in_lesson and _phase == Phase.SIMULATION and _module_id == "mod_01"
 	_progress_label.visible = _in_lesson and not desktop_active
 	_phase_label.visible = not desktop_active
 	_submit_button.visible = not desktop_active or _simulation_passed

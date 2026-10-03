@@ -83,6 +83,7 @@ func settle() -> void:
 
 func capture(name: String) -> void:
 	if "--render" in OS.get_cmdline_user_args():
+		await create_timer(0.2).timeout
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/" + name + ".png")
 
@@ -166,6 +167,31 @@ func _run() -> void:
 			screen._on_continue()
 			check(not screen._answer_effect._active, "Phase change clears quiz feedback")
 			var sim = screen._simulation
+			if id == "mod_01":
+				check(sim._pc_mode and sim._pc.home.visible and not sim._pc.window.visible, "Each Module 1 simulation starts at the desktop")
+				check(sim._pc.shortcuts.size() == 6 and sim._pc.dock.size() == 6, "Desktop and taskbar offer six icon apps")
+				await settle()
+				await capture("pc_lesson_%d_home" % (index + 1))
+				sim._pc.shortcuts[0].pressed.emit()
+				check(sim._pc.unread, "Unread badge remains until the message is read")
+				sim._read_message()
+				check(not sim._pc.unread and sim._message_open, "Opening a message clears its unread badge")
+				sim._pc.hide_window(false)
+				check(sim._pc.home.visible and sim._pc.active_app == "Inbox", "Minimize retains the active app")
+				sim._pc._running.pressed.emit()
+				check(sim._pc.window.visible and sim._message_open, "Taskbar restores the open message")
+				await settle()
+				await capture("pc_lesson_%d_mail" % (index + 1))
+				for app: String in ["Browser", "File Sandbox", "Directory", "Evidence", "Quarantine"]:
+					sim._open_app(app)
+					await settle()
+					check(not sim._passed, "Visiting apps never completes the lesson")
+					if index == 3:
+						await capture("pc_lesson_4_" + app.replace(" ", "_"))
+				sim._pc.hide_window(true)
+				check(sim._pc.home.visible and sim._pc.active_app.is_empty(), "Close returns to desktop")
+			else:
+				check(not sim._pc_mode, "Other modules retain their existing simulations")
 			sim._act("report")
 			check(not screen._simulation_passed, "Guessing report is blocked")
 			sim._act("open")
@@ -177,6 +203,10 @@ func _run() -> void:
 			else:
 				check(not sim._investigation, "Other lesson simulations unchanged")
 				sim._act("inspect")
+				if id == "mod_01":
+					sim._pc.hide_window(true)
+					sim._open_app("Directory")
+					check(sim._inspected, "Closing a window preserves collected evidence")
 				sim._act("verify")
 				sim._act("report")
 			check(screen._simulation_passed, "Safe sequence passes")
@@ -211,7 +241,10 @@ func _run() -> void:
 	check(screen._answer_effect._active, "Success remains visible after animation")
 	await capture("lessons_quiz_correct")
 	screen._on_continue()
+	await settle()
+	await capture("pc_home_desktop")
 	screen._simulation._act("open")
+	screen._simulation._read_message()
 	await settle()
 	await capture("lessons_desktop_sim")
 	var desktop: Control = screen._simulation
@@ -220,6 +253,7 @@ func _run() -> void:
 	desktop._open_app("Directory")
 	desktop._search_directory("University IT")
 	desktop._compare_domains(true)
+	desktop._open_app("Inbox")
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
 		root.size = dimensions
 		await settle()
@@ -227,6 +261,17 @@ func _run() -> void:
 		check(root.get_visible_rect().encloses(desktop._mail_card.get_global_rect()), "Email stays visible at %s" % dimensions)
 		check(root.get_visible_rect().encloses(desktop._quarantine.get_global_rect()), "Quarantine stays visible at %s" % dimensions)
 		await capture("lessons_investigation_%dx%d" % [dimensions.x, dimensions.y])
+		if dimensions.x == 844:
+			check((desktop._pc.body.get_parent() as Control).size.y >= 100, "Phone mail keeps a usable scrolling viewport")
+			desktop._pc.hide_window(false)
+			await settle()
+			check(root.get_visible_rect().encloses(desktop._pc.shortcuts[5].get_global_rect()), "All desktop apps fit the phone")
+			for shortcut: Button in desktop._pc.shortcuts:
+				var caption: Label = shortcut.get_child(1) as Label
+				check(shortcut.get_global_rect().encloses(caption.get_global_rect()), "Desktop caption fits: " + caption.text)
+			await capture("pc_home_phone")
+			desktop._open_app("Inbox")
+			await settle()
 	await drag_email(desktop, desktop._task.get_global_rect().get_center())
 	check(not desktop._passed, "Cancelled native drag cannot complete investigation")
 	await drag_email(desktop, desktop._quarantine.get_global_rect().get_center())
