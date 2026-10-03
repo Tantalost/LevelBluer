@@ -206,13 +206,17 @@ func resolve_answer(expired: bool = false) -> void:
 	answered += 1
 	question_index += 1
 	correct_answers += int(correct)
-	gold += 5 if correct else 2
+	var reward: int = _answer_gold(correct)
+	gold += reward
 	if correct and not global_patch and randf() <= LevelManager.GLOBAL_PATCH_CHANCE:
 		global_patch = true
 		for tower: TowerBase in occupied.values():
 			tower.apply_global_patch()
-	hud.show_feedback(correct, expired, Quiz.explanation(question, correct, picked))
+	hud.show_feedback(correct, expired, Quiz.explanation(question, correct, picked), reward)
 	_update_hud()
+
+func _answer_gold(correct: bool) -> int:
+	return 5 if correct else 2
 
 func continue_question() -> void:
 	if phase != "Trace" or not resolved or paused:

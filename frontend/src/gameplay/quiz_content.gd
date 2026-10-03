@@ -1,4 +1,107 @@
 extends RefCounted
+
+## Shared selection contract: 4 easy / 7 medium / 4 hard, balanced by type.
+static func _take_balanced_count(candidates: Array[Dictionary], needed: int, type_counts: Dictionary) -> Array[Dictionary]:
+	var remaining: Array[Dictionary] = candidates.duplicate()
+	remaining.shuffle()
+	var picked: Array[Dictionary] = []
+	while picked.size() < needed and not remaining.is_empty():
+		var min_count: int = 999999
+		for i: int in remaining.size():
+			var used: int = int(type_counts.get(_question_type_id(remaining[i]), 0))
+			if used < min_count:
+				min_count = used
+		var chosen_index: int = -1
+		for i: int in remaining.size():
+			if int(type_counts.get(_question_type_id(remaining[i]), 0)) == min_count:
+				chosen_index = i
+				break
+		if chosen_index < 0:
+			break
+		var chosen: Dictionary = remaining[chosen_index]
+		picked.append(chosen)
+		remaining.remove_at(chosen_index)
+		var type_id: String = _question_type_id(chosen)
+		type_counts[type_id] = int(type_counts.get(type_id, 0)) + 1
+	return picked
+
+
+static func build_exam_deck(pool: Array[Dictionary], module_id: String) -> Array[Dictionary]:
+	if pool.is_empty():
+		push_error("LevelManager: TRACE exam bank unavailable for %s" % module_id)
+		return []
+	var type_counts: Dictionary = {}
+	var picked: Array[Dictionary] = []
+	var picked_ids: Dictionary = {}
+	var quotas: Array = [["easy", 4], ["medium", 7], ["hard", 4]]
+	for q: int in quotas.size():
+		var difficulty: String = str(quotas[q][0])
+		var needed: int = int(quotas[q][1])
+		var available: Array[Dictionary] = []
+		var matched: Array[Dictionary] = _questions_with_difficulty(pool, difficulty)
+		for i: int in matched.size():
+			var qid: String = _question_key(matched[i])
+			if picked_ids.has(qid):
+				continue
+			available.append(matched[i])
+		var taken: Array[Dictionary] = _take_balanced_count(available, needed, type_counts)
+		for i: int in taken.size():
+			var item: Dictionary = taken[i]
+			picked.append(item)
+			picked_ids[_question_key(item)] = true
+	if picked.size() < 15:
+		var leftover: Array[Dictionary] = []
+		for i: int in pool.size():
+			var qid: String = _question_key(pool[i])
+			if picked_ids.has(qid):
+				continue
+			leftover.append(pool[i])
+		var filler: Array[Dictionary] = _take_balanced_count(leftover, 15 - picked.size(), type_counts)
+		for i: int in filler.size():
+			picked.append(filler[i])
+			picked_ids[_question_key(filler[i])] = true
+	picked.shuffle()
+	var easy_n: int = 0
+	var medium_n: int = 0
+	var hard_n: int = 0
+	var unique_ids: Dictionary = {}
+	for i: int in picked.size():
+		unique_ids[_question_key(picked[i])] = true
+		match _question_difficulty(picked[i]):
+			"easy":
+				easy_n += 1
+			"hard":
+				hard_n += 1
+			_:
+				medium_n += 1
+	print("[TRACE EXAM]")
+	print("module=%s" % module_id)
+	print("questions=%d" % picked.size())
+	print("easy=%d" % easy_n)
+	print("medium=%d" % medium_n)
+	print("hard=%d" % hard_n)
+	print("unique=%d" % unique_ids.size())
+	return picked
+
+static func _question_key(q: Dictionary) -> String:
+	var qid: String = str(q.get("id", "")).strip_edges()
+	return qid if not qid.is_empty() else str(q.get("text", q.get("question", "")))
+
+static func _question_type_id(q: Dictionary) -> String:
+	var type_id: String = str(q.get("type_id", "")).strip_edges()
+	return type_id if not type_id.is_empty() else "other"
+
+static func _question_difficulty(q: Dictionary) -> String:
+	var difficulty: String = str(q.get("difficulty", "")).strip_edges().to_lower()
+	return difficulty if difficulty in ["easy", "medium", "hard"] else ""
+
+static func _questions_with_difficulty(pool: Array[Dictionary], difficulty: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for q: Dictionary in pool:
+		if _question_difficulty(q) == difficulty:
+			result.append(q)
+	return result
+
 ## Shared question presentation and grading; no economy, timers, or account state.
 
 static func _format_scenario(q: Dictionary) -> String:
@@ -115,4 +218,3 @@ static func options(q: Dictionary) -> Array[Dictionary]:
 	for i in rows.size():
 		out.append({"text": str(rows[i]), "value": i})
 	return out
-

@@ -30,6 +30,7 @@ var locked_stages: Dictionary = {}
 var cleared_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
+var lesson_post_quiz_scores: Dictionary = {}
 var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
 var tech_ranks: Dictionary = {}
@@ -186,6 +187,28 @@ func get_lesson_progress(module_id: String) -> int:
 	return int(lesson_progress[module_id])
 
 
+func has_lesson_post_quiz(module_id: String) -> bool:
+	return int(lesson_post_quiz_scores.get(module_id, 0)) >= 20
+
+
+func can_access_lesson_module(module_id: String) -> bool:
+	var ids: Array[String] = LessonCatalog.module_ids()
+	var index: int = ids.find(module_id)
+	# Keep previously-started archives accessible without inventing quiz passes.
+	return index >= 0 and (index == 0 or get_lesson_progress(module_id) > 0 or has_lesson_post_quiz(ids[index - 1]))
+
+
+func record_lesson_post_quiz(module_id: String, score: int, answered: int) -> bool:
+	if module_id not in LessonCatalog.module_ids() or answered != 25 or score < 0 or score > answered:
+		return false
+	if get_lesson_progress(module_id) < LessonCatalog.lesson_count(module_id):
+		return false
+	if score > int(lesson_post_quiz_scores.get(module_id, 0)):
+		lesson_post_quiz_scores[module_id] = score
+		_save_progress()
+	return has_lesson_post_quiz(module_id)
+
+
 func complete_lesson_unit(module_id: String, total: int, all_module_ids: Array[String]) -> void:
 	if module_id.is_empty():
 		return
@@ -230,6 +253,7 @@ func reset_to_defaults() -> void:
 	cleared_stages.clear()
 	completed_lessons.clear()
 	lesson_progress.clear()
+	lesson_post_quiz_scores.clear()
 	purchased_items.clear()
 	unlocked_skills.clear()
 	unlocked_towers = ["base"]
@@ -762,6 +786,7 @@ func get_save_data() -> Dictionary:
 		"tech_ranks": tech_ranks.duplicate(true),
 		"has_stateful_inspection": has_stateful_inspection,
 		"lesson_progress": lesson_progress.duplicate(true),
+		"lesson_post_quiz_scores": lesson_post_quiz_scores.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
 		"seen_module_intros": seen_module_intros.duplicate(),
@@ -776,6 +801,13 @@ func get_save_data() -> Dictionary:
 
 
 func apply_save_data(data: Dictionary) -> void:
+	lesson_post_quiz_scores.clear()
+	var checkpoints: Variant = data.get("lesson_post_quiz_scores", {})
+	if checkpoints is Dictionary:
+		for module_id: String in LessonCatalog.module_ids():
+			var score: Variant = checkpoints.get(module_id, 0)
+			if score is int or score is float:
+				lesson_post_quiz_scores[module_id] = clampi(int(score), 0, 25)
 	max_stage_cleared_by_module.clear()
 	if data.has("max_stage_cleared_by_module") and typeof(data["max_stage_cleared_by_module"]) == TYPE_DICTIONARY:
 		var saved_ceilings: Dictionary = data["max_stage_cleared_by_module"] as Dictionary

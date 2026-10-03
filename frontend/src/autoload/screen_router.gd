@@ -51,6 +51,7 @@ signal quit_requested
 const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
 const PREVIEW_SCENE := "res://src/gameplay/preview/stage_one_preview.tscn"
 const STAGE_ONE_LIVE_SCENE := "res://src/gameplay/decision/stage_one_live.tscn"
+const ASSESSMENT_LIVE_SCENE: String = "res://src/gameplay/assessment_live.tscn"
 var active_match_context: MatchContext = MatchContext.new()
 
 var _host: Control = null
@@ -526,12 +527,12 @@ func _pop_now() -> void:
 
 
 func _context_for_stage(stage_index: int) -> MatchContext:
-	# Any authored decision-story stage (DecisionScenarios data exists for it)
-	# uses the live geometric scene; everything else stays on the legacy
-	# level_base/TRACE path. The tutorial always stays legacy.
+	# Story stages and Module 1's final assessment share geometric combat.
+	# Other modules' assessments and the tutorial retain their existing route.
 	var stage_id: int = stage_index + 1
 	var decision_stage: bool = not is_tutorial and DecisionScenarios.is_decision_stage(active_module_id, stage_id)
-	var context := MatchContext.stage_one_live() if decision_stage else MatchContext.new()
+	var assessment_stage: bool = not is_tutorial and active_module_id == "mod_01" and stage_id == 10
+	var context: MatchContext = MatchContext.stage_one_live() if decision_stage or assessment_stage else MatchContext.new()
 	context.stage_id = stage_id
 	context.module_id = active_module_id
 	return context
@@ -539,6 +540,8 @@ func _context_for_stage(stage_index: int) -> MatchContext:
 func _scene_for_context(context: MatchContext) -> String:
 	if context.preview:
 		return PREVIEW_SCENE
+	if context.geometric and context.module_id == "mod_01" and context.stage_id == 10:
+		return ASSESSMENT_LIVE_SCENE
 	return STAGE_ONE_LIVE_SCENE if context.geometric else LEVEL_SCENE
 
 func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
@@ -546,8 +549,9 @@ func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 		context = _context_for_stage(stage_index)
 	context.stage_id = stage_index + 1
 	if context.geometric and context.persistent:
-		if not DecisionScenarios.is_decision_stage(context.module_id, context.stage_id) or is_tutorial or not StageManager.access_reason(context.stage_id, context.module_id).is_empty():
-			push_warning("Router: this decision stage is not available for this session.")
+		var supported: bool = DecisionScenarios.is_decision_stage(context.module_id, context.stage_id) or (context.module_id == "mod_01" and context.stage_id == 10)
+		if not supported or is_tutorial or not StageManager.access_reason(context.stage_id, context.module_id).is_empty():
+			push_warning("Router: this stage is not available for this session.")
 			_set_ui_stack_active(true)
 			return
 	if not context.geometric and not AssetManager.has_required_gameplay_assets():

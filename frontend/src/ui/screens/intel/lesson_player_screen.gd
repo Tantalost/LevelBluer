@@ -5,23 +5,15 @@ const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Study = preload("res://src/ui/screens/intel/lesson_study_content.gd")
 const Desktop = preload("res://src/ui/screens/intel/lesson_desktop_sim.gd")
 const Feedback = preload("res://src/ui/screens/intel/study_feedback.gd")
-const PathNode = preload("res://src/ui/screens/intel/lesson_path_node.gd")
+const Web = preload("res://src/ui/screens/intel/lesson_web.gd")
+const PostQuiz = preload("res://src/ui/screens/intel/lesson_post_quiz.gd")
+var account: Object
+var _web: Control
+var _post_quiz: Control
+var _post_active: bool = false
 const COMPLETE_FILL := Color("193a2b")
 const COMPLETE_INK := Color("a3e6b0")
 
-class PathLinks extends HBoxContainer:
-	var ink := Color("3b626a")
-	func _notification(what: int) -> void:
-		if what == NOTIFICATION_SORT_CHILDREN:
-			queue_redraw()
-	func _draw() -> void:
-		if get_child_count() != 3:
-			return
-		var points := PackedVector2Array()
-		for column in get_children():
-			var node := column.get_child(0) as Control
-			points.append(column.position + node.position + node.size * 0.5)
-		draw_polyline(points, ink, 3, true)
 enum Phase { DEFINITION, QUIZ, SIMULATION, COMPLETE }
 var _module_id := ""
 var _lesson_index := 0
@@ -33,7 +25,6 @@ var _quiz_passed := false
 var _simulation_passed := false
 var _picks: Array[int] = []
 var _data: Dictionary = {}
-var _side: VBoxContainer
 var _content: VBoxContainer
 var _phase_label: Label
 var _progress_label: Label
@@ -46,7 +37,6 @@ var _tutorial_overlay: TutorialOverlay
 var _panes: HBoxContainer
 var _pending_entry: Dictionary = {}
 var _answer_effect: Control
-var _roadmap: VBoxContainer
 var _workspace: PanelContainer
 var _start_button: Button
 var _page_back: Button
@@ -58,6 +48,8 @@ var _header_title: Label
 var _status_scroll: ScrollContainer
 
 func _ready() -> void:
+	if account == null:
+		account = PlayerManager
 	var shell := UI.shell(self, "LEARNING PATH", func() -> void: Router.request_back())
 	_close_button = shell.back
 	_header_title = shell.title
@@ -69,19 +61,14 @@ func _ready() -> void:
 	_panes.add_theme_constant_override("separation", 24)
 	_panes.size_flags_vertical = SIZE_EXPAND_FILL
 	layout.add_child(_panes)
-	var left := UI.panel(_panes)
-	left.name = "TopicInfo"
-	left.size_flags_horizontal = SIZE_EXPAND_FILL
-	left.size_flags_stretch_ratio = 0.32
-	_side = UI.scroll_column(left)
-	var right := UI.panel(_panes, Color("101e28"))
-	right.name = "ModuleRoadmap"
-	right.size_flags_horizontal = SIZE_EXPAND_FILL
-	right.size_flags_stretch_ratio = 0.68
-	var path_column := UI.column(right, 12)
-	_roadmap = UI.scroll_column(path_column)
-	_start_button = UI.button("START LESSON  >", _open_lesson, true)
-	path_column.add_child(_start_button)
+	_web = Web.new()
+	_web.name = "LessonWeb"
+	_panes.add_child(_web)
+	_web.step_selected.connect(_open_step)
+	_web.checkpoint_requested.connect(_open_post_quiz)
+	# Kept as an explicit keyboard/tutorial shortcut; the nodes are primary.
+	_start_button = UI.button("START LESSON", _open_lesson, true)
+	layout.add_child(_start_button)
 	_workspace = UI.panel(layout, Color("101e28"))
 	_workspace.name = "LessonWorkspace"
 	_workspace.size_flags_vertical = SIZE_EXPAND_FILL
@@ -124,14 +111,14 @@ func on_enter(args: Dictionary) -> void:
 	var tutorial := Router.is_tutorial and (Router.tutorial_beat == &"lesson" or bool(args.get("tutorial", false)))
 	if tutorial:
 		module_id = "mod_01"
-	var completed := PlayerManager.get_lesson_progress(module_id) >= LessonCatalog.lesson_count(module_id)
+	var completed: bool = account.get_lesson_progress(module_id) >= LessonCatalog.lesson_count(module_id)
 	if not tutorial:
 		var ids := LessonCatalog.module_ids()
 		var module_index := ids.find(module_id)
 		if module_index < 0:
 			Router.request_back()
 			return
-		if module_index > 0 and PlayerManager.get_lesson_progress(ids[module_index - 1]) < LessonCatalog.lesson_count(ids[module_index - 1]):
+		if not account.can_access_lesson_module(module_id):
 			Router.request_back()
 			return
 		if not completed and not AuthService.has_module_pretest(module_id):
@@ -142,6 +129,10 @@ func on_enter(args: Dictionary) -> void:
 	_load_module(module_id, bool(args.get("review", false)) and completed, tutorial)
 	if tutorial:
 		_begin_tutorial_coach()
+	elif bool(args.get("post_quiz", false)):
+		_open_post_quiz()
+	else:
+		_web.reveal_web()
 
 func on_resume() -> void:
 	if not _pending_entry.is_empty():
@@ -160,7 +151,7 @@ func _load_module(module_id: String, review: bool = false, tutorial: bool = fals
 		_status_label.text = "No lessons are available for this module."
 		_submit_button.disabled = true
 		return
-	_lesson_index = 0 if review or tutorial else clampi(PlayerManager.get_lesson_progress(module_id), 0, _lessons.size() - 1)
+	_lesson_index = 0 if review or tutorial else clampi(account.get_lesson_progress(module_id), 0, _lessons.size() - 1)
 	_close_button.visible = not tutorial
 	_start_lesson()
 
@@ -178,84 +169,26 @@ func _start_lesson() -> void:
 	_scroll_to_selected.call_deferred()
 
 func _scroll_to_selected() -> void:
-	var selected := _roadmap.find_child("TopicPath%d" % (_lesson_index + 1), true, false)
-	if selected != null:
-		(_roadmap.get_parent() as ScrollContainer).ensure_control_visible(selected)
+	_web.focus_current()
 
 func _refresh_topic_info() -> void:
-	UI.clear(_side)
-	var module := LessonCatalog.module_by_id(_module_id)
-	_progress_label.text = "%s  /  TOPIC %02d OF %02d%s" % [str(module.get("title", "")).to_upper(), _lesson_index + 1, _lessons.size(), "  /  REVIEW" if _review_mode else ""]
-	_side.add_child(UI.label("TOPIC BRIEF", 14, UI.TEAL, true))
-	_side.add_child(UI.label(str(_data.title), 28))
-	_side.add_child(UI.label(str(_data.term).to_upper(), 17, UI.GOLD, true))
-	_side.add_child(UI.label(str(_data.rule), 23, UI.MUTED))
-	var progress := PlayerManager.get_lesson_progress(_module_id)
-	_side.add_child(HSeparator.new())
-	_side.add_child(UI.label("%d / %d TOPICS COMPLETED" % [progress, _lessons.size()], 23, COMPLETE_INK))
-	_side.add_child(UI.label("Read the lesson, check your understanding, then try it in a safe simulation. Each complete topic unlocks the next.", 24, UI.MUTED))
-	_side.add_child(UI.label("Progress is saved after finishing all three steps of a topic.", 22, UI.GOLD))
-	if progress >= _lessons.size():
-		_side.add_child(UI.label("MODULE COMPLETE\nYour entire path is open for review.", 26, COMPLETE_INK))
-	var left := _panes.get_child(0) as PanelContainer
-	left.add_theme_stylebox_override("panel", UI.box(COMPLETE_FILL if _lesson_index < progress else UI.PANEL, COMPLETE_INK if _lesson_index < progress else UI.TEAL))
+	var module: Dictionary = LessonCatalog.module_by_id(_module_id)
+	_progress_label.text = "%s / LESSON %02d OF %02d" % [str(module.get("title", "")).to_upper(), _lesson_index + 1, _lessons.size()]
 
 func _refresh_roadmap() -> void:
-	UI.clear(_roadmap)
-	var progress := PlayerManager.get_lesson_progress(_module_id)
-	for i in _lessons.size():
-		var finished := i < progress
-		var locked := (not _review_mode and i > progress) or (Router.is_tutorial and i != 0)
-		if i > 0:
-			var stem := ColorRect.new()
-			stem.color = COMPLETE_INK if i <= progress else Color("3b626a")
-			stem.custom_minimum_size = Vector2(3, 18)
-			stem.size_flags_horizontal = SIZE_SHRINK_CENTER
-			stem.mouse_filter = MOUSE_FILTER_IGNORE
-			_roadmap.add_child(stem)
-		var card := UI.panel(_roadmap, COMPLETE_FILL if finished else UI.PANEL)
-		card.name = "TopicPath%d" % (i + 1)
-		card.add_theme_stylebox_override("panel", UI.box(COMPLETE_FILL if finished else (Color("1b2027") if locked else UI.PANEL), UI.GOLD if i == _lesson_index else (COMPLETE_INK if finished else Color("3b626a")), 12))
-		var column := UI.column(card, 8)
-		var select := UI.button("TOPIC %02d%s" % [i + 1, " / SELECTED" if i == _lesson_index else ""], _select_topic.bind(i))
-		select.name = "SelectTopic"
-		if locked:
-			UI.lock_topic(select, "Complete Topic %02d first." % i)
-		elif finished:
-			select.add_theme_stylebox_override("normal", UI.box(COMPLETE_FILL, COMPLETE_INK, 10))
-			select.add_theme_color_override("font_color", COMPLETE_INK)
-		column.add_child(select)
-		var links := PathLinks.new()
-		links.ink = COMPLETE_INK if finished else Color("3b626a")
-		links.add_theme_constant_override("separation", 0)
-		column.add_child(links)
-		for step in 3:
-			var node_column := UI.column(links, 5)
-			node_column.size_flags_horizontal = SIZE_EXPAND_FILL
-			var node := PathNode.new()
-			node.name = "Step%d" % step
-			node.kind = step
-			node.complete = finished or (i == _lesson_index and [_read_passed, _quiz_passed, _simulation_passed][step])
-			node.disabled = locked or (not finished and (i != _lesson_index or not _read_passed) and step == 1) or (not finished and (i != _lesson_index or not _quiz_passed) and step == 2)
-			node.ink = UI.MUTED if node.disabled else (COMPLETE_INK if node.complete else UI.TEAL)
-			node.custom_minimum_size = Vector2(80, 80)
-			node.size_flags_horizontal = SIZE_SHRINK_CENTER
-			node.add_theme_stylebox_override("normal", UI.box(COMPLETE_FILL if node.complete else Color("203b43"), node.ink, 4))
-			node.add_theme_stylebox_override("disabled", UI.box(Color("1b2027"), Color("48505a"), 4))
-			node.add_theme_stylebox_override("hover", UI.box(Color("30543d"), UI.GOLD, 4))
-			node.add_theme_stylebox_override("focus", UI.box(Color.TRANSPARENT, UI.GOLD, 0))
-			node.tooltip_text = ["Read definitions and examples", "Finish reading before the mini quiz", "Pass the mini quiz before practice"][step]
-			node.pressed.connect(_open_step.bind(i, step))
-			node_column.add_child(node)
-			var caption := UI.label(["Learn", "Quiz", "Practice"][step], 22, node.ink)
-			caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			node_column.add_child(caption)
-		if locked:
-			column.add_child(UI.label("Finish the tutorial first." if Router.is_tutorial else "Complete Topic %02d to unlock." % i, 22, UI.MUTED))
-	_start_button.text = "CONTINUE LESSON  >" if _read_passed or _reading_page > 0 else ("REVIEW LESSON  >" if _lesson_index < progress else "START LESSON  >")
+	var progress: int = account.get_lesson_progress(_module_id)
+	var checks: Array[bool] = [_read_passed, _quiz_passed, _simulation_passed]
+	_web.configure(_module_id, _lessons, progress, _lesson_index, checks, Router.is_tutorial, account.has_lesson_post_quiz(_module_id))
+	_start_button.text = "CONTINUE LESSON" if _read_passed or _reading_page > 0 else ("REVIEW LESSON" if _lesson_index < progress else "START LESSON")
 	_fit_readability.call_deferred()
 
 func _show_roadmap() -> void:
+	_post_active = false
+	if is_instance_valid(_post_quiz):
+		_post_quiz.get_parent().remove_child(_post_quiz)
+		_post_quiz.queue_free()
+		_post_quiz = null
+	_start_button.visible = Router.is_tutorial
 	_in_lesson = false
 	_workspace.hide()
 	_panes.show()
@@ -265,28 +198,39 @@ func _show_roadmap() -> void:
 	_refresh_roadmap()
 
 func _open_lesson() -> void:
+	_start_button.hide()
 	_in_lesson = true
 	_panes.hide()
 	_workspace.show()
 	_header_title.text = str(_data.title).to_upper()
 	_close_button.text = "< PATH"
+	_fit_readability.call_deferred()
 
 func _open_step(index: int, step: int) -> void:
+	if index < 0 or index >= _lessons.size() or step < 0 or step > 2:
+		return
+	if index > account.get_lesson_progress(_module_id) or (Router.is_tutorial and index != 0):
+		return
 	if index != _lesson_index:
 		_select_topic(index)
 	if index != _lesson_index:
 		return
-	# Completed nodes offer review, but never bypass the current practice checks.
+	var completed: bool = index < account.get_lesson_progress(_module_id)
+	if completed:
+		_read_passed = true
+		_quiz_passed = step == 2
+	if step == 1 and not _read_passed or step == 2 and not _quiz_passed:
+		return
 	if step == 0:
 		_reading_page = 0
-		_set_phase(Phase.DEFINITION)
-	elif step == 1 and _read_passed:
-		_set_phase(Phase.QUIZ)
-	elif step == 2 and _quiz_passed:
-		_set_phase(Phase.SIMULATION)
+	_set_phase([Phase.DEFINITION, Phase.QUIZ, Phase.SIMULATION][step])
 	_open_lesson()
 
 func can_go_back() -> bool:
+	if _post_active:
+		_show_roadmap()
+		_set_phase(_phase)
+		return false
 	if _in_lesson:
 		_show_roadmap()
 		return false
@@ -298,10 +242,13 @@ func _previous_page() -> void:
 		_set_phase(Phase.DEFINITION)
 
 func _fit_readability() -> void:
+	if _post_active:
+		UI.fit_touch(_close_button.get_parent())
+		return
 	# A desktop has independently scrolling windows and pinned transfer controls;
 	# do not nest those windows inside the ordinary scrolling reading page.
 	var desktop_active: bool = _in_lesson and _phase == Phase.SIMULATION and str(_data.get("simulation_id", "")) == "sender_cross_check"
-	_progress_label.visible = not desktop_active
+	_progress_label.visible = _in_lesson and not desktop_active
 	_phase_label.visible = not desktop_active
 	_submit_button.visible = not desktop_active or _simulation_passed
 	_content.size_flags_vertical = SIZE_EXPAND_FILL if desktop_active else SIZE_FILL
@@ -313,6 +260,8 @@ func _fit_readability() -> void:
 	var physical_scale := minf(float(get_window().size.x) / get_viewport_rect().size.x, float(get_window().size.y) / get_viewport_rect().size.y)
 	physical_scale = maxf(0.5, physical_scale)
 	for control in find_children("*", "Control", true, false):
+		if _web.is_ancestor_of(control):
+			continue
 		if control is Label or control is Button or control is LineEdit:
 			if not control.has_meta("lesson_font_size"):
 				control.set_meta("lesson_font_size", control.get_theme_font_size("font_size"))
@@ -332,7 +281,7 @@ func _select_topic(index: int) -> void:
 		return
 	if index == _lesson_index:
 		return
-	if not _review_mode and index > PlayerManager.get_lesson_progress(_module_id):
+	if index > account.get_lesson_progress(_module_id):
 		return
 	if Router.is_tutorial and index != 0:
 		return
@@ -520,13 +469,16 @@ func _finish_lesson() -> void:
 		PlayerManager.grant_intel_bonus(_module_id)
 		_show_tutorial_lesson_done()
 		return
-	var progress := PlayerManager.get_lesson_progress(_module_id)
+	var completed_index: int = _lesson_index
+	var progress: int = account.get_lesson_progress(_module_id)
 	# Replaying a completed topic must not increment the next topic's progress.
 	if not _review_mode and _lesson_index == progress:
-		PlayerManager.complete_lesson_unit(_module_id, _lessons.size(), LessonCatalog.module_ids())
+		account.complete_lesson_unit(_module_id, _lessons.size(), LessonCatalog.module_ids())
 	if _lesson_index + 1 < _lessons.size():
 		_lesson_index += 1
 	_start_lesson()
+	if completed_index == progress and not _review_mode:
+		_web.celebrate(completed_index)
 
 func _begin_tutorial_coach() -> void:
 	_tutorial_overlay = TutorialOverlay.mount_on(self)
@@ -556,3 +508,19 @@ func on_exit() -> void:
 	_answer_effect.reset()
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
+func _open_post_quiz() -> void:
+	if Router.is_tutorial or _post_active or account.get_lesson_progress(_module_id) < _lessons.size():
+		return
+	_post_active = true
+	_in_lesson = true
+	_panes.hide()
+	_start_button.hide()
+	_workspace.hide()
+	_progress_label.hide()
+	_header_title.text = "MODULE CHECKPOINT"
+	_close_button.text = "< PATH"
+	_post_quiz = PostQuiz.new()
+	_post_quiz.account = account
+	(_workspace.get_parent() as Control).add_child(_post_quiz)
+	_post_quiz.return_requested.connect(_show_roadmap)
+	_post_quiz.setup(_module_id)

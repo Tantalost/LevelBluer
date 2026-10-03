@@ -101,6 +101,7 @@ func _queue_metrics() -> void:
 
 func configure(data: Dictionary) -> void:
 	_data = data.duplicate(true)
+	_status.text = str(_data.get("clock", "07:35"))
 	_unlocked = false
 
 func reset_incident(config: Dictionary = {}) -> void:
@@ -219,13 +220,13 @@ func _render() -> void:
 		return
 	match _app:
 		"lock", "home":
-			var time: Label = UI.label("07:35", 64, Color("F3ECD6"))
+			var time: Label = UI.label(str(_data.get("clock", "07:35")), 64, Color("F3ECD6"))
 			time.set_meta("phone_clock", true)
 			time.add_theme_color_override("font_outline_color", Color("173058"))
 			time.add_theme_constant_override("outline_size", 4)
 			time.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_content.add_child(time)
-			var date: Label = UI.label("MONDAY", 20, Color("F3ECD6"))
+			var date: Label = UI.label(str(_data.get("day", "MONDAY")), 20, Color("F3ECD6"))
 			date.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_content.add_child(date)
 			var space: CenterContainer = CenterContainer.new()
