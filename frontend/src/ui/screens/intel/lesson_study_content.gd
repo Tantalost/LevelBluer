@@ -16,6 +16,7 @@ static func build(module_id: String, index: int) -> Dictionary:
 	var domain: Dictionary = DOMAIN.get(str(source.get("domain", "phishing")), DOMAIN.phishing)
 	var explanation := str(source.get("explanation", source.get("hint", source.get("brief", domain.rule))))
 	var result := {
+		"module_id": module_id, "lesson_index": index,
 		"title": source.title, "term": domain.term, "definition": domain.definition,
 		"takeaway": explanation, "rule": domain.rule, "summary": source.get("beat4_summary", "Practice complete."),
 		"scenario": _scenario(source), "domain": domain,

@@ -83,41 +83,43 @@ func settle() -> void:
 
 func capture(name: String) -> void:
 	if "--render" in OS.get_cmdline_user_args():
+		await create_timer(0.2).timeout
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/" + name + ".png")
 
 func _run() -> void:
-	var player := root.get_node("PlayerManager")
+	var player: Node = load("res://src/autoload/player_manager.gd").new()
 	player.lesson_progress = {}
 	var catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")
 	var study = load("res://src/ui/screens/intel/lesson_study_content.gd")
 	var picker: Control = load("res://src/ui/screens/intel/lessons_screen.tscn").instantiate()
+	picker.account = player
 	root.add_child(picker)
 	await settle()
 	check(picker._cards.size() == 5, "Five module cards")
 	check(picker.find_child("UpgradesCard", true, false) == null, "No upgrades in lesson picker")
-	check(picker._can_open(0) and not picker._can_open(1), "Sequential module lock retained")
+	check(picker._is_unlocked(0) and not picker._is_unlocked(1), "Sequential module lock retained")
 	check(picker._cards[1].disabled, "Locked module visibly disabled")
 	check(picker._cards[1].find_child("ModuleStatusIcon", true, false).kind == 4, "Locked module has padlock")
 	check(not picker._cards[0].disabled, "First module/pretest remains actionable")
 	await capture("lessons_module_picker")
 	picker.hide()
 	var screen: Control = load("res://src/ui/screens/intel/lesson_player_screen.tscn").instantiate()
+	screen.account = player
 	root.add_child(screen)
 	screen._load_module("mod_01")
 	await settle()
-	var locked_topics := 0
-	for card in screen._roadmap.get_children():
-		var child = card.find_child("SelectTopic", true, false)
-		if child is Button and child.disabled:
+	var locked_topics: int = 0
+	for node: Button in screen._web.nodes:
+		if node.disabled:
 			locked_topics += 1
-			check(child.text.begins_with("LOCKED / ") and child.has_node("LockIcon"), "Locked topic has visible label and icon")
 	check(locked_topics == 5, "Five future topics visibly locked")
-	check(not screen._in_lesson and not screen._workspace.visible, "Module opens on roadmap, not repeated definition")
-	check(screen._start_button.text == "START LESSON  >", "Explicit start lesson action")
-	check(screen._roadmap.find_children("Step*", "Button", true, false).size() == 18, "Six topics each have three connected steps")
+	check(not screen._in_lesson and not screen._workspace.visible, "Module opens on web")
+	check(screen._start_button.text == "START LESSON", "Explicit start lesson action")
+	check(screen._web._canvas.find_children("Lesson*Step*", "Button", false, false).size() == 12, "Six topics have quiz and simulation satellites")
 	screen._open_step(0, 2)
 	check(screen._phase == 0 and not screen._simulation_passed, "Roadmap cannot bypass quiz")
+	screen._open_lesson()
 	check(not screen.can_go_back() and not screen._in_lesson, "Back from lesson returns to path")
 	check(screen.can_go_back(), "Back from path returns to module picker")
 	await capture("lessons_locked_topics")
@@ -129,6 +131,7 @@ func _run() -> void:
 			check(not content.correct.is_empty(), "Quiz has correct answer")
 			for answer in content.correct:
 				check(answer >= 0 and answer < content.options.size(), "Valid quiz index")
+			player.lesson_progress[id] = index
 			screen._load_module(id, true)
 			screen._select_topic(index)
 			check(not screen._can_complete(), "Cannot finish definition")
@@ -164,6 +167,31 @@ func _run() -> void:
 			screen._on_continue()
 			check(not screen._answer_effect._active, "Phase change clears quiz feedback")
 			var sim = screen._simulation
+			if id == "mod_01":
+				check(sim._pc_mode and sim._pc.home.visible and not sim._pc.window.visible, "Each Module 1 simulation starts at the desktop")
+				check(sim._pc.shortcuts.size() == 6 and sim._pc.dock.size() == 6, "Desktop and taskbar offer six icon apps")
+				await settle()
+				await capture("pc_lesson_%d_home" % (index + 1))
+				sim._pc.shortcuts[0].pressed.emit()
+				check(sim._pc.unread, "Unread badge remains until the message is read")
+				sim._read_message()
+				check(not sim._pc.unread and sim._message_open, "Opening a message clears its unread badge")
+				sim._pc.hide_window(false)
+				check(sim._pc.home.visible and sim._pc.active_app == "Inbox", "Minimize retains the active app")
+				sim._pc._running.pressed.emit()
+				check(sim._pc.window.visible and sim._message_open, "Taskbar restores the open message")
+				await settle()
+				await capture("pc_lesson_%d_mail" % (index + 1))
+				for app: String in ["Browser", "File Sandbox", "Directory", "Evidence", "Quarantine"]:
+					sim._open_app(app)
+					await settle()
+					check(not sim._passed, "Visiting apps never completes the lesson")
+					if index == 3:
+						await capture("pc_lesson_4_" + app.replace(" ", "_"))
+				sim._pc.hide_window(true)
+				check(sim._pc.home.visible and sim._pc.active_app.is_empty(), "Close returns to desktop")
+			else:
+				check(not sim._pc_mode, "Other modules retain their existing simulations")
 			sim._act("report")
 			check(not screen._simulation_passed, "Guessing report is blocked")
 			sim._act("open")
@@ -175,14 +203,19 @@ func _run() -> void:
 			else:
 				check(not sim._investigation, "Other lesson simulations unchanged")
 				sim._act("inspect")
+				if id == "mod_01":
+					sim._pc.hide_window(true)
+					sim._open_app("Directory")
+					check(sim._inspected, "Closing a window preserves collected evidence")
 				sim._act("verify")
 				sim._act("report")
 			check(screen._simulation_passed, "Safe sequence passes")
 			check(sim._answer_effect._ink == screen.Feedback.SUCCESS, "Safe simulation turns green")
 			screen._on_continue()
 			check(screen._can_complete(), "Both checks permit completion")
+			check(player.get_lesson_progress(id) == index, "No topic progress written before finish")
 			count += 1
-	check(player.lesson_progress.is_empty(), "No progress written before finish")
+	player.lesson_progress.clear()
 	screen._load_module("mod_01", true)
 	screen._open_lesson()
 	await settle()
@@ -208,7 +241,10 @@ func _run() -> void:
 	check(screen._answer_effect._active, "Success remains visible after animation")
 	await capture("lessons_quiz_correct")
 	screen._on_continue()
+	await settle()
+	await capture("pc_home_desktop")
 	screen._simulation._act("open")
+	screen._simulation._read_message()
 	await settle()
 	await capture("lessons_desktop_sim")
 	var desktop: Control = screen._simulation
@@ -217,6 +253,7 @@ func _run() -> void:
 	desktop._open_app("Directory")
 	desktop._search_directory("University IT")
 	desktop._compare_domains(true)
+	desktop._open_app("Inbox")
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
 		root.size = dimensions
 		await settle()
@@ -224,6 +261,17 @@ func _run() -> void:
 		check(root.get_visible_rect().encloses(desktop._mail_card.get_global_rect()), "Email stays visible at %s" % dimensions)
 		check(root.get_visible_rect().encloses(desktop._quarantine.get_global_rect()), "Quarantine stays visible at %s" % dimensions)
 		await capture("lessons_investigation_%dx%d" % [dimensions.x, dimensions.y])
+		if dimensions.x == 844:
+			check((desktop._pc.body.get_parent() as Control).size.y >= 100, "Phone mail keeps a usable scrolling viewport")
+			desktop._pc.hide_window(false)
+			await settle()
+			check(root.get_visible_rect().encloses(desktop._pc.shortcuts[5].get_global_rect()), "All desktop apps fit the phone")
+			for shortcut: Button in desktop._pc.shortcuts:
+				var caption: Label = shortcut.get_child(1) as Label
+				check(shortcut.get_global_rect().encloses(caption.get_global_rect()), "Desktop caption fits: " + caption.text)
+			await capture("pc_home_phone")
+			desktop._open_app("Inbox")
+			await settle()
 	await drag_email(desktop, desktop._task.get_global_rect().get_center())
 	check(not desktop._passed, "Cancelled native drag cannot complete investigation")
 	await drag_email(desktop, desktop._quarantine.get_global_rect().get_center())
@@ -241,10 +289,10 @@ func _run() -> void:
 	screen._load_module("mod_01")
 	screen._select_topic(0)
 	await settle()
-	var completed = screen._roadmap.find_child("TopicPath1", true, false)
-	check(completed.get_theme_stylebox("panel").bg_color == screen.COMPLETE_FILL, "Completed topic has green tint")
-	for step in completed.find_children("Step*", "Button", true, false):
-		check(step.complete, "Completed topic has three checked nodes")
+	var completed: Button = screen._web.nodes[0]
+	check(completed.get_theme_stylebox("normal").border_color == Color("#33D17A"), "Completed topic has a green completion border")
+	for step: Button in screen._web._canvas.find_children("Lesson1Step*", "Button", false, false):
+		check(step.complete, "Completed topic has checked satellites")
 	await capture("lessons_roadmap_completed")
 	for dimensions in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
 		root.size = dimensions
@@ -263,5 +311,6 @@ func _run() -> void:
 	await capture("lessons_picker_compact")
 	picker.queue_free()
 	await process_frame
+	player.free()
 	print("[LESSONS WORKSPACE] topics=%d failures=%d" % [count, failures])
 	quit(0 if failures == 0 else 1)

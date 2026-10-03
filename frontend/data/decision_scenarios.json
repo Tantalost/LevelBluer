@@ -4319,66 +4319,212 @@
 			"stage": 9,
 			"title": "Cut the Line",
 			"bkt_skill": "phishing",
-			"company": "BlueTech Solutions",
+			"company": "Harbor High School",
 			"clear_title": "STAGE 9 COMPLETE",
 			"clear_subtitle": "CUT THE LINE",
 			"next_stage_title": "Stage 10 — Post-Assessment",
-			"breach_hp_multiplier": 1.0,
+			"breach_hp_multiplier": 1,
+			"scene_header": "HARBOR HIGH // MONDAY, 14:20",
+			"guide_speaker": "Ms. Reyes",
+			"decision_lives": 3,
+			"containment_note": "CONTAINMENT SIMULATION / Help visualize stopping the attack. Ms. Reyes and School IT handle system isolation and account recovery; students preserve evidence and ask for help.",
+			"map_route": [
+				[
+					0,
+					6
+				],
+				[
+					10,
+					6
+				],
+				[
+					10,
+					4
+				],
+				[
+					4,
+					4
+				],
+				[
+					4,
+					2
+				],
+				[
+					9,
+					2
+				],
+				[
+					9,
+					0
+				],
+				[
+					10,
+					0
+				]
+			],
+			"locations": {
+				"opening": "classroom_day",
+				"ending": "science_lab",
+				"resume_breach": "science_lab",
+				"breach_contained": "classroom_day"
+			},
 			"opening": [
-				{"speaker": "Security Assistant", "text": "Found it."},
-				{"speaker": "Mia", "text": "The remaining session?"},
-				{"speaker": "Security Assistant", "text": "Yes. But it's connected to more than one account."},
-				{"speaker": "Mia", "text": "How much access?"},
-				{"speaker": "Security Assistant", "text": "Cloud storage. Mail. One endpoint. And at least one persistence mechanism."},
-				{"speaker": "Mia", "text": "So blocking another domain won't finish this."},
-				{"speaker": "Security Assistant", "text": "No."},
-				{"speaker": "Mia", "text": "Then we cut every path they have left.", "emotion": "determined"},
-				{"speaker": "Security Assistant", "text": "Exactly. Cut the line."}
+				{
+					"speaker": "Alex",
+					"text": "We finally rehearsed the whole presentation. I even remembered my part.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Mia",
+					"text": "Almost. You called our project Water Wobbly.",
+					"emotion": "relieved"
+				},
+				{
+					"speaker": "Alex",
+					"text": "That was once! Are we allowed back on the shared drive yet?",
+					"emotion": "worried"
+				},
+				{
+					"speaker": "Ms. Reyes",
+					"text": "Not yet. School IT is checking the access we reported. They need us to recognize which activity was ours.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "We can help with that. No guessing just because we want it finished.",
+					"emotion": "determined"
+				}
 			],
 			"ending": [
-				{"speaker": "Security Assistant", "text": "The access points are closed."},
-				{"speaker": "Mia", "text": "Then why are we still seeing traffic?"},
-				{"speaker": "Security Assistant", "text": "Processes already in motion. Stop them before they reach the remaining systems."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The records are with School IT. They're closing the remaining connections now.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Alex",
+					"text": "We'll leave the affected laptop alone and use the checked backup.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "One last defense simulation while they finish? Let's close this out.",
+					"emotion": "determined"
+				}
 			],
 			"resume_breach": [
-				{"speaker": "Security Assistant", "text": "Containment is still running. Get the defenses back up."}
+				{
+					"speaker": "Ms. Reyes",
+					"text": "The containment simulation is still waiting. Your evidence is saved; deploy the defenses when you're ready.",
+					"emotion": "determined"
+				}
 			],
 			"breach_contained": [
-				{"speaker": "Security Assistant", "text": "Breach contained. That path is cut, but more of their access is still live."},
-				{"speaker": "Mia", "text": "Then let's close the rest before they notice."}
+				{
+					"speaker": "Alex",
+					"text": "That route is blocked. Let's check the next record before calling it finished.",
+					"emotion": "determined"
+				},
+				{
+					"speaker": "Mia",
+					"text": "And keep the shared work paused until School IT gives the all-clear.",
+					"emotion": "determined"
+				}
 			],
+			"phone": {
+				"clock": "14:20",
+				"contacts": [
+					{
+						"title": "Ms. Reyes / in-person help",
+						"evidence_id": "adviser",
+						"body": "Your adviser is beside you. Ask her to confirm the incident through School IT's saved help route. Never send passwords or approval codes in a reply."
+					}
+				],
+				"pages": [
+					{
+						"title": "My account / activity",
+						"evidence_id": "sessions",
+						"body": "https://portal.harborhigh.example/account/activity\nSaved school portal. Compare the relevant session records below with your own devices."
+					},
+					{
+						"title": "Mail / forwarding settings",
+						"evidence_id": "forwarding",
+						"body": "https://portal.harborhigh.example/mail/settings\nSaved settings page. Review only your group's relevant rule summary; School IT handles removal and the wider audit."
+					},
+					{
+						"title": "Fair laptop / staff report",
+						"evidence_id": "laptop",
+						"body": "https://portal.harborhigh.example/help/fair-laptop\nSaved incident record shared by Ms. Reyes. This is a read-only report, not a remote-control tool."
+					}
+				]
+			},
 			"finale": {
 				"enabled": true,
 				"type": "tower_defense",
-				"affected_system": "BLUETECH CORE NETWORK",
-				"enemy_hp_multiplier": 1.0,
+				"affected_system": "HARBOR HIGH / FAIR PROJECT RECOVERY",
+				"enemy_hp_multiplier": 1,
 				"deploy_label": "DEPLOY FINAL DEFENSES",
 				"victory_banner": "CONTAINMENT COMPLETE",
 				"failure_title": "CONTAINMENT FAILED",
 				"ending": [
-					{"speaker": "Security Assistant", "text": "External session terminated."},
-					{"speaker": "Ramon", "text": "Forwarding rules are clean."},
-					{"speaker": "Mia", "text": "Any malicious accounts still active?"},
-					{"speaker": "Security Assistant", "text": "None."},
-					{"speaker": "Mia", "text": "So that's it?"},
-					{"speaker": "Security Assistant", "text": "That's it. The phishing campaign is contained."}
+					{
+						"speaker": "Ms. Reyes",
+						"text": "School IT confirms the unwanted sessions have ended and the forwarding rules are removed.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Alex",
+						"text": "And the laptop?",
+						"emotion": "worried"
+					},
+					{
+						"speaker": "Ms. Reyes",
+						"text": "Still isolated for checking. We can use the verified backup on a clean school device.",
+						"emotion": "neutral"
+					},
+					{
+						"speaker": "Mia",
+						"text": "So the fair is back on. Water Wise survives!",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Alex",
+						"text": "I'm keeping Water Wobbly as our emergency team name.",
+						"emotion": "relieved"
+					}
 				],
 				"case_summary": {
 					"title": "CASE CLOSED",
-					"subtitle": "THE PHISHING CAMPAIGN",
+					"subtitle": "WATER WISE / RECOVERY CHECK",
 					"items": [
-						"Accounts Secured",
-						"Malicious Sessions Revoked",
-						"Persistence Removed",
-						"Attacker Infrastructure Blocked",
-						"Systems Recovered"
+						"Unwanted sessions ended by School IT",
+						"Unauthorized forwarding removed and related settings reviewed",
+						"Affected laptop isolated for staff investigation",
+						"Verified backup available on a clean device",
+						"Students warned through the official school notice"
 					]
 				},
 				"closing": [
-					{"speaker": "Mia", "text": "At the beginning, it was just one suspicious email."},
-					{"speaker": "Security Assistant", "text": "That's usually all an attacker needs."},
-					{"speaker": "Mia", "text": "And all we needed was to stop trusting the message and start verifying the situation."},
-					{"speaker": "Security Assistant", "text": "Exactly."}
+					{
+						"speaker": "Mia",
+						"text": "One scary email nearly made us hand everything over.",
+						"emotion": "worried"
+					},
+					{
+						"speaker": "Alex",
+						"text": "Next time, I'll check the request before the deadline does my thinking for me.",
+						"emotion": "determined"
+					},
+					{
+						"speaker": "Ms. Reyes",
+						"text": "You asked for help and showed your evidence. Now try the final assessment on your own.",
+						"emotion": "relieved"
+					},
+					{
+						"speaker": "Alex",
+						"text": "Then the fair. And tonight, an alarm I actually wake up to.",
+						"emotion": "relieved"
+					}
 				],
 				"complete_banner": "MODULE 1 STORY COMPLETE"
 			},
@@ -4387,85 +4533,441 @@
 					"id": "mod01_stage09_incident01",
 					"module_id": "mod_01",
 					"stage": 9,
-					"title": "Active Session",
 					"bkt_skill": "phishing",
-					"affected_system": "COMPROMISED CLOUD SESSION",
+					"title": "Still Signed In",
+					"affected_system": "SCHOOL ACCOUNT / REMAINING SESSIONS",
+					"background": "classroom_day",
 					"story": [
-						{"speaker": "Security Assistant", "text": "The remaining suspicious cloud session is still authenticated."},
-						{"speaker": "Mia", "text": "Didn't the employee already change their password?"},
-						{"speaker": "Security Assistant", "text": "They did. The token never cared."}
+						{
+							"speaker": "Alex",
+							"text": "I changed my password with School IT. I thought that meant we were done.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Your phone buzzed. There's a follow-up asking about two sessions.",
+							"emotion": "worried",
+							"mail": {
+								"sender": "School IT <help@harborhigh.example>",
+								"subject": "Follow-up: do you recognize these sessions?",
+								"body": "Our incident review found activity after the account reset. Please compare the session times through your saved school portal and speak to Ms. Reyes. Do not reply with a password or a code."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "The library browser could be mine. I used it earlier.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "A familiar device name isn't proof. Compare when it was used with where you actually were.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "I was here rehearsing, with my phone in my bag.",
+							"emotion": "neutral"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's open the saved activity page, not sign in through the message.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "The remaining suspicious cloud session is still authenticated even though the employee's password has already been changed. The session token is still valid and has accessed several internal files. Terminating every session will force legitimate users to sign in again, but current logs are already preserved.",
+					"situation": "Two sessions show activity Alex does not recognize. What should he ask Ms. Reyes to help do?",
 					"evidence": [
-						"Employee's password was already changed",
-						"Session token for the suspicious session remains valid",
-						"The session has accessed several internal files",
-						"Current logs are already preserved and safe to act on"
+						"Both sessions acted after the reset while Alex was rehearsing. He recognizes neither action; the friendly library device label does not make the second session safe.",
+						"School IT has preserved the activity logs. Ending all sessions on Alex's affected account signs out his genuine devices too, but does not delete the project.",
+						"Ms. Reyes confirms the record with School IT through the saved help route. Staff can end the affected account's sessions and check recovery settings."
 					],
 					"choices": [
-						{"label": "Keep the session connected briefly while restricting file permissions so Security can observe whether it attempts to access another system.", "outcome": "CRITICAL", "consequence": "The permission restriction slows the session down, but it stays authenticated long enough to reach a second account before anyone acts further."},
-						{"label": "Revoke all active sessions for the affected account, rotate its credentials, and require fresh authentication before restoring access.", "outcome": "SAFE", "consequence": "Every session tied to the account ends immediately. The employee re-authenticates cleanly and the account is fully contained."},
-						{"label": "Revoke only the suspicious session and continue monitoring the employee's other authenticated sessions.", "outcome": "RISKY", "consequence": "The named session ends, but one of the employee's other 'legitimate' sessions turns out to be the attacker's actual foothold."}
+						{
+							"label": "Keep both sessions open to investigate myself",
+							"outcome": "CRITICAL",
+							"consequence": "The unwanted access continues while Alex experiments. He stops and takes the saved records to Ms. Reyes for urgent help."
+						},
+						{
+							"label": "Ask staff to end all sessions on my affected account",
+							"outcome": "SAFE",
+							"consequence": "Ms. Reyes helps School IT end the affected account's sessions and review its recovery settings. Alex signs in again only after staff confirm it is safe."
+						},
+						{
+							"label": "Close only the unfamiliar browser session",
+							"outcome": "RISKY",
+							"consequence": "The session named Library Browser still has unwanted access. Its familiar label hid the second path; staff help contain the remaining session."
+						}
 					],
-					"explanation": "A password change does not invalidate a session that was authenticated before it. Containment has to remove every potentially compromised authentication state, not only the one session that happened to be caught first.",
+					"explanation": "This reset did not end the access shown in these records. Check activity and ownership, not just device labels, and get authorized help to end the affected account's sessions.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School IT <help@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Follow-up: do you recognize these sessions?"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CLOSE THE REMAINING ACCESS",
+						"prompt": "Compare the records with what you recognize. Bring the evidence to Ms. Reyes before deciding.",
+						"items": [
+							{
+								"id": "sessions",
+								"label": "Compare the two session records",
+								"analysis": "Both sessions acted after the reset while Alex was rehearsing. He recognizes neither action; the friendly library device label does not make the second session safe.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "COMPARE THE TWO SESSION RECORDS",
+								"fields": [
+									{
+										"label": "PASSWORD RESET",
+										"value": "14:10 / reset completed with School IT."
+									},
+									{
+										"label": "UNFAMILIAR BROWSER",
+										"value": "14:14 / downloaded the project folder. Alex did not do this."
+									},
+									{
+										"label": "LIBRARY BROWSER",
+										"value": "14:16 / changed a sharing setting. Alex left the library at 13:00 and is rehearsing with Mia."
+									}
+								]
+							},
+							{
+								"id": "impact",
+								"label": "Check what signing out changes",
+								"analysis": "School IT has preserved the activity logs. Ending all sessions on Alex's affected account signs out his genuine devices too, but does not delete the project.",
+								"valid": true
+							},
+							{
+								"id": "adviser",
+								"label": "Confirm the request in person",
+								"analysis": "Ms. Reyes confirms the record with School IT through the saved help route. Staff can end the affected account's sessions and check recovery settings.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll check the records again. We don't need to rush this part.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's make sure the next step actually stops the problem.",
+							"emotion": "determined"
+						}
+					],
 					"breach_gold": 50,
-					"next": "mod01_stage09_incident02"
+					"next": "mod01_stage09_incident02",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage09_incident02",
 					"module_id": "mod_01",
 					"stage": 9,
-					"title": "Hidden Forwarding Rule",
 					"bkt_skill": "phishing",
-					"affected_system": "MAILBOX / CLOUD RULES",
+					"title": "The Quiet Copy",
+					"affected_system": "PROJECT MAIL / UNAUTHORIZED FORWARDING",
+					"background": "library_room",
 					"story": [
-						{"speaker": "Security Assistant", "text": "After containing the session, I found an unusual mailbox rule."},
-						{"speaker": "Mia", "text": "What does it do?"},
-						{"speaker": "Security Assistant", "text": "Forwards selected messages to an external address, then marks them read. It's been there for days."}
+						{
+							"speaker": "Mia",
+							"text": "No more sign-in warnings. That's a relief.",
+							"emotion": "relieved"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Wait. This notice says our project mail has been forwarding somewhere.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "School Mail <activity@harborhigh.example>",
+								"subject": "Review a forwarding setting on your project mail",
+								"body": "A forwarding rule was found during the incident review. Open your saved mail settings to see the read-only summary. Discuss any unrecognized destination with Ms. Reyes; do not test it by sending private information."
+							}
+						},
+						{
+							"speaker": "Mia",
+							"text": "I didn't set that up. Is that why messages looked read before we opened them?",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Check the rule's destination and actions. Don't send a test message with anyone's information.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "There's also a note about the shared project inbox. We should include that.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I'd rather miss one rehearsal than send another copy outside.",
+							"emotion": "worried"
+						}
 					],
-					"situation": "Security finds an unusual mailbox rule that automatically forwards selected messages to an external address and then marks them as read. The rule appears to have been created several days ago.",
+					"situation": "A rule silently copies project mail outside the school. How should Alex help stop it?",
 					"evidence": [
-						"Forwarding rule sends selected messages to an external address",
-						"Rule marks forwarded messages as read, hiding them from the inbox view",
-						"Rule creation timestamp is several days old",
-						"No other persistence mechanisms have been confirmed yet"
+						"The rule copies project messages to archive@outside-copy.example and marks them read. Neither student authorized it; ordinary inbox reading would not reveal the copies.",
+						"The staff note identifies a second rule awaiting review on the shared project inbox. Removing only the first rule would leave that related path unchecked.",
+						"School IT has saved the rule configuration and timestamps. Staff can disable or remove unauthorized forwarding while retaining that evidence; keeping forwarding active is not necessary."
 					],
 					"choices": [
-						{"label": "Disable the rule without deleting it so investigators can preserve its configuration while watching for further attacker activity.", "outcome": "CRITICAL", "consequence": "The disabled rule stops forwarding, but leaving it intact means the attacker's fallback configuration is still sitting there, undiscovered persistence elsewhere included."},
-						{"label": "Remove the rule, audit the mailbox for other persistence settings, review the external destination, and revoke remaining authorization tokens.", "outcome": "SAFE", "consequence": "The rule is gone and the audit turns up a second forwarding rule on a shared mailbox, which is removed before it does any damage."},
-						{"label": "Remove the forwarding rule and monitor the mailbox closely for any new unauthorized configuration changes.", "outcome": "RISKY", "consequence": "The discovered rule is gone, but a second, unaudited rule on a shared mailbox keeps forwarding messages unnoticed."}
+						{
+							"label": "Send our project details to test the forwarding",
+							"outcome": "CRITICAL",
+							"consequence": "The test sends another copy of the group's information to the unwanted destination. Alex stops testing and asks staff to disable the forwarding."
+						},
+						{
+							"label": "Report both inboxes and ask staff to stop forwarding",
+							"outcome": "SAFE",
+							"consequence": "Staff preserve the records, disable the unauthorized rules, and review related mailbox access. The group keeps project mail paused until staff confirm recovery."
+						},
+						{
+							"label": "Remove just my rule and resume all project mail",
+							"outcome": "RISKY",
+							"consequence": "Alex's rule is gone, but the shared inbox remains unchecked. Ms. Reyes helps stop that remaining forwarding before the group resumes."
+						}
 					],
-					"explanation": "Finding one persistence mechanism does not prove it is the only one. A full audit of related mailboxes and authorization tokens is what actually closes the door, not just removing the rule that happened to be found first.",
+					"explanation": "Stopping unauthorized forwarding and preserving evidence can happen together. Report the related inbox too; one fixed setting does not prove every access path is closed.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School Mail <activity@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Review a forwarding setting on your project mail"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CLOSE THE REMAINING ACCESS",
+						"prompt": "Compare the records with what you recognize. Bring the evidence to Ms. Reyes before deciding.",
+						"items": [
+							{
+								"id": "forwarding",
+								"label": "Inspect the forwarding rule",
+								"analysis": "The rule copies project messages to archive@outside-copy.example and marks them read. Neither student authorized it; ordinary inbox reading would not reveal the copies.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "INSPECT THE FORWARDING RULE",
+								"fields": [
+									{
+										"label": "DESTINATION",
+										"value": "archive@outside-copy.example / not a school or approved supplier address."
+									},
+									{
+										"label": "ACTIONS",
+										"value": "Forward messages matching Water Wise, then mark them read."
+									},
+									{
+										"label": "CREATED",
+										"value": "Three days ago / neither Alex nor Mia set up this rule."
+									}
+								]
+							},
+							{
+								"id": "scope",
+								"label": "Check the related inbox note",
+								"analysis": "The staff note identifies a second rule awaiting review on the shared project inbox. Removing only the first rule would leave that related path unchecked.",
+								"valid": true
+							},
+							{
+								"id": "preserve",
+								"label": "Check the evidence already saved",
+								"analysis": "School IT has saved the rule configuration and timestamps. Staff can disable or remove unauthorized forwarding while retaining that evidence; keeping forwarding active is not necessary.",
+								"valid": true
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll check the records again. We don't need to rush this part.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's make sure the next step actually stops the problem.",
+							"emotion": "determined"
+						}
+					],
 					"breach_gold": 52,
-					"next": "mod01_stage09_incident03"
+					"next": "mod01_stage09_incident03",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				},
 				{
 					"id": "mod01_stage09_incident03",
 					"module_id": "mod_01",
 					"stage": 9,
-					"title": "Final Connection",
 					"bkt_skill": "phishing",
-					"affected_system": "BLUETECH CORE NETWORK / AFFECTED ENDPOINT",
+					"title": "Save the Project, Not the Connection",
+					"affected_system": "FAIR LAPTOP / ACTIVE CONNECTION",
+					"background": "science_lab",
 					"story": [
-						{"speaker": "Security Assistant", "text": "One workstation is still talking to infrastructure tied to this campaign."},
-						{"speaker": "Mia", "text": "Whose is it?"},
-						{"speaker": "Security Assistant", "text": "Someone currently working, with unsaved files open. This could be their last foothold."}
+						{
+							"speaker": "Alex",
+							"text": "Our last slide is still open on the fair laptop. I haven't saved the new ending.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Mia",
+							"text": "The staff report just arrived. That laptop is still making suspicious connections.",
+							"emotion": "shocked",
+							"mail": {
+								"sender": "School IT <help@harborhigh.example>",
+								"subject": "Fair laptop: stop using it and contact your adviser",
+								"body": "The fair laptop is still communicating with a confirmed malicious destination. Staff have preserved the relevant logs. Stop using the device, leave its current state intact, and speak to Ms. Reyes. School IT will isolate and investigate it."
+							}
+						},
+						{
+							"speaker": "Alex",
+							"text": "Could we finish uploading it first? It's only one slide.",
+							"emotion": "worried"
+						},
+						{
+							"speaker": "Ms. Reyes",
+							"text": "Let's check the report and the backup. School IT will handle isolating the laptop.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "I saved yesterday's version on the clean rehearsal device. We can redo one slide.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Alex",
+							"text": "Okay. The project matters, but leaving a known problem connected won't protect it.",
+							"emotion": "determined"
+						}
 					],
-					"situation": "Security correlates the remaining indicators to one workstation still communicating with infrastructure associated with the campaign. The endpoint belongs to an employee currently working, contains unsaved business data, has active network connections, and may contain the attacker's final foothold. Security already has sufficient centralized logs for initial investigation.",
+					"situation": "The laptop is still communicating with the attacker's system. What should Alex do with his unfinished slide?",
 					"evidence": [
-						"Workstation actively communicating with known campaign infrastructure",
-						"Employee is currently working with unsaved business data open",
-						"Endpoint has active network connections right now",
-						"Centralized logs already provide sufficient data for initial investigation"
+						"Staff confirm an active malicious connection and already have the initial logs. Waiting to collect more evidence would leave the known compromise connected.",
+						"The checked rehearsal device has yesterday's offline copy. One unsaved slide can be recreated; do not upload from or plug storage into the affected laptop.",
+						"Ms. Reyes is present and has verified the instruction with School IT. Students stop using the device; authorized staff isolate it and preserve its state."
 					],
 					"choices": [
-						{"label": "Keep the endpoint connected under enhanced monitoring long enough to map any additional attacker infrastructure before isolating it.", "outcome": "CRITICAL", "consequence": "The mapping identifies more infrastructure, but the confirmed foothold stays online the entire time, continuing to communicate outward."},
-						{"label": "Isolate the endpoint from the network, preserve its current state for forensics, and begin coordinated containment across linked accounts.", "outcome": "SAFE", "consequence": "The endpoint drops off the network immediately, its state preserved intact, while the linked accounts are contained in the same motion."},
-						{"label": "Block the known malicious destinations at the network edge while keeping the workstation online so the employee can save and close active work.", "outcome": "RISKY", "consequence": "The known destinations are blocked, but the endpoint stays online and reachable long enough for the attacker to pivot through a channel that was never on the block list."}
+						{
+							"label": "Keep the laptop connected until my upload finishes",
+							"outcome": "CRITICAL",
+							"consequence": "The confirmed malicious connection stays active during the upload. Alex stops using the laptop and asks Ms. Reyes to get it isolated immediately."
+						},
+						{
+							"label": "Stop using it; ask staff to isolate it and use the backup",
+							"outcome": "SAFE",
+							"consequence": "Alex leaves the laptop intact. School IT isolates it while the group uses the checked backup on a clean device and rewrites the final slide."
+						},
+						{
+							"label": "Close the browser but keep working on the laptop",
+							"outcome": "RISKY",
+							"consequence": "Closing one browser window does not end the device's confirmed unwanted connection. Staff help contain it, and the group moves to the clean backup."
+						}
 					],
-					"explanation": "Blocking known indicators only stops the traffic already identified. With enough evidence already gathered and a confirmed foothold still active, immediate isolation is what actually ends the exposure — extended observation at this point only extends the compromise.",
+					"explanation": "With confirmed active compromise, stop using the device and get authorized help promptly. Keep its state intact for staff investigation and use a verified clean alternative.",
+					"display": {
+						"presentation": "email",
+						"metadata": [
+							{
+								"label": "FROM",
+								"value": "School IT <help@harborhigh.example>"
+							},
+							{
+								"label": "SUBJECT",
+								"value": "Fair laptop: stop using it and contact your adviser"
+							}
+						]
+					},
+					"investigation": {
+						"enabled": true,
+						"mode": "inspect",
+						"title": "CLOSE THE REMAINING ACCESS",
+						"prompt": "Compare the records with what you recognize. Bring the evidence to Ms. Reyes before deciding.",
+						"items": [
+							{
+								"id": "laptop",
+								"label": "Inspect the staff report",
+								"analysis": "Staff confirm an active malicious connection and already have the initial logs. Waiting to collect more evidence would leave the known compromise connected.",
+								"valid": true,
+								"phone_app": "pages",
+								"view_title": "INSPECT THE STAFF REPORT",
+								"fields": [
+									{
+										"label": "CONNECTION",
+										"value": "Active now / destination matched to the malicious fair update."
+									},
+									{
+										"label": "EVIDENCE STATUS",
+										"value": "Relevant network logs preserved by School IT; no student testing needed."
+									},
+									{
+										"label": "STAFF INSTRUCTION",
+										"value": "Stop using the device. Leave it intact; School IT will isolate it and advise on recovery."
+									}
+								]
+							},
+							{
+								"id": "backup",
+								"label": "Check the backup and unsaved work",
+								"analysis": "The checked rehearsal device has yesterday's offline copy. One unsaved slide can be recreated; do not upload from or plug storage into the affected laptop.",
+								"valid": true
+							},
+							{
+								"id": "adviser",
+								"label": "Confirm who handles isolation",
+								"analysis": "Ms. Reyes is present and has verified the instruction with School IT. Students stop using the device; authorized staff isolate it and preserve its state.",
+								"valid": true,
+								"phone_app": "contacts"
+							}
+						]
+					},
+					"resume": [
+						{
+							"speaker": "Alex",
+							"text": "I'll check the records again. We don't need to rush this part.",
+							"emotion": "determined"
+						},
+						{
+							"speaker": "Mia",
+							"text": "Let's make sure the next step actually stops the problem.",
+							"emotion": "determined"
+						}
+					],
 					"breach_gold": 55,
-					"next": ""
+					"next": "",
+					"timer": {
+						"enabled": true,
+						"seconds": 45,
+						"label": "DECIDE",
+						"timeout_outcome": "CRITICAL",
+						"pause_in_logs": false
+					}
 				}
 			]
 		},

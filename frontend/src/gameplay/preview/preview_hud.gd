@@ -283,10 +283,12 @@ func paint_selection(selected: Array) -> void:
 		b.add_theme_stylebox_override("normal", UI.box(Color("285247") if on else UI.PANEL, UI.TEAL if on else Color("3b626a"), 12))
 	submit.disabled = selected.is_empty()
 
-func show_feedback(correct: bool, expired: bool, note: String) -> void:
+func show_feedback(correct: bool, expired: bool, note: String, gold_reward: int = -1) -> void:
 	for b in option_buttons:
 		b.disabled = true
-	feedback.text = ("TIME EXPIRED / +2 gold\n" if expired else ("CORRECT / +5 gold\n" if correct else "INCORRECT / +2 gold\n")) + note
+	var reward: int = gold_reward if gold_reward >= 0 else (5 if correct else 2)
+	var verdict: String = "TIME EXPIRED" if expired else ("CORRECT" if correct else "INCORRECT")
+	feedback.text = verdict + (" / +%d gold" % reward if reward > 0 else "") + "\n" + note
 	feedback.add_theme_color_override("font_color", Color("a3deb2") if correct else Color("ed9999"))
 	feedback.show()
 	submit.text = "Continue >"

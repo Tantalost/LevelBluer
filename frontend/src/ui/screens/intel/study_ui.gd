@@ -102,6 +102,26 @@ static func clear(parent: Node) -> void:
 		parent.remove_child(child)
 		child.queue_free()
 
+## Apply to new roadmap/quiz controls only; preserve authored sizes on resize.
+static func fit_touch(root: Control) -> void:
+	var viewport: Vector2 = root.get_viewport_rect().size
+	var window: Vector2 = Vector2(root.get_window().size)
+	var physical: float = maxf(0.25, minf(window.x / viewport.x, window.y / viewport.y))
+	for child: Node in root.find_children("*", "Control", true, false):
+		var control: Control = child as Control
+		if control is Label or control is Button:
+			if not control.has_meta("touch_font"):
+				control.set_meta("touch_font", control.get_theme_font_size("font_size"))
+			control.add_theme_font_size_override("font_size", maxi(int(control.get_meta("touch_font")), ceili(16 / physical)))
+		if control is Button:
+			if not control.has_meta("touch_size"):
+				control.set_meta("touch_size", control.custom_minimum_size)
+			var original: Vector2 = control.get_meta("touch_size")
+			control.custom_minimum_size = Vector2(maxf(original.x, 48 / physical), maxf(original.y, 48 / physical))
+			if not control.text.contains("\n") and control.text.length() <= 16:
+				control.autowrap_mode = TextServer.AUTOWRAP_OFF
+				control.custom_minimum_size.x = maxf(control.custom_minimum_size.x, control.get_theme_font("font").get_string_size(control.text, HORIZONTAL_ALIGNMENT_LEFT, -1, control.get_theme_font_size("font_size")).x + 28)
+
 static func shell(host: Control, title: String, back: Callable) -> Dictionary:
 	var bg := ColorRect.new()
 	bg.color = BG

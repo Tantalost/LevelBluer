@@ -101,6 +101,7 @@ func _queue_metrics() -> void:
 
 func configure(data: Dictionary) -> void:
 	_data = data.duplicate(true)
+	_status.text = str(_data.get("clock", "07:35"))
 	_unlocked = false
 
 func reset_incident(config: Dictionary = {}) -> void:

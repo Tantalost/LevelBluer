@@ -34,6 +34,16 @@ const MODULE_NOTES := {
 		"The group's first college project needs a camera, but delivery texts keep changing the plan. Match the full parcel reference, check the payment record, and protect two routes that meet closer to the laptop.",
 		"Match the whole record. Familiar details do not authorize a request.",
 	],
+	"mod_01:9": [
+		"CUT THE LINE",
+		"The fair is nearly ready, but recovery is not finished. Help Alex compare active sessions, hidden mail copies, and a laptop report before the final containment simulation.",
+		"Check every remaining path. Let trusted staff handle recovery.",
+	],
+	"mod_01:10": [
+		"READY FOR THE NEXT MESSAGE",
+		"The Water Wise team is ready for the fair. Now apply what you learned on your own: fifteen short evidence challenges, with five before each defense wave.",
+		"Defend through all three waves and score at least 75% (12 of 15). Answers award no gold.",
+	],
 	"mod_02:1": [
 		"FIRST LOGIN",
 		"College orientation brings a new timetable, a new classmate, and an urgent text. Help Alex check the campus portal on his laptop, then protect two entrances in a guided defense simulation.",

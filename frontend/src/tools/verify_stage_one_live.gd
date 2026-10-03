@@ -18,9 +18,13 @@ class Account extends RefCounted:
 	var bonus: Dictionary = {}
 	var story_memory: Dictionary = {}
 	var story_memory_writes := 0
-	var enemy_tasks: Array[String] = []
-	func record_enemy_defeated(kind: String) -> void:
-		enemy_tasks.append(kind)
+	var module_1_complete: bool = false
+	var trace_results: Array[Dictionary] = []
+	var exam_locks: Array[String] = []
+	func record_trace_result(module_id: String, question_id: String, correct: bool) -> void:
+		trace_results.append({"module": module_id, "id": question_id, "correct": correct})
+	func lock_stage(module_id: String, stage_id: int) -> void:
+		exam_locks.append("%s:%d" % [module_id, stage_id])
 	func get_story_memory_snapshot() -> Dictionary:
 		return story_memory.duplicate(true)
 	func set_story_memories(entries: Dictionary) -> void:
@@ -41,7 +45,7 @@ class Account extends RefCounted:
 		writes += 1
 	func clear_decision_stage_state(_key: String) -> void:
 		checkpoint.clear()
-	func update_mastery(skill: String, correct: bool) -> void:
+	func update_mastery(skill: String, correct: bool, _params: Dictionary = {}) -> void:
 		bkt.append([skill, correct])
 	func tower_capacity(_kind: String) -> int:
 		return 3
@@ -213,7 +217,7 @@ func shot(match_node: Control, name: String) -> void:
 	check(rect.encloses(match_node.hud.body.get_global_rect()), name + ": battlefield fits")
 	if match_node.hud.pause_button.is_visible_in_tree():
 		check(rect.encloses(match_node.hud.pause_button.get_global_rect()), name + ": pause fits")
-	if match_node.story_overlay.is_visible_in_tree():
+	if "story_overlay" in match_node and match_node.story_overlay.is_visible_in_tree():
 		if match_node.story_overlay._window.is_visible_in_tree():
 			check(rect.encloses(match_node.story_overlay._window.get_global_rect()), name + ": story fits")
 		if match_node.story_overlay._school_cast and is_instance_valid(match_node.story_overlay._conversation) and match_node.story_overlay._conversation.visible:
@@ -433,8 +437,8 @@ func _verify_school_inspection_stage(stage_id: int) -> void:
 	var game: Control = mount(account, context)
 	check(game._key() == "mod_01:%d" % stage_id and game.story.company == "Harbor High School", prefix + "School story routes to its own save key")
 	check(game.story_hp == 3 and game.story_overlay._phone_enabled and game.story.guide_speaker == "Ms. Reyes", prefix + "Existing hearts, phone and cast")
-	var health_scales: Dictionary = {5: 0.8, 6: 0.85, 7: 0.9, 8: 0.95}
-	var starting_budgets: Dictionary = {5: 26, 6: 32, 7: 38, 8: 44}
+	var health_scales: Dictionary = {5: 0.8, 6: 0.85, 7: 0.9, 8: 0.95, 9: 1.0}
+	var starting_budgets: Dictionary = {5: 26, 6: 32, 7: 38, 8: 44, 9: 50}
 	check(is_equal_approx(game._enemy_health_scale(), float(health_scales[stage_id])), prefix + "Combat difficulty retained")
 	check(game.story.map_route != DecisionScenarios.get_stage("mod_01", stage_id - 1).map_route, prefix + "Map layout differs from the preceding stage")
 	var board: Node2D = game.hud.battle.board
@@ -508,6 +512,24 @@ func _verify_school_inspection_stage(stage_id: int) -> void:
 		choose(game, "SAFE")
 		check(account.bkt.size() == incident + 1, prefix + "One mastery update per decision")
 	read_page(game)
+	if stage_id == 9:
+		check(game.phase == "Build" and account.clears == 0 and game.decision.is_finale_active(), prefix + "Even all-safe decisions require final containment")
+		await unmount(game)
+		game = mount(account, context)
+		check(game.decision.resolved_threats == 3 and account.bkt.size() == 3, prefix + "Finale reload preserves all decisions without regrading")
+		read_page(game)
+		game.begin_defend()
+		game._finish(false)
+		check(account.clears == 0 and not account.checkpoint.is_empty(), prefix + "Lost finale cannot unlock assessment")
+		await unmount(game)
+		game = mount(account, context)
+		read_page(game)
+		game.begin_defend()
+		game._wave_cleared()
+		for block: int in range(3):
+			read_page(game)
+		check(game.decision.is_complete(), prefix + "Finale, case report and closing finish the story")
+		game._finish(true)
 	check(game.phase == "Results" and account.clears == 1 and account.stage_tasks == 1 and account.credits == 50 + game.gold, prefix + "Safe path completes and rewards once")
 	check(account.clear_keys == ["mod_01:%d" % stage_id], prefix + "Completion targets this module and stage only")
 	await unmount(game)
@@ -518,7 +540,8 @@ func _verify_school_inspection_stage(stage_id: int) -> void:
 		choose(game, "RISKY")
 		check(game.decision.awaiting_breach_deploy() and game.story_hp == 3, prefix + "Risky response starts containment without heart loss")
 		game._consequence_continued()
-		check(game.phase == "Build" and game.gold == int(starting_budgets[stage_id]) + incident * 2, prefix + "Original incident gold budget retained")
+		var expected_gold: int = 55 if stage_id == 9 and incident == 2 else int(starting_budgets[stage_id]) + incident * 2
+		check(game.phase == "Build" and game.gold == expected_gold, prefix + "Original incident gold budget retained")
 		if incident == 0:
 			await shot(game, "stage%d_school_map" % stage_id)
 		game.begin_defend()
@@ -527,6 +550,11 @@ func _verify_school_inspection_stage(stage_id: int) -> void:
 		read_page(game)
 	if game.phase != "Results":
 		read_page(game)
+	if stage_id == 9:
+		game.begin_defend()
+		game._wave_cleared()
+		for block: int in range(3):
+			read_page(game)
 	check(game.phase == "Results" and account.clears == 1, prefix + "Containment path can finish all incidents")
 	await unmount(game)
 
@@ -556,6 +584,137 @@ func _verify_school_inspection_stage(stage_id: int) -> void:
 	game = mount(account, context)
 	check(game.story_hp == 3 and game.decision.threat_index == 0 and game.story_overlay._mode == &"story", prefix + "Exhausted attempt restarts at opening")
 	await unmount(game)
+
+func _exam_pick_correct(game: Control) -> void:
+	var quiz: GDScript = preload("res://src/gameplay/quiz_content.gd")
+	if quiz.is_multi(game.question):
+		for index: Variant in game.question.correct_indices:
+			game.choose_answer(int(index))
+	else:
+		for option: Dictionary in quiz.options(game.question):
+			if quiz.grade(game.question, option.value):
+				game.choose_answer(option.value)
+				break
+	game.resolve_answer()
+
+func _verify_school_assessment() -> void:
+	print("-- [School Assessment] Full exam, geometric battle, persistence boundaries --")
+	var original_scene: PackedScene = scene
+	scene = load("res://src/gameplay/assessment_live.tscn") as PackedScene
+	var context: MatchContext = Context.stage_one_live()
+	context.stage_id = 10
+	var account: Account = Account.new()
+	var game: Control = mount(account, context)
+	check(game.phase == "Briefing" and game.answered == 0, "Assessment waits for explicit start")
+	game.toggle_pause()
+	check(not game.paused and game.hud.modal != null, "Pause cannot replace the assessment Start prompt")
+	check(game.gold == 20 and account.intel_uses == 1, "Exam keeps starting budget and consumes Intel once")
+	check(game.hud.battle.board.waypoints == game.ROUTE, "Assessment route applied to geometric board")
+	check(game.config == root.get_node("StageManager").get_stage_config(10), "Migration preserves assessment config and all three waves")
+	var counts: Dictionary = {"easy": 0, "medium": 0, "hard": 0}
+	var ids: Dictionary = {}
+	for q: Dictionary in game.question_pool:
+		counts[q.difficulty] += 1
+		ids[q.id] = true
+		check(str(q.module_id) == "mod_01" and str(q.skill_id) == "phishing", "Exam content stays in Module 1")
+	check(counts == {"easy": 4, "medium": 7, "hard": 4} and ids.size() == 15, "Exam retains unique 4/7/4 difficulty selection")
+	await shot(game, "stage10_assessment_intro")
+	game._finish(true)
+	check(account.clears == 0 and game.phase == "Briefing", "Cannot clear without questions and waves")
+	game.start_assessment()
+	game.start_assessment()
+	check(game.phase == "Trace" and game.question_index == 0, "Duplicate start does not skip questions")
+	# Explicit start, pause, empty submit, and duplicate answer guards.
+	game.resolve_answer()
+	check(game.answered == 0, "Empty submit does not consume a question")
+	game.toggle_pause()
+	game._process(100.0)
+	game.resolve_answer(true)
+	check(game.answered == 0 and game.time_left > 0, "Pause freezes assessment timer and submission")
+	game.toggle_pause()
+	for index: int in range(15):
+		check(game.question_index == index % 5, "Exactly five questions before each defense")
+		var budget: int = game.gold
+		if index < 3:
+			game.time_left = 0.0
+			_exam_pick_correct(game)
+			check(not bool(account.trace_results.back().correct), "Deadline beats a queued correct submit")
+		else:
+			_exam_pick_correct(game)
+		check(game.gold == budget and not game.hud.feedback.text.contains("gold"), "Summative answers award no gold or misleading reward text")
+		game.resolve_answer(true)
+		check(game.answered == index + 1 and account.trace_results.size() == index + 1, "Each answer recorded exactly once")
+		if index == 0:
+			root.size = Vector2i(844, 390)
+			await shot(game, "stage10_assessment_feedback_small")
+			check(root.get_visible_rect().encloses(game.hud.submit.get_global_rect()), "Assessment submit fits small landscape")
+			root.size = Vector2i(1280, 720)
+		game.continue_question()
+		if index % 5 == 4:
+			check(game.phase == "Build" and game.waves_completed == index / 5, "Question batch leads to Build")
+			if index == 4:
+				await shot(game, "stage10_assessment_map")
+				game.select_cell(Vector2i(3, 2))
+				game.pick_tower("base")
+				check(game.place_tower(), "Actual researched tower can be placed in geometric exam")
+				check(game.occupied.size() == 1 and game.gold == 18, "Deployment uses exam gold")
+			game.begin_defend()
+			game.incident_due = false
+			game._spawn_enemy()
+			check(game.hud.battle.track.get_child_count() > 0, "Configured enemy spawns on geometric path")
+			for enemy: Node in game.hud.battle.track.get_children():
+				game.hud.battle.track.remove_child(enemy)
+				enemy.queue_free()
+			game.active_enemies = 0
+			game._wave_cleared()
+	check(game.phase == "Results" and game.correct_answers == 12 and game.waves_completed == 3, "12 of 15 plus final defense passes")
+	check(account.clears == 1 and account.stage_tasks == 1 and account.module_1_complete, "Successful exam marks module and stage once")
+	check(account.clear_keys == ["mod_01:10"] and account.exam_locks.is_empty(), "Success affects only Module 1 Stage 10")
+	check(account.bkt.size() == 15 and account.trace_results.size() == 15, "All questions record mastery and history")
+	var paid: int = account.credits
+	game._finish(true)
+	game._wave_cleared()
+	check(account.credits == paid and account.clears == 1, "Repeated completion cannot pay twice")
+	await shot(game, "stage10_assessment_pass")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	game.start_assessment()
+	for index: int in range(15):
+		if index < 4:
+			game.resolve_answer(true)
+		else:
+			_exam_pick_correct(game)
+		game.continue_question()
+		if index % 5 == 4:
+			game.begin_defend()
+			game.incident_due = false
+			game._wave_cleared()
+	check(game.phase == "Results" and game.health == 5 and game.remediation_required, "11 of 15 fails after wave three, not by destroying the base")
+	check(account.exam_locks == ["mod_01:10"] and account.clears == 0 and not account.module_1_complete, "Failed exam locks remediation and never unlocks module")
+	check(account.credits == 10 and not game.hud.battle.board.home_destroyed, "Exam failure keeps legacy consolation and intact base")
+	await shot(game, "stage10_assessment_review")
+	await unmount(game)
+
+	account = Account.new()
+	account.cleared = true
+	game = mount(account, context)
+	game.start_assessment()
+	for index: int in range(5):
+		_exam_pick_correct(game)
+		game.continue_question()
+	check(account.bkt.is_empty() and account.trace_results.size() == 5, "Replay freezes mastery while preserving learning history")
+	game.begin_defend()
+	game.incident_active = true
+	game.resolve_incident(true)
+	check(account.bkt.is_empty(), "Replay live incident also freezes mastery")
+	for leak: int in range(5):
+		game._enemy_leaked()
+	check(game.phase == "Results" and account.clears == 0 and account.exam_locks.is_empty(), "Early defense loss does not create an exam-score lock")
+	check(account.credits == 10 and game.hud.battle.board.home_destroyed, "Defense loss awards once and destroys base")
+	await unmount(game)
+	scene = original_scene
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
@@ -606,7 +765,7 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(6)) == router.STAGE_ONE_LIVE_SCENE, "Stage 7 also routes to the live decision scene (it is decision-based too)")
 	check(router._scene_for_context(router._context_for_stage(7)) == router.STAGE_ONE_LIVE_SCENE, "Stage 8 also routes to the live decision scene (it is decision-based too)")
 	check(router._scene_for_context(router._context_for_stage(8)) == router.STAGE_ONE_LIVE_SCENE, "Stage 9 also routes to the live decision scene (it is decision-based too)")
-	check(router._scene_for_context(router._context_for_stage(9)) == router.LEVEL_SCENE, "Stage 10 (the post-assessment, no decision data) remains legacy")
+	check(router._scene_for_context(router._context_for_stage(9)) == router.ASSESSMENT_LIVE_SCENE, "Module 1 Stage 10 uses the separate geometric assessment")
 	router.is_tutorial = true
 	check(not router._context_for_stage(0).geometric, "Tutorial remains legacy")
 	router.is_tutorial = false
@@ -1402,8 +1561,9 @@ func _run() -> void:
 	check(DecisionScenarios.stage_key("mod_01", 1) != DecisionScenarios.stage_key("mod_01", 2), "[Stage 2] Stage 1 and Stage 2 checkpoint keys never collide")
 	await _verify_school_stage_three()
 	await _verify_school_stage_four()
-	for stage_id: int in range(5, 9):
+	for stage_id: int in range(5, 10):
 		await _verify_school_inspection_stage(stage_id)
+	await _verify_school_assessment()
 
 	# Module 3 Stage 1 introduces the reusable dialogue-emotion system (see
 	# DialogueEmotion / DialogueScreenShake / DialoguePortrait). The legacy
