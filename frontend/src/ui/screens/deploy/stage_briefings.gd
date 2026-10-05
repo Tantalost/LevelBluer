@@ -19,6 +19,36 @@ const NOTES := {
 }
 
 const MODULE_NOTES := {
+	"mod_02:10": [
+		"FINAL CHECKPOINT",
+		"Presentation day brings three independent case investigations. Inspect the laptop records, answer five questions per round, and defend two routes through all three waves. Pass with at least 12 of 15 answers correct and the laptop still standing.",
+		"Check the source, action and permission. Both final approaches need coverage.",
+	],
+	"mod_02:9": [
+		"TRUST NO NUMBER",
+		"An incoming caller knows the real case number. Trace the follow-up text, compare its verification route with saved campus support, and check the scope of the real reply. Both extended approaches feed a tougher mixed wave.",
+		"Choose an independent support route. Act on the verified result and its limits.",
+	],
+	"mod_02:8": [
+		"CLOSE TO HOME",
+		"Messages pull classmates and relatives into the same recovery request. Compare the person, the exact account action and the approval role on your laptop. A longer lower approach brings delayed packets into the next group.",
+		"Support the person. Verify the action and authority. Cover both late bends.",
+	],
+	"mod_02:7": [
+		"NOT JUST LEAH",
+		"Reports spread through the seminar chat. Trace the original sources, distinguish confirmed incidents from suspicious messages, and prepare a class warning that protects private details. Both routes detour as enemy groups switch entrances.",
+		"Count original reports. Check their status and permission before sharing.",
+	],
+	"mod_02:6": [
+		"NO SIGNAL",
+		"Leah's phone loses service while her laptop stays online. Check the carrier record, identify which study accounts depend on SMS, and verify the restoration plan. A longer lower route meets the upper path close to the laptop.",
+		"Check the line and each account separately. Watch the late approaches.",
+	],
+	"mod_02:5": [
+		"LOCKED OUT",
+		"Leah's campus account is on a protective hold. Find the verified recovery route, check what the identity desk needs, and review earlier activity before returning to the project. Two winding approaches bring a tougher mixed wave.",
+		"Verify the route. Share only what is required. Check before resuming.",
+	],
 	"mod_02:4": [
 		"THE CODE",
 		"Leah receives a campus verification code she did not request. Compare the action, time and result on her laptop, then defend two winding routes as a tougher packet joins the practice.",

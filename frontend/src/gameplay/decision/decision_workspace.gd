@@ -621,6 +621,7 @@ func _animate_notice(generation: int) -> void:
 	_notice_offset = -_mail_notice.position.y - _mail_notice.size.y
 	_mail_notice.modulate.a = 0.0
 	_mail_tween = create_tween()
+	_mail_tween.finished.connect(func() -> void: _mail_tween = null)
 	_mail_tween.set_parallel(true)
 	_mail_tween.tween_property(self, "_notice_offset", 0.0, 0.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	_mail_tween.tween_property(_mail_notice, "modulate:a", 1.0, 0.20)

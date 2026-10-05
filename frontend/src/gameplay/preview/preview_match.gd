@@ -175,6 +175,8 @@ func _next_question() -> void:
 	time_left = time_limit
 	hud.show_question(question, question_index + 1, int(config.get("questions_per_wave", 3)))
 	hud.quiz_timer.max_value = time_limit
+	hud.quiz_timer.value = time_limit
+	hud.quiz_time.text = "%.1fs" % time_limit
 
 func choose_answer(value: Variant) -> void:
 	if phase != "Trace" or resolved or paused:
@@ -211,7 +213,7 @@ func resolve_answer(expired: bool = false) -> void:
 	correct_answers += int(correct)
 	var reward: int = _answer_gold(correct)
 	gold += reward
-	if correct and not global_patch and randf() <= LevelManager.GLOBAL_PATCH_CHANCE:
+	if correct and _allows_answer_patch() and not global_patch and randf() <= LevelManager.GLOBAL_PATCH_CHANCE:
 		global_patch = true
 		for tower: TowerBase in occupied.values():
 			tower.apply_global_patch()
@@ -220,6 +222,9 @@ func resolve_answer(expired: bool = false) -> void:
 
 func _answer_gold(correct: bool) -> int:
 	return 5 if correct else 2
+
+func _allows_answer_patch() -> bool:
+	return true
 
 func continue_question() -> void:
 	if phase != "Trace" or not resolved or paused:

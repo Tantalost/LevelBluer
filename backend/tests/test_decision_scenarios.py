@@ -776,7 +776,9 @@ class DecisionScenarioDataTest(unittest.TestCase):
         stage = self._stage(5, module_id="mod_02")
         self.assertEqual(stage["title"], "Locked Out")
         self.assertEqual(stage["bkt_skill"], "smishing")
-        self.assertEqual(stage["breach_hp_multiplier"], 0.85)
+        self.assertEqual(stage["breach_hp_multiplier"], 0.45)
+        self.assertEqual(stage["content_version"], 2)
+        self.assertEqual(stage["visual_theme"], "college")
         self.assertEqual(stage["clear_title"], "STAGE 5 COMPLETE")
         self.assertEqual(stage["clear_subtitle"], "LOCKED OUT")
         self.assertIn("Stage 6", stage["next_stage_title"])
@@ -787,16 +789,19 @@ class DecisionScenarioDataTest(unittest.TestCase):
         threats = stage["threats"]
         self.assertEqual(
             [threat["title"] for threat in threats],
-            ["Recovery Contact Changed", "Messages From Me", "Prove You're You"],
+            ["Find the Recovery Route", "Prove You're You", "Messages From Me"],
         )
         opening = " ".join(line["text"] for line in stage["opening"])
-        self.assertIn("Try it again", opening)
-        self.assertIn("They changed the recovery path", opening)
+        self.assertIn("protective hold", opening)
+        self.assertIn("HC-104", opening)
+        self.assertIn("local interview draft", opening)
         ending = " ".join(line["text"] for line in stage["ending"])
         self.assertIn("I'm back in", ending)
-        self.assertIn("I have no signal", ending)
-        self.assertIn("No Service", ending)
-        self.assertNotIn("SIM swap", ending)
+        closing = " ".join(line["text"] for line in stage["finale"]["closing"])
+        self.assertIn("I have no signal", closing)
+        self.assertIn("No Service", closing)
+        self.assertIn("separate symptom", closing)
+        self.assertNotIn("SIM swap", closing)
 
     def test_module_2_stage_5_choices_avoid_trivial_wording(self):
         trivial_patterns = [
@@ -838,10 +843,10 @@ class DecisionScenarioDataTest(unittest.TestCase):
         threats = stage["threats"]
         incident2_story = " ".join(line["text"] for line in threats[1]["story"])
         incident3_story = " ".join(line["text"] for line in threats[2]["story"])
-        self.assertIn("asking everyone for money", incident2_story)
-        self.assertIn("talking to my family as me", incident2_story)
-        self.assertIn("We still don't know that's how they got in", incident3_story)
-        self.assertIn("we may leave the real one open", incident3_story)
+        self.assertIn("verified desk appointment", incident2_story)
+        self.assertIn("13:12, before the hold", incident3_story)
+        self.assertIn("earlier message I did not write", incident3_story)
+        self.assertIn("entry point is still unconfirmed", incident3_story)
         forbidden_blame_phrases = [
             "the click caused",
             "the click was how they got in",
@@ -851,24 +856,86 @@ class DecisionScenarioDataTest(unittest.TestCase):
         for phrase in forbidden_blame_phrases:
             self.assertNotIn(phrase, incident3_story.lower())
 
-    def test_module_2_stage_5_safe_playthrough_still_includes_guilt_dialogue(self):
-        # Leah's guilt over her Stage 1 click is story content shown regardless
-        # of the player's choices — it must not be tied to a RISKY/CRITICAL path.
+    def test_module_2_stage_5_safe_playthrough_does_not_invent_an_unsafe_choice(self):
+        # Support Leah without asserting a click the player may never have made.
         stage = self._stage(5, module_id="mod_02")
-        incident3_story = " ".join(line["text"] for line in stage["threats"][2]["story"])
-        self.assertIn("I clicked one message four stages ago", incident3_story)
-        self.assertIn("But it's my name", incident3_story)
+        story = " ".join(line["text"] for threat in stage["threats"] for line in threat["story"])
+        self.assertNotIn("I clicked one message", story)
+        self.assertIn("But it's my name", story)
+        self.assertIn("without blaming you", story)
         safe_outcomes = [
             next(choice for choice in threat["choices"] if choice["outcome"] == "SAFE")
             for threat in stage["threats"]
         ]
         self.assertEqual(len(safe_outcomes), 3)
 
+    def test_module_2_stage_5_recovery_sources_limit_disclosure_and_gate_restored_account(self):
+        stage = self._stage(5, module_id="mod_02")
+        self.assertNotIn("BlueTech", json.dumps(stage))
+        for threat in stage["threats"]:
+            items = threat["investigation"]["items"]
+            self.assertEqual(len(items), 3)
+            self.assertNotIn("offer", [item["id"] for item in items])
+            for item in items:
+                self.assertGreaterEqual(len(item["fields"]), 2)
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [card["evidence_id"] for card in stage["laptop"][item["phone_app"]]])
+        first, second, third = [threat["investigation"]["items"] for threat in stage["threats"]]
+        self.assertNotIn("audit", [item["id"] for item in first + second])
+        self.assertIn("no held-account login required", first[2]["fields"][0]["value"])
+        self.assertIn("not evidence of current account status", first[1]["analysis"])
+        self.assertIn("No document upload", second[1]["fields"][1]["value"])
+        self.assertIn("Keep backup codes private", second[2]["fields"][1]["value"])
+        self.assertEqual(third[1]["id"], "audit")
+        self.assertIn("13:12 before the hold", third[1]["fields"][1]["value"])
+        self.assertIn("remains restricted", third[2]["fields"][0]["value"])
+
+    def test_module_2_stage_5_map_adds_bends_without_a_budget_or_health_spike(self):
+        stage = self._stage(5, module_id="mod_02")
+        previous = self._stage(4, module_id="mod_02")
+        self.assertEqual(len(stage["map_routes"]), 2)
+        expanded = []
+        for route, old in zip(stage["map_routes"], previous["map_routes"]):
+            self.assertGreater(len(route), len(old))
+            cells = [tuple(route[0])]
+            for start, end in zip(route, route[1:]):
+                self.assertNotEqual(start, end)
+                self.assertTrue(start[0] == end[0] or start[1] == end[1])
+                dx = (end[0] > start[0]) - (end[0] < start[0])
+                dy = (end[1] > start[1]) - (end[1] < start[1])
+                while cells[-1] != tuple(end):
+                    x, y = cells[-1][0] + dx, cells[-1][1] + dy
+                    self.assertTrue(0 <= x < 13 and 0 <= y < 7)
+                    cells.append((x, y))
+            self.assertEqual(len(cells), len(set(cells)))
+            expanded.append(cells)
+        self.assertEqual([len(route) for route in expanded], [17, 17])
+        self.assertNotEqual(expanded[0][0], expanded[1][0])
+        self.assertEqual(set(expanded[0]) & set(expanded[1]), {(x, 3) for x in range(10, 13)})
+        finale = stage["finale"]
+        self.assertTrue(finale["enabled"])
+        self.assertEqual(finale["gold"], previous["finale"]["gold"])
+        self.assertEqual(finale["enemy_hp_multiplier"], previous["finale"]["enemy_hp_multiplier"])
+        for old, new in zip(previous["finale"]["waves"], finale["waves"]):
+            self.assertEqual(new["enemy_count"], old["enemy_count"] + 1)
+            self.assertGreaterEqual(new["spawn_delay"], old["spawn_delay"])
+            self.assertEqual(set(new["spawn_routes"]), {0, 1})
+        self.assertEqual(finale["waves"][0]["spawn_delay"], 1.7)
+        self.assertEqual(finale["waves"][1]["spawn_delay"], 1.9)
+        mixed = finale["waves"][1]
+        self.assertEqual(len(mixed["enemy_mix"]), mixed["enemy_count"])
+        heavy_indices = [i for i, kind in enumerate(mixed["enemy_mix"]) if kind == "heavy"]
+        self.assertEqual(len(heavy_indices), 2)
+        self.assertGreater(heavy_indices[1] - heavy_indices[0], 3)
+        self.assertNotEqual(mixed["spawn_routes"][heavy_indices[0] % 4], mixed["spawn_routes"][heavy_indices[1] % 4])
+
     def test_module_2_stage_6_is_no_signal_with_four_choice_incidents(self):
         stage = self._stage(6, module_id="mod_02")
         self.assertEqual(stage["title"], "No Signal")
         self.assertEqual(stage["bkt_skill"], "smishing")
-        self.assertEqual(stage["breach_hp_multiplier"], 0.9)
+        self.assertEqual(stage["breach_hp_multiplier"], 0.45)
+        self.assertEqual(stage["content_version"], 2)
+        self.assertEqual(stage["visual_theme"], "college")
         self.assertEqual(stage["clear_title"], "STAGE 6 COMPLETE")
         self.assertEqual(stage["clear_subtitle"], "NO SIGNAL")
         self.assertIn("Stage 7", stage["next_stage_title"])
@@ -886,9 +953,10 @@ class DecisionScenarioDataTest(unittest.TestCase):
         self.assertIn("eSIM activation", opening)
         ending = " ".join(line["text"] for line in stage["ending"])
         self.assertIn("I have service", ending)
-        self.assertIn("Before the first text", ending)
-        self.assertIn("Because now I'm angry", ending)
-        self.assertIn("wasn't the only target", ending)
+        self.assertIn("account", ending)
+        closing = " ".join(line["text"] for line in stage["finale"]["closing"])
+        self.assertIn("wasn't the only target", closing)
+        self.assertIn("do not yet prove the same cause", closing)
         self.assertNotIn("SIM swap", ending)
 
     def test_module_2_stage_6_choices_avoid_trivial_wording(self):
@@ -941,11 +1009,11 @@ class DecisionScenarioDataTest(unittest.TestCase):
             self.assertNotIn(phrase, all_text.lower())
 
     def test_module_2_stage_6_safe_playthrough_still_reaches_the_ramon_reveal(self):
-        # The Ramon/predates-Stage-1 revelations are story content shown after
-        # Incident 3 regardless of the player's choices throughout the stage.
+        # A separate classmate report follows completed practice, without
+        # claiming a common attacker or blaming an unchosen earlier action.
         stage = self._stage(6, module_id="mod_02")
-        ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("Before the first text", ending)
+        ending = " ".join(line["text"] for line in stage["finale"]["closing"])
+        self.assertIn("seminar group", ending)
         self.assertIn("Ramon", ending)
         self.assertIn("wasn't the only target", ending)
         safe_outcomes = [
@@ -954,11 +1022,70 @@ class DecisionScenarioDataTest(unittest.TestCase):
         ]
         self.assertEqual(len(safe_outcomes), 3)
 
+    def test_module_2_stage_6_separates_saved_sms_from_wifi_and_account_dependencies(self):
+        stage = self._stage(6, module_id="mod_02")
+        self.assertNotIn("BlueTech", json.dumps(stage))
+        for threat in stage["threats"]:
+            items = threat["investigation"]["items"]
+            self.assertEqual(len(items), 3)
+            self.assertNotIn("archive", [item["id"] for item in items])
+            for item in items:
+                self.assertGreaterEqual(len(item["fields"]), 2)
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [card["evidence_id"] for card in stage["laptop"][item["phone_app"]]])
+        first, second, third = [threat["investigation"]["items"] for threat in stage["threats"]]
+        self.assertIn("before service loss", first[0]["fields"][0]["value"])
+        self.assertIn("not receiving a new text", first[0]["fields"][1]["value"])
+        self.assertIn("Current line record", first[1]["fields"][1]["value"])
+        self.assertNotIn("restore", [item["id"] for item in first + second])
+        self.assertIn("authenticator already enrolled", second[1]["fields"][0]["value"])
+        self.assertIn("no completed new session", second[1]["fields"][1]["value"])
+        self.assertIn("Carrier cannot confirm", second[2]["fields"][1]["value"])
+        self.assertIn("test an ordinary call and SMS", third[1]["fields"][1]["value"])
+        self.assertIn("no remote-control app", third[1]["fields"][0]["value"])
+
+    def test_module_2_stage_6_extends_lower_route_and_merges_later_with_modest_wave_growth(self):
+        stage = self._stage(6, module_id="mod_02")
+        previous = self._stage(5, module_id="mod_02")
+        self.assertEqual(len(stage["map_routes"]), 2)
+        expanded = []
+        for route in stage["map_routes"]:
+            cells = [tuple(route[0])]
+            for start, end in zip(route, route[1:]):
+                self.assertNotEqual(start, end)
+                self.assertTrue(start[0] == end[0] or start[1] == end[1])
+                dx = (end[0] > start[0]) - (end[0] < start[0])
+                dy = (end[1] > start[1]) - (end[1] < start[1])
+                while cells[-1] != tuple(end):
+                    x, y = cells[-1][0] + dx, cells[-1][1] + dy
+                    self.assertTrue(0 <= x < 13 and 0 <= y < 7)
+                    cells.append((x, y))
+            self.assertEqual(len(cells), len(set(cells)))
+            expanded.append(cells)
+        self.assertEqual([len(route) for route in expanded], [17, 19])
+        self.assertNotEqual(expanded[0][0], expanded[1][0])
+        self.assertEqual(set(expanded[0]) & set(expanded[1]), {(11, 3), (12, 3)})
+        finale = stage["finale"]
+        self.assertTrue(finale["enabled"])
+        self.assertEqual(finale["gold"], previous["finale"]["gold"])
+        self.assertEqual(finale["enemy_hp_multiplier"], previous["finale"]["enemy_hp_multiplier"])
+        for old, new in zip(previous["finale"]["waves"], finale["waves"]):
+            self.assertEqual(new["enemy_count"], old["enemy_count"] + 1)
+            self.assertGreaterEqual(new["spawn_delay"], old["spawn_delay"])
+            self.assertEqual(set(new["spawn_routes"]), {0, 1})
+        mixed = finale["waves"][1]
+        self.assertEqual(len(mixed["enemy_mix"]), mixed["enemy_count"])
+        heavy_indices = [i for i, kind in enumerate(mixed["enemy_mix"]) if kind == "heavy"]
+        self.assertEqual(len(heavy_indices), 2)
+        self.assertNotEqual(mixed["spawn_routes"][heavy_indices[0] % 4], mixed["spawn_routes"][heavy_indices[1] % 4])
+
     def test_module_2_stage_7_is_not_just_leah_with_four_choice_incidents(self):
         stage = self._stage(7, module_id="mod_02")
         self.assertEqual(stage["title"], "Not Just Leah")
         self.assertEqual(stage["bkt_skill"], "smishing")
-        self.assertEqual(stage["breach_hp_multiplier"], 0.95)
+        self.assertEqual(stage["breach_hp_multiplier"], 0.45)
+        self.assertEqual(stage["content_version"], 2)
+        self.assertEqual(stage["visual_theme"], "college")
         self.assertEqual(stage["clear_title"], "STAGE 7 COMPLETE")
         self.assertEqual(stage["clear_subtitle"], "NOT JUST LEAH")
         self.assertIn("Stage 8", stage["next_stage_title"])
@@ -970,14 +1097,14 @@ class DecisionScenarioDataTest(unittest.TestCase):
         threats = stage["threats"]
         self.assertEqual(
             [threat["title"] for threat in threats],
-            ["Same Problem", "Third Name", "BlueTech Security"],
+            ["Same Problem", "Third Name", "Campus Security"],
         )
         opening = " ".join(line["text"] for line in stage["opening"])
         self.assertIn("His phone still has no service", opening)
-        self.assertIn("Leah may not be the only person being targeted", opening)
+        self.assertIn("Five forwards can still describe one person", opening)
         ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("Every one of them is directly connected to someone who does", ending)
-        self.assertIn("hitting everyone they found", ending)
+        self.assertIn("Two confirmed line incidents and one suspicious message", ending)
+        self.assertIn("original sources", ending)
 
     def test_module_2_stage_7_choices_avoid_trivial_wording(self):
         trivial_patterns = [
@@ -1009,27 +1136,30 @@ class DecisionScenarioDataTest(unittest.TestCase):
         self.assertTrue(mod1_ids.isdisjoint(mod2_ids))
         self.assertNotEqual(self._stage(7)["id"], self._stage(7, module_id="mod_02")["id"])
 
-    def test_module_2_stage_7_paolo_is_introduced_as_ramons_brother_not_bluetech(self):
+    def test_module_2_stage_7_paolo_is_introduced_as_ramons_brother_outside_the_seminar(self):
         stage = self._stage(7, module_id="mod_02")
         incident1_story = " ".join(line["text"] for line in stage["threats"][0]["story"])
         incident2_story = " ".join(line["text"] for line in stage["threats"][1]["story"])
         opening = " ".join(line["text"] for line in stage["opening"])
-        self.assertIn("Paolo", incident1_story)
-        self.assertIn("keep your brother on Wi-Fi", opening)
-        self.assertIn("does not work for BlueTech", incident2_story + stage["threats"][1]["situation"])
+        self.assertIn("Ramon", incident1_story)
+        self.assertIn("using Wi-Fi", opening)
+        self.assertIn("Paolo is Ramon's brother", incident2_story)
+        self.assertIn("not in our seminar group", incident2_story)
 
-    def test_module_2_stage_7_establishes_three_victims_and_bluetech_link(self):
+    def test_module_2_stage_7_distinguishes_three_reports_from_two_confirmed_line_incidents(self):
         stage = self._stage(7, module_id="mod_02")
         incident2_story = " ".join(line["text"] for line in stage["threats"][1]["story"])
-        self.assertIn("Three people", incident2_story)
-        self.assertIn("None of the three known victims", stage["threats"][1]["situation"])
-        self.assertIn("BlueTech", incident2_story)
+        self.assertIn("third person reporting something suspicious", incident2_story)
+        comparison = stage["threats"][1]["investigation"]["items"][2]
+        self.assertIn("Three people, two confirmed line incidents", comparison["fields"][1]["value"])
+        self.assertIn("no carrier change found", comparison["fields"][0]["value"])
+        self.assertNotIn("BlueTech", json.dumps(stage))
 
-    def test_module_2_stage_7_incident_3_uses_fake_bluetech_security_sms(self):
+    def test_module_2_stage_7_incident_3_uses_fake_campus_security_sms(self):
         stage = self._stage(7, module_id="mod_02")
         incident3 = stage["threats"][2]
         incident3_story = " ".join(line["text"] for line in incident3["story"])
-        self.assertIn("BLUETECH SECURITY", incident3_story)
+        self.assertIn("CAMPUS SECURITY", incident3_story)
         combined_text = " ".join(choice["consequence"] for choice in incident3["choices"]) + incident3["explanation"]
         self.assertTrue(
             "doesn't prove" in combined_text or "does not prove" in combined_text
@@ -1049,43 +1179,98 @@ class DecisionScenarioDataTest(unittest.TestCase):
             self.assertNotIn(phrase, ending.lower())
 
     def test_module_2_stage_7_safe_playthrough_still_reaches_the_major_reveal(self):
-        # The BlueTech-link reveal and coordinated-wave cliffhanger are story
-        # content shown regardless of the player's choices throughout the stage.
+        # Family-directed pressure follows the limited class response on every
+        # completed path; no unsupported common-attacker claim is required.
         stage = self._stage(7, module_id="mod_02")
-        ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("Every one of them is directly connected to someone who does", ending)
-        self.assertIn("hitting everyone they found", ending)
+        ending = " ".join(line["text"] for line in stage["finale"]["closing"])
+        self.assertIn("names their mother", ending)
+        self.assertIn("family recovery request", ending)
+        self.assertIn("family contact he already knows", ending)
         safe_outcomes = [
             next(choice for choice in threat["choices"] if choice["outcome"] == "SAFE")
             for threat in stage["threats"]
         ]
         self.assertEqual(len(safe_outcomes), 3)
 
+    def test_module_2_stage_7_requires_original_sources_and_warning_permission(self):
+        stage = self._stage(7, module_id="mod_02")
+        self.assertEqual([len(t["investigation"]["items"]) for t in stage["threats"]], [3, 3, 4])
+        for threat in stage["threats"]:
+            items = threat["investigation"]["items"]
+            self.assertNotIn("forward", [item["id"] for item in items])
+            for item in items:
+                self.assertGreaterEqual(len(item["fields"]), 2)
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [card["evidence_id"] for card in stage["laptop"][item["phone_app"]]])
+        first, second, third = [t["investigation"]["items"] for t in stage["threats"]]
+        self.assertIn("all three forwards show that post", first[1]["fields"][0]["value"])
+        self.assertIn("no replacement or pending transfer", second[1]["fields"][0]["value"])
+        self.assertEqual(third[3]["id"], "notice")
+        self.assertIn("No permission for class-wide identity records", third[2]["fields"][0]["value"])
+        self.assertIn("no live suspicious links", third[3]["fields"][1]["value"])
+        self.assertIn("Two carrier-confirmed line incidents plus one message-only report", third[2]["fields"][1]["value"])
+
+    def test_module_2_stage_7_adds_upper_detour_and_switching_groups(self):
+        stage = self._stage(7, module_id="mod_02")
+        previous = self._stage(6, module_id="mod_02")
+        self.assertEqual(len(stage["map_routes"]), 2)
+        expanded = []
+        for route in stage["map_routes"]:
+            cells = [tuple(route[0])]
+            for start, end in zip(route, route[1:]):
+                self.assertNotEqual(start, end)
+                self.assertTrue(start[0] == end[0] or start[1] == end[1])
+                dx = (end[0] > start[0]) - (end[0] < start[0])
+                dy = (end[1] > start[1]) - (end[1] < start[1])
+                while cells[-1] != tuple(end):
+                    x, y = cells[-1][0] + dx, cells[-1][1] + dy
+                    self.assertTrue(0 <= x < 13 and 0 <= y < 7)
+                    cells.append((x, y))
+            self.assertEqual(len(cells), len(set(cells)))
+            expanded.append(cells)
+        self.assertEqual([len(route) for route in expanded], [19, 19])
+        self.assertNotEqual(expanded[0][0], expanded[1][0])
+        self.assertEqual(set(expanded[0]) & set(expanded[1]), {(11, 3), (12, 3)})
+        finale = stage["finale"]
+        self.assertTrue(finale["enabled"])
+        self.assertEqual(finale["gold"], previous["finale"]["gold"])
+        self.assertEqual(finale["enemy_hp_multiplier"], previous["finale"]["enemy_hp_multiplier"])
+        for old, new in zip(previous["finale"]["waves"], finale["waves"]):
+            self.assertEqual(new["enemy_count"], old["enemy_count"] + 1)
+            self.assertGreaterEqual(new["spawn_delay"], old["spawn_delay"])
+            self.assertEqual(set(new["spawn_routes"]), {0, 1})
+        mixed = finale["waves"][1]
+        self.assertEqual(mixed["spawn_routes"], [1, 1, 1, 0, 0, 0])
+        self.assertEqual(len(mixed["enemy_mix"]), mixed["enemy_count"])
+        heavy_indices = [i for i, kind in enumerate(mixed["enemy_mix"]) if kind == "heavy"]
+        self.assertEqual(len(heavy_indices), 2)
+        self.assertNotEqual(mixed["spawn_routes"][heavy_indices[0] % 6], mixed["spawn_routes"][heavy_indices[1] % 6])
+
     def test_module_2_stage_8_is_close_to_home_with_four_choice_incidents(self):
         stage = self._stage(8, module_id="mod_02")
         self.assertEqual(stage["title"], "Close to Home")
+        self.assertEqual(stage["content_version"], 2)
         self.assertEqual(stage["bkt_skill"], "smishing")
-        self.assertEqual(stage["breach_hp_multiplier"], 1.0)
+        self.assertEqual(stage["breach_hp_multiplier"], 0.45)
+        self.assertEqual(stage["visual_theme"], "college")
         self.assertEqual(stage["clear_title"], "STAGE 8 COMPLETE")
         self.assertEqual(stage["clear_subtitle"], "CLOSE TO HOME")
-        self.assertIn("Stage 9", stage["next_stage_title"])
-        self.assertIn("Trust No Number", stage["next_stage_title"])
+        self.assertEqual(stage["next_stage_title"], "Stage 9 — Trust No Number")
+        self.assertNotIn("BlueTech", json.dumps(stage))
         self._assert_module2_four_choice_threats(stage)
 
     def test_module_2_stage_8_topics_and_continuity_match_the_brief(self):
         stage = self._stage(8, module_id="mod_02")
-        threats = stage["threats"]
-        self.assertEqual(
-            [threat["title"] for threat in threats],
-            ["She Needs Your Help", "Your Brother Is Compromised", "Family Emergency"],
-        )
+        self.assertEqual([t["title"] for t in stage["threats"]], [
+            "She Needs Your Help", "A Real Request, the Wrong Role", "The Approval Behind the Emergency"])
+        previous = " ".join(line["text"] for line in self._stage(7, module_id="mod_02")["finale"]["closing"])
         opening = " ".join(line["text"] for line in stage["opening"])
-        self.assertIn("Multiple phones begin vibrating", opening)
-        self.assertIn("and their families another", opening)
-        ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("Leverage against the employees", ending)
-        self.assertIn("Recovery authority", ending)
-        self.assertIn("Not a personal one", ending)
+        for text in (previous, opening):
+            self.assertIn("Paolo", text)
+            self.assertIn("their mother", text)
+            self.assertIn("family recovery", text)
+        self.assertIn("presentation", opening)
+        self.assertEqual(stage["locations"], self._stage(7, module_id="mod_02")["locations"])
 
     def test_module_2_stage_8_choices_avoid_trivial_wording(self):
         trivial_patterns = [
@@ -1117,105 +1302,149 @@ class DecisionScenarioDataTest(unittest.TestCase):
         self.assertTrue(mod1_ids.isdisjoint(mod2_ids))
         self.assertNotEqual(self._stage(8)["id"], self._stage(8, module_id="mod_02")["id"])
 
-    def test_module_2_stage_8_incident_1_uses_mirrored_mia_leah_manipulation(self):
-        stage = self._stage(8, module_id="mod_02")
-        incident1_story = " ".join(line["text"] for line in stage["threats"][0]["story"])
-        self.assertIn("do not contact her directly", incident1_story)
-        self.assertIn("Do not contact her until", incident1_story)
+    def test_module_2_stage_8_incident_1_breaks_circular_family_confirmation(self):
+        items = self._stage(8, module_id="mod_02")["threats"][0]["investigation"]["items"]
+        self.assertEqual([item["id"] for item in items], ["message", "family", "timeline"])
+        self.assertIn("do not call", items[0]["fields"][0]["value"])
+        self.assertIn("saved before today", items[1]["fields"][0]["value"])
+        self.assertIn("requested no recovery", items[1]["fields"][1]["value"])
+        self.assertIn("15:28", items[2]["fields"][0]["label"])
+        self.assertIn("15:29", items[2]["fields"][1]["label"])
+        self.assertIn("no independent evidence", items[2]["fields"][1]["value"])
 
-    def test_module_2_stage_8_incident_2_uses_ramon_paolo_cross_validation_with_real_otp(self):
-        stage = self._stage(8, module_id="mod_02")
-        incident2 = stage["threats"][1]
-        incident2_story = " ".join(line["text"] for line in incident2["story"])
-        self.assertIn("Paolo", incident2_story)
-        self.assertIn("Ramon", incident2_story)
-        self.assertIn("OTP", incident2_story)
-        critical_choice = next(c for c in incident2["choices"] if c["outcome"] == "CRITICAL")
-        self.assertIn("code", critical_choice["consequence"])
+    def test_module_2_stage_8_incident_2_separates_identity_from_role_scope(self):
+        incident = self._stage(8, module_id="mod_02")["threats"][1]
+        items = {item["id"]: item for item in incident["investigation"]["items"]}
+        self.assertIn("genuine request", items["message"]["analysis"])
+        self.assertIn("No change", items["ramon"]["fields"][1]["value"])
+        self.assertIn("personal photo account", items["roles"]["fields"][0]["value"])
+        self.assertIn("Paolo has no workspace role", items["roles"]["fields"][1]["value"])
+        self.assertIn("cannot approve college workspace changes", items["support"]["fields"][0]["value"])
+        critical = next(c for c in incident["choices"] if c["outcome"] == "CRITICAL")
+        self.assertIn("live session", critical["consequence"])
 
-    def test_module_2_stage_8_incident_3_is_coordinated_multi_victim_campaign(self):
-        stage = self._stage(8, module_id="mod_02")
-        incident3_story = " ".join(line["text"] for line in stage["threats"][2]["story"])
-        self.assertIn("coordinated wave", incident3_story)
-        self.assertIn("two messages that convince each other", incident3_story)
+    def test_module_2_stage_8_incident_3_checks_request_effect_status_and_authority(self):
+        incident = self._stage(8, module_id="mod_02")["threats"][2]
+        items = {item["id"]: item for item in incident["investigation"]["items"]}
+        self.assertIn("RN-318", items["request"]["fields"][0]["value"])
+        self.assertIn("replace its recovery contact", items["request"]["fields"][0]["value"])
+        self.assertIn("Pending, not approved or applied", items["request"]["fields"][1]["value"])
+        self.assertIn("both required", items["request"]["fields"][1]["value"])
+        self.assertIn("no contact change applied", items["support"]["fields"][0]["value"])
+        self.assertIn("No approval is needed", items["plan"]["fields"][0]["value"])
+        self.assertIn("existing local slides", items["plan"]["fields"][1]["value"])
 
-    def test_module_2_stage_8_leah_helps_another_victim_recognize_the_pattern(self):
-        stage = self._stage(8, module_id="mod_02")
-        incident3_story = " ".join(line["text"] for line in stage["threats"][2]["story"])
-        self.assertIn("So did mine", incident3_story)
-        self.assertIn("verify with your sister", incident3_story.lower())
+    def test_module_2_stage_8_leah_helps_without_assuming_player_mistakes(self):
+        story = " ".join(line["text"] for line in self._stage(8, module_id="mod_02")["threats"][2]["story"] if line["speaker"] == "Leah")
+        self.assertIn("earlier messages", story)
+        self.assertIn("without approving an account change", story)
+        self.assertNotIn("I approved", story)
+        self.assertNotIn("I clicked", story)
 
-    def test_module_2_stage_8_does_not_reveal_the_exact_final_target(self):
-        stage = self._stage(8, module_id="mod_02")
-        ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("recovery authority", ending.lower())
+    def test_module_2_stage_8_keeps_request_origin_and_campaign_attribution_uncertain(self):
+        ending = " ".join(line["text"] for line in self._stage(8, module_id="mod_02")["ending"])
+        self.assertIn("recovery authority", ending)
         self.assertIn("recovery request", ending)
-        forbidden_leak_phrases = [
-            "admin console",
-            "master key",
-            "root access to bluetech",
-            "the final target is",
-        ]
-        for phrase in forbidden_leak_phrases:
-            self.assertNotIn(phrase, ending.lower())
+        self.assertIn("do not know who submitted it", ending)
+        self.assertIn("whether every message has the same sender", ending)
 
-    def test_module_2_stage_8_safe_playthrough_still_reaches_the_leverage_reveal(self):
-        # The leverage/recovery-authority reveal and the new recovery-request
-        # cliffhanger are story content shown regardless of player choices.
+    def test_module_2_stage_8_safe_playthrough_still_requires_practice_and_pending_case(self):
         stage = self._stage(8, module_id="mod_02")
-        ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("Leverage against the employees", ending)
-        self.assertIn("Not a personal one", ending)
-        safe_outcomes = [
-            next(choice for choice in threat["choices"] if choice["outcome"] == "SAFE")
-            for threat in stage["threats"]
-        ]
-        self.assertEqual(len(safe_outcomes), 3)
+        self.assertTrue(stage["finale"]["enabled"])
+        self.assertEqual(stage["finale"]["type"], "tower_defense")
+        closing = " ".join(line["text"] for line in stage["finale"]["closing"])
+        self.assertIn("No one has approved", closing)
+        self.assertIn("CAMPUS HELP", closing)
+        self.assertIn("independent support route", closing)
+        self.assertEqual(sum(c["outcome"] == "SAFE" for t in stage["threats"] for c in t["choices"]), 3)
 
-    def test_module_2_stage_9_is_the_final_story_stage_with_a_finale(self):
-        stage9 = self._stage(9, module_id="mod_02")
-        self.assertEqual(stage9["title"], "Trust No Number")
-        self.assertEqual(stage9["bkt_skill"], "smishing")
-        self.assertEqual(stage9["breach_hp_multiplier"], 1.0)
-        self.assertEqual(stage9["clear_title"], "STAGE 9 COMPLETE")
-        self.assertEqual(stage9["clear_subtitle"], "TRUST NO NUMBER")
-        self.assertIn("Stage 10", stage9["next_stage_title"])
-        self._assert_module2_four_choice_threats(stage9)
-        finale = stage9.get("finale", {})
-        self.assertTrue(finale.get("enabled"))
-        self.assertEqual(finale.get("type"), "tower_defense")
-        self.assertEqual(finale.get("enemy_hp_multiplier"), 1.0)
-        self.assertEqual(finale.get("affected_system"), "BLUETECH IDENTITY RECOVERY SERVICE")
-        self.assertEqual(finale.get("complete_banner"), "MODULE 2 STORY COMPLETE")
-        self.assertTrue(finale.get("ending"))
-        self.assertTrue(finale.get("closing"))
-        summary = finale.get("case_summary", {})
-        self.assertTrue(summary.get("title"))
-        self.assertEqual(summary.get("subtitle"), "SIGNAL LOST")
-        self.assertTrue(summary.get("items"))
-        # Updated college stages reuse this mechanism for mandatory practice.
-        for stage_number in range(5, 9):
-            self.assertNotIn(
-                "finale", self._stage(stage_number, module_id="mod_02"),
-                "Unchanged Stages 5-8 do not author a final encounter",
-            )
+    def test_module_2_stage_8_requires_actual_sources_and_full_scope_reviews(self):
+        stage = self._stage(8, module_id="mod_02")
+        self.assertEqual([len(t["investigation"]["items"]) for t in stage["threats"]], [3, 4, 4])
+        for threat in stage["threats"]:
+            items = threat["investigation"]["items"]
+            self.assertEqual(len({item["id"] for item in items}), len(items))
+            self.assertNotIn("forward", [item["id"] for item in items])
+            for item in items:
+                self.assertGreaterEqual(len(item["fields"]), 2)
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [card["evidence_id"] for card in stage["laptop"][item["phone_app"]]])
+        self.assertEqual(stage["threats"][1]["investigation"]["items"][-1]["id"], "support")
+        self.assertEqual(stage["threats"][2]["investigation"]["items"][-1]["id"], "plan")
+
+    def test_module_2_stage_8_extends_lower_route_with_gradual_overlapping_pressure(self):
+        stage = self._stage(8, module_id="mod_02")
+        previous = self._stage(7, module_id="mod_02")
+        self.assertEqual(len(stage["map_routes"]), 2)
+        self.assertEqual(stage["map_routes"][0], previous["map_routes"][0])
+        expanded = []
+        for route in stage["map_routes"]:
+            cells = [tuple(route[0])]
+            for start, end in zip(route, route[1:]):
+                self.assertNotEqual(start, end)
+                self.assertTrue(start[0] == end[0] or start[1] == end[1])
+                dx = (end[0] > start[0]) - (end[0] < start[0])
+                dy = (end[1] > start[1]) - (end[1] < start[1])
+                while cells[-1] != tuple(end):
+                    x, y = cells[-1][0] + dx, cells[-1][1] + dy
+                    self.assertTrue(0 <= x < 13 and 0 <= y < 7)
+                    cells.append((x, y))
+            self.assertEqual(len(cells), len(set(cells)))
+            expanded.append(cells)
+        self.assertEqual([len(route) for route in expanded], [19, 21])
+        self.assertEqual(set(expanded[0]) & set(expanded[1]), {(11, 3), (12, 3)})
+        self.assertNotEqual(expanded[0][0], expanded[1][0])
+        for position in [(10, 1), (10, 3), (11, 5)]:
+            self.assertNotIn(position, expanded[0] + expanded[1])
+        finale = stage["finale"]
+        self.assertEqual(finale["gold"], previous["finale"]["gold"])
+        self.assertEqual(finale["enemy_hp_multiplier"], previous["finale"]["enemy_hp_multiplier"])
+        for old, new in zip(previous["finale"]["waves"], finale["waves"]):
+            self.assertEqual(new["enemy_count"], old["enemy_count"] + 1)
+            self.assertGreaterEqual(new["spawn_delay"], old["spawn_delay"])
+            self.assertEqual(set(new["spawn_routes"]), {0, 1})
+        mixed = finale["waves"][1]
+        self.assertEqual(len(mixed["enemy_mix"]), mixed["enemy_count"])
+        heavy = [i for i, kind in enumerate(mixed["enemy_mix"]) if kind == "heavy"]
+        self.assertEqual(len(heavy), 2)
+        self.assertEqual(mixed["enemy_mix"].count("fast"), 4)
+        self.assertNotEqual(mixed["spawn_routes"][heavy[0] % 6], mixed["spawn_routes"][heavy[1] % 6])
+
+    def test_module_2_stage_9_is_college_support_verification_with_required_practice(self):
+        stage = self._stage(9, module_id="mod_02")
+        self.assertEqual(stage["title"], "Trust No Number")
+        self.assertEqual(stage["content_version"], 2)
+        self.assertEqual(stage["visual_theme"], "college")
+        self.assertEqual(stage["bkt_skill"], "smishing")
+        self.assertEqual(stage["breach_hp_multiplier"], 0.45)
+        self.assertEqual(stage["clear_title"], "STAGE 9 COMPLETE")
+        self.assertEqual(stage["clear_subtitle"], "TRUST NO NUMBER")
+        self.assertEqual(stage["next_stage_title"], "Stage 10 — Final Checkpoint")
+        self._assert_module2_four_choice_threats(stage)
+        finale = stage["finale"]
+        self.assertTrue(finale["enabled"])
+        self.assertEqual(finale["type"], "tower_defense")
+        self.assertEqual(finale["enemy_hp_multiplier"], 0.45)
+        self.assertEqual(finale["affected_system"], "LAPTOP / INDEPENDENT SUPPORT PRACTICE")
+        self.assertEqual(finale["complete_banner"], "SUPPORT VERIFICATION COMPLETE")
+        self.assertTrue(finale["ending"])
+        self.assertTrue(finale["closing"])
+        self.assertTrue(finale["case_summary"]["items"])
+        self.assertNotIn("BlueTech", json.dumps(stage))
+        self.assertNotIn("MODULE 2 STORY COMPLETE", json.dumps(stage))
 
     def test_module_2_stage_9_topics_and_continuity_match_the_brief(self):
         stage = self._stage(9, module_id="mod_02")
-        threats = stage["threats"]
-        self.assertEqual(
-            [threat["title"] for threat in threats],
-            ["Not a Personal Account", "Second Approval", "The Last Call"],
-        )
+        self.assertEqual([t["title"] for t in stage["threats"]], [
+            "They Know the Case", "A Second Screen Is Not a Second Source", "The Verified Reply"])
+        previous = " ".join(line["text"] for line in self._stage(8, module_id="mod_02")["finale"]["closing"])
         opening = " ".join(line["text"] for line in stage["opening"])
-        self.assertIn("Not a personal account", opening)
-        self.assertIn("identity recovery administrator", opening.lower())
-        self.assertIn("don't automatically own bluetech", opening.lower())
-        ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("leverage", ending.lower())
-        self.assertIn("reset authentication factors and recovery methods", ending)
-        finale_closing = " ".join(line["text"] for line in stage["finale"]["closing"])
-        self.assertIn("verify the process, not the story", finale_closing.lower())
+        for text in (previous, opening):
+            self.assertIn("CAMPUS HELP", text)
+            self.assertIn("RN-318", text)
+            self.assertIn("release", text)
+        self.assertIn("saved on the laptop", opening)
+        self.assertEqual(stage["locations"], self._stage(8, module_id="mod_02")["locations"])
 
     def test_module_2_stage_9_choices_avoid_trivial_wording(self):
         trivial_patterns = [
@@ -1247,40 +1476,243 @@ class DecisionScenarioDataTest(unittest.TestCase):
         self.assertTrue(mod1_ids.isdisjoint(mod2_ids))
         self.assertNotEqual(self._stage(9)["id"], self._stage(9, module_id="mod_02")["id"])
 
-    def test_module_2_stage_9_does_not_overclaim_universal_bluetech_access(self):
+    def test_module_2_stage_9_does_not_overclaim_review_scope_or_attribution(self):
         stage = self._stage(9, module_id="mod_02")
-        opening = " ".join(line["text"] for line in stage["opening"])
         ending = " ".join(line["text"] for line in stage["ending"])
-        overreach_phrases = [
-            "access to every account",
-            "access to every system",
-            "own all of bluetech",
-        ]
-        for phrase in overreach_phrases:
-            self.assertNotIn(phrase, opening.lower())
-            self.assertNotIn(phrase, ending.lower())
+        self.assertIn("do not know who made every contact", ending)
+        self.assertIn("separate carrier case", ending)
+        review = next(item for item in stage["threats"][2]["investigation"]["items"] if item["id"] == "review")
+        self.assertIn("no unauthorized change found in that review", review["fields"][0]["value"])
+        self.assertIn("does not identify every caller", review["fields"][1]["value"])
+        self.assertIn("common attacker", review["fields"][1]["value"])
 
-    def test_module_2_stage_9_incident_3_shows_caller_id_and_real_code_are_not_proof(self):
-        stage = self._stage(9, module_id="mod_02")
-        incident3 = stage["threats"][2]
-        explanation = incident3["explanation"].lower()
+    def test_module_2_stage_9_incident_1_separates_case_knowledge_from_caller_identity(self):
+        incident = self._stage(9, module_id="mod_02")["threats"][0]
+        explanation = incident["explanation"].lower()
         self.assertIn("caller id", explanation)
-        self.assertIn("genuine", explanation)
-        critical_choice = next(c for c in incident3["choices"] if c["outcome"] == "CRITICAL")
-        self.assertIn("caller id", critical_choice["label"].lower())
+        self.assertIn("genuine case", explanation)
+        items = {item["id"]: item for item in incident["investigation"]["items"]}
+        self.assertIn("no incoming link or callback number", items["support"]["fields"][0]["value"])
+        self.assertIn("has not requested release", items["support"]["fields"][1]["value"])
+        self.assertIn("does not authenticate", items["case"]["fields"][1]["value"])
+        critical = next(c for c in incident["choices"] if c["outcome"] == "CRITICAL")
+        self.assertIn("caller ID", critical["label"])
 
-    def test_module_2_stage_9_safe_playthrough_still_reaches_the_final_reveal(self):
-        # The leverage/objective reveal is story content shown regardless of
-        # the player's choices throughout the stage.
+    def test_module_2_stage_9_safe_playthrough_rejects_the_change_and_keeps_stage_10_pending(self):
         stage = self._stage(9, module_id="mod_02")
         ending = " ".join(line["text"] for line in stage["ending"])
-        self.assertIn("leverage", ending.lower())
-        self.assertIn("Take over the account that helps other people recover theirs", ending)
-        safe_outcomes = [
-            next(choice for choice in threat["choices"] if choice["outcome"] == "SAFE")
-            for threat in stage["threats"]
-        ]
-        self.assertEqual(len(safe_outcomes), 3)
+        self.assertIn("rejected RN-318", ending)
+        self.assertIn("not applied", ending)
+        closing = " ".join(line["text"] for line in stage["finale"]["closing"])
+        self.assertIn("presentation draft is saved", closing)
+        self.assertIn("One college checkpoint remains", closing)
+        self.assertEqual(sum(c["outcome"] == "SAFE" for t in stage["threats"] for c in t["choices"]), 3)
+
+    def test_module_2_stage_9_sms_page_and_chat_are_not_independent_verification(self):
+        incident = self._stage(9, module_id="mod_02")["threats"][1]
+        items = {item["id"]: item for item in incident["investigation"]["items"]}
+        self.assertIn("Incoming SMS -> supplied verification page -> chat", items["link"]["fields"][0]["value"])
+        self.assertIn("cannot independently validate", items["link"]["fields"][1]["value"])
+        self.assertIn("bookmark saved at orientation", items["route"]["fields"][0]["value"])
+        self.assertIn("does not use the SMS verification page", items["support"]["fields"][0]["value"])
+        safe = next(c for c in incident["choices"] if c["outcome"] == "SAFE")
+        self.assertIn("page closed", safe["label"])
+        self.assertIn("Private browsing does not verify", " ".join(c["consequence"] for c in incident["choices"]))
+
+    def test_module_2_stage_9_verified_result_allows_scoped_work_without_reusing_old_instructions(self):
+        incident = self._stage(9, module_id="mod_02")["threats"][2]
+        items = {item["id"]: item for item in incident["investigation"]["items"]}
+        self.assertIn("case update retrieved", items["message"]["fields"][0]["value"])
+        self.assertIn("rejected by designated student maintainer and campus IT", items["case"]["fields"][0]["value"])
+        self.assertIn("supersedes the earlier on-hold status", items["case"]["fields"][1]["value"])
+        self.assertIn("Keep normal account protections enabled", items["plan"]["fields"][0]["value"])
+        safe = next(c for c in incident["choices"] if c["outcome"] == "SAFE")
+        self.assertIn("Resume the project", safe["label"])
+        self.assertIn("rejected, not authorized", next(c for c in incident["choices"] if c["outcome"] == "CRITICAL")["consequence"])
+
+    def test_module_2_stage_9_requires_actual_sources_and_full_scope_reviews(self):
+        stage = self._stage(9, module_id="mod_02")
+        self.assertEqual([len(t["investigation"]["items"]) for t in stage["threats"]], [3, 4, 4])
+        for threat in stage["threats"]:
+            items = threat["investigation"]["items"]
+            self.assertEqual(len({item["id"] for item in items}), len(items))
+            self.assertNotIn("display", [item["id"] for item in items])
+            for item in items:
+                self.assertGreaterEqual(len(item["fields"]), 2)
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [card["evidence_id"] for card in stage["laptop"][item["phone_app"]]])
+        self.assertEqual(stage["threats"][1]["investigation"]["items"][-1]["id"], "support")
+        self.assertEqual(stage["threats"][2]["investigation"]["items"][-1]["id"], "plan")
+
+    def test_module_2_stage_9_extends_upper_route_with_gradual_mixed_pressure(self):
+        stage = self._stage(9, module_id="mod_02")
+        previous = self._stage(8, module_id="mod_02")
+        self.assertEqual(len(stage["map_routes"]), 2)
+        self.assertEqual(stage["map_routes"][1], previous["map_routes"][1])
+        expanded = []
+        for route in stage["map_routes"]:
+            cells = [tuple(route[0])]
+            for start, end in zip(route, route[1:]):
+                self.assertNotEqual(start, end)
+                self.assertTrue(start[0] == end[0] or start[1] == end[1])
+                dx = (end[0] > start[0]) - (end[0] < start[0])
+                dy = (end[1] > start[1]) - (end[1] < start[1])
+                while cells[-1] != tuple(end):
+                    x, y = cells[-1][0] + dx, cells[-1][1] + dy
+                    self.assertTrue(0 <= x < 13 and 0 <= y < 7)
+                    cells.append((x, y))
+            self.assertEqual(len(cells), len(set(cells)))
+            expanded.append(cells)
+        self.assertEqual([len(route) for route in expanded], [21, 21])
+        self.assertEqual(set(expanded[0]) & set(expanded[1]), {(11, 3), (12, 3)})
+        self.assertNotEqual(expanded[0][0], expanded[1][0])
+        for position in [(10, 1), (10, 3), (11, 5)]:
+            self.assertNotIn(position, expanded[0] + expanded[1])
+        finale = stage["finale"]
+        self.assertEqual(finale["gold"], previous["finale"]["gold"])
+        self.assertEqual(finale["enemy_hp_multiplier"], previous["finale"]["enemy_hp_multiplier"])
+        for old_wave, new_wave in zip(previous["finale"]["waves"], finale["waves"]):
+            self.assertEqual(new_wave["enemy_count"], old_wave["enemy_count"] + 1)
+            self.assertGreaterEqual(new_wave["spawn_delay"], old_wave["spawn_delay"])
+            self.assertEqual(set(new_wave["spawn_routes"]), {0, 1})
+        mixed = finale["waves"][1]
+        self.assertEqual(len(mixed["enemy_mix"]), mixed["enemy_count"])
+        heavy = [i for i, kind in enumerate(mixed["enemy_mix"]) if kind == "heavy"]
+        self.assertEqual(len(heavy), 2)
+        self.assertEqual(mixed["enemy_mix"].count("fast"), 4)
+        self.assertNotEqual(mixed["spawn_routes"][heavy[0] % 6], mixed["spawn_routes"][heavy[1] % 6])
+
+    def test_module_2_stage_10_is_an_assessment_not_an_extra_story_grade(self):
+        stage = self._stage(10, module_id="mod_02")
+        self.assertEqual(stage["stage_type"], "assessment")
+        self.assertEqual(stage["title"], "Final Checkpoint")
+        self.assertEqual(stage["visual_theme"], "college")
+        self.assertEqual(stage["bkt_skill"], "smishing")
+        self.assertNotIn("threats", stage)
+        self.assertEqual(len(stage["rounds"]), 3)
+        config = stage["assessment"]
+        self.assertEqual(config["exam_question_count"], 15)
+        self.assertEqual(config["exam_required_score"], 0.75)
+        self.assertEqual(config["questions_per_wave"], 5)
+        self.assertEqual(config["incident_chance"], 0)
+
+    def test_module_2_stage_10_continues_presentation_story_and_concludes_college(self):
+        stage = self._stage(10, module_id="mod_02")
+        opening = " ".join(line["text"] for line in stage["opening"])
+        closing = " ".join(line["text"] for line in stage["ending"])
+        self.assertIn("RN-318 was rejected", opening)
+        self.assertIn("presentation draft is saved", opening)
+        self.assertIn("high school", opening)
+        self.assertIn("college project", closing)
+        self.assertIn("carrier follow-up separate", closing)
+        self.assertNotIn("BlueTech", json.dumps(stage))
+        self.assertNotIn("next_stage_title", stage)
+
+    def test_module_2_stage_10_has_fifteen_unique_questions_grouped_by_case(self):
+        stage = self._stage(10, module_id="mod_02")
+        self.assertEqual([r["title"] for r in stage["rounds"]], [
+            "The Presentation Deadline", "A Helpful Group Member", "The Recovery Handoff"])
+        questions = [q for r in stage["rounds"] for q in r["questions"]]
+        self.assertEqual([len(r["questions"]) for r in stage["rounds"]], [5, 5, 5])
+        self.assertEqual(len({q["id"] for q in questions}), 15)
+        self.assertEqual([q["id"] for q in questions], [f"mod02_final_{n:02}" for n in range(1, 16)])
+        self.assertEqual({q["module_id"] for q in questions}, {"mod_02"})
+        self.assertEqual({q["skill_id"] for q in questions}, {"smishing"})
+        for difficulty, count in [("easy", 4), ("medium", 7), ("hard", 4)]:
+            self.assertEqual(sum(q["difficulty"] == difficulty for q in questions), count)
+
+    def test_module_2_stage_10_questions_have_gradable_answers_and_self_contained_facts(self):
+        deliveries = set()
+        for case in self._stage(10, module_id="mod_02")["rounds"]:
+            for q in case["questions"]:
+                deliveries.add(q["delivery"])
+                self.assertTrue(q["question"])
+                self.assertTrue(q["scenario"]["body"])
+                self.assertTrue(q["explanation"])
+                if q["delivery"] == "single_choice":
+                    self.assertEqual(len(set(q["options"])), 4)
+                    self.assertIn(q["answer_index"], range(4))
+                elif q["delivery"] == "true_false":
+                    self.assertIsInstance(q["answer"], bool)
+                else:
+                    self.assertEqual(len(set(q["email_lines"])), 4)
+                    self.assertEqual(len(set(q["correct_indices"])), 2)
+                    self.assertTrue(set(q["correct_indices"]).issubset(range(4)))
+        self.assertEqual(deliveries, {"single_choice", "multi_select", "true_false"})
+
+    def test_module_2_stage_10_cases_require_real_sources_and_no_forwarded_shortcuts(self):
+        stage = self._stage(10, module_id="mod_02")
+        self.assertEqual([len(r["investigation"]["items"]) for r in stage["rounds"]], [3, 4, 4])
+        for case in stage["rounds"]:
+            self.assertTrue(case["story"][-1]["mail"]["body"])
+            self.assertEqual(case["background"], "college_commons")
+            items = case["investigation"]["items"]
+            self.assertNotIn("forward", [item["id"] for item in items])
+            for item in items:
+                self.assertGreaterEqual(len(item["fields"]), 2)
+                if item["phone_app"] != "mail":
+                    self.assertIn(item["id"], [c["evidence_id"] for c in stage["laptop"][item["phone_app"]]])
+
+    def test_module_2_stage_10_deadline_case_separates_real_schedule_from_fee(self):
+        case = self._stage(10, module_id="mod_02")["rounds"][0]
+        record = next(i for i in case["investigation"]["items"] if i["id"] == "record")
+        self.assertIn("PR-410", record["fields"][0]["value"])
+        self.assertIn("no balance due", record["fields"][0]["value"])
+        self.assertIn("PR-401 belongs to last week", record["fields"][1]["value"])
+        self.assertFalse(case["questions"][1]["answer"])
+
+    def test_module_2_stage_10_access_case_checks_permission_and_consent(self):
+        case = self._stage(10, module_id="mod_02")["rounds"][1]
+        scope = next(i for i in case["investigation"]["items"] if i["id"] == "scope")
+        self.assertIn("public sharing was not agreed", scope["fields"][0]["value"])
+        self.assertIn("no college project role", scope["fields"][1]["value"])
+        self.assertEqual(case["questions"][-1]["correct_indices"], [0, 1])
+
+    def test_module_2_stage_10_handoff_case_distinguishes_rejected_from_applied(self):
+        case = self._stage(10, module_id="mod_02")["rounds"][2]
+        record = next(i for i in case["investigation"]["items"] if i["id"] == "record")
+        self.assertIn("RN-422", record["fields"][0]["value"])
+        self.assertIn("rejected", record["fields"][0]["value"])
+        self.assertIn("not applied", record["fields"][0]["value"])
+        self.assertFalse(case["questions"][1]["answer"])
+        self.assertIn("outside", case["questions"][-1]["scenario"]["body"])
+
+    def test_module_2_stage_10_final_routes_merge_only_at_laptop(self):
+        stage = self._stage(10, module_id="mod_02")
+        self.assertEqual(len(stage["map_routes"]), 2)
+        expanded = []
+        for route in stage["map_routes"]:
+            cells = [tuple(route[0])]
+            for start, end in zip(route, route[1:]):
+                self.assertNotEqual(start, end)
+                self.assertTrue(start[0] == end[0] or start[1] == end[1])
+                dx = (end[0] > start[0]) - (end[0] < start[0])
+                dy = (end[1] > start[1]) - (end[1] < start[1])
+                while cells[-1] != tuple(end):
+                    x, y = cells[-1][0] + dx, cells[-1][1] + dy
+                    self.assertTrue(0 <= x < 13 and 0 <= y < 7)
+                    cells.append((x, y))
+            self.assertEqual(len(cells), len(set(cells)))
+            expanded.append(cells)
+        self.assertEqual([len(r) for r in expanded], [23, 23])
+        self.assertEqual(set(expanded[0]) & set(expanded[1]), {(12, 3)})
+        self.assertNotEqual(expanded[0][0], expanded[1][0])
+        for cell in [(10, 1), (11, 3), (11, 5)]:
+            self.assertNotIn(cell, expanded[0] + expanded[1])
+
+    def test_module_2_stage_10_three_waves_build_gradually_on_stage_9(self):
+        stage = self._stage(10, module_id="mod_02")
+        previous = self._stage(9, module_id="mod_02")["finale"]
+        self.assertEqual(stage["assessment"]["starting_gold"], previous["gold"])
+        self.assertEqual(stage["enemy_hp_multiplier"], previous["enemy_hp_multiplier"])
+        waves = stage["assessment"]["waves"]
+        self.assertEqual([w["enemy_count"] for w in waves], [10, 12, 14])
+        self.assertEqual([w["enemy_mix"].count("heavy") for w in waves], [0, 1, 2])
+        self.assertEqual([w["enemy_mix"].count("fast") for w in waves], [0, 2, 4])
+        for w in waves:
+            self.assertEqual(set(w["spawn_routes"]), {0, 1})
+            self.assertGreaterEqual(w["spawn_delay"], 1.8)
+            self.assertEqual(w["health_multiplier"], 1)
 
     def test_module_3_stage_1_is_unknown_caller_with_four_choice_incidents(self):
         stage = self._stage(1, module_id="mod_03")

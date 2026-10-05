@@ -21,10 +21,18 @@ class Account extends RefCounted:
 	var module_1_complete: bool = false
 	var trace_results: Array[Dictionary] = []
 	var exam_locks: Array[String] = []
+	var exam_unlocks: Array[String] = []
+	var enemy_tasks: Array[String] = []
+	func record_enemy_defeated(kind: String) -> void:
+		enemy_tasks.append(kind)
 	func record_trace_result(module_id: String, question_id: String, correct: bool) -> void:
 		trace_results.append({"module": module_id, "id": question_id, "correct": correct})
 	func lock_stage(module_id: String, stage_id: int) -> void:
 		exam_locks.append("%s:%d" % [module_id, stage_id])
+	func unlock_stage(module_id: String, stage_id: int) -> void:
+		var key: String = "%s:%d" % [module_id, stage_id]
+		exam_locks.erase(key)
+		exam_unlocks.append(key)
 	func get_story_memory_snapshot() -> Dictionary:
 		return story_memory.duplicate(true)
 	func set_story_memories(entries: Dictionary) -> void:
@@ -217,7 +225,7 @@ func shot(match_node: Control, name: String) -> void:
 	check(rect.encloses(match_node.hud.body.get_global_rect()), name + ": battlefield fits")
 	if match_node.hud.pause_button.is_visible_in_tree():
 		check(rect.encloses(match_node.hud.pause_button.get_global_rect()), name + ": pause fits")
-	if "story_overlay" in match_node and match_node.story_overlay.is_visible_in_tree():
+	if "story_overlay" in match_node and is_instance_valid(match_node.story_overlay) and match_node.story_overlay.is_visible_in_tree():
 		if match_node.story_overlay._window.is_visible_in_tree():
 			check(rect.encloses(match_node.story_overlay._window.get_global_rect()), name + ": story fits")
 		if match_node.story_overlay._school_cast and is_instance_valid(match_node.story_overlay._conversation) and match_node.story_overlay._conversation.visible:
@@ -597,6 +605,260 @@ func _exam_pick_correct(game: Control) -> void:
 				break
 	game.resolve_answer()
 
+func _college_assessment_evidence(game: Control, inspect_layout: bool = false) -> void:
+	check(game.phase == "Investigation", "Each college exam round starts with its own evidence")
+	game._college_case_confirmed(0)
+	check(game.phase == "Investigation", "Unread case cannot start scored questions")
+	read_page(game)
+	var laptop: Control = game.story_overlay._phone
+	laptop._finish()
+	check(game.phase == "Investigation" and not laptop.is_complete(), "Empty case inspection cannot unlock assessment")
+	if inspect_layout:
+		laptop._unlock()
+		laptop._navigate("pages")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("record", 0)
+		check(laptop._inspected.is_empty(), "Forwarded caption cannot count as the official case record")
+		laptop._navigate("mail")
+		laptop._open_message()
+		laptop._inspect("message")
+		laptop._reveal_field("message", 0)
+		# A finished tween can remain valid until the engine's next cleanup pass.
+		# Pause/resume in that frame must not try to play it again.
+		if laptop._transition != null:
+			laptop._transition.custom_step(1.0)
+		if laptop._zoom_tween != null:
+			laptop._zoom_tween.custom_step(1.0)
+		if game.story_overlay._mail_tween != null:
+			game.story_overlay._mail_tween.custom_step(1.0)
+		check(laptop._transition == null and laptop._zoom_tween == null and game.story_overlay._mail_tween == null, "Completed story animations release their references before pause/resume")
+		game.toggle_pause()
+		laptop._reveal_field("message", 1)
+		game._process(100.0)
+		check(not laptop._inspected.has("message") and game.answered == 0, "Paused investigation freezes evidence and scoring")
+		game.toggle_pause()
+		for viewport_size: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+			root.size = viewport_size
+			await shot(game, "college_stage10_laptop_%dx%d" % [viewport_size.x, viewport_size.y])
+			check(root.get_visible_rect().encloses(laptop._shell.get_global_rect()), "Final laptop fits viewport")
+			check(root.get_visible_rect().encloses(laptop._nav.get_global_rect()), "Final laptop controls remain reachable")
+		root.size = Vector2i(1280, 720)
+	var answered_before: int = game.answered
+	inspect_school_email(game)
+	check(game.phase == "Investigation" and game.answered == answered_before, "Inspection itself never grades the exam")
+	game.story_overlay._choose(0)
+	check(game.phase == "Trace" and game.evidence_round == game.wave, "Explicit case confirmation starts this round's questions")
+	game._college_case_confirmed(0)
+	check(game.answered == answered_before and game.question_index == 0, "Duplicate case confirmation cannot skip questions")
+
+func _verify_college_assessment() -> void:
+	print("-- [College Assessment] Three laptop cases, fifteen questions, real two-route combat --")
+	var original_scene: PackedScene = scene
+	scene = load("res://src/gameplay/assessment_live.tscn") as PackedScene
+	var context: MatchContext = Context.stage_one_live()
+	context.module_id = "mod_02"
+	context.stage_id = 10
+	var router: Node = root.get_node("Router")
+	check(router._scene_for_context(context) == router.ASSESSMENT_LIVE_SCENE, "College final routes to the assessment scene")
+	check(not DecisionScenarios.is_decision_stage("mod_02", 10), "Final assessment cannot be treated as a three-choice story stage")
+	var account: Account = Account.new()
+	var game: Control = mount(account, context)
+	await settle()
+	check(game.college_ready and game.phase == "Briefing", "College assessment is valid and waits for Start")
+	check(game.gold == 8 and account.intel_uses == 1, "College final preserves the authored budget and consumes Intel once")
+	check(game.hud.battle.tracks.size() == 2 and game.config.waves.size() == 3, "Final assessment has two routes and three waves")
+	check(game.story_overlay._college_cast and game.story_overlay._phone.name == "StoryLaptop", "Final uses college cast and the established laptop")
+	var ids: Dictionary = {}
+	var difficulties: Dictionary = {"easy": 0, "medium": 0, "hard": 0}
+	for item: Dictionary in game.question_pool:
+		ids[item.id] = true
+		difficulties[item.difficulty] += 1
+		check(item.module_id == "mod_02" and item.skill_id == "smishing", "College exam is isolated to Module 2 smishing")
+	check(ids.size() == 15 and difficulties == {"easy": 4, "medium": 7, "hard": 4}, "Final has fifteen unique balanced questions")
+	for cell: Vector2i in [Vector2i(4, 0), Vector2i(3, 1), Vector2i(4, 6), Vector2i(12, 4)]:
+		check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Final extended approaches block placement")
+	game.toggle_pause()
+	check(not game.paused, "Intro pause cannot replace the only Start control")
+	await shot(game, "college_stage10_intro")
+	root.size = Vector2i(844, 390)
+	await shot(game, "college_stage10_intro_small")
+	check(root.get_visible_rect().encloses(game.hud.modal.get_global_rect()), "Final intro fits small landscape")
+	root.size = Vector2i(1280, 720)
+	game._finish(true)
+	check(account.clears == 0, "Early completion cannot bypass assessment")
+	game.start_assessment()
+	game.start_assessment()
+	check(game.phase == "Opening" and game.answered == 0, "Duplicate Start cannot skip opening")
+	game.story_overlay._reveal_line()
+	await shot(game, "college_stage10_opening")
+	read_page(game)
+	for round_index: int in 3:
+		await _college_assessment_evidence(game, round_index == 0)
+		game.resolve_answer()
+		check(game.answered == round_index * 5, "Empty submission cannot consume a question")
+		game.toggle_pause()
+		game._process(100.0)
+		game.resolve_answer(true)
+		check(game.answered == round_index * 5 and game.time_left > 0, "Pause freezes final exam countdown and submission")
+		game.toggle_pause()
+		for question_in_round: int in 5:
+			var index: int = round_index * 5 + question_in_round
+			check(game.question_index == question_in_round, "Exactly five scored questions per case")
+			check(str(game.question.id) == "mod02_final_%02d" % (index + 1), "Question stays with its authored case")
+			var budget: int = game.gold
+			if question_in_round == 4:
+				root.size = Vector2i(844, 390)
+				await shot(game, "college_stage10_round%d_question_small" % (round_index + 1))
+				check(root.get_visible_rect().encloses(game.hud.submit.get_global_rect()), "Final Submit fits small landscape")
+				root.size = Vector2i(1280, 720)
+			if index < 3:
+				game.time_left = 0.0
+				_exam_pick_correct(game)
+				check(not bool(account.trace_results.back().correct), "Deadline wins over queued correct answer")
+			else:
+				_exam_pick_correct(game)
+			game.resolve_answer(true)
+			check(account.trace_results.size() == index + 1 and game.answered == index + 1, "Every scored answer recorded once")
+			check(game.gold == budget and not game.global_patch, "Final assessment gives no answer gold or random combat patch")
+			if question_in_round == 4:
+				root.size = Vector2i(844, 390)
+				await shot(game, "college_stage10_round%d_feedback_small" % (round_index + 1))
+				var feedback_view: ScrollContainer = game.hud.answers.get_parent() as ScrollContainer
+				check(feedback_view.get_global_rect().encloses(game.hud.feedback.get_global_rect()), "Final feedback automatically scrolls into view after resize")
+				root.size = Vector2i(1280, 720)
+			game.continue_question()
+		check(game.phase == "Build", "Five answers unlock the next defense")
+		if round_index == 0:
+			for cell: Vector2i in [Vector2i(10, 1), Vector2i(11, 3), Vector2i(11, 5)]:
+				game.select_cell(cell)
+				game.pick_tower("base")
+				check(game.place_tower(), "Basic-only final defense is buildable")
+			await shot(game, "college_stage10_defenses")
+		game.speed = 1 if "--college-real-time" in OS.get_cmdline_user_args() else 2
+		game.set_process(true)
+		game.begin_defend()
+		check(not game.incident_due, "No unrelated combat incident can add assessment grades")
+		var seen: Array[bool] = [false, false]
+		var started: int = Time.get_ticks_msec()
+		var timeout_ms: int = 65000 if game.speed == 1 else 38000
+		while game.phase == "Defend" and Time.get_ticks_msec() - started < timeout_ms:
+			for route_index: int in 2:
+				seen[route_index] = seen[route_index] or game.hud.battle.tracks[route_index].get_child_count() > 0
+			await create_timer(0.05, true, false, true).timeout
+		game.set_process(false)
+		print("[COLLEGE FINAL WAVE %d] phase=%s health=%d kills=%d" % [round_index + 1, game.phase, game.health, game.match_kills])
+		check(seen[0] and seen[1], "Both spawners run in each real final wave")
+		check(game.waves_completed == round_index + 1 and game.phase == ("Closing" if round_index == 2 else "Investigation"), "Actual combat clears into the next case or ending")
+		if game.phase == "Results" or game.phase == "Defend":
+			await unmount(game)
+			scene = original_scene
+			return
+	check(game.health >= 3 and game.match_kills >= 34, "Three Basic Nodes can complete the final map with a reasonable margin")
+	check(game.correct_answers == 12 and account.bkt.size() == 15, "Passing boundary is 12 of 15 and only questions grade mastery")
+	for grade: Array in account.bkt:
+		check(grade[0] == "smishing", "Final never grades Module 1 phishing")
+	check(account.clears == 0 and account.credits == 0, "Ending must be read before rewards or module completion")
+	game._finish(true)
+	check(account.clears == 0, "Duplicate finish cannot bypass unread ending")
+	read_page(game)
+	check(game.phase == "Results" and account.clear_keys == ["mod_02:10"] and account.stage_tasks == 1, "Only Module 2 final clears after the conclusion")
+	check(not account.module_1_complete and account.exam_locks.is_empty(), "College completion leaves school flag and remediation intact")
+	var credits: int = account.credits
+	game._finish(true)
+	game._college_story_continued()
+	check(account.credits == credits and account.clears == 1, "Repeated ending signals cannot pay twice")
+	game.hud.result_overlay.finish_reveal()
+	check(game.hud.result_overlay._title.text == "MODULE 2 COMPLETE", "Final result correctly names completed module")
+	await shot(game, "college_stage10_complete")
+	await unmount(game)
+	var certificate: Control = (load("res://src/ui/screens/intel/certificate_screen.tscn") as PackedScene).instantiate()
+	root.add_child(certificate)
+	certificate.on_enter({"module_id": "mod_02"})
+	check(certificate._cert_file.text == "MODULE_2.CRT" and certificate._title_label.text.contains("MODULE 2"), "College certificate names Module 2")
+	certificate.on_enter({})
+	check(certificate._cert_file.text == "MODULE_1.CRT" and certificate._title_label.text.contains("MODULE 1"), "Default school certificate remains unchanged")
+	certificate.queue_free()
+	await settle()
+
+	# Isolate the score boundary from combat, already exercised above.
+	account = Account.new()
+	game = mount(account, context)
+	game.start_assessment()
+	read_page(game)
+	for round_index: int in 3:
+		await _college_assessment_evidence(game)
+		for index: int in 5:
+			if game.answered < 4:
+				game.resolve_answer(true)
+			else:
+				_exam_pick_correct(game)
+			game.continue_question()
+		game.begin_defend()
+		game._wave_cleared()
+	check(game.correct_answers == 11 and game.remediation_required and game.phase == "Results", "11 of 15 requires review despite surviving all waves")
+	check(account.exam_locks == ["mod_02:10"] and account.clears == 0 and not account.module_1_complete, "Review lock affects only Module 2 final")
+	check(account.credits == 10 and not game.hud.battle.board.home_destroyed, "Score failure retains consolation and intact laptop")
+	await shot(game, "college_stage10_review")
+	account.exam_locks.append("mod_03:10")
+	game._advance_case_review()
+	check(account.exam_unlocks.is_empty(), "Unopened review cannot clear the exam lock")
+	game._intent("result_restart", null)
+	check(game.review_index == 0 and account.exam_locks.has("mod_02:10"), "Failed final opens the first missed-case review without unlocking")
+	root.size = Vector2i(844, 390)
+	await shot(game, "college_stage10_missed_case_small")
+	root.size = Vector2i(1280, 720)
+	game._advance_case_review()
+	check(account.exam_locks.has("mod_02:10"), "Partial review keeps the assessment locked")
+	for remaining: int in game.missed_questions.size() - 1:
+		game._advance_case_review()
+	game._advance_case_review()
+	check(account.exam_locks == ["mod_03:10"] and account.exam_unlocks == ["mod_02:10"], "Complete review clears only this module's lock exactly once")
+	check(account.bkt.size() == 15 and account.trace_results.size() == 15 and account.clears == 0 and account.credits == 10, "Review changes no score, mastery, completion or rewards")
+	await shot(game, "college_stage10_review_complete")
+	await unmount(game)
+
+	account = Account.new()
+	game = mount(account, context)
+	game.start_assessment()
+	read_page(game)
+	await _college_assessment_evidence(game)
+	for index: int in 5:
+		_exam_pick_correct(game)
+		game.continue_question()
+	game.speed = 2
+	game.set_process(true)
+	game.begin_defend()
+	var defeat_started: int = Time.get_ticks_msec()
+	while game.phase == "Defend" and Time.get_ticks_msec() - defeat_started < 38000:
+		await create_timer(0.05, true, false, true).timeout
+	game.set_process(false)
+	check(game.phase == "Results" and game.health == 0 and account.clears == 0, "Undefended final really loses despite five correct answers")
+	check(account.exam_locks.is_empty(), "Defense failure alone does not apply score-remediation lock")
+	await unmount(game)
+	game = mount(account, context)
+	check(game.answered == 0 and game.wave == 0 and game.gold == 8 and game.occupied.is_empty(), "Exit or defeat restarts the entire assessment")
+	check(account.trace_results.size() == 5, "Restart retains completed answer history")
+	await unmount(game)
+
+	account = Account.new()
+	account.cleared = true
+	game = mount(account, context)
+	game.start_assessment()
+	read_page(game)
+	await _college_assessment_evidence(game)
+	_exam_pick_correct(game)
+	check(account.bkt.is_empty() and account.trace_results.size() == 1, "Completed-module replay freezes mastery but retains history")
+	await unmount(game)
+	account = Account.new()
+	game = mount(account, context)
+	game.story.rounds[0].questions.pop_back()
+	game._configure_college_deck()
+	game.start_assessment()
+	check(game.phase == "Briefing" and account.clears == 0 and account.bkt.is_empty(), "Incomplete final content fails closed before any grade")
+	await unmount(game)
+	root.size = Vector2i(1280, 720)
+	scene = original_scene
+
 func _verify_school_assessment() -> void:
 	print("-- [School Assessment] Full exam, geometric battle, persistence boundaries --")
 	var original_scene: PackedScene = scene
@@ -727,6 +989,43 @@ func _run() -> void:
 		print("[COLLEGE CAST] failures=%d" % failures)
 		quit(0 if failures == 0 else 1)
 		return
+	if "--college-stage-ten-only" in OS.get_cmdline_user_args():
+		await _verify_college_assessment()
+		await _verify_school_assessment()
+		check(fingerprint() == before, "Assessment verification leaves real account state unchanged")
+		print("[COLLEGE STAGE TEN] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-nine-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(9)
+		check(fingerprint() == before, "College Stage 9 leaves real account state unchanged")
+		print("[COLLEGE STAGE NINE] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-eight-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(8)
+		check(fingerprint() == before, "College Stage 8 leaves real account state unchanged")
+		print("[COLLEGE STAGE EIGHT] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-seven-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(7)
+		check(fingerprint() == before, "College Stage 7 leaves real account state unchanged")
+		print("[COLLEGE STAGE SEVEN] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-six-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(6)
+		check(fingerprint() == before, "College Stage 6 leaves real account state unchanged")
+		print("[COLLEGE STAGE SIX] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
+	if "--college-stage-five-only" in OS.get_cmdline_user_args():
+		await _verify_college_stage(5)
+		check(fingerprint() == before, "College Stage 5 leaves real account state unchanged")
+		print("[COLLEGE STAGE FIVE] failures=%d" % failures)
+		quit(0 if failures == 0 else 1)
+		return
 	if "--college-stage-four-only" in OS.get_cmdline_user_args():
 		await _verify_college_stage(4)
 		check(fingerprint() == before, "College Stage 4 leaves real account state unchanged")
@@ -754,6 +1053,12 @@ func _run() -> void:
 	await _verify_college_stage(2)
 	await _verify_college_stage(3)
 	await _verify_college_stage(4)
+	await _verify_college_stage(5)
+	await _verify_college_stage(6)
+	await _verify_college_stage(7)
+	await _verify_college_stage(8)
+	await _verify_college_stage(9)
+	await _verify_college_assessment()
 	var router := root.get_node("Router")
 	router.active_module_id = "mod_01"
 	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Normal Stage 1 routes to the live decision scene")
@@ -779,7 +1084,7 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(6)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 7 also routes to the same live decision scene")
 	check(router._scene_for_context(router._context_for_stage(7)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 8 also routes to the same live decision scene")
 	check(router._scene_for_context(router._context_for_stage(8)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 9 (final story stage, with a finale) also routes to the same live decision scene")
-	check(router._scene_for_context(router._context_for_stage(9)) == router.LEVEL_SCENE, "Module 2 Stage 10 (the post-assessment) remains legacy")
+	check(router._scene_for_context(router._context_for_stage(9)) == router.ASSESSMENT_LIVE_SCENE, "Module 2 Stage 10 uses the college assessment adapter")
 	router.active_module_id = "mod_03"
 	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 1 also routes to the live decision scene (it is decision-based too)")
 	check(router._scene_for_context(router._context_for_stage(1)) == router.STAGE_ONE_LIVE_SCENE, "Module 3 Stage 2 uses the reusable live decision scene")
@@ -2237,7 +2542,12 @@ func _verify_college_stage(stage_number: int) -> void:
 	var stage_two: bool = stage_number == 2
 	var stage_three: bool = stage_number == 3
 	var stage_four: bool = stage_number == 4
-	var titles: Array[String] = ["First Login", "Expected Delivery", "Someone You Know", "The Code"]
+	var stage_five: bool = stage_number == 5
+	var stage_six: bool = stage_number == 6
+	var stage_seven: bool = stage_number == 7
+	var stage_eight: bool = stage_number == 8
+	var stage_nine: bool = stage_number == 9
+	var titles: Array[String] = ["First Login", "Expected Delivery", "Someone You Know", "The Code", "Locked Out", "No Signal", "Not Just Leah", "Close to Home", "Trust No Number"]
 	var title: String = titles[stage_number - 1]
 	var shot_prefix: String = "college_stage%d_" % stage_number if stage_number > 1 else "college_"
 	var account: Account = Account.new()
@@ -2250,8 +2560,8 @@ func _verify_college_stage(stage_number: int) -> void:
 	check(game.hud.battle.tracks.size() == 2, "Two real Path2D entrances exist")
 	var route_a: Path2D = game.hud.battle.tracks[0]
 	var route_b: Path2D = game.hud.battle.tracks[1]
-	if stage_three:
-		check(route_b.curve.get_baked_length() > route_a.curve.get_baked_length(), "Stage 3 lower detour has longer travel time")
+	if stage_three or stage_six or stage_eight:
+		check(route_b.curve.get_baked_length() > route_a.curve.get_baked_length(), "Authored lower detour has longer travel time")
 	else:
 		check(is_equal_approx(route_a.curve.get_baked_length(), route_b.curve.get_baked_length()), "Authored routes offer equal travel distance")
 	check(route_a.curve.get_point_position(0) != route_b.curve.get_point_position(0), "Entrances are physically distinct")
@@ -2272,6 +2582,31 @@ func _verify_college_stage(stage_number: int) -> void:
 		for cell: Vector2i in [Vector2i(7, 1), Vector2i(10, 2), Vector2i(10, 4)]:
 			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 4 winding approaches block placement")
 		check(game.hud.battle.board.cell_reason(Vector2i(9, 3)).is_empty(), "Stage 4 meeting point supports shared coverage")
+	if stage_five:
+		for cell: Vector2i in [Vector2i(6, 1), Vector2i(9, 2), Vector2i(8, 4), Vector2i(5, 5)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 5 additional bends block placement")
+		for cell: Vector2i in [Vector2i(5, 3), Vector2i(9, 3), Vector2i(11, 4)]:
+			check(game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 5 coverage positions are buildable")
+	if stage_six:
+		for cell: Vector2i in [Vector2i(7, 6), Vector2i(10, 5), Vector2i(11, 2), Vector2i(11, 4)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 6 extended detour and late approaches block placement")
+		for cell: Vector2i in [Vector2i(5, 3), Vector2i(10, 3), Vector2i(12, 4)]:
+			check(game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 6 early and late coverage positions are buildable")
+	if stage_seven:
+		for cell: Vector2i in [Vector2i(6, 0), Vector2i(9, 0), Vector2i(8, 6), Vector2i(11, 4)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 7 upper and lower detours block placement")
+		for cell: Vector2i in [Vector2i(10, 1), Vector2i(10, 3), Vector2i(11, 5)]:
+			check(game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 7 late coverage positions stay buildable")
+	if stage_eight:
+		for cell: Vector2i in [Vector2i(1, 6), Vector2i(3, 6), Vector2i(3, 4), Vector2i(10, 6)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 8 longer lower approach blocks placement")
+		for cell: Vector2i in [Vector2i(10, 1), Vector2i(10, 3), Vector2i(11, 5)]:
+			check(game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 8 late coverage positions stay buildable")
+	if stage_nine:
+		for cell: Vector2i in [Vector2i(1, 0), Vector2i(3, 0), Vector2i(3, 1), Vector2i(3, 6)]:
+			check(not game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 9 extended approaches block placement")
+		for cell: Vector2i in [Vector2i(10, 1), Vector2i(10, 3), Vector2i(11, 5)]:
+			check(game.hud.battle.board.cell_reason(cell).is_empty(), "Stage 9 late coverage positions stay buildable")
 	game.story_overlay._reveal_line()
 	await shot(game, shot_prefix + "opening")
 	read_page(game)
@@ -2322,6 +2657,77 @@ func _verify_college_stage(stage_number: int) -> void:
 		laptop._reveal_field("activity", 1)
 		check(laptop._inspected.has("activity") and not laptop.is_complete(), "Current activity still requires message and support checks")
 		await shot(game, shot_prefix + "activity_timeline")
+	if stage_five:
+		laptop._navigate("pages")
+		check(laptop._title.text == "RECOVERY WORKSPACE" and laptop._data.app_titles.lock == "LEAH'S LAPTOP", "Stage 5 uses Leah's recovery workspace")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("case", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Copied case number on an unsolicited offer cannot verify the saved case")
+		laptop._navigate("pages")
+		laptop._open_card(laptop._data.pages[3])
+		laptop._reveal_field("audit", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Restored-account evidence cannot be inspected before identity recovery")
+		laptop._navigate("pages")
+		laptop._open_card(laptop._data.pages[0])
+		laptop._reveal_field("case", 0)
+		laptop._reveal_field("case", 1)
+		check(laptop._inspected.has("case") and not laptop.is_complete(), "A saved receipt cannot substitute for current help-desk confirmation")
+		await shot(game, shot_prefix + "saved_case")
+	if stage_six:
+		laptop._navigate("pages")
+		check(laptop._title.text == "SERVICE / ACCOUNT CHECKS", "Stage 6 service workspace is active")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("service", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Old maintenance notice cannot verify today's line event")
+		laptop._navigate("pages")
+		laptop._open_card(laptop._data.pages[3])
+		laptop._reveal_field("restore", 0)
+		check(laptop._inspected.is_empty(), "Restoration evidence cannot be inspected before the carrier response")
+		laptop._navigate("pages")
+		laptop._open_card(laptop._data.pages[0])
+		laptop._reveal_field("service", 0)
+		laptop._reveal_field("service", 1)
+		check(laptop._inspected.has("service") and not laptop.is_complete(), "Current line record still requires the saved SMS and independent support checks")
+		await shot(game, shot_prefix + "service_record")
+	if stage_seven:
+		laptop._navigate("pages")
+		check(laptop._title.text == "CLASS REPORT WORKSPACE", "Stage 7 report workspace is active")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("reports", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Forwarded screenshot cannot count as an original report")
+		laptop._navigate("contacts")
+		laptop._open_card(laptop._data.contacts[0])
+		laptop._reveal_field("ramon", 0)
+		check(not laptop._inspected.has("ramon"), "Source identity alone does not establish current status or permission")
+		laptop._reveal_field("ramon", 1)
+		check(laptop._inspected.has("ramon") and not laptop.is_complete(), "Original reply still requires comparing the caption and report list")
+		await shot(game, shot_prefix + "original_report")
+	if stage_eight:
+		laptop._navigate("pages")
+		check(laptop._title.text == "FAMILY / APPROVAL WORKSPACE", "Stage 8 approval workspace is active")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("timeline", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Family agreement screenshot cannot replace original source checks")
+		laptop._navigate("contacts")
+		laptop._open_card(laptop._data.contacts[0])
+		laptop._reveal_field("family", 0)
+		check(not laptop._inspected.has("family"), "Recognizing the family member alone does not verify a recovery request")
+		laptop._reveal_field("family", 1)
+		check(laptop._inspected.has("family") and not laptop.is_complete(), "Direct family reply still requires the message and source timeline")
+		await shot(game, shot_prefix + "family_check")
+	if stage_nine:
+		laptop._navigate("pages")
+		check(laptop._title.text == "SUPPORT / CASE WORKSPACE", "Stage 9 support workspace is active")
+		laptop._open_card(laptop._data.pages[1])
+		laptop._reveal_field("case", 0)
+		check(laptop._inspected.is_empty() and laptop._revealed_fields.is_empty(), "Incoming caller display cannot verify the saved portal case")
+		laptop._navigate("contacts")
+		laptop._open_card(laptop._data.contacts[0])
+		laptop._reveal_field("support", 0)
+		check(not laptop._inspected.has("support"), "Selecting a support route still requires reading its actual reply")
+		laptop._reveal_field("support", 1)
+		check(laptop._inspected.has("support") and not laptop.is_complete(), "Verified support reply still requires comparing the message and current case")
+		await shot(game, shot_prefix + "independent_support")
 	laptop._navigate("mail")
 	laptop._open_message()
 	laptop._inspect("message")
@@ -2361,6 +2767,29 @@ func _verify_college_stage(stage_number: int) -> void:
 		if stage_number > 1:
 			if not game.story_overlay._dialogue_done:
 				read_page(game)
+			if (stage_seven and incident_index == 2) or ((stage_eight or stage_nine) and incident_index >= 1):
+				laptop._unlock()
+				var required_last: String = "notice" if stage_seven else ("support" if incident_index == 1 else "plan")
+				check(laptop._items.size() == 4, "Later investigation includes four independent checks")
+				for item: Dictionary in laptop._items:
+					var item_id: String = str(item.id)
+					if item_id == required_last:
+						continue
+					var app: String = str(item.phone_app)
+					laptop._navigate(app)
+					if app == "mail":
+						laptop._open_message()
+						laptop._inspect(item_id)
+					else:
+						for card: Dictionary in laptop._data.get(app, []):
+							if str(card.evidence_id) == item_id:
+								laptop._open_card(card)
+					for field_index: int in (item.fields as Array).size():
+						laptop._reveal_field(item_id, field_index)
+				check(laptop._inspected.size() == 3 and not laptop.is_complete(), "Three sources cannot bypass the final required review")
+				laptop._finish()
+				check(not game.story_overlay._investigation_config.is_empty(), "Missing required review keeps decisions locked")
+				await shot(game, shot_prefix + "review_gate_%d" % incident_index)
 			inspect_school_email(game)
 			check(game.story_overlay._choice_buttons.size() == 4, "Each later college incident offers four distinct decisions")
 			root.size = Vector2i(844, 390)
@@ -2400,15 +2829,22 @@ func _verify_college_stage(stage_number: int) -> void:
 		placement_cells.assign([Vector2i(6, 3), Vector2i(8, 3), Vector2i(10, 4)])
 	elif stage_four:
 		placement_cells.assign([Vector2i(6, 3), Vector2i(9, 3), Vector2i(11, 4)])
+	elif stage_five:
+		placement_cells.assign([Vector2i(5, 3), Vector2i(9, 3), Vector2i(11, 4)])
+	elif stage_six:
+		placement_cells.assign([Vector2i(5, 3), Vector2i(10, 3), Vector2i(12, 4)])
+	elif stage_seven or stage_eight or stage_nine:
+		placement_cells.assign([Vector2i(10, 1), Vector2i(10, 3), Vector2i(11, 5)])
 	for cell: Vector2i in placement_cells:
 		game.select_cell(cell)
 		game.pick_tower("base")
 		check(game.place_tower(), "Intro is buildable using only unlocked Basic Nodes")
 	await shot(game, shot_prefix + "defenses")
-	game.speed = 1 if "--college-real-time" in OS.get_cmdline_user_args() else 8
-	# Later college routes need spawn time + up to 29.3 s of heavy-packet
-	# travel + the existing 2 s intermission. Keep a bounded margin.
-	var wave_timeout_ms: int = 45000 if game.speed == 1 else 30000
+	# Later overlapping arrivals must use a supported gameplay speed.
+	# Artificial 8x advances frame-based aiming and firing in coarse steps.
+	game.speed = 1 if "--college-real-time" in OS.get_cmdline_user_args() else (2 if stage_number >= 8 else 8)
+	# Allow the last packet's spawn time, longer travel and intermission.
+	var wave_timeout_ms: int = (60000 if stage_number >= 8 else (55000 if stage_number >= 6 else 45000)) if game.speed == 1 else (35000 if stage_nine else 30000)
 	game.set_process(true)
 	game.begin_defend()
 	var seen_a: bool = false
@@ -2419,29 +2855,32 @@ func _verify_college_stage(stage_number: int) -> void:
 		seen_b = seen_b or game.hud.battle.tracks[1].get_child_count() > 0
 		await create_timer(0.05, true, false, true).timeout
 	game.set_process(false)
-	print("[COLLEGE WAVE %d/1] elapsed=%.2f phase=%s" % [stage_number, game.defend_clock, game.phase])
+	print("[COLLEGE WAVE %d/1] elapsed=%.2f phase=%s health=%d kills=%d" % [stage_number, game.defend_clock, game.phase, game.health, game.match_kills])
 	check(game.phase == "Build" and game.wave == 1, "Real tower targeting clears wave one and opens build break")
 	check(seen_a and seen_b, "Real simulation exercised both entrances")
 	if game.phase != "Build":
 		await unmount(game)
 		return
-	var saw_heavy: bool = false
+	var heavy_ids: Array[int] = []
+	var heavy_shot_taken: bool = false
 	if game.phase == "Build":
 		game.begin_defend()
 		game.set_process(true)
 		started = Time.get_ticks_msec()
 		while game.phase == "Defend" and Time.get_ticks_msec() - started < wave_timeout_ms:
-			if stage_four and not saw_heavy:
+			if stage_number >= 4:
 				for route: Path2D in game.hud.battle.tracks:
 					for enemy: Node in route.get_children():
-						if enemy is EnemyBase and (enemy as EnemyBase)._type_id == "heavy":
-							saw_heavy = true
-							check((enemy as EnemyBase).max_health == 8, "Stage 4 heavy packet uses the authored health scale")
-							await shot(game, shot_prefix + "heavy_packet")
+						if enemy is EnemyBase and (enemy as EnemyBase)._type_id == "heavy" and not heavy_ids.has(enemy.get_instance_id()):
+							heavy_ids.append(enemy.get_instance_id())
+							check((enemy as EnemyBase).max_health == 8, "College heavy packet uses the authored health scale")
+				if not heavy_ids.is_empty() and not heavy_shot_taken:
+					heavy_shot_taken = true
+					await shot(game, shot_prefix + "heavy_packet")
 			await create_timer(0.05, true, false, true).timeout
 		game.set_process(false)
-	if stage_four:
-		check(saw_heavy, "Stage 4 second wave actually spawns its tougher packet")
+	if stage_number >= 4:
+		check(heavy_ids.size() == (1 if stage_four else 2), "Later college mixed wave actually spawns its authored tougher packets")
 	print("[COLLEGE WAVE %d/2] elapsed=%.2f phase=%s remaining=%d intermission=%.2f" % [stage_number, game.defend_clock, game.phase, game.active_enemies, game.intermission])
 	check(game.decision.finale_won and game.phase == "Incident", "Real combat wins the second wave")
 	if not game.decision.finale_won:

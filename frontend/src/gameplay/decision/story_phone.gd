@@ -146,6 +146,7 @@ func open_phone(investigating: bool = false) -> void:
 	if settings == null or not bool(settings.get("reduced_motion")):
 		_shell.modulate.a = 0.0
 		_transition = create_tween()
+		_transition.finished.connect(func() -> void: _transition = null)
 		_transition.tween_property(_shell, "modulate:a", 1.0, 0.18)
 	if _app == "lock":
 		_unlock_button.grab_focus()
@@ -206,6 +207,7 @@ func _navigate(app: String) -> void:
 		_zoom = target
 	else:
 		_zoom_tween = create_tween()
+		_zoom_tween.finished.connect(func() -> void: _zoom_tween = null)
 		_zoom_tween.tween_property(self, "_zoom", target, 0.24).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 func _render() -> void:
