@@ -4,6 +4,9 @@ const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Data = preload("res://src/ui/screens/progress/progress_data.gd")
 const Briefing = preload("res://src/ui/screens/profile/profile_briefing.gd")
 const Badge = preload("res://src/ui/screens/progress/rank_badge.gd")
+const AvatarPicker = preload("res://src/ui/screens/profile/avatar_picker.gd")
+var _avatar_picker: Control
+var _avatar_button: Button
 var _body: HBoxContainer
 var _identity: VBoxContainer
 var _briefing: VBoxContainer
@@ -44,6 +47,10 @@ func _ready() -> void:
 	AuthService.session_changed.connect(_session_changed)
 	get_viewport().size_changed.connect(_request_refresh)
 	_refresh()
+	_avatar_picker = AvatarPicker.new()
+	add_child(_avatar_picker)
+	_avatar_picker.confirmed.connect(_confirm_avatar)
+	_avatar_picker.store_requested.connect(_avatar_store)
 
 func on_enter(_args: Dictionary) -> void:
 	_active = true
@@ -59,10 +66,13 @@ func on_resume() -> void:
 	_refresh_from_server()
 
 func on_exit() -> void:
+	_avatar_picker.dismiss()
 	_active = false
 	visible = false
 
 func _session_changed(_signed_in: bool) -> void:
+	if is_instance_valid(_avatar_picker):
+		_avatar_picker.dismiss()
 	_details_open = false
 	_sync_copy = "CACHED PROFILE"
 	_request_refresh()
@@ -143,17 +153,28 @@ func _build_identity() -> void:
 	card.add_child(portrait_row)
 	var frame := UI.panel(portrait_row, UI.BG)
 	frame.size_flags_horizontal = SIZE_EXPAND_FILL
+	_avatar_button = _button("", _open_avatar_picker)
+	_avatar_button.tooltip_text = "Change profile picture"
+	_avatar_button.accessibility_name = "Change profile picture"
+	_avatar_button.custom_minimum_size = Vector2(110, 150)
+	frame.add_child(_avatar_button)
 	var avatar := TextureRect.new()
 	avatar.name = "AvatarImage"
-	avatar.custom_minimum_size = Vector2(96, 150)
+	avatar.custom_minimum_size = Vector2.ZERO
 	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	frame.add_child(avatar)
+	_avatar_button.add_child(avatar)
+	avatar.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	avatar.offset_left = 6
+	avatar.offset_right = -6
+	avatar.offset_top = 6
+	avatar.offset_bottom = -6
 	AssetManager.bind_texture(avatar, "ui_pfp")
 	var badge := Badge.new()
 	badge.rank_index = int(_snapshot.rank_index)
 	portrait_row.add_child(badge)
 	card.add_child(_label(AuthService.display_name().to_upper(), UI.TEXT, 10))
+	card.add_child(_label("Tap your portrait to change it", UI.TEAL, -2))
 	card.add_child(_label(str(_snapshot.rank), UI.GOLD, 2))
 	card.add_child(_label("SIGNED IN" if AuthService.is_signed_in() else "LOCAL PROFILE", UI.TEAL, -2))
 	card.add_child(_label("%d RANK POINTS" % _snapshot.points, UI.TEXT, 2))
@@ -274,3 +295,20 @@ func _build_milestones() -> void:
 
 func _navigate(route: StringName) -> void:
 	Router.push(route)
+
+func _open_avatar_picker() -> void:
+	_avatar_picker.present()
+
+func _confirm_avatar(id: String) -> void:
+	if PlayerManager.select_avatar(id):
+		_avatar_picker.dismiss()
+
+func _avatar_store(id: String) -> void:
+	_avatar_picker.dismiss()
+	Router.push(&"store", {"item_id": id})
+
+func can_go_back() -> bool:
+	if is_instance_valid(_avatar_picker) and _avatar_picker.visible:
+		_avatar_picker.dismiss()
+		return false
+	return true

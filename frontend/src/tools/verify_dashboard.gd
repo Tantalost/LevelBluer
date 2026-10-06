@@ -19,6 +19,21 @@ func _capture(filename: String) -> void:
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/" + filename + ".png")
 
+func _tap(control: Control) -> void:
+	var point: Vector2 = control.get_global_rect().get_center()
+	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
+	motion.position = point
+	motion.global_position = point
+	root.push_input(motion, true)
+	for down: bool in [true, false]:
+		var event: InputEventMouseButton = InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = down
+		event.position = point
+		event.global_position = point
+		root.push_input(event, true)
+		await process_frame
+
 func _check_profile_info(screen: Control) -> void:
 	var main: Control = screen.get_node("SafeAreaContainer/ScreenLayout/MainRow")
 	var profile: Rect2 = screen.get_node("HeaderBand/HeaderLayer/ProfileButton").get_global_rect()
@@ -26,6 +41,151 @@ func _check_profile_info(screen: Control) -> void:
 	_check(absf(progress.get_center().x - profile.get_center().x) < 1, "Field progress centered beneath profile")
 	_check(progress.position.y > profile.end.y, "Field progress below profile")
 	_check(progress.end.y < main.get_node("DeployButton").get_global_rect().position.y, "Profile info clears menu")
+
+func _verify_modes(screen: Control) -> void:
+	var player: Node = root.get_node("PlayerManager")
+	var settings: Node = root.get_node("SettingsService")
+	var prior_tutorial: bool = player.tutorial_complete
+	var prior_reduced: bool = settings.reduced_motion
+	var progress_before: Dictionary = player.lesson_progress.duplicate(true)
+	# Memory-only setup. Do not invoke tutorial completion or settings/save APIs.
+	player.tutorial_complete = true
+	settings.reduced_motion = false
+	var selector: Control = screen._mode_selector
+	var modal: Control = screen._mode_modal
+	var completed: Array[StringName] = []
+	screen.mode_switch_finished.connect(func(mode: StringName) -> void: completed.append(mode))
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 600), Vector2i(844, 390)]:
+		root.size = dimensions
+		await _settle()
+		_check(selector.is_visible_in_tree(), "OS switch is visible on Solo")
+		_check(root.get_visible_rect().encloses(selector.get_global_rect()), "OS switch fits %s" % dimensions)
+		await _tap(selector)
+		_check(modal.visible, "Dashboard switch opens selector")
+		await create_timer(0.3).timeout
+		await _capture("mode_solo_%dx%d" % [dimensions.x, dimensions.y])
+		await _tap(modal._bands[1])
+		_check(modal.get_mode_name() == &"PVP", "Native pointer selects the red side")
+		await create_timer(0.3).timeout
+		_check(screen._selected_mode == &"SOLO", "Preview does not commit mode")
+		_check(root.get_visible_rect().encloses(modal._confirm.get_global_rect()), "Confirm fits %s" % dimensions)
+		_check(root.get_visible_rect().encloses(modal._cancel.get_global_rect()), "Cancel fits %s" % dimensions)
+		for band: Button in modal._bands:
+			_check(root.get_visible_rect().encloses(band.get_global_rect()), "Both choices fit %s" % dimensions)
+			_check(is_equal_approx(band.size.y, modal.size.y), "Mode artwork fills the screen height")
+			_check(is_equal_approx(band.size.x, modal.size.x * 0.5), "Each mode occupies half the screen")
+			_check(band.copy.get_rect().end.y < band.size.y, "Mode copy stays inside its side at %s: bottom=%s height=%s" % [dimensions, band.copy.get_rect().end.y, band.size.y])
+			_check(band.copy.get_global_rect().end.y < modal._confirm.get_global_rect().position.y, "Mode text clears floating footer")
+		_check(is_equal_approx(modal._bands[0].get_global_rect().end.x, modal._bands[1].get_global_rect().position.x), "Full-bleed halves meet with no gap")
+		await _capture("mode_pvp_%dx%d" % [dimensions.x, dimensions.y])
+		await _tap(modal._cancel)
+		_check(not modal.visible and screen._selected_mode == &"SOLO", "Cancel preserves Solo")
+	# Current mode confirmation must never trigger the power cycle.
+	selector.pressed.emit()
+	var focus_before: Control = root.gui_get_focus_owner()
+	var tab: InputEventKey = InputEventKey.new()
+	tab.keycode = KEY_TAB
+	tab.pressed = true
+	for index: int in 4:
+		root.push_input(tab, true)
+		await process_frame
+	_check(root.gui_get_focus_owner() == focus_before, "Tab cycles only inside the selector")
+	modal._confirm.pressed.emit()
+	_check(not screen._mode_transitioning and completed.is_empty(), "Same-mode confirm closes without reboot")
+	selector.pressed.emit()
+	modal._bands[1].pressed.emit()
+	await _tap(modal._confirm)
+	_check(screen._mode_transitioning and screen._power_overlay.visible, "Change starts input-blocking shutter")
+	_check(screen._selected_mode == &"SOLO", "Mode remains Solo until shutter is shut")
+	screen._on_mode_confirmed(&"SOLO")
+	_check(screen._pending_mode == &"PVP", "Repeated confirm cannot replace an active switch")
+	await create_timer(0.2).timeout
+	await _capture("mode_power_closing")
+	await create_timer(0.27).timeout
+	_check(screen._selected_mode == &"PVP", "Mode changes behind closed screen")
+	_check(is_equal_approx(screen._power_overlay.closure, 1.0), "OS commit is completely covered")
+	await _capture("mode_power_off")
+	await create_timer(0.85).timeout
+	_check(not screen._mode_transitioning and not screen._power_overlay.visible, "Power-on releases input")
+	_check(completed == [&"PVP"], "Switch completes exactly once")
+	_check(screen._pvp_hub.visible and not screen.get_node("SafeAreaContainer").visible, "PvP has its own workspace")
+	_check(screen._pvp_hub._queue.disabled, "Unimplemented matchmaking cannot be started")
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await _settle()
+		_check(root.get_visible_rect().encloses(screen._pvp_hub._switch.get_global_rect()), "PvP return switch fits")
+		_check(not screen._pvp_hub._status.get_global_rect().intersects(screen._pvp_hub._switch.get_global_rect()), "PvP copy clears return control")
+		await _capture("pvp_workspace_%dx%d" % [dimensions.x, dimensions.y])
+	screen._pvp_hub._switch.pressed.emit()
+	_check(modal.visible and modal.get_mode_name() == &"PVP", "PvP switch opens selector with current mode")
+	modal._bands[0].pressed.emit()
+	modal._confirm.pressed.emit()
+	await create_timer(1.3).timeout
+	_check(screen._selected_mode == &"SOLO" and not screen._pvp_hub.visible, "Reverse power cycle restores Solo")
+	_check(screen.get_node("SafeAreaContainer").visible and screen.get_node("HeaderBand").visible, "Solo controls restored")
+	_check(completed == [&"PVP", &"SOLO"], "Both directions complete once")
+	settings.reduced_motion = true
+	screen._on_mode_confirmed(&"PVP")
+	_check(screen._power_overlay.reduced, "Reduced motion uses fade instead of shutter")
+	await create_timer(0.45).timeout
+	_check(not screen._mode_transitioning and screen._selected_mode == &"PVP", "Reduced-motion transition completes")
+	screen._on_mode_confirmed(&"SOLO")
+	screen.on_exit()
+	await create_timer(0.45).timeout
+	_check(not screen._power_overlay.visible and not screen._mode_transitioning, "Screen exit cancels transition")
+	_check(screen._selected_mode == &"PVP", "Cancelled pre-commit switch cannot mutate mode later")
+	_check(player.lesson_progress == progress_before, "Switching OS preserves lesson progress")
+	player.tutorial_complete = prior_tutorial
+	settings.reduced_motion = prior_reduced
+
+func _verify_remote_pvp_art(screen: Control) -> void:
+	var assets: Node = root.get_node("AssetManager")
+	var entry_found: bool = false
+	var workspace_found: bool = false
+	for entry: Dictionary in assets._ui_catalog():
+		if str(entry.asset_id) == "ui_dashboard_pvp_workspace":
+			workspace_found = str(entry.cloudinary_url) == "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791168774/pvp_workspace_muted_v1.png"
+		if str(entry.asset_id) == "ui_dashboard_pvp":
+			entry_found = str(entry.cloudinary_url) == "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791049225/pvp_command_v1.png"
+	_check(entry_found, "PvP catalog uses the supplied Cloudinary URL")
+	_check(workspace_found, "Muted workspace uses its separate supplied Cloudinary URL")
+	_check(assets._bundled_path("ui_dashboard_pvp").is_empty(), "PvP no longer depends on a bundled image")
+	var original: Texture2D = assets.get_texture("ui_dashboard_pvp")
+	var original_workspace: Texture2D = assets.get_texture("ui_dashboard_pvp_workspace")
+	_check(assets._bundled_path("ui_dashboard_pvp_workspace").is_empty(), "Workspace is remote-only")
+	var workspace_image: Image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	workspace_image.fill(Color("301018"))
+	var workspace: Texture2D = ImageTexture.create_from_image(workspace_image)
+	assets._textures["ui_dashboard_pvp_workspace"] = workspace
+	assets._textures["ui_dashboard_pvp"] = null
+	screen._mode_modal._refresh_art()
+	screen._pvp_hub._refresh_art()
+	_check(screen._mode_modal._bands[1].art == null, "Missing selector cache leaves usable color fallback")
+	_check(screen._pvp_hub._backdrop.texture == workspace, "Missing selector art does not affect workspace")
+	var image: Image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	image.fill(Color("#FF5C5C"))
+	var downloaded: Texture2D = ImageTexture.create_from_image(image)
+	assets._textures["ui_dashboard_pvp"] = downloaded
+	# Even a partially successful catalog sync must refresh available artwork.
+	assets.sync_finished.emit(false)
+	_check(screen._mode_modal._bands[1].art == downloaded, "Selector refreshes after a late download")
+	_check(screen._pvp_hub._backdrop.texture == workspace, "Selector downloads cannot replace calm workspace art")
+	assets._textures["ui_dashboard_pvp_workspace"] = null
+	screen._pvp_hub._refresh_art()
+	_check(screen._pvp_hub._backdrop.texture == null, "Workspace supports native fallback when art is missing")
+	assets._textures["ui_dashboard_pvp_workspace"] = workspace
+	assets.sync_finished.emit(false)
+	_check(screen._pvp_hub._backdrop.texture == workspace, "Workspace refreshes independently after asset sync")
+	if original != null:
+		assets._textures["ui_dashboard_pvp"] = original
+	else:
+		assets._textures.erase("ui_dashboard_pvp")
+	if original_workspace != null:
+		assets._textures["ui_dashboard_pvp_workspace"] = original_workspace
+	else:
+		assets._textures.erase("ui_dashboard_pvp_workspace")
+	screen._mode_modal._refresh_art()
+	screen._pvp_hub._refresh_art()
 
 func _run() -> void:
 	var screen: Control = load("res://src/ui/screens/dashboard/dashboard_screen.tscn").instantiate()
@@ -117,6 +277,8 @@ func _run() -> void:
 	# behavior directly rather than asserting the old side effect.
 	screen._apply_lock_state()
 	_check(not screen.get_node("PreTestLock").visible, "_apply_lock_state() hides the retired pre-test lock overlay")
+	_verify_remote_pvp_art(screen)
+	await _verify_modes(screen)
 	screen.on_exit()
 	_check(not handler._dialogue.visible, "Leaving screen closes dialogue")
 	print("[DASHBOARD UI] failures=%d" % failures)

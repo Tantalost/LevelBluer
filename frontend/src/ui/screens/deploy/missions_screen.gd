@@ -1,159 +1,257 @@
 class_name MissionsScreen
 extends BaseScreen
-## Briefing overlay. Layout mirrors a settings sheet: header, tabs, columns, Done.
+## Presentation only. TaskManager owns progress and automatic reward payouts.
+const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const CREAM: Color = Color("#F3ECD6")
+const INK: Color = Color("#101623")
+const CYAN: Color = Color("#4FE0D4")
+const NAVY: Color = Color("#0A1730")
+const TABS: PackedStringArray = ["DAILY", "MAIN", "EVENT"]
 
-const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-const CARD_WIDTH := 720.0
-const TAB_NAMES: PackedStringArray = ["DAILY", "MAIN", "EVENT"]
-
-@onready var _dimmer: ColorRect = %Dimmer
-@onready var _modal_card: PanelContainer = %ModalCard
-@onready var _header_title: Label = %HeaderTitle
-@onready var _tab_left: Button = %TabLeft
-@onready var _tab_right: Button = %TabRight
-@onready var _tab_label: Label = %TabLabel
-@onready var _body_panel: PanelContainer = %BodyPanel
-@onready var _column_row: HBoxContainer = %ColumnRow
-@onready var _done_button: Button = %DoneButton
-
-var _pixel_font: Font
 var _tab_index: int = 0
-var _chrome: Color = Palette.FOREST_NIGHT
-
+var _selected_id: String = ""
+var _tasks: Array[Dictionary] = []
+var _compact: bool = false
+var _details_open: bool = false
+var _modal_card: PanelContainer
+var _list_page: PanelContainer
+var _detail_page: PanelContainer
+var _cards: VBoxContainer
+var _details: VBoxContainer
+var _tabs: Array[Button] = []
+var _back: Button
+var _close: Button
+var _heading: Label
+var _tween: Tween
 
 func _ready() -> void:
-	_load_font()
-	_chrome = Palette.FOREST_NIGHT.lerp(Palette.MAGENTA, 0.22)
-	_dimmer.color = Color(Palette.BG_DEEP, 0.55)
-	_style_card()
-	_style_body()
-	_style_tab_button(_tab_left)
-	_style_tab_button(_tab_right)
-	_style_done_button()
-	_apply_label(_header_title, Palette.TEXT_PRIMARY, 16)
-	_apply_label(_tab_label, Palette.TEXT_PRIMARY, 12)
-	_tab_left.pressed.connect(func() -> void: _set_tab(_tab_index - 1))
-	_tab_right.pressed.connect(func() -> void: _set_tab(_tab_index + 1))
-	_done_button.pressed.connect(func() -> void: Router.request_back())
-	_dimmer.gui_input.connect(_on_dimmer_gui)
+	var dimmer: ColorRect = ColorRect.new()
+	dimmer.color = Color(0.02, 0.04, 0.09, 0.88)
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(dimmer)
+	dimmer.gui_input.connect(_on_dimmer_gui)
+	var safe: SafeAreaContainer = SafeAreaContainer.new()
+	safe.extra_margin = 24
+	safe.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	safe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(safe)
+	_modal_card = _panel(safe, Color("#173058"), Color("#64878B"), 14)
+	var layout: VBoxContainer = UI.column(_modal_card, 16)
+	var header: HBoxContainer = HBoxContainer.new()
+	header.add_theme_constant_override("separation", 18)
+	layout.add_child(header)
+	_back = _button("MISSIONS", _return_to_list)
+	header.add_child(_back)
+	_heading = UI.label("MISSION JOURNAL", 24, CREAM, true)
+	_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	header.add_child(_heading)
+	_close = _button("X", _dismiss)
+	_close.tooltip_text = "Close missions"
+	header.add_child(_close)
+	var pages: HBoxContainer = HBoxContainer.new()
+	pages.add_theme_constant_override("separation", 18)
+	pages.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(pages)
+	_list_page = _panel(pages, CREAM, Color("#B7AE96"), 22)
+	_list_page.size_flags_stretch_ratio = 0.85
+	var left: VBoxContainer = UI.column(_list_page, 18)
+	left.add_child(UI.label("YOUR MISSIONS", 24, INK, true))
+	var tabs: HBoxContainer = HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 10)
+	left.add_child(tabs)
+	for index: int in TABS.size():
+		var tab: Button = _button(TABS[index], _set_tab.bind(index))
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tabs.add_child(tab)
+		_tabs.append(tab)
+	_cards = _scroll(left)
+	left.add_child(UI.label("Select a mission to view its objective.", 22, Color("#52616B")))
+	_detail_page = _panel(pages, NAVY, Color("#34566C"), 24)
+	_detail_page.size_flags_stretch_ratio = 1.15
+	var right: VBoxContainer = UI.column(_detail_page, 16)
+	_details = _scroll(right)
+	right.add_child(UI.label("Rewards are credited automatically.", 22, UI.MUTED))
+	resized.connect(_layout)
+	_refresh_body()
 
+func _panel(parent: Node, fill: Color, border: Color, padding: int) -> PanelContainer:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", UI.journal_box(fill, border, padding))
+	parent.add_child(panel)
+	return panel
+
+func _button(text: String, callback: Callable) -> Button:
+	var button: Button = UI.button(text, callback)
+	button.custom_minimum_size = Vector2(64, 56)
+	button.add_theme_stylebox_override("normal", UI.journal_box(NAVY, Color("#64878B"), 12))
+	return button
+
+func _scroll(parent: Node) -> VBoxContainer:
+	var content: VBoxContainer = UI.scroll_column(parent)
+	var scroll: ScrollContainer = content.get_parent() as ScrollContainer
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	scroll.follow_focus = true
+	return content
 
 func on_enter(_args: Dictionary) -> void:
 	_tab_index = 0
+	_details_open = false
 	_refresh_body()
-
+	if _tween != null:
+		_tween.kill()
+	_modal_card.modulate.a = 1.0
+	if not SettingsService.reduced_motion:
+		_modal_card.modulate.a = 0.0
+		_tween = create_tween()
+		_tween.tween_property(_modal_card, "modulate:a", 1.0, 0.22).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_tabs[0].grab_focus()
 
 func on_resume() -> void:
 	_refresh_body()
 
+func on_exit() -> void:
+	if _tween != null:
+		_tween.kill()
 
-func _set_tab(index: int) -> void:
-	var count: int = TAB_NAMES.size()
-	_tab_index = posmod(index, count)
-	_refresh_body()
+func _exit_tree() -> void:
+	on_exit()
 
+func can_go_back() -> bool:
+	if _compact and _details_open:
+		_return_to_list()
+		return false
+	return true
 
-func _on_dimmer_gui(event: InputEvent) -> void:
-	var mouse := event as InputEventMouseButton
-	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
-		return
-	if _modal_card.get_global_rect().has_point(mouse.global_position):
-		return
+func _dismiss() -> void:
+	_details_open = false
 	Router.request_back()
 
+func _on_dimmer_gui(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mouse: InputEventMouseButton = event as InputEventMouseButton
+		if mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT and not _modal_card.get_global_rect().has_point(mouse.global_position):
+			_dismiss()
+
+func _set_tab(index: int) -> void:
+	_tab_index = posmod(index, TABS.size())
+	_details_open = false
+	_selected_id = ""
+	_refresh_body()
+	(_cards.get_parent() as ScrollContainer).scroll_vertical = 0
+	_tabs[_tab_index].grab_focus()
 
 func _refresh_body() -> void:
-	_tab_label.text = TAB_NAMES[_tab_index]
-	_clear_columns()
+	_tasks.clear()
 	if _tab_index == 0:
-		_fill_daily_columns()
-		return
-	if _tab_index == 1:
-		_column_row.add_child(_make_empty_note("No story directives."))
-		return
-	_column_row.add_child(_make_empty_note("No active event."))
+		_tasks = TaskManager.get_active_tasks()
+	var selected_exists: bool = false
+	for task: Dictionary in _tasks:
+		if str(task.get("id", "")) == _selected_id:
+			selected_exists = true
+	if not selected_exists:
+		_selected_id = "" if _tasks.is_empty() else str(_tasks[0].get("id", ""))
+	UI.clear(_cards)
+	for task: Dictionary in _tasks:
+		_add_card(task)
+	if _tasks.is_empty():
+		_cards.add_child(UI.label("No daily missions available." if _tab_index == 0 else ("No story directives yet." if _tab_index == 1 else "No active event."), 28, INK))
+	for index: int in _tabs.size():
+		_tabs[index].add_theme_stylebox_override("normal", UI.journal_box(Color("#153B37") if index == _tab_index else NAVY, CYAN if index == _tab_index else Color("#64878B"), 12))
+	_fill_details()
+	_layout()
 
-
-func _fill_daily_columns() -> void:
-	var tasks: Array[Dictionary] = TaskManager.get_active_tasks()
-	for t in tasks.size():
-		if t > 0:
-			_column_row.add_child(_make_divider())
-		_column_row.add_child(_make_task_column(tasks[t]))
-
-
-func _clear_columns() -> void:
-	var kids: Array[Node] = _column_row.get_children()
-	for i in kids.size():
-		var child: Node = kids[i]
-		_column_row.remove_child(child)
-		child.queue_free()
-
-
-func _make_task_column(task: Dictionary) -> Control:
-	var title: String = str(task.get("title", "DIRECTIVE"))
+func _add_card(task: Dictionary) -> void:
 	var task_id: String = str(task.get("id", ""))
 	var target: int = maxi(1, int(task.get("target", 1)))
 	var current: int = clampi(int(task.get("current", 0)), 0, target)
-	var reward: int = maxi(0, int(task.get("reward", 0)))
-	var done: bool = current >= target
+	var selected: bool = task_id == _selected_id
+	var color: Color = CREAM if selected else INK
+	var button: Button = _button("", _select_task.bind(task_id))
+	button.tooltip_text = str(task.get("title", "Mission"))
+	button.custom_minimum_size.y = 158
+	button.add_theme_stylebox_override("normal", UI.journal_box(Color("#153B37") if selected else Color("#E5DDC7"), CYAN if selected else Color("#B7AE96"), 16))
+	button.add_theme_stylebox_override("hover", UI.journal_box(Color("#153B37") if selected else CREAM, CYAN, 16))
+	button.add_theme_stylebox_override("pressed", UI.journal_box(Color("#153B37") if selected else CREAM, UI.GOLD, 16))
+	var content: HBoxContainer = HBoxContainer.new()
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	content.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	content.offset_left = 16
+	content.offset_right = -16
+	content.offset_top = 16
+	content.offset_bottom = -16
+	content.add_theme_constant_override("separation", 18)
+	button.add_child(content)
+	var icon: IntelPixelIcon = IntelPixelIcon.new()
+	icon.kind = IntelPixelIcon.Kind.ENVELOPE if task_id == "defeat_fast" else IntelPixelIcon.Kind.BADGE
+	icon.custom_minimum_size = Vector2(48, 48)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon.ink_override = CYAN if selected else Color("#356372")
+	content.add_child(icon)
+	var copy: VBoxContainer = UI.column(content, 10)
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	copy.add_child(UI.label(str(task.get("title", "Mission")), 28, color))
+	copy.add_child(UI.label("COMPLETED" if current >= target else "%d / %d complete" % [current, target], 24, color))
+	copy.add_child(_progress(current, target))
+	_cards.add_child(button)
+	copy.minimum_size_changed.connect(func() -> void: button.custom_minimum_size.y = maxf(158.0, copy.get_combined_minimum_size().y + 32.0))
 
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.alignment = BoxContainer.ALIGNMENT_CENTER
-	col.add_theme_constant_override("separation", 12)
-
-	var heading := Label.new()
-	heading.text = title.to_upper()
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_apply_label(heading, Palette.FIELD_TEXT, 11)
-	col.add_child(heading)
-
-	var blurb := Label.new()
-	blurb.text = _task_blurb(task_id)
-	blurb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_apply_label(blurb, Color(Palette.FIELD_TEXT, 0.55), 8)
-	col.add_child(blurb)
-
-	var status := Label.new()
-	if done:
-		status.text = "CLEARED"
+func _select_task(task_id: String) -> void:
+	_selected_id = task_id
+	_details_open = true
+	_refresh_body()
+	(_details.get_parent() as ScrollContainer).scroll_vertical = 0
+	if _compact:
+		_back.grab_focus()
 	else:
-		status.text = "%d / %d" % [current, target]
-	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_apply_label(status, Palette.FIELD_TEXT, 12)
-	col.add_child(status)
+		_close.grab_focus()
 
-	var reward_label := Label.new()
-	reward_label.text = "+%d CR" % reward
-	reward_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_apply_label(reward_label, Palette.GOLD_DIM if done else Palette.GOLD, 9)
-	col.add_child(reward_label)
-	return col
+func _fill_details() -> void:
+	UI.clear(_details)
+	var selected: Dictionary = {}
+	for task: Dictionary in _tasks:
+		if str(task.get("id", "")) == _selected_id:
+			selected = task
+	_details.add_child(UI.label(TABS[_tab_index] + " / MISSION DETAILS", 22, CYAN))
+	if selected.is_empty():
+		_details.add_child(UI.label("ALL QUIET", 30, CREAM, true))
+		_details.add_child(UI.label("There are no missions in this category right now. Browse another tab to see your available objectives.", 28, UI.MUTED))
+		return
+	var target: int = maxi(1, int(selected.get("target", 1)))
+	var current: int = clampi(int(selected.get("current", 0)), 0, target)
+	var done: bool = current >= target
+	_details.add_child(UI.label(str(selected.get("title", "Mission")).to_upper(), 28, CREAM, true))
+	_details.add_child(UI.label(_task_blurb(_selected_id), 28, UI.MUTED))
+	var objective: PanelContainer = _panel(_details, Color("#153B37") if done else Color("#102040"), Color("#34566C"), 20)
+	var copy: VBoxContainer = UI.column(objective, 14)
+	copy.add_child(UI.label("OBJECTIVE COMPLETED" if done else "OBJECTIVE IN PROGRESS", 24, Color("#33D17A") if done else CYAN))
+	var status: HBoxContainer = HBoxContainer.new()
+	status.add_theme_constant_override("separation", 16)
+	copy.add_child(status)
+	status.add_child(UI.journal_check(done))
+	var count: Label = UI.label("%d / %d" % [current, target], 32, CREAM)
+	count.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	count.autowrap_mode = TextServer.AUTOWRAP_OFF
+	status.add_child(count)
+	copy.add_child(_progress(current, target))
+	_details.add_child(UI.label("REWARD", 22, CYAN))
+	var reward: PanelContainer = _panel(_details, Color("#102040"), Color("#34566C"), 20)
+	var reward_copy: VBoxContainer = UI.column(reward, 10)
+	reward_copy.add_child(UI.label("+%d CR" % maxi(0, int(selected.get("reward", 0))), 32, UI.GOLD))
+	reward_copy.add_child(UI.label("Credited on completion" if done else "Earned when the objective is complete", 24, UI.MUTED))
 
-
-func _make_empty_note(copy: String) -> Label:
-	var note := Label.new()
-	note.text = copy.to_upper()
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	note.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	note.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_apply_label(note, Color(Palette.FIELD_TEXT, 0.55), 10)
-	return note
-
-
-func _make_divider() -> ColorRect:
-	var line := ColorRect.new()
-	line.custom_minimum_size = Vector2(2, 0)
-	line.color = Color(Palette.FIELD_TEXT, 0.12)
-	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return line
-
+func _progress(current: int, target: int) -> ProgressBar:
+	var progress: ProgressBar = ProgressBar.new()
+	progress.custom_minimum_size.y = 12
+	progress.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress.show_percentage = false
+	progress.max_value = target
+	progress.value = current
+	progress.add_theme_stylebox_override("background", UI.box(NAVY, Color("#34566C"), 0))
+	progress.add_theme_stylebox_override("fill", UI.box(Color("#33D17A") if current >= target else CYAN, CYAN, 0))
+	return progress
 
 func _task_blurb(task_id: String) -> String:
 	if task_id == "defeat_fast":
@@ -162,76 +260,36 @@ func _task_blurb(task_id: String) -> String:
 		return "Clear stages to complete this directive."
 	return "Complete this directive during deploy."
 
+func _return_to_list() -> void:
+	_details_open = false
+	_layout()
+	_tabs[_tab_index].grab_focus()
 
-func _style_card() -> void:
-	var box: StyleBoxFlat = _pixel_box(_chrome, _chrome, 18, 0)
-	box.content_margin_left = 0.0
-	box.content_margin_right = 0.0
-	box.content_margin_top = 8.0
-	box.content_margin_bottom = 0.0
-	box.shadow_color = Color(Palette.BG_DEEP, 0.7)
-	box.shadow_size = 12
-	box.shadow_offset = Vector2(0, 6)
-	_modal_card.add_theme_stylebox_override("panel", box)
-	_modal_card.custom_minimum_size = Vector2(CARD_WIDTH, 400.0)
-
-
-func _style_body() -> void:
-	var box: StyleBoxFlat = _pixel_box(Color(Palette.FIELD_BG, 0.94), Color(Palette.FIELD_BG, 0.94), 0, 0)
-	box.content_margin_left = 24.0
-	box.content_margin_right = 24.0
-	box.content_margin_top = 20.0
-	box.content_margin_bottom = 20.0
-	_body_panel.add_theme_stylebox_override("panel", box)
-
-
-func _style_done_button() -> void:
-	var box: StyleBoxFlat = _pixel_box(_chrome, _chrome, 0, 0)
-	box.corner_radius_bottom_left = 18
-	box.corner_radius_bottom_right = 18
-	box.content_margin_left = 16.0
-	box.content_margin_right = 16.0
-	box.content_margin_top = 16.0
-	box.content_margin_bottom = 16.0
-	_done_button.add_theme_stylebox_override("normal", box)
-	_done_button.add_theme_stylebox_override("hover", box)
-	_done_button.add_theme_stylebox_override("pressed", box)
-	_done_button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	if _pixel_font != null:
-		_done_button.add_theme_font_override("font", _pixel_font)
-	_done_button.add_theme_font_size_override("font_size", 14)
-
-
-func _style_tab_button(button: Button) -> void:
-	var empty := StyleBoxEmpty.new()
-	button.add_theme_stylebox_override("normal", empty)
-	button.add_theme_stylebox_override("hover", empty)
-	button.add_theme_stylebox_override("pressed", empty)
-	button.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-	if _pixel_font != null:
-		button.add_theme_font_override("font", _pixel_font)
-	button.add_theme_font_size_override("font_size", 12)
-
-
-func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(border_w)
-	box.set_corner_radius_all(radius)
-	return box
-
-
-func _apply_label(label: Label, color: Color, font_size: int) -> void:
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	if _pixel_font != null:
-		label.add_theme_font_override("font", _pixel_font)
-
-
-func _load_font() -> void:
-	if not ResourceLoader.exists(FONT_PATH):
+func _layout() -> void:
+	if not is_instance_valid(_modal_card):
 		return
-	var file: FontFile = load(FONT_PATH) as FontFile
-	if file != null:
-		_pixel_font = file
+	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().x)
+	_compact = size.x * physical < 1000.0
+	_list_page.visible = not _compact or not _details_open
+	_detail_page.visible = not _compact or _details_open
+	_back.visible = _compact and _details_open
+	_heading.text = "MISSION DETAILS" if _compact and _details_open else "MISSION JOURNAL"
+	UI.fit_touch(self)
+
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+	if event.is_action_pressed("ui_cancel"):
+		Router.request_back()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_focus_next") or event.is_action_pressed("ui_focus_prev"):
+		var controls: Array[Control] = []
+		for node: Node in find_children("*", "Button", true, false):
+			var button: Button = node as Button
+			if button.is_visible_in_tree() and not button.disabled:
+				controls.append(button)
+		if not controls.is_empty():
+			var index: int = controls.find(get_viewport().gui_get_focus_owner())
+			var step: int = -1 if event.is_action_pressed("ui_focus_prev") else 1
+			controls[posmod(index + step, controls.size())].grab_focus()
+			get_viewport().set_input_as_handled()

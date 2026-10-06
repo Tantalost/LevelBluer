@@ -9,6 +9,24 @@ const MUTED := Color("a0b7bb")
 const TEAL := Color("85d9c3")
 const GOLD := Color("e5c88a")
 
+class JournalCheck extends Control:
+	var complete: bool = false
+	func _draw() -> void:
+		var color: Color = Color("#33D17A") if complete else Color("#64878B")
+		var origin: Vector2 = Vector2(4, 8)
+		draw_rect(Rect2(origin, Vector2(26, 26)), color, false, 2.0)
+		if complete:
+			draw_polyline(PackedVector2Array([origin + Vector2(5, 12), origin + Vector2(11, 18), origin + Vector2(23, 3)]), color, 4.0)
+
+static func journal_check(complete: bool) -> Control:
+	var mark: JournalCheck = JournalCheck.new()
+	mark.name = "CompletionMark"
+	mark.complete = complete
+	mark.set_meta("complete", complete)
+	mark.custom_minimum_size = Vector2(38, 40)
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return mark
+
 static func box(fill: Color = PANEL, border: Color = Color("3b626a"), padding: int = 18) -> StyleBoxFlat:
 	var b := StyleBoxFlat.new()
 	b.bg_color = fill
@@ -20,6 +38,16 @@ static func box(fill: Color = PANEL, border: Color = Color("3b626a"), padding: i
 	b.shadow_size = 4
 	b.shadow_offset = Vector2(3, 4)
 	return b
+
+## Shared beveled pages for the Worlds and Missions journals.
+static func journal_box(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
+	var style: StyleBoxFlat = box(fill, border, padding)
+	style.set_border_width_all(2)
+	style.border_width_bottom = 5
+	style.set_corner_radius_all(12)
+	style.corner_detail = 1
+	style.shadow_size = 6
+	return style
 
 static func label(text: String, font_size: int = 24, color: Color = TEXT, heading: bool = false) -> Label:
 	var l := Label.new()

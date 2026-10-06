@@ -1,4 +1,7 @@
 extends Node
+signal avatar_changed
+const Avatars = preload("res://src/ui/screens/profile/avatar_portrait.gd")
+var selected_avatar_id: String = "byte_bot"
 ## Autoload singleton, registered as "PlayerManager".
 ## Lesson progress is persisted per signed-in participant.
 
@@ -40,6 +43,17 @@ var has_stateful_inspection: bool = false
 ## Absent means "no clears recorded yet" — see max_stage_cleared().
 var max_stage_cleared_by_module: Dictionary = {}
 var credits: int = 0
+## Separate cosmetic wallet. No Solo reward or OS-switch path may credit it.
+## PvP settlement is not implemented yet; do not grant local participation rewards.
+var pvp_tokens: int = 0
+
+const STORE_ITEMS: Array[Dictionary] = [
+	{"id": "t1", "name": "Assault Frame", "price": 500, "category": "FEATURED", "art": "frame", "color": "4FE0D4", "description": "An angular cyan frame for your collection."},
+	{"id": "t2", "name": "Recon Drone", "price": 350, "category": "FEATURED", "art": "drone", "color": "4F8CFF", "description": "A compact surveillance-drone collectible."},
+	{"id": "t3", "name": "Ghost Cloak", "price": 1200, "category": "FEATURED", "art": "cloak", "color": "B09AFF", "description": "A shadow operative emblem with violet accents."},
+	{"id": "b1", "name": "Gold Frame", "price": 300, "category": "BORDERS", "art": "frame", "color": "FFB648", "description": "A gold border with pixel-cut corners."},
+	{"id": "b2", "name": "Shadow Border", "price": 600, "category": "BORDERS", "art": "frame", "color": "B09AFF", "description": "A dark border edged with violet light."},
+]
 var module_1_complete: bool = false
 var seen_module_intros: Array[String] = []
 var tutorial_complete: bool = false
@@ -249,6 +263,9 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 func reset_to_defaults() -> void:
 	max_stage_cleared_by_module.clear()
 	credits = 0
+	pvp_tokens = 0
+	selected_avatar_id = Avatars.DEFAULT_ID
+	avatar_changed.emit()
 	locked_stages.clear()
 	cleared_stages.clear()
 	completed_lessons.clear()
@@ -471,12 +488,58 @@ func owns_store_item(item_id: String) -> bool:
 	return not item_id.is_empty() and purchased_items.has(item_id)
 
 
-func purchase_store_item(item_id: String, price: int) -> bool:
+func store_item(item_id: String) -> Dictionary:
+	for item: Dictionary in store_items():
+		if str(item.id) == item_id:
+			return item.duplicate(true)
+	return {}
+
+
+func store_items() -> Array[Dictionary]:
+	var items: Array[Dictionary] = STORE_ITEMS.duplicate(true)
+	for avatar: Dictionary in Avatars.ENTRIES:
+		if int(avatar.price) == 0:
+			continue
+		items.append({"id": avatar.id, "name": avatar.name, "price": avatar.price,
+			"category": "PROFILES", "art": "avatar", "color": "4FE0D4",
+			"description": "Unlock this profile picture. Choose it from your profile after purchase."})
+	return items
+
+
+func can_use_avatar(id: String) -> bool:
+	var avatar: Dictionary = Avatars.entry(id)
+	return not avatar.is_empty() and (int(avatar.price) == 0 or owns_store_item(id))
+
+
+func current_avatar_id() -> String:
+	return selected_avatar_id if can_use_avatar(selected_avatar_id) else Avatars.DEFAULT_ID
+
+
+func select_avatar(id: String) -> bool:
+	if not can_use_avatar(id):
+		return false
+	if selected_avatar_id == id:
+		return true
+	selected_avatar_id = id
+	_save_progress()
+	avatar_changed.emit()
+	return true
+
+
+func purchase_store_item(item_id: String, price: int = -1) -> bool:
 	if item_id.is_empty() or owns_store_item(item_id):
 		return false
-	if not spend_credits(price):
+	var item: Dictionary = store_item(item_id)
+	if item.is_empty():
 		return false
+	var cost: int = int(item.price)
+	# Never trust a price supplied by a UI caller; retain the optional argument
+	# for compatibility and reject stale or forged quotes.
+	if (price != -1 and price != cost) or cost <= 0 or pvp_tokens < cost:
+		return false
+	pvp_tokens -= cost
 	purchased_items.append(item_id)
+	# Ownership and wallet are persisted together, not in two separate writes.
 	_save_progress()
 	return true
 
@@ -803,6 +866,8 @@ func get_save_data() -> Dictionary:
 		"cleared_stages": cleared_stages.keys(),
 		"completed_lessons": completed_lessons.duplicate(),
 		"credits": credits,
+		"pvp_tokens": pvp_tokens,
+		"selected_avatar_id": current_avatar_id(),
 		"unlocked_towers": unlocked_towers.duplicate(),
 		"unlocked_skills": unlocked_skills.duplicate(),
 		"tech_ranks": tech_ranks.duplicate(true),
@@ -823,6 +888,13 @@ func get_save_data() -> Dictionary:
 
 
 func apply_save_data(data: Dictionary) -> void:
+	# Missing/malformed legacy wallet always means zero, never Solo conversion.
+	pvp_tokens = 0
+	var tokens_raw: Variant = data.get("pvp_tokens", 0)
+	if typeof(tokens_raw) == TYPE_INT or typeof(tokens_raw) == TYPE_FLOAT:
+		var tokens_number: float = float(tokens_raw)
+		if is_finite(tokens_number) and tokens_number >= 0.0:
+			pvp_tokens = int(minf(tokens_number, 2147483647.0))
 	lesson_post_quiz_scores.clear()
 	var checkpoints: Variant = data.get("lesson_post_quiz_scores", {})
 	if checkpoints is Dictionary:
@@ -888,13 +960,18 @@ func apply_save_data(data: Dictionary) -> void:
 		if credits_type == TYPE_INT or credits_type == TYPE_FLOAT:
 			credits = maxi(0, int(credits_raw))
 
+	purchased_items.clear()
 	if data.has("purchased_items") and typeof(data["purchased_items"]) == TYPE_ARRAY:
 		var saved_items: Array = data["purchased_items"] as Array
-		purchased_items.clear()
 		for i in saved_items.size():
 			var item_id: String = str(saved_items[i])
 			if not item_id.is_empty() and not purchased_items.has(item_id):
 				purchased_items.append(item_id)
+
+	var avatar_raw: Variant = data.get("selected_avatar_id", Avatars.DEFAULT_ID)
+	selected_avatar_id = str(avatar_raw) if typeof(avatar_raw) == TYPE_STRING else Avatars.DEFAULT_ID
+	selected_avatar_id = current_avatar_id()
+	avatar_changed.emit()
 
 	if data.has("unlocked_towers") and typeof(data["unlocked_towers"]) == TYPE_ARRAY:
 		var saved_towers: Array = data["unlocked_towers"] as Array

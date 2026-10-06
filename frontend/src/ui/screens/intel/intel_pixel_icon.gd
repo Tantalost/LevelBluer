@@ -3,7 +3,7 @@ extends Control
 
 ## Integer-scaled pixel glyphs. Colors come from Palette only.
 
-enum Kind { BOOKS, CODEX, SKULL, WRENCH, LOCK, ENVELOPE, PHONE, CAMERA, BADGE, TERMINAL, GEAR, CHAT, TRIANGLE, SNOWFLAKE, PICKAXE }
+enum Kind { BOOKS, CODEX, SKULL, WRENCH, LOCK, ENVELOPE, PHONE, CAMERA, BADGE, TERMINAL, GEAR, CHAT, TRIANGLE, SNOWFLAKE, PICKAXE, SWAP }
 
 @export var kind: Kind = Kind.BOOKS:
 	set(value):
@@ -46,6 +46,25 @@ func _draw() -> void:
 
 func _map_for(which: Kind) -> PackedStringArray:
 	match which:
+		Kind.SWAP:
+			return PackedStringArray([
+				"................",
+				".........##.....",
+				"..........##....",
+				"....#########...",
+				"...###########..",
+				"..##......###...",
+				"..##.....###....",
+				"..##............",
+				"............##..",
+				"....###.....##..",
+				"...###......##..",
+				"..###########...",
+				"...#########....",
+				"....##..........",
+				".....##.........",
+				"................",
+			])
 		Kind.BOOKS:
 			return PackedStringArray([
 				"................",

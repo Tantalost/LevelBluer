@@ -12,7 +12,10 @@ const HEADER_TEXT := Color("e8e8da")
 const HEADER_MUTED := Color("a4b8b7")
 const HEADER_ACCENT := Color("8dc9bd")
 const Access = preload("res://src/ui/screens/dashboard/world_access.gd")
+const WorldJournal = preload("res://src/ui/screens/dashboard/world_journal.gd")
 const StudyUI = preload("res://src/ui/screens/intel/study_ui.gd")
+const PvpHub = preload("res://src/ui/screens/dashboard/dashboard_pvp_hub.gd")
+signal mode_switch_finished(mode: StringName)
 
 @onready var _game_title: Label = %GameTitle
 @onready var _profile_button: HudGeoButton = %ProfileButton
@@ -57,14 +60,49 @@ var _current_stage: int = DEFAULT_CURRENT_STAGE
 var _menu_rects: Dictionary = {}
 var _world_access: Dictionary = {}
 var _access_modal: Control
-var _access_body: VBoxContainer
 var _access_action: Button
-var _access_title: Label
 var _access_queued := false
-var _access_controls: Array[Button] = []
 var _world_status_copy: VBoxContainer
 var _world_status_heading: Label
 var _world_status_body: Label
+var _pvp_hub: Control
+var _power_overlay: PowerOverlay
+var _power_tween: Tween
+var _mode_transitioning: bool = false
+var _pending_mode: StringName = &"SOLO"
+
+class PowerOverlay extends Control:
+	var closure: float = 0.0:
+		set(value):
+			closure = value
+			queue_redraw()
+	var accent: Color = Color("#4FE0D4")
+	var reduced: bool = false
+	var boot_text: Label
+	func _draw() -> void:
+		if reduced:
+			draw_rect(Rect2(Vector2.ZERO, size), Color(0.01, 0.02, 0.03, closure))
+			return
+		var height: float = size.y * 0.5 * closure
+		draw_rect(Rect2(Vector2.ZERO, Vector2(size.x, height)), Color("#020306"))
+		draw_rect(Rect2(Vector2(0, size.y - height), Vector2(size.x, height)), Color("#020306"))
+		if closure > 0.1 and closure < 1.0:
+			var alpha: float = minf(0.7, (1.0 - closure) * 12.0)
+			draw_line(Vector2(0, height), Vector2(size.x, height), Color(accent, alpha), 2)
+			draw_line(Vector2(0, size.y - height), Vector2(size.x, size.y - height), Color(accent, alpha), 2)
+	func _ready() -> void:
+		mouse_filter = MOUSE_FILTER_STOP
+		focus_mode = FOCUS_ALL
+		resized.connect(queue_redraw)
+		boot_text = StudyUI.label("", 30, Color("#F3ECD6"))
+		boot_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		boot_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(boot_text)
+		boot_text.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		boot_text.hide()
+	func _input(event: InputEvent) -> void:
+		if visible and (event is InputEventKey or event is InputEventAction or event is InputEventJoypadButton):
+			get_viewport().set_input_as_handled()
 
 
 func _ready() -> void:
@@ -73,6 +111,7 @@ func _ready() -> void:
 	_setup_surroundings()
 	if Engine.is_editor_hint():
 		return
+	_setup_mode_workspace()
 	_store_button.pressed.connect(func() -> void: Router.push(&"store"))
 	_lessons_button.pressed.connect(func() -> void: Router.push(&"lessons"))
 	_codex_button.pressed.connect(func() -> void: Router.push(&"codex"))
@@ -111,11 +150,13 @@ func on_resume() -> void:
 	_refresh_data()
 	_apply_lock_state()
 	_apply_tutorial_gate()
+	_update_mode_ui()
 
 
 func on_exit() -> void:
 	_close_access()
-	_mode_modal.visible = false
+	_mode_modal.dismiss()
+	_cancel_mode_transition()
 	%Companion.close_dialogue()
 
 
@@ -266,11 +307,11 @@ func _refresh_access() -> void:
 
 func _close_access() -> void:
 	if is_instance_valid(_access_modal):
-		_access_modal.visible = false
+		_access_modal.close()
 
 func can_go_back() -> bool:
 	if is_instance_valid(_access_modal) and _access_modal.visible:
-		_close_access()
+		_access_modal.back()
 		return false
 	return true
 
@@ -278,69 +319,18 @@ func _show_access() -> void:
 	%Companion.close_dialogue()
 	_refresh_world()
 	if not is_instance_valid(_access_modal):
-		_access_modal = Control.new()
-		_access_modal.name = "WorldAccessBriefing"
-		_access_modal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_access_modal.mouse_filter = Control.MOUSE_FILTER_STOP
+		_access_modal = WorldJournal.new()
+		_access_modal.name = "WorldJournal"
 		add_child(_access_modal)
-		var shade := ColorRect.new()
-		shade.color = Color("08121bef")
-		shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_access_modal.add_child(shade)
-		var safe := SafeAreaContainer.new()
-		safe.extra_margin = 24
-		safe.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_access_modal.add_child(safe)
-		var panel := StudyUI.panel(safe)
-		var layout := StudyUI.column(panel, 18)
-		var header := HBoxContainer.new()
-		layout.add_child(header)
-		_access_title = StudyUI.label("WORLD / ACCESS BRIEFING", 30, StudyUI.TEAL)
-		_access_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		header.add_child(_access_title)
-		header.add_child(_access_button("CLOSE", _close_access))
-		_access_body = StudyUI.scroll_column(layout)
-		var actions := HBoxContainer.new()
-		actions.add_theme_constant_override("separation", 18)
-		layout.add_child(actions)
-		_access_action = _access_button("OPEN LESSONS", _access_go, true)
-		_access_action.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		actions.add_child(_access_action)
-		actions.add_child(_access_button("MISSIONS", _access_missions))
-	_access_modal.visible = true
-	_fill_access()
-	_access_action.grab_focus()
-
-func _access_button(text: String, callback: Callable, primary: bool = false) -> Button:
-	var button := StudyUI.button(text, callback, primary)
-	var ratio := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-	button.custom_minimum_size = Vector2(180, maxf(68, ceilf(48 / ratio)))
-	button.add_theme_font_size_override("font_size", maxi(28, ceili(16 / ratio)))
-	_access_controls.append(button)
-	return button
+		_access_modal.route_requested.connect(_access_go)
+		_access_modal.missions_requested.connect(_access_missions)
+		_access_action = _access_modal.action
+	_access_modal.open(_world_access)
 
 func _fill_access() -> void:
-	var ratio := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-	for button in _access_controls:
-		button.custom_minimum_size.y = maxf(68, ceilf(48 / ratio))
-		button.add_theme_font_size_override("font_size", maxi(28, ceili(16 / ratio)))
-	StudyUI.clear(_access_body)
-	_access_body.add_child(StudyUI.label(str(_world_access.heading), 36, StudyUI.GOLD if _world_access.locked else StudyUI.TEAL))
-	_access_body.add_child(StudyUI.label(str(_world_access.explanation), 30))
-	_access_body.add_child(StudyUI.label("MODULE ACCESS", 28, StudyUI.TEAL))
-	for module in _world_access.modules:
-		_access_body.add_child(StudyUI.label("%s / %s\n%s\nLessons: %d / %d" % [module.title, module.status, module.reason, module.done, module.total], 28, StudyUI.MUTED))
-	_access_body.add_child(StudyUI.label("MODULE 1 / STAGE ACCESS", 28, StudyUI.TEAL))
-	for stage in _world_access.stages:
-		var note := str(stage.reason) if stage.status == "LOCKED" else ("Stage cleared. Replay available." if stage.done else "Choose this stage in Deploy.")
-		if stage.status == "LOCKED" and PlayerManager.is_stage_locked("mod_01", int(stage.id)):
-			note += " Review does not automatically remove the recorded exam lock."
-		_access_body.add_child(StudyUI.label("%s / %s\n%s" % [stage.title, stage.status, note], 28, StudyUI.GOLD if stage.status == "LOCKED" else StudyUI.MUTED))
-	_access_action.text = str(_world_access.action)
+	_access_modal.refresh(_world_access)
 
-func _access_go() -> void:
-	var route: StringName = _world_access.route
+func _access_go(route: StringName) -> void:
 	_close_access()
 	Router.push(route)
 
@@ -358,20 +348,114 @@ func _refresh_updates() -> void:
 
 
 func _open_mode_modal() -> void:
-	if PlayerManager.needs_tutorial():
+	if PlayerManager.needs_tutorial() or _mode_transitioning:
 		return
+	%Companion.close_dialogue()
 	var mode := DashboardModeModal.Mode.SOLO if _selected_mode == &"SOLO" else DashboardModeModal.Mode.PVP
 	_mode_modal.open(mode, get_viewport().get_visible_rect().size.x)
 
 
 func _on_mode_confirmed(mode: StringName) -> void:
-	_selected_mode = mode
+	if _mode_transitioning or mode not in [&"SOLO", &"PVP"]:
+		return
+	if mode == _selected_mode:
+		return
+	_pending_mode = mode
+	_mode_transitioning = true
+	_mode_modal.dismiss()
+	_close_access()
+	%Companion.close_dialogue()
+	_power_overlay.reduced = SettingsService.reduced_motion
+	_power_overlay.accent = Color("#4FE0D4") if _selected_mode == &"SOLO" else Color("#FF5C5C")
+	_power_overlay.closure = 0.0
+	_power_overlay.boot_text.hide()
+	_power_overlay.show()
+	move_child(_power_overlay, get_child_count() - 1)
+	_power_overlay.grab_focus()
+	_power_tween = create_tween()
+	_power_tween.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
+	_power_tween.tween_property(_power_overlay, "closure", 1.0, 0.12 if SettingsService.reduced_motion else 0.42)
+	_power_tween.tween_callback(_commit_mode_switch)
+	_power_tween.tween_interval(0.1 if SettingsService.reduced_motion else 0.28)
+	_power_tween.tween_callback(_power_overlay.boot_text.hide)
+	_power_tween.tween_property(_power_overlay, "closure", 0.0, 0.12 if SettingsService.reduced_motion else 0.46)
+	_power_tween.tween_callback(_finish_mode_transition)
+
+
+func _setup_mode_workspace() -> void:
+	var main: Control = $SafeAreaContainer/ScreenLayout/MainRow
+	_mode_selector.reparent(main)
+	_mode_selector.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_mode_selector.custom_minimum_size = Vector2(104, 104)
+	_mode_selector.size = Vector2(104, 104)
+	_mode_selector.geo = HudGeoButton.Geo.DIAMOND
+	_mode_selector.tooltip_text = "Switch between Solo and PvP"
+	_mode_selector.focus_mode = Control.FOCUS_ALL
+	_mode_selector.gui_input.connect(func(event: InputEvent) -> void:
+		if event.is_action_pressed("ui_accept"):
+			_open_mode_modal()
+			_mode_selector.accept_event()
+	)
+	var glyph: IntelPixelIcon = %ModeGlyph
+	glyph.kind = IntelPixelIcon.Kind.SWAP
+	glyph.ink_override = Color("#101623")
+	glyph.show()
+	glyph.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	glyph.position = Vector2(24, 24)
+	glyph.size = Vector2(56, 56)
+	_pvp_hub = PvpHub.new()
+	_pvp_hub.name = "PvpWorkspace"
+	add_child(_pvp_hub)
+	_pvp_hub.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pvp_hub.switch_requested.connect(_open_mode_modal)
+	_pvp_hub.hide()
+	# Keep the selector above either OS without global z-indices leaking through Router.
+	move_child(_mode_modal, get_child_count() - 1)
+	_power_overlay = PowerOverlay.new()
+	_power_overlay.name = "OSPowerTransition"
+	add_child(_power_overlay)
+	_power_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_power_overlay.hide()
+	_layout_surroundings()
+
+
+func _commit_mode_switch() -> void:
+	_selected_mode = _pending_mode
 	_update_mode_ui()
+	_power_overlay.accent = Color("#4FE0D4") if _selected_mode == &"SOLO" else Color("#FF5C5C")
+	_power_overlay.boot_text.text = ("BLUE OS" if _selected_mode == &"SOLO" else "RED OS") + " / INITIALIZING"
+	_power_overlay.boot_text.add_theme_color_override("font_color", _power_overlay.accent)
+	_power_overlay.boot_text.show()
+
+
+func _finish_mode_transition() -> void:
+	_power_overlay.hide()
+	_power_overlay.boot_text.hide()
+	_mode_transitioning = false
+	if _selected_mode == &"PVP":
+		_pvp_hub._switch.grab_focus()
+	else:
+		_mode_selector.grab_focus()
+	mode_switch_finished.emit(_selected_mode)
+
+
+func _cancel_mode_transition() -> void:
+	if _power_tween != null:
+		_power_tween.kill()
+	_mode_transitioning = false
+	if is_instance_valid(_power_overlay):
+		_power_overlay.hide()
+		_power_overlay.closure = 0.0
+		_power_overlay.boot_text.hide()
+
+
+func _exit_tree() -> void:
+	_cancel_mode_transition()
 
 
 func _update_mode_ui() -> void:
 	var is_solo := _selected_mode == &"SOLO"
-	_mode_selector.title = "SOLO" if is_solo else "PVP"
+	_mode_selector.title = ""
 	_mode_selector.border_key = "cyan" if is_solo else "red"
 	_mode_selector.fill_key = "frost"
 	_mode_selector.queue_redraw()
@@ -383,20 +467,25 @@ func _update_mode_ui() -> void:
 	_world_button.fill_key = "frost"
 	_world_button.border_key = "cream"
 	_refresh_world()
+	if is_instance_valid(_pvp_hub):
+		_pvp_hub.visible = not is_solo
+		$SafeAreaContainer.visible = is_solo
+		$HeaderBand.visible = is_solo
+		if not is_solo:
+			_pvp_hub.refresh_identity()
 
 
 func _on_mission_pressed() -> void:
 	if PlayerManager.needs_tutorial():
 		return
 	if _selected_mode == &"PVP":
-		push_warning("PvP Hub screen not built yet")
+		return
 	else:
 		_show_access()
 
 
 func _on_deploy_pressed() -> void:
 	if _selected_mode == &"PVP":
-		push_warning("PvP Hub screen not built yet")
 		return
 	if PlayerManager.needs_tutorial():
 		Router.start_tutorial()
@@ -606,6 +695,9 @@ func _layout_surroundings() -> void:
 	var info_width := 499.0
 	updates.scale = Vector2.ONE * layout_scale
 	updates.position = Vector2(profile_center.x - info_width * layout_scale * 0.5, 34 * layout_scale)
+	if _mode_selector.get_parent() == main:
+		_mode_selector.scale = Vector2.ONE * layout_scale
+		_mode_selector.position = Vector2(40 * layout_scale, main.size.y * 0.5 + 98 * layout_scale)
 
 
 func _style_at_risk() -> void:

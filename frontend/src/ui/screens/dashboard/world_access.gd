@@ -10,7 +10,7 @@ static func snapshot() -> Dictionary:
 		var done := clampi(PlayerManager.get_lesson_progress(id), 0, total)
 		var accessible := PlayerManager.is_module_deploy_unlocked(id) if i == 0 else PlayerManager.get_lesson_progress(str(lessons[i - 1].id)) >= LessonCatalog.lesson_count(str(lessons[i - 1].id))
 		var required := 0 if i == 0 else i - 1
-		modules.append({"title": "MODULE %d / %s" % [i + 1, lessons[i].title], "status": "AVAILABLE" if accessible else "LOCKED",
+		modules.append({"id": id, "name": str(lessons[i].title), "summary": str(lessons[i].get("desc", "")), "title": "MODULE %d / %s" % [i + 1, lessons[i].title], "status": "AVAILABLE" if accessible else "LOCKED",
 			"reason": ("Module access unlocked." if accessible else "Complete Module %d (%s) lessons to unlock module access." % [required + 1, lessons[required].title]) + (" Stages coming soon; lesson completion cannot unlock unauthored stages." if i > 0 else ""),
 			"done": done, "total": total})
 	var stages: Array[Dictionary] = []
@@ -29,14 +29,15 @@ static func snapshot() -> Dictionary:
 			next = row
 	var result := {"modules": modules, "stages": stages, "badge": "!", "route": &"lessons", "action": "OPEN LESSONS", "locked": true}
 	if PlayerManager.needs_tutorial():
-		result.merge({"heading": "TUTORIAL REQUIRED", "short": "Use DEPLOY to\nfinish the tutorial", "explanation": "Complete the guided tutorial using Deploy before opening World."})
+		result.merge({"heading": "TUTORIAL REQUIRED", "short": "Use DEPLOY to\nfinish the tutorial", "hint": "Finish the guided tutorial in Deploy.", "explanation": "Complete the guided tutorial using Deploy before opening World."})
 	elif not PlayerManager.is_module_deploy_unlocked("mod_01"):
 		var done := clampi(PlayerManager.get_lesson_progress("mod_01"), 0, LessonCatalog.lesson_count("mod_01"))
 		var pretest := AuthService.has_module_pretest("mod_01")
 		result.merge({"heading": "MODULE 1 LOCKED", "short": "Finish lessons\n%d / %d complete" % [done, LessonCatalog.lesson_count("mod_01")],
+			"hint": "Complete the pre-test, then each lesson, quiz and simulation." if not pretest else "Finish each lesson, quiz and simulation to unlock deployment.",
 			"explanation": "Module 1 deployment is locked. " + ("Complete its pre-test in Lessons, then finish its lesson topics, quizzes and simulations." if not pretest else "Finish the Module 1 lesson topics, quizzes and simulations in Lessons.")})
 	elif next.is_empty():
-		result.merge({"heading": "MODULE 1 CLEARED", "short": "More stages\ncoming soon", "explanation": "All authored Module 1 stages are cleared. Later modules have no authored stages yet; completing lessons will not create those stages."})
+		result.merge({"heading": "MODULE 1 CLEARED", "short": "More stages\ncoming soon", "hint": "All ten stages cleared. Your next world is still being prepared.", "explanation": "All authored Module 1 stages are cleared. Later modules have no authored stages yet; completing lessons will not create those stages."})
 		result.locked = false
 		result.badge = "OK"
 		result.route = &"progress"
@@ -51,9 +52,9 @@ static func snapshot() -> Dictionary:
 		elif PlayerManager.is_stage_locked("mod_01", int(next.id)):
 			short = "Review lessons\nExam lock active"
 			explanation = "An exam lock is active. Review the required material in Lessons. The current game does not automatically clear this recorded lock when you review."
-		result.merge({"heading": "STAGE %d LOCKED" % next.id, "short": short, "explanation": str(next.title) + "\n" + explanation})
+		result.merge({"heading": "STAGE %d LOCKED" % next.id, "short": short, "hint": "Review the required material in Lessons. Reviewing alone does not remove the recorded exam lock." if PlayerManager.is_stage_locked("mod_01", int(next.id)) else str(next.reason), "explanation": str(next.title) + "\n" + explanation})
 	else:
-		result.merge({"heading": "STAGE %d READY" % next.id, "short": "Open DEPLOY\nTap for access info", "explanation": str(next.title) + " is available. Later stages can still require preceding clears or lesson completion; see the access list below."})
+		result.merge({"heading": "STAGE %d READY" % next.id, "short": "Open DEPLOY\nTap for access info", "hint": "Continue in Deploy. Clear each stage to reach the next challenge.", "explanation": str(next.title) + " is available. Later stages can still require preceding clears or lesson completion; see the access list below."})
 		result.locked = false
 		result.badge = "GO"
 		result.route = &"stage_select"

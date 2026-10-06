@@ -51,6 +51,7 @@ func _run() -> void:
 	screen.on_enter({})
 	await settle()
 	var before := fingerprint()
+	await verify_avatars()
 	check(screen.get_node("CRTOverlay").visible, "Permanent CRT shell")
 	check(screen._dossier.next.route == &"lessons", "Fresh account points to lessons, not locked gameplay")
 	check(screen._dossier.strongest.is_empty(), "Default BKT prior is not shown as assessed")
@@ -147,3 +148,143 @@ func _run() -> void:
 	await settle()
 	print("PROFILE_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)
+
+func tap(control: Control) -> void:
+	var point: Vector2 = control.get_global_rect().get_center()
+	for pressed: bool in [true, false]:
+		var event: InputEventMouseButton = InputEventMouseButton.new()
+		event.position = point
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = pressed
+		root.push_input(event, true)
+	await settle()
+
+func verify_avatars() -> void:
+	var portraits: GDScript = load("res://src/ui/screens/profile/avatar_portrait.gd")
+	var assets: Node = root.get_node("AssetManager")
+	var versions: Dictionary = {"byte_bot": "1791177053", "cyber_cat": "1791177071", "commander": "1791177054", "operative": "1791177072", "neon_fox": "1791177084", "circuit_owl": "1791177053", "glitch_ghost": "1791177069", "pixel_bunny": "1791177053", "cyber_axolotl": "1791177067", "masked_raccoon": "1791177068"}
+	var remote_count: int = 0
+	for asset: Dictionary in assets._ui_catalog():
+		var asset_id: String = str(asset.asset_id)
+		if not asset_id.begins_with("ui_avatar_"):
+			continue
+		var avatar_file: String = asset_id.trim_prefix("ui_avatar_")
+		remote_count += 1
+		check(str(asset.cloudinary_url) == "https://res.cloudinary.com/nfd5bhkz/image/upload/v%s/%s_v1.png" % [str(versions.get(avatar_file, "")), avatar_file], "Exact supplied avatar URL: " + avatar_file)
+	check(remote_count == 10, "All ten avatars registered for cached downloads")
+	var probe_script: GDScript = GDScript.new()
+	probe_script.source_code = "extends \"res://src/autoload/player_manager.gd\"\nvar writes: int = 0\nfunc _save_progress() -> void:\n\twrites += 1\n"
+	check(probe_script.reload() == OK, "Avatar persistence probe compiles")
+	var probe: Node = probe_script.new()
+	var free_count: int = 0
+	var paid_count: int = 0
+	for avatar: Dictionary in portraits.ENTRIES:
+		check(assets._bundled_path("ui_avatar_" + str(avatar.file)).is_empty(), "Avatar is remote-only: " + str(avatar.id))
+		if int(avatar.price) == 0:
+			free_count += 1
+			check(probe.can_use_avatar(str(avatar.id)), "Free avatar requires no purchase")
+		else:
+			paid_count += 1
+			check(not probe.select_avatar(str(avatar.id)), "Unowned avatar cannot equip")
+			check(int(probe.store_item(str(avatar.id)).price) == int(avatar.price), "Picker and store share price")
+	check(free_count == 2 and paid_count == 8, "Exactly two free and eight paid portraits")
+	check(not probe.select_avatar("not_real"), "Unknown IDs rejected")
+	probe.credits = 9000
+	probe.pvp_tokens = 0
+	check(not probe.purchase_store_item("p1"), "Solo credits cannot buy an avatar")
+	check(probe.select_avatar("cyber_cat") and probe.writes == 1, "Free selection persists once")
+	probe.pvp_tokens = 800
+	check(probe.purchase_store_item("p1") and probe.pvp_tokens == 0, "PvP purchase unlocks legacy Commander ID")
+	check(probe.current_avatar_id() == "cyber_cat", "Purchase does not auto-equip")
+	check(probe.select_avatar("p1"), "Purchased avatar can equip")
+	var saved: Dictionary = probe.get_save_data()
+	probe.apply_save_data(saved)
+	check(probe.current_avatar_id() == "p1", "Selection and ownership survive reload")
+	saved["selected_avatar_id"] = "p8"
+	probe.apply_save_data(saved)
+	check(probe.current_avatar_id() == "byte_bot", "Unowned saved selection falls back to free avatar")
+	saved.erase("selected_avatar_id")
+	probe.apply_save_data(saved)
+	check(probe.can_use_avatar("p1") and probe.current_avatar_id() == "byte_bot", "Legacy purchase survives avatar migration")
+	probe.apply_save_data({})
+	check(not probe.can_use_avatar("p1"), "Missing ownership cannot leak across account loads")
+	probe.free()
+	var original_id: String = player.selected_avatar_id
+	var original_items: Array = player.purchased_items.duplicate()
+	player.selected_avatar_id = "byte_bot"
+	player.purchased_items.clear()
+	player.avatar_changed.emit()
+	var legacy: TextureRect = TextureRect.new()
+	root.add_child(legacy)
+	root.get_node("AssetManager").bind_texture(legacy, "ui_pfp")
+	check(legacy.get("displayed_id") == "byte_bot", "Legacy header binding uses uniform avatar")
+	var preview: TextureRect = portraits.new()
+	preview.call("show_avatar", "byte_bot")
+	root.add_child(preview)
+	var original_texture: Texture2D = assets.get_texture("ui_avatar_byte_bot")
+	assets._textures["ui_avatar_byte_bot"] = null
+	assets.sync_finished.emit(false)
+	check(legacy.texture == null and preview.texture == null and preview.material == null, "Empty cache uses native avatar placeholder without a missing resource")
+	check(player.current_avatar_id() == "byte_bot", "Missing art preserves selected avatar")
+	var fixture_image: Image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	fixture_image.fill(Color.CYAN)
+	var downloaded_texture: ImageTexture = ImageTexture.create_from_image(fixture_image)
+	assets._textures["ui_avatar_byte_bot"] = downloaded_texture
+	assets.sync_finished.emit(false)
+	check(legacy.texture == downloaded_texture and preview.texture == downloaded_texture, "Partial asset sync refreshes headers and picker/store-style previews")
+	check(player.current_avatar_id() == "byte_bot", "Asset refresh never changes equipped ID")
+	assets._textures["ui_avatar_byte_bot"] = original_texture
+	assets.sync_finished.emit(true)
+	preview.free()
+	assets.sync_finished.emit(false)
+	var picker: Control = screen._avatar_picker
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(960, 540), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		(screen._identity.get_parent() as ScrollContainer).scroll_vertical = 0
+		await settle()
+		await tap(screen._avatar_button)
+		check(picker.visible and picker._buttons.size() == 10, "Native profile-picture tap opens ten options")
+		for button: Button in picker._buttons:
+			check(root.get_visible_rect().encloses(button.get_global_rect()), "Landscape avatar cell fits")
+		check(root.get_visible_rect().encloses(picker._action.get_global_rect()), "Landscape confirm fits")
+		await capture("avatars_%dx%d" % [dimensions.x, dimensions.y])
+		await tap(picker._buttons[1])
+		check(picker.selected_id == "cyber_cat" and player.current_avatar_id() == "byte_bot", "Preview alone never equips")
+		await tap(picker._cancel)
+		check(not picker.visible and player.current_avatar_id() == "byte_bot", "Cancel preserves equipped avatar")
+		await tap(screen._avatar_button)
+		await tap(picker._buttons[2])
+		check(picker._action.text == "VIEW IN STORE" and picker._state.text.contains("800 PVP TOKENS"), "Locked preview shows store price")
+		await capture("avatars_locked_%dx%d" % [dimensions.x, dimensions.y])
+		check(not screen.can_go_back() and not picker.visible, "Back dismisses chooser before leaving profile")
+	# Existing selected avatar can be confirmed without a save; mutation is tested above on the off-tree probe.
+	picker.present()
+	await tap(picker._action)
+	check(not picker.visible, "Confirm current selection closes modal")
+	var store_requests: Array[String] = []
+	picker.store_requested.disconnect(screen._avatar_store)
+	var capture_store: Callable = func(id: String) -> void: store_requests.append(id)
+	picker.store_requested.connect(capture_store)
+	picker.present()
+	await tap(picker._buttons[9])
+	await tap(picker._action)
+	check(store_requests == ["p8"] and player.current_avatar_id() == "byte_bot", "View in Store requests exact locked item without equipping")
+	picker.dismiss()
+	picker.store_requested.disconnect(capture_store)
+	picker.store_requested.connect(screen._avatar_store)
+	player.selected_avatar_id = "cyber_cat"
+	player.avatar_changed.emit()
+	check(legacy.get("displayed_id") == "cyber_cat", "Bound headers update immediately from selection signal")
+	check(screen.find_child("AvatarImage", true, false).get("displayed_id") == "cyber_cat", "Profile portrait refreshes from same signal")
+	picker.present()
+	screen._session_changed(false)
+	await settle()
+	check(not picker.visible, "Account switch dismisses stale chooser")
+	legacy.queue_free()
+	await settle()
+	player.selected_avatar_id = original_id
+	player.purchased_items.assign(original_items)
+	player.avatar_changed.emit()
+	root.size = Vector2i(1280, 720)
+	await settle()

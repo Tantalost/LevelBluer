@@ -1,252 +1,254 @@
 class_name DashboardModeModal
 extends Control
-## SELECT GAME MODE overlay. Sheet layout matches MissionsScreen; chrome matches Dashboard.
-
+## Presentation and selection only; the dashboard owns the OS switch.
 signal mode_confirmed(mode: StringName)
 signal cancelled
 
 enum Mode { SOLO, PVP }
-
-const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
-
-@onready var _dimmer: ColorRect = %Dimmer
-@onready var _modal_card: PanelContainer = %ModalCard
-@onready var _title: Label = %ModalTitle
-@onready var _subtitle: Label = %ModalSubtitle
-@onready var _body_panel: PanelContainer = %BodyPanel
-@onready var _solo_card: PanelContainer = %SoloCard
-@onready var _pvp_card: PanelContainer = %PvpCard
-@onready var _solo_header: PanelContainer = %SoloHeader
-@onready var _pvp_header: PanelContainer = %PvpHeader
-@onready var _solo_header_label: Label = %SoloHeaderLabel
-@onready var _pvp_header_label: Label = %PvpHeaderLabel
-@onready var _solo_title: Label = %SoloTitle
-@onready var _pvp_title: Label = %PvpTitle
-@onready var _solo_sub: Label = %SoloSub
-@onready var _pvp_sub: Label = %PvpSub
-@onready var _solo_badge: PanelContainer = %SoloBadge
-@onready var _pvp_badge: PanelContainer = %PvpBadge
-@onready var _solo_badge_label: Label = %SoloBadgeLabel
-@onready var _pvp_badge_label: Label = %PvpBadgeLabel
-@onready var _confirm: Button = %ConfirmButton
-@onready var _cancel: Button = %CancelButton
-
+const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const BLUE: Color = Color("#4FE0D4")
+const RED: Color = Color("#FF5C5C")
 var selected_mode: Mode = Mode.SOLO
-var _pixel_font: Font
-var _view_width: float = 1280.0
-var _chrome: Color = Palette.FOREST_NIGHT
+var _bands: Array[ModeBand] = []
+var _title: Label
+var _subtitle: Label
+var _confirm: Button
+var _cancel: Button
+var _wash: ColorRect
+var _motion: Tween
+var _previous_focus: WeakRef
 
+class ModeBand extends Button:
+	var art: Texture2D
+	var accent: Color = Color("#4FE0D4")
+	var right_side: bool = false
+	var power: float = 0.0:
+		set(value):
+			power = value
+			queue_redraw()
+	var copy: VBoxContainer
+	var tag: Label
+	var heading: Label
+	var description: Label
+	func polygon() -> PackedVector2Array:
+		return PackedVector2Array([Vector2.ZERO, Vector2(size.x, 0), size, Vector2(0, size.y)])
+	func _has_point(point: Vector2) -> bool:
+		return Geometry2D.is_point_in_polygon(point, polygon())
+	func _draw() -> void:
+		var points: PackedVector2Array = polygon()
+		draw_colored_polygon(points, Color("#0A1730") if not right_side else Color("#170A12"))
+		if art != null and size.x > 0 and size.y > 0:
+			var uv: PackedVector2Array = PackedVector2Array()
+			# Cover each full-height half without stretching. Favor the hacker's
+			# eyes on the right rather than the image's empty UI space.
+			var ratio: float = (size.x / size.y) / (float(art.get_width()) / art.get_height())
+			var crop: Vector2 = Vector2(minf(1.0, ratio), minf(1.0, 1.0 / ratio)) / (1.0 + power * 0.035)
+			var focal_x: float = 0.76 if right_side else 0.48
+			var origin: Vector2 = Vector2(clampf(focal_x - crop.x * 0.5, 0.0, 1.0 - crop.x), (1.0 - crop.y) * 0.42)
+			for point: Vector2 in points:
+				uv.append(origin + point / size * crop)
+			var shade: Color = Color(0.3, 0.34, 0.4).lerp(Color.WHITE, power)
+			draw_polygon(points, PackedColorArray([shade]), uv, art)
+		var tint: Color = Color("#2E6BFF") if not right_side else accent
+		draw_colored_polygon(points, Color(tint, 0.05 + 0.13 * power))
+		# Floating text over cinematic gradients, not bordered cards.
+		draw_polygon(PackedVector2Array([Vector2.ZERO, Vector2(size.x, 0), Vector2(size.x, size.y * 0.3), Vector2(0, size.y * 0.3)]),
+			PackedColorArray([Color(0.01, 0.02, 0.04, 0.85), Color(0.01, 0.02, 0.04, 0.85), Color(0.01, 0.02, 0.04, 0), Color(0.01, 0.02, 0.04, 0)]))
+		draw_polygon(PackedVector2Array([Vector2(0, size.y * 0.47), Vector2(size.x, size.y * 0.47), size, Vector2(0, size.y)]),
+			PackedColorArray([Color(0.01, 0.02, 0.04, 0), Color(0.01, 0.02, 0.04, 0), Color(0.01, 0.02, 0.04, 0.97), Color(0.01, 0.02, 0.04, 0.97)]))
+		if right_side:
+			draw_line(Vector2.ZERO, Vector2(0, size.y), Color(accent, 0.35 + power * 0.5), 2)
+		if has_focus():
+			draw_line(copy.position - Vector2(0, 10), copy.position + Vector2(72, -10), Color("#F3ECD6"), 3)
+	func _ready() -> void:
+		resized.connect(queue_redraw)
+		focus_entered.connect(queue_redraw)
+		focus_exited.connect(queue_redraw)
+	func fit_copy() -> void:
+		# Wrapped labels briefly report tall minimums before their first layout.
+		# Shrink the free-standing column when its real minimum settles.
+		copy.size.y = 0.0
 
 func _ready() -> void:
 	visible = false
-	modulate.a = 0.0
-	_load_font()
-	_chrome = Palette.FOREST_NIGHT.lerp(Palette.PINE, 0.42)
-	_dimmer.color = Color(Palette.BG_DEEP, 0.62)
-	_solo_card.gui_input.connect(func(e: InputEvent) -> void: _on_card_input(e, Mode.SOLO))
-	_pvp_card.gui_input.connect(func(e: InputEvent) -> void: _on_card_input(e, Mode.PVP))
-	_confirm.pressed.connect(_confirm_selection)
-	_cancel.pressed.connect(_close)
-	_dimmer.gui_input.connect(_on_dimmer_gui)
+	mouse_filter = MOUSE_FILTER_STOP
+	_wash = ColorRect.new()
+	_wash.color = Color("#050B18")
+	_wash.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(_wash)
+	_wash.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_title = UI.label("CHOOSE YOUR SIDE", 28, Color("#F3ECD6"), true)
+	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_title)
+	_subtitle = UI.label("One identity. Two operating systems.", 24, BLUE)
+	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_subtitle)
+	for index: int in 2:
+		var band: ModeBand = ModeBand.new()
+		band.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		band.name = "SoloSide" if index == 0 else "PvpSide"
+		band.right_side = index == 1
+		band.accent = BLUE if index == 0 else RED
+		band.art = AssetManager.get_texture("ui_dashboard_scenic" if index == 0 else "ui_dashboard_pvp")
+		band.mouse_default_cursor_shape = CURSOR_POINTING_HAND
+		band.tooltip_text = "Select Solo campaign" if index == 0 else "Select PvP command center"
+		for state: String in ["normal", "hover", "pressed", "focus"]:
+			band.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		add_child(band)
+		band.copy = VBoxContainer.new()
+		band.copy.mouse_filter = MOUSE_FILTER_IGNORE
+		band.copy.add_theme_constant_override("separation", 8)
+		band.add_child(band.copy)
+		band.tag = UI.label("", 20, band.accent)
+		band.heading = UI.label("SOLO" if index == 0 else "PVP", 42, Color("#F3ECD6"), true)
+		band.description = UI.label("Learn. Investigate. Defend.\nYour campaign, your pace." if index == 0 else "Enter the rival network.\nPlayer-versus-player command.", 24)
+		band.copy.add_child(band.tag)
+		band.copy.add_child(band.heading)
+		band.copy.add_child(band.description)
+		band.copy.minimum_size_changed.connect(band.fit_copy)
+		band.pressed.connect(_select_mode.bind(index as Mode))
+		_bands.append(band)
+	# Headings and footer float above the full-bleed selectable artwork.
+	move_child(_title, get_child_count() - 1)
+	move_child(_subtitle, get_child_count() - 1)
+	_confirm = UI.button("CONFIRM SOLO", _confirm_selection, true)
+	_confirm.name = "ConfirmMode"
+	add_child(_confirm)
+	_cancel = UI.button("CANCEL", close)
+	add_child(_cancel)
+	var focus_order: Array[Control] = [_bands[0], _bands[1], _confirm, _cancel]
+	for index: int in focus_order.size():
+		var control: Control = focus_order[index]
+		control.focus_next = control.get_path_to(focus_order[(index + 1) % focus_order.size()])
+		control.focus_previous = control.get_path_to(focus_order[(index + focus_order.size() - 1) % focus_order.size()])
+		control.focus_neighbor_bottom = control.focus_next
+		control.focus_neighbor_top = control.focus_previous
+		control.focus_neighbor_left = control.focus_previous
+		control.focus_neighbor_right = control.focus_next
+	resized.connect(_layout)
+	AssetManager.sync_finished.connect(_refresh_art)
+	_layout.call_deferred()
 
+func _refresh_art(_success: bool = true) -> void:
+	for index: int in _bands.size():
+		_bands[index].art = AssetManager.get_texture("ui_dashboard_scenic" if index == 0 else "ui_dashboard_pvp")
+		_bands[index].queue_redraw()
 
-func open(initial_mode: Mode = Mode.SOLO, viewport_width: float = 1280.0) -> void:
-	_view_width = viewport_width
+func open(initial_mode: Mode = Mode.SOLO, _viewport_width: float = 1280.0) -> void:
+	_stop_motion()
+	var focused: Control = get_viewport().gui_get_focus_owner()
+	_previous_focus = weakref(focused) if focused != null else null
 	selected_mode = initial_mode
+	_refresh_art()
 	visible = true
-	_apply_copy()
-	_apply_scale()
-	_style_sheet()
-	_refresh_selection()
-	modulate.a = 0.0
-	var fade := create_tween()
-	fade.tween_property(self, "modulate:a", 1.0, 0.2).set_trans(Tween.TRANS_SINE)
-
+	modulate.a = 1.0
+	_refresh_selection(false)
+	_layout()
+	_bands[int(initial_mode)].grab_focus()
+	if not SettingsService.reduced_motion:
+		modulate.a = 0.0
+		_motion = create_tween()
+		_motion.tween_property(self, "modulate:a", 1.0, 0.22)
 
 func close() -> void:
 	if not visible:
 		return
-	var fade := create_tween()
-	fade.tween_property(self, "modulate:a", 0.0, 0.15)
-	await fade.finished
-	visible = false
+	_stop_motion()
+	hide()
+	_restore_focus()
 	cancelled.emit()
 
+func dismiss() -> void:
+	_stop_motion()
+	hide()
 
 func get_mode_name() -> StringName:
 	return &"SOLO" if selected_mode == Mode.SOLO else &"PVP"
 
-
-func _load_font() -> void:
-	if not ResourceLoader.exists(FONT_PATH):
-		return
-	var file: FontFile = load(FONT_PATH) as FontFile
-	if file != null:
-		_pixel_font = file
-
-
-func _apply_copy() -> void:
-	_title.text = tr("DASH_MODE_TITLE")
-	_subtitle.text = tr("DASH_MODE_SUBTITLE")
-	_cancel.text = tr("DASH_MODE_CANCEL")
-	_confirm.text = tr("DASH_MODE_CONFIRM")
-
-
-func _apply_scale() -> void:
-	var title_size: int = UiScale.n(16.0, _view_width)
-	var sub_size: int = UiScale.n(8.0, _view_width)
-	var card_title: int = UiScale.n(20.0, _view_width)
-	var confirm_size: int = UiScale.n(12.0, _view_width)
-	_apply_label(_title, Palette.TEXT_PRIMARY, title_size)
-	_apply_label(_subtitle, Palette.CYAN, sub_size)
-	_apply_label(_solo_header_label, Palette.CYAN, sub_size)
-	_apply_label(_pvp_header_label, Palette.RED, sub_size)
-	_apply_label(_solo_title, Palette.FIELD_TEXT, card_title)
-	_apply_label(_pvp_title, Palette.FIELD_TEXT, card_title)
-	_apply_label(_solo_sub, Color(Palette.FIELD_TEXT, 0.55), sub_size)
-	_apply_label(_pvp_sub, Color(Palette.FIELD_TEXT, 0.55), sub_size)
-	_apply_label(_solo_badge_label, Palette.BG_DEEP, sub_size)
-	_apply_label(_pvp_badge_label, Palette.TEXT_PRIMARY, sub_size)
-	if _pixel_font != null:
-		_confirm.add_theme_font_override("font", _pixel_font)
-		_cancel.add_theme_font_override("font", _pixel_font)
-	_confirm.add_theme_font_size_override("font_size", confirm_size)
-	_cancel.add_theme_font_size_override("font_size", sub_size)
-	_solo_card.custom_minimum_size = Vector2(UiScale.n(248.0, _view_width), UiScale.n(220.0, _view_width))
-	_pvp_card.custom_minimum_size = Vector2(UiScale.n(248.0, _view_width), UiScale.n(220.0, _view_width))
-
-
-func _style_sheet() -> void:
-	var card := _pixel_box(_chrome, _chrome, 18, 0)
-	card.content_margin_left = 0.0
-	card.content_margin_right = 0.0
-	card.content_margin_top = 0.0
-	card.content_margin_bottom = 0.0
-	card.shadow_color = Color(Palette.BG_DEEP, 0.7)
-	card.shadow_size = 12
-	card.shadow_offset = Vector2(0, 6)
-	_modal_card.add_theme_stylebox_override("panel", card)
-	_modal_card.custom_minimum_size = Vector2(UiScale.n(640.0, _view_width), UiScale.n(420.0, _view_width))
-
-	var body := _pixel_box(Palette.BG_PANEL, Palette.BG_PANEL, 0, 0)
-	_body_panel.add_theme_stylebox_override("panel", body)
-
-	_style_header(_solo_header, Palette.PINE)
-	_style_header(_pvp_header, Palette.RED_DEEP)
-	_style_confirm()
-	_style_cancel()
-
-
-func _style_header(header: PanelContainer, fill: Color) -> void:
-	var box := _pixel_box(fill, fill, 0, 0)
-	box.content_margin_left = 10.0
-	box.content_margin_right = 10.0
-	box.content_margin_top = 10.0
-	box.content_margin_bottom = 10.0
-	header.add_theme_stylebox_override("panel", box)
-
-
-func _style_confirm() -> void:
-	var accent: Color = Palette.CYAN if selected_mode == Mode.SOLO else Palette.RED
-	var fill: Color = Palette.PINE if selected_mode == Mode.SOLO else Palette.RED_DEEP
-	var box := _pixel_box(fill, accent, 8, 2)
-	box.content_margin_left = 16.0
-	box.content_margin_right = 16.0
-	box.content_margin_top = 12.0
-	box.content_margin_bottom = 12.0
-	_confirm.add_theme_stylebox_override("normal", box)
-	_confirm.add_theme_stylebox_override("hover", box)
-	_confirm.add_theme_stylebox_override("pressed", box)
-	_confirm.add_theme_color_override("font_color", Palette.TEXT_PRIMARY)
-
-
-func _style_cancel() -> void:
-	var empty := StyleBoxEmpty.new()
-	_cancel.add_theme_stylebox_override("normal", empty)
-	_cancel.add_theme_stylebox_override("hover", empty)
-	_cancel.add_theme_stylebox_override("pressed", empty)
-	_cancel.add_theme_color_override("font_color", Palette.TEXT_MUTED)
-
-
-func _on_dimmer_gui(event: InputEvent) -> void:
-	var mouse := event as InputEventMouseButton
-	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
-		return
-	if _modal_card.get_global_rect().has_point(mouse.global_position):
-		return
-	_close()
-
-
-func _on_card_input(event: InputEvent, mode: Mode) -> void:
-	var mouse := event as InputEventMouseButton
-	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
-		return
-	_select_mode(mode)
-
-
 func _select_mode(mode: Mode) -> void:
-	if selected_mode == mode:
+	if not visible:
 		return
 	selected_mode = mode
-	_refresh_selection()
-	_style_confirm()
+	_refresh_selection(true)
 
-
-func _refresh_selection() -> void:
-	var solo_active: bool = selected_mode == Mode.SOLO
-	var pvp_active: bool = selected_mode == Mode.PVP
-	_solo_badge.visible = solo_active
-	_pvp_badge.visible = pvp_active
-	_style_mode_card(_solo_card, solo_active, true)
-	_style_mode_card(_pvp_card, pvp_active, false)
-	_style_badge(_solo_badge, Palette.CYAN)
-	_style_badge(_pvp_badge, Palette.RED)
-	_apply_label(_solo_title, Palette.FIELD_TEXT if solo_active else Palette.TEXT_PRIMARY, UiScale.n(20.0, _view_width))
-	_apply_label(_pvp_title, Palette.FIELD_TEXT if pvp_active else Palette.TEXT_PRIMARY, UiScale.n(20.0, _view_width))
-	_apply_label(_solo_sub, Color(Palette.FIELD_TEXT, 0.7) if solo_active else Palette.TEXT_SECONDARY, UiScale.n(8.0, _view_width))
-	_apply_label(_pvp_sub, Color(Palette.FIELD_TEXT, 0.7) if pvp_active else Palette.TEXT_SECONDARY, UiScale.n(8.0, _view_width))
-	_apply_label(_solo_header_label, Palette.CYAN if solo_active else Palette.CYAN_DIM, UiScale.n(8.0, _view_width))
-	_apply_label(_pvp_header_label, Palette.RED if pvp_active else Color(Palette.RED, 0.55), UiScale.n(8.0, _view_width))
-
-
-func _style_mode_card(card: PanelContainer, active: bool, is_solo: bool) -> void:
-	var accent: Color = Palette.CYAN if is_solo else Palette.RED
-	var fill: Color = Color(Palette.FIELD_BG, 1.0) if active else Color(Palette.BG_PANEL_ALT, 0.92)
-	var border: Color = accent if active else Color(Palette.TEXT_MUTED, 0.35)
-	var box := _pixel_box(fill, border, 10, 2 if active else 1)
-	card.add_theme_stylebox_override("panel", box)
-
-
-func _style_badge(badge: PanelContainer, fill: Color) -> void:
-	var box := _pixel_box(fill, fill, 10, 0)
-	box.content_margin_left = 12.0
-	box.content_margin_right = 12.0
-	box.content_margin_top = 6.0
-	box.content_margin_bottom = 6.0
-	badge.add_theme_stylebox_override("panel", box)
-
+func _refresh_selection(animate: bool) -> void:
+	_stop_motion()
+	modulate.a = 1.0
+	var accent: Color = BLUE if selected_mode == Mode.SOLO else RED
+	_confirm.text = "CONFIRM " + String(get_mode_name())
+	_confirm.add_theme_stylebox_override("normal", UI.box(accent.darkened(0.72), accent, 14))
+	_confirm.add_theme_color_override("font_color", Color("#F3ECD6"))
+	for state: String in ["hover", "pressed"]:
+		_confirm.add_theme_stylebox_override(state, UI.box(accent, Color("#F3ECD6"), 14))
+	_subtitle.add_theme_color_override("font_color", accent)
+	var target: Color = Color("#061528") if selected_mode == Mode.SOLO else Color("#1B080F")
+	if animate and not SettingsService.reduced_motion:
+		_motion = create_tween().set_parallel(true)
+		_motion.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		_motion.tween_property(_wash, "color", target, 0.28)
+	else:
+		_wash.color = target
+	for index: int in _bands.size():
+		var active: bool = index == int(selected_mode)
+		var band: ModeBand = _bands[index]
+		band.tag.text = ("SELECTED / " if active else "SELECT / ") + ("BLUE OS" if index == 0 else "RED OS")
+		if animate and not SettingsService.reduced_motion:
+			_motion.tween_property(band, "power", 1.0 if active else 0.0, 0.28)
+		else:
+			band.power = 1.0 if active else 0.0
 
 func _confirm_selection() -> void:
+	if not visible:
+		return
+	_stop_motion()
+	hide()
+	_restore_focus()
 	mode_confirmed.emit(get_mode_name())
-	visible = false
-	modulate.a = 1.0
 
+func _unhandled_key_input(event: InputEvent) -> void:
+	if visible and event.is_action_pressed("ui_cancel"):
+		close()
+		get_viewport().set_input_as_handled()
 
-func _close() -> void:
-	close()
+func _restore_focus() -> void:
+	if _previous_focus != null:
+		var previous: Control = _previous_focus.get_ref() as Control
+		if is_instance_valid(previous) and previous.is_visible_in_tree():
+			previous.grab_focus()
 
+func _stop_motion() -> void:
+	if _motion != null:
+		_motion.kill()
+		_motion = null
 
-func _pixel_box(bg: Color, border: Color, radius: int, border_w: int) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(border_w)
-	box.set_corner_radius_all(radius)
-	return box
+func _exit_tree() -> void:
+	_stop_motion()
 
-
-func _apply_label(label: Label, color: Color, font_size: int) -> void:
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	if _pixel_font != null:
-		label.add_theme_font_override("font", _pixel_font)
+func _layout() -> void:
+	if not is_inside_tree() or _confirm == null:
+		return
+	var physical: float = maxf(0.4, float(get_window().size.y) / get_viewport_rect().size.y)
+	var readable: int = maxi(24, ceili(16.0 / physical))
+	var inset: float = size.x * 0.055
+	_title.position = Vector2(inset, size.y * 0.065)
+	_title.size = Vector2(size.x - inset * 2, 46)
+	_title.add_theme_font_size_override("font_size", maxi(28, ceili(19.0 / physical)))
+	_subtitle.position = Vector2(inset, size.y * 0.125)
+	_subtitle.size = Vector2(size.x - inset * 2, 40)
+	_subtitle.add_theme_font_size_override("font_size", readable)
+	for index: int in 2:
+		var band: ModeBand = _bands[index]
+		band.position = Vector2(size.x * 0.5 * index, 0)
+		band.size = Vector2(size.x * 0.5, size.y)
+		band.copy.position = Vector2(inset, size.y * 0.57)
+		band.copy.size = Vector2(band.size.x - inset * 2, 0)
+		band.tag.add_theme_font_size_override("font_size", maxi(20, ceili(14.0 / physical)))
+		band.heading.add_theme_font_size_override("font_size", maxi(48, ceili(26.0 / physical)))
+		band.description.add_theme_font_size_override("font_size", readable)
+	var height: float = maxf(56, 44.0 / physical)
+	_cancel.position = Vector2(inset, size.y * 0.85)
+	_cancel.size = Vector2(size.x * 0.21, height)
+	_confirm.position = Vector2(size.x * 0.53, size.y * 0.85)
+	_confirm.size = Vector2(size.x * 0.415, height)
+	_confirm.add_theme_font_size_override("font_size", readable)
+	_cancel.add_theme_font_size_override("font_size", readable)

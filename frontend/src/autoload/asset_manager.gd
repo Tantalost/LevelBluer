@@ -123,6 +123,14 @@ func get_texture(asset_id: String) -> Texture2D:
 func bind_texture(target: CanvasItem, asset_id: String) -> void:
 	if target == null or asset_id.is_empty():
 		return
+	# Legacy portrait consumers all resolve to the selected uniform avatar.
+	# Receiver-owned signal connections disappear when their TextureRect is freed.
+	if asset_id == "ui_pfp" and target is TextureRect:
+		var portrait_script: GDScript = preload("res://src/ui/screens/profile/avatar_portrait.gd")
+		if target.get_script() != portrait_script:
+			target.set_script(portrait_script)
+		target.call("bind_current")
+		return
 	var texture: Texture2D = get_texture(asset_id)
 	if texture == null:
 		return
@@ -302,6 +310,18 @@ func _ui_catalog() -> Array[Dictionary]:
 		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
 		_catalog_entry("ui_dashboard_scenic", "Command outpost dashboard", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1789109666/command_outpost_v1.png"),
+		_catalog_entry("ui_dashboard_pvp", "PvP mode-selection artwork", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791049225/pvp_command_v1.png"),
+		_catalog_entry("ui_dashboard_pvp_workspace", "Muted PvP workspace", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791168774/pvp_workspace_muted_v1.png"),
+		_catalog_entry("ui_avatar_byte_bot", "Byte Bot", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177053/byte_bot_v1.png"),
+		_catalog_entry("ui_avatar_cyber_cat", "Cyber Cat", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177071/cyber_cat_v1.png"),
+		_catalog_entry("ui_avatar_commander", "Commander", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177054/commander_v1.png"),
+		_catalog_entry("ui_avatar_operative", "Operative", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177072/operative_v1.png"),
+		_catalog_entry("ui_avatar_neon_fox", "Neon Fox", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177084/neon_fox_v1.png"),
+		_catalog_entry("ui_avatar_circuit_owl", "Circuit Owl", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177053/circuit_owl_v1.png"),
+		_catalog_entry("ui_avatar_glitch_ghost", "Glitch Ghost", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177069/glitch_ghost_v1.png"),
+		_catalog_entry("ui_avatar_pixel_bunny", "Pixel Bunny", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177053/pixel_bunny_v1.png"),
+		_catalog_entry("ui_avatar_cyber_axolotl", "Cyber Axolotl", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177067/cyber_axolotl_v1.png"),
+		_catalog_entry("ui_avatar_masked_raccoon", "Masked Raccoon", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791177068/masked_raccoon_v1.png"),
 		_catalog_entry("ui_background", "Login background", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336648/background.png"),
 		_catalog_entry("ui_logo", "Brand logo", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336656/logo.png"),
 		_catalog_entry("ui_loading", "Loading mark", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336655/loading.png"),
@@ -442,6 +462,10 @@ func _download_and_store(entry: Dictionary) -> bool:
 	if asset_id.begins_with("story_dialogue_") and image.get_size() != Vector2i(1536, 1024):
 		push_warning("AssetManager: school dialogue atlases require the original 1536x1024 crop layout.")
 		return _use_local_fallback(asset_id, local_path, false)
+	# Keep downloaded UI portraits lightweight rather than retaining full-resolution textures.
+	if asset_id.begins_with("ui_avatar_") and maxi(image.get_width(), image.get_height()) > 256:
+		var scale_ratio: float = 256.0 / float(maxi(image.get_width(), image.get_height()))
+		image.resize(maxi(1, roundi(image.get_width() * scale_ratio)), maxi(1, roundi(image.get_height() * scale_ratio)), Image.INTERPOLATE_NEAREST)
 	var png: PackedByteArray = image.save_png_to_buffer()
 	if png.is_empty():
 		png = body
@@ -706,6 +730,8 @@ func _seed_from_bundle() -> void:
 
 
 func _bundled_path(asset_id: String) -> String:
+	if asset_id.begins_with("ui_avatar_"):
+		return ""
 	if asset_id.begins_with("npc_"):
 		return ""
 	match asset_id:
@@ -736,6 +762,10 @@ func _bundled_path(asset_id: String) -> String:
 		"ui_intro_preview":
 			return ""
 		"ui_module1_intro":
+			return ""
+		"ui_dashboard_pvp":
+			return ""
+		"ui_dashboard_pvp_workspace":
 			return ""
 		"ui_dashboard":
 			return "res://assets/ui/dashboard.png"
