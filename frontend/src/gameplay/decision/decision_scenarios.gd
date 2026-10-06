@@ -18,7 +18,8 @@ static func stage_key(module_id: String, stage_id: int) -> String:
 
 
 static func is_decision_stage(module_id: String, stage_id: int) -> bool:
-	return not get_stage(module_id, stage_id).is_empty()
+	var stage: Dictionary = get_stage(module_id, stage_id)
+	return not stage.is_empty() and str(stage.get("stage_type", "decision")) == "decision"
 
 
 static func get_stage(module_id: String, stage_id: int) -> Dictionary:

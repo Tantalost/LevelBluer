@@ -1,6 +1,6 @@
 class_name CertificateScreen
 extends BaseScreen
-## Capstone award after Module 1 Stage 10. Shows final BKT bars. No completion action.
+## School/college capstone award. Shows final BKT bars. No completion action.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 
@@ -50,8 +50,11 @@ func _process(delta: float) -> void:
 	_os_led.color = Palette.GREEN if on else Color(Palette.GREEN, 0.28)
 
 
-func on_enter(_args: Dictionary) -> void:
+func on_enter(args: Dictionary) -> void:
 	set_process(true)
+	var college: bool = str(args.get("module_id", "mod_01")) == "mod_02"
+	_cert_file.text = "MODULE_2.CRT" if college else "MODULE_1.CRT"
+	_title_label.text = "MODULE 2 CLEARED: CAMPUS DEFENDER" if college else "MODULE 1 CLEARED: NETWORK DEFENDER"
 	var trainee: String = AuthService.display_name().strip_edges().to_upper()
 	if trainee.is_empty():
 		trainee = "OPERATIVE"

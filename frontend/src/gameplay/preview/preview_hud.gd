@@ -199,6 +199,8 @@ func _responsive() -> void:
 	side.custom_minimum_size.x = maxf(clampf(size.x * 0.30, 370, 440), _card_width() * 3 + 80)
 	build_details.custom_minimum_size.x = clampf(size.x * 0.24, 300, 350)
 	_apply_metrics(self)
+	if is_instance_valid(feedback) and workspace.visible and not feedback.text.is_empty():
+		_scroll_feedback.call_deferred(weakref(answers.get_parent()), weakref(feedback))
 
 func _apply_metrics(node: Node) -> void:
 	if bool(node.get_meta("owns_responsive_metrics", false)):
@@ -294,7 +296,7 @@ func show_feedback(correct: bool, expired: bool, note: String, gold_reward: int 
 	submit.text = "Continue >"
 	submit.disabled = false
 	var scroll := answers.get_parent() as ScrollContainer
-	_scroll_feedback.call_deferred(scroll, feedback)
+	_scroll_feedback.call_deferred(weakref(scroll), weakref(feedback))
 	workspace.add_theme_stylebox_override("panel", UI.box(Color("14271f") if correct else Color("2d1e25"), Color("91cda6") if correct else Color("d88d8d"), 18))
 	if not correct:
 		var tween := create_tween()
@@ -615,8 +617,13 @@ func close_modal() -> void:
 		modal.queue_free()
 	modal = null
 
-func _scroll_feedback(scroll: ScrollContainer, target: Control) -> void:
-	if is_instance_valid(target) and scroll.is_ancestor_of(target):
+func _scroll_feedback(scroll_ref: WeakRef, target_ref: WeakRef) -> void:
+	# A quick Continue can free the prior question before this deferred call.
+	# Wait for wrapped text/container heights after feedback or viewport changes.
+	await get_tree().process_frame
+	var scroll: ScrollContainer = scroll_ref.get_ref() as ScrollContainer
+	var target: Control = target_ref.get_ref() as Control
+	if is_instance_valid(scroll) and is_instance_valid(target) and scroll.is_ancestor_of(target):
 		scroll.ensure_control_visible(target)
 
 func _crt(panel: Control) -> void:

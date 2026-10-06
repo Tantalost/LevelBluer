@@ -24,8 +24,10 @@ func configure(data: Dictionary) -> void:
 	var settings: Dictionary = data.duplicate(true)
 	settings["device_name"] = "laptop"
 	settings["message_app"] = "Messages"
-	settings["contacts_origin"] = "Campus directory saved during enrollment"
-	settings["app_titles"] = {"home": "DESKTOP", "mail": "MESSAGES / SMS SYNC", "contacts": "CAMPUS DIRECTORY", "pages": "CAMPUS PORTAL", "lock": "ALEX'S LAPTOP"}
+	settings["contacts_origin"] = str(data.get("contacts_origin", "Campus directory saved during enrollment"))
+	var titles: Dictionary = {"home": "DESKTOP", "mail": "MESSAGES / SMS SYNC", "contacts": "CAMPUS DIRECTORY", "pages": "CAMPUS PORTAL", "lock": "ALEX'S LAPTOP"}
+	titles.merge(data.get("app_titles", {}) as Dictionary, true)
+	settings["app_titles"] = titles
 	super.configure(settings)
 	_status.text = "CAMPUS WORKSPACE / OFFLINE STORY"
 
@@ -40,6 +42,8 @@ func _fit_shell() -> void:
 		return
 	var factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	var nav_height: float = maxf(52.0, 48.0 / factor)
+	# Containers can retain larger button metrics during a viewport transition.
+	nav_height = maxf(nav_height, _nav.get_combined_minimum_size().y)
 	var gap: float = 20.0
 	var landscape: bool = size.x >= size.y
 	var guide_width: float = minf(280.0 / factor, size.x * 0.27)
