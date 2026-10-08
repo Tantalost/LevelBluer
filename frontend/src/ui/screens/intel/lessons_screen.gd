@@ -142,6 +142,9 @@ func _ready() -> void:
 		account = PlayerManager
 	var shell: Dictionary = UI.shell(self, "LEARNING JOURNEY", func() -> void: Router.request_back())
 	var layout: VBoxContainer = shell.layout
+	var school_button: Button = UI.button("School Content", func() -> void: Router.push(&"school_content"))
+	school_button.custom_minimum_size.x = 200
+	shell.title.get_parent().add_child(school_button)
 	_heading = shell.title
 	_back = shell.back
 	_overview = UI.column(layout, 20)

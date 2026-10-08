@@ -1,6 +1,16 @@
 extends Node
 ## Autoload singleton, registered as "ContentDB".
-## Loads authored JSON at boot. FastAPI swap comes later.
+## Loads bundled gameplay at boot; published school resources stay separate.
+
+signal content_updated
+var school_items: Array[Dictionary] = []
+var school_content_status: String = "Sign in to load school content."
+var school_content_loading: bool = false
+var school_release: int = 0
+var _school_http: HTTPRequest
+var _school_request_token: String = ""
+var _school_session_token: String = ""
+var _school_has_catalog: bool = false
 
 var questions: Dictionary = {}
 var stages: Dictionary = {}
@@ -26,6 +36,7 @@ const MODULE_SKILL_IDS := {
 
 
 func _ready() -> void:
+	_setup_school_feed.call_deferred()
 	_load_question_bank()
 	_load_json_dict("res://data/stages.json", stages)
 	_load_json_dict("res://data/enemies.json", enemies)
@@ -660,3 +671,141 @@ func _parse_json_file(file_path: String) -> Variant:
 		push_error("ContentDB: JSON Parse Error in " + file_path)
 		return null
 	return json.data
+
+
+# Supplemental content never enters the stage question pools or saved unlocks.
+func _setup_school_feed() -> void:
+	_school_http = HTTPRequest.new()
+	_school_http.timeout = 20.0
+	_school_http.body_size_limit = 4 * 1024 * 1024
+	add_child(_school_http)
+	_school_http.request_completed.connect(_school_request_completed)
+	AuthService.session_changed.connect(_school_session_changed)
+	_school_session_changed(AuthService.is_signed_in())
+
+
+func _school_session_changed(signed_in: bool) -> void:
+	if signed_in and not _school_session_token.is_empty() and _school_session_token == AuthService.auth_token():
+		return
+	_school_session_token = AuthService.auth_token() if signed_in else ""
+	_school_http.cancel_request()
+	_school_request_token = ""
+	school_content_loading = false
+	school_items.clear()
+	school_release = 0
+	_school_has_catalog = false
+	school_content_status = "Sign in to load school content."
+	content_updated.emit()
+	if signed_in:
+		refresh_school_content()
+
+
+func refresh_school_content() -> void:
+	if not is_instance_valid(_school_http) or school_content_loading or not AuthService.is_signed_in():
+		return
+	_school_request_token = AuthService.auth_token()
+	var headers: PackedStringArray = ["Authorization: Bearer " + _school_request_token]
+	if _school_has_catalog:
+		headers.append('If-None-Match: "levelblue-content-v1-%d"' % school_release)
+	var base: String = str(ProjectSettings.get_setting("levelblue/api_base_url", "http://127.0.0.1:8000")).trim_suffix("/")
+	school_content_loading = true
+	school_content_status = "Checking for published school content..."
+	content_updated.emit()
+	var request_error: Error = _school_http.request(base + "/api/content", headers)
+	if request_error != OK:
+		_school_feed_failed()
+
+
+func _school_feed_failed() -> void:
+	school_content_loading = false
+	school_content_status = "School content could not refresh. Bundled lessons are still available."
+	if _school_has_catalog:
+		school_content_status += " Showing the last loaded school release."
+	content_updated.emit()
+
+
+func _school_request_completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if not AuthService.is_signed_in() or _school_request_token != AuthService.auth_token():
+		return
+	school_content_loading = false
+	if result != HTTPRequest.RESULT_SUCCESS:
+		_school_feed_failed()
+		return
+	if code == 401 or code == 403:
+		school_items.clear()
+		_school_has_catalog = false
+		school_content_status = "Sign in again to access school content."
+		content_updated.emit()
+		return
+	if code == 304 and _school_has_catalog:
+		school_content_status = "School content is up to date."
+		content_updated.emit()
+		return
+	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	if code != 200 or not valid_school_catalog(parsed):
+		_school_feed_failed()
+		return
+	var catalog: Dictionary = parsed
+	school_items.clear()
+	for item: Dictionary in catalog["items"]:
+		school_items.append(item.duplicate(true))
+	school_release = int(catalog["releaseVersion"])
+	_school_has_catalog = true
+	school_content_status = "Release %d · %d school resources" % [school_release, school_items.size()]
+	content_updated.emit()
+
+
+func valid_school_catalog(value: Variant) -> bool:
+	if not value is Dictionary:
+		return false
+	var catalog: Dictionary = value
+	if catalog.get("schemaVersion") != 1 or not catalog.get("items") is Array:
+		return false
+	if not catalog.get("releaseVersion") is float and not catalog.get("releaseVersion") is int:
+		return false
+	if float(catalog["releaseVersion"]) < 0 or floorf(float(catalog["releaseVersion"])) != float(catalog["releaseVersion"]):
+		return false
+	var ids: Dictionary = {}
+	for raw: Variant in catalog["items"]:
+		if not raw is Dictionary:
+			return false
+		var item: Dictionary = raw
+		if not item.get("id") is String or str(item["id"]).is_empty() or ids.has(item["id"]):
+			return false
+		ids[item["id"]] = true
+		if not item.get("title") is String or not item.get("content") is Dictionary:
+			return false
+		if not ["Phishing", "Smishing", "Vishing", "Pretexting", "Baiting"].has(item.get("topic")):
+			return false
+		var content: Dictionary = item["content"]
+		var kind: String = str(item.get("kind", ""))
+		var fields: Array[String] = []
+		var list_key: String = ""
+		match kind:
+			"lesson":
+				fields = ["body"]
+				list_key = "objectives"
+			"codex":
+				fields = ["definition", "safeResponse"]
+				list_key = "warningSigns"
+			"quiz":
+				fields = ["prompt", "explanation"]
+				list_key = "options"
+			_:
+				return false
+		for field: String in fields:
+			if not content.get(field) is String or str(content[field]).strip_edges().is_empty():
+				return false
+		if not content.get(list_key) is Array:
+			return false
+		var entries: Array = content[list_key]
+		for entry: Variant in entries:
+			if not entry is String:
+				return false
+		if kind == "quiz":
+			var answer: Variant = content.get("correctOption")
+			if not answer is float and not answer is int:
+				return false
+			if entries.size() < 2 or entries.size() > 6 or float(answer) != floorf(float(answer)) or int(answer) < 0 or int(answer) >= entries.size():
+				return false
+	return true

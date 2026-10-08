@@ -27,6 +27,7 @@ const SCREENS: Dictionary = {
 	&"dashboard":    "res://src/ui/screens/dashboard/dashboard_screen.tscn",
 	&"store":        "res://src/ui/screens/store/store_screen.tscn",
 	&"lessons":      "res://src/ui/screens/intel/lessons_screen.tscn",
+	&"school_content": "res://src/ui/screens/intel/school_content_screen.tscn",
 	&"lesson_player": "res://src/ui/screens/intel/lesson_player_screen.tscn",
 	&"codex":        "res://src/ui/screens/intel/codex_screen.tscn",
 	&"progress":     "res://src/ui/screens/progress/progress_screen.tscn",
