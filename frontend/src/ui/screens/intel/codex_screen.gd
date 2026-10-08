@@ -39,6 +39,9 @@ func _ready() -> void:
 	var shell := UI.shell(self, "CODEX / FIELD GUIDE", _on_back_pressed)
 	_back_button = shell.back
 	var layout: VBoxContainer = shell.layout
+	var school_button: Button = UI.button("School Content", func() -> void: Router.push(&"school_content"))
+	school_button.custom_minimum_size.x = 200
+	shell.title.get_parent().add_child(school_button)
 	var strip := HBoxContainer.new()
 	layout.add_child(strip)
 	strip.hide()

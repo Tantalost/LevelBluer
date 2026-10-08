@@ -7,6 +7,7 @@ from app.routes.auth import router as auth_router
 from app.routes.bkt import router as bkt_router
 from app.routes.pretest import router as pretest_router
 from app.routes.progress import router as progress_router
+from app.routes.content import router as content_router
 
 app = FastAPI(
     title="LevelBlue Mobile API",
@@ -26,6 +27,7 @@ app.include_router(auth_router)
 app.include_router(pretest_router)
 app.include_router(bkt_router)
 app.include_router(progress_router)
+app.include_router(content_router)
 
 
 @app.exception_handler(HTTPException)
