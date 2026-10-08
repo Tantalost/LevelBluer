@@ -8,8 +8,19 @@ const ARENA_TEX = preload("res://assets/gameplay/pvp/arena/network_core_arena_v1
 const DEFENDER_TEX = preload("res://assets/gameplay/pvp/characters/cyber_defender_pixel_v1.png")
 const RIVAL_TEX = preload("res://assets/gameplay/pvp/characters/rival_cyber_duelist_left_v1.png")
 const PULSE_TEX = preload("res://assets/gameplay/pvp/vfx/blue_cyber_pulse_v1.png")
+const RED_PULSE_TEX = preload("res://assets/gameplay/pvp/vfx/red_cyber_pulse_v1.png")
+const ATTACK_TEX = preload("res://assets/gameplay/pvp/characters/cyber_defender_attack_draft_v1.png")
 const ARENA_FOCUS := Vector2(0.502, 0.47)
 const FIGHTER_FOOT := 0.96
+const ATTACK_FRAME_COUNT := 8
+const ATTACK_FPS := 11.0
+const ATTACK_RELEASE_FRAME := 4
+const IDLE_BODY_TOP := 68.0
+const IDLE_BODY_BOTTOM := 1201.0
+const IDLE_BODY_CENTER_X := 657.5
+const ATTACK_BODY_TOP := 180.0
+const ATTACK_BODY_BOTTOM := 572.0
+const ATTACK_BODY_CENTER_X := 142.5
 
 class HpBar extends Control:
 	var value: int = 100
@@ -70,10 +81,17 @@ var _background: TextureRect
 var _player_slot: Control
 var _rival_slot: Control
 var _player_shake: Control
+var _defender_idle: TextureRect
+var _defender_attack: TextureRect
+var _attack_atlas: AtlasTexture
 var _pulse: TextureRect
+var _red_pulse: TextureRect
 var _hit_flash: ColorRect
 var _fx: Tween
+var _attack_tween: Tween
 var _fx_round: int = -1
+var _attacking: bool = false
+var _pulse_fired: bool = false
 
 
 func _ready() -> void:
@@ -312,34 +330,27 @@ func _attach(node: Control, parent: Node, index: int = -1) -> void:
 
 
 func _result_headline() -> String:
+	if _battle.damage_to(false) > 0:
+		return "CORRECT — ATTACK!"
+	if _battle.damage_to(true) > 0:
+		return "RIVAL ANSWERED FIRST"
 	if _battle.side_timed_out(true) and _battle.side_timed_out(false):
 		return "BOTH TIMED OUT"
-	var dealt: int = _battle.damage_to(false)
-	var taken: int = _battle.damage_to(true)
-	if _battle.side_correct(true) and _battle.side_correct(false):
-		if dealt > 0:
-			return "BOTH CORRECT · FASTER!"
-		if taken > 0:
-			return "RIVAL FASTER · -%d HP" % taken
-		return "BOTH CORRECT · EVEN"
-	if dealt > 0:
-		return "CORRECT · %d DAMAGE" % dealt
-	if taken > 0:
-		if _battle.side_timed_out(true):
-			return "TIMED OUT · -%d HP" % taken
-		return "YOU MISSED · -%d HP" % taken
 	return "NO DAMAGE"
 
 
 func _pick(index: int) -> void:
 	if _battle == null or index < 0 or index >= _choices.size():
 		return
-	if _battle.submit_player(_choices[index].get("value"), _clock_now()):
-		_show_locked()
+	if not _battle.submit_player(_choices[index].get("value"), _clock_now()):
+		return
+	if _battle.phase != Battle.Phase.QUESTION:
+		return
+	_show_incorrect()
 
 
-func _show_locked() -> void:
-	_status.text = "ANSWER LOCKED / WAITING FOR OPPONENT"
+func _show_incorrect() -> void:
+	_status.text = "INCORRECT — WAITING FOR RIVAL"
 	for button: Button in _answer_buttons:
 		button.disabled = true
 
@@ -532,13 +543,19 @@ func _build_arena() -> void:
 	_background.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_arena.add_child(_background)
 	_player_shake = _fighter_sprite(DEFENDER_TEX, "CyberDefender", true)
+	_defender_idle = _player_shake.get_child(0) as TextureRect
+	_attack_atlas = AtlasTexture.new()
+	_attack_atlas.atlas = ATTACK_TEX
+	_attack_atlas.region = Rect2(0.0, 0.0, float(ATTACK_TEX.get_width()) / float(ATTACK_FRAME_COUNT), float(ATTACK_TEX.get_height()))
+	_defender_attack = _pixel_rect(_attack_atlas, "CyberDefenderAttack")
+	_defender_attack.stretch_mode = TextureRect.STRETCH_SCALE
+	_defender_attack.hide()
+	_player_shake.add_child(_defender_attack)
 	_fighter_sprite(RIVAL_TEX, "RivalDuelist", false)
-	_pulse = _pixel_rect(PULSE_TEX, "PlayerPulse")
-	_pulse.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_pulse.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	_pulse.z_index = 2
-	_pulse.hide()
+	_pulse = _projectile(PULSE_TEX, "PlayerPulse")
 	_arena.add_child(_pulse)
+	_red_pulse = _projectile(RED_PULSE_TEX, "RivalPulse")
+	_arena.add_child(_red_pulse)
 	_hit_flash = ColorRect.new()
 	_hit_flash.name = "PlayerHitFlash"
 	_hit_flash.color = Palette.DANGER
@@ -572,6 +589,15 @@ func _build_arena() -> void:
 	plate.custom_minimum_size.x = 280
 	stack.add_child(_countdown_round)
 	stack.add_child(_countdown_value)
+
+
+func _projectile(texture: Texture2D, node_name: String) -> TextureRect:
+	var pulse: TextureRect = _pixel_rect(texture, node_name)
+	pulse.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	pulse.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	pulse.z_index = 2
+	pulse.hide()
+	return pulse
 
 
 func _pixel_rect(texture: Texture2D, node_name: String) -> TextureRect:
@@ -763,11 +789,49 @@ func _ground_sprite(slot: Control, side: float) -> void:
 		var sprite: TextureRect = child as TextureRect
 		if sprite == null:
 			continue
+		if sprite == _defender_attack:
+			_place_attack_sprite(sprite, side)
+			continue
 		sprite.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		sprite.offset_left = 0.0
 		sprite.offset_top = -lift
 		sprite.offset_right = side
 		sprite.offset_bottom = side
+
+
+func _idle_drawn_rect(side: float) -> Rect2:
+	var lift: float = side * (1.0 / FIGHTER_FOOT - 1.0)
+	var control_rect: Rect2 = Rect2(0.0, -lift, side, side / FIGHTER_FOOT)
+	var tex_size: Vector2 = DEFENDER_TEX.get_size()
+	if tex_size.x < 1.0 or tex_size.y < 1.0:
+		return control_rect
+	var fit: float = minf(control_rect.size.x / tex_size.x, control_rect.size.y / tex_size.y)
+	var drawn: Vector2 = tex_size * fit
+	return Rect2(control_rect.position + (control_rect.size - drawn) * 0.5, drawn)
+
+
+func _place_attack_sprite(sprite: TextureRect, side: float) -> void:
+	var drawn: Rect2 = _idle_drawn_rect(side)
+	var idle_tex: Vector2 = DEFENDER_TEX.get_size()
+	var sheet: Vector2 = ATTACK_TEX.get_size()
+	var body_px: float = ATTACK_BODY_BOTTOM - ATTACK_BODY_TOP
+	if idle_tex.y < 1.0 or sheet.x < 1.0 or sheet.y < 1.0 or body_px <= 1.0:
+		return
+	var idle_scale: float = drawn.size.y / idle_tex.y
+	var idle_feet: float = drawn.position.y + IDLE_BODY_BOTTOM * idle_scale
+	var idle_head: float = drawn.position.y + IDLE_BODY_TOP * idle_scale
+	var idle_center: float = drawn.position.x + IDLE_BODY_CENTER_X * idle_scale
+	var attack_scale: float = (idle_feet - idle_head) / body_px
+	var frame_w: float = sheet.x / float(ATTACK_FRAME_COUNT)
+	var attack_w: float = frame_w * attack_scale
+	var attack_h: float = sheet.y * attack_scale
+	var top: float = idle_feet - ATTACK_BODY_BOTTOM * attack_scale
+	var left: float = idle_center - ATTACK_BODY_CENTER_X * attack_scale
+	sprite.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	sprite.offset_left = left
+	sprite.offset_top = top
+	sprite.offset_right = left + attack_w
+	sprite.offset_bottom = top + attack_h
 
 
 func _place_slot(slot: Control, x: float, y: float, side: float) -> void:
@@ -787,29 +851,88 @@ func _present_round_fx() -> void:
 	if _arena == null or _arena.size.x < 2.0:
 		return
 	if _battle.damage_to(false) > 0:
-		_play_player_pulse()
+		_play_defender_attack()
 	elif _battle.damage_to(true) > 0:
-		_play_player_hit()
+		_play_rival_pulse()
+
+
+func _play_defender_attack() -> void:
+	if _defender_attack == null or _defender_idle == null or ATTACK_TEX.get_width() < ATTACK_FRAME_COUNT:
+		_play_player_pulse()
+		return
+	_attacking = true
+	_pulse_fired = false
+	_defender_idle.hide()
+	_defender_attack.show()
+	_show_attack_frame(0)
+	_attack_tween = create_tween()
+	for frame: int in range(1, ATTACK_FRAME_COUNT):
+		_attack_tween.tween_interval(1.0 / ATTACK_FPS)
+		_attack_tween.tween_callback(_show_attack_frame.bind(frame))
+	_attack_tween.tween_interval(1.0 / ATTACK_FPS)
+	_attack_tween.tween_callback(_restore_defender_idle)
+
+
+func _show_attack_frame(frame: int) -> void:
+	if not _attacking or _attack_atlas == null:
+		return
+	var frame_w: float = float(ATTACK_TEX.get_width()) / float(ATTACK_FRAME_COUNT)
+	_attack_atlas.region = Rect2(frame_w * float(frame), 0.0, frame_w, float(ATTACK_TEX.get_height()))
+	if frame == ATTACK_RELEASE_FRAME and not _pulse_fired:
+		_pulse_fired = true
+		_play_player_pulse()
+
+
+func _restore_defender_idle() -> void:
+	_attacking = false
+	if _defender_attack != null:
+		_defender_attack.hide()
+	if _defender_idle != null:
+		_defender_idle.show()
 
 
 func _play_player_pulse() -> void:
-	var height: float = clampf(_arena.size.y * 0.28, 24.0, 84.0)
-	var aspect: float = 2.0
-	if PULSE_TEX.get_height() > 0:
-		aspect = float(PULSE_TEX.get_width()) / float(PULSE_TEX.get_height())
-	var pulse_size: Vector2 = Vector2(height * aspect, height)
-	var origin: Vector2 = _slot_point(_player_slot, 0.86, 0.42) - pulse_size * 0.5
-	var target: Vector2 = _slot_point(_rival_slot, 0.14, 0.42) - pulse_size * 0.5
-	_pulse.size = pulse_size
-	_pulse.position = origin
-	_pulse.modulate = Color.WHITE
-	_pulse.show()
+	_launch_pulse(_pulse, PULSE_TEX, _player_slot, Vector2(0.86, 0.42), _rival_slot, Vector2(0.14, 0.42), Callable())
+
+
+func _play_rival_pulse() -> void:
+	_launch_pulse(_red_pulse, RED_PULSE_TEX, _rival_slot, Vector2(0.14, 0.42), _player_slot, Vector2(0.86, 0.42), _impact_defender)
+
+
+func _launch_pulse(pulse: TextureRect, texture: Texture2D, origin_slot: Control, origin_ratio: Vector2, target_slot: Control, target_ratio: Vector2, on_arrive: Callable) -> void:
+	if pulse == null or origin_slot == null or target_slot == null or _arena == null:
+		if on_arrive.is_valid():
+			on_arrive.call()
+		return
+	var pulse_size: Vector2 = _pulse_size(texture)
+	var origin: Vector2 = _slot_point(origin_slot, origin_ratio.x, origin_ratio.y) - pulse_size * 0.5
+	var target: Vector2 = _slot_point(target_slot, target_ratio.x, target_ratio.y) - pulse_size * 0.5
+	pulse.size = pulse_size
+	pulse.position = origin
+	pulse.modulate = Color.WHITE
+	pulse.show()
 	_fx = create_tween()
 	_fx.set_trans(Tween.TRANS_QUAD)
 	_fx.set_ease(Tween.EASE_OUT)
-	_fx.tween_property(_pulse, "position", target, 0.32)
-	_fx.tween_property(_pulse, "modulate:a", 0.0, 0.08)
+	_fx.tween_property(pulse, "position", target, 0.32)
+	if on_arrive.is_valid():
+		_fx.tween_callback(on_arrive)
+		return
+	_fx.tween_property(pulse, "modulate:a", 0.0, 0.08)
 	_fx.tween_callback(_hide_pulse)
+
+
+func _pulse_size(texture: Texture2D) -> Vector2:
+	var height: float = clampf(_arena.size.y * 0.28, 24.0, 84.0)
+	var aspect: float = 2.0
+	if texture != null and texture.get_height() > 0:
+		aspect = float(texture.get_width()) / float(texture.get_height())
+	return Vector2(height * aspect, height)
+
+
+func _impact_defender() -> void:
+	_hide_red_pulse()
+	_play_player_hit()
 
 
 func _play_player_hit() -> void:
@@ -835,10 +958,18 @@ func _slot_point(slot: Control, x_ratio: float, y_ratio: float) -> Vector2:
 
 
 func _hide_pulse() -> void:
-	if _pulse == null:
+	_hide_projectile(_pulse)
+
+
+func _hide_red_pulse() -> void:
+	_hide_projectile(_red_pulse)
+
+
+func _hide_projectile(pulse: TextureRect) -> void:
+	if pulse == null:
 		return
-	_pulse.hide()
-	_pulse.modulate = Color.WHITE
+	pulse.hide()
+	pulse.modulate = Color.WHITE
 
 
 func _end_hit() -> void:
@@ -849,10 +980,17 @@ func _end_hit() -> void:
 
 
 func _clear_fx() -> void:
+	_attacking = false
+	_pulse_fired = false
+	if _attack_tween != null and is_instance_valid(_attack_tween):
+		_attack_tween.kill()
+	_attack_tween = null
 	if _fx != null and is_instance_valid(_fx):
 		_fx.kill()
 	_fx = null
 	_hide_pulse()
+	_hide_red_pulse()
+	_restore_defender_idle()
 	_end_hit()
 
 
@@ -903,7 +1041,9 @@ func _update_hud(now: int) -> void:
 	if _battle.phase == Battle.Phase.QUESTION:
 		_timer.text = "%.1fs" % (float(_battle.remaining_ms(now)) / 1000.0)
 		if _battle.player_locked():
-			_status.text = "ANSWER LOCKED / WAITING FOR OPPONENT"
+			_status.text = "INCORRECT — WAITING FOR RIVAL"
+			for button: Button in _answer_buttons:
+				button.disabled = true
 	elif _battle.phase == Battle.Phase.COUNTDOWN:
 		var remain: int = maxi(0, _battle.countdown_ends_at - now)
 		_timer.text = "%d" % int(ceil(float(remain) / 1000.0))

@@ -1,0 +1,32 @@
+Generation mode: built-in image_gen
+Status: Draft; layout is not safe for eight equal-width Godot frames.
+
+Initial prompt:
+Use case: precise-object-edit / production pixel-art animation.
+The attached Cyber Defender is the EXACT character identity reference, not inspiration. Preserve its youthful face, dark swept hair, navy segmented armor, electric blue/cyan accents, large angular translucent cyan forearm-mounted hexagonal shield with circuit motifs, gloves, belt and boots, anatomy, head/body ratio, outline thickness, pixel density and discrete pixel shading. Do not redesign, simplify into a new character, change equipment or switch rendering styles.
+
+Deliver ONE SPRITE SHEET containing EXACTLY EIGHT chronological animation frames in ONE SINGLE HORIZONTAL ROW. This is not a concept sheet or collage. NO second row. NO labels or separators.
+Requested sheet geometry: 4096 pixels wide x 512 pixels high; EIGHT EQUAL 512x512 cells. The total sheet must be exactly 8:1 landscape, width divisible by 8, hframes=8 vframes=1. Invisible cell boundaries at x=0,512,1024,1536,2048,2560,3072,3584,4096. Keep the whole character and all energy completely within each cell with transparent padding. Nothing crosses a frame boundary.
+
+Animation: Cyber Defender — Correct Answer Attack, toward SCREEN RIGHT. Front three-quarter view consistent with reference; face and eyes looking toward right opponent. A confident technological countermeasure launch through an open hand on the shield-bearing arm, not a physical punch or firing a weapon.
+Frame 1 (leftmost): exact reference idle battle stance, shield idle.
+Frame 2: slight forward torso lean and small elbow preparation, feet stay planted.
+Frame 3: arm begins extending toward RIGHT; SMALL cyan pixel energy gathers close around hand/forearm, original shield remains.
+Frame 4: release pose, open hand extended RIGHT, same shield rotates with its forearm, a SMALL LOCAL cyan flare at palm marks projectile spawn point.
+Frame 5: peak, SAME hand position as frame 4, strongest but still SMALL cyan pixel glow at palm. No outward beam or traveling projectile.
+Frame 6: follow-through, arm starts retracting, local glow fades.
+Frame 7: recovery, torso and arm return nearly to original idle.
+Frame 8 (rightmost): exact same idle pose as frame 1 to close the loop.
+
+Technical alignment in every 512x512 cell: fixed camera, fixed character scale, head approximately y=70, soles on exactly y=450 baseline. Both feet retain identical local positions and baseline throughout. Fixed character root centered around local x=230, allowing arm extension toward x=460. Shield, fingers and energy must stay within each cell and never overlap neighboring frame. Consistent body size/limb lengths and lighting in all frames; only torso/arm articulation and local energy change. At release frames 4 and 5 maintain the same palm location for reliable projectile spawning. Keep enough space between silhouettes so eight equal-width slices isolate complete frames.
+
+True polished modern pixel-art sprite matching reference: crisp square pixel clusters, stepped hard edges, controlled limited navy/blue/cyan palette, pixel highlights and shadows, no smooth gradients, airbrush, painterly treatment, 3D rendering, anime illustration, motion blur or fake pixelation filter.
+Transparent PNG with actual alpha everywhere outside sprites. No environment, floor, ground plane, shadows on floor, text, numbering, logo, watermark, UI, additional characters, guns, projectiles, laser beams, flying cyber pulse, huge flare or explosion. The only VFX is a compact cyan buildup/release physically close to the hand. ONE clean 8-frame horizontal animation sheet, full body visible in all eight frames.
+
+Layout correction prompt:
+Correct ONLY the sprite sheet layout and pose consistency of input image 1, using image 2 as the exact original Cyber Defender reference.
+The first sheet has sprites overlapping neighboring equal-width cells. Fix this. ONE horizontal row of EXACTLY 8 frames, no text, genuine transparent background.
+CRITICAL LAYOUT: divide the entire canvas into EXACTLY EIGHT equal vertical columns. Put one complete sprite at the CENTER OF EACH COLUMN with a clear transparent GUTTER on BOTH sides inside that column. Uniformly REDUCE all eight characters to 70 percent of their current scale so that each full sprite AND extended arm/shield fits COMPLETELY INSIDE its own column. There must be visible empty gaps between ALL 8 sprites. No overlap. First character must be padded from left edge and eighth character padded from right edge. Do not spread arms across cell boundaries.
+Use same scale for all8. Identical local feet positions and baseline for all8; neither feet nor character root move. No camera motion. Align every sole to the same horizontal baseline. Align the character root to exactly the same relative position within each equal-width cell. Preserve all original face, armor, colors, pixel clusters, proportions, shield design and lighting. Frame8 exactly matches frame1.
+8 distinct chronological poses LEFT TO RIGHT: idle, slight lean/wind-up, local hand charge, open-hand RIGHTWARD release, same release pose with peak small cyan palm glow, retract/follow-through, recovery, idle. Do not alter character design. The full reference hexagonal shield stays mounted on arm, don't replace it. No gun, punch, beam or traveling projectile. Cyan release glow stays tiny at the hand.
+Output one transparent horizontal sheet ideally 4096x512 with 8 equal 512x512 cells. If the canvas must be another shape, preserve the EIGHT EQUAL COLUMNS and shrink ALL sprites uniformly to fit within those columns with generous margins, leaving extra transparent space above and below. Canvas pixel width must be divisible by EIGHT. No text, cell dividers, numbers, background, floor, environment, watermark or extra sprites. EXACTLY 8 complete non-overlapping full-body sprites. Same crisp authentic pixel art, no blur or smooth resampling.

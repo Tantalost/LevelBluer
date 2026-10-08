@@ -31,6 +31,7 @@ func _run() -> void:
 	_check_hidden_bot()
 	_check_damage_cases()
 	_check_ko()
+	_check_first_correct_race()
 	_check_match_continues_until_ko()
 	_check_live_bank()
 	_check_short_and_empty_decks()
@@ -105,10 +106,16 @@ func play_round(battle: Battle, player_pick: Variant, player_offset: int, bot_co
 	check(opened >= 0, "question opened")
 	if opened < 0:
 		return
-	if player_offset >= 0:
-		var accepted: bool = battle.submit_player(player_pick, opened + player_offset)
-		check(accepted, "in-time answer accepted")
-	battle.tick(battle.round_ends_at)
+	var player_at: int = opened + player_offset
+	var bot_at: int = opened + bot_delay
+	if player_offset >= 0 and player_at <= bot_at:
+		check(battle.submit_player(player_pick, player_at), "in-time answer accepted")
+	if battle.phase == Battle.Phase.QUESTION and bot_at < battle.round_ends_at:
+		battle.tick(bot_at)
+	if player_offset >= 0 and player_at > bot_at and battle.phase == Battle.Phase.QUESTION:
+		check(battle.submit_player(player_pick, player_at), "in-time answer accepted")
+	if battle.phase == Battle.Phase.QUESTION:
+		battle.tick(battle.round_ends_at)
 	check(battle.phase == Battle.Phase.ROUND_RESULT, "round resolved")
 
 
@@ -173,11 +180,12 @@ func _check_guards() -> void:
 	var battle: Battle = fresh(scripted(false, 2000))
 	check(not battle.submit_player(1, 0), "countdown rejects an answer")
 	var opened: int = open_question(battle)
-	check(battle.submit_player(1, opened + 100), "first answer locks")
+	check(battle.submit_player(0, opened + 100), "first answer locks")
 	check(not battle.submit_player(0, opened + 200), "second answer is rejected")
+	check(battle.phase == Battle.Phase.QUESTION, "a wrong answer leaves the round open")
 	check(battle.player_response_ms() == 100, "the first response time is kept")
-	check(not battle.side_correct(false), "bot result stays hidden before resolution")
-	var late: Battle = fresh(scripted(true, 2000))
+	check(not battle.side_correct(false) and battle.bot_response_ms() == -1, "bot result stays hidden before resolution")
+	var late: Battle = fresh(scripted(true, 20000))
 	var late_opened: int = open_question(late)
 	check(not late.submit_player(1, late.round_ends_at), "the deadline itself is late")
 	check(not late.player_locked(), "a late answer does not lock")
@@ -187,14 +195,16 @@ func _check_guards() -> void:
 	var once: Battle = fresh(scripted(false, 1000))
 	once.phase_changed.connect(func(next_phase: int) -> void: phases.append(next_phase))
 	var start: int = open_question(once)
-	check(once.submit_player(1, start + 500), "player answers before the bot")
 	var hp_before: int = once.bot_hp
-	once.tick(once.round_ends_at)
-	check(once.phase == Battle.Phase.ROUND_RESULT, "deadline resolves the round")
+	check(once.submit_player(1, start + 500), "player answers before the bot")
+	check(once.phase == Battle.Phase.ROUND_RESULT, "the first correct answer resolves immediately")
 	check(once.bot_hp == hp_before - Battle.DAMAGE_HIT, "correct versus wrong deals 20 once")
 	check(once.player_hp == Battle.MAX_HP, "the correct player takes no damage")
 	check(once.rounds_played == 1, "the round counts once")
 	check(_count(phases, Battle.Phase.RESOLVING) == 1, "resolve emits once")
+	check(not once.submit_player(0, start + 600), "a submission after resolution is rejected")
+	once.tick(start + 1000)
+	check(once.phase == Battle.Phase.ROUND_RESULT and once.bot_hp == hp_before - Battle.DAMAGE_HIT, "a delayed bot answer is ignored after the player wins")
 	once.tick(once.result_ends_at - 1)
 	check(once.bot_hp == hp_before - Battle.DAMAGE_HIT, "a second tick does not resolve again")
 	check(once.rounds_played == 1, "a second tick does not count another round")
@@ -244,31 +254,36 @@ func _check_damage_cases() -> void:
 
 	var correct_timeout: Battle = fresh(scripted(false, 20000))
 	play_round(correct_timeout, 1, 1000, false, 20000)
-	check(correct_timeout.bot_hp == 80 and correct_timeout.player_hp == 100, "correct versus timeout deals 20 to the bot")
-	check(correct_timeout.side_timed_out(false) and not correct_timeout.side_timed_out(true), "only the bot timed out")
+	check(correct_timeout.bot_hp == 80 and correct_timeout.player_hp == 100, "the first correct answer deals 20 before a late bot")
+	check(not correct_timeout.side_timed_out(false) and not correct_timeout.side_timed_out(true), "a won round does not time the opponent out")
 
 	var wrong_correct: Battle = fresh(scripted(true, 2000))
-	play_round(wrong_correct, 0, 1000, true, 2000)
-	check(wrong_correct.player_hp == 80 and wrong_correct.bot_hp == 100, "wrong versus correct deals 20 to the player")
+	var wrong_opened: int = open_question(wrong_correct)
+	check(wrong_correct.submit_player(0, wrong_opened + 1000), "a wrong answer is accepted")
+	check(wrong_correct.phase == Battle.Phase.QUESTION, "the rival can still answer after a wrong lock")
+	check(not wrong_correct.submit_player(1, wrong_opened + 1200), "the wrong player cannot answer twice")
+	wrong_correct.tick(wrong_opened + 2000)
+	check(wrong_correct.phase == Battle.Phase.ROUND_RESULT, "the rival's correct answer resolves the round")
+	check(wrong_correct.player_hp == 80 and wrong_correct.bot_hp == 100, "the first correct rival deals 20")
 
 	var timeout_correct: Battle = fresh(scripted(true, 2000))
 	play_round(timeout_correct, null, -1, true, 2000)
-	check(timeout_correct.player_hp == 80 and timeout_correct.bot_hp == 100, "timeout versus correct deals 20 to the player")
-	check(timeout_correct.side_timed_out(true), "the player timed out")
-	check(timeout_correct.player_correct == 0 and timeout_correct.average_correct_ms(true) < 0.0, "a timeout is not a correct-answer time")
+	check(timeout_correct.player_hp == 80 and timeout_correct.bot_hp == 100, "a correct bot wins before the deadline")
+	check(not timeout_correct.side_timed_out(true), "the player is locked out by the rival's correct answer")
+	check(timeout_correct.player_correct == 0 and timeout_correct.average_correct_ms(true) < 0.0, "an unanswered player has no correct-answer time")
 	check(timeout_correct.bot_correct == 1 and timeout_correct.average_correct_ms(false) == 2000.0, "the bot average is its correct response")
 
-	var player_faster: Battle = fresh(scripted(true, 3000))
-	play_round(player_faster, 1, 1000, true, 3000)
-	check(player_faster.player_hp == 100 and player_faster.bot_hp == 90, "the faster correct player deals 10")
+	var player_first: Battle = fresh(scripted(true, 3000))
+	play_round(player_first, 1, 1000, true, 3000)
+	check(player_first.player_hp == 100 and player_first.bot_hp == 80, "the first correct player deals 20")
+	check(not player_first.side_correct(false), "the later bot answer is not recorded")
 
-	var bot_faster: Battle = fresh(scripted(true, 1500))
-	play_round(bot_faster, 1, 4000, true, 1500)
-	check(bot_faster.player_hp == 90 and bot_faster.bot_hp == 100, "the faster correct bot deals 10")
-
-	var tied: Battle = fresh(scripted(true, 2000))
-	play_round(tied, 1, 2000, true, 2000)
-	check(tied.player_hp == 100 and tied.bot_hp == 100, "equal correct times deal no damage")
+	var bot_first: Battle = fresh(scripted(true, 1500))
+	var bot_opened: int = open_question(bot_first)
+	bot_first.tick(bot_opened + 1500)
+	check(bot_first.phase == Battle.Phase.ROUND_RESULT, "the bot's correct answer resolves immediately")
+	check(not bot_first.submit_player(1, bot_opened + 4000), "the player cannot answer after the rival wins")
+	check(bot_first.player_hp == 80 and bot_first.bot_hp == 100, "the first correct bot deals 20")
 
 	var both_wrong: Battle = fresh(scripted(false, 2000))
 	play_round(both_wrong, 0, 1000, false, 2000)
@@ -294,6 +309,40 @@ func _check_ko() -> void:
 	check(battle.rounds_played == 5, "KO reports the rounds actually played")
 	battle.tick(battle.result_ends_at + 100000)
 	check(battle.player_hp == 0 and battle.rounds_played == 5 and battle.phase == Battle.Phase.FINISHED, "a finished KO cannot resolve again")
+
+
+func _check_first_correct_race() -> void:
+	var player_win: Battle = fresh(scripted(true, 3000))
+	var opened: int = open_question(player_win)
+	var before: int = player_win.bot_hp
+	check(player_win.submit_player(1, opened + 400), "the player's correct answer is accepted")
+	check(player_win.phase == Battle.Phase.ROUND_RESULT, "player correct first resolves immediately")
+	check(player_win.damage_to(false) == Battle.DAMAGE_HIT and player_win.bot_hp == before - Battle.DAMAGE_HIT, "the round winner deals 20")
+	check(not player_win.side_correct(false), "the opponent's answer is not revealed after the player wins")
+	check(not player_win.submit_player(0, opened + 500), "late submission rejected after correct answer resolved round")
+	player_win.tick(opened + 3000)
+	check(player_win.rounds_played == 1 and player_win.bot_hp == before - Battle.DAMAGE_HIT, "delayed bot answer ignored after player wins")
+	var rival_win: Battle = fresh(scripted(true, 1200))
+	var rival_opened: int = open_question(rival_win)
+	rival_win.tick(rival_opened + 1200)
+	check(rival_win.phase == Battle.Phase.ROUND_RESULT and rival_win.player_hp == 80, "bot correct first resolves immediately")
+	check(not rival_win.submit_player(1, rival_opened + 1300), "player input is rejected after the rival answers first")
+	var missed: Battle = fresh(scripted(true, 2500))
+	var missed_opened: int = open_question(missed)
+	check(missed.submit_player(0, missed_opened + 300), "a wrong answer locks that player")
+	check(missed.phase == Battle.Phase.QUESTION and missed.player_hp == 100 and missed.bot_hp == 100, "wrong answer does not resolve round")
+	check(not missed.side_correct(true) and missed.bot_response_ms() == -1, "a wrong lock does not reveal the rival")
+	check(not missed.submit_player(1, missed_opened + 400), "wrong player cannot answer twice")
+	check(missed.phase == Battle.Phase.QUESTION, "opponent can still answer after other player is wrong")
+	missed.tick(missed_opened + 2500)
+	check(missed.phase == Battle.Phase.ROUND_RESULT and missed.player_hp == 80, "the other player can still win after a wrong lock")
+	var quiet: Battle = fresh(scripted(false, 20000))
+	var quiet_opened: int = open_question(quiet)
+	quiet.tick(quiet.round_ends_at)
+	check(quiet.phase == Battle.Phase.ROUND_RESULT, "a deadline with no correct answer resolves")
+	check(quiet.player_hp == 100 and quiet.bot_hp == 100 and quiet.damage_to(true) == 0 and quiet.damage_to(false) == 0, "timeout with no correct answer = no damage")
+	check(quiet.side_timed_out(true) and quiet.side_timed_out(false), "both unanswered sides time out")
+	check(quiet_opened >= 0, "the timeout fixture opened a question")
 
 
 func _check_match_continues_until_ko() -> void:
@@ -561,7 +610,18 @@ func _assert_pressed_choice(screen: Control, battle: Battle, want_correct: bool)
 	check(selected >= 0, "the fixture has the requested grade")
 	var picked: Variant = (choices[selected] as Dictionary).get("value")
 	(buttons[selected] as Button).pressed.emit()
-	battle.tick(battle.bot_answers_at)
+	if not want_correct:
+		var waiting: Label = screen.find_child("BattleStatus", true, false) as Label
+		check(waiting != null and waiting.text == "INCORRECT — WAITING FOR RIVAL", "a wrong press waits without revealing the answer")
+		check((buttons[selected] as Button).disabled, "a wrong press locks the answer buttons")
+	if battle.phase == Battle.Phase.QUESTION:
+		battle.tick(mini(battle.bot_answers_at, battle.round_ends_at))
+		if battle.phase == Battle.Phase.QUESTION:
+			battle.tick(battle.round_ends_at)
+	check(battle.phase == Battle.Phase.ROUND_RESULT, "the pressed option resolves when the race ends")
+	if want_correct:
+		var headline: Label = screen.get("_result_title") as Label
+		check(headline != null and headline.text == "CORRECT — ATTACK!", "the first correct press attacks immediately")
 	check(battle.player_pick() == picked, "the pressed button submits its own graded value")
 	check(battle.side_correct(true) == Quiz.grade(battle.current_question(), picked), "the submitted value matches Quiz.grade")
 	check(battle.side_correct(true) == want_correct, "the pressed option has the expected grade")

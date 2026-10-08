@@ -1,0 +1,20 @@
+Generation mode: built-in image_gen
+Status: Draft only. Width is not divisible by six; final shield reaches canvas edge. Requires production alignment and padding.
+
+Production pixel-art animation sprite sheet: Cyber Defender — Battle Idle.
+The attached image is the EXACT character reference. Preserve this very same face, hairstyle, navy armor design and every plate, electric-blue/cyan trim, gloves, boots, belt, shield geometry and circuitry, proportions, outline thickness, pixel-cluster density and discrete shading. Do not redesign. Front three-quarter view facing screen right identical to reference.
+
+OUTPUT EXACTLY SIX FRAMES IN ONE HORIZONTAL ROW, chronological left to right, not multiple rows. PNG genuine transparency. Layout designed for six equal-width Godot cells. Canvas requested 2172x724 pixels (3:1), divided into SIX EQUAL PORTRAIT CELLS of 362x724. Cell boundaries at x=0,362,724,1086,1448,1810,2172. No visible cell lines or labels. Canvas width must be divisible by six.
+Inside EACH cell: same character root at local x=181, same feet at exactly the same local x/y coordinates, soles baseline local y=550, complete character approximately 390 pixels tall, top of hair near y=160. Entire character INCLUDING shield and glow confined to local x=48..314. Generous transparent padding on all sides. Large empty gutters between adjacent sprites. Do not enlarge sprites to fill the sheet. Absolutely no touching, overlap or cropping of adjacent frames. Fixed camera, fixed scale, fixed lighting and local center all six frames.
+
+Subtle restrained battle-idle loop:
+1. Original neutral ready stance.
+2. Tiny breathing lift in chest/shoulders only, no foot change.
+3. Very small shoulder/torso shift, same planted legs and head identity.
+4. Small localized shield-energy brightness pulse, no shield shape or size change.
+5. Torso/shoulders return gently, shield brightness settling.
+6. EXACT SAME POSE, PIXELS, position and lighting as FRAME 1 for seamless looping.
+Minimal torso displacement, at most 1-2 native sprite pixels. No jumping, bobbing, moving feet, leg animation, arm gestures, attack or projectiles. Legs and boots must be identical across all six frames; only the small breathing motion and shield light cycle animate.
+
+True deliberate pixel art matched exactly to reference: crisp square pixels, clean stepped edges, controlled flat shading clusters, limited navy/blue/cyan palette. No 3D rendering, gradients, painterly blur, anti-aliased soft outlines, motion blur or fake pixelation filter.
+No text, numbers, logo, watermark, character labels, UI, environment, floor, ground shadows, extra characters or cropping. The repeated figures are ONLY six animation frames of this one character. One clean horizontal six-frame sprite sheet only.

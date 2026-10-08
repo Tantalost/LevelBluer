@@ -13,7 +13,6 @@ const ROUND_MS: int = 10000
 const COUNTDOWN_MS: int = 3000
 const RESULT_MS: int = 2500
 const DAMAGE_HIT: int = 20
-const DAMAGE_SPEED: int = 10
 const BOT_ACCURACY: float = 0.65
 const BOT_DELAY_MIN_MS: int = 1500
 const BOT_DELAY_MAX_MS: int = 8000
@@ -174,11 +173,17 @@ func submit_player(pick: Variant, now_ms: int) -> bool:
 		return false
 	if now_ms >= round_ends_at:
 		return false
+	if not _current.bot.locked and _bot_due(now_ms):
+		_lock_bot(bot_answers_at)
+		if _current.resolved or phase != Phase.QUESTION:
+			return false
 	_current.player.locked = true
 	_current.player.timed_out = false
 	_current.player.pick = pick
 	_current.player.response_ms = now_ms - _current.started_at
 	_current.player.correct = Quiz.grade(_current.question, pick)
+	if _current.player.correct or _current.bot.locked:
+		_resolve(now_ms)
 	return true
 
 
@@ -314,27 +319,28 @@ func _tick_question(now_ms: int) -> void:
 	if phase != Phase.QUESTION or _current == null or _current.resolved:
 		return
 	if not _current.bot.locked and _bot_due(now_ms):
-		_lock_bot()
+		_lock_bot(now_ms)
+	if _current == null or _current.resolved or phase != Phase.QUESTION:
+		return
 	if now_ms >= round_ends_at:
 		_timeout_unlocked()
-	if _current.resolved:
-		return
-	if now_ms >= round_ends_at or (_current.player.locked and _current.bot.locked):
-		_resolve(now_ms)
+		_resolve(round_ends_at)
 
 
 func _bot_due(now_ms: int) -> bool:
 	return bot_answers_at < round_ends_at and now_ms >= bot_answers_at
 
 
-func _lock_bot() -> void:
-	if _current == null or _current.bot.locked:
+func _lock_bot(now_ms: int) -> void:
+	if _current == null or _current.resolved or _current.bot.locked:
 		return
 	_current.bot.locked = true
 	_current.bot.timed_out = false
 	_current.bot.pick = _scheduled_pick
 	_current.bot.response_ms = _bot_delay_ms
 	_current.bot.correct = Quiz.grade(_current.question, _scheduled_pick)
+	if _current.bot.correct or _current.player.locked:
+		_resolve(now_ms)
 
 
 func _timeout_unlocked() -> void:
@@ -433,17 +439,9 @@ func _refill_deck() -> bool:
 
 
 func _damage_for(round_state: RoundState) -> Vector2i:
-	var player_ok: bool = round_state.player.correct
-	var bot_ok: bool = round_state.bot.correct
-	if player_ok and bot_ok:
-		if round_state.player.response_ms < round_state.bot.response_ms:
-			return Vector2i(0, DAMAGE_SPEED)
-		if round_state.bot.response_ms < round_state.player.response_ms:
-			return Vector2i(DAMAGE_SPEED, 0)
-		return Vector2i.ZERO
-	if player_ok and not bot_ok:
+	if round_state.player.correct:
 		return Vector2i(0, DAMAGE_HIT)
-	if bot_ok and not player_ok:
+	if round_state.bot.correct:
 		return Vector2i(DAMAGE_HIT, 0)
 	return Vector2i.ZERO
 
