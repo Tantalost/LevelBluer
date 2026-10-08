@@ -408,6 +408,7 @@ func _setup_mode_workspace() -> void:
 	add_child(_pvp_hub)
 	_pvp_hub.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_pvp_hub.switch_requested.connect(_open_mode_modal)
+	_pvp_hub.battle_requested.connect(func() -> void: Router.push(&"pvp_battle"))
 	_pvp_hub.hide()
 	# Keep the selector above either OS without global z-indices leaking through Router.
 	move_child(_mode_modal, get_child_count() - 1)

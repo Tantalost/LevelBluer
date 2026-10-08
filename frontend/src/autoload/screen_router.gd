@@ -39,6 +39,7 @@ const SCREENS: Dictionary = {
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",
 	&"profile":      "res://src/ui/screens/profile/profile_screen.tscn",
 	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
+	&"pvp_battle":   "res://src/ui/screens/pvp/pvp_battle_screen.tscn",
 	&"victory":      "res://src/ui/screens/victory/victory_screen.tscn",
 	&"certificate":  "res://src/ui/screens/intel/certificate_screen.tscn",
 }
@@ -435,6 +436,8 @@ func request_back() -> void:
 		return
 
 	var current: BaseScreen = _stack.back()
+	if current.consume_back():
+		return
 	if not current.can_go_back():
 		return
 
