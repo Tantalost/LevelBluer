@@ -24,12 +24,16 @@ class FakeQuery:
     def __init__(self, store, table):
         self._store = store
         self._table = table
+        self._pending_upsert = None
+        self._on_conflict = ""
 
     def update(self, payload):
         self._store.updates.setdefault(self._table, []).append(payload)
         return self
 
-    def upsert(self, payload):
+    def upsert(self, payload, *, on_conflict=""):
+        self._pending_upsert = payload
+        self._on_conflict = on_conflict
         self._store.upserts.setdefault(self._table, []).append(payload)
         return self
 
@@ -49,6 +53,15 @@ class FakeQuery:
             raise RuntimeError(f"supabase {self._table} failed: secret-token")
         if (self._table, n) in self._store.fail_nth:
             raise RuntimeError(f"supabase {self._table} #{n} failed: secret-token")
+        if self._table == "bkt_records" and self._pending_upsert is not None:
+            rows = self._pending_upsert
+            if isinstance(rows, dict):
+                rows = [rows]
+            for row in rows:
+                key = (row["student_id"], row["topic"])
+                if key in self._store.bkt_rows and self._on_conflict != "student_id,topic":
+                    raise RuntimeError("duplicate student/topic; default primary key is id")
+                self._store.bkt_rows[key] = dict(row)
         return _Result(data=[{"payload": {}}])
 
 
@@ -56,6 +69,7 @@ class FakeSupabase:
     def __init__(self, fail=None, fail_nth=None):
         self.fail = set(fail or ())
         self.fail_nth = set(fail_nth or ())
+        self.bkt_rows = {}
         self.executes: list[str] = []
         self.updates: dict[str, list] = {}
         self.upserts: dict[str, list] = {}
@@ -85,6 +99,34 @@ class ProgressSyncFailureTest(unittest.TestCase):
     def test_success_returns_ok(self):
         result = self._run(FakeSupabase())
         self.assertTrue(result.ok)
+
+    def test_repeated_sync_updates_existing_mastery_without_duplicates(self):
+        fake = FakeSupabase()
+        self.assertTrue(self._run(fake).ok)
+        fake.bkt_rows[("stu-1", "Phishing")]["probability_known"] = 0.1
+        self.assertTrue(self._run(fake).ok)
+        self.assertEqual(len(fake.bkt_rows), 2)
+        self.assertEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.42)
+
+    def test_pretest_updates_mastery_previously_saved_by_gameplay(self):
+        from app.services.pretest_service import _upsert_bkt_records
+
+        fake = FakeSupabase()
+        self._run(fake)
+        with patch("app.services.pretest_service.supabase", fake):
+            _upsert_bkt_records("stu-1", {"Phishing": 0.7})
+        self.assertEqual(len(fake.bkt_rows), 2)
+        self.assertEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.7)
+
+    def test_assessment_updates_mastery_previously_saved_by_gameplay(self):
+        from app.services.assess_service import _persist_topic_pl
+
+        fake = FakeSupabase()
+        self._run(fake)
+        with patch("app.services.assess_service.supabase", fake):
+            _persist_topic_pl("stu-1", "Phishing", 0.8)
+        self.assertEqual(len(fake.bkt_rows), 2)
+        self.assertEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.8)
 
     def test_save_blob_write_fails_raises_non_2xx(self):
         with self.assertRaises(HTTPException) as ctx:

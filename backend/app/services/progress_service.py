@@ -6,6 +6,8 @@ from app.services.auth_service import _supabase_error, fetch_student_by_id
 from app.services.bkt_service import MASTERY_COLUMNS, clamp_pl
 from app.supabase_client import supabase
 
+from app.services.learning_records import record_learning_events
+
 logger = logging.getLogger(__name__)
 
 # Gameplay P(L) is calculated in Godot and stored as a snapshot on sync.
@@ -32,6 +34,10 @@ STUDENT_SYNC_KEYS = (
 
 def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> ProgressSyncResponse:
     student = fetch_student_by_id(student_id)
+    if str(student.get("status", "")).lower() in ("inactive", "archived"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="This student account is inactive")
+    acknowledged = record_learning_events(student_id, payload.learning_events)
     current_stage = int(student.get("highest_unlocked_stage") or 1)
     incoming_stage = max(1, int(payload.mock_max_stage_cleared))
     dumped = payload.model_dump()
@@ -59,9 +65,9 @@ def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> Prog
     )
 
     _upsert_game_bkt(student_id, payload.mastery_matrix)
-    blob = {k: v for k, v in dumped.items() if k != "student"}
+    blob = {k: v for k, v in dumped.items() if k not in ("student", "learning_events")}
     _upsert_save_blob(student_id, blob)
-    return ProgressSyncResponse()
+    return ProgressSyncResponse(acknowledged_events=acknowledged)
 
 
 def fetch_student_progress(student_id: str) -> dict | None:
@@ -129,7 +135,7 @@ def _upsert_game_bkt(student_id: str, matrix: dict[str, float]) -> None:
     _required_write(
         student_id,
         "bkt_records.upsert",
-        lambda: supabase.table("bkt_records").upsert(rows).execute(),
+        lambda: supabase.table("bkt_records").upsert(rows, on_conflict="student_id,topic").execute(),
     )
     if not student_mastery:
         return

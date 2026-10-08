@@ -18,6 +18,7 @@ var _resync_queued: bool = false
 var _fetch_in_flight: bool = false
 var _last_fetch_ok: bool = false
 var _retry_left: float = 0.0
+var _learning_session: String = ""
 
 
 func _ready() -> void:
@@ -32,13 +33,15 @@ func _ready() -> void:
 	_http_fetch.use_threads = true
 	add_child(_http_fetch)
 	_http_fetch.request_completed.connect(_on_fetch_completed)
+	_learning_session = AuthService.participant_code()
+	AuthService.session_changed.connect(_learning_session_changed)
 	set_process(true)
 
 
 func _process(delta: float) -> void:
 	if not AuthService.is_signed_in():
 		return
-	if not StudentDatabase.has_pending_sync(AuthService.participant_code()):
+	if not StudentDatabase.has_pending_sync(AuthService.participant_code()) and PlayerManager.learning_events.is_empty():
 		return
 	_retry_left -= delta
 	if _retry_left > 0.0:
@@ -62,7 +65,7 @@ func flush() -> void:
 	await get_tree().process_frame
 
 
-func save_game() -> void:
+func save_game(sync_cloud: bool = true) -> void:
 	var data: Dictionary = PlayerManager.get_save_data()
 	var json_string: String = JSON.stringify(data)
 	var path: String = _resolve_save_path()
@@ -72,6 +75,8 @@ func save_game() -> void:
 		return
 	file.store_string(json_string)
 	file.close()
+	if not sync_cloud:
+		return
 	print("[SaveService] Game saved successfully. path=", path)
 	if AuthService.is_signed_in():
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
@@ -107,7 +112,7 @@ func load_game() -> void:
 
 
 func fetch_cloud_save() -> void:
-	if StudentDatabase.has_pending_sync(AuthService.participant_code()):
+	if StudentDatabase.has_pending_sync(AuthService.participant_code()) or not PlayerManager.learning_events.is_empty():
 		push_pending_sync()
 		_finish_fetch(false)
 		return
@@ -149,6 +154,9 @@ func _on_fetch_completed(
 		_finish_fetch(false)
 		return
 
+	if StudentDatabase.has_pending_sync(AuthService.participant_code()) or not PlayerManager.learning_events.is_empty():
+		_finish_fetch(false)
+		return
 	var json_string: String = body.get_string_from_utf8()
 	if json_string.strip_edges().is_empty() or json_string.strip_edges() == "null":
 		print("[SaveService] No cloud save exists yet. Loading local fallback.")
@@ -222,6 +230,7 @@ func _sync_to_cloud() -> void:
 		return
 
 	var data: Dictionary = PlayerManager.get_save_data()
+	data["learning_events"] = PlayerManager.learning_events.slice(0, 100)
 	data["student"] = AuthService.cloud_sync_payload()
 	data["module_pretests"] = AuthService.completed_module_pretest_ids()
 	var json_string: String = JSON.stringify(data)
@@ -244,7 +253,7 @@ func _on_sync_completed(
 	result: int,
 	response_code: int,
 	_headers: PackedStringArray,
-	_body: PackedByteArray,
+	body: PackedByteArray,
 ) -> void:
 	_sync_in_flight = false
 	var ok: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
@@ -253,8 +262,17 @@ func _on_sync_completed(
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
 		_retry_left = RETRY_SEC
 	elif ok:
+		var response: Variant = JSON.parse_string(body.get_string_from_utf8())
+		if response is Dictionary and response.get("acknowledged_events", []) is Array:
+			PlayerManager.acknowledge_learning_events(response.get("acknowledged_events", []))
+			save_game(false)
+		# Keep retrying until every queued result is acknowledged. Old APIs cannot
+		# silently discard evidence; offline queues survive app restarts.
+		if not PlayerManager.learning_events.is_empty():
+			StudentDatabase.mark_needs_sync(AuthService.participant_code())
+			ok = false
 		print("[SaveService] Cloud sync successful.")
-		if not _resync_queued:
+		if not _resync_queued and ok:
 			StudentDatabase.mark_synced(AuthService.participant_code())
 		_retry_left = RETRY_SEC
 	else:
@@ -280,3 +298,15 @@ func _resolve_save_path() -> String:
 		if not safe_id.is_empty():
 			user_id = safe_id
 	return "user://player_save_" + user_id + ".json"
+
+
+func _learning_session_changed(_signed_in: bool) -> void:
+	var current: String = AuthService.participant_code() if AuthService.is_signed_in() else ""
+	if current == _learning_session:
+		return
+	_learning_session = current
+	_http_request.cancel_request()
+	_http_fetch.cancel_request()
+	_sync_in_flight = false
+	_fetch_in_flight = false
+	_resync_queued = false

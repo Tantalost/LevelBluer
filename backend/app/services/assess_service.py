@@ -82,7 +82,8 @@ def _persist_topic_pl(student_id: str, topic: str, probability_known: float) -> 
                 "student_id": student_id,
                 "topic": topic,
                 "probability_known": probability_known,
-            }
+            },
+            on_conflict="student_id,topic",
         ).execute()
     except Exception as exc:
         raise _supabase_error(exc) from exc

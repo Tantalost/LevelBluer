@@ -27,6 +27,8 @@ const DECISION_BREACH_ENEMY_HP_MULTIPLIER: float = 0.60
 
 @export var enemy_scene: PackedScene
 
+var _learning_attempt: String = ""
+var _learning_owner: String = ""
 var current_phase: GamePhase = GamePhase.PRE_MATCH
 var current_gold: int = 5
 var base_health: int = 5
@@ -401,6 +403,10 @@ func change_phase(new_phase: GamePhase) -> void:
 		_stop_question_timer()
 	match new_phase:
 		GamePhase.PRE_MATCH:
+			_finish_learning_attempt("abandoned")
+			if not Router.is_tutorial:
+				_learning_owner = AuthService.participant_code()
+				_learning_attempt = PlayerManager.begin_learning_attempt(_current_module_id(), Router.active_stage_index + 1)
 			_quiz_modal.visible = false
 			_set_start_controls_visible(false)
 			_end_game_modal.visible = false
@@ -436,6 +442,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			if Router.is_tutorial:
 				_finish_tutorial_defend()
 				return
+			_finish_learning_attempt("failed")
 			_defeat_started = true
 			current_phase = GamePhase.GAME_OVER
 			_wave_token += 1
@@ -478,6 +485,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			_hide_upgrade_ui()
 			var stage_id: int = Router.active_stage_index + 1
 			var module_id: String = _current_module_id()
+			_finish_learning_attempt("cleared")
 			PlayerManager.mark_stage_cleared(module_id, stage_id)
 			if _decision != null:
 				PlayerManager.clear_decision_stage_state(_decision_key())
@@ -1599,6 +1607,8 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		update_hud()
 		return
 	_quiz_modal.visible = false
+	if _is_summative() and exam_questions_asked == exam_count and exam_count == 15 and not Router.is_tutorial and not _learning_attempt.is_empty():
+		PlayerManager.record_learning_event("posttest", _current_module_id(), {"attempt_id":_learning_attempt, "instrument":"stage-exam-v1", "correct":exam_questions_correct, "answered":exam_questions_asked, "total":exam_count})
 	if _is_summative() and exam_questions_asked >= exam_count:
 		var accuracy: float = float(exam_questions_correct) / float(exam_count)
 		if accuracy < _exam_required_score():
@@ -1637,6 +1647,7 @@ func _style_start_button() -> void:
 
 
 func _exit_tree() -> void:
+	_finish_learning_attempt("abandoned")
 	Engine.time_scale = 1.0
 	var tree: SceneTree = get_tree()
 	if tree != null:
@@ -3109,3 +3120,9 @@ func _decision_clear_presentation() -> Dictionary:
 	if not next_title.is_empty():
 		data["advisory"] = "NEXT: %s" % next_title.to_upper()
 	return data
+
+
+func _finish_learning_attempt(outcome: String) -> void:
+	if not _learning_attempt.is_empty() and _learning_owner == AuthService.participant_code():
+		PlayerManager.finish_learning_attempt(_learning_attempt, _current_module_id(), Router.active_stage_index + 1, outcome)
+	_learning_attempt = ""
