@@ -109,7 +109,9 @@ func _verify_modes(screen: Control) -> void:
 	_check(not screen._mode_transitioning and not screen._power_overlay.visible, "Power-on releases input")
 	_check(completed == [&"PVP"], "Switch completes exactly once")
 	_check(screen._pvp_hub.visible and not screen.get_node("SafeAreaContainer").visible, "PvP has its own workspace")
-	_check(screen._pvp_hub._queue.disabled, "Unimplemented matchmaking cannot be started")
+	_check(not screen._pvp_hub._queue.disabled, "Local bot duel can be started")
+	_check(screen._pvp_hub._queue.text == "CHALLENGE BOT", "Hub starts a local bot duel")
+	_check(screen._pvp_hub.battle_requested.get_connections().size() == 1, "Battle request is routed once")
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
 		root.size = dimensions
 		await _settle()

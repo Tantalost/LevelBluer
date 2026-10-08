@@ -1,6 +1,7 @@
 extends Control
-## UI-only PvP destination. No simulated opponents, queue, ranks or network calls.
+## PvP destination. Phase 1 starts a local bot duel. No queue, ranks, or network calls.
 signal switch_requested
+signal battle_requested
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const RED: Color = Color("#FF5C5C")
 var _header: Label
@@ -46,14 +47,17 @@ func _ready() -> void:
 	_status = VBoxContainer.new()
 	_status.add_theme_constant_override("separation", 14)
 	add_child(_status)
-	_status.add_child(UI.label("ARENA / NOT CONNECTED", 24, RED))
-	_copy = UI.label("Your competitive workspace is ready.\nMatchmaking and battles are not available yet.", 24, Color("#B8A6AE"))
+	_status.add_child(UI.label("ARENA / LOCAL BOT", 24, RED))
+	_copy = UI.label("Challenge a local rival.\nNo ranking and no live matchmaking.", 24, Color("#B8A6AE"))
 	_status.add_child(_copy)
-	_queue = UI.button("FIND OPPONENT  /  UNAVAILABLE", Callable())
-	_queue.disabled = true
-	_queue.tooltip_text = "This milestone adds the PvP interface. Multiplayer battles are not connected yet."
-	_queue.add_theme_stylebox_override("disabled", UI.box(Color("#170C14"), Color("#69343D"), 18))
-	_queue.add_theme_color_override("font_disabled_color", Color("#BDA4AC"))
+	_queue = UI.button("CHALLENGE BOT", func() -> void: battle_requested.emit())
+	_queue.tooltip_text = "Start a local duel against a bot. No matchmaking."
+	_queue.add_theme_stylebox_override("normal", UI.box(Color("#24101A"), RED, 14))
+	_queue.add_theme_color_override("font_color", Color("#F3ECD6"))
+	_queue.add_theme_stylebox_override("hover", UI.box(RED, Color("#F3ECD6"), 14))
+	_queue.add_theme_color_override("font_hover_color", Color("#170A12"))
+	_queue.add_theme_stylebox_override("pressed", UI.box(Color("#3A1520"), Color("#F3ECD6"), 14))
+	_queue.add_theme_color_override("font_pressed_color", Color("#F3ECD6"))
 	_status.add_child(_queue)
 	_switch = UI.button("SWITCH OS", func() -> void: switch_requested.emit())
 	_switch.name = "SwitchOS"

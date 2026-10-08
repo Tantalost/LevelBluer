@@ -35,3 +35,9 @@ func on_exit() -> void:
 ## show a confirmation instead.
 func can_go_back() -> bool:
 	return true
+
+
+## Return true when this screen handles the back gesture itself.
+## The default leaves routing unchanged. The local duel uses it to confirm leaving.
+func consume_back() -> bool:
+	return false
