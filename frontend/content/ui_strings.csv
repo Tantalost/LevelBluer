@@ -80,16 +80,15 @@ MODULE_INTRO_LINE_5,You got mail,May bago kang email
 TUTORIAL_NPC_NAME,HANDLER,HANDLER
 TUTORIAL_NEXT,NEXT,SUNOD
 TUTORIAL_CHOICE_DEPLOY,DEPLOY,DEPLOY
-TUTORIAL_DASH_LINE,I'll walk you through a live match. Pick DEPLOY when you're ready.,Tutulungan kitang maunawaan ang laban. Piliin ang DEPLOY kung handa ka na.
+TUTORIAL_DASH_LINE,"Welcome! Tap DEPLOY to practice the phone, decisions and defense. Your real stages are safe.","Maligayang pagdating! I-tap ang DEPLOY para magsanay sa phone, desisyon at depensa. Ligtas ang totoong stages mo."
 TUTORIAL_INTRO_1,This floor is training. It is not Stage 1. Nothing here locks your real stages.,Pagsasanay ito. Hindi ito ang Stage 1. Walang naka-lock dito.
-TUTORIAL_INTRO_2,Every real stage has three beats. Quiz. Build. Defend.,Bawat stage ay may tatlong bahagi. Quiz. Build. Defend.
+TUTORIAL_INTRO_2,"Story missions combine investigation, decisions and defense. This is a practice drill.","May pagsisiyasat, desisyon at depensa sa story missions. Pagsasanay ito."
 TUTORIAL_PHASE_QUIZ,Quiz first. Correct answers pay gold. Misses spawn more enemies.,Quiz muna. Tama = ginto. Mali = dagdag na kaaway.
 TUTORIAL_PHASE_BUILD,Build next. Gold buys towers. You can move a tower for 1G.,Build. Ang ginto ay pambili ng tower. Pwede mo itong ilipat sa halagang 1G.
 TUTORIAL_PHASE_DEFEND,Defend last. Enemies walk the path. Hearts are your base. Empty hearts and you fail.,Defend. Dumadaan ang kaaway sa path. Hearts ang base mo. Kapag ubos, talo.
 TUTORIAL_PHASE_HOLD,That's the loop. Next we run a live quiz on this floor.,Iyan ang loop. Sunod ay live quiz dito sa floor.
 TUTORIAL_CHOICE_QUIZ,START QUIZ,SIMULAN ANG QUIZ
 TUTORIAL_Q1_RETRY,That's the trap. Pick the safe call.,Bitag iyon. Piliin ang ligtas.
-TUTORIAL_Q2_FORCE_MISS,Miss this one. Extra packets join the wave.,Palampasin ito. Dadagdag ang packet sa wave.
 TUTORIAL_QUIZ_DONE,That's quiz. Gold for hits. Extra packets for misses. Next we build.,Iyan ang quiz. Tama = ginto. Mali = dagdag na packet. Build ang susunod.
 TUTORIAL_CHOICE_BUILD,START BUILD,SIMULAN ANG BUILD
 TUTORIAL_BUILD_GO,Drag NODE onto a pad. Cap 2/2. 2G each. Move costs 1G.,I-drag ang NODE sa pad. Cap 2/2. 2G bawat isa. Lipat = 1G.
@@ -100,15 +99,41 @@ TUTORIAL_DEFEND_DONE,That's defend. Empty hearts fail a live stage. Training sti
 TUTORIAL_RESULTS,Capacity Rank 1 is yours. Open Upgrades to see the four Basic Node tracks.,Sa iyo na ang Capacity Rank 1. Buksan ang Upgrades para sa apat na track ng Basic Node.
 TUTORIAL_CHOICE_UPGRADE,OPEN UPGRADES,BUKSAN ANG UPGRADES
 TUTORIAL_UPGRADE_BUY,Tap Capacity Rank 1. Already owned. That's your first Basic Node track.,I-tap ang Capacity Rank 1. Owned na. Unang track iyan ng Basic Node.
-TUTORIAL_UPGRADE_DONE,Tracks stay with you. Fail a real stage and it locks until you train.,Mananatili ang tracks. Kapag natalo sa totoong stage, magla-lock hanggang mag-train ka.
-TUTORIAL_FAIL_LOCK,This is the lock. Intel opens it. Finish one Module 1 file.,Ito ang lock. Intel ang bumubukas. Tapusin ang isang Module 1 file.
+TUTORIAL_UPGRADE_DONE,"Research upgrades stay with you. Next, try one lesson from the Learning Journey.",Mananatili ang research upgrades mo. Subukan ang isang lesson sa Learning Journey.
+TUTORIAL_FAIL_LOCK,"Each lesson has Learn, Quiz and Simulation. Finish all three to unlock its next node.","May Learn, Quiz at Simulation ang bawat lesson. Tapusin ang tatlo para buksan ang susunod na node."
 TUTORIAL_CHOICE_LESSON,OPEN LESSON,BUKSAN ANG LESSON
-TUTORIAL_LESSON_GO,Real Module 1 file. Finish the drill. That is how a lock clears.,Totoong Module 1 file. Tapusin ang drill. Ganito nabubuksan ang lock.
-TUTORIAL_CHOICE_START_FILE,START FILE,SIMULAN ANG FILE
-TUTORIAL_LESSON_DONE,Lock cleared. Training is over. The floor is yours.,Bukas na ang lock. Tapos na ang training. Sa iyo na ang floor.
+TUTORIAL_LESSON_GO,"Try the first lesson: Learn the clues, pass its Quiz, then investigate on the practice desktop.","Subukan ang unang lesson: alamin ang clues, ipasa ang Quiz, at magsiyasat sa practice desktop."
+TUTORIAL_CHOICE_START_FILE,START LESSON,SIMULAN ANG LESSON
+TUTORIAL_LESSON_DONE,"Learn, Quiz and Simulation complete! Finish a module's lesson path to unlock its post-test. Pass that checkpoint to continue to the next module.","Tapos ang Learn, Quiz at Simulation! Tapusin ang lesson path para buksan ang post-test. Ipasa iyon para magpatuloy sa susunod na module."
 TUTORIAL_CHOICE_DASH,TO DASHBOARD,SA DASHBOARD
-TUTORIAL_DASH_DONE,Explore the floor. Deploy when you want a real stage. Have fun.,I-explore ang floor. Deploy kung gusto mo ng totoong stage. Enjoy.
-TUTORIAL_CHOICE_EXPLORE,GOT IT,OKAY
+TUTORIAL_DASH_DONE,"Tutorial complete! You practiced phone evidence, decisions, defense and a lesson. Open the Learning Journey to begin your module path. DEPLOY opens story missions when their requirements are met.","Tapos na ang tutorial! Nagsanay ka sa phone, desisyon, depensa at lesson. Buksan ang Learning Journey para simulan ang module. DEPLOY para sa story missions kapag handa na."
+TUTORIAL_CHOICE_EXPLORE,OPEN LEARNING JOURNEY,BUKSAN ANG LEARNING JOURNEY
+TUTORIAL_PRACTICE,GUIDED PRACTICE,GABAY NA PAGSASANAY
+TUTORIAL_PHONE_INTRO,"Let's practice with Alex's phone. Check a message, choose a response, then try defense. This is not a scored stage.","Magsanay gamit ang phone ni Alex. Suriin ang mensahe, pumili ng tugon, at subukan ang depensa. Walang score ito."
+TUTORIAL_PHONE_START,CHECK THE PHONE,SURIIN ANG PHONE
+TUTORIAL_PHONE_CHECK,"Use the checklist beside the phone: read Mail, inspect the sender and link, then compare Contacts. Confirm your evidence to see the choices.","Sundin ang checklist sa tabi ng phone: basahin ang Mail, tingnan ang sender at link, at ihambing sa Contacts. Kumpirmahin ang ebidensya."
+TUTORIAL_SAFE_FEEDBACK,Safe choice! You verified through a trusted route. Next is a separate defense drill so you can practice the controls.,Ligtas na tugon! Gumamit ka ng pinagkakatiwalaang paraan. Sunod ay hiwalay na pagsasanay sa depensa.
+TUTORIAL_RISKY_FEEDBACK,Risky choices keep your story HP but can trigger containment. Let's practice that defense now.,Hindi nababawasan ang story HP sa risky na tugon pero maaaring kailanganin ang containment. Subukan natin ang depensa.
+TUTORIAL_FAILED_FEEDBACK,Failed choices cost 1 story HP. At 0 HP you have one last chance; another failure restarts the stage. This practice lets you try again.,Bawas 1 story HP sa failed na tugon. Sa 0 HP ay may huling pagkakataon; ang susunod na pagkabigo ay restart ng stage. Dito ay puwede kang umulit.
+TUTORIAL_TIMER_EXPIRED,"Time ran out. In timed story decisions, waiting can count as a failed choice. No real progress was lost here.",Naubos ang oras. Sa timed na desisyon ay maaaring failed ang paghihintay. Walang totoong progress na nawala rito.
+TUTORIAL_TRY_RESPONSE,TRY ANOTHER RESPONSE,PUMILI MULI
+TUTORIAL_RETRY_CLUE,"Compare the email domain with the saved school contact. Trust that saved route, not the sender asking for your password.","Ihambing ang domain sa naka-save na school contact. Pagkatiwalaan iyon, hindi ang sender na humihingi ng password."
+TUTORIAL_PRACTICE_DEFENSE,PRACTICE DEFENSE,MAGSANAY SA DEPENSA
+TUTORIAL_DEFENSE_TITLE,DEFENSE CHECKLIST,CHECKLIST SA DEPENSA
+TUTORIAL_TILE_HINT,Empty tile → Basic Node → Place,Bakanteng tile → Basic Node → Place
+TUTORIAL_PLACE_ONE,Place your first Basic Node,Ilagay ang unang Basic Node
+TUTORIAL_PLACE_TWO,Place a second Basic Node,Ilagay ang ikalawang Basic Node
+TUTORIAL_BASIC_ONLY,Practice with Basic Node first.,Magsanay muna gamit ang Basic Node.
+TUTORIAL_BUILD_FIRST,Place both Basic Nodes before spending gold on moves or upgrades.,Ilagay muna ang dalawang Basic Node bago gumastos sa paglipat o upgrades.
+TUTORIAL_BASE_HINT,BASE HP: stop packets before they reach home. Story HP is separate.,BASE HP: pigilan ang packets bago makarating sa base. Hiwalay ang story HP.
+TUTORIAL_NO_SCORE,Practice only / no mastery score or stage rewards,Pagsasanay lamang / walang mastery score o stage rewards
+TUTORIAL_DEFENSE_DONE,DEFENSE PRACTICE COMPLETE,TAPOS ANG PAGSASANAY SA DEPENSA
+TUTORIAL_DEFENSE_SUCCESS,"You protected the base. Next, inspect your starter upgrade, then try Learn, Quiz and Simulation.","Naprotektahan mo ang base. Suriin ang starter upgrade, saka subukan ang Learn, Quiz at Simulation."
+TUTORIAL_DEFENSE_RETRY_TITLE,LET'S TRY THAT AGAIN,SUBUKAN NATIN MULI
+TUTORIAL_DEFENSE_RETRY,No stage was lost. Place nodes where their range covers the path. Restart practice and try a stronger position.,Walang stage na nawala. Ilagay ang nodes kung saan abot ang path. Ulitin ang pagsasanay sa mas magandang puwesto.
+TUTORIAL_RETRY_DEFENSE,RESTART PRACTICE,ULITIN ANG PAGSASANAY
+TUTORIAL_COMPLETE_TITLE,TUTORIAL COMPLETE,TAPOS NA ANG TUTORIAL
+TUTORIAL_TIMER_HINT,"Story decisions can have a countdown. It starts after evidence is confirmed, and Logs do not stop it. Settings can extend or disable it. Choose using the clues, not the email's pressure.","Maaaring may countdown ang desisyon. Nagsisimula ito matapos kumpirmahin ang ebidensya at hindi hihinto sa Logs. Puwede itong baguhin sa Settings. Gamitin ang clues sa pagpili."
 SETT_TITLE,SETTINGS,SETTINGS
 SETT_BACK,< BACK,< BUMALIK
 SETT_SEC_AUDIO,AUDIO,AUDIO

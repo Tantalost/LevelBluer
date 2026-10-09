@@ -545,11 +545,14 @@ func _show_explore_overlay() -> void:
 
 
 func _on_tutorial_dismissed() -> void:
+	if not PlayerManager.needs_tutorial():
+		return
 	Router.finish_tutorial()
 	if _tutorial_gate != null:
 		_tutorial_gate.visible = false
 	_lock_chrome(false)
 	%Companion.set_interaction_enabled(AuthService.has_pre_test_completed())
+	Router.push(&"lessons")
 
 
 func _lock_chrome(locked: bool) -> void:

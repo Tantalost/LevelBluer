@@ -492,6 +492,8 @@ func _on_tutorial_file_requested() -> void:
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
 		_tutorial_overlay.mouse_filter = MOUSE_FILTER_IGNORE
+	if Router.is_tutorial and Router.tutorial_beat == &"lesson":
+		_open_step(0, 0)
 
 func _on_tutorial_dashboard_requested() -> void:
 	Router.open_tutorial_dashboard()

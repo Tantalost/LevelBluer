@@ -15,6 +15,7 @@ const CallPanel = preload("res://src/gameplay/decision/decision_call_panel.gd")
 const InvestigationPanel = preload("res://src/gameplay/decision/decision_investigation_panel.gd")
 const StoryPhone = preload("res://src/gameplay/decision/story_phone.gd")
 var _phone: Control
+var minimum_text_pixels: float = 16.0
 var _phone_enabled: bool = false
 var _phone_prompt: VBoxContainer
 var _college_cast: bool = false
@@ -1170,7 +1171,7 @@ func _finish_phone_investigation() -> void:
 func _metrics() -> void:
 	_fit_school_portraits.call_deferred()
 	var factor := maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-	var font := maxi(26, ceili(16 / factor))
+	var font: int = maxi(26, ceili(minimum_text_pixels / factor))
 	var decision_height: float = 48.0 if _choice_buttons.size() > 3 else 72.0
 	var inset_x: float = minf(size.x * 0.07, 60.0)
 	var inset_y: float = minf(size.y * 0.06, 32.0)

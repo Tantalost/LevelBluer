@@ -52,6 +52,7 @@ signal quit_requested
 
 const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
 const PREVIEW_SCENE := "res://src/gameplay/preview/stage_one_preview.tscn"
+const TUTORIAL_SCENE: String = "res://src/gameplay/tutorial/tutorial_match.tscn"
 const STAGE_ONE_LIVE_SCENE := "res://src/gameplay/decision/stage_one_live.tscn"
 const ASSESSMENT_LIVE_SCENE: String = "res://src/gameplay/assessment_live.tscn"
 var active_match_context: MatchContext = MatchContext.new()
@@ -531,6 +532,8 @@ func _pop_now() -> void:
 
 
 func _context_for_stage(stage_index: int) -> MatchContext:
+	if is_tutorial:
+		return MatchContext.guided_training()
 	# Authored school/college assessments share geometric combat with story stages.
 	var stage_id: int = stage_index + 1
 	var decision_stage: bool = not is_tutorial and DecisionScenarios.is_decision_stage(active_module_id, stage_id)
@@ -541,6 +544,8 @@ func _context_for_stage(stage_index: int) -> MatchContext:
 	return context
 
 func _scene_for_context(context: MatchContext) -> String:
+	if context.tutorial:
+		return TUTORIAL_SCENE
 	if context.preview:
 		return PREVIEW_SCENE
 	if context.geometric and context.module_id in ["mod_01", "mod_02"] and context.stage_id == 10:

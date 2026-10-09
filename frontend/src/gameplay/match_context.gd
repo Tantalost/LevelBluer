@@ -2,6 +2,7 @@ class_name MatchContext
 extends RefCounted
 ## Passed before _ready. Preview code has no account-write capability.
 var preview := false
+var tutorial: bool = false
 var stage_id := 1
 var module_id := "mod_01"
 var footprint := 3
@@ -22,4 +23,10 @@ static func stage_one_live() -> MatchContext:
 	var context := MatchContext.new()
 	context.footprint = 1
 	context.geometric = true
+	return context
+
+static func guided_training() -> MatchContext:
+	var context: MatchContext = MatchContext.stage_one_preview()
+	context.preview = false
+	context.tutorial = true
 	return context

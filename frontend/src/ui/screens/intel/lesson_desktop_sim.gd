@@ -31,13 +31,19 @@ var _search: LineEdit
 var _pc_mode: bool = false
 var _pc: PanelContainer
 var _message_open: bool = false
+var _started: bool = false
+var _briefing: PanelContainer
+var _start_button: Button
 
 func setup(data: Dictionary) -> void:
 	_data = data
 	_investigation = str(data.get("simulation_id", "")) == "sender_cross_check"
 	_pc_mode = str(data.get("module_id", "")) == "mod_01" or _investigation
 	if _pc_mode:
-		_setup_pc()
+		if data.has("simulation_briefing"):
+			_show_briefing()
+		else:
+			_start_simulation()
 		return
 	add_theme_constant_override("separation", 14)
 	add_child(UI.label("TRAINING DESKTOP  /  OFFLINE SANDBOX", 14, UI.TEAL, true))
@@ -60,6 +66,56 @@ func setup(data: Dictionary) -> void:
 	_feedback = UI.label("Nothing here opens a real link, file or application.", 22, UI.MUTED)
 	add_child(_feedback)
 	_answer_effect = Feedback.mount(desktop)
+
+func _show_briefing() -> void:
+	size_flags_vertical = SIZE_EXPAND_FILL
+	var brief: Dictionary = _data.simulation_briefing
+	_briefing = UI.panel(self, Color("#0A1730"))
+	_briefing.name = "MissionBriefing"
+	_briefing.size_flags_vertical = SIZE_EXPAND_FILL
+	var layout: VBoxContainer = UI.column(_briefing, 16)
+	var content: VBoxContainer = UI.scroll_column(layout)
+	var heading: HBoxContainer = HBoxContainer.new()
+	heading.add_theme_constant_override("separation", 18)
+	content.add_child(heading)
+	var icon: IntelPixelIcon = IntelPixelIcon.new()
+	icon.kind = int(brief.icon)
+	icon.ink_override = CYAN
+	icon.custom_minimum_size = Vector2(56, 56)
+	icon.size_flags_vertical = SIZE_SHRINK_CENTER
+	icon.mouse_filter = MOUSE_FILTER_IGNORE
+	heading.add_child(icon)
+	var titles: VBoxContainer = UI.column(heading, 6)
+	titles.size_flags_horizontal = SIZE_EXPAND_FILL
+	titles.add_child(UI.label("MISSION BRIEF / %02d" % (int(_data.lesson_index) + 1), 24, CYAN))
+	titles.add_child(UI.label(str(brief.title), 34))
+	content.add_child(UI.label(str(brief.hook), 28, Color("#F3ECD6")))
+	var cards: HBoxContainer = HBoxContainer.new()
+	cards.add_theme_constant_override("separation", 18)
+	content.add_child(cards)
+	for section: String in ["mission", "why"]:
+		var panel: PanelContainer = UI.panel(cards, Color("#102040") if section == "mission" else Color("#0E2A28"))
+		panel.size_flags_horizontal = SIZE_EXPAND_FILL
+		var column: VBoxContainer = UI.column(panel, 10)
+		column.add_child(UI.label("YOUR MISSION" if section == "mission" else "WHY IT MATTERS", 26, CYAN))
+		column.add_child(UI.label(str(brief[section]), 28))
+	content.add_child(UI.label("Practice PC only. No real links, files or passwords. Take your time.", 24, UI.MUTED))
+	_start_button = UI.button("LET'S INVESTIGATE", _start_simulation, true)
+	_start_button.name = "StartSimulation"
+	_start_button.custom_minimum_size.y = 64
+	layout.add_child(_start_button) # Pinned below the scroll area on short landscape screens.
+	_start_button.grab_focus.call_deferred()
+	_readability_changed.call_deferred()
+
+func _start_simulation() -> void:
+	if _started or not _pc_mode:
+		return
+	_started = true
+	if is_instance_valid(_briefing):
+		remove_child(_briefing)
+		_briefing.queue_free() # The start button may still be emitting pressed.
+	_setup_pc()
+	_pc.shortcuts[0].grab_focus.call_deferred()
 
 func _show_window() -> void:
 	UI.clear(_window)
@@ -104,7 +160,7 @@ func _show_window() -> void:
 	actions.add_child(safe)
 
 func _act(action: String) -> void:
-	if _passed:
+	if _passed or (_pc_mode and not _started):
 		return
 	if _pc_mode and action == "open":
 		_open_app("Inbox")
@@ -339,7 +395,7 @@ func _pc_evidence() -> void:
 	_app_content.add_child(UI.button("Back to Mail", _open_app.bind("Inbox")))
 
 func _open_app(app: String) -> void:
-	if _pc_mode:
+	if _pc_mode and _started:
 		_open_pc_app(app)
 
 func _readability_changed() -> void:

@@ -251,8 +251,6 @@ func _on_tutorial_quiz_requested() -> void:
 func _tutorial_gate_copy(is_correct: bool) -> String:
 	if exam_questions_asked == 0 and not is_correct:
 		return tr("TUTORIAL_Q1_RETRY")
-	if exam_questions_asked == 1 and is_correct:
-		return tr("TUTORIAL_Q2_FORCE_MISS")
 	return ""
 
 

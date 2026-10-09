@@ -168,6 +168,23 @@ func _run() -> void:
 			check(not screen._answer_effect._active, "Phase change clears quiz feedback")
 			var sim = screen._simulation
 			if id == "mod_01":
+				check(is_instance_valid(sim._briefing) and not sim._started and sim._pc == null, "Each Module 1 simulation waits at its mission briefing")
+				check(not str(content.simulation_briefing.mission).is_empty() and not str(content.simulation_briefing.why).is_empty(), "Briefing explains the task and its purpose")
+				sim._act("open")
+				sim._act("report")
+				sim._open_app("Inbox")
+				check(not sim._opened and not sim._passed and sim._pc == null, "Briefing cannot start apps or grant completion")
+				for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+					root.size = dimensions
+					await settle()
+					check(root.get_visible_rect().encloses(sim._start_button.get_global_rect()), "Briefing start action stays visible in landscape")
+					check(sim.size.x <= screen._content.size.x + 1, "Briefing has no horizontal overflow")
+					await capture("briefing_%d_%dx%d" % [index + 1, dimensions.x, dimensions.y])
+				root.size = Vector2i(1280, 720)
+				sim._start_button.pressed.emit()
+				var first_pc: Control = sim._pc
+				sim._start_simulation()
+				check(sim._started and sim._pc == first_pc and not screen._simulation_passed, "Start is idempotent and never awards completion")
 				check(sim._pc_mode and sim._pc.home.visible and not sim._pc.window.visible, "Each Module 1 simulation starts at the desktop")
 				check(sim._pc.shortcuts.size() == 6 and sim._pc.dock.size() == 6, "Desktop and taskbar offer six icon apps")
 				await settle()
@@ -241,6 +258,9 @@ func _run() -> void:
 	check(screen._answer_effect._active, "Success remains visible after animation")
 	await capture("lessons_quiz_correct")
 	screen._on_continue()
+	await settle()
+	check(not screen._simulation._started, "Reentry shows the briefing again")
+	screen._simulation._start_button.pressed.emit()
 	await settle()
 	await capture("pc_home_desktop")
 	screen._simulation._act("open")

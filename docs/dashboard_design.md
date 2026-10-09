@@ -56,6 +56,15 @@ PvP matches and authoritative reward settlement are not connected. There is inte
 
 Validation: `res://src/tools/verify_store.gd` checks wallet isolation, legacy/malformed saves, round trips, reset, canonical prices, duplicate/insufficient purchases, native card/tab interaction, confirmation/cancellation, stale quotes, owned states, and desktop and landscape-phone layouts. Its off-tree wallet probe overrides persistence so tests never write purchases or balances to the player's save. Use `--render` to capture previews under `.godot/store_*.png`.
 
+### Guided tutorial refresh
+
+- Deploy now routes tutorial sessions to `tutorial_match.tscn`, a disposable extension of the shared geometric combat controller. `MatchContext.tutorial` selects this scene explicitly; persistent/account bonuses are disabled. Live story and assessment routing are unchanged.
+- The current story phone teaches unlock, Mail, sender/link inspection and Contacts through its existing side checklist. Confirming all evidence enables three real choices; only then does the practice countdown start. Extended/off timer settings are respected. Safe responses are accepted, risky responses retain HP, and failed/expired responses demonstrate HP loss with a retry (never a real-stage penalty).
+- A separate defense drill requires two actual Basic Node placements, then Start Defense. It uses current tile selection, loadout, placement, tower inspection, move and upgrade controls. Checklist progress follows placement results; choosing a tile hides the guide so it cannot cover the picker. Practice never awards mission kills, mastery, credits or stage completion.
+- Existing starter Capacity research and the first Learn → Quiz → Simulation exercise follow. Tutorial-only lesson handling does not mark a real module complete. Existing starter research/Intel grants remain unchanged.
+- The final dashboard coach is a centered **TUTORIAL COMPLETE** panel with **OPEN LEARNING JOURNEY**. Acknowledgment calls the existing completion save once, removes the tutorial gate, and opens Lessons. Module pretests and post-test gates remain enforced; tutorial completion does not bypass them.
+- English/Filipino guidance is updated. Landscape QA covers 1280×720 and 844×390. Run `verify_tutorial.gd`; `-- --render` also records ignored screenshots. The fixture never clicks persistent grant/completion actions.
+
 ### Subdued PvP workspace background
 
 The dashboard uses `ui_dashboard_pvp_workspace`, downloaded from `https://res.cloudinary.com/nfd5bhkz/image/upload/v1791168774/pvp_workspace_muted_v1.png` through AssetManager's persistent cache. The bundled PNG and import sidecar have been removed; an empty cache uses the native dark background until the first successful download. The selector keeps the existing dramatic eye artwork. The workspace is a static texture, with no blinking, pulsing, bloom, or animated lighting. Controls and OS transition behavior are unchanged. The independent asset ID prevents a selector download from replacing the quieter dashboard image. Tests cover the exact URL, missing-art fallback, and independent refresh.
