@@ -612,6 +612,7 @@ func _show_line() -> void:
 func _animate_notice(generation: int) -> void:
 	if generation != _mail_generation or _mail.is_empty():
 		return
+	AudioManager.play_sfx("ui_notification")
 	ScreenShake.cancel(_background)
 	var settings: Node = get_node_or_null("/root/SettingsService")
 	if settings != null and bool(settings.get("reduced_motion")):

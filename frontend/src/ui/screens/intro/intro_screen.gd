@@ -1,5 +1,5 @@
 extends BaseScreen
-## Original title card, preceded by a separate short intro animation.
+## Original title card, preceded by a player-paced academic disclaimer.
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 

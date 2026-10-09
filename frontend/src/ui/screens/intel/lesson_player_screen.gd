@@ -415,6 +415,7 @@ func _check_quiz() -> void:
 	var ok := _picks.size() == correct.size()
 	for index in correct:
 		ok = ok and index in _picks
+	AudioManager.play_sfx("ui_success" if ok else "ui_error")
 	if not ok:
 		_status_scroll.show()
 		_status_label.text = "Not quite. Re-read the case and try again. You must identify every correct option." if bool(_data.multi) else "Not quite. Verify the request rather than trusting a name or deadline. Try again."
@@ -432,6 +433,7 @@ func _check_quiz() -> void:
 func _on_simulation_passed() -> void:
 	if _phase != Phase.SIMULATION or not _quiz_passed:
 		return
+	AudioManager.play_sfx("ui_success")
 	_simulation_passed = true
 	_submit_button.disabled = false
 	_submit_button.text = "VIEW RESULT  >"

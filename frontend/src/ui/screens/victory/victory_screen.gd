@@ -51,6 +51,7 @@ func _ready() -> void:
 
 func on_enter(args: Dictionary) -> void:
 	_won = bool(args.get("won", true))
+	AudioManager.play_sfx("ui_success" if _won else "ui_error")
 	_materials_gained = maxi(0, int(args.get("credits", args.get("materials", args.get("gold", 0)))))
 	_weak_skill = str(args.get("weak_skill", ""))
 	var tip := str(args.get("tip", ""))

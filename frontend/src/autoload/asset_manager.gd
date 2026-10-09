@@ -38,6 +38,23 @@ var _textures: Dictionary = {}
 var _character_frames: Dictionary = {}
 var _online: bool = false
 var _network_blocked: bool = false
+var _sync_done: int = 0
+var _sync_total: int = 0
+var _sync_label: String = ""
+var _transfer_active: bool = false
+
+## A loading screen can attach after title-art synchronization has already begun.
+func get_sync_progress() -> Dictionary:
+	return {"active": _syncing, "done": _sync_done, "total": _sync_total,
+		"label": _sync_label, "downloading": _transfer_active,
+		"received": _http.get_downloaded_bytes() if _transfer_active else 0,
+		"bytes_total": _http.get_body_size() if _transfer_active else 0}
+
+func _report_sync_progress(done: int, total: int, label: String) -> void:
+	_sync_done = done
+	_sync_total = total
+	_sync_label = label
+	sync_progress.emit(done, total, label)
 
 
 func _ready() -> void:
@@ -78,7 +95,7 @@ func sync_catalog() -> void:
 	_online = false
 	_character_frames.clear()
 	_ensure_assets_dir()
-	sync_progress.emit(0, 1, "LOADING_ASSETS_CHECK")
+	_report_sync_progress(0, 0, "LOADING_ASSETS_CHECK")
 	_seed_from_bundle()
 	_hydrate_from_disk()
 	var all_ok: bool = true
@@ -86,11 +103,13 @@ func sync_catalog() -> void:
 	var total: int = catalog.size()
 	for i in total:
 		var entry: Dictionary = catalog[i]
-		sync_progress.emit(i, total, str(entry.get("asset_name", "asset")))
+		_report_sync_progress(i, total, str(entry.get("asset_name", "asset")))
 		var ok: bool = await _sync_entry(entry)
 		if not ok:
 			all_ok = false
-		sync_progress.emit(i + 1, total, str(entry.get("asset_name", "asset")))
+		_report_sync_progress(i + 1, total, str(entry.get("asset_name", "asset")))
+		# Cached entries still hash/decode; yield so the splash can paint real progress.
+		await get_tree().process_frame
 	_synced = true
 	_syncing = false
 	if all_ok:
@@ -529,7 +548,9 @@ func _http_get_once(url: String, has_local_file: bool, relax_tls: bool) -> Dicti
 			"body": PackedByteArray(),
 			"error": "request_start_%s" % err,
 		}
+	_transfer_active = true
 	var completed: Array = await _http.request_completed
+	_transfer_active = false
 	var result: int = int(completed[0])
 	var code: int = int(completed[1])
 	var body: PackedByteArray = PackedByteArray()

@@ -67,7 +67,6 @@ func _gui_input(event: InputEvent) -> void:
 	if mouse == null or not mouse.pressed or mouse.button_index != MOUSE_BUTTON_LEFT:
 		return
 	if _has_point(mouse.position):
-		AudioManager.play_sfx("ui_click")
 		pressed.emit()
 		accept_event()
 
