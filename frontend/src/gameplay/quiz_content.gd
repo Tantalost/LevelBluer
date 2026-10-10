@@ -87,6 +87,22 @@ static func _question_key(q: Dictionary) -> String:
 	var qid: String = str(q.get("id", "")).strip_edges()
 	return qid if not qid.is_empty() else str(q.get("text", q.get("question", "")))
 
+## Records a graded wrong pick in [param graded] (one dictionary per attempt).
+## Returns true when this exact question + wrong pick was already graded.
+static func repeat_wrong_answer(graded: Dictionary, q: Dictionary, picked: Variant, is_correct: bool) -> bool:
+	if is_correct or picked == null:
+		return false
+	var value: Variant = picked
+	if picked is Array:
+		var ordered: Array = (picked as Array).duplicate()
+		ordered.sort()
+		value = ordered
+	var key: String = "%s|%s" % [_question_key(q), str(value)]
+	if graded.has(key):
+		return true
+	graded[key] = true
+	return false
+
 static func _question_type_id(q: Dictionary) -> String:
 	var type_id: String = str(q.get("type_id", "")).strip_edges()
 	return type_id if not type_id.is_empty() else "other"

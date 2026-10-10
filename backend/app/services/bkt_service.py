@@ -7,6 +7,7 @@ P_L0 = 0.10  # prior probability the skill is already known
 P_T = 0.10  # probability of learning after an opportunity
 P_G = 0.20  # probability of a correct guess while unknown
 P_S = 0.10  # probability of a slip while known
+MAX_WRONG_DROP = 0.10  # largest P(L) decrease one wrong gameplay answer may cause
 
 MASTERY_COLUMNS = {
     "Phishing": "mastery_phishing",
@@ -61,8 +62,10 @@ def update_pl(
     p_s: float = P_S,
 ) -> float:
     posterior = _evidence_posterior(p_l, is_correct, p_g=p_g, p_s=p_s)
-    learned = posterior + (1.0 - posterior) * p_t
-    return clamp_pl(learned)
+    learned = clamp_pl(posterior + (1.0 - posterior) * p_t)
+    if not is_correct:
+        learned = clamp_pl(max(learned, clamp_pl(p_l) - MAX_WRONG_DROP))
+    return learned
 
 
 def update_pl_diagnostic(

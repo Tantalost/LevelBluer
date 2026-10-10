@@ -11,6 +11,7 @@ const P_TRANSIT: float = 0.1
 const DEFAULT_MASTERY: float = 0.10
 const MIN_MASTERY: float = 0.01
 const MAX_MASTERY: float = 0.99
+const MAX_WRONG_DROP: float = 0.10
 const AT_RISK_MASTERY: float = 0.40
 const PROFICIENT_MASTERY: float = 0.70
 const ALL_MODULES_LESSON := "mod1_all"
@@ -753,6 +754,8 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 	var p_learned: float = _mastery_of(key)
 	var p_post: float = _posterior(p_learned, is_correct, p_guess, p_slip)
 	var new_mastery: float = clampf(p_post + ((1.0 - p_post) * p_transit), MIN_MASTERY, MAX_MASTERY)
+	if not is_correct:
+		new_mastery = clampf(maxf(new_mastery, p_learned - MAX_WRONG_DROP), MIN_MASTERY, MAX_MASTERY)
 	mastery_matrix[key] = new_mastery
 	print(
 		"[BKT] local %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"

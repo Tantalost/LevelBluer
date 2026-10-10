@@ -38,6 +38,8 @@ var exam_questions_asked: int = 0
 var exam_questions_correct: int = 0
 var exam_history: Array[String] = []
 var _asked_question_ids: Array[String] = []
+var _graded_wrong: Dictionary = {}
+var _quiz_pick: Variant = null
 var _exam_deck: Array[Dictionary] = []
 var _exam_deck_index: int = 0
 var _wave_questions_asked: int = 0
@@ -686,6 +688,7 @@ func _load_stage_config() -> void:
 		_wave_questions_asked = 0
 		exam_history.clear()
 		_asked_question_ids.clear()
+		_graded_wrong.clear()
 		_exam_deck.clear()
 		_exam_deck_index = 0
 		current_gold = 0
@@ -706,6 +709,7 @@ func _load_stage_config() -> void:
 	_wave_questions_asked = 0
 	exam_history.clear()
 	_asked_question_ids.clear()
+	_graded_wrong.clear()
 	_exam_deck.clear()
 	_exam_deck_index = 0
 	var gold_stored: Variant = current_stage_config.get("starting_gold", 5)
@@ -903,6 +907,7 @@ func _submit_quiz_choice(picked: Variant) -> void:
 			_apply_quiz_label(_quiz_feedback, Palette.GOLD, 9)
 			return
 	_show_quiz_feedback(is_correct, picked)
+	_quiz_pick = picked
 	_finish_quiz_answer(is_correct)
 
 
@@ -954,10 +959,13 @@ func _on_quiz_time_expired() -> void:
 	if current_phase != GamePhase.PHASE_1_QUIZ or _quiz_locked:
 		return
 	_quiz_timer_running = false
-	_quiz_feedback.text = "TRACE EXPIRED — COUNTED AS A MISS"
+	_set_quiz_locked(true)
+	_quiz_feedback.text = "TRACE EXPIRED — GAME OVER"
 	_quiz_feedback.visible = true
 	_apply_quiz_label(_quiz_feedback, Palette.DANGER, 10)
-	_finish_quiz_answer(false)
+	_quiz_pick = null
+	# A timeout is not a submitted answer: no BKT, no trace history, no next question.
+	change_phase(GamePhase.GAME_OVER)
 
 
 func _pick_adaptive_question() -> Dictionary:
@@ -1572,7 +1580,9 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 	_wave_questions_asked += 1
 	if is_correct:
 		exam_questions_correct += 1
-	_record_bkt(_current_skill_id(), is_correct, PlayerManager.bkt_params_from(current_question))
+	if not preload("res://src/gameplay/quiz_content.gd").repeat_wrong_answer(_graded_wrong, current_question, _quiz_pick, is_correct):
+		_record_bkt(_current_skill_id(), is_correct, PlayerManager.bkt_params_from(current_question))
+	_quiz_pick = null
 	if not Router.is_tutorial:
 		PlayerManager.record_trace_result(_current_module_id(), _question_key(current_question), is_correct)
 	if is_inside_tree():

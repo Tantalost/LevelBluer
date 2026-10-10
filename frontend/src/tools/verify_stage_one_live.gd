@@ -605,6 +605,21 @@ func _exam_pick_correct(game: Control) -> void:
 				break
 	game.resolve_answer()
 
+func _exam_pick_wrong(game: Control) -> void:
+	var quiz: GDScript = preload("res://src/gameplay/quiz_content.gd")
+	var options: Array = quiz.options(game.question)
+	if quiz.is_multi(game.question):
+		for option: Dictionary in options:
+			if not game.question.correct_indices.has(option.value) and not game.question.correct_indices.has(float(option.value)):
+				game.choose_answer(option.value)
+				break
+	else:
+		for option: Dictionary in options:
+			if not quiz.grade(game.question, option.value):
+				game.choose_answer(option.value)
+				break
+	game.resolve_answer()
+
 func _college_assessment_evidence(game: Control, inspect_layout: bool = false) -> void:
 	check(game.phase == "Investigation", "Each college exam round starts with its own evidence")
 	game._college_case_confirmed(0)
@@ -712,9 +727,8 @@ func _verify_college_assessment() -> void:
 				check(root.get_visible_rect().encloses(game.hud.submit.get_global_rect()), "Final Submit fits small landscape")
 				root.size = Vector2i(1280, 720)
 			if index < 3:
-				game.time_left = 0.0
-				_exam_pick_correct(game)
-				check(not bool(account.trace_results.back().correct), "Deadline wins over queued correct answer")
+				_exam_pick_wrong(game)
+				check(not bool(account.trace_results.back().correct), "Submitted wrong answer grades wrong")
 			else:
 				_exam_pick_correct(game)
 			game.resolve_answer(true)
@@ -789,7 +803,7 @@ func _verify_college_assessment() -> void:
 		await _college_assessment_evidence(game)
 		for index: int in 5:
 			if game.answered < 4:
-				game.resolve_answer(true)
+				_exam_pick_wrong(game)
 			else:
 				_exam_pick_correct(game)
 			game.continue_question()
@@ -898,9 +912,8 @@ func _verify_school_assessment() -> void:
 		check(game.question_index == index % 5, "Exactly five questions before each defense")
 		var budget: int = game.gold
 		if index < 3:
-			game.time_left = 0.0
-			_exam_pick_correct(game)
-			check(not bool(account.trace_results.back().correct), "Deadline beats a queued correct submit")
+			_exam_pick_wrong(game)
+			check(not bool(account.trace_results.back().correct), "Submitted wrong answer grades wrong")
 		else:
 			_exam_pick_correct(game)
 		check(game.gold == budget and not game.hud.feedback.text.contains("gold"), "Summative answers award no gold or misleading reward text")
@@ -945,7 +958,7 @@ func _verify_school_assessment() -> void:
 	game.start_assessment()
 	for index: int in range(15):
 		if index < 4:
-			game.resolve_answer(true)
+			_exam_pick_wrong(game)
 		else:
 			_exam_pick_correct(game)
 		game.continue_question()

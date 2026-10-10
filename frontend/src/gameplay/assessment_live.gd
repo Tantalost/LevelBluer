@@ -14,6 +14,7 @@ var closing_read: bool = false
 var college_ready: bool = false
 var missed_questions: Array[Dictionary] = []
 var review_index: int = -1
+var _graded_wrong: Dictionary = {}
 const ROUTE: Array[Vector2i] = [Vector2i(0, 3), Vector2i(2, 3), Vector2i(2, 0), Vector2i(11, 0), Vector2i(11, 6), Vector2i(4, 6), Vector2i(4, 3), Vector2i(8, 3)]
 
 func _valid_context() -> bool:
@@ -108,6 +109,12 @@ func begin_defend() -> void:
 		incident_due = false
 
 func resolve_answer(expired: bool = false) -> void:
+	# A timeout is not a submitted answer: no grade, no BKT, straight to the failure result.
+	if phase == "Trace" and not resolved and not paused and (expired or time_left <= 0):
+		resolved = true
+		selected_answers.clear()
+		_finish(false)
+		return
 	var previous: int = answered
 	var previous_correct: int = correct_answers
 	super.resolve_answer(expired)
@@ -116,7 +123,8 @@ func resolve_answer(expired: bool = false) -> void:
 	var correct: bool = correct_answers > previous_correct
 	if college and not correct:
 		missed_questions.append(question.duplicate(true))
-	if not mastery_frozen:
+	var picked: Variant = selected_answers.duplicate() if Quiz.is_multi(question) else (selected_answers[0] if not selected_answers.is_empty() else null)
+	if not mastery_frozen and not Quiz.repeat_wrong_answer(_graded_wrong, question, picked, correct):
 		account.update_mastery("smishing" if college else "phishing", correct, PlayerManager.bkt_params_from(question))
 	account.record_trace_result(match_context.module_id, Quiz._question_key(question), correct)
 

@@ -30,6 +30,7 @@ var _action: Button
 var _started: bool = false
 var _recorded: bool = false
 var _skill: String = ""
+var _graded_wrong: Dictionary = {}
 
 func _ready() -> void:
 	if account == null:
@@ -208,7 +209,7 @@ func submit() -> void:
 	_feedback.text = ("CORRECT / " if correct else "REVIEW / ") + explanation
 	_feedback.add_theme_color_override("font_color", Color("#33D17A") if correct else Color("#FFB648"))
 	_scroll_feedback.call_deferred()
-	if not review:
+	if not review and not Quiz.repeat_wrong_answer(_graded_wrong, question, picked, correct):
 		account.update_mastery(_skill, correct, question.get("bkt", {}))
 	_action.text = "SEE RESULTS" if answered == COUNT else "NEXT QUESTION"
 	if answered == COUNT and not _recorded:
