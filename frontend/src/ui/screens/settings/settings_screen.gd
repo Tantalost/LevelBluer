@@ -292,7 +292,9 @@ func _apply_scale() -> void:
 
 	for val in [_master_val, _sfx_val]:
 		_apply_pixel_font(val, scaled.call(10))
-	_apply_pixel_font(_music_val, scaled.call(12))
+	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_apply_pixel_font(_music_val, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
+	_music_slider.custom_minimum_size.y = maxf(48.0, ceilf(48.0 / physical_scale))
 	for label: Label in _accessibility_labels:
 		_apply_pixel_font(label, scaled.call(14))
 	_apply_pixel_font_button(_reduced_motion_toggle, scaled.call(11))

@@ -1,6 +1,8 @@
 extends Node
 signal avatar_changed
 const Avatars = preload("res://src/ui/screens/profile/avatar_portrait.gd")
+const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
+var remediation_state: Dictionary = {"sessions": []}
 var selected_avatar_id: String = "byte_bot"
 ## Autoload singleton, registered as "PlayerManager".
 ## Lesson progress is persisted per signed-in participant.
@@ -262,6 +264,7 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 
 
 func reset_to_defaults() -> void:
+	remediation_state = {"sessions": []}
 	learning_events.clear()
 	max_stage_cleared_by_module.clear()
 	credits = 0
@@ -747,7 +750,7 @@ func bkt_params_from(question: Dictionary) -> Dictionary:
 	return stored as Dictionary
 
 
-func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}) -> void:
+func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}, persist: bool = true) -> void:
 	var key: String = skill_id if not skill_id.is_empty() else "phishing"
 	var p_guess: float = _bkt_param(params, ["p_g", "p_guess"], P_GUESS)
 	var p_slip: float = _bkt_param(params, ["p_s", "p_slip"], P_SLIP)
@@ -765,7 +768,14 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 	# uploaded as-is by the existing cloud progress sync. Never also submit
 	# this same answer to AuthService's official-BKT queue/endpoint — that
 	# would be a second, server-side BKT calculation for one gameplay event.
-	SaveService.save_game()
+	if persist:
+		SaveService.save_game()
+
+
+func save_remediation(state: Dictionary) -> void:
+	remediation_state = Remediation.restore(state)
+	# Save evidence and its mastery update together, never re-submit to official BKT.
+	_save_progress()
 
 
 ## True only when this account has local changes SaveService hasn't
@@ -888,10 +898,12 @@ func get_save_data() -> Dictionary:
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
 		"decision_stage_state": decision_stage_state.duplicate(true),
 		"story_memory": story_memory.duplicate(true),
+		"remediation_state": remediation_state.duplicate(true),
 	}
 
 
 func apply_save_data(data: Dictionary) -> void:
+	remediation_state = Remediation.restore(data.get("remediation_state", {}))
 	learning_events.clear()
 	var events: Variant = data.get("learning_events", [])
 	if events is Array:

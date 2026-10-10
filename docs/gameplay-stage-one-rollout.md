@@ -1,5 +1,98 @@
 # Geometric gameplay rollout: Module 1 / Stage 1
 
+## Targeted review rollout (2026-10-10)
+
+Approved scope: **all stages in Modules 1 and 2**, implemented and verified one
+stage at a time. Current enabled checkpoints: **Module 1 Stages 1 and 2**.
+Stages 3–9 need their own authored decision-to-lesson mappings and practice;
+both Stage 10 assessments require separate integration preserving graded scores.
+Module 2 stages are not yet enabled for this recovery system. Rewards, buffs,
+and voiced scenes are not part of this implementation checkpoint.
+
+The existing live controller emits the result; its result overlay emits
+`remediation`; Router tears down gameplay and opens the existing lesson player
+in targeted-review mode. A shared `StageRemediation` policy owns evidence and
+review state; PlayerManager persists it in the normal per-account save.
+No extra scene tree or parallel BKT implementation is introduced.
+
+### Stage 1 acceptance contract
+
+- Failure with recorded unsafe-decision/timeout evidence → acknowledge summary
+  with **Review Lesson** → matched refresher → 2–3 new practice questions →
+  explicit **Review Complete** → restart Stage 1 from its opening with 3 HP.
+- Incident 1 (urgent lookalike sign-in) → Lesson 3, Almost the real website.
+  Incident 2 (familiar sender asks for a secret) → Lesson 2, The name on the left
+  can lie. Incident 3 (independently verified reminder) → Lesson 5, Inbox under
+  the clock. Critical errors receive priority over risky responses; equal
+  weights prefer the most recently recorded topic.
+- Below the existing 0.40 at-risk boundary, provide guided support and three
+  questions; otherwise use a focused refresher and two. BKT remains a broad
+  **phishing-domain** estimate, not a probability for these individual concepts.
+- Only a previously unseen item's first submitted answer is scored. Reopened
+  incidents, repeat practice, corrections, and reading never regrade that item.
+  Timeouts identify support needs but do not fabricate incorrect BKT answers.
+  Cleared-stage replay stays ungraded. Original story HP rules are unchanged.
+- Battle-only failure without unsafe evidence provides tactical guidance, with
+  no additional knowledge penalty. Legacy checkpoints without observations
+  cannot be used to infer a knowledge weakness retroactively.
+- Closing/reopening keeps the review and its first answers. All gameplay entry
+  paths share the pending-review check. Retry clears the incident checkpoint
+  before consuming the review; completed lessons/stages and currencies remain.
+- Save evidence includes decision IDs/outcomes, scored flags, before/after
+  mastery, selected topic/lesson, support level, practice first answers and
+  corrections, timestamps, and links between successive attempt sessions.
+  It travels in the existing save blob. **No new teacher-dashboard report or
+  server-side remediation analytics endpoint is implemented here.**
+
+### Stage 2 acceptance contract — They Know Our Project
+
+- Notes for Our Poster → Lesson 3, Almost the real website. The targeted review
+  addresses public project details, a new sign-in destination, and the risk of
+  forwarding the unverified link to a teammate.
+- The Fair Registration → Lesson 2, The name on the left can lie. Review the
+  copied teacher identity and branding, deadline pressure, and why replying to
+  the suspicious sender is not an independent identity check.
+- Who Gets Our Folder? → Lesson 2, with a requester-identity and permissions
+  refresher. A genuine sharing site does not authenticate an unknown requester.
+  Viewer access can expose private data; verify the exact account first, then
+  share only the necessary file and permission. This extends the identity
+  lesson in the review; it does not invent a separate permissions lesson.
+- Nine newly authored questions (three per topic), with distinct `m1s2_*` IDs.
+  Existing `m1s1_*` IDs remain unchanged so past evidence survives the update.
+  The same 0.40 threshold selects two focused or three guided questions.
+- Preserve the stage's 45-second decision clocks and phone investigation gates.
+  A critical choice costs one HP; the fourth failure ends the attempt and opens
+  review. Risky choices keep HP and enter containment; a containment loss
+  requires review, while successful containment lets the story continue.
+- Retrying after review starts **Stage 2**, Incident 1, with 3 HP—not Stage 1 and
+  not the incident where the player failed. Stage 1 completion and normal lesson
+  progression remain untouched. A successful clear retains existing rewards.
+- Save validation rejects cross-stage threat/topic assignments. Both stages'
+  review records coexist without overwriting each other.
+
+### Verification
+
+`verify_stage_remediation.gd` uses isolated accounts, including the real
+PlayerManager BKT/save serialization, real lesson UI, live stage controller,
+and result action. It checks authored mappings, duplicate submissions,
+corrections, timeouts, tactical-only failures, malformed/legacy saves, account
+isolation, resumed reviews, cleared-stage replay, and opening-state retry.
+Stage 2 tests inspect the actual phone evidence and choose the displayed
+outcomes through the live UI: fourth failure at each incident, timeouts,
+failed/successful containment, and all-safe completion. They exercise all three
+review topics, guided/focused practice, reload during correction, distinct
+question IDs, stage-specific routing, and Stage 1 progress preservation.
+Containment completion/loss is injected at the controller boundary in these
+recovery tests; this is not a new combat-balance certification.
+Stage 1 screens were inspected at 1280×720 and 844×390; Stage 2 review/practice
+screens were inspected at 844×390 landscape. Screenshot artifacts remain under
+ignored `.godot/`.
+
+The broad live-stage regression run exposed a Module 2 Stage 7 loadout/balance
+assertion (1 remaining HP, expected at least 3); this checkpoint does not adjust
+that stage's balance. Outdated test expectations for the dedicated tutorial
+and simulation briefing were updated to follow the current authored flow.
+
 ## Module interaction identities and authoring contract
 
 Future decision-story scenes share the controller, live workspace, investigation,

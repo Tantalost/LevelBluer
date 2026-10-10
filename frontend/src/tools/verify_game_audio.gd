@@ -161,6 +161,19 @@ func _run() -> void:
 	root.add_child(panel)
 	panel.on_enter({})
 	check(panel._music_slider.value == settings.music_volume, "Music slider reflects saved preferences")
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await wait()
+		var scroll: ScrollContainer = panel.get_node("SafeAreaContainer/ScreenLayout/ScrollContainer") as ScrollContainer
+		scroll.ensure_control_visible(panel._music_slider)
+		await wait()
+		var physical_scale: float = root.get_final_transform().get_scale().y
+		check(scroll.get_global_rect().encloses(panel._music_slider.get_global_rect()), "Music slider reachable in landscape: %s" % dimensions)
+		check(panel._music_slider.size.y * physical_scale >= 48.0, "Music slider retains a 48px touch target")
+		check(panel._music_val.get_theme_font_size("font_size") * physical_scale >= 16.0, "Music volume label remains readable")
+		if "--render" in OS.get_cmdline_user_args():
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png("res://.godot/audio_settings_%dx%d.png" % [dimensions.x, dimensions.y])
 	panel.queue_free()
 	settings.music_enabled = old[0]
 	settings.sound_enabled = old[1]

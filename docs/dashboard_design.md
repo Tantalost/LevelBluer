@@ -2,6 +2,20 @@
 
 The six central menu buttons keep their authored shapes, textures, actions, and relative arrangement. Only the surrounding screen is redesigned: slate header, quiet teal accents, scenic pixel-art background, compact field progress, and a right-side holographic Handler.
 
+## UI audio milestone
+
+The existing AudioManager now owns two crossfading music players and eight reusable SFX voices. Router screen signals select loading, Solo hub, PvP hub, or quiet study music; the dashboard's mode-switch completion signal changes the OS music. Repeated routes sharing a track do not restart it. Intermediate routes in one navigation operation are coalesced. Disclaimer/title remain silent, and UI music fades out on entry to battle (battle music is outside this milestone).
+
+Seven original cues cover button clicks, confirmation, screen changes, incoming phone notifications, success, errors, and Defenses Online. Button hooks attach once, including custom dashboard controls. Per-cue cooldowns prevent accidental double playback. Phone notification audio remains enabled when motion reduction disables its shake. Loading readiness/error and lesson quiz/simulation/result screens use explicit cues.
+
+Settings persist separate music volume (55% default), SFX volume, master volume, and mute toggles. Opening Settings reads values without emitting save callbacks. Music-volume controls retain a 48-physical-pixel touch target and a minimum 16-physical-pixel label in landscape. Music remembers the newest route while muted. Application backgrounding pauses music and clears effects; resuming cannot replay stale effects.
+
+Audio provenance: original deterministic oscillator/noise synthesis, with no sampled music, third-party recordings, or anime melodies. Four 8-bar loops (approximately 18–27 seconds) and seven WAV cues total 402,406 bytes, bundled locally for offline/loading use. Compressed music peaks measured around -6.3 dBFS before runtime gain; device speaker balance still requires a listening playtest.
+
+To regenerate intentionally, run Godot with `--headless --path frontend --script res://src/tools/bake_game_audio.gd`. This overwrites the authored SFX WAVs and writes music intermediates into ignored `.godot/audio_bake`. Encode each of loading/hub/pvp/study with `ffmpeg -i frontend/.godot/audio_bake/<name>.wav -c:a libvorbis -q:a 4 frontend/assets/audio/bgm/<name>.ogg`, then reimport in Godot. Synthesis never runs during gameplay.
+
+Verification: `verify_game_audio.gd` covers resources, route selection, interrupted crossfades, mute/navigation, independent volume, suspend/resume, rapid/disabled/hidden buttons, paused-menu audio, bounded SFX voices, isolated settings persistence, and 1280×720 / 844×390 layouts. Add `-- --render` without headless for ignored screenshots. Dashboard, loading, and disclaimer regression suites also pass. Tests do not replace Android-device or browser audio playback checks.
+
 ## Assets
 
 - New background: `frontend/assets/ui/dashboard/command_outpost_v1.png` (one image, generated with the built-in image-generation tool).
