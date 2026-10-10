@@ -15,6 +15,9 @@ extends SceneTree
 ##   E. PlayerManager.update_mastery() never enqueues an AuthService BKT-assess
 ##      job (exactly one, local, BKT calculation per gameplay update)
 ##   F. the BKT formula/params (default and TRACE-authored) are unchanged
+##   G. a wrong answer drops P(L) by at most 0.10, an identical wrong pick on
+##      the same question is graded once per attempt, and the pre-test
+##      diagnostic update is untouched
 ##
 ## Run headless:  godot --headless --path frontend --script res://src/tools/verify_bkt_offline_sync.gd
 ## The local guest save is backed up before the run and restored afterwards.
@@ -215,6 +218,39 @@ func _run() -> void:
 	# Replay freeze (_bkt_frozen / mastery_frozen) is untouched by this fix
 	# and already covered by verify_stage_progression.gd's
 	# _test_mastery_frozen_scoping() — not duplicated here.
+
+	print("== G. Wrong-answer drop cap and duplicate wrong-pick suppression ==")
+	fresh()
+	_player.mastery_matrix["phishing"] = 0.80
+	var raw_drop: float = one_bkt_step(0.80, false, _player.P_GUESS, _player.P_SLIP, _player.P_TRANSIT)
+	check(is_equal_approx(snappedf(raw_drop, 0.0001), 0.40), "[G] Raw BKT for a wrong answer from 0.80 is 0.40")
+	_player.update_mastery("phishing", false, {})
+	check(is_equal_approx(_player.mastery_matrix["phishing"], 0.70), "[G] One wrong answer from 0.80 is capped at 0.70")
+	_player.mastery_matrix["phishing"] = 0.15
+	var small_drop: float = one_bkt_step(0.15, false, _player.P_GUESS, _player.P_SLIP, _player.P_TRANSIT)
+	_player.update_mastery("phishing", false, {})
+	check(0.15 - small_drop < 0.10 and is_equal_approx(_player.mastery_matrix["phishing"], small_drop), "[G] A raw drop smaller than 0.10 is unchanged")
+	_player.mastery_matrix["phishing"] = 0.80
+	_player.update_mastery("phishing", true, {})
+	check(is_equal_approx(_player.mastery_matrix["phishing"], one_bkt_step(0.80, true, _player.P_GUESS, _player.P_SLIP, _player.P_TRANSIT)), "[G] Correct answers still use the existing formula")
+
+	var Quiz: GDScript = load("res://src/gameplay/quiz_content.gd")
+	var question: Dictionary = {"id": "bkt_dup_q", "options": ["a", "b", "c"], "answer_index": 0}
+	var graded: Dictionary = {}
+	_player.mastery_matrix["phishing"] = 0.80
+	for pick: int in [1, 1, 2]:
+		if not Quiz.repeat_wrong_answer(graded, question, pick, false):
+			_player.update_mastery("phishing", false, {})
+		if pick == 1 and graded.size() == 1:
+			check(is_equal_approx(_player.mastery_matrix["phishing"], 0.70), "[G] Same question + same wrong choice grades once (0.80 -> 0.70)")
+	check(is_equal_approx(_player.mastery_matrix["phishing"], 0.60), "[G] A different wrong choice decreases again, still capped (0.70 -> 0.60)")
+	check(not Quiz.repeat_wrong_answer({}, question, 1, false), "[G] A fresh attempt grades the same wrong choice normally")
+	check(not Quiz.repeat_wrong_answer(graded, question, 0, true) and not Quiz.repeat_wrong_answer(graded, question, 0, true), "[G] Correct answers are never suppressed")
+
+	var Pretest: GDScript = load("res://src/data/pretest_bank.gd")
+	var diagnostic: float = Pretest._update_pl_diagnostic(0.80, false)
+	check(is_equal_approx(snappedf(diagnostic, 0.0001), 0.3333), "[G] Pre-test diagnostic update is uncapped and has no P(T) (0.80 -> 0.3333)")
+	check(is_equal_approx(snappedf(Pretest._update_pl_diagnostic(0.10, true), 0.0001), 0.3333), "[G] Pre-test diagnostic correct-answer update is unchanged")
 
 	fresh()
 	_cleanup_save_files()
