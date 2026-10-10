@@ -7,6 +7,18 @@ signal consequence_continued
 signal decision_ready
 signal end_call_requested
 signal pause_requested
+signal speech_blip_requested(speaker: String, emotion: String, letter_index: int)
+signal speech_blips_stopped
+signal speech_reaction_requested(speaker: String, emotion: String)
+var _speech_blips_enabled: bool = false
+var _blip_letters: int = 0
+var _reaction_pending: bool = false
+var _previous_reaction_key: String = ""
+
+func configure_speech_blips(module_id: String, stage_id: int) -> void:
+	_speech_blips_enabled = module_id == "mod_01" and stage_id == 1
+	_reaction_pending = false
+	speech_blips_stopped.emit()
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Portrait = preload("res://src/gameplay/decision/dialogue_portrait.gd")
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
@@ -199,6 +211,13 @@ var _mail_close: Button
 var _mail_tween: Tween
 
 func _ready() -> void:
+	speech_blip_requested.connect(AudioManager.play_dialogue_blip.bind(self))
+	speech_reaction_requested.connect(AudioManager.play_dialogue_reaction.bind(self))
+	speech_blips_stopped.connect(AudioManager.stop_dialogue_blips.bind(self))
+	tree_exiting.connect(func() -> void: speech_blips_stopped.emit())
+	visibility_changed.connect(func() -> void:
+		if not is_visible_in_tree(): speech_blips_stopped.emit()
+	)
 	_assets = get_node_or_null("/root/AssetManager")
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	mouse_filter = MOUSE_FILTER_STOP
@@ -398,7 +417,11 @@ func _reset(mode: StringName, header: String, caption: String) -> void:
 	_typing = false
 	_pause_remaining = 0.0
 	_typing_speed = 1.0
+	speech_blips_stopped.emit()
+	_blip_letters = 0
 	_previous_line_emotion = Emotion.NEUTRAL
+	_previous_reaction_key = ""
+	_reaction_pending = false
 	_dialogue_done = true
 	_caption = caption
 	_speech = null
@@ -573,6 +596,8 @@ func _fit_school_portraits() -> void:
 			nameplate.size = Vector2(seat_size.x, nameplate.get_minimum_size().y)
 
 func _show_line() -> void:
+	speech_blips_stopped.emit()
+	_blip_letters = 0
 	_clear_mail()
 	var line := _lines[_line_index]
 	_mail = (line.get("mail", {}) as Dictionary).duplicate(true)
@@ -583,6 +608,9 @@ func _show_line() -> void:
 		_animate_notice.call_deferred(_mail_generation)
 	var who := str(line.get("speaker", ""))
 	var line_emotion := Emotion.of(line)
+	var reaction_key: String = who + "/" + line_emotion
+	_reaction_pending = _speech_blips_enabled and reaction_key != _previous_reaction_key and line_emotion != Emotion.NEUTRAL
+	_previous_reaction_key = reaction_key
 	_speaker_label.text = who.to_upper() if not who.is_empty() else "SCENE"
 	_line_counter.text = "%d / %d" % [_line_index + 1, _lines.size()]
 	_speech.text = str(line.get("text", ""))
@@ -682,18 +710,41 @@ func _update_portraits() -> void:
 func _process(delta: float) -> void:
 	if not _typing or _locked or _review_open or _mail_open or not is_visible_in_tree():
 		return
+	if _reaction_pending:
+		# First active frame only: no cues from hidden setup, logs, or skipped lines.
+		_reaction_pending = false
+		var line: Dictionary = _lines[_line_index]
+		speech_reaction_requested.emit(str(line.get("speaker", "")), Emotion.of(line))
 	if _pause_remaining > 0.0:
 		# Skip-safe hold before revealing starts (see DialogueEmotion.pause_before)
 		# — a tap during it goes through _speech_input() -> _reveal_line()
 		# exactly like skipping mid-type, never blocked by this pause.
 		_pause_remaining = maxf(0.0, _pause_remaining - delta)
 		return
+	var previous: int = maxi(0, _speech.visible_characters)
 	_revealed += delta * 42.0 * _typing_speed
 	_speech.visible_characters = int(_revealed)
 	if _speech.visible_characters >= _speech.get_total_character_count():
 		_reveal_line()
+	elif _speech_blips_enabled:
+		_blip_for_reveal(previous, _speech.visible_characters)
+
+func _blip_for_reveal(previous: int, current: int) -> void:
+	var plain: String = _speech.get_parsed_text()
+	var last_letter: bool = false
+	for index: int in range(previous, mini(current, plain.length())):
+		var character: String = plain.substr(index, 1)
+		last_letter = character.to_lower() != character.to_upper() or character in "0123456789"
+		if last_letter:
+			_blip_letters += 1
+	if last_letter and _blip_letters >= 3:
+		_blip_letters = 0
+		var line: Dictionary = _lines[_line_index]
+		speech_blip_requested.emit(str(line.get("speaker", "")), Emotion.of(line), current)
 
 func _reveal_line() -> void:
+	_reaction_pending = false
+	speech_blips_stopped.emit()
 	_typing = false
 	_pause_remaining = 0.0
 	_speech.visible_characters = -1
@@ -711,6 +762,8 @@ func _speech_input(event: InputEvent) -> void:
 		_speech.accept_event()
 
 func _refresh_controls() -> void:
+	if _locked or _review_open or _mail_open:
+		speech_blips_stopped.emit()
 	_window.visible = not _review_open and not (_phone_enabled and _mail_open)
 	var choices_were_visible: bool = _choices_scroll.visible
 	var investigating := _mode == &"threat" and _dialogue_done and not _investigation_config.is_empty()

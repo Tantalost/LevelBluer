@@ -15,6 +15,10 @@ bus = &"BGM"
 
 [node name="SFXPool" type="Node" parent="."]
 
+[node name="DialoguePlayer" type="AudioStreamPlayer" parent="."]
+bus = &"SFX"
+volume_db = -6.0
+
 [node name="SFX_0" type="AudioStreamPlayer" parent="SFXPool"]
 bus = &"SFX"
 

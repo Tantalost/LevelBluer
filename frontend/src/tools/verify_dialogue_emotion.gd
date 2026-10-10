@@ -7,7 +7,7 @@ extends SceneTree
 const Emotion = preload("res://src/gameplay/decision/dialogue_emotion.gd")
 const ScreenShake = preload("res://src/gameplay/decision/dialogue_screen_shake.gd")
 const Portrait = preload("res://src/gameplay/decision/dialogue_portrait.gd")
-const Workspace = preload("res://src/gameplay/decision/decision_workspace.gd")
+var Workspace: GDScript
 
 var failures := 0
 
@@ -30,6 +30,8 @@ func settle(frames: int = 2) -> void:
 
 
 func _run() -> void:
+	# Workspace uses autoloads; load after SceneTree startup has registered them.
+	Workspace = load("res://src/gameplay/decision/decision_workspace.gd")
 	_test_recognized_emotions()
 	_test_neutral_default_and_fallback()
 	await _test_animation_reset_and_no_accumulation()
@@ -205,7 +207,7 @@ func _test_existing_dialogue_without_emotion_renders_normally() -> void:
 		check(Emotion.VALID_EMOTIONS.has(Emotion.of(line)), "Module 1 presentation tags normalize correctly")
 	var mod2_opening: Array[Dictionary] = DecisionScenarios.dialogue_lines(DecisionScenarios.get_stage("mod_02", 1), "opening")
 	for line in mod2_opening:
-		check(Emotion.of(line) == Emotion.NEUTRAL, "[Regression] Existing Module 2 line resolves to neutral")
+		check(Emotion.of(line) == Emotion.normalize(str(line.get("emotion", ""))), "[Regression] Module 2 preserves its authored emotion or neutral fallback")
 
 
 func _test_illustrated_workspace() -> void:

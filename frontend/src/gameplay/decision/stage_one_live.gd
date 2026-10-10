@@ -144,6 +144,7 @@ func _ready() -> void:
 	story_overlay = preload("res://src/gameplay/decision/decision_workspace.gd").new()
 	story_overlay.name = "DecisionOverlay"
 	hud.body.add_child(story_overlay)
+	story_overlay.configure_speech_blips(match_context.module_id, match_context.stage_id)
 	story_overlay.set_story_art(match_context.module_id, str(story.get("guide_speaker", "Security Assistant")))
 	story_overlay.configure_presentation(story)
 	if story.has("laptop"):

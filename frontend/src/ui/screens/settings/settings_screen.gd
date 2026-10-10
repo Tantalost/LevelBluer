@@ -14,6 +14,7 @@ extends BaseScreen
 @onready var _bgm_toggle: CheckButton = %BgmToggle
 var _music_slider: HSlider
 var _music_val: Label
+var _dialogue_toggle: CheckButton
 
 # Gameplay controls
 @onready var _vibration_toggle: CheckButton = %VibrationToggle
@@ -41,6 +42,7 @@ var _text_speed_select: OptionButton
 func _ready() -> void:
 	_load_font()
 	_build_music_volume()
+	_build_dialogue_toggle()
 	_build_accessibility_controls()
 	get_viewport().size_changed.connect(_apply_scale)
 
@@ -77,6 +79,18 @@ func _build_music_volume() -> void:
 	_music_slider.value_changed.connect(func(value: float) -> void:
 		SettingsService.music_volume = int(value)
 		_music_val.text = "Music volume: %d%%" % int(value)
+		SettingsService.save_settings()
+	)
+
+func _build_dialogue_toggle() -> void:
+	var column: VBoxContainer = %SfxLabel.get_parent() as VBoxContainer
+	_dialogue_toggle = CheckButton.new()
+	_dialogue_toggle.name = "DialogueBlipsToggle"
+	_dialogue_toggle.text = "Dialogue blips"
+	_dialogue_toggle.tooltip_text = "Retro speech blips and emotional reactions. Uses Sound Effects volume. Stage 1 preview."
+	column.add_child(_dialogue_toggle)
+	_dialogue_toggle.toggled.connect(func(enabled: bool) -> void:
+		SettingsService.dialogue_blips_enabled = enabled
 		SettingsService.save_settings()
 	)
 
@@ -159,6 +173,7 @@ func _load_ui_from_service() -> void:
 	_master_val.text = "%d%%" % SettingsService.master_volume
 
 	_sfx_toggle.set_pressed_no_signal(SettingsService.sound_enabled)
+	_dialogue_toggle.set_pressed_no_signal(SettingsService.dialogue_blips_enabled)
 
 	_sfx_slider.set_value_no_signal(SettingsService.sfx_volume)
 	_sfx_val.text = "%d%%" % SettingsService.sfx_volume
@@ -295,6 +310,8 @@ func _apply_scale() -> void:
 	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	_apply_pixel_font(_music_val, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
 	_music_slider.custom_minimum_size.y = maxf(48.0, ceilf(48.0 / physical_scale))
+	_apply_pixel_font_button(_dialogue_toggle, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
+	_dialogue_toggle.custom_minimum_size.y = ceilf(48.0 / physical_scale)
 	for label: Label in _accessibility_labels:
 		_apply_pixel_font(label, scaled.call(14))
 	_apply_pixel_font_button(_reduced_motion_toggle, scaled.call(11))

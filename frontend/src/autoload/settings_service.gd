@@ -8,6 +8,7 @@ const SAVE_PATH := "user://settings.cfg"
 
 var master_volume: int = 80
 var sound_enabled: bool = true
+var dialogue_blips_enabled: bool = true
 var sfx_volume: int = 70
 var music_enabled: bool = true
 var music_volume: int = 55
@@ -59,6 +60,7 @@ func load_settings() -> void:
 
 	master_volume = cfg.get_value("audio", "master_volume", 80)
 	sound_enabled = cfg.get_value("audio", "sound_enabled", true)
+	dialogue_blips_enabled = bool(cfg.get_value("audio", "dialogue_blips_enabled", true))
 	sfx_volume = cfg.get_value("audio", "sfx_volume", 70)
 	music_enabled = cfg.get_value("audio", "music_enabled", true)
 	music_volume = clampi(int(cfg.get_value("audio", "music_volume", 55)), 0, 100)
@@ -85,6 +87,7 @@ func save_settings() -> void:
 
 	cfg.set_value("audio", "master_volume", master_volume)
 	cfg.set_value("audio", "sound_enabled", sound_enabled)
+	cfg.set_value("audio", "dialogue_blips_enabled", dialogue_blips_enabled)
 	cfg.set_value("audio", "sfx_volume", sfx_volume)
 	cfg.set_value("audio", "music_enabled", music_enabled)
 	cfg.set_value("audio", "music_volume", music_volume)

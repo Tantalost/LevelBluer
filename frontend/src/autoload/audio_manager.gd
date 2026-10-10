@@ -7,6 +7,30 @@ const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition",
 
 @onready var bgm_player: AudioStreamPlayer = $BGMPlayer
 @onready var sfx_pool: Node = $SFXPool
+@onready var dialogue_player: AudioStreamPlayer = $DialoguePlayer
+const BLIP_RATE: int = 22050
+const BLIP_DURATION: float = 0.055
+const BLIP_INTERVAL_MS: int = 95
+const VOICE_PROFILES: Dictionary = {
+	"Alex": {"hz": 230.0, "third": 0.26, "second": 0.08},
+	"Mia": {"hz": 320.0, "third": 0.16, "second": 0.20},
+	"Ms. Reyes": {"hz": 175.0, "third": -0.12, "second": 0.06},
+}
+var _voice_streams: Dictionary[String, AudioStreamWAV] = {}
+var _dialogue_owner: WeakRef
+var _last_blip_ms: int = -10000
+const REACTION_PROFILES: Dictionary = {
+	"shocked": {"duration": 0.18, "start": 1.0, "end": 1.65, "pulses": 1, "wobble": 0.0},
+	"worried": {"duration": 0.24, "start": 1.05, "end": 0.9, "pulses": 1, "wobble": 0.07},
+	"frustrated": {"duration": 0.22, "start": 0.98, "end": 0.78, "pulses": 2, "wobble": 0.0},
+	"sad": {"duration": 0.28, "start": 1.0, "end": 0.65, "pulses": 1, "wobble": 0.02},
+	"relieved": {"duration": 0.25, "start": 1.15, "end": 0.86, "pulses": 1, "wobble": 0.0},
+	"determined": {"duration": 0.20, "start": 0.85, "end": 1.08, "pulses": 2, "wobble": 0.0},
+}
+const REACTION_INTERVAL_MS: int = 1200
+var _reaction_streams: Dictionary[String, AudioStreamWAV] = {}
+var _reaction_active: bool = false
+var _last_reaction_ms: int = -10000
 var hub_track: AudioStream
 ## Reserved for existing combat callers; this milestone does not add battle music.
 var level_track: AudioStream
@@ -24,6 +48,11 @@ var _app_paused: bool = false
 var _steal_index: int = 0
 
 func _ready() -> void:
+	for speaker: String in VOICE_PROFILES:
+		_voice_streams[speaker] = _synthesize_blip(VOICE_PROFILES[speaker])
+		for emotion: String in REACTION_PROFILES:
+			_reaction_streams[speaker + "/" + emotion] = _synthesize_reaction(VOICE_PROFILES[speaker], REACTION_PROFILES[emotion])
+	dialogue_player.finished.connect(func() -> void: _reaction_active = false)
 	_decks = [$BGMPlayer, $BGMPlayerB]
 	for key: String in ["loading", "hub", "pvp", "study"]:
 		var stream: AudioStreamOggVorbis = load(BGM_PATH + key + ".ogg") as AudioStreamOggVorbis
@@ -90,6 +119,7 @@ func _next_sfx_player() -> AudioStreamPlayer:
 	return stolen
 
 func _on_screen_changed(screen_id: StringName) -> void:
+	stop_dialogue_blips()
 	_screen_id = screen_id
 	# Router may replace Dashboard and push a child in one operation. Use its final route.
 	if not _route_queued:
@@ -166,6 +196,8 @@ func _apply_buses() -> void:
 	_set_bus("Master", SettingsService.master_volume, false)
 	_set_bus("BGM", SettingsService.music_volume, not SettingsService.music_enabled)
 	_set_bus("SFX", SettingsService.sfx_volume, not SettingsService.sound_enabled)
+	if not SettingsService.dialogue_blips_enabled or SettingsService.text_speed == "instant":
+		stop_dialogue_blips()
 	if not SettingsService.sound_enabled or SettingsService.sfx_volume <= 0 or SettingsService.master_volume <= 0:
 		_stop_effects()
 	if not SettingsService.music_enabled:
@@ -181,6 +213,7 @@ func _set_bus(bus_name: String, percent: int, muted: bool) -> void:
 		AudioServer.set_bus_mute(index, muted or percent <= 0)
 
 func _stop_effects() -> void:
+	stop_dialogue_blips()
 	for child: Node in sfx_pool.get_children():
 		(child as AudioStreamPlayer).stop()
 
@@ -206,3 +239,111 @@ func _notification(what: int) -> void:
 
 func _exit_tree() -> void:
 	_kill_bgm_tween()
+
+func _synthesize_blip(profile: Dictionary) -> AudioStreamWAV:
+	# Original, soft-edged chip timbres, made once at startup. No sampled voices.
+	# 16-bit storage retains a clean fade around a deliberately quantized waveform.
+	var count: int = int(BLIP_RATE * BLIP_DURATION)
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.resize(count * 2)
+	for i: int in count:
+		var time: float = float(i) / BLIP_RATE
+		var phase: float = TAU * float(profile.hz) * time
+		var wave: float = sin(phase) + float(profile.third) * sin(3.0 * phase) + float(profile.second) * sin(2.0 * phase)
+		wave = roundf(wave * 24.0) / 24.0
+		var envelope: float = minf(1.0, float(i) / (BLIP_RATE * 0.006)) * minf(1.0, float(count - 1 - i) / (BLIP_RATE * 0.014))
+		bytes.encode_s16(i * 2, int(clampf(wave * envelope * 0.30, -1.0, 1.0) * 32767.0))
+	var stream: AudioStreamWAV = AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = BLIP_RATE
+	stream.data = bytes
+	return stream
+
+func _dialogue_allowed(source: Control) -> bool:
+	if _screen_id != &"gameplay" or _suspended() or get_tree().paused or not is_instance_valid(source) or not source.is_visible_in_tree() or not source.can_process():
+		return false
+	if not SettingsService.dialogue_blips_enabled or not SettingsService.sound_enabled or SettingsService.sfx_volume <= 0 or SettingsService.master_volume <= 0 or SettingsService.text_speed == "instant":
+		return false
+	return true
+
+func play_dialogue_blip(speaker: String, emotion: String, letter_index: int, source: Control) -> void:
+	if not _dialogue_allowed(source) or (_reaction_active and dialogue_player.playing):
+		return
+	if not _voice_streams.has(speaker):
+		return # Narrators and unapproved cast stay silent.
+	var now: int = Time.get_ticks_msec()
+	if now - _last_blip_ms < BLIP_INTERVAL_MS:
+		return # No catch-up bursts, even at fast text speed or after a frame stall.
+	_last_blip_ms = now
+	_dialogue_owner = weakref(source)
+	var expression: float = 1.0
+	match emotion:
+		"worried", "scared", "shocked": expression = 1.04
+		"sad", "crying": expression = 0.96
+		"determined", "angry", "frustrated": expression = 1.02
+	var variation: float = [-0.012, 0.0, 0.012, 0.0][posmod(letter_index, 4)]
+	dialogue_player.pitch_scale = expression + variation
+	dialogue_player.stream = _voice_streams[speaker]
+	dialogue_player.play()
+
+func _reaction_kind(emotion: String) -> String:
+	match emotion:
+		"scared": return "worried"
+		"crying": return "sad"
+		"angry": return "frustrated"
+	return emotion
+
+func play_dialogue_reaction(speaker: String, emotion: String, source: Control) -> void:
+	var key: String = speaker + "/" + _reaction_kind(emotion)
+	if not _dialogue_allowed(source) or not _reaction_streams.has(key):
+		return
+	var now: int = Time.get_ticks_msec()
+	if now - _last_reaction_ms < REACTION_INTERVAL_MS:
+		return # Repeated taps/rapid emotion changes never build a noisy queue.
+	_last_reaction_ms = now
+	_last_blip_ms = now
+	_dialogue_owner = weakref(source)
+	_reaction_active = true
+	dialogue_player.pitch_scale = 1.0
+	dialogue_player.stream = _reaction_streams[key]
+	dialogue_player.play()
+
+func _synthesize_reaction(voice: Dictionary, reaction: Dictionary) -> AudioStreamWAV:
+	# Short nonverbal chip inflections, not copied samples or spoken interjections.
+	var duration: float = float(reaction.duration)
+	var count: int = int(duration * BLIP_RATE)
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.resize(count * 2)
+	var phase: float = 0.0
+	var pulse_length: float = duration / int(reaction.pulses)
+	for i: int in count:
+		var time: float = float(i) / BLIP_RATE
+		var pitch: float = lerpf(float(reaction.start), float(reaction.end), time / duration)
+		pitch += float(reaction.wobble) * sin(TAU * 9.0 * time)
+		phase += TAU * float(voice.hz) * pitch / BLIP_RATE
+		var wave: float = sin(phase) + float(voice.third) * sin(phase * 3.0) + float(voice.second) * sin(phase * 2.0)
+		wave = roundf(wave * 24.0) / 24.0
+		var pulse_time: float = fposmod(time, pulse_length)
+		var envelope: float = minf(1.0, pulse_time / 0.012) * clampf((pulse_length - pulse_time) / 0.045, 0.0, 1.0)
+		if i == count - 1: envelope = 0.0
+		bytes.encode_s16(i * 2, int(wave * envelope * 0.26 * 32767.0))
+	var stream: AudioStreamWAV = AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = BLIP_RATE
+	stream.data = bytes
+	return stream
+
+func stop_dialogue_blips(source: Control = null) -> void:
+	if source != null and (_dialogue_owner == null or _dialogue_owner.get_ref() != source):
+		return # An old workspace cannot stop a newer speaker's sound.
+	if is_instance_valid(dialogue_player):
+		dialogue_player.stop()
+	_dialogue_owner = null
+	_reaction_active = false
+
+func _process(_delta: float) -> void:
+	if not dialogue_player.playing:
+		return
+	var source: Control = _dialogue_owner.get_ref() as Control if _dialogue_owner != null else null
+	if get_tree().paused or source == null or not source.is_visible_in_tree() or not source.can_process():
+		stop_dialogue_blips()
