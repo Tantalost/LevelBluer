@@ -123,8 +123,22 @@ static func review_cards(module_id: String, answers: Dictionary) -> Array[Dictio
 		elif question.type == "true_false":
 			expected = "True" if question.answer else "False"
 			submitted = "True" if answer else "False"
-		cards.append({"question": question.text, "answer": expected, "submitted": submitted, "correct": _is_correct(question, answer)})
+		cards.append({"id": qid, "question": question.text, "answer": expected, "submitted": submitted, "correct": _is_correct(question, answer)})
 	return cards
+
+
+static func visual_example(module_id: String, question_id: int, text: String) -> Dictionary:
+	# Bind art to the authored item, never to keywords or the current card index.
+	# A changed server question must not inherit a mismatched local example.
+	# Presentation-only metadata stays separate from the shared server scoring bank.
+	if module_id != "mod_01" or question_id != 9 or text != "Your instructor's real name appears in an email asking you to open a project document. What would make it most suspicious?":
+		return {}
+	return {"kind": "email", "sender": "Ms. Reyes", "address": "reyes@project-desk.example",
+		"subject": "Water Wise / project notes", "known_domain": "harborhigh.example",
+		"body": "Hi Alex,\n\nPlease review the notes for our Water Wise project before our next class. The document is attached below.\n\nThank you,",
+		"signature": "Ms. Reyes\nScience instructor", "attachment": "Project-notes.pdf",
+		"prompt": "Inspect the project email. Which detail is most suspicious?",
+		"review_note": "The sender's domain differs from the school's saved domain. A familiar name, project and signature do not verify the sender. Check through the instructor's saved contact before opening the document."}
 
 
 static func _initial_pl(stored: float) -> float:

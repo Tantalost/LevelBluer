@@ -14,6 +14,7 @@ var closing_read: bool = false
 var college_ready: bool = false
 var missed_questions: Array[Dictionary] = []
 var review_index: int = -1
+const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
 const ROUTE: Array[Vector2i] = [Vector2i(0, 3), Vector2i(2, 3), Vector2i(2, 0), Vector2i(11, 0), Vector2i(11, 6), Vector2i(4, 6), Vector2i(4, 3), Vector2i(8, 3)]
 
 func _valid_context() -> bool:
@@ -70,6 +71,13 @@ func advance_briefing(_delta: float) -> void:
 func start_assessment() -> void:
 	if phase != "Briefing" or paused or assessment_started:
 		return
+	if _has_targeted_review():
+		if Remediation.pending(account, match_context.module_id, 10):
+			return
+		# Leaving an exam restarts its questions, not its historical evidence.
+		# Archive an abandoned attempt before this one records any responses.
+		if not assessment_started and Remediation.latest(account, match_context.module_id, 10).get("status", "") == "playing":
+			Remediation.mark(account, match_context.module_id, 10, "tactical_retry")
 	assessment_started = true
 	hud.close_modal()
 	if question_pool.size() != int(config.get("exam_question_count", 15)) or (college and not college_ready):
@@ -110,6 +118,7 @@ func begin_defend() -> void:
 func resolve_answer(expired: bool = false) -> void:
 	var previous: int = answered
 	var previous_correct: int = correct_answers
+	var timed_out: bool = expired or time_left <= 0.0
 	super.resolve_answer(expired)
 	if answered == previous:
 		return
@@ -118,7 +127,11 @@ func resolve_answer(expired: bool = false) -> void:
 	var correct: bool = correct_answers > previous_correct
 	if college and not correct:
 		missed_questions.append(question.duplicate(true))
-	if not mastery_frozen:
+	if _has_targeted_review():
+		Remediation.observe(account, match_context.module_id, 10,
+			{"threat": question, "outcome": "SAFE" if correct else "CRITICAL", "bkt_correct": correct},
+			timed_out, not mastery_frozen, PlayerManager.bkt_params_from(question))
+	elif not mastery_frozen:
 		account.update_mastery("smishing" if college else "phishing", correct, PlayerManager.bkt_params_from(question))
 	account.record_trace_result(match_context.module_id, Quiz._question_key(question), correct)
 
@@ -175,7 +188,7 @@ func _result_data(won: bool) -> Dictionary:
 		tasks.record_stage_cleared()
 	account.add_credits(payout)
 	var score: float = float(correct_answers) / float(config.exam_question_count)
-	return {"live": true, "won": won, "stage": 10, "wave": wave + 1, "waves": config.waves.size(),
+	var result: Dictionary = {"live": true, "won": won, "stage": 10, "wave": wave + 1, "waves": config.waves.size(),
 		"credits": payout, "kills": correct_answers if won else match_kills, "kills_label": "ANSWERS CORRECT",
 		"accuracy": score, "final_stage": true,
 		"title": ("MODULE 2 COMPLETE" if college else "MODULE 1 COMPLETE") if won else ("REVIEW AND RETRY" if remediation_required else "DEFENSE INCOMPLETE"),
@@ -183,6 +196,23 @@ func _result_data(won: bool) -> Dictionary:
 		"advisory": "The team is ready for its presentation. Keep checking the next message." if college else "The Water Wise team is ready for the fair. Keep checking the next message.",
 		"retry_label": ("REVIEW CASES" if college else "REVIEW LESSONS") if remediation_required else "RESTART",
 		"tip": "Score: %d / 15. %s" % [correct_answers, ("Review the missed cases to unlock another attempt." if college else "Review Lessons to clear the assessment lock.") if remediation_required else "Defend through all three waves and score at least 12 / 15."]}
+	if _has_targeted_review():
+		if won:
+			Remediation.mark(account, match_context.module_id, 10, "cleared")
+		else:
+			var review: Dictionary = Remediation.assign(account, match_context.module_id, 10)
+			if not review.is_empty():
+				account.lock_stage(match_context.module_id, 10)
+				remediation_required = true
+				result.merge({"is_decision": true, "remediation": true, "title": "REVIEW AND RETRY", "retry_label": "REVIEW LESSON",
+					"body": "%d / %d answered correctly. %d / 3 waves cleared.\n\n%s\n\nComplete the targeted refresher and fresh practice, then retry all 15 questions and 3 waves. This review does not change your exam score." % [correct_answers, answered, waves_completed, str(Remediation.TOPICS[review.topic].why)]}, true)
+			else:
+				Remediation.mark(account, match_context.module_id, 10, "tactical_retry")
+				result["tip"] = "No unsafe response was recorded in this attempt. Review tower placement and coverage, then retry all 15 questions and 3 waves. No extra knowledge penalty was applied."
+	return result
+
+func _has_targeted_review() -> bool:
+	return account != null and account.has_method("save_remediation") and Remediation.enabled(match_context.module_id, 10)
 
 func _destroy_home_on_loss() -> bool:
 	return health <= 0
@@ -231,8 +261,11 @@ func _intent(id: String, value: Variant) -> void:
 		return
 	if id.begins_with("result_") and phase == "Results":
 		match id:
+			"result_remediation": Router.open_stage_remediation(match_context.module_id, 10)
 			"result_restart":
-				if remediation_required:
+				if _has_targeted_review() and Remediation.pending(account, match_context.module_id, 10):
+					Router.open_stage_remediation(match_context.module_id, 10)
+				elif remediation_required:
 					if college:
 						_begin_case_review()
 					else:
@@ -247,6 +280,9 @@ func _intent(id: String, value: Variant) -> void:
 	super._intent(id, value)
 
 func _begin_case_review() -> void:
+	if _has_targeted_review() and Remediation.pending(account, match_context.module_id, 10):
+		Router.open_stage_remediation(match_context.module_id, 10)
+		return
 	if not college or phase != "Results" or not remediation_required or review_index >= 0 or missed_questions.is_empty():
 		return
 	review_index = 0
@@ -265,6 +301,8 @@ func _show_case_review() -> void:
 		[{"text": "NEXT REVIEW" if review_index + 1 < missed_questions.size() else "FINISH REVIEW", "id": "assessment_review_next", "primary": true}, {"text": "BACK TO STAGES", "id": "exit"}])
 
 func _advance_case_review() -> void:
+	if _has_targeted_review() and Remediation.pending(account, match_context.module_id, 10):
+		return
 	if not college or phase != "Results" or not remediation_required or review_index < 0 or review_index >= missed_questions.size():
 		return
 	review_index += 1

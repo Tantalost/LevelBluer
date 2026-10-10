@@ -495,7 +495,7 @@ func _enter_remediation(module_id: String, stage: int) -> void:
 	_close_button.show()
 	_close_button.text = "< SAVE & EXIT"
 	_header_title.text = "TARGETED REVIEW"
-	_progress_label.text = "MODULE 01 / STAGE %d / LESSON %d" % [stage, _lesson_index + 1]
+	_progress_label.text = "MODULE %s / STAGE %d / LESSON %d" % [module_id.trim_prefix("mod_"), stage, _lesson_index + 1]
 	_review_step = "done" if session.status == "ready" else "read"
 	_review_question = 0
 	_review_choice = -1
@@ -515,6 +515,7 @@ func _render_remediation() -> void:
 	match _review_step:
 		"read":
 			_phase_label.text = "YOUR NEXT STEP / " + str(_data.title).to_upper()
+			_content.add_child(UI.label(str(topic.title), 30, UI.TEAL))
 			_content.add_child(UI.label(str(topic.why), 28, UI.GOLD))
 			_content.add_child(UI.label(str(topic.rule), 28))
 			var example: PanelContainer = UI.panel(_content, UI.PANEL)
@@ -558,7 +559,10 @@ func _render_remediation() -> void:
 			_content.add_child(UI.label("Ready to try the stage again?", 30, UI.TEAL))
 			_content.add_child(UI.label("%d / %d first responses correct. You also worked through any corrections." % [first_correct, int(session.question_count)], 26))
 			_content.add_child(UI.label("Your BKT estimate uses new first responses, not lesson views or repeated corrections. Practice completion is not a guarantee of mastery.", 24, UI.MUTED))
-			_content.add_child(UI.label("Stage %d restarts at its opening with 3 story HP. Completed stages and lesson progress stay saved." % _remediation_stage, 26))
+			var retry_note: String = "Stage 10 restarts all 15 questions and 3 defense waves. Your recorded exam result is unchanged; review does not award a pass."
+			if _remediation_stage != 10:
+				retry_note = "Stage %d restarts at its opening with 3 story HP. Completed stages and lesson progress stay saved." % _remediation_stage
+			_content.add_child(UI.label(retry_note, 26))
 			_submit_button.text = "RETRY STAGE %d" % _remediation_stage
 	_fit_readability.call_deferred()
 

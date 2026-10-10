@@ -19,5 +19,9 @@ func access_reason(stage_id: int, module_id: String = "mod_01") -> String:
 	if not requirement.is_empty() and not PlayerManager.has_completed_lesson(requirement):
 		return "Complete the required lesson before deploying."
 	if PlayerManager.is_stage_locked(module_id, stage_id):
+		# A pending review grants access to the review route, never to gameplay.
+		# Router enforces the gate; module/preceding-stage/lesson checks stay above it.
+		if StageRemediation.pending(PlayerManager, module_id, stage_id):
+			return ""
 		return "Review the required material to clear this exam lock."
 	return ""

@@ -290,6 +290,8 @@ func _refresh_detail() -> void:
 	content.add_child(_label("%s  /  LESSONS %d OF %d" % [str(module.get("title", "")).to_upper(), clampi(PlayerManager.get_lesson_progress(id), 0, total), total], UI.MUTED, -3))
 	_breach_button.disabled = not _can_play(_selected)
 	_breach_button.text = ("REPLAY STAGE %02d  >" if PlayerManager.has_cleared_stage(_module_id(), _stage_id(_selected)) else "DEPLOY STAGE %02d  >") % (_selected + 1)
+	if StageRemediation.pending(PlayerManager, _module_id(), _stage_id(_selected)):
+		_breach_button.text = "CONTINUE TARGETED REVIEW"
 	if _breach_button.disabled:
 		_breach_button.text = "COMING SOON" if config.is_empty() else "LOCKED / SEE REQUIREMENTS"
 
@@ -317,6 +319,8 @@ func _status(index: int) -> String:
 		return "COMING SOON"
 	if not _is_unlocked(index):
 		return "COMPLETED / REVIEW REQUIRED" if PlayerManager.has_cleared_stage(_module_id(), _stage_id(index)) else "LOCKED"
+	if StageRemediation.pending(PlayerManager, _module_id(), _stage_id(index)):
+		return "TARGETED REVIEW / CONTINUE BEFORE RETRY"
 	return "COMPLETED / REPLAY AVAILABLE" if PlayerManager.has_cleared_stage(_module_id(), _stage_id(index)) else "AVAILABLE / READY TO DEPLOY"
 
 func _lock_reason(index: int) -> String:

@@ -15,6 +15,19 @@ class Account extends RefCounted:
 	var credits: int = 0
 	var cleared_stages: Dictionary = {}
 	var stage_tasks: int = 0
+	var graded_skills: Array[String] = []
+	var trace_results: Array[Dictionary] = []
+	var exam_locks: Array[String] = []
+	var module_1_complete: bool = false
+	func record_trace_result(module_id: String, question_id: String, correct: bool) -> void:
+		trace_results.append({"module": module_id, "id": question_id, "correct": correct})
+	func lock_stage(module_id: String, stage: int) -> void:
+		var key: String = DecisionScenarios.stage_key(module_id, stage)
+		if key not in exam_locks: exam_locks.append(key)
+	func unlock_stage(module_id: String, stage: int) -> void:
+		exam_locks.erase(DecisionScenarios.stage_key(module_id, stage))
+	func record_enemy_defeated(_kind: String) -> void:
+		pass
 	func learning_id() -> String:
 		ids += 1
 		return "test-%d" % ids
@@ -22,6 +35,7 @@ class Account extends RefCounted:
 		return mastery
 	func update_mastery(_skill: String, correct: bool, _params: Dictionary = {}, _persist: bool = true) -> void:
 		grades.append(correct)
+		graded_skills.append(_skill)
 		mastery = clampf(mastery + (0.05 if correct else -0.05), 0.01, 0.99)
 	func save_remediation(state: Dictionary) -> void:
 		remediation_state = R.restore(state)
@@ -75,7 +89,7 @@ func capture(name: String) -> void:
 
 func _run() -> void:
 	var snapshot: String = JSON.stringify(root.get_node("PlayerManager").get_save_data())
-	check(R.enabled("mod_01", 2) and not R.enabled("mod_01", 3) and not R.enabled("mod_02", 1), "Only authored checkpoints enabled")
+	check(R.enabled("mod_01", 10) and R.enabled("mod_02", 10) and not R.enabled("mod_03", 1) and not R.enabled("mod_01", 11), "Only both authored ten-stage campaigns enabled")
 	for id: String in R.MAPPINGS:
 		if not id.begins_with("mod01_s1_"):
 			continue
@@ -144,6 +158,10 @@ func _run() -> void:
 	await test_review_ui(timeout)
 	await test_live()
 	await test_stage_two()
+	test_all_content()
+	await test_remaining_story_stages()
+	await test_assessments()
+	test_locked_review_access()
 	check(account.lesson_progress.is_empty() and account.credits == 0, "Review cannot award progress or credits")
 	check(JSON.stringify(root.get_node("PlayerManager").get_save_data()) == snapshot, "Verification never changes real account data")
 	print("Stage remediation verification: %d failures" % failures)
@@ -171,7 +189,7 @@ func test_real_account() -> void:
 	restored.free()
 	account.free()
 
-func test_router_gate(account: Account, stage: int = 1) -> void:
+func test_router_gate(account: Account, stage: int = 1, module_id: String = "mod_01") -> void:
 	# Keep the production _begin_gameplay implementation. Replace only external
 	# dependencies and screen creation in memory so no participant save is touched.
 	var script: GDScript = GDScript.new()
@@ -182,6 +200,7 @@ func test_router_gate(account: Account, stage: int = 1) -> void:
 	router._test_account = account
 	var context: MatchContext = MatchContext.stage_one_live()
 	context.stage_id = stage
+	context.module_id = module_id
 	router._begin_gameplay(stage - 1, context)
 	check(router.destination.get("screen") == &"lesson_player" and router.destination.args.remediation_stage == stage, "Central deployment gate routes pending review to exact stage")
 	check(router._gameplay == null, "Pending review does not instantiate another gameplay scene")
@@ -349,6 +368,8 @@ func test_stage_two() -> void:
 	check(wrong.grades.is_empty() and wrong.remediation_state.sessions.is_empty(), "Reject a threat from a different stage before grading")
 	var ids: Array[String] = []
 	for topic: String in R.TOPICS:
+		if not R.ORIGINAL_TOPICS.has(topic):
+			continue
 		for question: Dictionary in R.questions(topic):
 			check(str(question.id) not in ids, "Practice IDs are unique across both stages")
 			ids.append(str(question.id))
@@ -480,3 +501,279 @@ func _stage_two_outcomes() -> void:
 	check(account.credits == 50 + game.gold and account.stage_tasks == 1, "Successful Stage 2 retains existing rewards exactly once")
 	game.queue_free()
 	await settle()
+
+func test_all_content() -> void:
+	var canonical_questions: Dictionary = {}
+	var catalog: GDScript = load("res://src/ui/screens/intel/lesson_catalog.gd")
+	for topic: String in R.TOPICS:
+		var data: Dictionary = R.TOPICS[topic]
+		var module_id: String = str(data.get("module", "mod_01"))
+		check(int(data.lesson) < catalog.lesson_count(module_id), "Real lesson exists: " + topic)
+		var bank: Array[Dictionary] = R.questions(topic)
+		check(bank.size() == 3, "Three authored practice items: " + topic)
+		for question: Dictionary in bank:
+			check(question.options.size() == 3 and int(question.correct) >= 0 and int(question.correct) < 3 and not str(question.feedback).is_empty(), "Complete practice answer/feedback: " + topic)
+			if canonical_questions.has(question.id):
+				check(canonical_questions[question.id] == question, "A shared practice ID always has identical content")
+			canonical_questions[question.id] = question
+	var covered: int = 0
+	for module_id: String in ["mod_01", "mod_02"]:
+		for stage: int in range(1, 11):
+			var items: Array[Dictionary] = DecisionScenarios.get_threats(module_id, stage)
+			if stage == 10:
+				if module_id == "mod_01":
+					for question: Dictionary in root.get_node("ContentDB").get_module_questions(module_id):
+						items.append(question)
+				else:
+					for round_data: Dictionary in DecisionScenarios.get_stage(module_id, stage).rounds:
+						for question: Dictionary in round_data.questions: items.append(question)
+			check(items.size() == (80 if module_id == "mod_01" else 15) if stage == 10 else items.size() == 3, "Actual source item count: %s:%d" % [module_id, stage])
+			for item: Dictionary in items:
+				covered += 1
+				check(R.MAPPINGS.has(str(item.id)), "Explicit mapping: " + str(item.id))
+				if not R.MAPPINGS.has(str(item.id)): continue
+				for mastery: float in [0.2, 0.8]:
+					var account: Account = Account.new()
+					account.mastery = mastery
+					R.observe(account, module_id, stage, {"threat": item, "outcome": "CRITICAL", "bkt_correct": false}, false)
+					var ticket: Dictionary = R.assign(account, module_id, stage)
+					check(not ticket.is_empty(), "Assign source item: " + str(item.id))
+					if ticket.is_empty(): continue
+					check(ticket.topic == R.MAPPINGS[item.id] and ticket.lesson_index == R.TOPICS[ticket.topic].lesson, "Exact source-to-lesson mapping")
+					check(ticket.question_count == (3 if mastery < 0.4 else 2), "Guided/focused threshold for each mapped item")
+					check(account.graded_skills == [R.skill(module_id)], "Correct module's mastery only")
+					R.start_review(account, module_id, stage)
+					var bank: Array[Dictionary] = R.questions(str(ticket.topic))
+					R.answer(account, module_id, stage, 0, (int(bank[0].correct) + 1) % 3)
+					account.remediation_state = R.restore(JSON.parse_string(JSON.stringify(account.remediation_state)))
+					for index: int in int(ticket.question_count):
+						R.answer(account, module_id, stage, index, int(bank[index].correct))
+					check(account.grades.size() == 1 + int(ticket.question_count), "Reload and correction grade first response only")
+					check(R.latest(account, module_id, stage).status == "ready", "Every mapped item reaches ready")
+					check(R.consume_review(account, module_id, stage), "Every mapped item releases its own retry")
+					check(not R.consume_review(account, module_id, stage), "Cannot consume review twice")
+	check(covered == 149 and R.MAPPINGS.size() == covered, "54 story decisions plus 95 possible exam questions, no invented IDs")
+	check(canonical_questions.size() == 81, "18 original + 63 new unique practice questions")
+	# Same transfer question in a later module is not fresh evidence.
+	var shared: Account = Account.new()
+	for entry: Array in [["mod_01", 4, "mod01_stage04_incident01"], ["mod_02", 2, "mod02_stage02_incident02"]]:
+		var module_id: String = str(entry[0])
+		var stage: int = int(entry[1])
+		R.observe(shared, module_id, stage, {"threat": {"id": entry[2]}, "outcome": "CRITICAL", "bkt_correct": false}, false)
+		var ticket: Dictionary = R.assign(shared, module_id, stage)
+		R.start_review(shared, module_id, stage)
+		for index: int in int(ticket.question_count):
+			R.answer(shared, module_id, stage, index, int(R.questions(str(ticket.topic))[index].correct))
+		check(R.consume_review(shared, module_id, stage), "Shared concept review completes in both modules")
+	check(shared.grades.size() == 5, "Three shared questions grade once globally plus two distinct story decisions")
+	var invalid: Account = Account.new()
+	R.observe(invalid, "mod_01", 1, {"threat": {"id": "mod02_stage01_incident01"}, "outcome": "CRITICAL", "bkt_correct": false}, false)
+	check(invalid.grades.is_empty(), "Cross-module observation rejected before grading")
+	print("All 20 stage mappings and 81 unique practice items verified.")
+
+func _mount_campaign(account: Account, module_id: String, stage: int) -> Control:
+	var path: String = "res://src/gameplay/assessment_live.tscn" if stage == 10 else "res://src/gameplay/decision/stage_one_live.tscn"
+	var game: Control = load(path).instantiate()
+	game.account = account
+	game.tasks = account
+	game.match_context = MatchContext.stage_one_live()
+	game.match_context.module_id = module_id
+	game.match_context.stage_id = stage
+	root.add_child(game)
+	game.set_process(false)
+	return game
+
+func _complete_review(account: Account, module_id: String, stage: int, render: bool = false) -> void:
+	var ticket: Dictionary = R.latest(account, module_id, stage)
+	var screen: Control = load("res://src/ui/screens/intel/lesson_player_screen.tscn").instantiate()
+	screen.account = account
+	root.add_child(screen)
+	screen.on_enter({"module_id": module_id, "remediation_stage": stage})
+	await settle()
+	check(screen._lesson_index == int(ticket.lesson_index) and screen._progress_label.text.begins_with("MODULE " + module_id.trim_prefix("mod_")), "Review shows correct module/lesson")
+	check(not screen._can_complete(), "Review cannot award lesson progress")
+	if render: await capture("review_%s_s%d" % [module_id, stage])
+	screen._on_continue()
+	for index: int in int(ticket.question_count):
+		var question: Dictionary = R.questions(str(ticket.topic))[index]
+		if render and index == 0:
+			await settle()
+			await capture("review_practice_%s_s%d" % [module_id, stage])
+		screen._choose_review_answer(int(question.correct))
+		screen._on_continue()
+		screen._on_continue()
+	await settle()
+	check(screen._review_step == "done" and screen._submit_button.text == "RETRY STAGE %d" % stage, "Review completes with stage-specific retry")
+	if render: await capture("review_done_%s_s%d" % [module_id, stage])
+	screen.queue_free()
+	await settle()
+
+func test_remaining_story_stages() -> void:
+	for module_id: String in ["mod_01", "mod_02"]:
+		for stage: int in range(3 if module_id == "mod_01" else 1, 10):
+			var threats: Array[Dictionary] = DecisionScenarios.get_threats(module_id, stage)
+			for incident: int in threats.size():
+				var account: Account = Account.new()
+				var game: Control = _mount_campaign(account, module_id, stage)
+				# Existing investigation UI is independently tested. Here drive the actual
+				# controller at each incident; inject only terminal combat loss.
+				game.decision.threat_index = incident
+				check(not game.decision.choose_by_outcome("RISKY").is_empty(), "Authored risky decision exists")
+				game._commit_decision()
+				check(game.story_hp == 3 and account.grades == [false], "Risky preserves HP and records one knowledge response")
+				game._finish(false)
+				var ticket: Dictionary = R.latest(account, module_id, stage)
+				check(ticket.get("topic") == R.MAPPINGS[threats[incident].id] and R.pending(account, module_id, stage), "Actual containment loss maps exact incident")
+				check(account.credits == 0 and account.cleared_stages.is_empty(), "Story failure awards no clear or credits")
+				test_router_gate(account, stage, module_id)
+				game.queue_free()
+				await settle()
+				await _complete_review(account, module_id, stage, incident == 2 and stage == 9)
+				check(R.consume_review(account, module_id, stage), "Review releases same story stage")
+				game = _mount_campaign(account, module_id, stage)
+				check(game.story_hp == 3 and game.decision.threat_index == 0, "Retry resets to own opening with 3 HP")
+				game.queue_free()
+				await settle()
+			# Safe-only combat defeat, all-safe completion, critical and timeout evidence.
+			for outcome: String in ["SAFE", "CRITICAL", "TIMEOUT", "CLEAR"]:
+				var account: Account = Account.new()
+				var game: Control = _mount_campaign(account, module_id, stage)
+				game.decision.choose_by_outcome("SAFE" if outcome in ["SAFE", "CLEAR"] else "CRITICAL")
+				game._commit_decision(outcome == "TIMEOUT")
+				var count: int = account.grades.size()
+				game._result_data(outcome == "CLEAR")
+				check(account.grades.size() == count, "Result does not grade twice")
+				check(R.pending(account, module_id, stage) == (outcome in ["CRITICAL", "TIMEOUT"]), "Only unsafe/timeout failure triggers knowledge review")
+				if outcome == "TIMEOUT": check(account.grades.is_empty(), "Timeout is support evidence, not a fabricated answer")
+				if outcome == "CLEAR": check(account.has_cleared_stage(module_id, stage), "Normal clear still works")
+				game.queue_free()
+				await settle()
+			print("Story recovery verified: %s stage %d / all 3 incidents" % [module_id, stage])
+
+func _exam_answer(game: Control, correct: bool, expired: bool = false) -> void:
+	var quiz: GDScript = preload("res://src/gameplay/quiz_content.gd")
+	if expired:
+		game.resolve_answer(true)
+		return
+	if quiz.is_multi(game.question):
+		game.selected_answers.clear()
+		if correct:
+			for option: Dictionary in quiz.options(game.question):
+				if int(option.value) in quiz._int_list(game.question.get("correct_indices", [])):
+					game.choose_answer(int(option.value))
+		else:
+			game.choose_answer(999)
+	else:
+		for option: Dictionary in quiz.options(game.question):
+			if quiz.grade(game.question, option.value) == correct:
+				game.choose_answer(option.value)
+				break
+	game.resolve_answer()
+
+func _exam_case(game: Control) -> void:
+	if not game.college: return
+	_read_story(game)
+	_read_story(game)
+	var overlay: Control = game.story_overlay
+	overlay._open_phone_investigation()
+	var laptop: Control = overlay._phone
+	laptop._unlock()
+	for item: Dictionary in laptop._items:
+		var id: String = str(item.id)
+		var app: String = str(item.get("phone_app", "mail"))
+		laptop._navigate(app)
+		if app == "mail":
+			laptop._open_message()
+			laptop._inspect(id)
+		else:
+			for card: Dictionary in laptop._data.get(app, []):
+				if str(card.get("evidence_id", "")) == id:
+					laptop._open_card(card)
+					break
+		for field: int in item.get("fields", []).size(): laptop._reveal_field(id, field)
+	# The actual laptop evidence gate must resolve before scored questions.
+	check(laptop.is_complete(), "College exam evidence pack completed")
+	laptop._finish()
+	if not overlay._dialogue_done: _read_story(game)
+	game._college_case_confirmed(0)
+	check(game.phase == "Trace", "College case starts scored questions only after evidence")
+
+func test_assessments() -> void:
+	for module_id: String in ["mod_01", "mod_02"]:
+		for mode: String in ["fail", "pass", "timeout", "combat"]:
+			var account: Account = Account.new()
+			var game: Control = _mount_campaign(account, module_id, 10)
+			game.start_assessment()
+			for wave: int in 3:
+				_exam_case(game)
+				for index: int in 5:
+					var should_miss: bool = mode in ["fail", "timeout"] and wave == 0 and index < 4
+					_exam_answer(game, not should_miss, mode == "timeout" and should_miss)
+					var count: int = account.grades.size()
+					game.resolve_answer(true)
+					check(account.grades.size() == count, "Duplicate exam submit cannot grade twice")
+					game.continue_question()
+				check(game.phase == "Build", "Five exam questions lead to defense")
+				game.begin_defend()
+				if mode == "combat":
+					game._finish(false)
+					break
+				game._wave_cleared()
+			if mode == "pass" and game.college:
+				_read_story(game)
+			check(game.phase == "Results", "Assessment reaches terminal result")
+			var score: int = game.correct_answers
+			var total: int = game.answered
+			check(score == (11 if mode in ["fail", "timeout"] else (5 if mode == "combat" else 15)), "Original formal exam score preserved")
+			check(account.trace_results.size() == total, "Formal answer history preserved")
+			check(account.grades.size() == total - (4 if mode == "timeout" else 0), "Exam BKT grades first actual responses, not timeout placeholders")
+			if mode in ["fail", "timeout"]:
+				check(R.pending(account, module_id, 10) and account.exam_locks == [module_id + ":10"], "Failed assessment gates exact module")
+				test_router_gate(account, 10, module_id)
+				game._advance_case_review()
+				check(account.exam_locks.size() == 1, "Old case-review action cannot unlock targeted review")
+				account.exam_locks.append("mod_03:10")
+				# Router normally tears down gameplay before opening review. Keep this
+				# fixture alive only to assert its score, without covering the review UI.
+				game.hud.result_overlay.hide()
+				await _complete_review(account, module_id, 10, mode == "fail")
+				check(game.correct_answers == score and game.answered == total and account.trace_results.size() == total and account.cleared_stages.is_empty(), "Practice never rewrites exam results or grants a pass")
+				check(R.consume_review(account, module_id, 10) and account.exam_locks == ["mod_03:10"], "Ready review clears only its assessment lock")
+			else:
+				check(not R.pending(account, module_id, 10) and account.exam_locks.is_empty(), "Pass or safe-only combat failure needs no knowledge review")
+				check(account.has_cleared_stage(module_id, 10) == (mode == "pass"), "Only passing exam and surviving waves clears Stage 10")
+			game.queue_free()
+			await settle()
+			game = _mount_campaign(account, module_id, 10)
+			check(game.answered == 0 and game.wave == 0 and game.waves_completed == 0 and game.phase == "Briefing", "Stage 10 retry starts full assessment, never the failed wave")
+			game.queue_free()
+			await settle()
+			print("Assessment recovery verified: %s / %s" % [module_id, mode])
+
+func test_locked_review_access() -> void:
+	# Production StageManager policy with only the account dependency replaced.
+	var memory: GDScript = GDScript.new()
+	memory.source_code = "extends \"res://src/autoload/player_manager.gd\"\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\tpass\nfunc is_module_deploy_unlocked(_module: String) -> bool:\n\treturn true\nfunc has_completed_lesson(_lesson: String) -> bool:\n\treturn true\n"
+	check(memory.reload() == OK, "Isolated real account for exam gate compiles")
+	var account: Node = memory.new()
+	account.max_stage_cleared_by_module = {"mod_01": 9, "mod_02": 9}
+	account.locked_stages = {"mod_02:10": true}
+	var script: GDScript = GDScript.new()
+	script.source_code = FileAccess.get_file_as_string("res://src/autoload/stage_manager.gd").replace("PlayerManager", "account") + "\nvar account: Object\n"
+	check(script.reload() == OK, "Isolated StageManager compiles")
+	var manager: Node = script.new()
+	manager.account = account
+	check(not manager.access_reason(10, "mod_02").is_empty(), "Legacy exam lock without review remains locked")
+	R.observe(account, "mod_02", 10, {"threat": {"id": "mod02_final_08"}, "outcome": "CRITICAL", "bkt_correct": false}, false)
+	R.assign(account, "mod_02", 10)
+	check(manager.access_reason(10, "mod_02").is_empty(), "Pending review remains reachable through stage selector despite exam lock")
+	account.max_stage_cleared_by_module["mod_02"] = 7
+	check(not manager.access_reason(10, "mod_02").is_empty(), "Review cannot bypass preceding-stage requirement")
+	var save: Dictionary = JSON.parse_string(JSON.stringify(account.get_save_data()))
+	var restored: Node = memory.new()
+	restored.apply_save_data(save)
+	check(R.pending(restored, "mod_02", 10) and restored.is_stage_locked("mod_02", 10), "Real save/load preserves review and exam lock together")
+	check(restored.get_mastery("phishing") == account.get_mastery("phishing"), "Smishing review leaves phishing mastery unchanged")
+	manager.free()
+	account.free()
+	restored.free()

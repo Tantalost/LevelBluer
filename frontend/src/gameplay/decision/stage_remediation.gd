@@ -1,8 +1,11 @@
 class_name StageRemediation
 extends RefCounted
 ## Shared policy/evidence, enabled only after each stage's authored mapping is verified.
-## Module 1 Stages 1–2 are authored checkpoints; do not infer mappings for others.
-const TOPICS: Dictionary = {
+## Every supported item is explicitly mapped; unknown content never guesses a lesson.
+const Content: GDScript = preload("res://src/gameplay/decision/remediation_content.gd")
+static var TOPICS: Dictionary = _topics()
+static var MAPPINGS: Dictionary = _mappings()
+const ORIGINAL_TOPICS: Dictionary = {
 	"sender": {"lesson": 1, "title": "Check the real sender", "why": "A familiar name or project detail does not prove who sent a message.", "rule": "Inspect the full address. Never send a password by reply; contact the office through saved details."},
 	"link": {"lesson": 2, "title": "Spot the lookalike destination", "why": "An urgent sign-in request needs an independent check, not a click on its own link.", "rule": "Compare the full destination with your saved school portal. Open the bookmark yourself; a deadline is not proof."},
 	"verify": {"lesson": 4, "title": "Verify, then decide", "why": "A message can be legitimate when independent evidence supports its ordinary request.", "rule": "Check the request through a known class page or trusted person. Do not label every message safe or unsafe just from its appearance."},
@@ -10,7 +13,7 @@ const TOPICS: Dictionary = {
 	"urgent_identity": {"stage": 2, "lesson": 1, "title": "Check the person behind the deadline", "why": "A teacher's name, school badge and urgent deadline can all be copied.", "rule": "Use the teacher's saved contact or the usual portal. Replying to the suspicious sender lets that same person claim the request is genuine.", "example": "A coach's name appears on a last-minute tournament form from sports-confirm.example. Your saved contact is coach@campus.example.\nAsk through the saved contact before acting. A quick reply from the new address proves nothing."},
 	"sharing_identity": {"stage": 2, "lesson": 1, "title": "Verify who gets your files", "why": "A real sharing service does not prove who is requesting access. View-only can still expose private files.", "rule": "Compare the exact account with your saved contact. Leave access unchanged until you verify the person and task; then share only the necessary file and permissions.", "example": "A new account requests your whole club folder on the real school drive. Your adviser already has access to the poster.\nKeep the contact sheet private. Check with the saved adviser before granting anything."},
 }
-const MAPPINGS: Dictionary = {
+const ORIGINAL_MAPPINGS: Dictionary = {
 	"mod01_s1_t1": "link", "mod01_s1_t2": "sender", "mod01_s1_t3": "verify",
 	"mod01_stage02_incident01": "project_link",
 	"mod01_stage02_incident02": "urgent_identity",
@@ -19,10 +22,23 @@ const MAPPINGS: Dictionary = {
 const GUIDED_THRESHOLD: float = 0.40 # Matches PlayerManager.AT_RISK_MASTERY.
 
 static func enabled(module_id: String, stage: int) -> bool:
-	return module_id == "mod_01" and stage in [1, 2]
+	return module_id in ["mod_01", "mod_02"] and stage >= 1 and stage <= 10
 
-static func _topic_matches_stage(topic: String, stage: int) -> bool:
-	return TOPICS.has(topic) and int(TOPICS[topic].get("stage", 1)) == stage
+static func _topics() -> Dictionary:
+	var result: Dictionary = ORIGINAL_TOPICS.duplicate(true)
+	result.merge(Content.topics())
+	return result
+
+static func _mappings() -> Dictionary:
+	var result: Dictionary = ORIGINAL_MAPPINGS.duplicate(true)
+	result.merge(Content.mappings())
+	return result
+
+static func skill(module_id: String) -> String:
+	return "smishing" if module_id == "mod_02" else "phishing"
+
+static func _topic_matches_stage(topic: String, stage: int, module_id: String) -> bool:
+	return TOPICS.has(topic) and int(TOPICS[topic].get("stage", 1)) == stage and str(TOPICS[topic].get("module", "mod_01")) == module_id
 
 static func latest(account: Object, module_id: String, stage: int) -> Dictionary:
 	var sessions: Array = account.remediation_state.get("sessions", [])
@@ -55,11 +71,11 @@ static func _seen(account: Object, item_id: String) -> bool:
 			return true
 	return false
 
-static func observe(account: Object, module_id: String, stage: int, result: Dictionary, timed_out: bool, grade_allowed: bool = true) -> void:
+static func observe(account: Object, module_id: String, stage: int, result: Dictionary, timed_out: bool, grade_allowed: bool = true, params: Dictionary = {}) -> void:
 	if not enabled(module_id, stage):
 		return
 	var item_id: String = str(result.threat.get("id", ""))
-	if not MAPPINGS.has(item_id) or not _topic_matches_stage(str(MAPPINGS[item_id]), stage):
+	if not MAPPINGS.has(item_id) or not _topic_matches_stage(str(MAPPINGS[item_id]), stage, module_id):
 		return
 	var session: Dictionary = latest(account, module_id, stage)
 	if session.is_empty() or str(session.status) in ["retried", "cleared", "tactical_retry"]:
@@ -70,11 +86,11 @@ static func observe(account: Object, module_id: String, stage: int, result: Dict
 	for response: Dictionary in session.decisions:
 		if response.item_id == item_id:
 			return
-	var before: float = account.get_mastery("phishing")
+	var before: float = account.get_mastery(skill(module_id))
 	var scored: bool = grade_allowed and not timed_out and not _seen(account, item_id)
 	if scored:
-		account.update_mastery("phishing", bool(result.bkt_correct), {}, false)
-	session.decisions.append({"item_id": item_id, "topic": MAPPINGS[item_id], "outcome": str(result.outcome), "timed_out": timed_out, "scored": scored, "mastery_before": before, "mastery_after": account.get_mastery("phishing")})
+		account.update_mastery(skill(module_id), bool(result.bkt_correct), params, false)
+	session.decisions.append({"item_id": item_id, "topic": MAPPINGS[item_id], "outcome": str(result.outcome), "timed_out": timed_out, "scored": scored, "mastery_before": before, "mastery_after": account.get_mastery(skill(module_id))})
 	_persist(account, session)
 
 static func assign(account: Object, module_id: String, stage: int) -> Dictionary:
@@ -97,7 +113,7 @@ static func assign(account: Object, module_id: String, stage: int) -> Dictionary
 	# A battle-only failure has no unsafe decision to remediate.
 	if selected.is_empty():
 		return {}
-	var mastery: float = account.get_mastery("phishing")
+	var mastery: float = account.get_mastery(skill(module_id))
 	session.merge({"status": "pending", "topic": selected, "lesson_index": int(TOPICS[selected].lesson), "mastery_at_assignment": mastery,
 		"support": "guided" if mastery < GUIDED_THRESHOLD else "focused", "question_count": 3 if mastery < GUIDED_THRESHOLD else 2,
 		"assigned_at": Time.get_unix_time_from_system()}, true)
@@ -119,6 +135,8 @@ static func start_review(account: Object, module_id: String, stage: int) -> Dict
 	return session
 
 static func questions(topic: String) -> Array[Dictionary]:
+	if TOPICS.has(topic) and TOPICS[topic].has("concept"):
+		return Content.questions(TOPICS[topic])
 	# Separate scenarios from the stage and existing mini-quizzes. Stable IDs prevent
 	# repeated exposure from inflating BKT; correction attempts never update mastery.
 	var rows: Array = []
@@ -177,11 +195,11 @@ static func answer(account: Object, module_id: String, stage: int, question_inde
 	if bool(observation.get("solved", false)):
 		return observation
 	if observation.is_empty():
-		var before: float = account.get_mastery("phishing")
+		var before: float = account.get_mastery(skill(module_id))
 		var scored: bool = bool(session.get("grade_allowed", true)) and not _seen(account, item_id)
 		if scored:
-			account.update_mastery("phishing", correct, {}, false)
-		observation = {"correct": correct, "choice": choice, "scored": scored, "mastery_before": before, "mastery_after": account.get_mastery("phishing"), "solved": correct}
+			account.update_mastery(skill(module_id), correct, {}, false)
+		observation = {"correct": correct, "choice": choice, "scored": scored, "mastery_before": before, "mastery_after": account.get_mastery(skill(module_id)), "solved": correct}
 	else:
 		observation["solved"] = correct
 	session.practice[item_id] = observation
@@ -191,7 +209,7 @@ static func answer(account: Object, module_id: String, stage: int, question_inde
 	if finished:
 		session.status = "ready"
 		session["completed_at"] = Time.get_unix_time_from_system()
-		session["mastery_after_review"] = account.get_mastery("phishing")
+		session["mastery_after_review"] = account.get_mastery(skill(module_id))
 	_persist(account, session)
 	return observation
 
@@ -212,6 +230,8 @@ static func consume_review(account: Object, module_id: String, stage: int) -> bo
 	# Clear the failed incident before releasing the gate. A crash between saves
 	# leaves the review ready, never an old incident playable as a fresh attempt.
 	account.clear_decision_stage_state(DecisionScenarios.stage_key(module_id, stage))
+	if stage == 10:
+		account.unlock_stage(module_id, stage)
 	mark(account, module_id, stage, "retried")
 	return true
 
@@ -236,7 +256,7 @@ static func restore(raw: Variant) -> Dictionary:
 			if not _integer_between(row.get("question_count"), 2, 3):
 				continue
 			row.question_count = int(row.question_count)
-			if not _topic_matches_stage(str(row.topic), int(row.stage)) or row.get("support", "") not in ["guided", "focused"]:
+			if not _topic_matches_stage(str(row.topic), int(row.stage), str(row.module_id)) or row.get("support", "") not in ["guided", "focused"]:
 				continue
 			row["lesson_index"] = int(TOPICS[row.topic].lesson)
 		var valid: bool = true
@@ -246,7 +266,7 @@ static func restore(raw: Variant) -> Dictionary:
 				valid = false
 				break
 			var item_id: String = str(response.item_id)
-			if not _topic_matches_stage(str(MAPPINGS[item_id]), int(row.stage)):
+			if not _topic_matches_stage(str(MAPPINGS[item_id]), int(row.stage), str(row.module_id)):
 				valid = false
 				break
 			if item_id in decision_ids or response.get("outcome", "") not in [DecisionScenarios.OUTCOME_SAFE, DecisionScenarios.OUTCOME_RISKY, DecisionScenarios.OUTCOME_CRITICAL] or not response.get("timed_out") is bool or not _valid_observation(response):

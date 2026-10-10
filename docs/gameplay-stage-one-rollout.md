@@ -2,11 +2,8 @@
 
 ## Targeted review rollout (2026-10-10)
 
-Approved scope: **all stages in Modules 1 and 2**, implemented and verified one
-stage at a time. Current enabled checkpoints: **Module 1 Stages 1 and 2**.
-Stages 3–9 need their own authored decision-to-lesson mappings and practice;
-both Stage 10 assessments require separate integration preserving graded scores.
-Module 2 stages are not yet enabled for this recovery system. Rewards, buffs,
+Enabled scope: **all 20 stages in Modules 1 and 2**, including both separately
+integrated Stage 10 assessments. Modules 3 onward are unchanged. Rewards, buffs,
 and voiced scenes are not part of this implementation checkpoint.
 
 The existing live controller emits the result; its result overlay emits
@@ -70,6 +67,55 @@ No extra scene tree or parallel BKT implementation is introduced.
 - Save validation rejects cross-stage threat/topic assignments. Both stages'
   review records coexist without overwriting each other.
 
+### Remaining stages and final assessments
+
+`remediation_content.gd` is the authored content bank, not a second controller.
+Every incident has an explicit topic and existing lesson anchor; no keyword
+matching guesses the student's mistake. Advanced topics extend the closest
+lesson inside targeted review rather than claiming a new course lesson exists.
+Lesson numbers below are one-based; entries follow each stage's incident order.
+
+| Module / stage | Incident-specific review focus → lesson |
+| --- | --- |
+| 1 / 3 | Identity → 2; sessions → 6; warnings → 5 |
+| 1 / 4 | Payments → 2; permissions → 2; destinations → 3 |
+| 1 / 5 | MFA → 6; sessions → 6; destinations → 3 |
+| 1 / 6 | Attachments → 4; consent → 6; destinations → 3 |
+| 1 / 7 | Payments → 2; attachments → 4; payment pressure → 5 |
+| 1 / 8 | Warnings → 5; isolation → 6; forwarding → 6 |
+| 1 / 9 | Sessions → 6; forwarding → 6; isolation → 6 |
+| 2 / 1 | Destinations → 2; independent verification → 4; codes → 3 |
+| 2 / 2 | Whole-record comparison → 4; payments → 4; codes → 3 |
+| 2 / 3 | Identity → 2; permissions → 5; payments → 5 |
+| 2 / 4 | Codes → 3; codes → 3; sessions → 6 |
+| 2 / 5 | Recovery → 6; privacy → 3; warnings → 6 |
+| 2 / 6 | SIM swaps → 6; authentication methods → 3; remote access → 6 |
+| 2 / 7 | Corroboration → 4; corroboration → 4; privacy → 5 |
+| 2 / 8 | Identity → 2; report scope → 5; response scope → 6 |
+| 2 / 9 | Identity → 2; destinations → 2; independent verification → 4 |
+
+- Coverage: all 54 story incidents, all 80 possible Module 1 final questions,
+  and all 15 Module 2 final questions. The bank contains 81 unique practice
+  questions: 18 preserved Stage 1–2 questions and 63 transfer questions.
+- Identical transfer questions deliberately share IDs across stages/modules.
+  Repeating the same question is practice, not fresh BKT evidence. Module 1
+  updates the phishing domain; Module 2 updates smishing. These remain broad
+  domain estimates, not separately trained concept-level mastery models.
+- A failed attempt selects one priority topic from its actual observations.
+  Critical evidence outweighs risky evidence; ties prefer the latest topic.
+  Lower mastery gets three guided questions, otherwise two focused questions.
+- Stage 10 retains 15 questions, three defense waves, and its 12/15 passing
+  requirement. Timeouts count as incorrect in the formal score but do not
+  fabricate a submitted BKT answer. Review never edits that score or grants a
+  pass. Retry starts a whole new exam, not the failed question or wave.
+- Pending exam review is reachable from stage selection despite its exam lock,
+  but normal module, prerequisite-stage, and lesson requirements still apply.
+  Review completion releases only the matching exam's lock when retrying.
+  Abandoned exams restart while retaining historical response evidence.
+- Safe-only combat failure gets tactical guidance, not an inferred knowledge
+  weakness. Existing legacy exam-review handling remains for accounts without
+  new mistake observations; historical mistakes are not reconstructed.
+
 ### Verification
 
 `verify_stage_remediation.gd` uses isolated accounts, including the real
@@ -84,9 +130,19 @@ review topics, guided/focused practice, reload during correction, distinct
 question IDs, stage-specific routing, and Stage 1 progress preservation.
 Containment completion/loss is injected at the controller boundary in these
 recovery tests; this is not a new combat-balance certification.
-Stage 1 screens were inspected at 1280×720 and 844×390; Stage 2 review/practice
-screens were inspected at 844×390 landscape. Screenshot artifacts remain under
-ignored `.godot/`.
+The expanded suite enumerates all 149 decision/question mappings at guided and
+focused mastery levels, verifies shared-question deduplication, and tests each
+remaining story incident through failure, review, and same-stage restart. Both
+assessments cover passing, wrong answers, timeouts, safe-only combat loss, saved
+locks, unchanged formal results, and full-exam retry. Assessment wave completion
+is injected for recovery testing; the existing Stage 10 regression separately
+exercises combat. The remediation, lesson-journey, and Stage 10 regression suites
+pass. Physical-device interaction and full stage-by-stage balance playtesting
+remain separate acceptance work.
+
+Stage 1 screens were inspected at 1280×720 and 844×390; Stage 2 and remaining
+campaign/final-assessment review screens were inspected at 844×390 landscape.
+Screenshot artifacts remain under ignored `.godot/`.
 
 The broad live-stage regression run exposed a Module 2 Stage 7 loadout/balance
 assertion (1 remaining HP, expected at least 3); this checkpoint does not adjust
