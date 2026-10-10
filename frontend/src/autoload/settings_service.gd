@@ -10,6 +10,7 @@ var master_volume: int = 80
 var sound_enabled: bool = true
 var sfx_volume: int = 70
 var music_enabled: bool = true
+var music_volume: int = 55
 
 var vibration_enabled: bool = true
 var auto_deploy: bool = false
@@ -60,6 +61,7 @@ func load_settings() -> void:
 	sound_enabled = cfg.get_value("audio", "sound_enabled", true)
 	sfx_volume = cfg.get_value("audio", "sfx_volume", 70)
 	music_enabled = cfg.get_value("audio", "music_enabled", true)
+	music_volume = clampi(int(cfg.get_value("audio", "music_volume", 55)), 0, 100)
 
 	vibration_enabled = cfg.get_value("gameplay", "vibration_enabled", true)
 	auto_deploy = cfg.get_value("gameplay", "auto_deploy", false)
@@ -85,6 +87,7 @@ func save_settings() -> void:
 	cfg.set_value("audio", "sound_enabled", sound_enabled)
 	cfg.set_value("audio", "sfx_volume", sfx_volume)
 	cfg.set_value("audio", "music_enabled", music_enabled)
+	cfg.set_value("audio", "music_volume", music_volume)
 
 	cfg.set_value("gameplay", "vibration_enabled", vibration_enabled)
 	cfg.set_value("gameplay", "auto_deploy", auto_deploy)

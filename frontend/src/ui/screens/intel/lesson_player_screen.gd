@@ -7,6 +7,12 @@ const Desktop = preload("res://src/ui/screens/intel/lesson_desktop_sim.gd")
 const Feedback = preload("res://src/ui/screens/intel/study_feedback.gd")
 const Web = preload("res://src/ui/screens/intel/lesson_web.gd")
 const PostQuiz = preload("res://src/ui/screens/intel/lesson_post_quiz.gd")
+const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
+var _remediation_stage: int = 0
+var _review_step: String = "read"
+var _review_question: int = 0
+var _review_choice: int = -1
+var _review_feedback: bool = false
 var account: Object
 var _web: Control
 var _post_quiz: Control
@@ -107,7 +113,11 @@ func _ready() -> void:
 
 func on_enter(args: Dictionary) -> void:
 	_pending_entry = {}
+	_remediation_stage = 0
 	var module_id := str(args.get("module_id", "mod_01"))
+	if args.has("remediation_stage"):
+		_enter_remediation(module_id, int(args.remediation_stage))
+		return
 	var tutorial := Router.is_tutorial and (Router.tutorial_beat == &"lesson" or bool(args.get("tutorial", false)))
 	if tutorial:
 		module_id = "mod_01"
@@ -207,6 +217,8 @@ func _open_lesson() -> void:
 	_fit_readability.call_deferred()
 
 func _open_step(index: int, step: int) -> void:
+	if _remediation_stage > 0:
+		return
 	if index < 0 or index >= _lessons.size() or step < 0 or step > 2:
 		return
 	if index > account.get_lesson_progress(_module_id) or (Router.is_tutorial and index != 0):
@@ -227,6 +239,8 @@ func _open_step(index: int, step: int) -> void:
 	_open_lesson()
 
 func can_go_back() -> bool:
+	if _remediation_stage > 0:
+		return true
 	if _post_active:
 		_show_roadmap()
 		_set_phase(_phase)
@@ -415,6 +429,7 @@ func _check_quiz() -> void:
 	var ok := _picks.size() == correct.size()
 	for index in correct:
 		ok = ok and index in _picks
+	AudioManager.play_sfx("ui_success" if ok else "ui_error")
 	if not ok:
 		_status_scroll.show()
 		_status_label.text = "Not quite. Re-read the case and try again. You must identify every correct option." if bool(_data.multi) else "Not quite. Verify the request rather than trusting a name or deadline. Try again."
@@ -432,12 +447,16 @@ func _check_quiz() -> void:
 func _on_simulation_passed() -> void:
 	if _phase != Phase.SIMULATION or not _quiz_passed:
 		return
+	AudioManager.play_sfx("ui_success")
 	_simulation_passed = true
 	_submit_button.disabled = false
 	_submit_button.text = "VIEW RESULT  >"
 
 func _on_continue() -> void:
 	if _busy or _submit_button.disabled:
+		return
+	if _remediation_stage > 0:
+		_continue_remediation()
 		return
 	match _phase:
 		Phase.DEFINITION:
@@ -458,8 +477,124 @@ func _on_continue() -> void:
 		Phase.COMPLETE:
 			_finish_lesson()
 
+func _enter_remediation(module_id: String, stage: int) -> void:
+	if not account.has_method("save_remediation") or not Remediation.pending(account, module_id, stage):
+		Router.request_back()
+		return
+	var session: Dictionary = Remediation.start_review(account, module_id, stage)
+	_module_id = module_id
+	_remediation_stage = stage
+	_phase = Phase.DEFINITION
+	_busy = false
+	_lesson_index = int(session.lesson_index)
+	_data = Study.build(module_id, _lesson_index)
+	_in_lesson = true
+	_panes.hide()
+	_start_button.hide()
+	_workspace.show()
+	_close_button.show()
+	_close_button.text = "< SAVE & EXIT"
+	_header_title.text = "TARGETED REVIEW"
+	_progress_label.text = "MODULE 01 / STAGE %d / LESSON %d" % [stage, _lesson_index + 1]
+	_review_step = "done" if session.status == "ready" else "read"
+	_review_question = 0
+	_review_choice = -1
+	_review_feedback = false
+	_render_remediation()
+
+func _render_remediation() -> void:
+	var session: Dictionary = Remediation.latest(account, _module_id, _remediation_stage)
+	var topic: Dictionary = Remediation.TOPICS[session.topic]
+	UI.clear(_content)
+	_quiz_buttons.clear()
+	_status_scroll.hide()
+	_page_back.hide()
+	_reading_progress.hide()
+	_submit_button.disabled = false
+	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
+	match _review_step:
+		"read":
+			_phase_label.text = "YOUR NEXT STEP / " + str(_data.title).to_upper()
+			_content.add_child(UI.label(str(topic.why), 28, UI.GOLD))
+			_content.add_child(UI.label(str(topic.rule), 28))
+			var example: PanelContainer = UI.panel(_content, UI.PANEL)
+			var column: VBoxContainer = UI.column(example, 10)
+			column.add_child(UI.label("YOUR INVESTIGATION CHECK", 22, UI.TEAL))
+			var example_text: String = "Saved portal: portal.campus.example\nMessage link: campus-check.example\nThose are different destinations. Use the saved portal to check the request."
+			if session.topic == "sender":
+				example_text = "Display name: Library Team\nSender: desk@library-help.example\nSaved contact: library@campus.example\nCheck with the saved contact. A familiar name is not proof."
+			elif session.topic == "verify":
+				example_text = "Your adviser confirms the poster deadline in person. Your saved class page agrees. No password or code is requested.\nIndependent evidence supports doing the ordinary class task."
+			example_text = str(topic.get("example", example_text))
+			column.add_child(UI.label(example_text, 24))
+			if session.support == "guided":
+				_content.add_child(UI.label("Let's take it step by step: who is asking, what do they want, and how can you check without using their link?", 24, UI.MUTED))
+			else:
+				_content.add_child(UI.label("A quick refresher for the decision that tripped you up. Put the check into action next.", 24, UI.MUTED))
+			_content.add_child(UI.label("Reading is support, not a scored answer. Next: %d short practice questions." % int(session.question_count), 22, UI.TEAL))
+			_submit_button.text = "TRY PRACTICE"
+		"question":
+			var question: Dictionary = Remediation.questions(str(session.topic))[_review_question]
+			var prior: Dictionary = session.practice.get(question.id, {})
+			_phase_label.text = "PRACTICE %d / %d" % [_review_question + 1, int(session.question_count)]
+			_content.add_child(UI.label(str(question.question), 28))
+			for index: int in question.options.size():
+				var button: Button = UI.button(str(question.options[index]), _choose_review_answer.bind(index))
+				button.disabled = _review_feedback
+				_content.add_child(button)
+				_quiz_buttons.append(button)
+			if _review_feedback:
+				_content.add_child(UI.label(("Correct. " if bool(prior.get("solved", false)) else "Let's check that together. ") + str(question.feedback), 25, UI.TEAL))
+				_submit_button.text = "CONTINUE" if bool(prior.get("solved", false)) else "TRY WITH THIS CLUE"
+			else:
+				_content.add_child(UI.label("Use the clue and try again. This correction isn't graded again." if not prior.is_empty() else "Take your time. Only your first answer to a new question is scored.", 22, UI.MUTED))
+				_submit_button.text = "CHECK ANSWER"
+				_submit_button.disabled = _review_choice < 0
+		"done":
+			_phase_label.text = "REVIEW COMPLETE"
+			var first_correct: int = 0
+			for response: Dictionary in session.practice.values():
+				if bool(response.correct): first_correct += 1
+			_content.add_child(UI.label("Ready to try the stage again?", 30, UI.TEAL))
+			_content.add_child(UI.label("%d / %d first responses correct. You also worked through any corrections." % [first_correct, int(session.question_count)], 26))
+			_content.add_child(UI.label("Your BKT estimate uses new first responses, not lesson views or repeated corrections. Practice completion is not a guarantee of mastery.", 24, UI.MUTED))
+			_content.add_child(UI.label("Stage %d restarts at its opening with 3 story HP. Completed stages and lesson progress stay saved." % _remediation_stage, 26))
+			_submit_button.text = "RETRY STAGE %d" % _remediation_stage
+	_fit_readability.call_deferred()
+
+func _choose_review_answer(index: int) -> void:
+	if _review_step != "question" or _review_feedback:
+		return
+	_review_choice = index
+	for item: int in _quiz_buttons.size():
+		_quiz_buttons[item].add_theme_stylebox_override("normal", UI.box(UI.PANEL, UI.TEAL if item == index else Color("3b626a"), 10))
+	_submit_button.disabled = false
+
+func _continue_remediation() -> void:
+	var session: Dictionary = Remediation.latest(account, _module_id, _remediation_stage)
+	if _review_step == "done":
+		Router.retry_after_remediation(_module_id, _remediation_stage)
+		return
+	if _review_step == "read" or _review_feedback:
+		_review_step = "question"
+		_review_feedback = false
+		_review_choice = -1
+		var bank: Array[Dictionary] = Remediation.questions(str(session.topic))
+		_review_question = 0
+		while _review_question < int(session.question_count) and bool(session.practice.get(bank[_review_question].id, {}).get("solved", false)):
+			_review_question += 1
+		if _review_question >= int(session.question_count):
+			_review_step = "done"
+	else:
+		var result: Dictionary = Remediation.answer(account, _module_id, _remediation_stage, _review_question, _review_choice)
+		if result.is_empty():
+			return
+		_review_feedback = true
+		AudioManager.play_sfx("ui_success" if bool(result.solved) else "ui_error")
+	_render_remediation()
+
 func _can_complete() -> bool:
-	return not _busy and _phase == Phase.COMPLETE and _quiz_passed and _simulation_passed
+	return _remediation_stage == 0 and not _busy and _phase == Phase.COMPLETE and _quiz_passed and _simulation_passed
 
 func _finish_lesson() -> void:
 	if not _can_complete():
@@ -492,6 +627,8 @@ func _on_tutorial_file_requested() -> void:
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
 		_tutorial_overlay.mouse_filter = MOUSE_FILTER_IGNORE
+	if Router.is_tutorial and Router.tutorial_beat == &"lesson":
+		_open_step(0, 0)
 
 func _on_tutorial_dashboard_requested() -> void:
 	Router.open_tutorial_dashboard()
@@ -509,7 +646,7 @@ func on_exit() -> void:
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
 func _open_post_quiz() -> void:
-	if Router.is_tutorial or _post_active or account.get_lesson_progress(_module_id) < _lessons.size():
+	if _remediation_stage > 0 or Router.is_tutorial or _post_active or account.get_lesson_progress(_module_id) < _lessons.size():
 		return
 	_post_active = true
 	_in_lesson = true

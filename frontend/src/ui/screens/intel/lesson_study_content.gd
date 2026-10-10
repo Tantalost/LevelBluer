@@ -8,6 +8,51 @@ const DOMAIN := {
 	"baiting": {"term": "Baiting", "definition": "Baiting offers a tempting reward or interesting find to make you install software, connect an unknown device or give away information.", "rule": "Do not trade your login for a prize or connect an unknown USB drive. Ask trusted staff to handle the item or verify the offer.", "app": "Device Security", "inspect": "Inspect item without opening", "verify": "Check with trusted staff", "action": "Reject and report item", "unsafe": "Open / install the offer"},
 }
 
+const PHISHING_BRIEFINGS: Array[Dictionary] = [
+	{
+		"title": "Operation: Inbox Impostor",
+		"hook": "An IT email just landed. Official business, or someone wearing a digital disguise?",
+		"mission": "Open Mail, inspect the sender, then search the Directory for University IT. Compare your findings in Evidence before handling the message.",
+		"why": "A familiar name is not proof. Checking the real source helps keep school accounts out of the wrong hands.",
+		"icon": IntelPixelIcon.Kind.ENVELOPE,
+	},
+	{
+		"title": "Operation: Name Tag",
+		"hook": "The help desk says your ticket is back. Time to check who is actually behind that name tag.",
+		"mission": "Read the ticket email in Mail and inspect its details. Ask the trusted Directory contact to verify the request, then choose your response.",
+		"why": "Anyone can type an official-looking name. Independent checks protect your password, even when a message sounds helpful.",
+		"icon": IntelPixelIcon.Kind.BADGE,
+	},
+	{
+		"title": "Operation: Double Take",
+		"hook": "Campus Wi-Fi needs attention. That web address looks familiar... but does it deserve your login?",
+		"mission": "Inspect the email in Mail. Use Browser to preview its destination without visiting it, then verify through Directory before responding.",
+		"why": "Lookalike addresses can lead somewhere completely different. A second look can keep your login from becoming someone else's.",
+		"icon": IntelPixelIcon.Kind.TERMINAL,
+	},
+	{
+		"title": "Operation: File in Disguise",
+		"hook": "A library notice brought an attachment. Your mission: investigate the file without waking it up.",
+		"mission": "Read the email, then open Files to inspect the attachment's properties without running it. Verify with Directory and handle the message safely.",
+		"why": "A document-looking name can hide a program. Checking the file type first helps protect the whole computer.",
+		"icon": IntelPixelIcon.Kind.BOOKS,
+	},
+	{
+		"title": "Operation: No Rush",
+		"hook": "Mia shared notes, and the email wants you to hurry. You set the pace here, not the inbox.",
+		"mission": "Open the shared-notes request in Mail. Inspect its details, check with the trusted Directory contact, and use your evidence to respond.",
+		"why": "A deadline can make a risky request feel normal. Pausing to verify helps protect you and the classmates sharing your files.",
+		"icon": IntelPixelIcon.Kind.CODEX,
+	},
+	{
+		"title": "Operation: Keep the Keys",
+		"hook": "One link promises to save your Wi-Fi. Your school login is the key: decide who gets near it.",
+		"mission": "Inspect the Wi-Fi email, preview the address in Browser, and verify with Directory. Choose a safe response before handing over any account access.",
+		"why": "A stolen login can let someone act as you. Practicing the checks now helps prevent the cleanup later.",
+		"icon": IntelPixelIcon.Kind.LOCK,
+	},
+]
+
 static func build(module_id: String, index: int) -> Dictionary:
 	var lessons := LessonCatalog.lessons_for(module_id)
 	if index < 0 or index >= lessons.size():
@@ -92,6 +137,8 @@ static func build(module_id: String, index: int) -> Dictionary:
 			result.correct.append(i)
 	if module_id == "mod_01" and index == 0:
 		result["simulation_id"] = "sender_cross_check"
+	if module_id == "mod_01" and index < PHISHING_BRIEFINGS.size():
+		result["simulation_briefing"] = PHISHING_BRIEFINGS[index].duplicate(true)
 	return result
 
 static func _scenario(source: Dictionary) -> String:

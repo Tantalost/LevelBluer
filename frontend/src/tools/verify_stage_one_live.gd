@@ -1085,7 +1085,7 @@ func _run() -> void:
 	check(router._scene_for_context(router._context_for_stage(8)) == router.STAGE_ONE_LIVE_SCENE, "Stage 9 also routes to the live decision scene (it is decision-based too)")
 	check(router._scene_for_context(router._context_for_stage(9)) == router.ASSESSMENT_LIVE_SCENE, "Module 1 Stage 10 uses the separate geometric assessment")
 	router.is_tutorial = true
-	check(not router._context_for_stage(0).geometric, "Tutorial remains legacy")
+	check(router._context_for_stage(0).tutorial and router._scene_for_context(router._context_for_stage(0)) == router.TUTORIAL_SCENE, "Tutorial uses its dedicated training scene")
 	router.is_tutorial = false
 	router.active_module_id = "mod_02"
 	check(router._scene_for_context(router._context_for_stage(0)) == router.STAGE_ONE_LIVE_SCENE, "Module 2 Stage 1 also routes to the live decision scene (it is decision-based too)")

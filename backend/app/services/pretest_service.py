@@ -242,7 +242,7 @@ def _upsert_bkt_records(student_id: str, mastery: dict[str, float]) -> None:
     if not rows:
         return
     try:
-        supabase.table("bkt_records").upsert(rows).execute()
+        supabase.table("bkt_records").upsert(rows, on_conflict="student_id,topic").execute()
     except Exception:
         # Table/constraint may not exist in every environment; student columns are source of truth.
         pass

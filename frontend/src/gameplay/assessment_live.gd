@@ -120,6 +120,8 @@ func resolve_answer(expired: bool = false) -> void:
 	super.resolve_answer(expired)
 	if answered == previous:
 		return
+	if answered == int(config.get("exam_question_count", 15)) and account == PlayerManager:
+		PlayerManager.record_learning_event("posttest", match_context.module_id, {"attempt_id":_learning_attempt, "instrument":"stage-exam-v1", "correct":correct_answers, "answered":answered, "total":15})
 	var correct: bool = correct_answers > previous_correct
 	if college and not correct:
 		missed_questions.append(question.duplicate(true))

@@ -12,6 +12,8 @@ extends BaseScreen
 @onready var _sfx_slider: HSlider = %SfxVolumeSlider
 @onready var _sfx_val: Label = %SfxVolumeVal
 @onready var _bgm_toggle: CheckButton = %BgmToggle
+var _music_slider: HSlider
+var _music_val: Label
 
 # Gameplay controls
 @onready var _vibration_toggle: CheckButton = %VibrationToggle
@@ -38,6 +40,7 @@ var _text_speed_select: OptionButton
 
 func _ready() -> void:
 	_load_font()
+	_build_music_volume()
 	_build_accessibility_controls()
 	get_viewport().size_changed.connect(_apply_scale)
 
@@ -58,6 +61,24 @@ func _load_font() -> void:
 		var file := load("res://assets/fonts/PressStart2P-Regular.ttf") as FontFile
 		if file != null:
 			_pixel_font = file
+
+
+func _build_music_volume() -> void:
+	var column: VBoxContainer = %BgmLabel.get_parent() as VBoxContainer
+	_music_val = Label.new()
+	column.add_child(_music_val)
+	_music_slider = HSlider.new()
+	_music_slider.name = "MusicVolumeSlider"
+	_music_slider.max_value = 100.0
+	_music_slider.step = 1.0
+	_music_slider.custom_minimum_size = Vector2(240, 48)
+	_music_slider.tooltip_text = "Music volume"
+	column.add_child(_music_slider)
+	_music_slider.value_changed.connect(func(value: float) -> void:
+		SettingsService.music_volume = int(value)
+		_music_val.text = "Music volume: %d%%" % int(value)
+		SettingsService.save_settings()
+	)
 
 
 func _build_accessibility_controls() -> void:
@@ -134,25 +155,27 @@ func _update_localized_text() -> void:
 
 
 func _load_ui_from_service() -> void:
-	_master_slider.value = SettingsService.master_volume
+	_master_slider.set_value_no_signal(SettingsService.master_volume)
 	_master_val.text = "%d%%" % SettingsService.master_volume
 
-	_sfx_toggle.button_pressed = SettingsService.sound_enabled
+	_sfx_toggle.set_pressed_no_signal(SettingsService.sound_enabled)
 
-	_sfx_slider.value = SettingsService.sfx_volume
+	_sfx_slider.set_value_no_signal(SettingsService.sfx_volume)
 	_sfx_val.text = "%d%%" % SettingsService.sfx_volume
 
-	_bgm_toggle.button_pressed = SettingsService.music_enabled
+	_bgm_toggle.set_pressed_no_signal(SettingsService.music_enabled)
+	_music_slider.set_value_no_signal(SettingsService.music_volume)
+	_music_val.text = "Music volume: %d%%" % SettingsService.music_volume
 
-	_vibration_toggle.button_pressed = SettingsService.vibration_enabled
-	_autodeploy_toggle.button_pressed = SettingsService.auto_deploy
-	_damage_toggle.button_pressed = SettingsService.show_damage_numbers
+	_vibration_toggle.set_pressed_no_signal(SettingsService.vibration_enabled)
+	_autodeploy_toggle.set_pressed_no_signal(SettingsService.auto_deploy)
+	_damage_toggle.set_pressed_no_signal(SettingsService.show_damage_numbers)
 
-	_push_toggle.button_pressed = SettingsService.push_notifications
-	_reminders_toggle.button_pressed = SettingsService.mission_reminders
+	_push_toggle.set_pressed_no_signal(SettingsService.push_notifications)
+	_reminders_toggle.set_pressed_no_signal(SettingsService.mission_reminders)
 
-	_hq_toggle.button_pressed = SettingsService.high_quality_graphics
-	_fps_toggle.button_pressed = SettingsService.show_fps_counter
+	_hq_toggle.set_pressed_no_signal(SettingsService.high_quality_graphics)
+	_fps_toggle.set_pressed_no_signal(SettingsService.show_fps_counter)
 	_reduced_motion_toggle.set_pressed_no_signal(SettingsService.reduced_motion)
 	_timer_assist_select.select(maxi(0, SettingsService.TIMED_DECISION_ASSIST_MODES.find(SettingsService.timed_decision_assist)))
 	_text_speed_select.select(maxi(0, SettingsService.TEXT_SPEED_MODES.find(SettingsService.text_speed)))
@@ -269,6 +292,9 @@ func _apply_scale() -> void:
 
 	for val in [_master_val, _sfx_val]:
 		_apply_pixel_font(val, scaled.call(10))
+	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_apply_pixel_font(_music_val, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
+	_music_slider.custom_minimum_size.y = maxf(48.0, ceilf(48.0 / physical_scale))
 	for label: Label in _accessibility_labels:
 		_apply_pixel_font(label, scaled.call(14))
 	_apply_pixel_font_button(_reduced_motion_toggle, scaled.call(11))

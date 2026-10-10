@@ -20,6 +20,8 @@ var _advisory: Label
 var _buttons: Array[Button] = []
 var _button_actions: Array[StringName] = [&"upgrade", &"restart", &"lessons", &"back"]
 var _skip: Button
+var _remediation: bool = false
+var _review_shade: ColorRect
 
 func _ready() -> void:
 	layer = 40
@@ -35,6 +37,12 @@ func _ready() -> void:
 	_grade.shader = preload("res://src/ui/screens/victory/defeat_tint.gdshader")
 	tint.material = _grade
 	_root.add_child(tint)
+	_review_shade = ColorRect.new()
+	_review_shade.color = Color("050b18f5")
+	_review_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_review_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_review_shade.hide()
+	_root.add_child(_review_shade)
 	_stage = _label(Color("cda2b7"))
 	_title = _label(Color("ff648a"))
 	_title.text = "BASE DESTROYED"
@@ -65,6 +73,8 @@ func _ready() -> void:
 
 func configure(data: Dictionary) -> void:
 	_won = bool(data.get("won", false))
+	_remediation = not _won and bool(data.get("remediation", false))
+	_review_shade.visible = _remediation
 	if _won:
 		_configure_clear(data)
 	else:
@@ -121,6 +131,8 @@ func _configure_defeat(data: Dictionary) -> void:
 		_buttons[2].text = ""
 		_buttons[3].text = ""
 		_button_actions = [&"restart", &"back", &"", &""]
+		if bool(data.get("remediation", false)):
+			_button_actions[0] = &"remediation"
 		# Primary is RETRY; EXIT MISSION is secondary.
 		_buttons[0].set("primary", true)
 		_buttons[1].set("primary", false)
@@ -173,9 +185,16 @@ func _layout() -> void:
 	_place(_kills, 0.495, 0.04, 0.65, 12 * factor)
 	_place(_advisory, 0.575, 0.085, 0.66, 10 * factor)
 	_advisory.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if _remediation:
+		_place(_stage, 0.10, 0.06, 0.9, 14 * factor)
+		_place(_title, 0.21, 0.12, 0.94, 30 * factor)
+		_place(_advisory, 0.38, 0.23, 0.82, maxf(14.0, 18 * factor))
+		_set_label_color(_advisory, Palette.CREAM)
 	for i in _buttons.size():
 		var button := _buttons[i]
 		var w := 240.0 if i == 0 else 164.0
+		if _remediation:
+			w = 340.0 if i == 0 else 240.0
 		button.size = Vector2(w, 52 if i == 0 else 42) * factor
 		button.position = Vector2((area.x - button.size.x) * 0.5, area.y * (0.74 if i == 0 else 0.85))
 		button.add_theme_font_size_override("font_size", maxi(9, int((15 if i == 0 else 11) * factor)))

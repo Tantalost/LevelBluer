@@ -2,6 +2,20 @@
 
 The six central menu buttons keep their authored shapes, textures, actions, and relative arrangement. Only the surrounding screen is redesigned: slate header, quiet teal accents, scenic pixel-art background, compact field progress, and a right-side holographic Handler.
 
+## UI audio milestone
+
+The existing AudioManager now owns two crossfading music players and eight reusable SFX voices. Router screen signals select loading, Solo hub, PvP hub, or quiet study music; the dashboard's mode-switch completion signal changes the OS music. Repeated routes sharing a track do not restart it. Intermediate routes in one navigation operation are coalesced. Disclaimer/title remain silent, and UI music fades out on entry to battle (battle music is outside this milestone).
+
+Seven original cues cover button clicks, confirmation, screen changes, incoming phone notifications, success, errors, and Defenses Online. Button hooks attach once, including custom dashboard controls. Per-cue cooldowns prevent accidental double playback. Phone notification audio remains enabled when motion reduction disables its shake. Loading readiness/error and lesson quiz/simulation/result screens use explicit cues.
+
+Settings persist separate music volume (55% default), SFX volume, master volume, and mute toggles. Opening Settings reads values without emitting save callbacks. Music-volume controls retain a 48-physical-pixel touch target and a minimum 16-physical-pixel label in landscape. Music remembers the newest route while muted. Application backgrounding pauses music and clears effects; resuming cannot replay stale effects.
+
+Audio provenance: original deterministic oscillator/noise synthesis, with no sampled music, third-party recordings, or anime melodies. Four 8-bar loops (approximately 18–27 seconds) and seven WAV cues total 402,406 bytes, bundled locally for offline/loading use. Compressed music peaks measured around -6.3 dBFS before runtime gain; device speaker balance still requires a listening playtest.
+
+To regenerate intentionally, run Godot with `--headless --path frontend --script res://src/tools/bake_game_audio.gd`. This overwrites the authored SFX WAVs and writes music intermediates into ignored `.godot/audio_bake`. Encode each of loading/hub/pvp/study with `ffmpeg -i frontend/.godot/audio_bake/<name>.wav -c:a libvorbis -q:a 4 frontend/assets/audio/bgm/<name>.ogg`, then reimport in Godot. Synthesis never runs during gameplay.
+
+Verification: `verify_game_audio.gd` covers resources, route selection, interrupted crossfades, mute/navigation, independent volume, suspend/resume, rapid/disabled/hidden buttons, paused-menu audio, bounded SFX voices, isolated settings persistence, and 1280×720 / 844×390 layouts. Add `-- --render` without headless for ignored screenshots. Dashboard, loading, and disclaimer regression suites also pass. Tests do not replace Android-device or browser audio playback checks.
+
 ## Assets
 
 - New background: `frontend/assets/ui/dashboard/command_outpost_v1.png` (one image, generated with the built-in image-generation tool).
@@ -55,6 +69,15 @@ The existing Store route and scene UID are preserved. Its content is now a pixel
 PvP matches and authoritative reward settlement are not connected. There is intentionally no local token-grant function, OS-switch reward, or participation shortcut. Production PvP must validate match rewards and purchases on the server; the existing client-save system is not an anti-cheat boundary. The UI explicitly reports unavailable match rewards. Purchased profile avatars can be equipped from Profile; other collectibles and borders remain collection-only. No item grants combat effects.
 
 Validation: `res://src/tools/verify_store.gd` checks wallet isolation, legacy/malformed saves, round trips, reset, canonical prices, duplicate/insufficient purchases, native card/tab interaction, confirmation/cancellation, stale quotes, owned states, and desktop and landscape-phone layouts. Its off-tree wallet probe overrides persistence so tests never write purchases or balances to the player's save. Use `--render` to capture previews under `.godot/store_*.png`.
+
+### Guided tutorial refresh
+
+- Deploy now routes tutorial sessions to `tutorial_match.tscn`, a disposable extension of the shared geometric combat controller. `MatchContext.tutorial` selects this scene explicitly; persistent/account bonuses are disabled. Live story and assessment routing are unchanged.
+- The current story phone teaches unlock, Mail, sender/link inspection and Contacts through its existing side checklist. Confirming all evidence enables three real choices; only then does the practice countdown start. Extended/off timer settings are respected. Safe responses are accepted, risky responses retain HP, and failed/expired responses demonstrate HP loss with a retry (never a real-stage penalty).
+- A separate defense drill requires two actual Basic Node placements, then Start Defense. It uses current tile selection, loadout, placement, tower inspection, move and upgrade controls. Checklist progress follows placement results; choosing a tile hides the guide so it cannot cover the picker. Practice never awards mission kills, mastery, credits or stage completion.
+- Existing starter Capacity research and the first Learn → Quiz → Simulation exercise follow. Tutorial-only lesson handling does not mark a real module complete. Existing starter research/Intel grants remain unchanged.
+- The final dashboard coach is a centered **TUTORIAL COMPLETE** panel with **OPEN LEARNING JOURNEY**. Acknowledgment calls the existing completion save once, removes the tutorial gate, and opens Lessons. Module pretests and post-test gates remain enforced; tutorial completion does not bypass them.
+- English/Filipino guidance is updated. Landscape QA covers 1280×720 and 844×390. Run `verify_tutorial.gd`; `-- --render` also records ignored screenshots. The fixture never clicks persistent grant/completion actions.
 
 ### Subdued PvP workspace background
 

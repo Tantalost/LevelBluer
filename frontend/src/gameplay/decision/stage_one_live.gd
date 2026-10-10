@@ -18,6 +18,10 @@ var mastery_frozen := false
 var reviewed_breach_index := -1
 var story_hp: int = 3
 var _timeout_failure: bool = false
+const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
+
+func _has_remediation() -> bool:
+	return Remediation.enabled(match_context.module_id, match_context.stage_id) and account.has_method("save_remediation")
 
 func _has_story_lives() -> bool:
 	return int(story.get("decision_lives", 0)) > 0
@@ -229,7 +233,7 @@ func _expire_decision() -> void:
 	var outcome: String = DecisionScenarios.timer_timeout_outcome(threat)
 	if decision.choose_by_outcome(outcome).is_empty():
 		return
-	var result: Dictionary = _commit_decision()
+	var result: Dictionary = _commit_decision(true)
 	if result.is_empty():
 		return
 	if _has_story_lives() and outcome == DecisionScenarios.OUTCOME_CRITICAL:
@@ -473,7 +477,7 @@ func _choice_selected(index: int) -> void:
 		return
 	story_overlay.show_consequence(str(result.outcome), str(result.choice.get("consequence", "")), str(result.threat.get("explanation", "")), _header(), "DAMAGE REPORT" if result.outcome == DecisionScenarios.OUTCOME_CRITICAL else "CONTINUE", "", DecisionScenarios.story_event_lines(result.choice as Dictionary, _memory()))
 
-func _commit_decision() -> Dictionary:
+func _commit_decision(timed_out: bool = false) -> Dictionary:
 	var result := decision.commit()
 	if result.is_empty():
 		return result
@@ -482,7 +486,9 @@ func _commit_decision() -> Dictionary:
 		story_overlay.set_story_hp(maxi(0, story_hp))
 	# Capture the committed threat's skill, not the next threat after SAFE advances.
 	var skill := str(result.threat.get("bkt_skill", story.get("bkt_skill", "phishing")))
-	if not mastery_frozen and int(result.threat_index) != reviewed_breach_index:
+	if _has_remediation() and int(result.threat_index) != reviewed_breach_index:
+		Remediation.observe(account, match_context.module_id, match_context.stage_id, result, timed_out, not mastery_frozen)
+	elif not mastery_frozen and int(result.threat_index) != reviewed_breach_index:
 		account.update_mastery(skill, bool(result.bkt_correct))
 	# Story memory follows the SAME "canonical resolution" rule as BKT just
 	# above: SAFE resolves the incident right here, so its memory commits
@@ -697,6 +703,8 @@ func _result_data(won: bool) -> Dictionary:
 	var stage_id: int = match_context.stage_id
 	var data := {"live": true, "won": won, "stage": stage_id, "wave": 1, "waves": config.waves.size(), "credits": 0, "kills": match_kills, "final_stage": false}
 	if won:
+		if _has_remediation():
+			Remediation.mark(account, match_context.module_id, stage_id, "cleared")
 		account.mark_stage_cleared(match_context.module_id, stage_id)
 		account.clear_decision_stage_state(_key())
 		tasks.record_stage_cleared()
@@ -732,6 +740,13 @@ func _result_data(won: bool) -> Dictionary:
 		if _has_story_lives() and story_hp < 0:
 			account.clear_decision_stage_state(_key())
 			data.merge({"title": "NO CHANCES LEFT", "subtitle": "TIME EXPIRED" if _timeout_failure else "STAGE ATTEMPT ENDED", "retry_label": "RESTART STAGE", "body": "Four failed decisions used all your chances. Restart from the opening and use what you learned.", "tip": "Story HP resets to 3. This stage starts again at the first incident."}, true)
+		if _has_remediation():
+			var review: Dictionary = Remediation.assign(account, match_context.module_id, stage_id)
+			if not review.is_empty():
+				data.merge({"remediation": true, "retry_label": "REVIEW LESSON", "body": str(Remediation.TOPICS[review.topic].why) + "\nNext: a focused lesson and fresh practice, then restart this stage."}, true)
+			else:
+				Remediation.mark(account, match_context.module_id, stage_id, "tactical_retry")
+				data["body"] = "No unsafe decision was recorded.\nTry a damage tower plus a slowing field. Upgrade before the next wave."
 	return data
 
 func _pause_title() -> String:
@@ -750,6 +765,7 @@ func toggle_pause() -> void:
 func _intent(id: String, value: Variant) -> void:
 	if id.begins_with("result_") and phase == "Results":
 		match id:
+			"result_remediation": Router.open_stage_remediation(match_context.module_id, match_context.stage_id)
 			"result_restart": Router.restart_level()
 			"result_next": Router.advance_level()
 			"result_upgrade": Router.open_defeat_upgrades()

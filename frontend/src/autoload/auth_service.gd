@@ -441,10 +441,13 @@ func submit_pretest(module_id: String, answers: Array) -> Result:
 		return Result.OK
 	if not _apply_local_pretest(module_id, answers):
 		return Result.UNKNOWN
+	PlayerManager.record_learning_event("pretest", module_id, {"answers":answers})
 	_pending_pretest[module_id] = answers
 	_persist(_signed_in, false, true)
 	session_changed.emit(_signed_in)
 	PlayerManager.seed_from_official_mastery()
+	var skill: String = str(PlayerManager.LEARNING_MODULES.find_key(module_id))
+	PlayerManager.record_learning_event("mastery", module_id, {"mastery":PlayerManager.get_mastery(skill)})
 	flush_pending_pretests()
 	return Result.OK
 

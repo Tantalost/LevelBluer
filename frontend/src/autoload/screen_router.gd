@@ -13,6 +13,7 @@ extends Node
 ## script ever sees the notification.
 
 signal screen_changed(screen_id: StringName)
+const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
 
 var is_tutorial: bool = false
 var tutorial_beat: StringName = &""
@@ -52,6 +53,7 @@ signal quit_requested
 
 const LEVEL_SCENE := "res://src/gameplay/level_base.tscn"
 const PREVIEW_SCENE := "res://src/gameplay/preview/stage_one_preview.tscn"
+const TUTORIAL_SCENE: String = "res://src/gameplay/tutorial/tutorial_match.tscn"
 const STAGE_ONE_LIVE_SCENE := "res://src/gameplay/decision/stage_one_live.tscn"
 const ASSESSMENT_LIVE_SCENE: String = "res://src/gameplay/assessment_live.tscn"
 var active_match_context: MatchContext = MatchContext.new()
@@ -192,6 +194,36 @@ func open_settings() -> void:
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
 		_push_now(&"settings")
+	)
+
+
+func open_stage_remediation(module_id: String, stage_id: int) -> void:
+	if _host == null or _busy or not Remediation.pending(PlayerManager, module_id, stage_id):
+		return
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		_set_ui_stack_active(true)
+		_push_now(&"lesson_player", {"module_id": module_id, "remediation_stage": stage_id})
+	)
+
+
+func retry_after_remediation(module_id: String, stage_id: int) -> void:
+	if _host == null or _busy or not Remediation.enabled(module_id, stage_id):
+		return
+	var review: Dictionary = Remediation.latest(PlayerManager, module_id, stage_id)
+	if review.get("status", "") != "ready" or not StageManager.access_reason(stage_id, module_id).is_empty():
+		return
+	await _navigate(true, func() -> void:
+		if not Remediation.consume_review(PlayerManager, module_id, stage_id):
+			return
+		_teardown_gameplay()
+		if current_screen_id() == &"lesson_player":
+			if _stack.size() > 1:
+				_pop_now()
+			else:
+				_replace_all_now(&"stage_select")
+		active_module_id = module_id
+		_begin_gameplay(stage_id - 1)
 	)
 
 
@@ -531,6 +563,8 @@ func _pop_now() -> void:
 
 
 func _context_for_stage(stage_index: int) -> MatchContext:
+	if is_tutorial:
+		return MatchContext.guided_training()
 	# Authored school/college assessments share geometric combat with story stages.
 	var stage_id: int = stage_index + 1
 	var decision_stage: bool = not is_tutorial and DecisionScenarios.is_decision_stage(active_module_id, stage_id)
@@ -541,6 +575,8 @@ func _context_for_stage(stage_index: int) -> MatchContext:
 	return context
 
 func _scene_for_context(context: MatchContext) -> String:
+	if context.tutorial:
+		return TUTORIAL_SCENE
 	if context.preview:
 		return PREVIEW_SCENE
 	if context.geometric and context.module_id in ["mod_01", "mod_02"] and context.stage_id == 10:
@@ -556,6 +592,12 @@ func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 		if not supported or is_tutorial or not StageManager.access_reason(context.stage_id, context.module_id).is_empty():
 			push_warning("Router: this stage is not available for this session.")
 			_set_ui_stack_active(true)
+			return
+		# One gate for deployment, retry, and asset-loading entry points. Called
+		# inside the router transition, so push directly instead of nesting navigation.
+		if Remediation.pending(PlayerManager, context.module_id, context.stage_id):
+			_set_ui_stack_active(true)
+			_push_now(&"lesson_player", {"module_id": context.module_id, "remediation_stage": context.stage_id})
 			return
 	if not context.geometric and not AssetManager.has_required_gameplay_assets():
 		push_error("Router: required gameplay assets are not available locally")

@@ -1,6 +1,8 @@
 extends Node
 signal avatar_changed
 const Avatars = preload("res://src/ui/screens/profile/avatar_portrait.gd")
+const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
+var remediation_state: Dictionary = {"sessions": []}
 var selected_avatar_id: String = "byte_bot"
 ## Autoload singleton, registered as "PlayerManager".
 ## Lesson progress is persisted per signed-in participant.
@@ -218,6 +220,7 @@ func record_lesson_post_quiz(module_id: String, score: int, answered: int) -> bo
 		return false
 	if get_lesson_progress(module_id) < LessonCatalog.lesson_count(module_id):
 		return false
+	record_learning_event("posttest", module_id, {"attempt_id":learning_id(), "instrument":"lesson-checkpoint-v1", "correct":score, "answered":answered, "total":25})
 	if score > int(lesson_post_quiz_scores.get(module_id, 0)):
 		lesson_post_quiz_scores[module_id] = score
 		_save_progress()
@@ -262,6 +265,8 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 
 
 func reset_to_defaults() -> void:
+	remediation_state = {"sessions": []}
+	learning_events.clear()
 	max_stage_cleared_by_module.clear()
 	credits = 0
 	pvp_tokens = 0
@@ -746,7 +751,7 @@ func bkt_params_from(question: Dictionary) -> Dictionary:
 	return stored as Dictionary
 
 
-func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}) -> void:
+func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}, persist: bool = true) -> void:
 	var key: String = skill_id if not skill_id.is_empty() else "phishing"
 	var p_guess: float = _bkt_param(params, ["p_g", "p_guess"], P_GUESS)
 	var p_slip: float = _bkt_param(params, ["p_s", "p_slip"], P_SLIP)
@@ -757,6 +762,7 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 	if not is_correct:
 		new_mastery = clampf(maxf(new_mastery, p_learned - MAX_WRONG_DROP), MIN_MASTERY, MAX_MASTERY)
 	mastery_matrix[key] = new_mastery
+	record_learning_event("mastery", str(LEARNING_MODULES.get(key, "")), {"mastery":new_mastery}, false)
 	print(
 		"[BKT] local %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"
 		% [key, "hit" if is_correct else "miss", p_learned, new_mastery, p_guess, p_slip, p_transit]
@@ -765,7 +771,14 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {})
 	# uploaded as-is by the existing cloud progress sync. Never also submit
 	# this same answer to AuthService's official-BKT queue/endpoint — that
 	# would be a second, server-side BKT calculation for one gameplay event.
-	SaveService.save_game()
+	if persist:
+		SaveService.save_game()
+
+
+func save_remediation(state: Dictionary) -> void:
+	remediation_state = Remediation.restore(state)
+	# Save evidence and its mastery update together, never re-submit to official BKT.
+	_save_progress()
 
 
 ## True only when this account has local changes SaveService hasn't
@@ -858,6 +871,7 @@ func _posterior(p_learned: float, is_correct: bool, p_guess: float = P_GUESS, p_
 
 func get_save_data() -> Dictionary:
 	return {
+		"learning_events": learning_events.duplicate(true),
 		"max_stage_cleared_by_module": max_stage_cleared_by_module.duplicate(true),
 		# Legacy field kept for older clients/detection only (see
 		# SaveService._looks_like_save()); it mirrors Module 1's own ceiling,
@@ -887,10 +901,18 @@ func get_save_data() -> Dictionary:
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
 		"decision_stage_state": decision_stage_state.duplicate(true),
 		"story_memory": story_memory.duplicate(true),
+		"remediation_state": remediation_state.duplicate(true),
 	}
 
 
 func apply_save_data(data: Dictionary) -> void:
+	remediation_state = Remediation.restore(data.get("remediation_state", {}))
+	learning_events.clear()
+	var events: Variant = data.get("learning_events", [])
+	if events is Array:
+		for event: Variant in events:
+			if event is Dictionary:
+				learning_events.append(event.duplicate(true))
 	# Missing/malformed legacy wallet always means zero, never Solo conversion.
 	pvp_tokens = 0
 	var tokens_raw: Variant = data.get("pvp_tokens", 0)
@@ -1147,3 +1169,41 @@ func _sync_evolution_unlocks() -> void:
 		unlocked_towers.append("scanner")
 	if evo >= 2 and not unlocked_towers.has("sandbox"):
 		unlocked_towers.append("sandbox")
+
+
+# Learning evidence is account-scoped and travels with the existing offline save.
+var learning_events: Array[Dictionary] = []
+const LEARNING_MODULES: Dictionary = {"phishing":"mod_01", "smishing":"mod_02", "vishing":"mod_03", "pretexting":"mod_04", "baiting":"mod_05"}
+
+func learning_id() -> String:
+	var value: String = Crypto.new().generate_random_bytes(16).hex_encode()
+	return "%s-%s-4%s-a%s-%s" % [value.substr(0,8), value.substr(8,4), value.substr(13,3), value.substr(17,3), value.substr(20,12)]
+
+func record_learning_event(kind: String, module_id: String, fields: Dictionary, persist: bool = true) -> void:
+	if not AuthService.is_signed_in() or module_id not in LEARNING_MODULES.values():
+		return
+	var event: Dictionary = fields.duplicate(true)
+	var now: float = Time.get_unix_time_from_system()
+	var stamp: String = Time.get_datetime_string_from_unix_time(int(now)) + ".%06dZ" % int(fmod(now, 1.0) * 1000000.0)
+	event.merge({"event_id":learning_id(), "kind":kind, "module_id":module_id, "occurred_at":stamp}, true)
+	learning_events.append(event)
+	if persist:
+		_save_progress()
+
+func begin_learning_attempt(module_id: String, stage_id: int) -> String:
+	if not AuthService.is_signed_in():
+		return ""
+	var attempt: String = learning_id()
+	record_learning_event("stage", module_id, {"attempt_id":attempt, "stage":stage_id, "outcome":"started"})
+	return attempt
+
+func finish_learning_attempt(attempt: String, module_id: String, stage_id: int, outcome: String) -> void:
+	if not attempt.is_empty():
+		record_learning_event("stage", module_id, {"attempt_id":attempt, "stage":stage_id, "outcome":outcome})
+
+func acknowledge_learning_events(ids: Array) -> void:
+	var remaining: Array[Dictionary] = []
+	for event: Dictionary in learning_events:
+		if event.get("event_id", "") not in ids:
+			remaining.append(event)
+	learning_events = remaining

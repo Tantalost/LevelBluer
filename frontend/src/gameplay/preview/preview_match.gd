@@ -44,6 +44,8 @@ var incident_active := false
 var incident_left := 0.0
 var incident: Dictionary = {}
 var global_patch := false
+var _learning_attempt: String = ""
+var _learning_owner: String = ""
 var hud: Control
 
 func _ready() -> void:
@@ -54,6 +56,9 @@ func _ready() -> void:
 		return
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_configure_match()
+	if match_context.persistent and not match_context.preview and get("account") == PlayerManager:
+		_learning_owner = AuthService.participant_code()
+		_learning_attempt = PlayerManager.begin_learning_attempt(match_context.module_id, match_context.stage_id)
 	hud = HUD.new()
 	add_child(hud)
 	hud.action.connect(_intent)
@@ -87,6 +92,7 @@ func _enemy_task_gateway() -> Object:
 	return null
 
 func _exit_tree() -> void:
+	_finish_learning("abandoned")
 	Engine.time_scale = 1.0
 
 func _process(delta: float) -> void:
@@ -533,6 +539,7 @@ func toggle_pause() -> void:
 func _finish(won: bool) -> void:
 	if phase == "Results":
 		return
+	_finish_learning("cleared" if won else "failed")
 	_set_phase("Results")
 	incident_active = false
 	hud.battle.world.process_mode = Node.PROCESS_MODE_DISABLED
@@ -587,3 +594,9 @@ func _intent(id: String, value: Variant) -> void:
 				Engine.time_scale = speed
 		"exit": Router.return_to_stage_select()
 		"retry": Router.restart_level()
+
+
+func _finish_learning(outcome: String) -> void:
+	if not _learning_attempt.is_empty() and _learning_owner == AuthService.participant_code():
+		PlayerManager.finish_learning_attempt(_learning_attempt, match_context.module_id, match_context.stage_id, outcome)
+	_learning_attempt = ""

@@ -19,8 +19,8 @@ const TALK_SWAP_CHARS := 5
 const EXPR_TALK := "npc_talk"
 const EXPR_CALM := "npc_calm"
 const EXPR_SMILE := "npc_smile"
-const BOX_FILL := Color("#1A3C6D")
-const BOX_BORDER := Color("#EEF2FF")
+const BOX_FILL := Color("#0A1730")
+const BOX_BORDER := Color("#4FE0D4")
 const BOX_INNER := Color("#C8D8FF")
 const TAG_FILL := Color("#C2C2C2")
 const TEXT_WHITE := Color("#EEF2FF")
@@ -54,6 +54,7 @@ func _ready() -> void:
 	_bind_nodes()
 	_load_font()
 	_style_chrome()
+	resized.connect(_fit_current_layout)
 	if _choice_list != null:
 		_choice_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _dialogue_box != null:
@@ -121,6 +122,79 @@ func setup_explore() -> void:
 	_deploy_rect = Rect2()
 	_glow_rect = Rect2()
 	_prime_coach(108, tr("TUTORIAL_DASH_DONE"), 0.42, true, false)
+	_portrait_allowed = false
+	_face_art.hide()
+	_name_label.text = tr("TUTORIAL_COMPLETE_TITLE")
+	_fit_current_layout()
+
+## Non-blocking, action-driven battle checklist. The phone owns its own guide.
+func setup_task(title: String, instruction: String, tasks: Array[Dictionary]) -> void:
+	_seq += 1
+	_typing = false
+	_portrait_allowed = false
+	_mode = Mode.MATCH
+	_beat = 100
+	_glow_rect = Rect2()
+	set_process(false)
+	show()
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_dim.hide()
+	_cards.hide()
+	_face_art.hide()
+	get_node("NameTag").hide()
+	_tap_catch.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_choice_list.hide()
+	_dialogue_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+	_dialogue_box.position = Vector2(16, 146)
+	_dialogue_box.size = Vector2(minf(390.0, get_viewport_rect().size.x * 0.27), 0)
+	_dialogue_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_body_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_body_label.add_theme_font_size_override("font_size", _readable_font())
+	var copy: String = title + "\n" + instruction
+	for task: Dictionary in tasks:
+		copy += "\n" + ("[x] " if bool(task.get("done", false)) else "[ ] ") + str(task.get("text", ""))
+	_full_line = copy
+	_body_label.text = copy
+
+func _readable_font() -> int:
+	var scale_factor: float = maxf(0.4, get_viewport().get_final_transform().get_scale().x)
+	return maxi(28, ceili(20.0 / scale_factor))
+
+func _fit_current_layout() -> void:
+	if _body_label == null:
+		return
+	_apply_fonts()
+	if _beat == 108:
+		var width: float = minf(1000.0, size.x - 64.0)
+		var left: float = (size.x - width) * 0.5
+		var top: float = (size.y - 430.0) * 0.5
+		var tag: Control = get_node("NameTag") as Control
+		tag.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		tag.position = Vector2(left, top)
+		tag.size = Vector2(width, 64)
+		_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_name_label.add_theme_font_size_override("font_size", _readable_font() + 10)
+		_dialogue_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		_dialogue_box.position = Vector2(left, top + 76)
+		_dialogue_box.size = Vector2(width, 252)
+		_body_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_choice_list.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		_choice_list.position = Vector2(left, top + 344)
+		_choice_list.size = Vector2(width, 72)
+		_choice_list.alignment = BoxContainer.ALIGNMENT_CENTER
+	elif _beat == 100:
+		_dialogue_box.size.x = minf(390.0, size.x * 0.27)
+	else:
+		var height: float = maxf(150.0, float(_readable_font()) * 4.0 + 48.0)
+		_dialogue_box.offset_top = -height
+		var tag: Control = get_node("NameTag") as Control
+		tag.offset_top = -height - 52.0
+		tag.offset_bottom = -height + 5.0
+		_choice_list.offset_top = -height - 144.0
+		_choice_list.offset_bottom = -height - 8.0
+	for child: Node in _choice_list.get_children():
+		if child is Button:
+			_style_choice(child as Button)
 
 
 func setup_match() -> void:
@@ -387,7 +461,7 @@ func _present_choices() -> void:
 
 func _add_choice(label: String, id: StringName) -> void:
 	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0.0, 44.0)
+	btn.custom_minimum_size = Vector2(0.0, 72.0)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_END
 	btn.mouse_filter = Control.MOUSE_FILTER_STOP
 	btn.focus_mode = Control.FOCUS_ALL
@@ -395,6 +469,7 @@ func _add_choice(label: String, id: StringName) -> void:
 	btn.pressed.connect(_on_choice.bind(id))
 	_style_choice(btn)
 	_choice_list.add_child(btn)
+	_fit_current_layout()
 
 
 func _clear_choices() -> void:
@@ -403,7 +478,7 @@ func _clear_choices() -> void:
 	while _choice_list.get_child_count() > 0:
 		var child: Node = _choice_list.get_child(0)
 		_choice_list.remove_child(child)
-		child.free()
+		child.queue_free() # May be the button currently emitting pressed.
 
 
 func _on_choice(id: StringName) -> void:
@@ -506,7 +581,7 @@ func _style_choice(btn: Button) -> void:
 	btn.add_theme_color_override("font_color", TEXT_WHITE)
 	btn.add_theme_color_override("font_hover_color", Color.WHITE)
 	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
-	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_font_size_override("font_size", _readable_font())
 	if _pixel_font != null:
 		btn.add_theme_font_override("font", _pixel_font)
 
@@ -526,9 +601,10 @@ func _rpg_box(fill: Color, border: Color, radius: int, border_w: int, pad_x: flo
 
 func _apply_fonts() -> void:
 	if _name_label != null:
-		_apply_label(_name_label, Palette.INK, 16)
+		_apply_label(_name_label, Palette.INK, _readable_font())
 	if _body_label != null:
-		_apply_label(_body_label, TEXT_WHITE, 18)
+		_apply_label(_body_label, TEXT_WHITE, _readable_font())
+		_body_label.add_theme_constant_override("line_spacing", 6)
 
 
 func _bind_nodes() -> void:

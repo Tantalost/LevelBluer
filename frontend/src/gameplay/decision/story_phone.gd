@@ -6,6 +6,7 @@ signal detail_inspected(id: String)
 signal investigation_confirmed
 
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+var guide_text_pixels: float = 16.0
 var _shell: PanelContainer
 var _content: VBoxContainer
 var _title: Label
@@ -566,7 +567,7 @@ func _metrics() -> void:
 	if not is_instance_valid(_shell):
 		return
 	var scale_factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-	_guide.add_theme_font_size_override("normal_font_size", maxi(22, ceili(16.0 / scale_factor)))
+	_guide.add_theme_font_size_override("normal_font_size", maxi(22, ceili(guide_text_pixels / scale_factor)))
 	for node: Node in find_children("*", "Control", true, false):
 		if node is Label or node is Button:
 			(node as Control).add_theme_font_size_override("font_size", maxi(22, ceili((40.0 if node.has_meta("phone_clock") else 16.0) / scale_factor)))

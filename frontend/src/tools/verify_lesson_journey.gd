@@ -47,6 +47,7 @@ func _run() -> void:
 	Catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")
 	var memory_script: GDScript = GDScript.new()
 	memory_script.source_code = "extends \"res://src/autoload/player_manager.gd\"\nvar writes: int = 0\nvar answers: int = 0\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\twrites += 1\nfunc update_mastery(skill_id: String, correct: bool, params: Dictionary = {}) -> void:\n\tanswers += 1\n\tvar prior: float = get_mastery(skill_id)\n\tvar post: float = _posterior(prior, correct, float(params.get(\"p_g\", P_GUESS)), float(params.get(\"p_s\", P_SLIP)))\n\tmastery_matrix[skill_id] = clampf(post + (1 - post) * float(params.get(\"p_t\", P_TRANSIT)), MIN_MASTERY, MAX_MASTERY)\nfunc complete_lesson_unit(module_id: String, total: int, _ids: Array[String]) -> void:\n\tlesson_progress[module_id] = mini(total, get_lesson_progress(module_id) + 1)\n\twrites += 1\n"
+	memory_script.source_code = memory_script.source_code.replace("params: Dictionary = {}) -> void:", "params: Dictionary = {}, _persist: bool = true) -> void:")
 	check(memory_script.reload() == OK, "In-memory account compiles")
 	var account: Node = memory_script.new()
 	check(account.can_access_lesson_module("mod_01") and not account.can_access_lesson_module("mod_02"), "Fresh account only opens Module 1")
@@ -156,12 +157,17 @@ func _run() -> void:
 	player._on_continue()
 	player._on_continue()
 	player._on_continue()
+	await settle()
 	for value: int in player._data.correct:
 		player._pick(value)
 	player._check_quiz()
 	check(player._quiz_passed, "Original mini quiz still grades")
 	player._on_continue()
 	var sim: Control = player._simulation
+	check(not sim._started, "Simulation begins with its mission briefing")
+	await settle()
+	sim._start_simulation()
+	await settle()
 	sim._act("open")
 	sim._select_mail()
 	sim._inspect_sender()
@@ -169,6 +175,7 @@ func _run() -> void:
 	sim._search_directory("University IT")
 	sim._compare_domains(true)
 	sim._tap_quarantine()
+	await settle()
 	check(player._simulation_passed, "Original evidence simulation still completes")
 	player._on_continue()
 	player._finish_lesson()

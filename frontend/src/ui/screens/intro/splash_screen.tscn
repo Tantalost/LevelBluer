@@ -1,27 +1,22 @@
-[gd_scene load_steps=5 format=3 uid="uid://dlfiwm5qp15wh"]
+[gd_scene load_steps=9 format=3 uid="uid://dlfiwm5qp15wh"]
 
 [ext_resource type="Script" uid="uid://b3gr4m5mws5nj" path="res://src/ui/screens/intro/splash_screen.gd" id="1_63qxy"]
 [ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_p78g7"]
 [ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="3_theme"]
+[ext_resource type="Texture2D" path="res://assets/ui/loading_before_v1.webp" id="4_before"]
+[ext_resource type="Texture2D" path="res://assets/ui/loading_after_v1.webp" id="5_after"]
+[ext_resource type="FontFile" path="res://assets/fonts/DigitalDisco.ttf" id="6_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
-bg_color = Color(0.176471, 0.184314, 0.2, 0.95)
+bg_color = Color(0.039, 0.09, 0.188, 1)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
-border_color = Color(1, 1, 1, 0.06)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+border_color = Color(0.09, 0.188, 0.345, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_fill"]
-bg_color = Color(1, 0.819608, 0.4, 1)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
-corner_radius_bottom_right = 12
-corner_radius_bottom_left = 12
+bg_color = Color(0.31, 0.878, 0.831, 1)
 
 [node name="SplashScreen" type="Control"]
 layout_mode = 3
@@ -41,7 +36,23 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
+texture = ExtResource("4_before")
 stretch_mode = 6
+mouse_filter = 2
+
+[node name="ReadyArt" type="TextureRect" parent="."]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+texture = ExtResource("5_after")
+stretch_mode = 6
+mouse_filter = 2
 
 [node name="BottomScrim" type="ColorRect" parent="."]
 layout_mode = 1
@@ -52,7 +63,8 @@ anchor_bottom = 1.0
 offset_top = -220.0
 grow_horizontal = 2
 grow_vertical = 0
-color = Color(0, 0, 0, 0.45)
+color = Color(0.02, 0.043, 0.094, 0.86)
+mouse_filter = 2
 
 [node name="SafeAreaContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -85,9 +97,23 @@ custom_minimum_size = Vector2(480, 0)
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="StatusLabel" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
+[node name="Headline" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_colors/font_color = Color(0.31, 0.878, 0.831, 1)
+text = "POWERING UP"
+horizontal_alignment = 1
+
+[node name="StatusRow" type="HBoxContainer" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="StatusLabel" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_fonts/font = ExtResource("6_font")
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
 theme_override_constants/shadow_offset_x = 0
@@ -95,7 +121,14 @@ theme_override_constants/shadow_offset_y = 1
 theme_override_constants/shadow_outline_size = 4
 theme_override_font_sizes/font_size = 18
 text = "Loading"
-horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Percent" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+text = "0%"
+vertical_alignment = 1
 
 [node name="ProgressBar" type="ProgressBar" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
 unique_name_in_owner = true
@@ -106,7 +139,15 @@ theme_override_styles/background = SubResource("StyleBoxFlat_bar_bg")
 theme_override_styles/fill = SubResource("StyleBoxFlat_bar_fill")
 max_value = 100.0
 show_percentage = false
-value = 35.0
+value = 0.0
+
+[node name="AssetDetail" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_fonts/font = ExtResource("6_font")
+theme_override_colors/font_color = Color(0.56, 0.94, 0.90, 1)
+text = "Preparing your session"
+autowrap_mode = 3
 
 [node name="TipLabel" type="Label" parent="SafeAreaContainer/Layout/LoadingGroup/Panel"]
 unique_name_in_owner = true
@@ -117,6 +158,7 @@ theme_override_constants/shadow_offset_x = 0
 theme_override_constants/shadow_offset_y = 1
 theme_override_constants/shadow_outline_size = 3
 theme_override_font_sizes/font_size = 12
+theme_override_fonts/font = ExtResource("6_font")
 text = "Tip"
 horizontal_alignment = 1
 autowrap_mode = 2
@@ -128,3 +170,4 @@ layout_mode = 2
 size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 14
 text = "Retry"
+theme_override_fonts/font = ExtResource("6_font")
