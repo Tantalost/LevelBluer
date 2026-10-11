@@ -17,6 +17,7 @@ const BOT_ACCURACY: float = 0.65
 const BOT_DELAY_MIN_MS: int = 1500
 const BOT_DELAY_MAX_MS: int = 8000
 const BOT_NAME: String = "RIVAL NODE"
+const ROUND_MESSAGE: String = "pvp_round"
 
 class Answer:
 	var locked: bool = false
@@ -26,8 +27,10 @@ class Answer:
 	var pick: Variant = null
 
 class RoundState:
+	var round: int = 0
 	var question_id: String = ""
 	var question: Dictionary = {}
+	var option_order: Array[int] = []
 	var started_at: int = 0
 	var ends_at: int = 0
 	var resolved: bool = false
@@ -55,7 +58,10 @@ var bot_correct: int = 0
 var player_correct_ms: int = 0
 var bot_correct_ms: int = 0
 var match_result: Outcome = Outcome.ONGOING
+var questions_selected: int = 0
 
+var _player_stats: Dictionary = _new_stats()
+var _bot_stats: Dictionary = _new_stats()
 var _deck: Array[Dictionary] = []
 var _source: Array[Dictionary] = []
 var _round_cursor: int = 0
@@ -190,7 +196,77 @@ func submit_player(pick: Variant, now_ms: int) -> bool:
 func current_question() -> Dictionary:
 	if _current == null:
 		return {}
-	return _current.question
+	return _current.question.duplicate(true)
+
+
+## The authoritative round message sent to every client. It carries the id, never the question payload.
+func round_message() -> Dictionary:
+	if _current == null:
+		return {}
+	return {
+		"type": ROUND_MESSAGE,
+		"round": _current.round,
+		"question_id": _current.question_id,
+		"option_order": _current.option_order.duplicate(),
+		"started_at": _current.started_at,
+		"ends_at": _current.ends_at,
+	}
+
+
+func shared_round() -> Dictionary:
+	if _current == null:
+		return {}
+	return resolve_round(round_message(), [_current.question])
+
+
+## Client side: rebuild the round from the local bank. Returns {} when the message cannot be honored.
+static func resolve_round(message: Dictionary, bank: Array) -> Dictionary:
+	if str(message.get("type", "")) != ROUND_MESSAGE:
+		return {}
+	var qid: String = str(message.get("question_id", "")).strip_edges()
+	if qid.is_empty():
+		return {}
+	var question: Dictionary = {}
+	for row: Variant in bank:
+		if typeof(row) == TYPE_DICTIONARY and question_id(row as Dictionary) == qid:
+			question = (row as Dictionary).duplicate(true)
+			break
+	if question.is_empty():
+		return {}
+	var base: Array[Dictionary] = Quiz.options(question)
+	var raw_order: Variant = message.get("option_order", [])
+	if typeof(raw_order) != TYPE_ARRAY or (raw_order as Array).size() != base.size():
+		return {}
+	var used: Dictionary = {}
+	var options: Array[Dictionary] = []
+	for slot: Variant in raw_order as Array:
+		var index: int = int(slot)
+		if index < 0 or index >= base.size() or used.has(index):
+			return {}
+		used[index] = true
+		options.append(base[index])
+	return {
+		"round": int(message.get("round", 0)),
+		"question_id": qid,
+		"question": question,
+		"options": options,
+		"difficulty": str(question.get("difficulty", "")),
+		"topic": str(question.get("topic", "")),
+		"started_at": int(message.get("started_at", 0)),
+		"ends_at": int(message.get("ends_at", 0)),
+	}
+
+
+func stats(player_side: bool) -> Dictionary:
+	var source: Dictionary = _player_stats if player_side else _bot_stats
+	var out: Dictionary = source.duplicate(true)
+	out["accuracy"] = _ratio(int(source["correct"]), int(source["answered"]))
+	out["avg_response_ms"] = _ratio(int(source["response_ms_total"]), int(source["responses"]))
+	var topics: Dictionary = out["topics"] as Dictionary
+	for topic: Variant in topics.keys():
+		var row: Dictionary = topics[topic] as Dictionary
+		row["accuracy"] = _ratio(int(row["correct"]), int(row["answered"]))
+	return out
 
 
 func question_started_at() -> int:
@@ -272,6 +348,9 @@ func _reset() -> void:
 	player_correct_ms = 0
 	bot_correct_ms = 0
 	match_result = Outcome.ONGOING
+	questions_selected = 0
+	_player_stats = _new_stats()
+	_bot_stats = _new_stats()
 	_deck.clear()
 	_source.clear()
 	_round_cursor = 0
@@ -296,12 +375,17 @@ func _begin_question(now_ms: int) -> void:
 	round_number = rounds_played + 1
 	_last_question_id = question_id(question)
 	_current = RoundState.new()
+	_current.round = round_number
 	_current.question = question
 	_current.question_id = question_id(question)
+	for index: int in Quiz.options(question).size():
+		_current.option_order.append(index)
+	_shuffle_order(_current.option_order, _deck_rng)
 	_current.started_at = now_ms
 	_current.ends_at = now_ms + ROUND_MS
 	round_ends_at = _current.ends_at
-	var decision: Dictionary = _choose_bot(question)
+	questions_selected += 1
+	var decision: Dictionary = _choose_bot(question.duplicate(true))
 	_bot_delay_ms = BOT_DELAY_MIN_MS
 	if decision.has("delay_ms"):
 		_bot_delay_ms = int(decision["delay_ms"])
@@ -375,6 +459,9 @@ func _resolve(now_ms: int) -> void:
 	if _current.bot.correct and _current.bot.response_ms >= 0:
 		bot_correct += 1
 		bot_correct_ms += _current.bot.response_ms
+	var topic: String = str(_current.question.get("topic", ""))
+	_record_stats(_player_stats, _current.player, topic)
+	_record_stats(_bot_stats, _current.bot, topic)
 	rounds_played += 1
 	result_ends_at = now_ms + RESULT_MS
 	_set_phase(Phase.RESOLVING)
@@ -481,6 +568,45 @@ static func _is_duel_question(question: Dictionary) -> bool:
 	if Quiz.is_multi(question):
 		return false
 	return not Quiz.options(question).is_empty()
+
+
+static func _new_stats() -> Dictionary:
+	return {"answered": 0, "correct": 0, "streak": 0, "best_streak": 0, "response_ms_total": 0, "responses": 0, "topics": {}}
+
+
+## A side that never answered because the rival won the race first is not counted.
+static func _record_stats(stats: Dictionary, answer: Answer, topic: String) -> void:
+	if not answer.locked:
+		return
+	var topics: Dictionary = stats["topics"] as Dictionary
+	var row: Dictionary = topics.get(topic, {"answered": 0, "correct": 0}) as Dictionary
+	stats["answered"] = int(stats["answered"]) + 1
+	row["answered"] = int(row["answered"]) + 1
+	if answer.correct:
+		stats["correct"] = int(stats["correct"]) + 1
+		row["correct"] = int(row["correct"]) + 1
+		stats["streak"] = int(stats["streak"]) + 1
+		stats["best_streak"] = maxi(int(stats["best_streak"]), int(stats["streak"]))
+	else:
+		stats["streak"] = 0
+	if answer.response_ms >= 0:
+		stats["response_ms_total"] = int(stats["response_ms_total"]) + answer.response_ms
+		stats["responses"] = int(stats["responses"]) + 1
+	topics[topic] = row
+
+
+static func _ratio(part: int, whole: int) -> float:
+	if whole <= 0:
+		return -1.0
+	return float(part) / float(whole)
+
+
+static func _shuffle_order(order: Array[int], rng: RandomNumberGenerator) -> void:
+	for i: int in range(order.size() - 1, 0, -1):
+		var j: int = rng.randi_range(0, i)
+		var swap: int = order[i]
+		order[i] = order[j]
+		order[j] = swap
 
 
 static func _shuffle_ids(ids: Array[String], rng: RandomNumberGenerator) -> void:

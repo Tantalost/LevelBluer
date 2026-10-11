@@ -33,6 +33,7 @@ func _run() -> void:
 	_check_ko()
 	_check_first_correct_race()
 	_check_match_continues_until_ko()
+	_check_pvp_stats()
 	_check_live_bank()
 	_check_short_and_empty_decks()
 	_check_result_hold_and_retired_match()
@@ -44,6 +45,9 @@ func _run() -> void:
 	var screen_source: String = FileAccess.get_file_as_string("res://src/ui/screens/pvp/pvp_battle_screen.gd")
 	check(not battle_source.contains("update_mastery") and not screen_source.contains("update_mastery"), "PvP source does not update mastery")
 	check(not battle_source.contains("pvp_tokens") and not screen_source.contains("pvp_tokens"), "PvP source does not pay tokens")
+	check(not screen_source.contains("Quiz.options(") and not screen_source.contains("shuffle"), "the client renders the shared option order and never reshuffles")
+	check(not screen_source.contains("_format_scenario"), "the PvP screen has no scenario section")
+	check(not screen_source.contains("pick_random") and not screen_source.contains("current_question()") and screen_source.contains("resolve_round(_battle.round_message(), _bank)"), "the client never picks a question; it resolves the host's question_id")
 	print("[PVP] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
 
@@ -369,36 +373,318 @@ func _check_match_continues_until_ko() -> void:
 
 
 func _check_live_bank() -> void:
+	var content: Node = root.get_node("ContentDB")
+	var pool: Array = content.get_pvp_questions()
+	check(pool.size() == 100, "the PvP bank loads all 100 questions")
+	var topics: Dictionary = {}
+	var levels: Dictionary = {}
+	var ids: Dictionary = {}
+	var shapes_ok: bool = true
+	var answers_ok: bool = true
+	var with_scenario: int = 0
+	var from_new_bank: bool = true
+	for row: Variant in pool:
+		var question: Dictionary = row as Dictionary
+		var options: Array = question.get("options", []) as Array
+		var answer: int = int(question.get("answer_index", -1))
+		var bkt: Dictionary = question.get("bkt", {}) as Dictionary
+		if options.size() != 4 or Quiz.options(question).size() != 4 or Quiz._format_prompt(question).is_empty():
+			shapes_ok = false
+		for option: Variant in options:
+			shapes_ok = shapes_ok and not str(option).strip_edges().is_empty()
+		if typeof(question.get("answer_index")) != TYPE_INT or answer < 0 or answer > 3 or not Quiz.grade(question, answer) or Quiz.grade(question, (answer + 1) % 4):
+			answers_ok = false
+		if question.has("scenario"):
+			with_scenario += 1
+		from_new_bank = from_new_bank and Battle.question_id(question).begins_with("pvp_easy_")
+		if not bkt.has("p_g") or not bkt.has("p_s") or not bkt.has("p_t") or str(question.get("correct_feedback", "")).is_empty() or str(question.get("incorrect_feedback", "")).is_empty():
+			shapes_ok = false
+		topics[str(question.get("topic", ""))] = int(topics.get(str(question.get("topic", "")), 0)) + 1
+		levels[str(question.get("difficulty", ""))] = true
+		ids[Battle.question_id(question)] = true
+	check(from_new_bank, "PvP loads the all-easy bank, not the old scenario bank")
+	check(shapes_ok, "every PvP question has a question, 4 non-empty options, feedback, and bkt")
+	check(answers_ok, "every answer_index is an int in 0..3 that grades as the only correct option")
+	check(with_scenario == 0, "no PvP question carries or needs a scenario")
+	check(topics == {"Phishing": 20, "Smishing": 20, "Vishing": 20, "Pretexting": 20, "Baiting": 20}, "all five topics keep their metadata")
+	check(levels.size() == 1 and levels.has("easy"), "every PvP question is easy")
+	check(ids.size() == 100, "PvP ids are unique")
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 11
-	var pool: Array = []
-	var bank: Dictionary = root.get_node("ContentDB").get_questions()
-	for skill: Variant in bank.keys():
-		var rows: Variant = bank[skill]
-		if typeof(rows) != TYPE_ARRAY:
-			continue
-		var list: Array = rows as Array
-		for row: Variant in list:
-			pool.append(row)
-	var eligible: Dictionary = {}
-	for row: Variant in pool:
-		if typeof(row) != TYPE_DICTIONARY:
-			continue
-		var question: Dictionary = row as Dictionary
-		if Quiz.is_multi(question):
-			continue
-		var qid: String = Battle.question_id(question)
-		if qid.is_empty() or Quiz.options(question).is_empty() or eligible.has(qid):
-			continue
-		eligible[qid] = true
 	var deck: Array[Dictionary] = Battle.build_deck(pool, 0, rng)
-	check(deck.size() == eligible.size() and deck.size() > 7, "the live bank keeps every eligible question")
-	var seen: Dictionary = {}
-	for row: Dictionary in deck:
-		var qid: String = Battle.question_id(row)
-		check(not qid.is_empty() and not seen.has(qid), "live deck ids are present and unique")
-		seen[qid] = true
-		check(not Quiz.is_multi(row), "live deck skips multi-select")
+	check(deck.size() == 100, "the PvP deck keeps every bank question")
+	var single_player: Dictionary = content.get_questions()
+	var single_total: int = 0
+	var leaked: bool = false
+	for skill: Variant in single_player.keys():
+		for row: Variant in single_player[skill] as Array:
+			single_total += 1
+			leaked = leaked or str((row as Dictionary).get("id", "")).begins_with("pvp_")
+	check(single_total == 400 and not leaked, "the single-player bank is unchanged and has no PvP questions")
+	_check_pvp_bank_validation(content)
+	_check_full_match_no_repeat(pool)
+	_check_shared_round(pool)
+	_check_two_player_sync(content)
+
+
+func _check_pvp_bank_validation(content: Node) -> void:
+	var good: Dictionary = (content.get_pvp_questions()[0] as Dictionary).duplicate(true)
+	check(content.pvp_question_problem(good).is_empty() and not good.has("scenario"), "a bank row validates without a scenario")
+	var broken: Array[Dictionary] = []
+	for i: int in 7:
+		broken.append(good.duplicate(true))
+	broken[0]["options"] = ["a", "b", "c"]
+	broken[1]["answer_index"] = 4
+	broken[2]["answer_index"] = 1.5
+	broken[3].erase("bkt")
+	broken[4]["difficulty"] = "extreme"
+	broken[5]["skill_id"] = "malware"
+	broken[6]["question"] = ""
+	for row: Dictionary in broken:
+		check(not content.pvp_question_problem(row).is_empty(), "a malformed PvP row is rejected")
+	var raw: Dictionary = {"modules": [{"module_id": "mod_01", "topic": "Phishing", "question_types": [{"type_id": "pvp_social_engineering", "delivery": "multiple_choice_4", "questions": [
+		{"id": "ok_1", "difficulty": "easy", "question": "q", "options": ["a", "b", "c", "d"], "answer_index": 2, "correct_feedback": "c", "incorrect_feedback": "i", "explanation": "e", "bkt": {"p_g": 0.2, "p_s": 0.1, "p_t": 0.1}},
+		{"id": "ok_1", "difficulty": "easy", "question": "dup", "options": ["a", "b", "c", "d"], "answer_index": 0, "correct_feedback": "c", "incorrect_feedback": "i", "explanation": "e", "bkt": {"p_g": 0.2, "p_s": 0.1, "p_t": 0.1}},
+		{"id": "bad_1", "difficulty": "easy", "question": "q", "options": ["a", "b"], "answer_index": 0},
+	]}]}]}
+	var path: String = "user://pvp_bank_validation_probe.json"
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	file.store_string(JSON.stringify(raw))
+	file.close()
+	check(content.load_pvp_bank(path) == 1, "malformed and duplicate rows are skipped; valid rows load")
+	check(typeof(content.get_pvp_questions()[0]["answer_index"]) == TYPE_INT, "answer_index is normalized to an int")
+	DirAccess.remove_absolute(path)
+	check(content.load_pvp_bank("res://data/__missing_pvp_bank__.json") == 0 and content.get_pvp_questions().is_empty(), "a missing PvP file fails gracefully with an empty bank")
+	check(Battle.build_deck(content.get_pvp_questions(), 0, RandomNumberGenerator.new()).is_empty(), "an empty PvP bank yields no deck, so the screen reports PvP unavailable")
+	check(content.load_pvp_bank() == 100, "the real PvP bank reloads")
+
+
+func _check_full_match_no_repeat(pool: Array) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 23
+	var battle: Battle = Battle.new()
+	battle.set_bot_policy(scripted(false, 20000))
+	check(battle.start(Battle.build_deck(pool, 0, rng), 0, rng), "a full PvP-bank match starts")
+	battle.tick(0)
+	var played: Dictionary = {}
+	var repeated: bool = false
+	var last_id: String = ""
+	for _round: int in 100:
+		if open_question(battle) < 0:
+			repeated = true
+			break
+		last_id = Battle.question_id(battle.current_question())
+		repeated = repeated or played.has(last_id)
+		played[last_id] = true
+		battle.tick(battle.round_ends_at)
+	check(not repeated and played.size() == 100, "100 rounds show 100 different PvP questions")
+	check(open_question(battle) >= 0, "round 101 continues after the bank is exhausted")
+	var next_id: String = Battle.question_id(battle.current_question())
+	check(played.has(next_id) and next_id != last_id, "the reshuffled deck repeats only after exhaustion and never back-to-back")
+	check(battle.player_hp == Battle.MAX_HP and battle.bot_hp == Battle.MAX_HP, "timeouts on bank questions deal no damage")
+	var graded: Battle = Battle.new()
+	var graded_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	graded_rng.seed = 5
+	graded.set_bot_policy(scripted(false, 20000))
+	graded.start(Battle.build_deck(pool, 0, graded_rng), 0, graded_rng)
+	graded.tick(0)
+	var opened: int = open_question(graded)
+	var question: Dictionary = graded.current_question()
+	check(graded.submit_player(int(question["answer_index"]), opened + 500), "the bank's answer_index is accepted")
+	check(graded.phase == Battle.Phase.ROUND_RESULT and graded.side_correct(true) and graded.bot_hp == Battle.MAX_HP - Battle.DAMAGE_HIT, "grading uses answer_index and the first correct answer deals 20")
+	check(Quiz.explanation(question, true, int(question["answer_index"])) == str(question["correct_feedback"]).strip_edges(), "a correct answer shows the bank's correct_feedback")
+	check(Quiz.explanation(question, false, (int(question["answer_index"]) + 1) % 4) == str(question["incorrect_feedback"]).strip_edges(), "a wrong answer shows the bank's incorrect_feedback")
+
+
+func _capture_bot(question: Dictionary, received: Array) -> Dictionary:
+	received.append(question)
+	return {"correct": false, "delay_ms": 20000}
+
+
+func _option_texts(options: Array) -> PackedStringArray:
+	var texts: PackedStringArray = PackedStringArray()
+	for option: Variant in options:
+		texts.append(str((option as Dictionary).get("text", "")))
+	return texts
+
+
+func _check_shared_round(pool: Array) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 31
+	var received: Array = []
+	var battle: Battle = Battle.new()
+	battle.set_bot_policy(_capture_bot.bind(received))
+	check(battle.start(Battle.build_deck(pool, 0, rng), 0, rng), "a shared-round match starts")
+	battle.tick(0)
+	check(battle.shared_round().is_empty() and battle.questions_selected == 0, "no question is selected before the first countdown ends")
+	var same_id: bool = true
+	var same_meta: bool = true
+	var same_order: bool = true
+	var one_pick: bool = true
+	var valid_order: bool = true
+	var shared_timer: bool = true
+	var played: Dictionary = {}
+	var early_repeat: bool = false
+	var last_id: String = ""
+	var shuffled_rounds: int = 0
+	for round_index: int in 100:
+		var opened: int = open_question(battle)
+		if opened < 0:
+			early_repeat = true
+			break
+		var player_view: Dictionary = battle.shared_round()
+		var rejoin_view: Dictionary = battle.shared_round()
+		var bot_question: Dictionary = received.back() as Dictionary
+		var qid: String = str(player_view["question_id"])
+		same_id = same_id and received.size() == round_index + 1 and Battle.question_id(bot_question) == qid and str(rejoin_view["question_id"]) == qid
+		same_meta = same_meta and str(bot_question.get("difficulty", "")) == str(player_view["difficulty"]) and str(bot_question.get("topic", "")) == str(player_view["topic"]) and not str(player_view["difficulty"]).is_empty() and not str(player_view["topic"]).is_empty()
+		same_order = same_order and JSON.stringify(player_view["options"]) == JSON.stringify(rejoin_view["options"])
+		one_pick = one_pick and battle.questions_selected == round_index + 1 and int(player_view["round"]) == round_index + 1
+		shared_timer = shared_timer and int(player_view["started_at"]) == opened and int(player_view["ends_at"]) == battle.round_ends_at and battle.round_ends_at - opened == Battle.ROUND_MS
+		var shown: PackedStringArray = _option_texts(player_view["options"] as Array)
+		var source: PackedStringArray = PackedStringArray(bot_question["options"] as Array)
+		var correct_values: int = 0
+		for option: Variant in player_view["options"] as Array:
+			if Quiz.grade(bot_question, (option as Dictionary).get("value")):
+				correct_values += 1
+		valid_order = valid_order and shown.size() == 4 and correct_values == 1
+		for text: String in source:
+			valid_order = valid_order and shown.has(text)
+		if shown != source:
+			shuffled_rounds += 1
+		early_repeat = early_repeat or played.has(qid)
+		played[qid] = true
+		last_id = qid
+		if round_index == 0:
+			battle.tick(opened + 100)
+			battle.tick(opened + 2000)
+			var mutated: Dictionary = battle.current_question()
+			mutated["id"] = "rerolled"
+			(mutated["options"] as Array).reverse()
+			var copy: Dictionary = battle.shared_round()
+			(copy["options"] as Array).reverse()
+			copy["question_id"] = "rerolled"
+			var after: Dictionary = battle.shared_round()
+			check(battle.questions_selected == 1 and str(after["question_id"]) == qid, "ticks inside a question never select another question")
+			check(JSON.stringify(after) == JSON.stringify(player_view), "mutating a client copy cannot reroll the question or its option order")
+		battle.tick(battle.round_ends_at)
+		if round_index == 0:
+			check(battle.phase == Battle.Phase.ROUND_RESULT and str(battle.shared_round()["question_id"]) == qid, "a client rejoining during the result recovers the same question_id")
+	check(same_id, "the bot and the player receive the identical question_id every round")
+	check(same_meta, "both sides receive the identical difficulty and topic every round")
+	check(same_order, "a rejoining client receives the identical option order")
+	check(valid_order, "the shared option order is a permutation of the 4 bank options with one correct value")
+	check(shuffled_rounds > 0, "option order is shuffled once by the authority, not left fixed")
+	check(one_pick, "exactly one question is selected per round")
+	check(shared_timer, "both sides share the authoritative start time and deadline")
+	check(not early_repeat and played.size() == 100, "no question repeats before all 100 are used")
+	check(open_question(battle) >= 0 and battle.questions_selected == 101, "round 101 selects one question from a refreshed deck")
+	var reused: String = str(battle.shared_round()["question_id"])
+	check(played.has(reused) and reused != last_id, "round 101 reuses a question only after all 100 were used, never back-to-back")
+	check(Battle.question_id(received.back() as Dictionary) == reused, "round 101 is still shared with the bot")
+
+
+func _over_wire(message: Dictionary) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(JSON.stringify(message))
+	return parsed as Dictionary if typeof(parsed) == TYPE_DICTIONARY else {}
+
+
+func _client_view(round_state: Dictionary) -> String:
+	if round_state.is_empty():
+		return ""
+	var question: Dictionary = round_state["question"] as Dictionary
+	return JSON.stringify([
+		round_state["question_id"],
+		Quiz._format_scenario(question),
+		Quiz._format_prompt(question),
+		_option_texts(round_state["options"] as Array),
+		round_state["topic"],
+		round_state["difficulty"],
+		round_state["started_at"],
+		round_state["ends_at"],
+	])
+
+
+func _check_two_player_sync(content: Node) -> void:
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 47
+	var host: Battle = Battle.new()
+	host.set_bot_policy(scripted(false, 20000))
+	check(host.start(Battle.build_deck(content.get_pvp_questions(), 0, rng), 0, rng), "the host match starts")
+	host.tick(0)
+	var bank_a: Array = content.get_pvp_questions()
+	var bank_b: Array = content.get_pvp_questions()
+	var ids_match: bool = true
+	var views_match: bool = true
+	var order_match: bool = true
+	var resolved: bool = true
+	var id_only: bool = true
+	var played: Dictionary = {}
+	for round_index: int in 101:
+		check(open_question(host) >= 0, "host opens round %d" % (round_index + 1))
+		var message: Dictionary = host.round_message()
+		id_only = id_only and not message.has("question") and not message.has("options") and message.has("question_id") and message.has("option_order")
+		var player_a: Dictionary = Battle.resolve_round(_over_wire(message), bank_a)
+		var player_b: Dictionary = Battle.resolve_round(_over_wire(message), bank_b)
+		resolved = resolved and not player_a.is_empty() and not player_b.is_empty()
+		if player_a.is_empty() or player_b.is_empty():
+			break
+		ids_match = ids_match and str(player_a["question_id"]) == str(player_b["question_id"]) and str(player_a["question_id"]) == str(message["question_id"])
+		order_match = order_match and _option_texts(player_a["options"] as Array) == _option_texts(player_b["options"] as Array) and JSON.stringify(player_a["options"]) == JSON.stringify(player_b["options"])
+		views_match = views_match and _client_view(player_a) == _client_view(player_b) and _client_view(player_a) == _client_view(host.shared_round())
+		if round_index < 100:
+			played[str(message["question_id"])] = true
+		if round_index == 3:
+			host.tick(int(message["started_at"]) + 1500)
+			var rejoined: Dictionary = Battle.resolve_round(_over_wire(host.round_message()), content.get_pvp_questions())
+			check(_client_view(rejoined) == _client_view(player_a), "a reconnecting player resyncs to the current authoritative question_id and order")
+			check(host.questions_selected == 4, "resync does not select a new question")
+		host.tick(host.round_ends_at)
+		if round_index == 3:
+			var after_round: Dictionary = Battle.resolve_round(_over_wire(host.round_message()), bank_b)
+			check(str(after_round["question_id"]) == str(player_a["question_id"]), "the question_id stays put until the next round opens")
+	check(resolved, "both players resolve every round message from their own ContentDB bank")
+	check(ids_match, "player_a.question_id == player_b.question_id for every round")
+	check(order_match, "player_a and player_b see identical answer option order every round")
+	check(views_match, "both players see identical scenario, question, options, topic, difficulty, and timer")
+	check(id_only, "the round message carries question_id and option order, not the question payload")
+	check(played.size() == 100 and host.questions_selected == 101, "100 unique questions before any reuse, one selection per round")
+	var good: Dictionary = host.round_message()
+	var unknown: Dictionary = good.duplicate(true)
+	unknown["question_id"] = "pvp_se_does_not_exist"
+	var bad_order: Dictionary = good.duplicate(true)
+	bad_order["option_order"] = [0, 0, 1, 2]
+	var short_order: Dictionary = good.duplicate(true)
+	short_order["option_order"] = [0, 1]
+	check(Battle.resolve_round(unknown, bank_a).is_empty(), "an unknown question_id does not fall back to a local pick")
+	check(Battle.resolve_round(bad_order, bank_a).is_empty() and Battle.resolve_round(short_order, bank_a).is_empty(), "a malformed option order is rejected")
+	check(Battle.resolve_round({}, bank_a).is_empty(), "an empty message resolves to nothing")
+
+
+func _check_pvp_stats() -> void:
+	var battle: Battle = Battle.new()
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 3
+	var questions: Array = []
+	for i: int in 4:
+		var row: Dictionary = question_row("t%d" % i)
+		row["topic"] = "Phishing"
+		questions.append(row)
+	check(battle.start(questions, 0, rng), "stats match starts")
+	battle.tick(0)
+	play_round(battle, 1, 500, false, 1000)
+	play_round(battle, 0, 300, true, 1000)
+	play_round(battle, null, -1, false, 20000)
+	var mine: Dictionary = battle.stats(true)
+	var rival: Dictionary = battle.stats(false)
+	check(int(mine["answered"]) == 3 and int(mine["correct"]) == 1, "player stats count a correct, a wrong, and a timeout")
+	check(is_equal_approx(float(mine["accuracy"]), 1.0 / 3.0), "player accuracy is correct / answered")
+	check(int(mine["streak"]) == 0 and int(mine["best_streak"]) == 1, "a wrong answer resets the player streak")
+	check(is_equal_approx(float(mine["avg_response_ms"]), 400.0), "player response time averages submitted answers only")
+	var topic: Dictionary = (mine["topics"] as Dictionary).get("Phishing", {}) as Dictionary
+	check(int(topic.get("answered", 0)) == 3 and is_equal_approx(float(topic.get("accuracy", 0.0)), 1.0 / 3.0), "topic accuracy is tracked per topic")
+	check(int(rival["answered"]) == 2 and int(rival["correct"]) == 1, "a side beaten to the answer is not counted for that round")
+	check(is_equal_approx(float(rival["avg_response_ms"]), 1000.0), "rival response time is tracked separately")
 
 
 func _check_screen() -> void:
@@ -582,7 +868,17 @@ func _check_displayed_choices(screen: Control) -> void:
 	battle.tick(now)
 	battle.tick(now + Battle.COUNTDOWN_MS)
 	screen.call("_bind_battle", battle)
+	screen.set("_bank", questions)
 	screen.call("_render_phase")
+	var body_nodes: Array[String] = []
+	for child: Node in (screen.get("_body") as Node).get_children():
+		if not child.is_queued_for_deletion():
+			body_nodes.append(child.get_class())
+	check(body_nodes == ["Label", "GridContainer"], "the PvP question shows only the prompt and the answer grid, no scenario box")
+	var shown: String = JSON.stringify(screen.get("_choices"))
+	check(shown == JSON.stringify(battle.shared_round()["options"]), "the screen shows the authoritative option order")
+	screen.call("_render_phase")
+	check(JSON.stringify(screen.get("_choices")) == shown, "a re-rendered (reconnected) screen keeps the same option order")
 	_assert_pressed_choice(screen, battle, false)
 	battle.tick(battle.result_ends_at)
 	battle.tick(battle.countdown_ends_at)
@@ -631,6 +927,7 @@ func _choice_question() -> Dictionary:
 	return {
 		"id": "grade_mc",
 		"delivery": "multiple_choice_4",
+		"scenario": {"from": "it@example.com", "body": "Ignored in PvP"},
 		"question": "Which sign is strongest?",
 		"options": ["All caps", "A swapped character", "Morning send", "The word enrollment"],
 		"answer_index": 1.0,
