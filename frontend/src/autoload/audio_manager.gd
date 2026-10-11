@@ -146,7 +146,7 @@ func _select_music() -> void:
 			_kill_bgm_tween()
 			_stop_music()
 			_stop_effects()
-		&"gameplay", &"pvp_battle": play_bgm(null)
+		&"gameplay", &"pvp_battle", &"pvp_online": play_bgm(null)
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
 		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex": play_bgm(_tracks.get("study"))
 		&"login", &"password_change": play_bgm(hub_track)

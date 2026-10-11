@@ -1,6 +1,8 @@
 class_name PvpBattleScreen
 extends BaseScreen
 ## Presentation for a local bot duel. Rules live in PvpBattle.
+## PvpOnlineScreen reuses this presentation in ONLINE mode, where the server is authoritative.
+enum Mode { BOT, ONLINE }
 const Battle = preload("res://src/gameplay/pvp/pvp_battle.gd")
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Quiz = preload("res://src/gameplay/quiz_content.gd")
@@ -53,7 +55,9 @@ var _bot_hp: Label
 var _player_bar: HpBar
 var _bot_bar: HpBar
 var _footer: HBoxContainer
+var _hud: HBoxContainer
 var _abandon: Control
+var _abandon_note: Label
 var _bank: Array = []
 var _choices: Array[Dictionary] = []
 var _answer_buttons: Array[Button] = []
@@ -114,6 +118,10 @@ func _ready() -> void:
 	resized.connect(_fit_arena)
 	_fit_arena()
 	_start_match()
+
+
+func battle_mode() -> Mode:
+	return Mode.BOT
 
 
 func _process(_delta: float) -> void:
@@ -211,6 +219,10 @@ func _apply_chrome(phase: Battle.Phase) -> void:
 	var counting: bool = phase == Battle.Phase.COUNTDOWN or phase == Battle.Phase.PREPARING
 	var resulting: bool = phase == Battle.Phase.RESOLVING or phase == Battle.Phase.ROUND_RESULT
 	var finished: bool = phase == Battle.Phase.FINISHED
+	_show_panels(questioning, counting, resulting, finished)
+
+
+func _show_panels(questioning: bool, counting: bool, resulting: bool, finished: bool) -> void:
 	_quiz.visible = questioning
 	_countdown.visible = counting
 	_result_host.visible = resulting
@@ -358,6 +370,7 @@ func _build_hud() -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	_layout.add_child(row)
+	_hud = row
 	var player_box: VBoxContainer = _fighter_column()
 	var center: VBoxContainer = VBoxContainer.new()
 	center.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -1002,7 +1015,8 @@ func _build_abandon() -> void:
 	center.add_child(panel)
 	var column: VBoxContainer = UI.column(panel, 14)
 	column.add_child(UI.label("LEAVE MATCH?", 22, Palette.CREAM, true))
-	column.add_child(UI.label("This local duel will be discarded.", 20, Palette.CREAM))
+	_abandon_note = UI.label("This local duel will be discarded.", 20, Palette.CREAM)
+	column.add_child(_abandon_note)
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 12)
 	column.add_child(actions)

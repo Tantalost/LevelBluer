@@ -42,6 +42,7 @@ const SCREENS: Dictionary = {
 	&"profile":      "res://src/ui/screens/profile/profile_screen.tscn",
 	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
 	&"pvp_battle":   "res://src/ui/screens/pvp/pvp_battle_screen.tscn",
+	&"pvp_online":   "res://src/ui/screens/pvp/pvp_online_screen.tscn",
 	&"victory":      "res://src/ui/screens/victory/victory_screen.tscn",
 	&"certificate":  "res://src/ui/screens/intel/certificate_screen.tscn",
 }
