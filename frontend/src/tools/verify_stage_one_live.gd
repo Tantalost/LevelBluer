@@ -683,6 +683,7 @@ func _verify_college_assessment() -> void:
 	check(game.gold == 8 and account.intel_uses == 1, "College final preserves the authored budget and consumes Intel once")
 	check(game.hud.battle.tracks.size() == 2 and game.config.waves.size() == 3, "Final assessment has two routes and three waves")
 	check(game.story_overlay._college_cast and game.story_overlay._phone.name == "StoryLaptop", "Final uses college cast and the established laptop")
+	check(game.story_overlay._speech_blips_enabled, "College final story opts into speech and emotional reactions")
 	var ids: Dictionary = {}
 	var difficulties: Dictionary = {"easy": 0, "medium": 0, "hard": 0}
 	for item: Dictionary in game.question_pool:

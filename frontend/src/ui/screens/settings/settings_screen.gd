@@ -87,7 +87,7 @@ func _build_dialogue_toggle() -> void:
 	_dialogue_toggle = CheckButton.new()
 	_dialogue_toggle.name = "DialogueBlipsToggle"
 	_dialogue_toggle.text = "Dialogue blips"
-	_dialogue_toggle.tooltip_text = "Retro speech blips and emotional reactions. Uses Sound Effects volume. Stage 1 preview."
+	_dialogue_toggle.tooltip_text = "Retro speech blips and emotional reactions for Module 1 and 2 stories. Uses Sound Effects volume."
 	column.add_child(_dialogue_toggle)
 	_dialogue_toggle.toggled.connect(func(enabled: bool) -> void:
 		SettingsService.dialogue_blips_enabled = enabled

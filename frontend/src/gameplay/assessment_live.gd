@@ -139,9 +139,9 @@ func resolve_answer(expired: bool = false) -> void:
 			{"threat": question, "outcome": "SAFE" if correct else "CRITICAL", "bkt_correct": correct},
 			timed_out, not mastery_frozen, PlayerManager.bkt_params_from(question))
 	elif not mastery_frozen:
-	var picked: Variant = selected_answers.duplicate() if Quiz.is_multi(question) else (selected_answers[0] if not selected_answers.is_empty() else null)
-	if not mastery_frozen and not Quiz.repeat_wrong_answer(_graded_wrong, question, picked, correct):
-		account.update_mastery("smishing" if college else "phishing", correct, PlayerManager.bkt_params_from(question))
+		var picked: Variant = selected_answers.duplicate() if Quiz.is_multi(question) else (selected_answers[0] if not selected_answers.is_empty() else null)
+		if not Quiz.repeat_wrong_answer(_graded_wrong, question, picked, correct):
+			account.update_mastery("smishing" if college else "phishing", correct, PlayerManager.bkt_params_from(question))
 	account.record_trace_result(match_context.module_id, Quiz._question_key(question), correct)
 
 func resolve_incident(correct: bool) -> void:
@@ -365,6 +365,7 @@ func _ready_college() -> void:
 	story_overlay = preload("res://src/gameplay/decision/decision_workspace.gd").new()
 	story_overlay.name = "AssessmentWorkspace"
 	hud.body.add_child(story_overlay)
+	story_overlay.configure_speech_blips(match_context.module_id, match_context.stage_id)
 	story_overlay.set_story_art("mod_02", "Mia")
 	story_overlay.configure_presentation(story)
 	story_overlay.configure_laptop(story.get("laptop", {}) as Dictionary)

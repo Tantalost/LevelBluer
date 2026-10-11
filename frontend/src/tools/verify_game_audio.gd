@@ -142,6 +142,7 @@ func _run() -> void:
 	check(music_voices() == 0, "UI music does not leak into battle")
 	await _test_dialogue_blips()
 	await _test_dialogue_reactions()
+	_test_module_dialogue_coverage()
 	# Validate persistence through the real service code, redirected to an ignored test file.
 	var source: GDScript = load("res://src/autoload/settings_service.gd") as GDScript
 	var isolated: GDScript = GDScript.new()
@@ -203,19 +204,19 @@ func _run() -> void:
 func _test_dialogue_blips() -> void:
 	settings.dialogue_blips_enabled = true
 	settings.text_speed = "normal"
-	check(audio._voice_streams.size() == 3 and audio.dialogue_player.bus == &"SFX", "Three original voices share SFX volume")
+	check(audio._voice_streams.size() == 4 and audio.dialogue_player.bus == &"SFX", "Four original voices share SFX volume")
 	var distinct: Dictionary = {}
 	for speaker: String in audio._voice_streams:
 		var stream: AudioStreamWAV = audio._voice_streams[speaker]
 		check(stream.get_length() > 0.05 and stream.get_length() < 0.07 and stream.loop_mode == AudioStreamWAV.LOOP_DISABLED, "Short one-shot speech: " + speaker)
 		check(stream.data.decode_s16(0) == 0 and stream.data.decode_s16(stream.data.size() - 2) == 0, "Sample fades to silence: " + speaker)
 		distinct[hash(stream.data)] = true
-	check(distinct.size() == 3, "Each speaker has a distinct waveform")
+	check(distinct.size() == 4, "Each speaker has a distinct waveform")
 	if "--voice-preview" in OS.get_cmdline_user_args():
 		_export_voice_preview()
 	var owner: Control = Control.new()
 	root.add_child(owner)
-	for speaker: String in ["Alex", "Mia", "Ms. Reyes"]:
+	for speaker: String in ["Alex", "Mia", "Ms. Reyes", "Leah"]:
 		audio._last_blip_ms = -10000
 		audio.play_dialogue_blip(speaker, "neutral", 3, owner)
 		check(audio.dialogue_player.playing and audio.dialogue_player.stream == audio._voice_streams[speaker], "Speaker voice plays: " + speaker)
@@ -267,12 +268,12 @@ func _test_dialogue_blips() -> void:
 	workspace._refresh_controls()
 	check(not audio.dialogue_player.playing, "Opening phone silences speech")
 	workspace._mail_open = false
-	for module_id: String in ["mod_01", "mod_02"]:
-		workspace.configure_speech_blips(module_id, 2 if module_id == "mod_01" else 1)
+	for module_id: String in ["mod_03", "", "unknown"]:
+		workspace.configure_speech_blips(module_id, 1)
 		workspace.show_story(lines, "OUT OF SCOPE")
 		var before: int = speech_requests
 		workspace._process(0.1)
-		check(speech_requests == before, "Only Module 1 Stage 1 is enabled")
+		check(speech_requests == before, "Unrequested modules remain silent")
 	workspace.configure_speech_blips("mod_01", 1)
 	settings.text_speed = "instant"
 	workspace.show_story(lines, "INSTANT")
@@ -315,6 +316,73 @@ func _test_dialogue_blips() -> void:
 	audio._on_screen_changed(&"gameplay")
 	await wait()
 
+func _test_module_dialogue_coverage() -> void:
+	var workspace: Control = load("res://src/gameplay/decision/decision_workspace.gd").new()
+	root.add_child(workspace)
+	workspace.set_process(false)
+	settings.text_speed = "normal"
+	settings.dialogue_blips_enabled = true
+	var stage_count: int = 0
+	var line_count: int = 0
+	for module_id: String in ["mod_01", "mod_02"]:
+		for stage_id: int in range(1, 11):
+			workspace.configure_speech_blips(module_id, stage_id)
+			check(workspace._speech_blips_enabled, "%s/%d enables story audio" % [module_id, stage_id])
+			var stage: Dictionary = DecisionScenarios.get_stage(module_id, stage_id)
+			var lines: Array[Dictionary] = []
+			_collect_spoken_lines(stage, lines)
+			if module_id == "mod_01" and stage_id == 10:
+				check(lines.is_empty(), "School final assessment has no typewriter dialogue; instructions stay silent")
+				continue
+			check(not lines.is_empty(), "%s/%d has authored dialogue to validate" % [module_id, stage_id])
+			stage_count += 1
+			for line: Dictionary in lines:
+				line_count += 1
+				var speaker: String = str(line.speaker)
+				var emotion: String = DialogueEmotion.of(line)
+				check(audio._voice_streams.has(speaker), "Authored speaker has a voice: " + speaker)
+				if emotion != "neutral":
+					check(audio._reaction_streams.has(speaker + "/" + audio._reaction_kind(emotion)), "Authored reaction has a sound: " + speaker + "/" + emotion)
+			# Exercise real typewriter signals with an authored opening in every story stage.
+			var opening: Array[Dictionary] = DecisionScenarios.dialogue_lines(stage, "opening")
+			check(not opening.is_empty(), "Stage has an opening")
+			if opening.is_empty():
+				continue
+			workspace.show_story(opening, "ROLLOUT CHECK")
+			audio._last_reaction_ms = -10000
+			workspace._process(0.001)
+			var speaker: String = str(opening[0].speaker)
+			var emotion: String = DialogueEmotion.of(opening[0])
+			if emotion != "neutral":
+				check(audio.dialogue_player.playing and audio.dialogue_player.stream == audio._reaction_streams[speaker + "/" + audio._reaction_kind(emotion)], "Opening reaction reaches audio: %s/%d" % [module_id, stage_id])
+			audio.stop_dialogue_blips(workspace)
+			audio._last_blip_ms = -10000
+			workspace._pause_remaining = 0.0
+			for frame: int in 30:
+				workspace._process(1.0 / 60.0)
+				if audio.dialogue_player.playing:
+					break
+			check(audio.dialogue_player.playing and audio.dialogue_player.stream == audio._voice_streams[speaker], "Opening speech reaches audio: %s/%d" % [module_id, stage_id])
+			workspace._reveal_line()
+			check(not audio.dialogue_player.playing, "Every stage can skip safely")
+	for stage_id: int in [0, 11, -1]:
+		workspace.configure_speech_blips("mod_02", stage_id)
+		check(not workspace._speech_blips_enabled, "Invalid stage is not opted into audio")
+	check(stage_count == 19, "All nineteen authored story stages covered, plus silent school exam")
+	print("[DIALOGUE ROLLOUT] stages=%d authored_lines=%d" % [stage_count, line_count])
+	workspace.free()
+
+func _collect_spoken_lines(value: Variant, lines: Array[Dictionary]) -> void:
+	if value is Dictionary:
+		var row: Dictionary = value as Dictionary
+		if row.has("speaker") and row.has("text") and not str(row.speaker).is_empty():
+			lines.append(row)
+		for child: Variant in row.values():
+			_collect_spoken_lines(child, lines)
+	elif value is Array:
+		for child: Variant in value as Array:
+			_collect_spoken_lines(child, lines)
+
 func _export_voice_preview() -> void:
 	# Optional audition only, in ignored .godot/. Order: Alex, Mia, Ms. Reyes.
 	var rate: int = audio.BLIP_RATE
@@ -337,14 +405,14 @@ func _export_voice_preview() -> void:
 	check(preview.save_to_wav("res://.godot/dialogue-voices-preview.wav") == OK, "Original voice audition exported")
 
 func _test_dialogue_reactions() -> void:
-	check(audio._reaction_streams.size() == 18, "Six reactions retain each of three character timbres")
+	check(audio._reaction_streams.size() == 24, "Six reactions retain each of four character timbres")
 	var fingerprints: Dictionary = {}
 	for key: String in audio._reaction_streams:
 		var stream: AudioStreamWAV = audio._reaction_streams[key]
 		check(stream.get_length() >= 0.17 and stream.get_length() <= 0.29, "Reaction is brief: " + key)
 		check(stream.data.decode_s16(0) == 0 and stream.data.decode_s16(stream.data.size() - 2) == 0, "Reaction endpoints are silent")
 		fingerprints[hash(stream.data)] = true
-	check(fingerprints.size() == 18, "Reactions and speakers have distinct waveforms")
+	check(fingerprints.size() == 24, "Reactions and speakers have distinct waveforms")
 	var workspace: Control = load("res://src/gameplay/decision/decision_workspace.gd").new()
 	root.add_child(workspace)
 	workspace.set_process(false)
@@ -395,9 +463,9 @@ func _test_dialogue_reactions() -> void:
 	workspace._process(0.1)
 	check(reaction_requests == 2, "Log view never starts reaction")
 	workspace._review_open = false
-	workspace.configure_speech_blips("mod_01", 2)
+	workspace.configure_speech_blips("mod_03", 1)
 	workspace._process(0.1)
-	check(reaction_requests == 2, "Disabling pilot clears pending reaction")
+	check(reaction_requests == 2, "Leaving supported modules clears pending reaction")
 	for setting: String in ["dialogue_blips_enabled", "sound_enabled", "sfx_volume", "master_volume", "text_speed"]:
 		var previous: Variant = settings.get(setting)
 		settings.set(setting, "instant" if setting == "text_speed" else (false if previous is bool else 0))

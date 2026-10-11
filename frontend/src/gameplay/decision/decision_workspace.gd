@@ -16,7 +16,7 @@ var _reaction_pending: bool = false
 var _previous_reaction_key: String = ""
 
 func configure_speech_blips(module_id: String, stage_id: int) -> void:
-	_speech_blips_enabled = module_id == "mod_01" and stage_id == 1
+	_speech_blips_enabled = module_id in ["mod_01", "mod_02"] and stage_id >= 1 and stage_id <= 10
 	_reaction_pending = false
 	speech_blips_stopped.emit()
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")

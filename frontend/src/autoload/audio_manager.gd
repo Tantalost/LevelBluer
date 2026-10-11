@@ -15,6 +15,7 @@ const VOICE_PROFILES: Dictionary = {
 	"Alex": {"hz": 230.0, "third": 0.26, "second": 0.08},
 	"Mia": {"hz": 320.0, "third": 0.16, "second": 0.20},
 	"Ms. Reyes": {"hz": 175.0, "third": -0.12, "second": 0.06},
+	"Leah": {"hz": 275.0, "third": 0.08, "second": -0.18},
 }
 var _voice_streams: Dictionary[String, AudioStreamWAV] = {}
 var _dialogue_owner: WeakRef
