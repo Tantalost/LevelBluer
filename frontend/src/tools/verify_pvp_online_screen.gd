@@ -89,6 +89,12 @@ func settle() -> void:
 		await process_frame
 
 
+func capture(filename: String) -> void:
+	if "--render" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/" + filename + ".png")
+
+
 func jwt(user_id: String) -> String:
 	var payload: String = Marshalls.utf8_to_base64(JSON.stringify({"id": user_id, "role": "student"})).replace("+", "-").replace("/", "_").trim_suffix("=").trim_suffix("=")
 	return "eyJhbGciOiJIUzI1NiJ9.%s.signature" % payload
@@ -321,14 +327,27 @@ func _check_create_flow() -> void:
 	check(screen._opponent_label.text.begins_with("Waiting for an opponent"), "the lobby waits for an opponent")
 	socket.push(view("waiting", 2, {"type": "room_state"}))
 	pump(screen)
-	check(screen._opponent_label.text.contains("CONNECTED") and screen._opponent_label.text.contains("NOT READY"), "the lobby shows the opponent connection and ready state")
+	check(screen._rival_name.text == "CONNECTED" and screen._opponent_label.text == "NOT READY", "the lobby shows the opponent connection and ready state")
+	await capture("pvp_lobby_1280x720")
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		var lobby: Rect2 = screen._lobby_host.get_global_rect()
+		for control: Control in [screen._code_label, screen._copy_button, screen._ready_button, screen._you_card, screen._rival_card]:
+			if dimensions.y >= 500:
+				check(lobby.grow(1.0).encloses(control.get_global_rect()), "%s fits the lobby without scrolling at %s" % [control.name, dimensions])
+			check(root.get_visible_rect().size.x >= control.get_global_rect().end.x, "%s stays on screen horizontally at %s" % [control.name, dimensions])
+		check(screen._copy_button.autowrap_mode == TextServer.AUTOWRAP_OFF and screen._ready_button.autowrap_mode == TextServer.AUTOWRAP_OFF, "lobby buttons never wrap")
+	await capture("pvp_lobby_844x390")
+	root.size = Vector2i(1280, 720)
+	await settle()
 	screen._ready_button.pressed.emit()
 	screen._ready_button.pressed.emit()
 	check(socket.sent_of("ready").size() == 1 and same_ints(socket.sent_of("ready")[0], {"type": "ready"}), "READY sends one ready message")
 	check(screen._ready_button.disabled, "READY locks after sending")
 	socket.push(view("waiting", 3, {"type": "room_state", "ready": {HOST_ID: true, GUEST_ID: true}}))
 	pump(screen)
-	check(screen._lobby_host.visible and screen._ready_label.text == "YOU: READY" and screen._opponent_label.text.contains("READY"), "both ready flags come from the server")
+	check(screen._lobby_host.visible and screen._ready_label.text == "READY" and screen._opponent_label.text == "READY", "both ready flags come from the server")
 	check(session.state == Session.State.WAITING and not screen._countdown.visible, "the battle does not start until the server countdown")
 	socket.push(event("countdown_started", 4, {"round": 1, "countdown_ends_at": 63000}))
 	pump(screen)
@@ -364,7 +383,7 @@ func _check_join_flow() -> void:
 	check(str(http_calls[1]["path"]) == "/api/pvp/rooms/ABC234/join" and (http_calls[1]["body"] as Dictionary).is_empty(), "Join Room uses the entered code with no player id")
 	check(sockets.size() == 1 and sockets[0].url.ends_with("/api/pvp/rooms/ABC234/ws"), "Join Room connects to the joined room")
 	check(not screen._entry.visible and screen._room_box.visible and screen._code_label.text == "ABC234", "a joined room shows the lobby")
-	check(screen._opponent_label.text.contains("CONNECTED") and factory_calls == 1, "the guest sees the host and still has one session")
+	check(screen._rival_name.text == "CONNECTED" and factory_calls == 1, "the guest sees the host and still has one session")
 	await close_screen(screen)
 	sections_done += 1
 

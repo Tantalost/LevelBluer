@@ -37,6 +37,9 @@ var _share_label: Label
 var _copy_button: Button
 var _opponent_label: Label
 var _ready_label: Label
+var _you_card: PanelContainer
+var _rival_card: PanelContainer
+var _rival_name: Label
 var _ready_button: Button
 var _lobby_status: Label
 var _lobby_error: Label
@@ -325,19 +328,32 @@ func _render_lobby() -> void:
 	_retry_button.visible = room.is_empty() and _action == "create" and idle and not _leaving
 	_room_box.visible = not room.is_empty()
 	_code_label.text = room
-	_share_label.text = "Share this code: %s\nYour classmate opens PvP › JOIN ROOM and types it." % room
+	_share_label.text = "Your classmate opens PvP › JOIN ROOM and enters %s" % room
 	var opponent: String = _session.opponent_id()
 	if opponent.is_empty():
+		_rival_name.text = "OPEN SLOT"
+		_rival_name.add_theme_color_override("font_color", Palette.CYAN_300)
 		_opponent_label.text = "Waiting for an opponent to join…"
+		_opponent_label.add_theme_color_override("font_color", Palette.CYAN_300)
+		_rival_card.add_theme_stylebox_override("panel", _slot_style(Palette.NAVY_700))
 	else:
-		_opponent_label.text = "RIVAL: %s  ·  %s" % ["OFFLINE" if _opponent_offline else "CONNECTED", "READY" if _flag("ready", opponent) else "NOT READY"]
+		var rival_ready: bool = _flag("ready", opponent)
+		_rival_name.text = "OFFLINE" if _opponent_offline else "CONNECTED"
+		_rival_name.add_theme_color_override("font_color", Palette.DANGER if _opponent_offline else Palette.CREAM)
+		_opponent_label.text = "READY" if rival_ready else "NOT READY"
+		_opponent_label.add_theme_color_override("font_color", _status_color(rival_ready, _opponent_offline))
+		_rival_card.add_theme_stylebox_override("panel", _slot_style(Palette.SUCCESS if rival_ready else Palette.DANGER))
 	var me_ready: bool = _flag("ready", _session.self_id)
-	_ready_label.text = "YOU: READY" if me_ready else "YOU: NOT READY"
+	_ready_label.text = "READY" if me_ready else "NOT READY"
+	_ready_label.add_theme_color_override("font_color", _status_color(me_ready, false))
+	_you_card.add_theme_stylebox_override("panel", _slot_style(Palette.SUCCESS if me_ready else Palette.CYAN_400))
 	_ready_button.disabled = _leaving or state != Session.State.WAITING or me_ready or _ready_sent
-	_ready_button.text = "READY" if not (me_ready or _ready_sent) else "WAITING FOR RIVAL"
+	_ready_button.text = "I'M READY" if not (me_ready or _ready_sent) else "READY — WAITING FOR RIVAL"
 	_leave_room_button.disabled = _leaving
 	if not _leaving:
 		_lobby_status.text = _lobby_line(state)
+	_lobby_status.visible = not _lobby_status.text.is_empty()
+	_lobby_error.visible = not _lobby_error.text.is_empty()
 
 
 func _lobby_line(state: Session.State) -> String:
@@ -350,8 +366,6 @@ func _lobby_line(state: Session.State) -> String:
 			return "Connecting…"
 		Session.State.RECONNECTING:
 			return "Connection lost — reconnecting…"
-		Session.State.WAITING:
-			return "The duel starts when both players are ready."
 	return ""
 
 
@@ -615,13 +629,16 @@ func _build_lobby() -> void:
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_lobby_host.add_child(center)
 	var card: PanelContainer = PanelContainer.new()
-	card.custom_minimum_size.x = 520
-	card.add_theme_stylebox_override("panel", UI.box(Palette.NAVY_900, Palette.NAVY_700, 18))
+	card.custom_minimum_size.x = 560
+	card.add_theme_stylebox_override("panel", UI.box(Palette.NAVY_900, Palette.NAVY_700, 22))
 	center.add_child(card)
-	var column: VBoxContainer = UI.column(card, 8)
-	var title: Label = UI.label("PRIVATE ROOM", 22, Palette.CREAM, true)
+	var column: VBoxContainer = UI.column(card, 10)
+	var title: Label = UI.label("PRIVATE ROOM", 24, Palette.CREAM, true)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(title)
+	var subtitle: Label = UI.label("Share the code. The duel starts when both players are ready.", 18, Palette.CYAN_300)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(subtitle)
 	_entry = VBoxContainer.new()
 	_entry.name = "JoinEntry"
 	_entry.add_theme_constant_override("separation", 6)
@@ -648,37 +665,16 @@ func _build_lobby() -> void:
 	column.add_child(_retry_button)
 	_room_box = VBoxContainer.new()
 	_room_box.name = "RoomBox"
-	_room_box.add_theme_constant_override("separation", 6)
+	_room_box.add_theme_constant_override("separation", 12)
 	column.add_child(_room_box)
-	var caption: Label = UI.label("ROOM CODE", 16, Palette.CYAN_300, true)
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_box.add_child(caption)
-	_code_label = UI.label("", 44, Palette.CYAN_400, true)
-	_code_label.name = "RoomCode"
-	_code_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_box.add_child(_code_label)
-	_share_label = UI.label("", 16, Palette.CREAM)
-	_share_label.name = "ShareText"
-	_share_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_box.add_child(_share_label)
-	_opponent_label = UI.label("", 18, Palette.CREAM, true)
-	_opponent_label.name = "OpponentStatus"
-	_opponent_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_box.add_child(_opponent_label)
-	_ready_label = UI.label("", 18, Palette.CREAM, true)
-	_ready_label.name = "ReadyStatus"
-	_ready_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_room_box.add_child(_ready_label)
-	var actions: HBoxContainer = HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 10)
-	_room_box.add_child(actions)
-	_copy_button = UI.button("COPY CODE", _copy_code)
-	_copy_button.name = "CopyCodeButton"
-	actions.add_child(_copy_button)
-	_ready_button = UI.button("READY", _on_ready_pressed, true)
+	_build_code_panel()
+	_build_player_slots()
+	_ready_button = _lobby_button("I'M READY", _on_ready_pressed, Palette.PRIMARY_BLUE, Palette.BLUE_400, Palette.CREAM)
 	_ready_button.name = "ReadyButton"
-	actions.add_child(_ready_button)
+	_ready_button.custom_minimum_size.y = 56
+	_ready_button.add_theme_stylebox_override("disabled", UI.box(Palette.NAVY_800, Palette.SUCCESS, 12))
+	_ready_button.add_theme_color_override("font_disabled_color", Palette.SUCCESS)
+	_room_box.add_child(_ready_button)
 	_lobby_status = UI.label("", 16, Palette.CYAN_300)
 	_lobby_status.name = "LobbyStatus"
 	_lobby_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -687,6 +683,98 @@ func _build_lobby() -> void:
 	_lobby_error.name = "LobbyError"
 	_lobby_error.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(_lobby_error)
-	_leave_room_button = UI.button("LEAVE ROOM", _leave_online)
+	_leave_room_button = _lobby_button("LEAVE ROOM", _leave_online, Palette.NAVY_900, Palette.NAVY_800, Palette.DANGER)
 	_leave_room_button.name = "LeaveRoomButton"
+	_leave_room_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_leave_room_button.add_theme_stylebox_override("normal", UI.box(Palette.NAVY_900, Palette.DANGER, 10))
 	column.add_child(_leave_room_button)
+
+
+func _build_code_panel() -> void:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.name = "CodePanel"
+	panel.add_theme_stylebox_override("panel", UI.box(Palette.TEAL_900, Palette.CYAN_400, 16))
+	_room_box.add_child(panel)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	panel.add_child(row)
+	var stack: VBoxContainer = VBoxContainer.new()
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stack.add_theme_constant_override("separation", 0)
+	row.add_child(stack)
+	stack.add_child(UI.label("ROOM CODE", 14, Palette.CYAN_300, true))
+	_code_label = UI.label("", 48, Palette.CYAN_400, true)
+	_code_label.name = "RoomCode"
+	_code_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	var spaced: FontVariation = FontVariation.new()
+	spaced.base_font = _code_label.get_theme_font("font")
+	spaced.spacing_glyph = 8
+	_code_label.add_theme_font_override("font", spaced)
+	stack.add_child(_code_label)
+	_copy_button = _lobby_button("COPY", _copy_code, Palette.TEAL_800, Palette.CYAN_400, Palette.CREAM)
+	_copy_button.name = "CopyCodeButton"
+	_copy_button.custom_minimum_size = Vector2(120, 52)
+	_copy_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(_copy_button)
+	_share_label = UI.label("", 18, Palette.CYAN_300)
+	_share_label.name = "ShareText"
+	_share_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_room_box.add_child(_share_label)
+
+
+func _build_player_slots() -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.name = "PlayerSlots"
+	row.add_theme_constant_override("separation", 12)
+	_room_box.add_child(row)
+	var you_name: String = AuthService.display_name().strip_edges().to_upper()
+	_you_card = _lobby_slot(row, "YOU", "OPERATOR" if you_name.is_empty() else you_name, Palette.CYAN_300)
+	_ready_label = _you_card.get_meta("status") as Label
+	_ready_label.name = "ReadyStatus"
+	_rival_card = _lobby_slot(row, "RIVAL", "OPEN SLOT", Palette.DANGER)
+	_rival_name = _rival_card.get_meta("title") as Label
+	_rival_name.name = "RivalName"
+	_opponent_label = _rival_card.get_meta("status") as Label
+	_opponent_label.name = "OpponentStatus"
+
+
+func _lobby_slot(row: HBoxContainer, role: String, title: String, accent: Color) -> PanelContainer:
+	var card: PanelContainer = PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.size_flags_stretch_ratio = 1.0
+	card.add_theme_stylebox_override("panel", _slot_style(Palette.NAVY_700))
+	row.add_child(card)
+	var stack: VBoxContainer = UI.column(card, 2)
+	stack.add_child(UI.label(role, 14, accent, true))
+	var name_label: Label = UI.label(title, 18, Palette.CREAM, true)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	stack.add_child(name_label)
+	var status: Label = UI.label("", 16, Palette.WARNING, true)
+	stack.add_child(status)
+	card.set_meta("title", name_label)
+	card.set_meta("status", status)
+	return card
+
+
+func _slot_style(border: Color) -> StyleBoxFlat:
+	return UI.box(Palette.NAVY_800, border, 12)
+
+
+func _status_color(ready: bool, offline: bool) -> Color:
+	if offline:
+		return Palette.DANGER
+	return Palette.SUCCESS if ready else Palette.WARNING
+
+
+func _lobby_button(text: String, callback: Callable, fill: Color, hover: Color, ink: Color) -> Button:
+	var button: Button = UI.button(text, callback)
+	button.autowrap_mode = TextServer.AUTOWRAP_OFF
+	button.custom_minimum_size.y = 48
+	button.add_theme_stylebox_override("normal", UI.box(fill, hover, 12))
+	button.add_theme_stylebox_override("hover", UI.box(hover, Palette.CREAM, 12))
+	button.add_theme_stylebox_override("pressed", UI.box(Palette.CYAN_400, Palette.CREAM, 12))
+	button.add_theme_color_override("font_color", ink)
+	button.add_theme_color_override("font_hover_color", Palette.CREAM)
+	button.add_theme_color_override("font_pressed_color", Palette.INK)
+	return button
