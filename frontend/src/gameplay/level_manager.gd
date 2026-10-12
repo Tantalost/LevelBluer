@@ -3132,5 +3132,9 @@ func _decision_clear_presentation() -> Dictionary:
 
 func _finish_learning_attempt(outcome: String) -> void:
 	if not _learning_attempt.is_empty() and _learning_owner == AuthService.participant_code():
-		PlayerManager.finish_learning_attempt(_learning_attempt, _current_module_id(), Router.active_stage_index + 1, outcome)
+		var details: Dictionary = {"phase":str(current_phase), "health":maxi(0, base_health)}
+		if _is_summative():
+			details["answered"] = exam_questions_asked
+			details["correct"] = exam_questions_correct
+		PlayerManager.finish_learning_attempt(_learning_attempt, _current_module_id(), Router.active_stage_index + 1, outcome, details)
 	_learning_attempt = ""

@@ -2,17 +2,37 @@
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 import json
-from typing import Literal
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 from app.data.pretest_questions import questions_for_module
 from app.schemas.pretest import PretestAnswerPayload
 from app.services.pretest_grading import is_correct
 from app.supabase_client import supabase
 
 MODULES = {"mod_01": "Phishing", "mod_02": "Smishing", "mod_03": "Vishing", "mod_04": "Pretexting", "mod_05": "Baiting"}
+
+class StageDetails(BaseModel):
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
+    phase: str = Field(max_length=40)
+    health: int = Field(ge=0, le=100000)
+    answered: int | None = Field(default=None, ge=0, le=10000)
+    correct: int | None = Field(default=None, ge=0, le=10000)
+    waves_completed: int | None = Field(default=None, ge=0, le=1000)
+    waves_total: int | None = Field(default=None, ge=0, le=1000)
+    timed_out: bool = False
+    missed_question_ids: list[Annotated[str, StringConstraints(min_length=1, max_length=96)]] = Field(default_factory=list, max_length=50)
+
+    @model_validator(mode="after")
+    def consistent_counts(self):
+        if self.correct is not None and (self.answered is None or self.correct > self.answered):
+            raise ValueError("Correct count cannot exceed answered count")
+        if self.waves_completed is not None and (self.waves_total is None or self.waves_completed > self.waves_total):
+            raise ValueError("Completed waves cannot exceed total waves")
+        return self
+
 
 class LearningEvent(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
@@ -29,6 +49,7 @@ class LearningEvent(BaseModel):
     total: int | None = Field(default=None, ge=1, le=100)
     mastery: float | None = Field(default=None, ge=0, le=1)
     answers: list[PretestAnswerPayload] | None = Field(default=None, max_length=100)
+    details: StageDetails | None = None
 
     @model_validator(mode="after")
     def validate_evidence(self):
@@ -38,6 +59,8 @@ class LearningEvent(BaseModel):
             raise ValueError("Invalid event time")
         if self.kind == "stage" and (self.attempt_id is None or self.stage is None or self.outcome is None):
             raise ValueError("Stage events need an attempt, stage, and outcome")
+        if self.details is not None and (self.kind != "stage" or self.outcome == "started"):
+            raise ValueError("Stage details require a terminal stage outcome")
         if self.kind == "mastery" and self.mastery is None:
             raise ValueError("Mastery observation is required")
         if self.kind == "posttest":
@@ -56,6 +79,8 @@ class LearningEvent(BaseModel):
             data["mastery"] = self.mastery
         elif self.kind == "stage":
             data.update(attempt_id=str(self.attempt_id), stage=self.stage, outcome=self.outcome)
+            if self.details is not None:
+                data["details"] = self.details.model_dump(exclude_none=True)
         elif self.kind == "pretest":
             bank = questions_for_module(self.module_id)
             answers = {a.id: a.answer for a in self.answers}

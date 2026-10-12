@@ -121,6 +121,7 @@ func resolve_answer(expired: bool = false) -> void:
 	if phase == "Trace" and not resolved and not paused and (expired or time_left <= 0):
 		resolved = true
 		selected_answers.clear()
+		_record_learning_answer(false, true)
 		_finish(false)
 		return
 	var previous: int = answered

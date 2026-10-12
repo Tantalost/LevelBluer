@@ -1197,9 +1197,12 @@ func begin_learning_attempt(module_id: String, stage_id: int) -> String:
 	record_learning_event("stage", module_id, {"attempt_id":attempt, "stage":stage_id, "outcome":"started"})
 	return attempt
 
-func finish_learning_attempt(attempt: String, module_id: String, stage_id: int, outcome: String) -> void:
+func finish_learning_attempt(attempt: String, module_id: String, stage_id: int, outcome: String, details: Dictionary = {}) -> void:
 	if not attempt.is_empty():
-		record_learning_event("stage", module_id, {"attempt_id":attempt, "stage":stage_id, "outcome":outcome})
+		var fields: Dictionary = {"attempt_id":attempt, "stage":stage_id, "outcome":outcome}
+		if not details.is_empty():
+			fields["details"] = details.duplicate(true)
+		record_learning_event("stage", module_id, fields)
 
 func acknowledge_learning_events(ids: Array) -> void:
 	var remaining: Array[Dictionary] = []

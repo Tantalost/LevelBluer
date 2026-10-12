@@ -25,12 +25,13 @@ func _run() -> void:
 	auth._signed_in = true
 	auth._participant_code = "learning-records-memory-test"
 	var attempt: String = player.begin_learning_attempt("mod_01", 1)
-	player.finish_learning_attempt(attempt, "mod_01", 1, "failed")
+	player.finish_learning_attempt(attempt, "mod_01", 1, "failed", {"phase":"Trace", "health":0, "answered":2, "correct":0})
+	check(player.learning_events[1].details.correct == 0, "Failed-stage details retain valid zero values")
 	player.record_learning_event("mastery", "mod_01", {"mastery":0.0})
 	check(player.learning_events.size() == 3, "Stage start, result, and zero mastery queued")
 	var snapshot: Dictionary = player.get_save_data()
 	var first_id: String = str(player.learning_events[0].event_id)
-	player.apply_save_data(snapshot)
+	player.apply_save_data(JSON.parse_string(JSON.stringify(snapshot)) as Dictionary)
 	check(player.learning_events.size() == 3 and player.learning_events[0].event_id == first_id, "Save reload preserves retry identities")
 	player.acknowledge_learning_events([first_id])
 	check(player.learning_events.size() == 2, "Partial acknowledgment retains unsent events")

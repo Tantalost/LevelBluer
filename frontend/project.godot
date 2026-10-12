@@ -59,6 +59,7 @@ locale/translations=PackedStringArray("res://content/ui_strings.en.translation",
 [levelblue]
 
 api_base_url="http://127.0.0.1:8000"
+feedback_api_base_url="https://web-llevelblue.onrender.com"
 
 [physics]
 

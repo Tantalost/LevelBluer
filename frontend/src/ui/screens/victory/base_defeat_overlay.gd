@@ -22,6 +22,8 @@ var _button_actions: Array[StringName] = [&"upgrade", &"restart", &"lessons", &"
 var _skip: Button
 var _remediation: bool = false
 var _review_shade: ColorRect
+var _feedback_button: Button
+var _feedback_context: Dictionary = {}
 
 func _ready() -> void:
 	layer = 40
@@ -67,11 +69,18 @@ func _ready() -> void:
 	_skip.add_theme_font_size_override("font_size", 10)
 	_skip.pressed.connect(finish_reveal)
 	_root.add_child(_skip)
+	_feedback_button = preload("res://src/ui/screens/intel/study_ui.gd").button("Give feedback", func() -> void:
+		preload("res://src/ui/screens/settings/student_feedback.gd").open(self, _feedback_context)
+	)
+	_feedback_button.hide()
+	_root.add_child(_feedback_button)
 	_root.resized.connect(_layout)
 	_layout()
 	_update_reveal()
 
 func configure(data: Dictionary) -> void:
+	_feedback_context = {"module_id": str(data.get("module_id", Router.active_module_id)), "stage": int(data.get("stage", Router.active_stage_index + 1)), "won": bool(data.get("won", false))}
+	_feedback_button.set_meta("available", not Router.is_tutorial and not Router.active_match_context.preview and not get_script().resource_path.ends_with("preview_result_overlay.gd"))
 	_won = bool(data.get("won", false))
 	_remediation = not _won and bool(data.get("remediation", false))
 	_review_shade.visible = _remediation
@@ -202,6 +211,14 @@ func _layout() -> void:
 	_buttons[3].position = Vector2(area.x - _buttons[3].size.x - 26, area.y - _buttons[3].size.y - 24)
 	_skip.position = Vector2(area.x - 110, 22)
 	_skip.size = Vector2(90, 32)
+	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_feedback_button.add_theme_font_size_override("font_size", maxi(24, ceili(16 / physical_scale)))
+	_feedback_button.custom_minimum_size = Vector2(180, maxf(48, ceilf(48 / physical_scale)))
+	_feedback_button.size = _feedback_button.get_combined_minimum_size()
+	_feedback_button.position = Vector2(area.x - _feedback_button.size.x - 24, 16)
+	if not _remediation:
+		_stage.size.x = maxf(0, area.x - 2 * (_feedback_button.size.x + 36))
+		_stage.position.x = (area.x - _stage.size.x) * 0.5
 
 func _place(label: Label, y: float, height: float, width: float, font_size: float) -> void:
 	label.size = _root.size * Vector2(width, height)
@@ -227,6 +244,7 @@ func _update_reveal() -> void:
 	for i in _buttons.size():
 		_buttons[i].modulate.a = _fade(3.0 + minf(i, 1) * 0.22)
 	_skip.visible = elapsed < REVEAL_COMPLETE
+	_feedback_button.visible = elapsed >= REVEAL_COMPLETE and bool(_feedback_button.get_meta("available", false))
 	if elapsed >= REVEAL_COMPLETE and not results_ready:
 		results_ready = true
 		for button in _buttons:
@@ -247,6 +265,8 @@ func _choose_button(index: int) -> void:
 	_choose(_button_actions[index])
 
 func _choose(action: StringName) -> void:
+	if has_node("StudentFeedback"):
+		return
 	if action.is_empty() or not results_ready or _leaving:
 		return
 	_leaving = true

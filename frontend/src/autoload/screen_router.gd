@@ -455,6 +455,10 @@ func pop() -> void:
 ## back arrows to this, not to pop(), so screens that must not be dismissed
 ## (the forced password change) can refuse in one place.
 func request_back() -> void:
+	var feedback: Node = get_tree().get_first_node_in_group("student_feedback_modal")
+	if feedback != null:
+		feedback.call("_dismiss")
+		return
 	if is_tutorial:
 		return
 	if _gameplay != null and is_instance_valid(_gameplay):

@@ -37,6 +37,7 @@ var _accessibility_labels: Array[Label] = []
 var _reduced_motion_toggle: CheckButton
 var _timer_assist_select: OptionButton
 var _text_speed_select: OptionButton
+var _feedback_button: Button
 
 
 func _ready() -> void:
@@ -44,6 +45,12 @@ func _ready() -> void:
 	_build_music_volume()
 	_build_dialogue_toggle()
 	_build_accessibility_controls()
+	var content: VBoxContainer = get_node("SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox") as VBoxContainer
+	_feedback_button = preload("res://src/ui/screens/intel/study_ui.gd").button("SEND FEEDBACK", func() -> void:
+		preload("res://src/ui/screens/settings/student_feedback.gd").open(self)
+	)
+	content.add_child(_feedback_button)
+	content.move_child(_feedback_button, content.get_node("LogoutSpacer").get_index())
 	get_viewport().size_changed.connect(_apply_scale)
 
 	_back_button.pressed.connect(func(): Router.request_back())
@@ -308,6 +315,8 @@ func _apply_scale() -> void:
 	for val in [_master_val, _sfx_val]:
 		_apply_pixel_font(val, scaled.call(10))
 	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_feedback_button.custom_minimum_size.y = maxf(48, ceilf(48 / physical_scale))
+	_feedback_button.add_theme_font_size_override("font_size", maxi(24, ceili(16 / physical_scale)))
 	_apply_pixel_font(_music_val, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
 	_music_slider.custom_minimum_size.y = maxf(48.0, ceilf(48.0 / physical_scale))
 	_apply_pixel_font_button(_dialogue_toggle, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
