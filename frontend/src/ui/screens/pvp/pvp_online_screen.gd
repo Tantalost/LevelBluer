@@ -1,7 +1,7 @@
 class_name PvpOnlineScreen
 extends PvpBattleScreen
-## Private-room online duel. Reuses the duel presentation in ONLINE mode.
-## Owns exactly one PvpOnlineSession from lobby to final result and frees it only when the player leaves.
+## Online duel via a private room or matchmaking. Reuses the duel presentation in ONLINE mode.
+## Owns exactly one PvpOnlineSession from lobby (or search) to final result and frees it only when the player leaves.
 ## Questions, options, answer verdicts, HP, and winners come from server events; nothing is graded or scored here.
 
 const Session = preload("res://src/network/pvp_online_session.gd")
@@ -13,6 +13,7 @@ var session_factory: Callable = Callable()
 
 var _session: Session
 var _sessions_created: int = 0
+var _sessions_freed: int = 0
 var _action: String = "create"
 var _leaving: bool = false
 var _left: bool = false
@@ -45,6 +46,13 @@ var _lobby_status: Label
 var _lobby_error: Label
 var _leave_room_button: Button
 var _banner: Label
+var _lobby_title: Label
+var _lobby_subtitle: Label
+var _code_panel: PanelContainer
+var _search_box: VBoxContainer
+var _search_title: Label
+var _search_time: Label
+var _cancel_search_button: Button
 
 
 func battle_mode() -> Mode:
@@ -52,9 +60,12 @@ func battle_mode() -> Mode:
 
 
 func on_enter(args: Dictionary) -> void:
-	_action = "join" if str(args.get("action", "create")) == "join" else "create"
+	var requested: String = str(args.get("action", "create"))
+	_action = requested if requested == "join" or requested == "find" else "create"
 	if _action == "create":
 		_create_room()
+	elif _action == "find":
+		_find_opponent()
 	_render_online()
 
 
@@ -81,11 +92,13 @@ func consume_back() -> bool:
 
 func _process(_delta: float) -> void:
 	if _leaving:
-		if _session == null or not _session.is_socket_open():
+		if _session == null or not _session.has_pending_exit():
 			_complete_leave()
 		return
 	if _session == null:
 		return
+	if _session.state == Session.State.SEARCHING:
+		_update_search()
 	_update_online_hud()
 	_update_banner()
 
@@ -137,6 +150,8 @@ func _ensure_session() -> void:
 	made.match_finished.connect(_on_match_finished)
 	made.connection_changed.connect(_on_connection_changed)
 	made.error_received.connect(_on_error_received)
+	made.match_found.connect(_on_match_found)
+	made.matchmaking_ended.connect(_on_matchmaking_ended)
 
 
 func _drop_session() -> void:
@@ -144,6 +159,7 @@ func _drop_session() -> void:
 		return
 	var leaving: Session = _session
 	_session = null
+	_sessions_freed += 1
 	if not _leaving:
 		leaving.leave()
 	if leaving.get_parent() == self:
@@ -160,7 +176,7 @@ func _leave_online() -> void:
 	if _session != null:
 		_session.leave()
 	_render_online()
-	if _session == null or not _session.is_socket_open():
+	if _session == null or not _session.has_pending_exit():
 		_complete_leave()
 
 
@@ -169,7 +185,16 @@ func _complete_leave() -> void:
 		return
 	_left = true
 	_drop_session()
-	Router.pop()
+	_pop_when_router_free()
+
+
+## Router.pop() is silently dropped mid-transition; keep retrying until this screen is popped.
+func _pop_when_router_free() -> void:
+	while is_inside_tree() and Router.is_top(self):
+		if Router.is_busy():
+			await get_tree().process_frame
+			continue
+		await Router.pop()
 
 
 func _create_room() -> void:
@@ -177,6 +202,29 @@ func _create_room() -> void:
 		return
 	_lobby_error.text = ""
 	_session.create_room()
+
+
+func _find_opponent() -> void:
+	if _session == null or _leaving:
+		return
+	_lobby_error.text = ""
+	_session.join_matchmaking()
+
+
+func _retry() -> void:
+	if _action == "find":
+		_find_opponent()
+	else:
+		_create_room()
+	_render_online()
+
+
+func _cancel_search() -> void:
+	if _session == null or _leaving or _session.state != Session.State.SEARCHING:
+		return
+	_cancel_search_button.disabled = true
+	_cancel_search_button.text = "CANCELLING…"
+	_session.cancel_matchmaking()
 
 
 func _submit_code() -> void:
@@ -205,6 +253,15 @@ static func normalize_code(raw: String) -> String:
 
 func _on_room_entered(_code: String) -> void:
 	_render_online()
+
+
+func _on_match_found(_code: String) -> void:
+	_lobby_error.text = ""
+	_render_online()
+
+
+func _on_matchmaking_ended(_reason: String) -> void:
+	_leave_online()
 
 
 func _on_room_updated(next_view: Dictionary) -> void:
@@ -323,10 +380,22 @@ func _render_lobby() -> void:
 	var state: Session.State = _session.state
 	var room: String = _session.room_code
 	var idle: bool = state == Session.State.IDLE or state == Session.State.ERROR or state == Session.State.DISCONNECTED
+	var searching: bool = state == Session.State.SEARCHING
+	var matchmade: bool = _action == "find"
+	_lobby_title.text = ("MATCH FOUND" if not room.is_empty() else "FIND OPPONENT") if matchmade else "PRIVATE ROOM"
+	_lobby_subtitle.text = "The duel starts when both players are ready." if matchmade else "Share the code. The duel starts when both players are ready."
 	_entry.visible = room.is_empty() and _action == "join"
 	_join_button.disabled = _leaving or state == Session.State.JOINING_ROOM
-	_retry_button.visible = room.is_empty() and _action == "create" and idle and not _leaving
+	_retry_button.visible = room.is_empty() and _action != "join" and idle and not _leaving
+	_search_box.visible = searching
+	_cancel_search_button.disabled = _leaving or not searching
+	if searching:
+		_update_search()
+	else:
+		_cancel_search_button.text = "CANCEL"
 	_room_box.visible = not room.is_empty()
+	_code_panel.visible = not matchmade
+	_share_label.visible = not matchmade
 	_code_label.text = room
 	_share_label.text = "Your classmate opens PvP › JOIN ROOM and enters %s" % room
 	var opponent: String = _session.opponent_id()
@@ -350,6 +419,8 @@ func _render_lobby() -> void:
 	_ready_button.disabled = _leaving or state != Session.State.WAITING or me_ready or _ready_sent
 	_ready_button.text = "I'M READY" if not (me_ready or _ready_sent) else "READY — WAITING FOR RIVAL"
 	_leave_room_button.disabled = _leaving
+	_leave_room_button.visible = not searching
+	_leave_room_button.text = "BACK" if room.is_empty() and matchmade else "LEAVE ROOM"
 	if not _leaving:
 		_lobby_status.text = _lobby_line(state)
 	_lobby_status.visible = not _lobby_status.text.is_empty()
@@ -367,6 +438,13 @@ func _lobby_line(state: Session.State) -> String:
 		Session.State.RECONNECTING:
 			return "Connection lost — reconnecting…"
 	return ""
+
+
+## Per-frame while queued: elapsed time and a dot indicator. Polling itself lives in the session.
+func _update_search() -> void:
+	var seconds: int = int(_session.search_elapsed_ms() / 1000.0)
+	_search_time.text = "%d:%02d" % [int(seconds / 60.0), seconds % 60]
+	_search_title.text = "SEARCHING FOR OPPONENT" + ".".repeat(seconds % 4)
 
 
 func _render_countdown() -> void:
@@ -633,12 +711,14 @@ func _build_lobby() -> void:
 	card.add_theme_stylebox_override("panel", UI.box(Palette.NAVY_900, Palette.NAVY_700, 22))
 	center.add_child(card)
 	var column: VBoxContainer = UI.column(card, 10)
-	var title: Label = UI.label("PRIVATE ROOM", 24, Palette.CREAM, true)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
-	var subtitle: Label = UI.label("Share the code. The duel starts when both players are ready.", 18, Palette.CYAN_300)
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(subtitle)
+	_lobby_title = UI.label("PRIVATE ROOM", 24, Palette.CREAM, true)
+	_lobby_title.name = "LobbyTitle"
+	_lobby_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_lobby_title)
+	_lobby_subtitle = UI.label("Share the code. The duel starts when both players are ready.", 18, Palette.CYAN_300)
+	_lobby_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_lobby_subtitle)
+	_build_search_box(column)
 	_entry = VBoxContainer.new()
 	_entry.name = "JoinEntry"
 	_entry.add_theme_constant_override("separation", 6)
@@ -659,7 +739,7 @@ func _build_lobby() -> void:
 	_join_button = UI.button("JOIN", _submit_code, true)
 	_join_button.name = "JoinButton"
 	entry_row.add_child(_join_button)
-	_retry_button = UI.button("TRY AGAIN", _create_room, true)
+	_retry_button = UI.button("TRY AGAIN", _retry, true)
 	_retry_button.name = "RetryCreateButton"
 	_retry_button.hide()
 	column.add_child(_retry_button)
@@ -690,8 +770,31 @@ func _build_lobby() -> void:
 	column.add_child(_leave_room_button)
 
 
+func _build_search_box(column: VBoxContainer) -> void:
+	_search_box = VBoxContainer.new()
+	_search_box.name = "SearchBox"
+	_search_box.add_theme_constant_override("separation", 10)
+	_search_box.hide()
+	column.add_child(_search_box)
+	_search_title = UI.label("SEARCHING FOR OPPONENT", 20, Palette.CYAN_400, true)
+	_search_title.name = "SearchTitle"
+	_search_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_search_box.add_child(_search_title)
+	_search_time = UI.label("0:00", 32, Palette.CREAM, true)
+	_search_time.name = "SearchTime"
+	_search_time.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_search_box.add_child(_search_time)
+	_cancel_search_button = _lobby_button("CANCEL", _cancel_search, Palette.NAVY_900, Palette.NAVY_800, Palette.DANGER)
+	_cancel_search_button.name = "CancelSearchButton"
+	_cancel_search_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_cancel_search_button.custom_minimum_size.x = 200
+	_cancel_search_button.add_theme_stylebox_override("normal", UI.box(Palette.NAVY_900, Palette.DANGER, 10))
+	_search_box.add_child(_cancel_search_button)
+
+
 func _build_code_panel() -> void:
 	var panel: PanelContainer = PanelContainer.new()
+	_code_panel = panel
 	panel.name = "CodePanel"
 	panel.add_theme_stylebox_override("panel", UI.box(Palette.TEAL_900, Palette.CYAN_400, 16))
 	_room_box.add_child(panel)

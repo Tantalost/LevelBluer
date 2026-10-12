@@ -15,15 +15,22 @@ signal round_resolved(result: Dictionary)
 signal match_finished(result: Dictionary)
 signal connection_changed(next_state: int)
 signal error_received(code: String, message: String)
+## Matchmaking paired this player; the session is now entering that ordinary room.
+signal match_found(code: String)
+## The search stopped without a room (currently only "cancelled"; failures go through error_received).
+signal matchmaking_ended(reason: String)
 
-enum State { IDLE, CREATING_ROOM, JOINING_ROOM, CONNECTING, WAITING, COUNTDOWN, ACTIVE, ROUND_RESULT, FINISHED, DISCONNECTED, RECONNECTING, ERROR }
+enum State { IDLE, CREATING_ROOM, JOINING_ROOM, CONNECTING, WAITING, COUNTDOWN, ACTIVE, ROUND_RESULT, FINISHED, DISCONNECTED, RECONNECTING, ERROR, SEARCHING }
 
 const DEFAULT_API_BASE: String = "http://127.0.0.1:8000"
 const REQUEST_TIMEOUT_SEC: float = 15.0
 const RECONNECT_WINDOW_MS: int = 15000
 const RECONNECT_BACKOFF_MS: Array[int] = [500, 1000, 2000, 3000]
+## A handshake on a dropped network can hang far past the reconnect window; abandon it and retry.
+const CONNECT_TIMEOUT_MS: int = 3000
 const PING_INTERVAL_MS: int = 5000
 const LEAVE_TIMEOUT_MS: int = 2000
+const MATCHMAKING_POLL_MS: int = 1000
 const ROUND_KEYS: PackedStringArray = ["round", "question_id", "question", "options", "started_at", "ends_at"]
 const CLOSE_UNAUTHORIZED: int = 4401
 const CLOSE_FORBIDDEN: int = 4403
@@ -55,6 +62,8 @@ const SAFE_MESSAGES: Dictionary = {
 	"round_resolved": "That round was already decided.",
 	"already_answered": "You already answered this round.",
 	"wrong_round": "That round is not open.",
+	"already_in_match": "You are already in a match. Finish or leave it first.",
+	"search_ended": "The search stopped. Try again.",
 }
 
 ## Wraps WebSocketPeer so tests can substitute a fake transport.
@@ -96,6 +105,7 @@ var token_provider: Callable = Callable()
 ## () -> int (local monotonic ms)
 var now_provider: Callable = Callable()
 var api_base: String = ""
+var debug_log: bool = OS.is_debug_build()
 
 var state: State = State.IDLE
 var room_code: String = ""
@@ -113,6 +123,8 @@ var clock_offset_ms: int = 0
 var has_clock_sample: bool = false
 var last_error_code: String = ""
 var reconnect_attempts: int = 0
+var search_started_at: int = 0
+var status_requests: int = 0
 
 var _socket: SocketTransport = null
 var _socket_open: bool = false
@@ -122,7 +134,12 @@ var _answered_round: int = 0
 var _op_seq: int = 0
 var _reconnect_deadline: int = 0
 var _next_retry_at: int = 0
+var _connect_deadline: int = 0
 var _next_ping_at: int = 0
+var _next_status_at: int = 0
+var _status_in_flight: bool = false
+var _cancelling: bool = false
+var _queue_exit_pending: bool = false
 var _http: HTTPRequest
 
 
@@ -193,6 +210,111 @@ func recover_room(code: String) -> bool:
 	return true
 
 
+# ---- matchmaking ---------------------------------------------------------------
+# The queue only hands out a room code; the match itself runs through recover_room() like any other room.
+
+func join_matchmaking() -> bool:
+	_begin_session()
+	search_started_at = _now()
+	_set_state(State.SEARCHING)
+	var seq: int = _op_seq
+	var reply: Dictionary = await _call_http(HTTPClient.METHOD_POST, "/api/pvp/matchmaking/join")
+	if seq != _op_seq:
+		return false
+	return _apply_matchmaking_reply(reply)
+
+
+## Asks the server to dequeue. The server decides the race: a "matched" reply enters that room instead.
+func cancel_matchmaking() -> void:
+	if state != State.SEARCHING or _cancelling:
+		return
+	_op_seq += 1
+	_cancelling = true
+	_status_in_flight = false
+	_next_status_at = 0
+	var seq: int = _op_seq
+	var reply: Dictionary = await _call_http(HTTPClient.METHOD_POST, "/api/pvp/matchmaking/cancel")
+	if seq != _op_seq:
+		return
+	_cancelling = false
+	var data: Dictionary = reply.get("data", {}) as Dictionary
+	if bool(reply.get("ok", false)) and str(data.get("status", "")) == "matched":
+		_log("cancel lost the race; entering the matched room")
+		_enter_match(data)
+		return
+	_log("search cancelled")
+	_set_state(State.IDLE)
+	matchmaking_ended.emit("cancelled")
+
+
+func get_matchmaking_status() -> bool:
+	if state != State.SEARCHING or _status_in_flight or _cancelling:
+		return false
+	_status_in_flight = true
+	_next_status_at = 0
+	status_requests += 1
+	var seq: int = _op_seq
+	var reply: Dictionary = await _call_http(HTTPClient.METHOD_GET, "/api/pvp/matchmaking/status")
+	if seq != _op_seq:
+		return false
+	_status_in_flight = false
+	return _apply_matchmaking_reply(reply)
+
+
+func search_elapsed_ms() -> int:
+	return maxi(0, _now() - search_started_at) if state == State.SEARCHING else 0
+
+
+func is_polling_matchmaking() -> bool:
+	return state == State.SEARCHING and not _cancelling and (_status_in_flight or _next_status_at > 0)
+
+
+## True while an exit still has something to deliver (a leave over the socket or a queue cancel).
+func has_pending_exit() -> bool:
+	return is_socket_open() or (_queue_exit_pending and _now() < _leave_deadline)
+
+
+func _apply_matchmaking_reply(reply: Dictionary) -> bool:
+	var data: Dictionary = reply.get("data", {}) as Dictionary
+	if not bool(reply.get("ok", false)):
+		_fail(_http_error_code(int(reply.get("status", 0)), data))
+		return false
+	match str(data.get("status", "")):
+		"queued":
+			_next_status_at = _now() + MATCHMAKING_POLL_MS
+			return true
+		"matched":
+			return _enter_match(data)
+		"idle":
+			_fail("search_ended")
+			return false
+	_fail("bad_response")
+	return false
+
+
+func _enter_match(data: Dictionary) -> bool:
+	var code: String = str(data.get("room_code", "")).strip_edges().to_upper()
+	if code.is_empty():
+		_fail("bad_response")
+		return false
+	_log("matched into room %s" % code)
+	match_found.emit(code)
+	recover_room(code)
+	return true
+
+
+func _leave_queue() -> void:
+	_op_seq += 1
+	_cancelling = false
+	_status_in_flight = false
+	_next_status_at = 0
+	_queue_exit_pending = true
+	_leave_deadline = _now() + LEAVE_TIMEOUT_MS
+	_set_state(State.IDLE)
+	await _call_http(HTTPClient.METHOD_POST, "/api/pvp/matchmaking/cancel")
+	_queue_exit_pending = false
+
+
 func send_ready() -> bool:
 	if state != State.WAITING:
 		return false
@@ -219,6 +341,9 @@ func has_answered_current_round() -> bool:
 
 
 func leave() -> void:
+	if state == State.SEARCHING:
+		_leave_queue()
+		return
 	_op_seq += 1
 	_stop_reconnect()
 	if _socket != null and _socket_open:
@@ -287,6 +412,10 @@ func poll() -> void:
 				_socket = null
 				_socket_open = false
 				_on_socket_closed(code)
+			elif ready_state == WebSocketPeer.STATE_CONNECTING and now >= _connect_deadline:
+				_log("connect timeout")
+				_close_socket()
+				_on_socket_closed(-1)
 			elif ready_state == WebSocketPeer.STATE_OPEN:
 				if _leaving and now >= _leave_deadline:
 					_leaving = false
@@ -296,11 +425,14 @@ func poll() -> void:
 				elif now >= _next_ping_at:
 					_next_ping_at = now + PING_INTERVAL_MS
 					_send({"type": "ping"})
+	if state == State.SEARCHING and _next_status_at > 0 and now >= _next_status_at:
+		get_matchmaking_status()
 	if state == State.RECONNECTING and _socket == null and now >= _next_retry_at:
 		if now >= _reconnect_deadline:
 			_give_up()
 		else:
 			reconnect_attempts += 1
+			_log("reconnect attempt %d (%dms left)" % [reconnect_attempts, _reconnect_deadline - now])
 			_open_socket()
 
 
@@ -323,14 +455,17 @@ func _handle_text(text: String) -> void:
 		return
 	if kind == "error":
 		var code: String = str(message.get("code", "error"))
+		_log("server error %s" % code)
 		last_error_code = code
 		error_received.emit(code, safe_message(code))
 		return
 	var revision: int = _int(message.get("revision", 0))
 	if revision <= last_revision:
 		ignored_events += 1
+		_log("ignored %s rev=%d (last=%d)" % [kind, revision, last_revision])
 		return
 	last_revision = revision
+	_log_event(kind, revision, message)
 	match kind:
 		"room_state":
 			_apply_view(message)
@@ -367,6 +502,7 @@ func _open_socket() -> void:
 	self_id = token_subject(token)
 	_socket = _make_socket()
 	_socket_open = false
+	_connect_deadline = _now() + CONNECT_TIMEOUT_MS
 	var err: Error = _socket.open(ws_url(room_code), PackedStringArray(["Authorization: Bearer " + token]))
 	if err != OK:
 		_socket = null
@@ -377,6 +513,7 @@ func _open_socket() -> void:
 
 
 func _on_socket_closed(code: int) -> void:
+	_log("socket closed code=%d" % code)
 	if _leaving:
 		_leaving = false
 		if state != State.FINISHED:
@@ -446,6 +583,9 @@ func _begin_session() -> void:
 	last_error_code = ""
 	reconnect_attempts = 0
 	_answered_round = 0
+	_next_status_at = 0
+	_status_in_flight = false
+	_cancelling = false
 
 
 # ---- state application ------------------------------------------------------------
@@ -461,6 +601,7 @@ func _accept_room_reply(reply: Dictionary) -> bool:
 		return false
 	room_code = code
 	self_id = token_subject(_token())
+	_log("room %s (revision %d)" % [room_code, _int(data.get("revision", 0))])
 	_sample_clock(data)
 	last_revision = maxi(last_revision, _int(data.get("revision", 0)))
 	_apply_view(data)
@@ -537,6 +678,7 @@ func _sample_clock(message: Dictionary) -> void:
 func _set_state(next: State) -> void:
 	if state == next:
 		return
+	_log("state %s -> %s" % [State.keys()[state], State.keys()[next]])
 	state = next
 	connection_changed.emit(int(next))
 
@@ -547,11 +689,33 @@ func _fail(code: String) -> void:
 
 
 func _report(code: String) -> void:
+	_log("error %s" % code)
 	last_error_code = code
 	error_received.emit(code, safe_message(code))
 
 
 # ---- helpers -----------------------------------------------------------------------
+
+## Development-only trace. Never includes the JWT; round logs carry ids, not answers.
+func _log(text: String) -> void:
+	if debug_log:
+		print("[PvP %s] %s" % [room_code if not room_code.is_empty() else "-", text])
+
+
+func _log_event(kind: String, revision: int, message: Dictionary) -> void:
+	if not debug_log:
+		return
+	match kind:
+		"round_started":
+			_log("rev %d round_started round=%d question=%s" % [revision, _int(message.get("round", 0)), str(message.get("question_id", ""))])
+		"round_result":
+			_log("rev %d round_result round=%d winner=%s reason=%s hp=%s" % [revision, _int(message.get("round", 0)), str(message.get("winner_id", "")), str(message.get("reason", "")), JSON.stringify(message.get("hp", {}))])
+		"match_finished":
+			_log("rev %d match_finished reason=%s winner=%s hp=%s" % [revision, str(message.get("reason", "")), str(message.get("winner_id", "")), JSON.stringify(message.get("hp", {}))])
+		"countdown_started":
+			_log("rev %d countdown round=%d ends_at=%d" % [revision, _int(message.get("round", 0)), _int(message.get("countdown_ends_at", 0))])
+		_:
+			_log("rev %d %s" % [revision, kind])
 
 static func public_round(source: Dictionary) -> Dictionary:
 	var out: Dictionary = {}

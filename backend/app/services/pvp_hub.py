@@ -13,16 +13,20 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from fastapi import WebSocket
 
 from app.services.pvp_service import PvpError, PvpService
 
+if TYPE_CHECKING:
+    from app.services.pvp_history import MatchRecorder
+
 logger = logging.getLogger(__name__)
 
 TICK_SECONDS = 0.1
 CLEANUP_SECONDS = 5.0
+RECORD_SECONDS = 1.0
 CLOSE_REPLACED = 4409
 CLOSE_ROOM_GONE = 4410
 
@@ -38,10 +42,12 @@ class Connection:
 
 
 class PvpHub:
-    def __init__(self, service: PvpService, tick_seconds: float = TICK_SECONDS, cleanup_seconds: float = CLEANUP_SECONDS) -> None:
+    def __init__(self, service: PvpService, tick_seconds: float = TICK_SECONDS, cleanup_seconds: float = CLEANUP_SECONDS, recorder: MatchRecorder | None = None, record_seconds: float = RECORD_SECONDS) -> None:
         self.service = service
         self.tick_seconds = tick_seconds
         self.cleanup_seconds = cleanup_seconds
+        self.recorder = recorder
+        self.record_seconds = record_seconds
         self._connections: dict[tuple[str, str], Connection] = {}
         self._last_cleanup = 0.0
 
@@ -152,15 +158,43 @@ class PvpHub:
                 logger.exception("PvP ticker step failed")
             await asyncio.sleep(self.tick_seconds)
 
+    async def persist(self) -> int:
+        """Hand finished matches to the recorder and write them off the event loop."""
+        records = self.service.drain_records()
+        if self.recorder is None:
+            return 0
+        self.recorder.add(records)
+        if not self.recorder.pending:
+            return 0
+        return await asyncio.to_thread(self.recorder.flush)
+
+    async def _record_loop(self, stop: asyncio.Event) -> None:
+        # Separate from the ticker so a slow database never delays round deadlines.
+        # Never cancelled mid-write: it finishes the current flush, then does one last pass.
+        while True:
+            try:
+                await self.persist()
+            except Exception:
+                logger.exception("PvP history step failed")
+            if stop.is_set():
+                return
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(stop.wait(), self.record_seconds)
+
     @contextlib.asynccontextmanager
     async def running(self) -> AsyncIterator[PvpHub]:
         task = asyncio.create_task(self.run())
+        stop = asyncio.Event()
+        recorder_task = asyncio.create_task(self._record_loop(stop))
         try:
             yield self
         finally:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task
+            stop.set()
+            with contextlib.suppress(Exception):
+                await recorder_task
             for connection in list(self._connections.values()):
                 self._close(connection, 1001)
             self._connections.clear()

@@ -1,9 +1,10 @@
 extends Control
-## PvP destination: a local bot duel or a private online room. No queue or ranks.
+## PvP destination: matchmaking, a local bot duel, or a private online room. No ranks.
 signal switch_requested
 signal battle_requested
 signal create_room_requested
 signal join_room_requested
+signal find_opponent_requested
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const RED: Color = Color("#FF5C5C")
 var _header: Label
@@ -15,6 +16,7 @@ var _switch: Button
 var _queue: Button
 var _create: Button
 var _join: Button
+var _find: Button
 var _copy: Label
 var _backdrop: TextureRect
 
@@ -51,12 +53,16 @@ func _ready() -> void:
 	_status = VBoxContainer.new()
 	_status.add_theme_constant_override("separation", 14)
 	add_child(_status)
-	_status.add_child(UI.label("ARENA / BOT OR ROOM", 24, RED))
-	_copy = UI.label("Duel a local bot, or a classmate\nwith a private room code.", 24, Color("#B8A6AE"))
+	_status.add_child(UI.label("ARENA / MATCH, BOT OR ROOM", 24, RED))
+	_copy = UI.label("Find a rival, duel a bot,\nor use a private room code.", 24, Color("#B8A6AE"))
 	_status.add_child(_copy)
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 10)
 	_status.add_child(actions)
+	_find = _action("FIND OPPONENT", func() -> void: find_opponent_requested.emit())
+	_find.name = "FindOpponent"
+	_find.tooltip_text = "Queue for an online duel with the next available classmate."
+	actions.add_child(_find)
 	_queue = _action("CHALLENGE BOT", func() -> void: battle_requested.emit())
 	_queue.tooltip_text = "Start a local duel against a bot. No matchmaking."
 	actions.add_child(_queue)
@@ -122,7 +128,7 @@ func _layout() -> void:
 	_status.size = Vector2(size.x * 0.52, 0)
 	for label: Label in [_identity, _subtitle, _copy, _status.get_child(0) as Label]:
 		label.add_theme_font_size_override("font_size", readable)
-	for button: Button in [_queue, _create, _join]:
+	for button: Button in [_find, _queue, _create, _join]:
 		button.add_theme_font_size_override("font_size", readable)
 		button.custom_minimum_size.y = maxf(60, 44.0 / physical)
 	_switch.add_theme_font_size_override("font_size", readable)

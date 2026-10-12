@@ -5,9 +5,10 @@ WebSocket auth: send ``Authorization: Bearer <jwt>`` in the handshake (Godot 4:
 """
 from typing import Any
 
-from fastapi import APIRouter, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
+from app.services import pvp_history
 from app.services.auth_service import verify_token
 from app.services.pvp_hub import PvpHub
 from app.services.pvp_service import PvpError
@@ -22,6 +23,7 @@ _STATUS = {
     "room_not_found": 404,
     "not_in_room": 403,
     "already_in_room": 409,
+    "already_in_match": 409,
     "room_full": 409,
     "room_closed": 409,
     "bank_unavailable": 503,
@@ -78,6 +80,47 @@ async def room_state(code: str, request: Request, authorization: str | None = He
         return _failure(exc)
     hub.flush(view["code"])
     return JSONResponse(content=view)
+
+
+@router.post("/matchmaking/join")
+async def join_matchmaking(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
+    user_id = _student_id(authorization)
+    try:
+        return JSONResponse(content=_hub(request.app).service.join_queue(user_id))
+    except PvpError as exc:
+        return _failure(exc)
+
+
+@router.post("/matchmaking/cancel")
+async def cancel_matchmaking(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
+    user_id = _student_id(authorization)
+    return JSONResponse(content=_hub(request.app).service.cancel_queue(user_id))
+
+
+@router.get("/matchmaking/status")
+async def matchmaking_status(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
+    user_id = _student_id(authorization)
+    return JSONResponse(content=_hub(request.app).service.queue_status(user_id))
+
+
+# History is read-only and always scoped to the JWT's own student; no route accepts a result.
+
+@router.get("/me/summary")
+def my_summary(authorization: str | None = Header(default=None)) -> JSONResponse:
+    user_id = _student_id(authorization)
+    try:
+        return JSONResponse(content=pvp_history.student_summary(user_id))
+    except pvp_history.HistoryUnavailable:
+        return JSONResponse(status_code=503, content={"error": "PvP history is unavailable right now", "code": "history_unavailable"})
+
+
+@router.get("/me/matches")
+def my_matches(limit: int = Query(default=10, ge=1, le=pvp_history.RECENT_LIMIT_MAX), authorization: str | None = Header(default=None)) -> JSONResponse:
+    user_id = _student_id(authorization)
+    try:
+        return JSONResponse(content={"matches": pvp_history.recent_matches(user_id, limit)})
+    except pvp_history.HistoryUnavailable:
+        return JSONResponse(status_code=503, content={"error": "PvP history is unavailable right now", "code": "history_unavailable"})
 
 
 @router.websocket("/rooms/{code}/ws")

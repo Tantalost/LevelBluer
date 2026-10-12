@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     pvp_waiting_grace_seconds: int = 60
     pvp_closed_ttl_seconds: int = 60
     pvp_stale_waiting_seconds: int = 600
+    pvp_queue_ttl_seconds: int = 90
 
     @property
     def cors_origin_list(self) -> list[str]:

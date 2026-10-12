@@ -18,6 +18,7 @@ import random
 import secrets
 import threading
 import time
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -40,6 +41,15 @@ ACTIVE_GRACE_MS = 15_000
 WAITING_GRACE_MS = 60_000
 CLOSED_TTL_MS = 60_000
 STALE_WAITING_MS = 10 * 60_000
+QUEUE_TTL_MS = 90_000
+
+ORIGIN_PRIVATE = "private"
+ORIGIN_MATCHMAKING = "matchmaking"
+
+FINISH_KO = "ko"
+FINISH_FORFEIT_DISCONNECT = "forfeit_disconnect"
+FINISH_FORFEIT_LEAVE = "forfeit_leave"
+FINISH_ABANDONED = "abandoned_before_start"
 
 
 class RoomState(str, Enum):
@@ -77,6 +87,9 @@ class Player:
     hp: int = MAX_HP
     connected: bool = True
     disconnected_at: int | None = None
+    correct: int = 0
+    wrong: int = 0
+    timeouts: int = 0
 
 
 @dataclass
@@ -108,6 +121,37 @@ class Event:
     payload: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class PlayerResult:
+    user_id: str
+    hp: int
+    correct: int
+    wrong: int
+    timeouts: int
+
+
+@dataclass(frozen=True)
+class MatchRecord:
+    """The authoritative outcome of one finished two-player room. Built only by the server."""
+    match_id: str
+    origin: str
+    player1: PlayerResult
+    player2: PlayerResult
+    winner_id: str | None
+    forfeited_by: str | None
+    finish_reason: str
+    rounds_played: int
+    started_at: int | None
+    finished_at: int
+
+
+@dataclass
+class QueueEntry:
+    user_id: str
+    joined_at: int
+    last_seen: int
+
+
 @dataclass
 class Room:
     code: str
@@ -130,6 +174,10 @@ class Room:
     outbox: list[Event] = field(default_factory=list)
     created_at: int = 0
     closed_at: int | None = None
+    origin: str = ORIGIN_PRIVATE
+    match_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    started_at: int | None = None
+    rounds_played: int = 0
     lock: threading.Lock = field(default_factory=threading.Lock)
 
     def player(self, user_id: str) -> Player | None:
@@ -230,6 +278,7 @@ class PvpService:
         waiting_grace_ms: int = WAITING_GRACE_MS,
         closed_ttl_ms: int = CLOSED_TTL_MS,
         stale_waiting_ms: int = STALE_WAITING_MS,
+        queue_ttl_ms: int = QUEUE_TTL_MS,
     ) -> None:
         self._bank: dict[str, PvpQuestion] = {question.id: question for question in (load_bank() if bank is None else bank)}
         self._clock = clock
@@ -241,6 +290,14 @@ class PvpService:
         self.waiting_grace_ms = waiting_grace_ms
         self.closed_ttl_ms = closed_ttl_ms
         self.stale_waiting_ms = stale_waiting_ms
+        self.queue_ttl_ms = queue_ttl_ms
+        # Lock order is always _queue_lock -> _rooms_lock -> room.lock; never take _queue_lock under a room lock.
+        self._queue: dict[str, QueueEntry] = {}
+        self._matched: dict[str, str] = {}
+        self._queue_lock = threading.Lock()
+        # Leaf lock: taken under room.lock in _close, never held while taking another lock.
+        self._records: list[MatchRecord] = []
+        self._records_lock = threading.Lock()
 
     @property
     def bank_size(self) -> int:
@@ -252,6 +309,11 @@ class PvpService:
     # ---- lifecycle -------------------------------------------------------
 
     def create_room(self, user_id: str) -> dict[str, Any]:
+        room = self._new_room(Player(user_id))
+        with room.lock:
+            return self._view(room, user_id)
+
+    def _new_room(self, host: Player, guest: Player | None = None, origin: str = ORIGIN_PRIVATE) -> Room:
         if not self._bank:
             raise PvpError("bank_unavailable", "PvP questions are unavailable")
         with self._rooms_lock:
@@ -261,10 +323,9 @@ class PvpService:
                     break
             else:
                 raise PvpError("code_exhausted", "Could not allocate a room code")
-            room = Room(code=code, host=Player(user_id), rng=random.Random(self._seeds.getrandbits(64)), created_at=self._clock())
+            room = Room(code=code, host=host, guest=guest, rng=random.Random(self._seeds.getrandbits(64)), created_at=self._clock(), origin=origin)
             self._rooms[code] = room
-        with room.lock:
-            return self._view(room, user_id)
+        return room
 
     def member_of(self, code: str, user_id: str) -> bool:
         room = self._room(code)
@@ -298,7 +359,8 @@ class PvpService:
             player.ready = ready
             if room.guest is not None and room.host.ready and room.guest.ready:
                 room.round_number = 1
-                room.countdown_ends_at = self._clock() + COUNTDOWN_MS
+                room.started_at = self._clock()
+                room.countdown_ends_at = room.started_at + COUNTDOWN_MS
                 room.state = RoomState.COUNTDOWN
                 self._emit(room, "countdown_started", {"round": room.round_number, "countdown_ends_at": room.countdown_ends_at})
             else:
@@ -344,6 +406,114 @@ class PvpService:
                 self._abandon(room, user_id, "retired")
             return self._view(room, user_id)
 
+    # ---- matchmaking ---------------------------------------------------------
+    # Pairing produces an ordinary room (origin="matchmaking"); the Phase 2 room/socket flow runs the match.
+    # Responses never carry the opponent's identity; the room view is the only place players meet.
+
+    def join_queue(self, user_id: str) -> dict[str, Any]:
+        with self._queue_lock:
+            now = self._clock()
+            self._expire_queue(now)
+            code = self._live_match(user_id)
+            if code is not None:
+                return {"status": "matched", "room_code": code}
+            entry = self._queue.get(user_id)
+            if entry is not None:
+                entry.last_seen = now
+                return self._queued(entry)
+            if self.active_room_for(user_id) is not None:
+                raise PvpError("already_in_match", "Finish or leave your current match first")
+            if not self._bank:
+                raise PvpError("bank_unavailable", "PvP questions are unavailable")
+            for waiting in list(self._queue.values()):
+                del self._queue[waiting.user_id]
+                if self.active_room_for(waiting.user_id) is not None:
+                    continue
+                code = self._create_match(waiting.user_id, user_id)
+                return {"status": "matched", "room_code": code}
+            entry = QueueEntry(user_id=user_id, joined_at=now, last_seen=now)
+            self._queue[user_id] = entry
+            return self._queued(entry)
+
+    def cancel_queue(self, user_id: str) -> dict[str, Any]:
+        """Leave the queue. A match that already exists is never touched; the caller learns its room instead."""
+        with self._queue_lock:
+            self._expire_queue(self._clock())
+            if self._queue.pop(user_id, None) is not None:
+                return {"status": "cancelled"}
+            code = self._live_match(user_id)
+            if code is not None:
+                return {"status": "matched", "room_code": code}
+            return {"status": "idle"}
+
+    def queue_status(self, user_id: str) -> dict[str, Any]:
+        """Polling doubles as the queue heartbeat."""
+        with self._queue_lock:
+            now = self._clock()
+            self._expire_queue(now)
+            code = self._live_match(user_id)
+            if code is not None:
+                return {"status": "matched", "room_code": code}
+            entry = self._queue.get(user_id)
+            if entry is not None:
+                entry.last_seen = now
+                return self._queued(entry)
+            return {"status": "idle"}
+
+    def expire_queue(self) -> list[str]:
+        with self._queue_lock:
+            return self._expire_queue(self._clock())
+
+    def active_room_for(self, user_id: str) -> str | None:
+        """The unfinished room this student belongs to, private or matchmade."""
+        with self._rooms_lock:
+            rooms = list(self._rooms.values())
+        for room in rooms:
+            with room.lock:
+                if room.player(user_id) is None:
+                    continue
+                self._advance(room)
+                if room.state not in TERMINAL_STATES:
+                    return room.code
+        return None
+
+    def _queued(self, entry: QueueEntry) -> dict[str, Any]:
+        return {"status": "queued", "queued_at": entry.joined_at, "expires_at": entry.last_seen + self.queue_ttl_ms}
+
+    def _create_match(self, host_id: str, guest_id: str) -> str:
+        # Both start offline with grace running, so a matched player who never connects
+        # closes the room through the normal waiting grace instead of blocking both students.
+        now = self._clock()
+        host = Player(host_id, connected=False, disconnected_at=now)
+        guest = Player(guest_id, connected=False, disconnected_at=now)
+        room = self._new_room(host, guest, origin=ORIGIN_MATCHMAKING)
+        self._matched[host_id] = room.code
+        self._matched[guest_id] = room.code
+        logger.info("PvP matchmaking paired into room %s", room.code)
+        return room.code
+
+    def _live_match(self, user_id: str) -> str | None:
+        code = self._matched.get(user_id)
+        if code is None:
+            return None
+        with self._rooms_lock:
+            room = self._rooms.get(code)
+        if room is not None:
+            with room.lock:
+                self._advance(room)
+                if room.state not in TERMINAL_STATES and room.player(user_id) is not None:
+                    return code
+        del self._matched[user_id]
+        return None
+
+    def _expire_queue(self, now: int) -> list[str]:
+        expired = [user_id for user_id, entry in self._queue.items() if now - entry.last_seen >= self.queue_ttl_ms]
+        for user_id in expired:
+            del self._queue[user_id]
+        for user_id in list(self._matched):
+            self._live_match(user_id)
+        return expired
+
     # ---- play --------------------------------------------------------------
 
     def state(self, code: str, user_id: str) -> dict[str, Any]:
@@ -383,12 +553,25 @@ class PvpService:
                 raise PvpError("bad_choice", "Unknown option")
             correct = live.order[choice] == live.question.answer_index
             live.submissions[user_id] = Submission(choice=choice, correct=correct, at_ms=now)
+            player = self._member(room, user_id)
+            if correct:
+                player.correct += 1
+            else:
+                player.wrong += 1
             self._emit(room, "answer_locked", {"round": live.number, "option_index": choice, "correct": correct}, to=user_id)
             if correct:
                 self._resolve(room, now, winner_id=user_id, reason="correct")
             elif len(live.submissions) == len(room.players()):
                 self._resolve(room, now, winner_id=None, reason="both_wrong")
             return {"accepted": True, "correct": correct, "room": self._view(room, user_id)}
+
+    # ---- match history ----------------------------------------------------------
+
+    def drain_records(self) -> list[MatchRecord]:
+        """Finished-match outcomes waiting to be persisted. Each room yields at most one."""
+        with self._records_lock:
+            records, self._records = self._records, []
+            return records
 
     # ---- transport support ----------------------------------------------------
 
@@ -408,7 +591,8 @@ class PvpService:
             return room.revision
 
     def cleanup(self) -> list[str]:
-        """Close stale waiting rooms; forget rooms closed longer than the TTL. Returns removed codes."""
+        """Expire stale queue entries, close stale waiting rooms, forget rooms closed longer than the TTL. Returns removed codes."""
+        self.expire_queue()
         now = self._clock()
         removed: list[str] = []
         for code in self.room_codes():
@@ -503,6 +687,11 @@ class PvpService:
             return
         live.resolved = True
         live.winner_id = winner_id
+        room.rounds_played += 1
+        if reason == "timeout":
+            for player in room.players():
+                if player.user_id not in live.submissions:
+                    player.timeouts += 1
         if winner_id is not None:
             loser = room.opponent(winner_id)
             if loser is not None:
@@ -533,6 +722,8 @@ class PvpService:
         self._close(room, reason)
 
     def _close(self, room: Room, reason: str) -> None:
+        if room.closed_at is not None:
+            return
         room.finish_reason = reason
         room.closed_at = self._clock()
         self._emit(room, "match_finished", {
@@ -542,6 +733,35 @@ class PvpService:
             "retired_by": room.retired_by,
             "hp": self._hp(room),
         })
+        if room.guest is not None:
+            record = self._record(room, reason)
+            with self._records_lock:
+                self._records.append(record)
+
+    @staticmethod
+    def _record(room: Room, reason: str) -> MatchRecord:
+        if room.started_at is None:
+            finish = FINISH_ABANDONED
+        elif reason == "ko":
+            finish = FINISH_KO
+        elif reason == "retired":
+            finish = FINISH_FORFEIT_LEAVE
+        else:
+            finish = FINISH_FORFEIT_DISCONNECT
+        def result(player: Player) -> PlayerResult:
+            return PlayerResult(player.user_id, player.hp, player.correct, player.wrong, player.timeouts)
+        return MatchRecord(
+            match_id=room.match_id,
+            origin=room.origin,
+            player1=result(room.host),
+            player2=result(room.guest),
+            winner_id=room.winner_id,
+            forfeited_by=room.retired_by if finish in (FINISH_FORFEIT_LEAVE, FINISH_FORFEIT_DISCONNECT) else None,
+            finish_reason=finish,
+            rounds_played=room.rounds_played,
+            started_at=room.started_at,
+            finished_at=room.closed_at or 0,
+        )
 
     def _emit(self, room: Room, kind: str, data: dict[str, Any], to: str | None = None) -> None:
         room.revision += 1
@@ -584,6 +804,7 @@ class PvpService:
             "winner_id": room.winner_id,
             "retired_by": room.retired_by,
             "finish_reason": room.finish_reason,
+            "origin": room.origin,
             "revision": room.revision,
             "server_now": self._clock(),
         }

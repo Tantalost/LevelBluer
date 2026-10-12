@@ -24,11 +24,12 @@ class FakeSocket extends "res://src/network/pvp_online_session.gd".SocketTranspo
 	var sent: Array[String] = []
 	var closed_by_client: bool = false
 	var opens: bool = true
+	var hangs: bool = false
 
 	func open(target: String, handshake: PackedStringArray) -> Error:
 		url = target
 		headers = handshake
-		state = WebSocketPeer.STATE_OPEN if opens else WebSocketPeer.STATE_CLOSED
+		state = WebSocketPeer.STATE_CONNECTING if hangs else WebSocketPeer.STATE_OPEN if opens else WebSocketPeer.STATE_CLOSED
 		return OK
 
 	func poll() -> void:
@@ -95,7 +96,9 @@ func fake_http(method: int, path: String, body: Dictionary) -> Dictionary:
 func make_socket() -> Session.SocketTransport:
 	var socket: FakeSocket = FakeSocket.new()
 	if not socket_plan.is_empty():
-		socket.opens = socket_plan.pop_front() == 1
+		var plan: int = socket_plan.pop_front()
+		socket.opens = plan == 1
+		socket.hangs = plan == 2
 	sockets.append(socket)
 	return socket
 
@@ -190,6 +193,7 @@ func _run() -> void:
 	_check_clock_offset()
 	_check_disconnect_reconnects()
 	_check_reconnect_gives_up()
+	_check_hung_handshake_times_out()
 	_check_intentional_leave()
 	_check_close_codes()
 	_check_match_finished_stops_reconnect()
@@ -410,6 +414,27 @@ func _check_reconnect_gives_up() -> void:
 	clock_ms += 30000
 	session.poll()
 	check(sockets.size() == settled, "a given-up session stays disconnected")
+	session.free()
+
+
+func _check_hung_handshake_times_out() -> void:
+	var session: Session = active_host()
+	socket_plan.append_array([2, 1])
+	sockets.back().drop(1006)
+	session.poll()
+	clock_ms += Session.backoff_ms(0)
+	session.poll()
+	var hung: FakeSocket = sockets.back()
+	check(sockets.size() == 2 and hung.state == WebSocketPeer.STATE_CONNECTING, "a reconnect handshake can hang")
+	clock_ms += Session.CONNECT_TIMEOUT_MS - 1
+	session.poll()
+	check(sockets.size() == 2 and not hung.closed_by_client, "a pending handshake is given its timeout")
+	clock_ms += 1
+	session.poll()
+	check(hung.closed_by_client and session.state == Session.State.RECONNECTING, "a hung handshake is abandoned and stays reconnecting")
+	clock_ms += Session.backoff_ms(1)
+	session.poll()
+	check(sockets.size() == 3 and sockets.back().state == WebSocketPeer.STATE_OPEN, "the next retry starts within the grace window")
 	session.free()
 
 

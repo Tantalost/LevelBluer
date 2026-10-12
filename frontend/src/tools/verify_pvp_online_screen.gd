@@ -4,7 +4,7 @@ extends SceneTree
 const Session = preload("res://src/network/pvp_online_session.gd")
 const MODE_BOT: int = 0
 const MODE_ONLINE: int = 1
-const SECTIONS: int = 10
+const SECTIONS: int = 11
 const ONLINE_SCENE: String = "res://src/ui/screens/pvp/pvp_online_screen.tscn"
 const BOT_SCENE: String = "res://src/ui/screens/pvp/pvp_battle_screen.tscn"
 const HOST_ID: String = "stu-host"
@@ -263,6 +263,7 @@ func _run() -> void:
 	await _check_opponent_disconnect()
 	await _check_match_finished()
 	await _check_leave_cleanup()
+	await _check_leave_while_router_busy()
 	_check_source_guards()
 	check(JSON.stringify(player.mastery_matrix) == mastery_before, "online PvP never touches mastery")
 	check(int(player.pvp_tokens) == tokens_before, "online PvP never pays tokens")
@@ -549,6 +550,53 @@ func _check_leave_cleanup() -> void:
 	screen.on_exit()
 	check(socket.sent_of("leave").size() == 1 and screen._session == null and session.is_queued_for_deletion(), "a forced exit still sends leave and frees the session")
 	screen.queue_free()
+	await settle()
+	sections_done += 1
+
+
+func _check_leave_while_router_busy() -> void:
+	reset_fakes()
+	http_replies.append({"ok": true, "status": 201, "data": view("waiting", 0, {"guest_id": null, "hp": {HOST_ID: 100}})})
+	var router: Node = root.get_node("Router")
+	var stack: Array = router.get("_stack") as Array
+	var saved_stack: Array = stack.duplicate()
+	var saved_host: Variant = router.get("_host")
+	var host: Control = Control.new()
+	root.add_child(host)
+	host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var below: Control = (load("res://src/ui/base_screen.gd") as GDScript).new() as Control
+	host.add_child(below)
+	var screen: Control = (load(ONLINE_SCENE) as PackedScene).instantiate() as Control
+	screen.session_factory = new_session.bind(HOST_ID)
+	host.add_child(screen)
+	screen.on_enter({"action": "create"})
+	await settle()
+	router.set("_host", host)
+	stack.clear()
+	stack.append(below)
+	stack.append(screen)
+	var session: Session = screen._session
+	var socket: FakeSocket = sockets.back()
+	pump(screen)
+	router.set("_busy", true)
+	screen._leave_room_button.pressed.emit()
+	socket.drop(1000)
+	pump(screen)
+	check(screen._left and screen._sessions_freed == 1 and session.is_queued_for_deletion(), "leaving during a router transition still frees the session once")
+	for _i: int in 10:
+		await process_frame
+	check(is_instance_valid(screen) and bool(router.call("is_top", screen)), "a busy router keeps the screen mounted instead of dropping the pop")
+	check(screen._sessions_freed == 1, "waiting for the router never frees the session twice")
+	router.set("_busy", false)
+	var waited: int = Time.get_ticks_msec()
+	while stack.size() > 1 and Time.get_ticks_msec() - waited < 5000:
+		await process_frame
+	check(stack.size() == 1 and stack.back() == below, "the screen pops once the router is free")
+	check(not is_instance_valid(screen) or screen._sessions_freed == 1, "the delayed pop does not free the session again")
+	stack.clear()
+	stack.append_array(saved_stack)
+	router.set("_host", saved_host)
+	host.queue_free()
 	await settle()
 	sections_done += 1
 

@@ -411,6 +411,7 @@ func _setup_mode_workspace() -> void:
 	_pvp_hub.battle_requested.connect(func() -> void: Router.push(&"pvp_battle"))
 	_pvp_hub.create_room_requested.connect(func() -> void: Router.push(&"pvp_online", {"action": "create"}))
 	_pvp_hub.join_room_requested.connect(func() -> void: Router.push(&"pvp_online", {"action": "join"}))
+	_pvp_hub.find_opponent_requested.connect(func() -> void: Router.push(&"pvp_online", {"action": "find"}))
 	_pvp_hub.hide()
 	# Keep the selector above either OS without global z-indices leaking through Router.
 	move_child(_mode_modal, get_child_count() - 1)
