@@ -13,6 +13,8 @@ var _school_session_token: String = ""
 var _school_has_catalog: bool = false
 
 var questions: Dictionary = {}
+## PvP-only bank. Never merged into `questions`, stage pools, or lessons.
+var pvp_questions: Array[Dictionary] = []
 var stages: Dictionary = {}
 var enemies: Dictionary = {}
 var towers: Dictionary = {}
@@ -33,6 +35,10 @@ const MODULE_SKILL_IDS := {
 	"mod_04": "pretexting",
 	"mod_05": "baiting",
 }
+const PVP_BANK_PATH := "res://data/pvp_social_engineering_100_all_easy.json"
+const PVP_TOPICS: PackedStringArray = ["phishing", "smishing", "vishing", "pretexting", "baiting"]
+const PVP_DIFFICULTIES: PackedStringArray = ["easy", "medium", "hard"]
+const PVP_OPTION_COUNT := 4
 
 
 func _ready() -> void:
@@ -45,6 +51,7 @@ func _ready() -> void:
 	_load_json_array("res://data/incidents.json", incidents)
 	_load_json_dict("res://data/lessons.json", lessons)
 	_assign_stage_pools()
+	load_pvp_bank()
 	print(
 		"[ContentDB] Parsed skills=", questions.size(),
 		" questions=", _question_count(),
@@ -73,11 +80,91 @@ func load_all() -> void:
 	if lessons.is_empty():
 		_load_json_dict("res://data/lessons.json", lessons)
 	_assign_stage_pools()
+	if pvp_questions.is_empty():
+		load_pvp_bank()
 	await get_tree().process_frame
 
 
 func get_questions() -> Dictionary:
 	return questions.duplicate(true)
+
+
+func get_pvp_questions() -> Array[Dictionary]:
+	return pvp_questions.duplicate(true)
+
+
+## Loads and validates the PvP bank. Malformed rows are skipped with a warning;
+## an unreadable file leaves the bank empty so PvP reports itself unavailable.
+func load_pvp_bank(file_path: String = PVP_BANK_PATH) -> int:
+	pvp_questions.clear()
+	var data: Variant = _parse_json_file(file_path)
+	if typeof(data) != TYPE_DICTIONARY:
+		if data != null:
+			push_error("ContentDB: PvP bank root is not a Dictionary in " + file_path)
+		return 0
+	var modules_stored: Variant = (data as Dictionary).get("modules", [])
+	if typeof(modules_stored) != TYPE_ARRAY:
+		push_error("ContentDB: PvP bank has no modules array in " + file_path)
+		return 0
+	var seen: Dictionary = {}
+	var skipped: int = 0
+	for module_row: Variant in modules_stored as Array:
+		if typeof(module_row) != TYPE_DICTIONARY:
+			skipped += 1
+			continue
+		var module: Dictionary = module_row as Dictionary
+		var topic: String = str(module.get("topic", "")).strip_edges()
+		var skill_id: String = topic.to_lower()
+		var module_id: String = str(module.get("module_id", "")).strip_edges()
+		for item: Dictionary in _flatten_module_rows(module, skill_id, module_id):
+			item["topic"] = topic
+			var problem: String = pvp_question_problem(item)
+			if problem.is_empty() and seen.has(str(item["id"])):
+				problem = "duplicate id"
+			if not problem.is_empty():
+				skipped += 1
+				push_warning("ContentDB: skipped PvP question %s (%s)" % [str(item.get("id", "?")), problem])
+				continue
+			item["answer_index"] = int(item["answer_index"])
+			seen[str(item["id"])] = true
+			pvp_questions.append(item)
+	print("[ContentDB] PvP bank loaded ", pvp_questions.size(), " questions (skipped ", skipped, ")")
+	return pvp_questions.size()
+
+
+## Returns why a flattened PvP row is unusable, or "" when it is valid.
+static func pvp_question_problem(item: Dictionary) -> String:
+	if str(item.get("id", "")).strip_edges().is_empty():
+		return "missing id"
+	if not PVP_TOPICS.has(str(item.get("skill_id", ""))):
+		return "unknown topic"
+	if not PVP_DIFFICULTIES.has(str(item.get("difficulty", "")).strip_edges().to_lower()):
+		return "unknown difficulty"
+	if str(item.get("question", "")).strip_edges().is_empty():
+		return "missing question"
+	var options: Variant = item.get("options", null)
+	if typeof(options) != TYPE_ARRAY or (options as Array).size() != PVP_OPTION_COUNT:
+		return "needs exactly %d options" % PVP_OPTION_COUNT
+	for option: Variant in options as Array:
+		if typeof(option) != TYPE_STRING or str(option).strip_edges().is_empty():
+			return "blank option"
+	var answer: Variant = item.get("answer_index", null)
+	if typeof(answer) != TYPE_INT and typeof(answer) != TYPE_FLOAT:
+		return "answer_index is not a number"
+	var answer_value: float = float(answer)
+	if answer_value != floorf(answer_value) or answer_value < 0.0 or answer_value >= float(PVP_OPTION_COUNT):
+		return "answer_index out of range"
+	for key: String in ["correct_feedback", "incorrect_feedback", "explanation"]:
+		if typeof(item.get(key, null)) != TYPE_STRING:
+			return "missing " + key
+	var bkt: Variant = item.get("bkt", null)
+	if typeof(bkt) != TYPE_DICTIONARY:
+		return "missing bkt"
+	for key: String in ["p_g", "p_s", "p_t"]:
+		var value: Variant = (bkt as Dictionary).get(key, null)
+		if typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+			return "bkt %s is not a number" % key
+	return ""
 
 
 func get_stage_question_pool(stage_id: int, module_id: String = "") -> Array:
@@ -457,11 +544,22 @@ func _ingest_module_bank(raw: Dictionary) -> void:
 	var skill_id: String = str(raw.get("topic", DEFAULT_SKILL_ID)).strip_edges().to_lower()
 	if skill_id.is_empty():
 		skill_id = DEFAULT_SKILL_ID
-	var types_stored: Variant = raw.get("question_types", [])
-	if typeof(types_stored) != TYPE_ARRAY:
+	if typeof(raw.get("question_types", [])) != TYPE_ARRAY:
 		push_error("ContentDB: question_types is not an Array")
 		return
 	var flat: Array = []
+	flat.append_array(_flatten_module_rows(raw, skill_id, module_id))
+	questions[skill_id] = flat
+	if not module_id.is_empty():
+		_module_question_ids[module_id] = skill_id
+	print("[ContentDB] Flattened module ", module_id, " -> ", skill_id, " (", flat.size(), " items)")
+
+
+func _flatten_module_rows(raw: Dictionary, skill_id: String, module_id: String) -> Array[Dictionary]:
+	var flat: Array[Dictionary] = []
+	var types_stored: Variant = raw.get("question_types", [])
+	if typeof(types_stored) != TYPE_ARRAY:
+		return flat
 	var types: Array = types_stored as Array
 	for i in types.size():
 		var type_row: Variant = types[i]
@@ -486,10 +584,7 @@ func _ingest_module_bank(raw: Dictionary) -> void:
 			item["skill_id"] = skill_id
 			item["module_id"] = module_id
 			flat.append(item)
-	questions[skill_id] = flat
-	if not module_id.is_empty():
-		_module_question_ids[module_id] = skill_id
-	print("[ContentDB] Flattened module ", module_id, " -> ", skill_id, " (", flat.size(), " items)")
+	return flat
 
 
 func _assign_stage_pools() -> void:

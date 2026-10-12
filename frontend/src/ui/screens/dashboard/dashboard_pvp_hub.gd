@@ -1,7 +1,10 @@
 extends Control
-## PvP destination. Phase 1 starts a local bot duel. No queue, ranks, or network calls.
+## PvP destination: matchmaking, a local bot duel, or a private online room. No ranks.
 signal switch_requested
 signal battle_requested
+signal create_room_requested
+signal join_room_requested
+signal find_opponent_requested
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const RED: Color = Color("#FF5C5C")
 var _header: Label
@@ -11,6 +14,9 @@ var _subtitle: Label
 var _status: VBoxContainer
 var _switch: Button
 var _queue: Button
+var _create: Button
+var _join: Button
+var _find: Button
 var _copy: Label
 var _backdrop: TextureRect
 
@@ -47,18 +53,27 @@ func _ready() -> void:
 	_status = VBoxContainer.new()
 	_status.add_theme_constant_override("separation", 14)
 	add_child(_status)
-	_status.add_child(UI.label("ARENA / LOCAL BOT", 24, RED))
-	_copy = UI.label("Challenge a local rival.\nNo ranking and no live matchmaking.", 24, Color("#B8A6AE"))
+	_status.add_child(UI.label("ARENA / MATCH, BOT OR ROOM", 24, RED))
+	_copy = UI.label("Find a rival, duel a bot,\nor use a private room code.", 24, Color("#B8A6AE"))
 	_status.add_child(_copy)
-	_queue = UI.button("CHALLENGE BOT", func() -> void: battle_requested.emit())
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 10)
+	_status.add_child(actions)
+	_find = _action("FIND OPPONENT", func() -> void: find_opponent_requested.emit())
+	_find.name = "FindOpponent"
+	_find.tooltip_text = "Queue for an online duel with the next available classmate."
+	actions.add_child(_find)
+	_queue = _action("CHALLENGE BOT", func() -> void: battle_requested.emit())
 	_queue.tooltip_text = "Start a local duel against a bot. No matchmaking."
-	_queue.add_theme_stylebox_override("normal", UI.box(Color("#24101A"), RED, 14))
-	_queue.add_theme_color_override("font_color", Color("#F3ECD6"))
-	_queue.add_theme_stylebox_override("hover", UI.box(RED, Color("#F3ECD6"), 14))
-	_queue.add_theme_color_override("font_hover_color", Color("#170A12"))
-	_queue.add_theme_stylebox_override("pressed", UI.box(Color("#3A1520"), Color("#F3ECD6"), 14))
-	_queue.add_theme_color_override("font_pressed_color", Color("#F3ECD6"))
-	_status.add_child(_queue)
+	actions.add_child(_queue)
+	_create = _action("CREATE ROOM", func() -> void: create_room_requested.emit())
+	_create.name = "CreateRoom"
+	_create.tooltip_text = "Open a private room and share its code."
+	actions.add_child(_create)
+	_join = _action("JOIN ROOM", func() -> void: join_room_requested.emit())
+	_join.name = "JoinRoom"
+	_join.tooltip_text = "Enter a classmate's room code."
+	actions.add_child(_join)
 	_switch = UI.button("SWITCH OS", func() -> void: switch_requested.emit())
 	_switch.name = "SwitchOS"
 	_switch.alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -73,6 +88,17 @@ func _ready() -> void:
 	resized.connect(_layout)
 	refresh_identity()
 	_layout.call_deferred()
+
+func _action(text: String, callback: Callable) -> Button:
+	var button: Button = UI.button(text, callback)
+	button.autowrap_mode = TextServer.AUTOWRAP_OFF
+	button.add_theme_stylebox_override("normal", UI.box(Color("#24101A"), RED, 14))
+	button.add_theme_color_override("font_color", Color("#F3ECD6"))
+	button.add_theme_stylebox_override("hover", UI.box(RED, Color("#F3ECD6"), 14))
+	button.add_theme_color_override("font_hover_color", Color("#170A12"))
+	button.add_theme_stylebox_override("pressed", UI.box(Color("#3A1520"), Color("#F3ECD6"), 14))
+	button.add_theme_color_override("font_pressed_color", Color("#F3ECD6"))
+	return button
 
 func refresh_identity() -> void:
 	_identity.text = AuthService.display_name().to_upper()
@@ -102,8 +128,9 @@ func _layout() -> void:
 	_status.size = Vector2(size.x * 0.52, 0)
 	for label: Label in [_identity, _subtitle, _copy, _status.get_child(0) as Label]:
 		label.add_theme_font_size_override("font_size", readable)
-	_queue.add_theme_font_size_override("font_size", readable)
-	_queue.custom_minimum_size.y = maxf(60, 44.0 / physical)
+	for button: Button in [_find, _queue, _create, _join]:
+		button.add_theme_font_size_override("font_size", readable)
+		button.custom_minimum_size.y = maxf(60, 44.0 / physical)
 	_switch.add_theme_font_size_override("font_size", readable)
 	_switch.position = Vector2(inset, size.y * 0.86)
 	_switch.size = Vector2(maxf(245, 180.0 / physical), maxf(60, 44.0 / physical))

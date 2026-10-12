@@ -112,10 +112,13 @@ func _verify_modes(screen: Control) -> void:
 	_check(not screen._pvp_hub._queue.disabled, "Local bot duel can be started")
 	_check(screen._pvp_hub._queue.text == "CHALLENGE BOT", "Hub starts a local bot duel")
 	_check(screen._pvp_hub.battle_requested.get_connections().size() == 1, "Battle request is routed once")
+	_check(screen._pvp_hub.create_room_requested.get_connections().size() == 1 and screen._pvp_hub.join_room_requested.get_connections().size() == 1 and screen._pvp_hub.find_opponent_requested.get_connections().size() == 1, "Online room and matchmaking requests are routed once")
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
 		root.size = dimensions
 		await _settle()
 		_check(root.get_visible_rect().encloses(screen._pvp_hub._switch.get_global_rect()), "PvP return switch fits")
+		for action: Button in [screen._pvp_hub._find, screen._pvp_hub._queue, screen._pvp_hub._create, screen._pvp_hub._join]:
+			_check(root.get_visible_rect().encloses(action.get_global_rect()), "%s fits %s" % [action.text, dimensions])
 		_check(not screen._pvp_hub._status.get_global_rect().intersects(screen._pvp_hub._switch.get_global_rect()), "PvP copy clears return control")
 		await _capture("pvp_workspace_%dx%d" % [dimensions.x, dimensions.y])
 	screen._pvp_hub._switch.pressed.emit()

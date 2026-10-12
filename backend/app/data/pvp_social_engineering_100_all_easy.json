@@ -1,0 +1,2082 @@
+{
+  "bank_id": "levelblue_pvp_social_engineering_100_all_easy",
+  "version": 3,
+  "description": "100 easy plain social-engineering PvP questions with no scenarios.",
+  "modules": [
+    {
+      "module_id": "mod_01",
+      "module_title": "Email Tricks",
+      "topic": "Phishing",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering_plain",
+          "type_label": "Social Engineering",
+          "delivery": "multiple_choice_4",
+          "description": "Easy plain social-engineering multiple-choice questions for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_easy_01_01",
+              "difficulty": "easy",
+              "question": "What is phishing?",
+              "options": [
+                "A trick to steal information using fake messages or websites.",
+                "A type of antivirus.",
+                "A way to charge a phone.",
+                "A way to make Wi-Fi faster."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Phishing tricks people into giving away information.",
+              "incorrect_feedback": "Not quite. Phishing tricks people into giving away information.",
+              "explanation": "Phishing tricks people into giving away information.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_02",
+              "difficulty": "easy",
+              "question": "What should you do if an email asks for your password?",
+              "options": [
+                "Post it in a group chat.",
+                "Do not give your password.",
+                "Send it quickly.",
+                "Send only half."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Passwords should stay private.",
+              "incorrect_feedback": "Not quite. Passwords should stay private.",
+              "explanation": "Passwords should stay private.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_03",
+              "difficulty": "easy",
+              "question": "What should you check before clicking a link?",
+              "options": [
+                "The time it was sent.",
+                "The message length.",
+                "The font color.",
+                "The website address."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — The website address can reveal a fake site.",
+              "incorrect_feedback": "Not quite. The website address can reveal a fake site.",
+              "explanation": "The website address can reveal a fake site.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_04",
+              "difficulty": "easy",
+              "question": "What is a common sign of phishing?",
+              "options": [
+                "A normal greeting.",
+                "A message sent in the morning.",
+                "A short subject line.",
+                "A message that pressures you to act quickly."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Scammers often use urgency.",
+              "incorrect_feedback": "Not quite. Scammers often use urgency.",
+              "explanation": "Scammers often use urgency.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_05",
+              "difficulty": "easy",
+              "question": "What should you do with a suspicious login link?",
+              "options": [
+                "Click it to test it.",
+                "Enter a fake password first.",
+                "Open the official website yourself.",
+                "Send it to a friend."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Use the real website directly instead of a suspicious link.",
+              "incorrect_feedback": "Not quite. Use the real website directly instead of a suspicious link.",
+              "explanation": "Use the real website directly instead of a suspicious link.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_06",
+              "difficulty": "easy",
+              "question": "Should you share a one-time code from your phone?",
+              "options": [
+                "Yes, with anyone from support.",
+                "Yes, if the message looks official.",
+                "No.",
+                "Yes, if it expires soon."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — One-time codes are secret.",
+              "incorrect_feedback": "Not quite. One-time codes are secret.",
+              "explanation": "One-time codes are secret.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_07",
+              "difficulty": "easy",
+              "question": "What should you do if an email says you won a prize you never entered?",
+              "options": [
+                "Share your bank details.",
+                "Pay a fee right away.",
+                "Treat it as suspicious.",
+                "Send your password."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unexpected prizes are a common scam trick.",
+              "incorrect_feedback": "Not quite. Unexpected prizes are a common scam trick.",
+              "explanation": "Unexpected prizes are a common scam trick.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_08",
+              "difficulty": "easy",
+              "question": "What should you do if a message looks like it came from your school but feels strange?",
+              "options": [
+                "Verify it through the official school website or contact.",
+                "Reply with your password.",
+                "Click every link in it.",
+                "Trust it because it has the school logo."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Logos can be copied, so verify through a trusted source.",
+              "incorrect_feedback": "Not quite. Logos can be copied, so verify through a trusted source.",
+              "explanation": "Logos can be copied, so verify through a trusted source.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_09",
+              "difficulty": "easy",
+              "question": "What should you do with an unexpected attachment?",
+              "options": [
+                "Open it immediately.",
+                "Rename the file.",
+                "Do not open it until you verify it.",
+                "Turn off antivirus first."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unexpected files may be unsafe.",
+              "incorrect_feedback": "Not quite. Unexpected files may be unsafe.",
+              "explanation": "Unexpected files may be unsafe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_10",
+              "difficulty": "easy",
+              "question": "Why are fake login pages dangerous?",
+              "options": [
+                "They can steal your username and password.",
+                "They improve security.",
+                "They make the screen brighter.",
+                "They speed up the internet."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Fake login pages are made to steal login details.",
+              "incorrect_feedback": "Not quite. Fake login pages are made to steal login details.",
+              "explanation": "Fake login pages are made to steal login details.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_11",
+              "difficulty": "easy",
+              "question": "What should you do if a website address looks slightly misspelled?",
+              "options": [
+                "Refresh it many times.",
+                "Leave the site.",
+                "Share it with classmates.",
+                "Enter your password anyway."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Misspelled domains can be fake.",
+              "incorrect_feedback": "Not quite. Misspelled domains can be fake.",
+              "explanation": "Misspelled domains can be fake.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_12",
+              "difficulty": "easy",
+              "question": "Can a phishing email look professional?",
+              "options": [
+                "No, never.",
+                "Yes.",
+                "Only on weekends.",
+                "Only if it is from a teacher."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Scam messages can look very convincing.",
+              "incorrect_feedback": "Not quite. Scam messages can look very convincing.",
+              "explanation": "Scam messages can look very convincing.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_13",
+              "difficulty": "easy",
+              "question": "What should you do if a message says your account will close in 5 minutes?",
+              "options": [
+                "Verify the claim using the official site.",
+                "Ignore all future account alerts.",
+                "Send your password.",
+                "Panic and click immediately."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Urgency is often used to pressure users.",
+              "incorrect_feedback": "Not quite. Urgency is often used to pressure users.",
+              "explanation": "Urgency is often used to pressure users.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_14",
+              "difficulty": "easy",
+              "question": "Should you trust a message only because it has a company logo?",
+              "options": [
+                "Yes, if the colors match.",
+                "Yes, if the logo is clear.",
+                "Yes, always.",
+                "No."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Logos are easy to copy.",
+              "incorrect_feedback": "Not quite. Logos are easy to copy.",
+              "explanation": "Logos are easy to copy.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_15",
+              "difficulty": "easy",
+              "question": "What is the safest way to visit your school portal?",
+              "options": [
+                "Use a saved trusted link or type the official address.",
+                "Use a shortened link.",
+                "Click any link from a message.",
+                "Use a random search result."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — A known official address is safer.",
+              "incorrect_feedback": "Not quite. A known official address is safer.",
+              "explanation": "A known official address is safer.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_16",
+              "difficulty": "easy",
+              "question": "What should you do after giving your password to a fake website?",
+              "options": [
+                "Send the password again.",
+                "Change the password on the real website.",
+                "Keep using the same password.",
+                "Tell no one and wait."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Changing the password helps protect the account.",
+              "incorrect_feedback": "Not quite. Changing the password helps protect the account.",
+              "explanation": "Changing the password helps protect the account.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_17",
+              "difficulty": "easy",
+              "question": "Why should you be careful with shortened links?",
+              "options": [
+                "They make Wi-Fi slower.",
+                "They cannot open on phones.",
+                "They can hide the real website address.",
+                "They are always broken."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Shortened links can hide where they lead.",
+              "incorrect_feedback": "Not quite. Shortened links can hide where they lead.",
+              "explanation": "Shortened links can hide where they lead.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_18",
+              "difficulty": "easy",
+              "question": "What should you do if a message asks for bank details unexpectedly?",
+              "options": [
+                "Post them publicly.",
+                "Send only the account number.",
+                "Do not send them.",
+                "Send them quickly."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Bank details are sensitive.",
+              "incorrect_feedback": "Not quite. Bank details are sensitive.",
+              "explanation": "Bank details are sensitive.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_19",
+              "difficulty": "easy",
+              "question": "What is the best way to check if a suspicious email is real?",
+              "options": [
+                "Trust the logo.",
+                "Reply to the same suspicious email.",
+                "Contact the sender using a trusted method.",
+                "Trust the subject line."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Use a separate trusted contact method.",
+              "incorrect_feedback": "Not quite. Use a separate trusted contact method.",
+              "explanation": "Use a separate trusted contact method.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_01_20",
+              "difficulty": "easy",
+              "question": "What is the safest response to a suspicious email?",
+              "options": [
+                "Do not click links or share information.",
+                "Forward it to everyone.",
+                "Reply with your password.",
+                "Open every attachment."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Avoid interacting with suspicious content.",
+              "incorrect_feedback": "Not quite. Avoid interacting with suspicious content.",
+              "explanation": "Avoid interacting with suspicious content.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_02",
+      "module_title": "Text Tricks",
+      "topic": "Smishing",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering_plain",
+          "type_label": "Social Engineering",
+          "delivery": "multiple_choice_4",
+          "description": "Easy plain social-engineering multiple-choice questions for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_easy_02_01",
+              "difficulty": "easy",
+              "question": "What is smishing?",
+              "options": [
+                "A way to charge a phone.",
+                "Phishing through phone calls.",
+                "Phishing through text messages.",
+                "A type of firewall."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Smishing is phishing sent by SMS or text.",
+              "incorrect_feedback": "Not quite. Smishing is phishing sent by SMS or text.",
+              "explanation": "Smishing is phishing sent by SMS or text.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_02",
+              "difficulty": "easy",
+              "question": "What should you do with a suspicious text link?",
+              "options": [
+                "Do not click it.",
+                "Enter your password.",
+                "Click it once.",
+                "Send it to a friend."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Suspicious links can lead to fake websites.",
+              "incorrect_feedback": "Not quite. Suspicious links can lead to fake websites.",
+              "explanation": "Suspicious links can lead to fake websites.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_03",
+              "difficulty": "easy",
+              "question": "What should you do if a text asks for your password?",
+              "options": [
+                "Send half of it.",
+                "Send it quickly.",
+                "Send a screenshot.",
+                "Do not send it."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Passwords should not be shared.",
+              "incorrect_feedback": "Not quite. Passwords should not be shared.",
+              "explanation": "Passwords should not be shared.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_04",
+              "difficulty": "easy",
+              "question": "What is a common sign of a smishing text?",
+              "options": [
+                "It says hello.",
+                "It uses normal spelling.",
+                "It creates urgency and asks you to click a link.",
+                "It has your name."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Urgency and links are common warning signs.",
+              "incorrect_feedback": "Not quite. Urgency and links are common warning signs.",
+              "explanation": "Urgency and links are common warning signs.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_05",
+              "difficulty": "easy",
+              "question": "What should you do if a text says you won a prize?",
+              "options": [
+                "Be suspicious if you did not enter anything.",
+                "Pay a fee immediately.",
+                "Share your bank details.",
+                "Send your password."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unexpected prizes are common scams.",
+              "incorrect_feedback": "Not quite. Unexpected prizes are common scams.",
+              "explanation": "Unexpected prizes are common scams.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_06",
+              "difficulty": "easy",
+              "question": "What should you do if a bank text looks suspicious?",
+              "options": [
+                "Open the official banking app yourself.",
+                "Send your card number.",
+                "Reply with your PIN.",
+                "Click the text link."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Use the bank's trusted official channel.",
+              "incorrect_feedback": "Not quite. Use the bank's trusted official channel.",
+              "explanation": "Use the bank's trusted official channel.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_07",
+              "difficulty": "easy",
+              "question": "Should you share a one-time code by text?",
+              "options": [
+                "Yes, if it expires soon.",
+                "Yes, with support.",
+                "Yes, with friends.",
+                "No."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — One-time codes must stay private.",
+              "incorrect_feedback": "Not quite. One-time codes must stay private.",
+              "explanation": "One-time codes must stay private.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_08",
+              "difficulty": "easy",
+              "question": "What should you do if a delivery text asks for a small fee?",
+              "options": [
+                "Pay through the text link.",
+                "Check the delivery using the official courier website.",
+                "Send your password.",
+                "Send your ID."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Verify delivery claims using official channels.",
+              "incorrect_feedback": "Not quite. Verify delivery claims using official channels.",
+              "explanation": "Verify delivery claims using official channels.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_09",
+              "difficulty": "easy",
+              "question": "Can a text from a known number still be unsafe?",
+              "options": [
+                "Only if it has emojis.",
+                "Only at night.",
+                "No, never.",
+                "Yes."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Known accounts or devices can be compromised.",
+              "incorrect_feedback": "Not quite. Known accounts or devices can be compromised.",
+              "explanation": "Known accounts or devices can be compromised.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_10",
+              "difficulty": "easy",
+              "question": "What should you do if a text asks for personal information?",
+              "options": [
+                "Send your school ID.",
+                "Send your password.",
+                "Send everything.",
+                "Do not share it until you verify the sender."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Verify before sharing personal data.",
+              "incorrect_feedback": "Not quite. Verify before sharing personal data.",
+              "explanation": "Verify before sharing personal data.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_11",
+              "difficulty": "easy",
+              "question": "Why are shortened links in texts risky?",
+              "options": [
+                "They can hide the real destination.",
+                "They block malware.",
+                "They are always safe.",
+                "They improve security."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — You may not see where the link really goes.",
+              "incorrect_feedback": "Not quite. You may not see where the link really goes.",
+              "explanation": "You may not see where the link really goes.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_12",
+              "difficulty": "easy",
+              "question": "What should you do if a text threatens a large penalty?",
+              "options": [
+                "Send your PIN.",
+                "Reply with your password.",
+                "Pay immediately.",
+                "Verify the claim through an official source."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Scammers often use fear to pressure people.",
+              "incorrect_feedback": "Not quite. Scammers often use fear to pressure people.",
+              "explanation": "Scammers often use fear to pressure people.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_13",
+              "difficulty": "easy",
+              "question": "What should you do if a text says your account is locked?",
+              "options": [
+                "Check the account through the official app or website.",
+                "Reply with your password.",
+                "Use the link in the text.",
+                "Send a photo of your ID."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Use the real service directly.",
+              "incorrect_feedback": "Not quite. Use the real service directly.",
+              "explanation": "Use the real service directly.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_14",
+              "difficulty": "easy",
+              "question": "Should you trust a text only because it knows your name?",
+              "options": [
+                "Yes, always.",
+                "Yes, if it uses your nickname.",
+                "Yes, if it knows your school.",
+                "No."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Names can be found online or leaked.",
+              "incorrect_feedback": "Not quite. Names can be found online or leaked.",
+              "explanation": "Names can be found online or leaked.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_15",
+              "difficulty": "easy",
+              "question": "What should you do if an unknown number asks where you live?",
+              "options": [
+                "Do not share your address.",
+                "Send a map pin.",
+                "Send the full address.",
+                "Send your school name too."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Avoid sharing personal information with unknown senders.",
+              "incorrect_feedback": "Not quite. Avoid sharing personal information with unknown senders.",
+              "explanation": "Avoid sharing personal information with unknown senders.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_16",
+              "difficulty": "easy",
+              "question": "What is the safest response to a suspicious text?",
+              "options": [
+                "Delete or ignore it after verifying if needed.",
+                "Reply with your password.",
+                "Click every link.",
+                "Send money."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Do not engage with suspicious texts.",
+              "incorrect_feedback": "Not quite. Do not engage with suspicious texts.",
+              "explanation": "Do not engage with suspicious texts.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_17",
+              "difficulty": "easy",
+              "question": "What should you do if a text says 'Act now or lose your account'?",
+              "options": [
+                "Send your password.",
+                "Forward the text to everyone.",
+                "Verify through the official service.",
+                "Click immediately."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Urgency is a common scam technique.",
+              "incorrect_feedback": "Not quite. Urgency is a common scam technique.",
+              "explanation": "Urgency is a common scam technique.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_18",
+              "difficulty": "easy",
+              "question": "What should you do if a text asks you to install an app?",
+              "options": [
+                "Verify the request before installing anything.",
+                "Install it right away.",
+                "Share the app with others.",
+                "Turn off phone security."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unexpected apps can be unsafe.",
+              "incorrect_feedback": "Not quite. Unexpected apps can be unsafe.",
+              "explanation": "Unexpected apps can be unsafe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_19",
+              "difficulty": "easy",
+              "question": "What should you do if a text asks for your PIN?",
+              "options": [
+                "Send it quickly.",
+                "Send it later.",
+                "Send only two digits.",
+                "Do not send it."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — PINs must remain secret.",
+              "incorrect_feedback": "Not quite. PINs must remain secret.",
+              "explanation": "PINs must remain secret.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_02_20",
+              "difficulty": "easy",
+              "question": "What is the safest way to respond to smishing?",
+              "options": [
+                "Use official channels instead of links in the text.",
+                "Trust every sender name.",
+                "Install requested apps immediately.",
+                "Send personal details."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Official channels are safer than suspicious text links.",
+              "incorrect_feedback": "Not quite. Official channels are safer than suspicious text links.",
+              "explanation": "Official channels are safer than suspicious text links.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_03",
+      "module_title": "Phone Tricks",
+      "topic": "Vishing",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering_plain",
+          "type_label": "Social Engineering",
+          "delivery": "multiple_choice_4",
+          "description": "Easy plain social-engineering multiple-choice questions for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_easy_03_01",
+              "difficulty": "easy",
+              "question": "What is vishing?",
+              "options": [
+                "Phishing through text messages.",
+                "A way to back up files.",
+                "Phishing through phone calls.",
+                "A type of antivirus."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Vishing uses voice calls to trick people.",
+              "incorrect_feedback": "Not quite. Vishing uses voice calls to trick people.",
+              "explanation": "Vishing uses voice calls to trick people.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_02",
+              "difficulty": "easy",
+              "question": "What should you do if a caller asks for your password?",
+              "options": [
+                "Text it later.",
+                "Give half of it.",
+                "Tell them slowly.",
+                "Do not give it."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Passwords should stay private.",
+              "incorrect_feedback": "Not quite. Passwords should stay private.",
+              "explanation": "Passwords should stay private.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_03",
+              "difficulty": "easy",
+              "question": "What should you do if a caller asks for your PIN?",
+              "options": [
+                "Send it by text.",
+                "Read it out loud.",
+                "Share only the first two numbers.",
+                "Do not share it."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — PINs are secret.",
+              "incorrect_feedback": "Not quite. PINs are secret.",
+              "explanation": "PINs are secret.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_04",
+              "difficulty": "easy",
+              "question": "Can caller ID be faked?",
+              "options": [
+                "Only by banks.",
+                "Yes.",
+                "No, never.",
+                "Only on old phones."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Caller ID can be spoofed.",
+              "incorrect_feedback": "Not quite. Caller ID can be spoofed.",
+              "explanation": "Caller ID can be spoofed.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_05",
+              "difficulty": "easy",
+              "question": "What should you do if someone claiming to be your bank calls unexpectedly?",
+              "options": [
+                "Hang up and call the official bank number.",
+                "Give your PIN.",
+                "Share your password.",
+                "Trust the caller ID."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Call back using a trusted official number.",
+              "incorrect_feedback": "Not quite. Call back using a trusted official number.",
+              "explanation": "Call back using a trusted official number.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_06",
+              "difficulty": "easy",
+              "question": "What should you do if a caller asks for a one-time code?",
+              "options": [
+                "Share it if they sound professional.",
+                "Do not share it.",
+                "Share half of it.",
+                "Send a screenshot."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — One-time codes protect your account.",
+              "incorrect_feedback": "Not quite. One-time codes protect your account.",
+              "explanation": "One-time codes protect your account.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_07",
+              "difficulty": "easy",
+              "question": "What should you do if a caller pressures you to act immediately?",
+              "options": [
+                "Slow down and verify the request.",
+                "Do whatever they say.",
+                "Give them your password.",
+                "Send money quickly."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Urgency is a common manipulation tactic.",
+              "incorrect_feedback": "Not quite. Urgency is a common manipulation tactic.",
+              "explanation": "Urgency is a common manipulation tactic.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_08",
+              "difficulty": "easy",
+              "question": "Should you trust a caller because they know your name?",
+              "options": [
+                "No.",
+                "Yes, if they sound friendly.",
+                "Yes, if they know your school.",
+                "Yes, always."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Personal details can be found online.",
+              "incorrect_feedback": "Not quite. Personal details can be found online.",
+              "explanation": "Personal details can be found online.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_09",
+              "difficulty": "easy",
+              "question": "What should you do if a caller asks you to install software?",
+              "options": [
+                "Verify the request through official support.",
+                "Give them remote access.",
+                "Turn off antivirus.",
+                "Install it immediately."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unexpected software requests can be dangerous.",
+              "incorrect_feedback": "Not quite. Unexpected software requests can be dangerous.",
+              "explanation": "Unexpected software requests can be dangerous.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_10",
+              "difficulty": "easy",
+              "question": "What should you do with an unexpected login approval request during a call?",
+              "options": [
+                "Ignore it and keep talking.",
+                "Approve it if they know your name.",
+                "Approve it once.",
+                "Deny it if you did not start the login."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Only approve logins you started.",
+              "incorrect_feedback": "Not quite. Only approve logins you started.",
+              "explanation": "Only approve logins you started.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_11",
+              "difficulty": "easy",
+              "question": "Why are gift-card payment requests suspicious?",
+              "options": [
+                "Scammers often use gift cards because the money is hard to recover.",
+                "Gift cards are illegal.",
+                "Gift cards cannot be bought online.",
+                "Gift cards reveal passwords."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Gift cards are common in scams.",
+              "incorrect_feedback": "Not quite. Gift cards are common in scams.",
+              "explanation": "Gift cards are common in scams.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_12",
+              "difficulty": "easy",
+              "question": "What should you do if a caller says you will be arrested unless you pay now?",
+              "options": [
+                "Hang up and verify through an official source.",
+                "Give your card number.",
+                "Pay immediately.",
+                "Buy gift cards."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Threats are often used to create fear.",
+              "incorrect_feedback": "Not quite. Threats are often used to create fear.",
+              "explanation": "Threats are often used to create fear.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_13",
+              "difficulty": "easy",
+              "question": "What should you do if a caller claims to be IT support?",
+              "options": [
+                "Give remote access immediately.",
+                "Trust them because they know your username.",
+                "Verify them through your official IT contact.",
+                "Give your password."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Always verify support requests.",
+              "incorrect_feedback": "Not quite. Always verify support requests.",
+              "explanation": "Always verify support requests.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_14",
+              "difficulty": "easy",
+              "question": "What should you do if a caller asks for bank details?",
+              "options": [
+                "Read them all aloud.",
+                "Send them by text.",
+                "Do not share them unless you are sure who you are speaking to.",
+                "Share only the account number."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Financial information is sensitive.",
+              "incorrect_feedback": "Not quite. Financial information is sensitive.",
+              "explanation": "Financial information is sensitive.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_15",
+              "difficulty": "easy",
+              "question": "Can a familiar voice always be trusted?",
+              "options": [
+                "Yes, always.",
+                "Only if it sounds clear.",
+                "No.",
+                "Only if the caller knows your name."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Voices can be copied or imitated.",
+              "incorrect_feedback": "Not quite. Voices can be copied or imitated.",
+              "explanation": "Voices can be copied or imitated.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_16",
+              "difficulty": "easy",
+              "question": "What is the safest response to a suspicious call?",
+              "options": [
+                "Stay on the line.",
+                "Trust the caller ID.",
+                "Give basic details first.",
+                "End the call and verify independently."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Independent verification is safer.",
+              "incorrect_feedback": "Not quite. Independent verification is safer.",
+              "explanation": "Independent verification is safer.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_17",
+              "difficulty": "easy",
+              "question": "What should you do if a caller wants access to your computer?",
+              "options": [
+                "Give access immediately.",
+                "Do not allow it unless the request is verified.",
+                "Share your password.",
+                "Turn off security."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Remote access can expose your device.",
+              "incorrect_feedback": "Not quite. Remote access can expose your device.",
+              "explanation": "Remote access can expose your device.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_18",
+              "difficulty": "easy",
+              "question": "What should you do if someone asks you to keep a payment secret?",
+              "options": [
+                "Send the money immediately.",
+                "Pay quietly.",
+                "Be suspicious and verify first.",
+                "Tell no one."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Secrecy is a common scam warning sign.",
+              "incorrect_feedback": "Not quite. Secrecy is a common scam warning sign.",
+              "explanation": "Secrecy is a common scam warning sign.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_19",
+              "difficulty": "easy",
+              "question": "What should you do if a caller says 'Do not hang up'?",
+              "options": [
+                "Send money before hanging up.",
+                "You can still hang up and verify the call yourself.",
+                "Give your password first.",
+                "Stay on the call no matter what."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Scammers may try to keep control of the conversation.",
+              "incorrect_feedback": "Not quite. Scammers may try to keep control of the conversation.",
+              "explanation": "Scammers may try to keep control of the conversation.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_03_20",
+              "difficulty": "easy",
+              "question": "What is the best defense against vishing?",
+              "options": [
+                "Act quickly when pressured.",
+                "Trust caller ID.",
+                "Give passwords to support.",
+                "Do not share secrets and verify callers independently."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Verification and protecting secrets are key.",
+              "incorrect_feedback": "Not quite. Verification and protecting secrets are key.",
+              "explanation": "Verification and protecting secrets are key.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_04",
+      "module_title": "Fake Stories",
+      "topic": "Pretexting",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering_plain",
+          "type_label": "Social Engineering",
+          "delivery": "multiple_choice_4",
+          "description": "Easy plain social-engineering multiple-choice questions for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_easy_04_01",
+              "difficulty": "easy",
+              "question": "What is pretexting?",
+              "options": [
+                "Backing up data.",
+                "Making Wi-Fi faster.",
+                "Using a fake story or identity to trick someone.",
+                "Encrypting files."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Pretexting uses a believable false story.",
+              "incorrect_feedback": "Not quite. Pretexting uses a believable false story.",
+              "explanation": "Pretexting uses a believable false story.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_02",
+              "difficulty": "easy",
+              "question": "What should you do if someone claims to be IT staff?",
+              "options": [
+                "Give them your password.",
+                "Let them use your account.",
+                "Verify their identity first.",
+                "Trust their clothes."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Always verify identity.",
+              "incorrect_feedback": "Not quite. Always verify identity.",
+              "explanation": "Always verify identity.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_03",
+              "difficulty": "easy",
+              "question": "What should you do if someone asks to borrow your access badge?",
+              "options": [
+                "Leave it at the door.",
+                "Do not lend it.",
+                "Lend it for five minutes.",
+                "Give it to anyone in uniform."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Access badges should not be shared.",
+              "incorrect_feedback": "Not quite. Access badges should not be shared.",
+              "explanation": "Access badges should not be shared.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_04",
+              "difficulty": "easy",
+              "question": "Should you trust someone only because they know your teacher's name?",
+              "options": [
+                "Yes, if they sound confident.",
+                "Yes, always.",
+                "Yes, if they know your class.",
+                "No."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Names can be found online.",
+              "incorrect_feedback": "Not quite. Names can be found online.",
+              "explanation": "Names can be found online.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_05",
+              "difficulty": "easy",
+              "question": "What should you do before giving someone sensitive information?",
+              "options": [
+                "Check who they are and why they need it.",
+                "Trust their story.",
+                "Give it first.",
+                "Ask if they are in a hurry."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Verify identity and need.",
+              "incorrect_feedback": "Not quite. Verify identity and need.",
+              "explanation": "Verify identity and need.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_06",
+              "difficulty": "easy",
+              "question": "Why do attackers use fake roles like 'IT staff' or 'manager'?",
+              "options": [
+                "To make people trust them.",
+                "To improve Wi-Fi.",
+                "To create backups.",
+                "To fix computers automatically."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Trusted roles make fake stories more believable.",
+              "incorrect_feedback": "Not quite. Trusted roles make fake stories more believable.",
+              "explanation": "Trusted roles make fake stories more believable.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_07",
+              "difficulty": "easy",
+              "question": "What should you do if someone says they forgot their badge?",
+              "options": [
+                "Open every door for them.",
+                "Let them follow you inside.",
+                "Lend them your badge.",
+                "Send them to the proper office or check-in process."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Access rules should still be followed.",
+              "incorrect_feedback": "Not quite. Access rules should still be followed.",
+              "explanation": "Access rules should still be followed.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_08",
+              "difficulty": "easy",
+              "question": "Should you share your password with a coworker who says they need it?",
+              "options": [
+                "No.",
+                "Yes, if they are your friend.",
+                "Yes, if it is temporary.",
+                "Yes, if they are busy."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Passwords should not be shared.",
+              "incorrect_feedback": "Not quite. Passwords should not be shared.",
+              "explanation": "Passwords should not be shared.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_09",
+              "difficulty": "easy",
+              "question": "What is a common goal of pretexting?",
+              "options": [
+                "To get information or access.",
+                "To improve battery life.",
+                "To speed up computers.",
+                "To update software."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Attackers use fake stories to gain something.",
+              "incorrect_feedback": "Not quite. Attackers use fake stories to gain something.",
+              "explanation": "Attackers use fake stories to gain something.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_10",
+              "difficulty": "easy",
+              "question": "What should you do if someone claims there is an emergency?",
+              "options": [
+                "Skip all checks.",
+                "Still verify the request.",
+                "Give them your password.",
+                "Let them in immediately."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Emergencies can be used to pressure people.",
+              "incorrect_feedback": "Not quite. Emergencies can be used to pressure people.",
+              "explanation": "Emergencies can be used to pressure people.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_11",
+              "difficulty": "easy",
+              "question": "What should you do if a stranger knows personal facts about you?",
+              "options": [
+                "Stay careful and verify who they are.",
+                "Trust them immediately.",
+                "Share your password.",
+                "Give more information."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Personal facts can come from public sources.",
+              "incorrect_feedback": "Not quite. Personal facts can come from public sources.",
+              "explanation": "Personal facts can come from public sources.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_12",
+              "difficulty": "easy",
+              "question": "Why should you follow access rules even when someone seems friendly?",
+              "options": [
+                "Rules only apply at night.",
+                "Friendly people are always safe.",
+                "Access rules are optional.",
+                "Friendly behavior does not prove identity."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Attackers can act friendly.",
+              "incorrect_feedback": "Not quite. Attackers can act friendly.",
+              "explanation": "Attackers can act friendly.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_13",
+              "difficulty": "easy",
+              "question": "What should you do if someone asks for confidential files?",
+              "options": [
+                "Send the files immediately.",
+                "Post them publicly.",
+                "Verify that they are allowed to receive them.",
+                "Give them your login."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Sensitive information should go only to authorized people.",
+              "incorrect_feedback": "Not quite. Sensitive information should go only to authorized people.",
+              "explanation": "Sensitive information should go only to authorized people.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_14",
+              "difficulty": "easy",
+              "question": "What should you do if someone says a manager approved something unusual?",
+              "options": [
+                "Give them access.",
+                "Skip the rules.",
+                "Trust the claim.",
+                "Confirm it with the manager or official process."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Namedropping does not prove authorization.",
+              "incorrect_feedback": "Not quite. Namedropping does not prove authorization.",
+              "explanation": "Namedropping does not prove authorization.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_15",
+              "difficulty": "easy",
+              "question": "Can uniforms or ID-looking clothing be faked?",
+              "options": [
+                "Yes.",
+                "Only online.",
+                "No, never.",
+                "Only by police."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Appearance alone is not proof.",
+              "incorrect_feedback": "Not quite. Appearance alone is not proof.",
+              "explanation": "Appearance alone is not proof.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_16",
+              "difficulty": "easy",
+              "question": "What should you do if someone asks for your account recovery information?",
+              "options": [
+                "Do not share it unless properly verified.",
+                "Post it in a group chat.",
+                "Share it quickly.",
+                "Send it by text."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Recovery information can help attackers take over accounts.",
+              "incorrect_feedback": "Not quite. Recovery information can help attackers take over accounts.",
+              "explanation": "Recovery information can help attackers take over accounts.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_17",
+              "difficulty": "easy",
+              "question": "Why do attackers use detailed stories?",
+              "options": [
+                "To speed up networks.",
+                "To block malware.",
+                "To improve security.",
+                "To make the lie sound believable."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Details can increase trust.",
+              "incorrect_feedback": "Not quite. Details can increase trust.",
+              "explanation": "Details can increase trust.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_18",
+              "difficulty": "easy",
+              "question": "What should you do if a request feels unusual?",
+              "options": [
+                "Ignore normal rules.",
+                "Share your password.",
+                "Pause and verify it.",
+                "Do it quickly."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unusual requests deserve extra checking.",
+              "incorrect_feedback": "Not quite. Unusual requests deserve extra checking.",
+              "explanation": "Unusual requests deserve extra checking.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_19",
+              "difficulty": "easy",
+              "question": "What is the safest way to handle an unknown visitor?",
+              "options": [
+                "Let them in if they smile.",
+                "Follow the normal visitor check-in process.",
+                "Give them your badge.",
+                "Tell them where restricted rooms are."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Normal procedures help prevent unauthorized access.",
+              "incorrect_feedback": "Not quite. Normal procedures help prevent unauthorized access.",
+              "explanation": "Normal procedures help prevent unauthorized access.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_04_20",
+              "difficulty": "easy",
+              "question": "What is the best defense against pretexting?",
+              "options": [
+                "Ignore company rules.",
+                "Verify identity before sharing information or access.",
+                "Share passwords with coworkers.",
+                "Trust confident people."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Verification reduces the risk of deception.",
+              "incorrect_feedback": "Not quite. Verification reduces the risk of deception.",
+              "explanation": "Verification reduces the risk of deception.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_05",
+      "module_title": "Tempting Offers",
+      "topic": "Baiting",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering_plain",
+          "type_label": "Social Engineering",
+          "delivery": "multiple_choice_4",
+          "description": "Easy plain social-engineering multiple-choice questions for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_easy_05_01",
+              "difficulty": "easy",
+              "question": "What is baiting?",
+              "options": [
+                "Blocking websites.",
+                "Using something tempting to trick someone into taking a risky action.",
+                "Making Wi-Fi faster.",
+                "Encrypting files."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Baiting uses curiosity or rewards.",
+              "incorrect_feedback": "Not quite. Baiting uses curiosity or rewards.",
+              "explanation": "Baiting uses curiosity or rewards.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_02",
+              "difficulty": "easy",
+              "question": "What should you do with an unknown USB drive?",
+              "options": [
+                "Do not plug it in.",
+                "Use it on a friend's computer.",
+                "Copy the files first.",
+                "Open it immediately."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unknown USB drives may be unsafe.",
+              "incorrect_feedback": "Not quite. Unknown USB drives may be unsafe.",
+              "explanation": "Unknown USB drives may be unsafe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_03",
+              "difficulty": "easy",
+              "question": "Why can free software from an unknown website be dangerous?",
+              "options": [
+                "It always saves battery.",
+                "It makes the screen brighter.",
+                "It improves every computer.",
+                "It may contain malware."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Unsafe downloads may contain malicious software.",
+              "incorrect_feedback": "Not quite. Unsafe downloads may contain malicious software.",
+              "explanation": "Unsafe downloads may contain malicious software.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_04",
+              "difficulty": "easy",
+              "question": "What should you do if a website says 'Disable antivirus to continue'?",
+              "options": [
+                "Turn it off right away.",
+                "Uninstall security software.",
+                "Ignore all warnings.",
+                "Do not disable antivirus."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Disabling protection can expose your device.",
+              "incorrect_feedback": "Not quite. Disabling protection can expose your device.",
+              "explanation": "Disabling protection can expose your device.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_05",
+              "difficulty": "easy",
+              "question": "What should you do with a QR code from an unknown source?",
+              "options": [
+                "Share it with everyone.",
+                "Enter your password after scanning.",
+                "Be careful and verify where it leads.",
+                "Scan it automatically."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — QR codes can lead to unsafe websites.",
+              "incorrect_feedback": "Not quite. QR codes can lead to unsafe websites.",
+              "explanation": "QR codes can lead to unsafe websites.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_06",
+              "difficulty": "easy",
+              "question": "Why are 'free prize' offers sometimes dangerous?",
+              "options": [
+                "Prizes always break phones.",
+                "Prizes delete passwords.",
+                "They can be used to trick you into giving information or installing software.",
+                "Prizes cannot be real."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Rewards can make people act without checking.",
+              "incorrect_feedback": "Not quite. Rewards can make people act without checking.",
+              "explanation": "Rewards can make people act without checking.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_07",
+              "difficulty": "easy",
+              "question": "What should you do with a USB drive labeled 'Exam Answers'?",
+              "options": [
+                "Open it immediately.",
+                "Use it on a school computer.",
+                "Do not open it.",
+                "Give it to a friend to test."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Tempting labels can be used as bait.",
+              "incorrect_feedback": "Not quite. Tempting labels can be used as bait.",
+              "explanation": "Tempting labels can be used as bait.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_08",
+              "difficulty": "easy",
+              "question": "What should you do before installing an unknown app?",
+              "options": [
+                "Check that it comes from a trusted source.",
+                "Turn off security.",
+                "Give it every permission.",
+                "Install it right away."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Use trusted app sources.",
+              "incorrect_feedback": "Not quite. Use trusted app sources.",
+              "explanation": "Use trusted app sources.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_09",
+              "difficulty": "easy",
+              "question": "What should you do if an app asks for too many permissions?",
+              "options": [
+                "Give it access to all files.",
+                "Approve everything.",
+                "Do not approve them unless they are really needed.",
+                "Ignore the permission list."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Extra permissions can expose data.",
+              "incorrect_feedback": "Not quite. Extra permissions can expose data.",
+              "explanation": "Extra permissions can expose data.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_10",
+              "difficulty": "easy",
+              "question": "What should you do if you find a strange device connected to a computer?",
+              "options": [
+                "Report it and do not use it.",
+                "Connect your phone to it.",
+                "Press every button.",
+                "Take it home."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unknown devices may be unsafe.",
+              "incorrect_feedback": "Not quite. Unknown devices may be unsafe.",
+              "explanation": "Unknown devices may be unsafe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_11",
+              "difficulty": "easy",
+              "question": "What should you do with a free download that seems too good to be true?",
+              "options": [
+                "Share it with friends.",
+                "Download it immediately.",
+                "Disable security first.",
+                "Be suspicious and use an official source instead."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Too-good-to-be-true offers are common bait.",
+              "incorrect_feedback": "Not quite. Too-good-to-be-true offers are common bait.",
+              "explanation": "Too-good-to-be-true offers are common bait.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_12",
+              "difficulty": "easy",
+              "question": "Why can fake update pop-ups be dangerous?",
+              "options": [
+                "They improve every computer.",
+                "They may install harmful software.",
+                "They cannot contain malware.",
+                "They always come from your browser."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Fake updates can be used to spread malware.",
+              "incorrect_feedback": "Not quite. Fake updates can be used to spread malware.",
+              "explanation": "Fake updates can be used to spread malware.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_13",
+              "difficulty": "easy",
+              "question": "What should you do if a free charging station asks you to trust a computer?",
+              "options": [
+                "Give it full access.",
+                "Always tap Trust.",
+                "Unlock your phone first.",
+                "Do not trust it unless you know it is safe."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Unknown charging/data connections can be risky.",
+              "incorrect_feedback": "Not quite. Unknown charging/data connections can be risky.",
+              "explanation": "Unknown charging/data connections can be risky.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_14",
+              "difficulty": "easy",
+              "question": "What should you do if someone gives you a free USB drive?",
+              "options": [
+                "Plug it in right away.",
+                "Open every file.",
+                "Treat it as untrusted until it is checked.",
+                "Disable antivirus."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Free devices can still be unsafe.",
+              "incorrect_feedback": "Not quite. Free devices can still be unsafe.",
+              "explanation": "Free devices can still be unsafe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_15",
+              "difficulty": "easy",
+              "question": "Why is curiosity dangerous in baiting attacks?",
+              "options": [
+                "Curiosity deletes files.",
+                "Curiosity changes passwords.",
+                "It can make people ignore security warnings.",
+                "Curiosity blocks Wi-Fi."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Attackers rely on people wanting to see what is inside.",
+              "incorrect_feedback": "Not quite. Attackers rely on people wanting to see what is inside.",
+              "explanation": "Attackers rely on people wanting to see what is inside.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_16",
+              "difficulty": "easy",
+              "question": "What should you do if a pop-up offers a free gift for your password?",
+              "options": [
+                "Enter your password.",
+                "Share the pop-up.",
+                "Close it and do not enter your password.",
+                "Send your PIN too."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Legitimate rewards should not ask for passwords.",
+              "incorrect_feedback": "Not quite. Legitimate rewards should not ask for passwords.",
+              "explanation": "Legitimate rewards should not ask for passwords.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_17",
+              "difficulty": "easy",
+              "question": "What should you do if an unknown website offers a free expensive program?",
+              "options": [
+                "Give the site your login.",
+                "Use the official software website instead.",
+                "Turn off antivirus.",
+                "Download it immediately."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Official sources are safer.",
+              "incorrect_feedback": "Not quite. Official sources are safer.",
+              "explanation": "Official sources are safer.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_18",
+              "difficulty": "easy",
+              "question": "What should you do before scanning a promotional QR code?",
+              "options": [
+                "Scan every code you see.",
+                "Disable phone security.",
+                "Enter your password first.",
+                "Make sure it comes from a trusted source."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — QR codes can be replaced or misused.",
+              "incorrect_feedback": "Not quite. QR codes can be replaced or misused.",
+              "explanation": "QR codes can be replaced or misused.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_19",
+              "difficulty": "easy",
+              "question": "Should you trust a device only because it has a company logo?",
+              "options": [
+                "Yes, if it is free.",
+                "Yes, always.",
+                "Yes, if the logo looks real.",
+                "No."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Logos can be copied.",
+              "incorrect_feedback": "Not quite. Logos can be copied.",
+              "explanation": "Logos can be copied.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_easy_05_20",
+              "difficulty": "easy",
+              "question": "What is the best defense against baiting?",
+              "options": [
+                "Trust free offers.",
+                "Do not let curiosity or rewards make you ignore security rules.",
+                "Open unknown files.",
+                "Disable security software."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Baiting works by tempting people to take unsafe actions.",
+              "incorrect_feedback": "Not quite. Baiting works by tempting people to take unsafe actions.",
+              "explanation": "Baiting works by tempting people to take unsafe actions.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

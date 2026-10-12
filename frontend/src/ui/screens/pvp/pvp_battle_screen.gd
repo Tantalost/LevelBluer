@@ -1,6 +1,8 @@
 class_name PvpBattleScreen
 extends BaseScreen
 ## Presentation for a local bot duel. Rules live in PvpBattle.
+## PvpOnlineScreen reuses this presentation in ONLINE mode, where the server is authoritative.
+enum Mode { BOT, ONLINE }
 const Battle = preload("res://src/gameplay/pvp/pvp_battle.gd")
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Quiz = preload("res://src/gameplay/quiz_content.gd")
@@ -53,10 +55,12 @@ var _bot_hp: Label
 var _player_bar: HpBar
 var _bot_bar: HpBar
 var _footer: HBoxContainer
+var _hud: HBoxContainer
 var _abandon: Control
+var _abandon_note: Label
+var _bank: Array = []
 var _choices: Array[Dictionary] = []
 var _answer_buttons: Array[Button] = []
-var _display_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _pause_started: int = -1
 var _paused_total: int = 0
 var _quiz: PanelContainer
@@ -111,10 +115,13 @@ func _ready() -> void:
 	_build_result_card()
 	_build_end_card()
 	_build_abandon()
-	_display_rng.randomize()
 	resized.connect(_fit_arena)
 	_fit_arena()
 	_start_match()
+
+
+func battle_mode() -> Mode:
+	return Mode.BOT
 
 
 func _process(_delta: float) -> void:
@@ -152,7 +159,8 @@ func _start_match() -> void:
 	deck_rng.randomize()
 	var bot_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	bot_rng.randomize()
-	var deck: Array[Dictionary] = Battle.build_deck(_pool(), 0, deck_rng)
+	_bank = _pool()
+	var deck: Array[Dictionary] = Battle.build_deck(_bank, 0, deck_rng)
 	var next: Battle = Battle.new()
 	_bind_battle(next)
 	var now: int = _clock_now()
@@ -164,16 +172,7 @@ func _start_match() -> void:
 
 
 func _pool() -> Array:
-	var pool: Array = []
-	var bank: Dictionary = ContentDB.get_questions()
-	for skill: Variant in bank.keys():
-		var rows: Variant = bank[skill]
-		if typeof(rows) != TYPE_ARRAY:
-			continue
-		var list: Array = rows as Array
-		for row: Variant in list:
-			pool.append(row)
-	return pool
+	return ContentDB.get_pvp_questions()
 
 
 func _on_phase_changed(_next_phase: int) -> void:
@@ -220,6 +219,10 @@ func _apply_chrome(phase: Battle.Phase) -> void:
 	var counting: bool = phase == Battle.Phase.COUNTDOWN or phase == Battle.Phase.PREPARING
 	var resulting: bool = phase == Battle.Phase.RESOLVING or phase == Battle.Phase.ROUND_RESULT
 	var finished: bool = phase == Battle.Phase.FINISHED
+	_show_panels(questioning, counting, resulting, finished)
+
+
+func _show_panels(questioning: bool, counting: bool, resulting: bool, finished: bool) -> void:
 	_quiz.visible = questioning
 	_countdown.visible = counting
 	_result_host.visible = resulting
@@ -231,21 +234,16 @@ func _apply_chrome(phase: Battle.Phase) -> void:
 
 
 func _render_question() -> void:
-	var question: Dictionary = _battle.current_question()
-	var scenario: String = Quiz._format_scenario(question)
-	if not scenario.is_empty():
-		var evidence: PanelContainer = UI.panel(_body, Palette.NAVY_800)
-		evidence.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		evidence.add_theme_stylebox_override("panel", UI.box(Palette.NAVY_800, Palette.NAVY_700, 8))
-		var evidence_label: Label = UI.label(scenario, 16, Palette.CREAM)
-		evidence_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		evidence.add_child(evidence_label)
+	var shared: Dictionary = Battle.resolve_round(_battle.round_message(), _bank)
+	if shared.is_empty():
+		_render_unavailable()
+		return
+	var question: Dictionary = shared.get("question", {}) as Dictionary
 	var prompt: Label = UI.label(Quiz._format_prompt(question), 18, Palette.CREAM)
 	prompt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.add_child(prompt)
-	_choices = Quiz.options(question)
-	_shuffle_choices(_choices)
+	_choices.assign(shared.get("options", []) as Array)
 	var grid: GridContainer = GridContainer.new()
 	grid.name = "AnswerGrid"
 	grid.columns = 2 if _choices.size() > 1 else 1
@@ -273,7 +271,8 @@ func _render_result() -> void:
 	var headline: String = _result_headline()
 	_status.text = headline
 	_result_title.text = headline
-	var note: String = Quiz.explanation(_battle.current_question(), _battle.side_correct(true), _battle.player_pick())
+	var shared: Dictionary = Battle.resolve_round(_battle.round_message(), _bank)
+	var note: String = Quiz.explanation(shared.get("question", {}) as Dictionary, _battle.side_correct(true), _battle.player_pick())
 	_result_note.text = note
 	_result_note.visible = not note.is_empty()
 
@@ -371,6 +370,7 @@ func _build_hud() -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	_layout.add_child(row)
+	_hud = row
 	var player_box: VBoxContainer = _fighter_column()
 	var center: VBoxContainer = VBoxContainer.new()
 	center.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -1015,7 +1015,8 @@ func _build_abandon() -> void:
 	center.add_child(panel)
 	var column: VBoxContainer = UI.column(panel, 14)
 	column.add_child(UI.label("LEAVE MATCH?", 22, Palette.CREAM, true))
-	column.add_child(UI.label("This local duel will be discarded.", 20, Palette.CREAM))
+	_abandon_note = UI.label("This local duel will be discarded.", 20, Palette.CREAM)
+	column.add_child(_abandon_note)
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 12)
 	column.add_child(actions)
@@ -1075,14 +1076,6 @@ func _format_average(ms: float) -> String:
 	if ms < 0.0:
 		return "—"
 	return "%.2fs" % (ms / 1000.0)
-
-
-func _shuffle_choices(choices: Array[Dictionary]) -> void:
-	for i: int in range(choices.size() - 1, 0, -1):
-		var j: int = _display_rng.randi_range(0, i)
-		var swap: Dictionary = choices[i]
-		choices[i] = choices[j]
-		choices[j] = swap
 
 
 func _clock_now() -> int:

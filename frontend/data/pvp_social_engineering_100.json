@@ -1,0 +1,2682 @@
+{
+  "bank_id": "levelblue_pvp_social_engineering_100",
+  "version": 1,
+  "description": "100 PvP-ready defensive social-engineering questions for LevelBlue.",
+  "modules": [
+    {
+      "module_id": "mod_01",
+      "module_title": "Email Tricks",
+      "topic": "Phishing",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering",
+          "type_label": "Social Engineering Duel",
+          "delivery": "multiple_choice_4",
+          "description": "Fast four-choice social-engineering scenarios designed for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_se_0101",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "School Security <security@school-helpdesk.net>",
+                "subject": "URGENT: Account expires today",
+                "body": "Your student account will be deleted in 30 minutes. Sign in using the link below to keep access."
+              },
+              "question": "What is the safest action?",
+              "options": [
+                "Open the official school portal separately and verify the alert.",
+                "Reply with your password to confirm ownership.",
+                "Click the link before the timer expires.",
+                "Forward the message to classmates and ask if it is real."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Urgency plus a non-school sender domain are warning signs. Verify through an official channel instead of using the message link.",
+              "incorrect_feedback": "Not quite. Urgency plus a non-school sender domain are warning signs. Verify through an official channel instead of using the message link.",
+              "explanation": "Urgency plus a non-school sender domain are warning signs. Verify through an official channel instead of using the message link.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0102",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "Registrar <registrar@westfield.edu>",
+                "subject": "Enrollment schedule",
+                "body": "Enrollment for next term opens Monday. Visit the normal student portal when registration begins. No reply is required."
+              },
+              "question": "Which detail most strongly suggests this message may be legitimate?",
+              "options": [
+                "The sender used a formal greeting.",
+                "It uses the expected school domain and does not ask for credentials.",
+                "It mentions enrollment.",
+                "It arrived during school hours."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — A known domain and the absence of credential requests or urgent links are stronger trust signals than tone or timing.",
+              "incorrect_feedback": "Not quite. A known domain and the absence of credential requests or urgent links are stronger trust signals than tone or timing.",
+              "explanation": "A known domain and the absence of credential requests or urgent links are stronger trust signals than tone or timing.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0103",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "IT Support <it@westfie1d.edu>",
+                "subject": "Password check required",
+                "body": "We detected an error. Reply with your username and password so IT can test your account."
+              },
+              "question": "What is the clearest red flag?",
+              "options": [
+                "The sender uses the word 'error'.",
+                "The message is short.",
+                "The subject mentions IT.",
+                "The message asks you to send your password."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Legitimate support staff should not ask you to send your password by email.",
+              "incorrect_feedback": "Not quite. Legitimate support staff should not ask you to send your password by email.",
+              "explanation": "Legitimate support staff should not ask you to send your password by email.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0104",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "Library Notice <library@westfield.edu>",
+                "subject": "Overdue book reminder",
+                "body": "You have an overdue library book. Check your account through the library page you normally use."
+              },
+              "question": "What should you do before acting?",
+              "options": [
+                "Reply with your student password.",
+                "Send your ID number to the sender.",
+                "Ignore every library message.",
+                "Navigate to the known library site yourself instead of using unexpected links."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Using a known site or bookmark reduces the risk of following a spoofed link.",
+              "incorrect_feedback": "Not quite. Using a known site or bookmark reduces the risk of following a spoofed link.",
+              "explanation": "Using a known site or bookmark reduces the risk of following a spoofed link.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0105",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "Scholarship Office <award@free-scholarships-now.com>",
+                "subject": "You have been selected!",
+                "body": "Claim your scholarship today by entering your school login and bank details."
+              },
+              "question": "Which social-engineering tactic is being used most clearly?",
+              "options": [
+                "The attacker is physically tailgating.",
+                "The attacker is encrypting your files.",
+                "A tempting reward is being used to pressure you into revealing information.",
+                "The attacker is shoulder surfing."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unexpected rewards are commonly used as bait, especially when the message asks for sensitive information.",
+              "incorrect_feedback": "Not quite. Unexpected rewards are commonly used as bait, especially when the message asks for sensitive information.",
+              "explanation": "Unexpected rewards are commonly used as bait, especially when the message asks for sensitive information.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0106",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "Cloud Docs <share@docs-notice.com>",
+                "subject": "Mia shared a document",
+                "body": "Open the shared document and sign in with your school account to view it."
+              },
+              "question": "What should you check first?",
+              "options": [
+                "Whether the document title sounds interesting.",
+                "Whether the message has a logo.",
+                "Whether the sharing notification came from the real document service domain.",
+                "Whether your friend usually sends homework."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Branding can be copied. The actual sender domain and destination are more useful checks.",
+              "incorrect_feedback": "Not quite. Branding can be copied. The actual sender domain and destination are more useful checks.",
+              "explanation": "Branding can be copied. The actual sender domain and destination are more useful checks.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0107",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "email",
+                "from": "Principal Reyes <principal.office@gmail.com>",
+                "subject": "Need a quick favor",
+                "body": "I am in a meeting. Buy four gift cards and email me the codes immediately."
+              },
+              "question": "What is the best response?",
+              "options": [
+                "Send the codes but keep the receipts.",
+                "Reply asking which gift-card brand to buy.",
+                "Verify the request through a known school contact method.",
+                "Buy one card first to test the request."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Gift-card requests combined with urgency and secrecy are common impersonation scams.",
+              "incorrect_feedback": "Not quite. Gift-card requests combined with urgency and secrecy are common impersonation scams.",
+              "explanation": "Gift-card requests combined with urgency and secrecy are common impersonation scams.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0108",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Microsoft 365 Security <alerts@micros0ft-login.com>",
+                "subject": "Unusual sign-in",
+                "body": "We blocked a sign-in. Review activity at https://micros0ft-login.com/security."
+              },
+              "question": "Which detail is the strongest technical clue?",
+              "options": [
+                "The domain uses a lookalike spelling with a zero instead of the letter o.",
+                "The link begins with https.",
+                "The email contains a company name.",
+                "The message mentions security."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — HTTPS does not prove a site is legitimate. Lookalike domains are a common phishing indicator.",
+              "incorrect_feedback": "Not quite. HTTPS does not prove a site is legitimate. Lookalike domains are a common phishing indicator.",
+              "explanation": "HTTPS does not prove a site is legitimate. Lookalike domains are a common phishing indicator.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0109",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Finance Office <finance@westfield.edu>",
+                "subject": "Updated reimbursement form",
+                "body": "Please review the attached spreadsheet and enable editing to see the payment information."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Enable editing because the sender domain looks correct.",
+                "Disable antivirus temporarily so the file opens.",
+                "Confirm the attachment through a trusted channel before opening or enabling content.",
+                "Upload the file to a public website for checking."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Even apparently trusted accounts can be compromised. Unexpected active-content attachments should be independently verified.",
+              "incorrect_feedback": "Not quite. Even apparently trusted accounts can be compromised. Unexpected active-content attachments should be independently verified.",
+              "explanation": "Even apparently trusted accounts can be compromised. Unexpected active-content attachments should be independently verified.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0110",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Student Portal <no-reply@westfield.edu>",
+                "subject": "Password reset requested",
+                "body": "A password reset was requested for your account. If this was not you, open the school portal directly and review security settings."
+              },
+              "question": "You did not request a reset. What is the best next step?",
+              "options": [
+                "Use the official portal directly and secure the account.",
+                "Ignore the event permanently.",
+                "Reply to the email with your old password.",
+                "Click every link in the message to inspect them."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — An unexpected reset can indicate attempted account access. Use a known official route, not an embedded link.",
+              "incorrect_feedback": "Not quite. An unexpected reset can indicate attempted account access. Use a known official route, not an embedded link.",
+              "explanation": "An unexpected reset can indicate attempted account access. Use a known official route, not an embedded link.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0111",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Dean's Office <dean@westfield.edu>",
+                "subject": "Confidential student list",
+                "body": "Send me the class roster with student phone numbers right now. Do not copy anyone else."
+              },
+              "question": "Why should you verify this request even if the address looks correct?",
+              "options": [
+                "Confidential requests are always fake.",
+                "The account could be compromised and the request involves sensitive data.",
+                "Phone numbers are never considered personal information.",
+                "School addresses can never send attachments."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — A familiar account is not proof of authenticity. Unusual requests for sensitive information deserve independent verification.",
+              "incorrect_feedback": "Not quite. A familiar account is not proof of authenticity. Unusual requests for sensitive information deserve independent verification.",
+              "explanation": "A familiar account is not proof of authenticity. Unusual requests for sensitive information deserve independent verification.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0112",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Payroll <payroll@westfield-pay.com>",
+                "subject": "Bank update",
+                "body": "Your allowance deposit failed. Sign in here and re-enter your bank details before 3 PM."
+              },
+              "question": "Which combination is most suspicious?",
+              "options": [
+                "A short subject and formal wording.",
+                "An unfamiliar domain, financial information request, and urgent deadline.",
+                "The message was sent before 3 PM.",
+                "The message mentions payroll and banking."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Multiple red flags together increase the likelihood of phishing.",
+              "incorrect_feedback": "Not quite. Multiple red flags together increase the likelihood of phishing.",
+              "explanation": "Multiple red flags together increase the likelihood of phishing.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0113",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Project Team <classproject@westfield.edu>",
+                "subject": "Re: Poster draft",
+                "body": "Here is the updated draft. Download Poster_Final.zip and run the included viewer to open it."
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Confirm with the teammate through another channel before running the file.",
+                "Rename the file extension before opening.",
+                "Turn off file warnings so it opens faster.",
+                "Run it because it is part of an existing thread."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Attackers can hijack real threads or accounts. Executable or unusual files should be verified.",
+              "incorrect_feedback": "Not quite. Attackers can hijack real threads or accounts. Executable or unusual files should be verified.",
+              "explanation": "Attackers can hijack real threads or accounts. Executable or unusual files should be verified.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0114",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Help Desk <helpdesk@westfield.edu>",
+                "subject": "MFA synchronization",
+                "body": "Reply with the six-digit code sent to your phone so we can resync your account."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Approve any login prompt that appears.",
+                "Send only the first three digits.",
+                "Send the code because it expires quickly.",
+                "Never share the one-time code and contact the help desk through its official number."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — One-time authentication codes are secrets and can be used to take over accounts.",
+              "incorrect_feedback": "Not quite. One-time authentication codes are secrets and can be used to take over accounts.",
+              "explanation": "One-time authentication codes are secrets and can be used to take over accounts.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0115",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "email",
+                "from": "Campus Store <store@westfield.edu>",
+                "subject": "Receipt available",
+                "body": "Your receipt is ready. The message contains a button labeled VIEW RECEIPT."
+              },
+              "question": "Before clicking, what is the most useful check?",
+              "options": [
+                "Inspect the actual destination and confirm it belongs to the expected service.",
+                "Check whether the sender used your first name.",
+                "Check whether the button is blue.",
+                "Check whether the email has the school logo."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Visual design and personalization are easy to fake; destination domains matter more.",
+              "incorrect_feedback": "Not quite. Visual design and personalization are easy to fake; destination domains matter more.",
+              "explanation": "Visual design and personalization are easy to fake; destination domains matter more.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0116",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "email",
+                "from": "Teacher Account <mreyes@westfield.edu>",
+                "subject": "Re: Group grades",
+                "body": "Can you send me the verification code that just appeared on your phone? I am fixing the grade portal."
+              },
+              "question": "What makes this dangerous even though it comes from the real teacher account?",
+              "options": [
+                "School accounts cannot be compromised.",
+                "The teacher's account may be compromised and a verification code should not be shared.",
+                "Teachers are not allowed to send email.",
+                "Verification codes are safe if the requester knows you."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Compromised trusted accounts are powerful phishing tools. Never share authentication codes.",
+              "incorrect_feedback": "Not quite. Compromised trusted accounts are powerful phishing tools. Never share authentication codes.",
+              "explanation": "Compromised trusted accounts are powerful phishing tools. Never share authentication codes.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0117",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "email",
+                "from": "Vendor Billing <billing@knownvendor.com>",
+                "subject": "RE: October invoice",
+                "body": "Our bank account changed. Use the new account in the attached instructions for today's payment."
+              },
+              "question": "What is the safest verification method?",
+              "options": [
+                "Send a small payment first.",
+                "Use the phone number printed in the attachment.",
+                "Call the vendor using a previously known phone number, not contact details in the email.",
+                "Reply to the same email asking for confirmation."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Payment-change fraud is best verified through a trusted contact path established before the suspicious message.",
+              "incorrect_feedback": "Not quite. Payment-change fraud is best verified through a trusted contact path established before the suspicious message.",
+              "explanation": "Payment-change fraud is best verified through a trusted contact path established before the suspicious message.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0118",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "email",
+                "from": "Security Team <security@westfield.edu>",
+                "subject": "Incident response",
+                "body": "We found malware on your account. Open the attached remote-support tool and send the session code to this email."
+              },
+              "question": "What is the key risk?",
+              "options": [
+                "Session codes are public information.",
+                "Security teams never contact users.",
+                "The message is trying to make you install or grant remote access without independent verification.",
+                "Remote-support tools are always malware."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Legitimate remote support should be initiated and verified through approved support procedures.",
+              "incorrect_feedback": "Not quite. Legitimate remote support should be initiated and verified through approved support procedures.",
+              "explanation": "Legitimate remote support should be initiated and verified through approved support procedures.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0119",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "email",
+                "from": "Classmate <jules@westfield.edu>",
+                "subject": "Re: Notes",
+                "body": "I uploaded the notes here: westfield.edu.notes-share.co/login. Sign in with your school account."
+              },
+              "question": "Which domain actually controls the site?",
+              "options": [
+                "edu.notes-share",
+                "westfield.edu",
+                "notes-share.co",
+                "login"
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — The registrable domain is notes-share.co; 'westfield.edu' appears only as a subdomain-like label intended to mislead.",
+              "incorrect_feedback": "Not quite. The registrable domain is notes-share.co; 'westfield.edu' appears only as a subdomain-like label intended to mislead.",
+              "explanation": "The registrable domain is notes-share.co; 'westfield.edu' appears only as a subdomain-like label intended to mislead.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0120",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "email",
+                "from": "Security Alert <alerts@westfield.edu>",
+                "subject": "New device sign-in",
+                "body": "You receive a convincing alert after accidentally entering your password on a suspicious page five minutes earlier."
+              },
+              "question": "What should you do first?",
+              "options": [
+                "Change the password through the official site and review active sessions/MFA.",
+                "Reuse the same password on another account.",
+                "Reply to the suspicious page and ask it to delete your password.",
+                "Wait to see whether anything happens."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — After suspected credential exposure, use the official service to change credentials and review account security immediately.",
+              "incorrect_feedback": "Not quite. After suspected credential exposure, use the official service to change credentials and review account security immediately.",
+              "explanation": "After suspected credential exposure, use the official service to change credentials and review account security immediately.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_02",
+      "module_title": "Text Tricks",
+      "topic": "Smishing",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering",
+          "type_label": "Social Engineering Duel",
+          "delivery": "multiple_choice_4",
+          "description": "Fast four-choice social-engineering scenarios designed for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_se_0201",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "Unknown Number",
+                "subject": "",
+                "body": "Your parcel could not be delivered. Pay a small redelivery fee at tiny-delivery.link."
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Forward the link to someone else to test.",
+                "Pay the fee because it is small.",
+                "Use the courier's official app or website to check the shipment.",
+                "Reply with your address for confirmation."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unexpected delivery texts with payment links are common smishing lures.",
+              "incorrect_feedback": "Not quite. Unexpected delivery texts with payment links are common smishing lures.",
+              "explanation": "Unexpected delivery texts with payment links are common smishing lures.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0202",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "BANK-ALERT",
+                "subject": "",
+                "body": "Your account is locked. Tap bank-unlock-now.co and sign in within 15 minutes."
+              },
+              "question": "What is the strongest warning sign?",
+              "options": [
+                "The message creates urgency and sends you to an unfamiliar domain.",
+                "The message has no emoji.",
+                "The message mentions a bank.",
+                "The message is a text instead of an email."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Urgency plus an unfamiliar login link is a classic smishing pattern.",
+              "incorrect_feedback": "Not quite. Urgency plus an unfamiliar login link is a classic smishing pattern.",
+              "explanation": "Urgency plus an unfamiliar login link is a classic smishing pattern.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0203",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "School Office",
+                "subject": "",
+                "body": "Classes are suspended tomorrow. Check the official school page for the full announcement."
+              },
+              "question": "Which action is safest?",
+              "options": [
+                "Tap any shortened link you receive afterward.",
+                "Reply with your password to confirm you are a student.",
+                "Send your student ID to the number.",
+                "Open the school's known website or official channel yourself."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — When a message can be verified through an official public channel, use that route.",
+              "incorrect_feedback": "Not quite. When a message can be verified through an official public channel, use that route.",
+              "explanation": "When a message can be verified through an official public channel, use that route.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0204",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "Unknown Number",
+                "subject": "",
+                "body": "You won a new phone! Claim it now: prize-now.example"
+              },
+              "question": "What social-engineering trigger is being used?",
+              "options": [
+                "Authority only.",
+                "Physical intimidation.",
+                "A reward or prize.",
+                "Encryption."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unexpected prizes are designed to create excitement and reduce careful checking.",
+              "incorrect_feedback": "Not quite. Unexpected prizes are designed to create excitement and reduce careful checking.",
+              "explanation": "Unexpected prizes are designed to create excitement and reduce careful checking.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0205",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "Mom? New Number",
+                "subject": "",
+                "body": "My phone broke. This is my new number. I need money urgently for transport."
+              },
+              "question": "What should you do first?",
+              "options": [
+                "Contact the family member using a previously known number or another trusted method.",
+                "Send a small amount first.",
+                "Save the new number and trust it.",
+                "Ask for their bank account immediately."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Family-emergency impersonation should be verified independently before sending money or information.",
+              "incorrect_feedback": "Not quite. Family-emergency impersonation should be verified independently before sending money or information.",
+              "explanation": "Family-emergency impersonation should be verified independently before sending money or information.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0206",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "OTP Service",
+                "subject": "",
+                "body": "Your login code is 482193. Do not share this code with anyone."
+              },
+              "question": "Someone immediately texts asking you to send them the code. What should you do?",
+              "options": [
+                "Do not share the code.",
+                "Post it in the group chat to ask if it is safe.",
+                "Send only the last three digits.",
+                "Send it if they claim to be support."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — One-time passwords are authentication secrets.",
+              "incorrect_feedback": "Not quite. One-time passwords are authentication secrets.",
+              "explanation": "One-time passwords are authentication secrets.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0207",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "sms",
+                "from": "Unknown Number",
+                "subject": "",
+                "body": "Hi, is this Carla? Sorry, wrong number! By the way, what school do you attend?"
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Answer so they know they reached a real person.",
+                "Tell them your school but not your name.",
+                "Send your social-media profile instead.",
+                "Avoid sharing personal details with the unknown sender."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Wrong-number conversations can be used to collect personal information or build trust.",
+              "incorrect_feedback": "Not quite. Wrong-number conversations can be used to collect personal information or build trust.",
+              "explanation": "Wrong-number conversations can be used to collect personal information or build trust.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0208",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Campus IT",
+                "subject": "",
+                "body": "We detected a virus. Install the security app from this link now: bit.ly/secure-campus"
+              },
+              "question": "What should you do?",
+              "options": [
+                "Install it because the message says IT.",
+                "Contact campus IT through its official support channel before installing anything.",
+                "Send the link to classmates.",
+                "Disable phone security before installing."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Unexpected software-install requests should be independently verified.",
+              "incorrect_feedback": "Not quite. Unexpected software-install requests should be independently verified.",
+              "explanation": "Unexpected software-install requests should be independently verified.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0209",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Toll Notice",
+                "subject": "",
+                "body": "FINAL NOTICE: Unpaid road fee. Pay PHP 75 today to avoid a PHP 3,000 penalty: toll-pay.example"
+              },
+              "question": "Which tactic is most obvious?",
+              "options": [
+                "The attacker is asking for a physical key.",
+                "The attacker is shoulder surfing.",
+                "The attacker is offering technical support.",
+                "A small immediate payment is paired with a large threatened penalty."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Threats and disproportionate penalties create pressure to act quickly.",
+              "incorrect_feedback": "Not quite. Threats and disproportionate penalties create pressure to act quickly.",
+              "explanation": "Threats and disproportionate penalties create pressure to act quickly.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0210",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Job Recruiter",
+                "subject": "",
+                "body": "We saw your profile. Earn PHP 5,000 per day. Pay a PHP 300 verification fee to begin."
+              },
+              "question": "What is the best assessment?",
+              "options": [
+                "Send an ID photo before asking questions.",
+                "Share the offer publicly to prove it is real.",
+                "Pay because the salary is high.",
+                "Treat it as suspicious because legitimate hiring should not require an unexpected upfront verification payment."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — High-reward job offers combined with upfront fees are a common social-engineering lure.",
+              "incorrect_feedback": "Not quite. High-reward job offers combined with upfront fees are a common social-engineering lure.",
+              "explanation": "High-reward job offers combined with upfront fees are a common social-engineering lure.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0211",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "School Club",
+                "subject": "",
+                "body": "Vote for me in this contest! Log in with your school account here: vote-campus.example"
+              },
+              "question": "You know the sender. Why should you still be careful?",
+              "options": [
+                "Their messaging account could be compromised.",
+                "School accounts are never used for voting.",
+                "Friends cannot send links.",
+                "Voting websites are always fake."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Compromised accounts often spread malicious links through trusted contacts.",
+              "incorrect_feedback": "Not quite. Compromised accounts often spread malicious links through trusted contacts.",
+              "explanation": "Compromised accounts often spread malicious links through trusted contacts.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0212",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Bank Support",
+                "subject": "",
+                "body": "We will call you next. When the call arrives, read us the code we just sent to verify your identity."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Delete the code and approve the next login.",
+                "Send a screenshot of the code instead.",
+                "Share it only during the call.",
+                "Do not share the code; contact the bank through its official number."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Attackers may combine texts and calls to capture authentication codes.",
+              "incorrect_feedback": "Not quite. Attackers may combine texts and calls to capture authentication codes.",
+              "explanation": "Attackers may combine texts and calls to capture authentication codes.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0213",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Delivery Service",
+                "subject": "",
+                "body": "Your package address is incomplete. Reply with your full name, home address, birth date, and school ID number."
+              },
+              "question": "What is the biggest concern?",
+              "options": [
+                "The message requests far more personal information than is necessary for delivery.",
+                "Addresses are never needed for delivery.",
+                "Delivery services cannot send texts.",
+                "Birth dates are public information."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Excessive data requests are a strong warning sign.",
+              "incorrect_feedback": "Not quite. Excessive data requests are a strong warning sign.",
+              "explanation": "Excessive data requests are a strong warning sign.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0214",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Unknown Number",
+                "subject": "",
+                "body": "Your account was charged PHP 8,900. If this was not you, call 09XX-XXX-XXXX immediately."
+              },
+              "question": "What is the safest action?",
+              "options": [
+                "Call the number in the message immediately.",
+                "Send the text your account number.",
+                "Reply 'NO' with your PIN.",
+                "Use the number on your bank card or official banking app instead of the number in the text."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — A scam text may direct victims to an attacker-controlled phone number.",
+              "incorrect_feedback": "Not quite. A scam text may direct victims to an attacker-controlled phone number.",
+              "explanation": "A scam text may direct victims to an attacker-controlled phone number.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0215",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "sms",
+                "from": "Social App",
+                "subject": "",
+                "body": "Security warning: Your account will be removed for copyright violations. Appeal at social-appeal.example."
+              },
+              "question": "Which response is safest?",
+              "options": [
+                "Open the social platform directly and check account notifications there.",
+                "Reply with your password.",
+                "Appeal through the text link before deletion.",
+                "Ask the sender to extend the deadline."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Use the service's official app or website to verify threatening account notices.",
+              "incorrect_feedback": "Not quite. Use the service's official app or website to verify threatening account notices.",
+              "explanation": "Use the service's official app or website to verify threatening account notices.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0216",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "sms",
+                "from": "Known Friend",
+                "subject": "",
+                "body": "Can you vote for my project? I need your phone number first so the site can send you a voting code. Then send me the code."
+              },
+              "question": "What is likely happening?",
+              "options": [
+                "The sender may be trying to use your verification code to access an account.",
+                "The code is only for voting and is safe.",
+                "The sender needs the code to prove friendship.",
+                "Voting codes cannot be used for authentication."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Requests to relay verification codes are a common account-takeover technique.",
+              "incorrect_feedback": "Not quite. Requests to relay verification codes are a common account-takeover technique.",
+              "explanation": "Requests to relay verification codes are a common account-takeover technique.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0217",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "sms",
+                "from": "Unknown Number",
+                "subject": "",
+                "body": "Security: A new eSIM was requested for your number. Reply YES to cancel."
+              },
+              "question": "Why is replying directly risky?",
+              "options": [
+                "Carriers never send security alerts.",
+                "eSIMs do not exist.",
+                "The message itself may be fraudulent; use your carrier's official app or number to verify.",
+                "Replying always disables your SIM."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Security alerts should be verified through a trusted carrier channel rather than instructions in an unexpected message.",
+              "incorrect_feedback": "Not quite. Security alerts should be verified through a trusted carrier channel rather than instructions in an unexpected message.",
+              "explanation": "Security alerts should be verified through a trusted carrier channel rather than instructions in an unexpected message.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0218",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "sms",
+                "from": "Boss - New Number",
+                "subject": "",
+                "body": "I'm in a client meeting. Buy digital gift cards and send the codes here. Keep this confidential."
+              },
+              "question": "Which combination makes this especially suspicious?",
+              "options": [
+                "New number, urgency, secrecy, and an unusual payment request.",
+                "The boss is in a meeting.",
+                "Gift cards can be bought online.",
+                "The request is sent by text."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Multiple social-engineering pressure signals appearing together are a strong warning.",
+              "incorrect_feedback": "Not quite. Multiple social-engineering pressure signals appearing together are a strong warning.",
+              "explanation": "Multiple social-engineering pressure signals appearing together are a strong warning.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0219",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "sms",
+                "from": "University Alert",
+                "subject": "",
+                "body": "Campus emergency. Confirm your safety and location at westfield.edu.safety-check.example."
+              },
+              "question": "Which part of the URL should determine who owns the site?",
+              "options": [
+                "The first word 'westfield'.",
+                "The page title after it loads.",
+                "The '.edu' text anywhere in the address.",
+                "The registrable domain ending in safety-check.example."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Attackers can place trusted names earlier in a hostname. The actual registrable domain matters.",
+              "incorrect_feedback": "Not quite. Attackers can place trusted names earlier in a hostname. The actual registrable domain matters.",
+              "explanation": "Attackers can place trusted names earlier in a hostname. The actual registrable domain matters.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0220",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "sms",
+                "from": "Courier Chat",
+                "subject": "",
+                "body": "The courier asks you in a text to install a 'tracking certificate' on your phone so the parcel map will work."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Do not install it; verify through the courier's official support channel.",
+                "Install it and remove it after delivery.",
+                "Disable phone security so installation succeeds.",
+                "Send the installer to a friend first."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unexpected configuration profiles, certificates, or apps can grant dangerous permissions.",
+              "incorrect_feedback": "Not quite. Unexpected configuration profiles, certificates, or apps can grant dangerous permissions.",
+              "explanation": "Unexpected configuration profiles, certificates, or apps can grant dangerous permissions.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_03",
+      "module_title": "Phone Tricks",
+      "topic": "Vishing",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering",
+          "type_label": "Social Engineering Duel",
+          "delivery": "multiple_choice_4",
+          "description": "Fast four-choice social-engineering scenarios designed for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_se_0301",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Campus IT",
+                "subject": "",
+                "body": "The caller says your account is broken and asks for your password so they can repair it."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Give the password because they know your name.",
+                "Ask the caller to promise they are really IT.",
+                "Refuse and call IT back using the official support number.",
+                "Give only the first half of the password."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Legitimate support should not need your password, and caller ID can be spoofed.",
+              "incorrect_feedback": "Not quite. Legitimate support should not need your password, and caller ID can be spoofed.",
+              "explanation": "Legitimate support should not need your password, and caller ID can be spoofed.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0302",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Bank",
+                "subject": "",
+                "body": "The caller says there is fraud on your card and asks for the PIN to cancel the transaction."
+              },
+              "question": "What is the correct response?",
+              "options": [
+                "Read the PIN backward.",
+                "Give the PIN only if the caller knows your balance.",
+                "Give the PIN because it is an emergency.",
+                "Do not provide the PIN; contact the bank using an official number."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Banks should not ask for your card PIN over the phone.",
+              "incorrect_feedback": "Not quite. Banks should not ask for your card PIN over the phone.",
+              "explanation": "Banks should not ask for your card PIN over the phone.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0303",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Unknown Caller",
+                "subject": "",
+                "body": "You have won a prize. Pay a processing fee now by reading your card details."
+              },
+              "question": "Which tactic is being used?",
+              "options": [
+                "Data encryption.",
+                "Tailgating.",
+                "Shoulder surfing.",
+                "A reward is used to pressure you into paying."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Unexpected prizes paired with fees are a common social-engineering pattern.",
+              "incorrect_feedback": "Not quite. Unexpected prizes paired with fees are a common social-engineering pattern.",
+              "explanation": "Unexpected prizes paired with fees are a common social-engineering pattern.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0304",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: School Office",
+                "subject": "",
+                "body": "The caller asks for your student password to 'confirm enrollment.'"
+              },
+              "question": "What is the strongest red flag?",
+              "options": [
+                "They use a polite tone.",
+                "They are asking for a password.",
+                "They called during school hours.",
+                "They know the school name."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Passwords should not be requested by phone.",
+              "incorrect_feedback": "Not quite. Passwords should not be requested by phone.",
+              "explanation": "Passwords should not be requested by phone.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0305",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Unknown Caller",
+                "subject": "",
+                "body": "A caller claims to be a relative in trouble and urgently needs money."
+              },
+              "question": "What should you do first?",
+              "options": [
+                "Verify the story by contacting the relative or family through a known channel.",
+                "Send a small amount first.",
+                "Keep the call secret as requested.",
+                "Ask the caller for a bank account."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Emotional urgency can be used to bypass normal verification.",
+              "incorrect_feedback": "Not quite. Emotional urgency can be used to bypass normal verification.",
+              "explanation": "Emotional urgency can be used to bypass normal verification.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0306",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Police",
+                "subject": "",
+                "body": "The caller threatens immediate arrest unless you pay a fine with gift cards."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Buy the cards to avoid arrest.",
+                "Do not pay and verify through an official agency contact.",
+                "Stay on the call while driving to a store.",
+                "Give the gift-card numbers but keep the cards."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Threats demanding immediate gift-card payment are a strong fraud indicator.",
+              "incorrect_feedback": "Not quite. Threats demanding immediate gift-card payment are a strong fraud indicator.",
+              "explanation": "Threats demanding immediate gift-card payment are a strong fraud indicator.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0307",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Help Desk",
+                "subject": "",
+                "body": "The caller asks you to approve an MFA prompt that just appeared."
+              },
+              "question": "You did not initiate a login. What should you do?",
+              "options": [
+                "Deny the prompt and contact support independently.",
+                "Approve it because support called first.",
+                "Approve it once, then change your password.",
+                "Ignore the prompt but stay on the call."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Unexpected MFA prompts can be part of an account takeover attempt.",
+              "incorrect_feedback": "Not quite. Unexpected MFA prompts can be part of an account takeover attempt.",
+              "explanation": "Unexpected MFA prompts can be part of an account takeover attempt.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0308",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Your Bank",
+                "subject": "",
+                "body": "The caller knows your full name and the last four digits of your card."
+              },
+              "question": "Does that prove the caller is legitimate?",
+              "options": [
+                "No. Personal details can be obtained from prior leaks or research.",
+                "Yes, if the caller sounds professional.",
+                "Yes, if caller ID shows the bank name.",
+                "Yes, only banks know card digits."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Attackers may know convincing personal details. Verify via a known official number.",
+              "incorrect_feedback": "Not quite. Attackers may know convincing personal details. Verify via a known official number.",
+              "explanation": "Attackers may know convincing personal details. Verify via a known official number.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0309",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Campus IT",
+                "subject": "",
+                "body": "The caller asks you to install remote-support software and read a session code."
+              },
+              "question": "What should you do?",
+              "options": [
+                "End the call and start a support session only through the official IT process.",
+                "Give the session code but not your password.",
+                "Turn off antivirus first.",
+                "Install it because remote support is normal."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Remote access is powerful and should be initiated only through a trusted support workflow.",
+              "incorrect_feedback": "Not quite. Remote access is powerful and should be initiated only through a trusted support workflow.",
+              "explanation": "Remote access is powerful and should be initiated only through a trusted support workflow.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0310",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Principal's Office",
+                "subject": "",
+                "body": "The caller says the principal urgently needs student contact lists for an 'inspection.'"
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Ask the caller to say the principal's first name.",
+                "Read the list aloud instead of emailing it.",
+                "Send the list because the request comes from authority.",
+                "Verify the request with the office through a known internal contact method."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Authority claims do not replace verification when sensitive data is involved.",
+              "incorrect_feedback": "Not quite. Authority claims do not replace verification when sensitive data is involved.",
+              "explanation": "Authority claims do not replace verification when sensitive data is involved.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0311",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Unknown Caller",
+                "subject": "",
+                "body": "A caller asks, 'Can you hear me?' and then begins requesting account information."
+              },
+              "question": "What should guide your response?",
+              "options": [
+                "Do not disclose sensitive information; verify the caller's identity and purpose independently.",
+                "Say yes repeatedly to prove the line works.",
+                "Trust the call if the connection is clear.",
+                "Give basic account details before asking questions."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — The core risk is disclosure to an unverified caller, not a particular opening phrase.",
+              "incorrect_feedback": "Not quite. The core risk is disclosure to an unverified caller, not a particular opening phrase.",
+              "explanation": "The core risk is disclosure to an unverified caller, not a particular opening phrase.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0312",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Mobile Carrier",
+                "subject": "",
+                "body": "The caller says your SIM will be disabled unless you read them a one-time code."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Do not share the code; contact the carrier using its official app or number.",
+                "Send a screenshot instead of reading it.",
+                "Share the code because SIM issues are urgent.",
+                "Ask the caller to text the code back to you."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Authentication codes can authorize sensitive account changes such as SIM transfers.",
+              "incorrect_feedback": "Not quite. Authentication codes can authorize sensitive account changes such as SIM transfers.",
+              "explanation": "Authentication codes can authorize sensitive account changes such as SIM transfers.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0313",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Vendor",
+                "subject": "",
+                "body": "A vendor calls asking you to change payment details immediately and emails new bank information during the call."
+              },
+              "question": "What is the safest verification?",
+              "options": [
+                "Trust the caller because they also emailed.",
+                "Make a small test transfer.",
+                "Use a previously known vendor contact to confirm the change.",
+                "Use the phone number in the new email."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Independent verification through an established contact path protects against impersonation.",
+              "incorrect_feedback": "Not quite. Independent verification through an established contact path protects against impersonation.",
+              "explanation": "Independent verification through an established contact path protects against impersonation.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0314",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Security Team",
+                "subject": "",
+                "body": "A caller correctly describes a recent school event, then asks for your login."
+              },
+              "question": "Why is the background knowledge not enough to trust them?",
+              "options": [
+                "Security staff never know school events.",
+                "Only students can see public information.",
+                "Public information can be used to make a false story sound credible.",
+                "Knowing an event means the caller is an employee."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Pretexting often combines publicly available facts with impersonation.",
+              "incorrect_feedback": "Not quite. Pretexting often combines publicly available facts with impersonation.",
+              "explanation": "Pretexting often combines publicly available facts with impersonation.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0315",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Bank Fraud",
+                "subject": "",
+                "body": "The caller pressures you to stay on the line while moving money to a 'safe account.'"
+              },
+              "question": "What should you do?",
+              "options": [
+                "Move a small amount first.",
+                "Stay on the line but refuse to answer questions.",
+                "Hang up and contact the bank through its official channel.",
+                "Ask the caller to send the safe-account number by text."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Banks do not protect money by asking customers to transfer it to an unknown 'safe' account.",
+              "incorrect_feedback": "Not quite. Banks do not protect money by asking customers to transfer it to an unknown 'safe' account.",
+              "explanation": "Banks do not protect money by asking customers to transfer it to an unknown 'safe' account.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0316",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Your Teacher",
+                "subject": "",
+                "body": "The voice sounds exactly like your teacher and asks for an MFA code to fix the class portal."
+              },
+              "question": "What is the safest assumption?",
+              "options": [
+                "A familiar voice proves identity.",
+                "MFA codes are safe to share with teachers.",
+                "An AI-generated voice cannot sound convincing.",
+                "Voice alone is not proof; verify through an established school channel."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Voice cloning makes voice recognition alone an unreliable authentication method.",
+              "incorrect_feedback": "Not quite. Voice cloning makes voice recognition alone an unreliable authentication method.",
+              "explanation": "Voice cloning makes voice recognition alone an unreliable authentication method.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0317",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Internal Extension",
+                "subject": "",
+                "body": "A caller appears to be calling from a real internal extension and requests confidential records."
+              },
+              "question": "Why should you still verify?",
+              "options": [
+                "Internal numbers are never real.",
+                "Caller ID and internal numbers can be spoofed or accounts can be compromised.",
+                "Only external calls can be fraudulent.",
+                "Confidential records can always be shared internally."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Technical indicators such as caller ID are not sufficient proof of identity.",
+              "incorrect_feedback": "Not quite. Technical indicators such as caller ID are not sufficient proof of identity.",
+              "explanation": "Technical indicators such as caller ID are not sufficient proof of identity.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0318",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Help Desk",
+                "subject": "",
+                "body": "You receive repeated MFA prompts. Seconds later, 'IT' calls and says approving one will stop the alerts."
+              },
+              "question": "What attack pattern does this resemble?",
+              "options": [
+                "Physical tailgating.",
+                "Shoulder surfing.",
+                "MFA fatigue combined with impersonation.",
+                "Dumpster diving."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Attackers may flood a user with prompts and then impersonate support to convince them to approve one.",
+              "incorrect_feedback": "Not quite. Attackers may flood a user with prompts and then impersonate support to convince them to approve one.",
+              "explanation": "Attackers may flood a user with prompts and then impersonate support to convince them to approve one.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0319",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Finance Director",
+                "subject": "",
+                "body": "The caller orders an urgent confidential payment and says normal approval steps can be skipped because of an emergency."
+              },
+              "question": "What is the correct response?",
+              "options": [
+                "Ask a coworker whether the caller sounded confident.",
+                "Follow the established payment-verification process despite the claimed emergency.",
+                "Send half the payment first.",
+                "Skip controls because a director outranks them."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Social engineering often exploits authority and urgency to bypass established controls.",
+              "incorrect_feedback": "Not quite. Social engineering often exploits authority and urgency to bypass established controls.",
+              "explanation": "Social engineering often exploits authority and urgency to bypass established controls.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0320",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "phone",
+                "from": "Caller ID: Security Operations",
+                "subject": "",
+                "body": "The caller asks you to read information displayed in your authenticator app, including login location and number-matching details."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Keep retrying until the prompt disappears.",
+                "Share the location but not the number.",
+                "Approve if the caller knows your username.",
+                "Do not approve or disclose authentication details for a login you did not initiate."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Authentication prompts should correspond to actions you personally initiated.",
+              "incorrect_feedback": "Not quite. Authentication prompts should correspond to actions you personally initiated.",
+              "explanation": "Authentication prompts should correspond to actions you personally initiated.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_04",
+      "module_title": "Fake Stories",
+      "topic": "Pretexting",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering",
+          "type_label": "Social Engineering Duel",
+          "delivery": "multiple_choice_4",
+          "description": "Fast four-choice social-engineering scenarios designed for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_se_0401",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Visitor at a locked door",
+                "subject": "",
+                "body": "A person says they forgot their badge and asks you to let them follow you inside."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Ask their name and then let them in.",
+                "Lend them your badge.",
+                "Direct them to the proper check-in or access process.",
+                "Hold the door because they seem friendly."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — A believable story does not replace physical access controls.",
+              "incorrect_feedback": "Not quite. A believable story does not replace physical access controls.",
+              "explanation": "A believable story does not replace physical access controls.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0402",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Person claiming to be IT",
+                "subject": "",
+                "body": "They ask to borrow your logged-in laptop for a 'quick network test.'"
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Hand over the laptop if they wear a polo shirt.",
+                "Tell them your password instead.",
+                "Verify their identity and use the approved IT support process.",
+                "Let them use it while you watch."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Uniforms, confidence, and technical language can all be part of a pretext.",
+              "incorrect_feedback": "Not quite. Uniforms, confidence, and technical language can all be part of a pretext.",
+              "explanation": "Uniforms, confidence, and technical language can all be part of a pretext.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0403",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "New classmate",
+                "subject": "",
+                "body": "A student you do not recognize asks for the class group password because 'the teacher forgot to send it.'"
+              },
+              "question": "What should you do?",
+              "options": [
+                "Write it on the classroom board.",
+                "Verify with the teacher or group administrator before sharing access information.",
+                "Share it because they know the teacher's name.",
+                "Post it in the class chat."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Claimed membership should be verified before sharing credentials or access codes.",
+              "incorrect_feedback": "Not quite. Claimed membership should be verified before sharing credentials or access codes.",
+              "explanation": "Claimed membership should be verified before sharing credentials or access codes.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0404",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Survey caller",
+                "subject": "",
+                "body": "A 'school survey' asks for your birth date, home address, and password."
+              },
+              "question": "Which requested item is an immediate red flag?",
+              "options": [
+                "Your year level.",
+                "Your opinion about classes.",
+                "Your favorite subject.",
+                "Your password."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Passwords should never be collected through surveys.",
+              "incorrect_feedback": "Not quite. Passwords should never be collected through surveys.",
+              "explanation": "Passwords should never be collected through surveys.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0405",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Delivery person",
+                "subject": "",
+                "body": "A courier asks to enter a restricted office because the recipient is 'too busy to come out.'"
+              },
+              "question": "What should staff do?",
+              "options": [
+                "Follow the normal delivery and visitor procedure.",
+                "Leave the restricted door open.",
+                "Let the courier in for convenience.",
+                "Give the courier an employee badge."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Attackers may use delivery roles as believable cover stories.",
+              "incorrect_feedback": "Not quite. Attackers may use delivery roles as believable cover stories.",
+              "explanation": "Attackers may use delivery roles as believable cover stories.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0406",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Social media message",
+                "subject": "",
+                "body": "Someone claiming to be a school journalist asks for your login to 'verify your student status.'"
+              },
+              "question": "What should you do?",
+              "options": [
+                "Do not provide login credentials and verify the request through the publication's official contact.",
+                "Send your password but change it later.",
+                "Ask them to promise not to share it.",
+                "Send your MFA code instead."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Verification should not require giving another person your credentials.",
+              "incorrect_feedback": "Not quite. Verification should not require giving another person your credentials.",
+              "explanation": "Verification should not require giving another person your credentials.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0407",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Maintenance worker",
+                "subject": "",
+                "body": "A person carrying tools asks where the server room is located."
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Send them a photo of the door.",
+                "Point them there because they have tools.",
+                "Walk them there without checking.",
+                "Do not disclose restricted-location details unless their need and identity are verified."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Props and job-role stories can be used to gain trust.",
+              "incorrect_feedback": "Not quite. Props and job-role stories can be used to gain trust.",
+              "explanation": "Props and job-role stories can be used to gain trust.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0408",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "HR impersonator",
+                "subject": "",
+                "body": "An email from a personal address says HR needs copies of student IDs for an urgent audit."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Verify the request through the official HR or administration channel.",
+                "Reply asking whether a photo is enough.",
+                "Send only one ID as a test.",
+                "Send the IDs because audits are confidential."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Sensitive-document requests from unexpected channels should be independently verified.",
+              "incorrect_feedback": "Not quite. Sensitive-document requests from unexpected channels should be independently verified.",
+              "explanation": "Sensitive-document requests from unexpected channels should be independently verified.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0409",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Fake technician",
+                "subject": "",
+                "body": "A visitor says the principal authorized them to inspect every computer and asks you to disable screen locks."
+              },
+              "question": "What is the best response?",
+              "options": [
+                "Confirm the work order and technician identity with the responsible office.",
+                "Let them proceed only on unused computers.",
+                "Disable locks because maintenance was authorized.",
+                "Ask them to show any business card."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Namedropping an authority figure is not sufficient authorization.",
+              "incorrect_feedback": "Not quite. Namedropping an authority figure is not sufficient authorization.",
+              "explanation": "Namedropping an authority figure is not sufficient authorization.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0410",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Class project partner",
+                "subject": "",
+                "body": "A new account claiming to be your partner asks for the shared-drive recovery code."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Send the code because they know the project title.",
+                "Contact your partner using the account or method you already know.",
+                "Ask the new account for your partner's birthday.",
+                "Share only part of the code."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Attackers can build convincing pretexts using information from public or leaked sources.",
+              "incorrect_feedback": "Not quite. Attackers can build convincing pretexts using information from public or leaked sources.",
+              "explanation": "Attackers can build convincing pretexts using information from public or leaked sources.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0411",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Vendor representative",
+                "subject": "",
+                "body": "A caller claims your school's software license expired and needs an administrator username to 'look up the contract.'"
+              },
+              "question": "What is the safest action?",
+              "options": [
+                "Verify the vendor and contract through procurement or IT before sharing anything.",
+                "Give only the username because it is not a password.",
+                "Install the vendor's tool first.",
+                "Give a temporary password."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Even usernames and organizational details can aid later attacks; verify the business relationship first.",
+              "incorrect_feedback": "Not quite. Even usernames and organizational details can aid later attacks; verify the business relationship first.",
+              "explanation": "Even usernames and organizational details can aid later attacks; verify the business relationship first.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0412",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Fake parent",
+                "subject": "",
+                "body": "Someone calls saying they are a student's parent and urgently need the student's schedule and classroom location."
+              },
+              "question": "What should staff do?",
+              "options": [
+                "Give only the next class location.",
+                "Provide the schedule because the caller knows the student's name.",
+                "Ask the caller to name one teacher, then disclose it.",
+                "Follow the school's identity-verification and privacy procedure."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Knowledge of basic personal facts does not establish identity or authorization.",
+              "incorrect_feedback": "Not quite. Knowledge of basic personal facts does not establish identity or authorization.",
+              "explanation": "Knowledge of basic personal facts does not establish identity or authorization.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0413",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Research request",
+                "subject": "",
+                "body": "A person claiming to be conducting a cybersecurity study asks you to describe your school's password reset process."
+              },
+              "question": "Why should you be cautious?",
+              "options": [
+                "Research requests are always illegal.",
+                "Password resets never have procedures.",
+                "Operational details can help an attacker build a stronger pretext.",
+                "Only passwords themselves are sensitive."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Process details can reveal opportunities for social engineering even without exposing credentials.",
+              "incorrect_feedback": "Not quite. Process details can reveal opportunities for social engineering even without exposing credentials.",
+              "explanation": "Process details can reveal opportunities for social engineering even without exposing credentials.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0414",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Executive assistant",
+                "subject": "",
+                "body": "A new assistant says the director authorized an exception and asks you to bypass the normal visitor log."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Record the visitor after they leave.",
+                "Ask for the director's name only.",
+                "Bypass it because executive staff have authority.",
+                "Follow the established access process unless the exception is independently confirmed."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Pretexting often pressures people to make 'one-time' exceptions to normal controls.",
+              "incorrect_feedback": "Not quite. Pretexting often pressures people to make 'one-time' exceptions to normal controls.",
+              "explanation": "Pretexting often pressures people to make 'one-time' exceptions to normal controls.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0415",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Lost badge story",
+                "subject": "",
+                "body": "A person wearing a school uniform says their badge was stolen and asks to borrow yours for five minutes."
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Send them to the office responsible for replacement or temporary credentials.",
+                "Swipe them into every door yourself.",
+                "Lend the badge if they leave their phone with you.",
+                "Give them the badge but keep the lanyard."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Access credentials should not be shared, even when the story seems plausible.",
+              "incorrect_feedback": "Not quite. Access credentials should not be shared, even when the story seems plausible.",
+              "explanation": "Access credentials should not be shared, even when the story seems plausible.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0416",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Compromised employee account",
+                "subject": "",
+                "body": "A real employee's messaging account asks for a confidential file that the employee does not normally handle."
+              },
+              "question": "What is the best response?",
+              "options": [
+                "Verify the unusual request through a separate trusted channel.",
+                "Remove the file name and send the contents.",
+                "Send it because the account is real.",
+                "Ask the same account whether it was hacked."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Behavioral context matters. A real account can be compromised and used for pretexting.",
+              "incorrect_feedback": "Not quite. Behavioral context matters. A real account can be compromised and used for pretexting.",
+              "explanation": "Behavioral context matters. A real account can be compromised and used for pretexting.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0417",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Deepfake video call",
+                "subject": "",
+                "body": "A video caller appears to be a manager and asks you to reveal sensitive access information during an emergency."
+              },
+              "question": "What should you rely on?",
+              "options": [
+                "Ask the caller to wave at the camera.",
+                "A manager can override all controls verbally.",
+                "Video is impossible to fake convincingly.",
+                "Established verification procedures, not appearance or voice alone."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Synthetic audio/video makes visual familiarity insufficient for high-risk requests.",
+              "incorrect_feedback": "Not quite. Synthetic audio/video makes visual familiarity insufficient for high-risk requests.",
+              "explanation": "Synthetic audio/video makes visual familiarity insufficient for high-risk requests.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0418",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Incident responder",
+                "subject": "",
+                "body": "A person claims to be responding to an active breach and asks you to skip identity checks because 'every second counts.'"
+              },
+              "question": "What should you do?",
+              "options": [
+                "Give them access, then verify afterward.",
+                "Share credentials only if they sound technical.",
+                "Use the organization's emergency verification procedure and approved contacts.",
+                "Skip verification during security emergencies."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Attackers may exploit emergencies to persuade people to bypass controls.",
+              "incorrect_feedback": "Not quite. Attackers may exploit emergencies to persuade people to bypass controls.",
+              "explanation": "Attackers may exploit emergencies to persuade people to bypass controls.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0419",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Procurement change",
+                "subject": "",
+                "body": "A known supplier's 'new account manager' requests confidential pricing documents and says the old contact left suddenly."
+              },
+              "question": "What is the safest next step?",
+              "options": [
+                "Trust the new manager because they know the supplier name.",
+                "Confirm the personnel change with the supplier using previously established contact information.",
+                "Send redacted documents first.",
+                "Ask for a LinkedIn profile as proof."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Third-party personnel changes should be verified through a trusted existing relationship.",
+              "incorrect_feedback": "Not quite. Third-party personnel changes should be verified through a trusted existing relationship.",
+              "explanation": "Third-party personnel changes should be verified through a trusted existing relationship.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0420",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Security questionnaire",
+                "subject": "",
+                "body": "A convincing form asks which employees have administrator access, what MFA method is used, and who approves password resets."
+              },
+              "question": "Why can this be sensitive even without asking for passwords?",
+              "options": [
+                "Only IP addresses are sensitive.",
+                "It maps people and processes an attacker could target in later social-engineering attempts.",
+                "MFA makes this information harmless.",
+                "Security processes are never confidential."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Attackers can use organizational process information to choose targets and craft believable stories.",
+              "incorrect_feedback": "Not quite. Attackers can use organizational process information to choose targets and craft believable stories.",
+              "explanation": "Attackers can use organizational process information to choose targets and craft believable stories.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "mod_05",
+      "module_title": "Tempting Offers",
+      "topic": "Baiting",
+      "question_types": [
+        {
+          "type_id": "pvp_social_engineering",
+          "type_label": "Social Engineering Duel",
+          "delivery": "multiple_choice_4",
+          "description": "Fast four-choice social-engineering scenarios designed for LevelBlue PvP.",
+          "questions": [
+            {
+              "id": "pvp_se_0501",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "USB drive found in the hallway",
+                "subject": "",
+                "body": "The drive is labeled 'FINAL EXAM ANSWERS'."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Open it on your personal laptop instead.",
+                "Give it to the appropriate staff without plugging it into a device.",
+                "Ask a friend to test it.",
+                "Open it on a school computer."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Curiosity-based baiting often relies on people connecting unknown removable media.",
+              "incorrect_feedback": "Not quite. Curiosity-based baiting often relies on people connecting unknown removable media.",
+              "explanation": "Curiosity-based baiting often relies on people connecting unknown removable media.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0502",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free game download",
+                "subject": "",
+                "body": "A website offers a paid game for free but requires you to disable antivirus first."
+              },
+              "question": "What is the clearest warning sign?",
+              "options": [
+                "It asks you to weaken security controls before installing.",
+                "The file is large.",
+                "The site uses dark colors.",
+                "The game is popular."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Requests to disable security controls are a major warning sign.",
+              "incorrect_feedback": "Not quite. Requests to disable security controls are a major warning sign.",
+              "explanation": "Requests to disable security controls are a major warning sign.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0503",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free Wi-Fi sign",
+                "subject": "",
+                "body": "A poster says 'FREE CAMPUS WIFI - no password' and shows a network name you have never seen."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Ask another student whether the signal is strong.",
+                "Connect because free Wi-Fi is convenient.",
+                "Use it only for email.",
+                "Confirm the official campus network name before connecting."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Attackers can create lookalike wireless networks to lure users.",
+              "incorrect_feedback": "Not quite. Attackers can create lookalike wireless networks to lure users.",
+              "explanation": "Attackers can create lookalike wireless networks to lure users.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0504",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Giveaway QR code",
+                "subject": "",
+                "body": "A sticker says 'Scan to win a laptop' and is placed over another QR code."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Scan it because QR codes cannot be malicious.",
+                "Scan it but do not read the page.",
+                "Share it with friends first.",
+                "Avoid scanning it and use the organization's official site for promotions."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Physical QR stickers can redirect users to attacker-controlled sites.",
+              "incorrect_feedback": "Not quite. Physical QR stickers can redirect users to attacker-controlled sites.",
+              "explanation": "Physical QR stickers can redirect users to attacker-controlled sites.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0505",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Charging kiosk",
+                "subject": "",
+                "body": "An unknown kiosk offers free charging and asks you to unlock your phone and select 'Trust this computer.'"
+              },
+              "question": "What is safest?",
+              "options": [
+                "Unlock the phone only once.",
+                "Disable the screen lock first.",
+                "Do not trust the unknown computer; use a power-only charger or your own adapter.",
+                "Trust it because charging requires data access."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Charging should not require granting an unknown computer data access.",
+              "incorrect_feedback": "Not quite. Charging should not require granting an unknown computer data access.",
+              "explanation": "Charging should not require granting an unknown computer data access.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0506",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free flash drive giveaway",
+                "subject": "",
+                "body": "A stranger outside campus hands out USB drives containing 'study tools.'"
+              },
+              "question": "What should you do?",
+              "options": [
+                "Use it only on a library computer.",
+                "Format it after opening the files.",
+                "Treat unknown removable media as untrusted and do not connect it.",
+                "Plug it in without opening anything."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Merely connecting unknown devices can create risk; use approved media.",
+              "incorrect_feedback": "Not quite. Merely connecting unknown devices can create risk; use approved media.",
+              "explanation": "Merely connecting unknown devices can create risk; use approved media.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0507",
+              "difficulty": "easy",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Online coupon",
+                "subject": "",
+                "body": "A pop-up promises a large discount if you enter your school username and password."
+              },
+              "question": "What is the best response?",
+              "options": [
+                "Enter the password because coupons need verification.",
+                "Send the coupon to classmates.",
+                "Close it and use the retailer's official site or app.",
+                "Use the same password but change it later."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Discounts should not require unrelated school credentials.",
+              "incorrect_feedback": "Not quite. Discounts should not require unrelated school credentials.",
+              "explanation": "Discounts should not require unrelated school credentials.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.08,
+                "p_t": 0.12
+              }
+            },
+            {
+              "id": "pvp_se_0508",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Cracked software",
+                "subject": "",
+                "body": "A download claims to unlock premium editing software and includes a 'patch' executable."
+              },
+              "question": "Why is this risky?",
+              "options": [
+                "Untrusted cracked software can be used as bait to deliver malware.",
+                "Editing software cannot contain malware.",
+                "A file is safe if many people downloaded it.",
+                "Premium software never uses executables."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Attackers often hide malicious software inside desirable pirated content.",
+              "incorrect_feedback": "Not quite. Attackers often hide malicious software inside desirable pirated content.",
+              "explanation": "Attackers often hide malicious software inside desirable pirated content.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0509",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Found USB labeled 'Payroll'",
+                "subject": "",
+                "body": "The drive appears to contain salary information."
+              },
+              "question": "What is the safest handling?",
+              "options": [
+                "Check it on an offline personal computer.",
+                "Open it to identify the owner.",
+                "Report and turn it over through the organization's approved process without opening it.",
+                "Copy the files before returning it."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Sensitive-looking labels are often designed to trigger curiosity.",
+              "incorrect_feedback": "Not quite. Sensitive-looking labels are often designed to trigger curiosity.",
+              "explanation": "Sensitive-looking labels are often designed to trigger curiosity.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0510",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free AI study tool",
+                "subject": "",
+                "body": "A site promises perfect answers if you upload your school account session file or browser cookies."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Do not upload session data; use approved tools without sharing authentication material.",
+                "Upload them and log out afterward.",
+                "Upload only cookies from the school site.",
+                "Send the files to a friend to test."
+              ],
+              "answer_index": 0,
+              "correct_feedback": "Correct — Session tokens and cookies can grant account access without a password.",
+              "incorrect_feedback": "Not quite. Session tokens and cookies can grant account access without a password.",
+              "explanation": "Session tokens and cookies can grant account access without a password.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0511",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Prize booth",
+                "subject": "",
+                "body": "A booth offers headphones if you install an unknown mobile app and grant accessibility permissions."
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Use a friend's phone.",
+                "Install it, claim the prize, then uninstall.",
+                "Grant permissions only for five minutes.",
+                "Do not grant powerful permissions to an unverified app for a reward."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Rewards can be used to convince users to grant dangerous permissions.",
+              "incorrect_feedback": "Not quite. Rewards can be used to convince users to grant dangerous permissions.",
+              "explanation": "Rewards can be used to convince users to grant dangerous permissions.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0512",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free textbook link",
+                "subject": "",
+                "body": "A message offers a normally expensive textbook for free from an unfamiliar download site."
+              },
+              "question": "What should you check?",
+              "options": [
+                "Whether the filename includes the book title.",
+                "Use legitimate library or publisher sources instead of downloading from an untrusted site.",
+                "Whether the page has five-star reviews.",
+                "Whether the file is a PDF."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — A desirable file type or convincing reviews do not make an unknown source safe.",
+              "incorrect_feedback": "Not quite. A desirable file type or convincing reviews do not make an unknown source safe.",
+              "explanation": "A desirable file type or convincing reviews do not make an unknown source safe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0513",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "USB charging cable giveaway",
+                "subject": "",
+                "body": "A promotional cable from an unknown source includes unexpected data-transfer behavior when connected."
+              },
+              "question": "What is the security lesson?",
+              "options": [
+                "A cable is safe if it charges normally.",
+                "Cables cannot affect security.",
+                "Only wireless devices can be malicious.",
+                "Treat unknown hardware accessories as potentially untrusted, not just unknown files."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Hardware itself can be part of a baiting attack.",
+              "incorrect_feedback": "Not quite. Hardware itself can be part of a baiting attack.",
+              "explanation": "Hardware itself can be part of a baiting attack.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0514",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Fake update banner",
+                "subject": "",
+                "body": "A streaming site says, 'Your video player is outdated—download this update to continue.'"
+              },
+              "question": "What is the safest action?",
+              "options": [
+                "Install the offered update because the video requires it.",
+                "Disable browser protection first.",
+                "Update software through the official app store or vendor site instead.",
+                "Download it but rename the file."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Unexpected update prompts on unrelated sites can be bait for malicious downloads.",
+              "incorrect_feedback": "Not quite. Unexpected update prompts on unrelated sites can be bait for malicious downloads.",
+              "explanation": "Unexpected update prompts on unrelated sites can be bait for malicious downloads.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0515",
+              "difficulty": "medium",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free cloud storage",
+                "subject": "",
+                "body": "A site offers 1 TB of free storage if you 'connect' your school account and approve broad permissions."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Approve because OAuth means no password is shared.",
+                "Grant access only during school hours.",
+                "Review the service and permissions through approved channels before granting access.",
+                "Approve and revoke it later if something happens."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — OAuth permissions can expose data even when you never type your password into the third-party site.",
+              "incorrect_feedback": "Not quite. OAuth permissions can expose data even when you never type your password into the third-party site.",
+              "explanation": "OAuth permissions can expose data even when you never type your password into the third-party site.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.1,
+                "p_t": 0.15
+              }
+            },
+            {
+              "id": "pvp_se_0516",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Conference USB gift",
+                "subject": "",
+                "body": "A branded USB drive is handed out at an event by someone wearing the event logo."
+              },
+              "question": "Why should you still use caution?",
+              "options": [
+                "Event merchandise is always screened.",
+                "Logos provide cryptographic verification.",
+                "Branding and physical appearance do not prove the device came from a trusted source.",
+                "USB devices cannot impersonate other hardware."
+              ],
+              "answer_index": 2,
+              "correct_feedback": "Correct — Physical branding can be copied; unknown devices still require approved handling.",
+              "incorrect_feedback": "Not quite. Physical branding can be copied; unknown devices still require approved handling.",
+              "explanation": "Physical branding can be copied; unknown devices still require approved handling.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0517",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "QR code on official poster",
+                "subject": "",
+                "body": "A new sticker has been placed over the poster's printed QR code."
+              },
+              "question": "What is the best response?",
+              "options": [
+                "Photograph the QR code and scan it later.",
+                "Do not scan it; report the altered poster and navigate to the official site manually.",
+                "Scan the sticker because it is newer.",
+                "Scan both codes and compare them."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — QR-code replacement is a physical baiting technique that redirects users to malicious destinations.",
+              "incorrect_feedback": "Not quite. QR-code replacement is a physical baiting technique that redirects users to malicious destinations.",
+              "explanation": "QR-code replacement is a physical baiting technique that redirects users to malicious destinations.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0518",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Free browser extension",
+                "subject": "",
+                "body": "An extension promises exam-answer summaries but requests permission to read and change data on every website you visit."
+              },
+              "question": "What is the key concern?",
+              "options": [
+                "Browser extensions cannot access websites.",
+                "A high rating guarantees safety.",
+                "Permissions only matter on mobile devices.",
+                "The requested permissions are excessive for the claimed function."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — Permission scope should match the tool's purpose; excessive access creates unnecessary risk.",
+              "incorrect_feedback": "Not quite. Permission scope should match the tool's purpose; excessive access creates unnecessary risk.",
+              "explanation": "Permission scope should match the tool's purpose; excessive access creates unnecessary risk.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0519",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Reward for security test",
+                "subject": "",
+                "body": "A stranger offers cash if you install a 'school security testing agent' and send them the activation code."
+              },
+              "question": "What should you do?",
+              "options": [
+                "Install it on a shared computer instead.",
+                "Install it because security testing is beneficial.",
+                "Ask for more money first.",
+                "Refuse and verify any security-testing activity through authorized school staff."
+              ],
+              "answer_index": 3,
+              "correct_feedback": "Correct — A claimed security purpose does not make unauthorized software safe.",
+              "incorrect_feedback": "Not quite. A claimed security purpose does not make unauthorized software safe.",
+              "explanation": "A claimed security purpose does not make unauthorized software safe.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            },
+            {
+              "id": "pvp_se_0520",
+              "difficulty": "hard",
+              "scenario": {
+                "channel": "mixed",
+                "from": "Limited-time beta invite",
+                "subject": "",
+                "body": "A convincing invite from a popular service asks you to sideload an app profile that grants device-management control."
+              },
+              "question": "What is the safest response?",
+              "options": [
+                "Grant control temporarily.",
+                "Use the service's official distribution channel and do not grant device-management control to an unverified profile.",
+                "Install it because beta software often needs extra permissions.",
+                "Use a spare account but the same phone."
+              ],
+              "answer_index": 1,
+              "correct_feedback": "Correct — Device-management profiles can provide extensive control and should come only from trusted, authorized sources.",
+              "incorrect_feedback": "Not quite. Device-management profiles can provide extensive control and should come only from trusted, authorized sources.",
+              "explanation": "Device-management profiles can provide extensive control and should come only from trusted, authorized sources.",
+              "bkt": {
+                "p_g": 0.25,
+                "p_s": 0.12,
+                "p_t": 0.18
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

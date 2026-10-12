@@ -42,6 +42,7 @@ const SCREENS: Dictionary = {
 	&"profile":      "res://src/ui/screens/profile/profile_screen.tscn",
 	&"pretest":      "res://src/ui/screens/pretest/pretest_screen.tscn",
 	&"pvp_battle":   "res://src/ui/screens/pvp/pvp_battle_screen.tscn",
+	&"pvp_online":   "res://src/ui/screens/pvp/pvp_online_screen.tscn",
 	&"victory":      "res://src/ui/screens/victory/victory_screen.tscn",
 	&"certificate":  "res://src/ui/screens/intel/certificate_screen.tscn",
 }
@@ -487,6 +488,15 @@ func request_back() -> void:
 
 func current_screen_id() -> StringName:
 	return _stack.back().screen_id if not _stack.is_empty() else &""
+
+
+## True while a transition is running; push()/pop() calls made now are dropped.
+func is_busy() -> bool:
+	return _busy
+
+
+func is_top(screen: BaseScreen) -> bool:
+	return _host != null and _stack.size() > 1 and not _stack.is_empty() and _stack.back() == screen
 
 
 func _navigate(use_fx: bool, action: Callable, backwards: bool = false) -> void:
