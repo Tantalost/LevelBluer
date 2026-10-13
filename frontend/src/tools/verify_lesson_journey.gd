@@ -41,6 +41,18 @@ func answer(quiz: Control, correct: bool) -> void:
 				break
 	quiz.submit()
 
+func answer_mini(screen: Control, correct: bool) -> void:
+	var item: Dictionary = screen._quiz_items[screen._quiz_index]
+	if correct:
+		for index: int in item.correct:
+			screen._pick(index)
+	else:
+		for index: int in item.options.size():
+			if index not in item.correct:
+				screen._pick(index)
+				break
+	screen._check_quiz()
+
 func _run() -> void:
 	await settle()
 	Checkpoint = load("res://src/ui/screens/intel/lesson_post_quiz.gd")
@@ -158,10 +170,50 @@ func _run() -> void:
 	player._on_continue()
 	player._on_continue()
 	await settle()
-	for value: int in player._data.correct:
-		player._pick(value)
-	player._check_quiz()
-	check(player._quiz_passed, "Original mini quiz still grades")
+	var mini_before: int = account.answers
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		check(root.get_visible_rect().encloses(player._submit_button.get_global_rect()), "Mini-quiz submit fits landscape viewport")
+		check(player._submit_button.disabled, "Mini-quiz requires a selected answer")
+		await capture("mini_%dx%d" % [dimensions.x, dimensions.y])
+	for index: int in 5:
+		answer_mini(player, index < 2)
+		player._check_quiz()
+		if index < 4:
+			player._on_continue()
+	check(player._quiz_score == 2 and not player._quiz_passed and player._quiz_finished, "2/5 fails after all five questions")
+	await settle()
+	await capture("mini_failed_phone")
+	check(account.answers == mini_before + 5, "Exactly five first-response BKT updates, including mistakes")
+	player._set_phase(2)
+	check(player._phase == 1 and player._simulation == null, "Failed quiz cannot enter simulation")
+	player.can_go_back()
+	player._open_step(0, 2)
+	check(not player._in_lesson, "Simulation satellite cannot bypass failed attempt")
+	player._open_step(0, 1)
+	check(player._quiz_finished and player._quiz_score == 2, "Returning from path preserves failed result")
+	player._on_continue()
+	check(player._quiz_index == 0 and player._quiz_score == 0 and not player._quiz_finished, "Retry starts a fresh five-question attempt")
+	for index: int in 5:
+		answer_mini(player, index < 3)
+		if index < 4:
+			check(not player._quiz_passed, "Three correct does not skip the remaining questions")
+			player._on_continue()
+	check(player._quiz_passed and player._quiz_score == 3, "Exactly 3/5 unlocks simulation")
+	await settle()
+	check(root.get_visible_rect().encloses(player._submit_button.get_global_rect()), "Mini-quiz result action fits phone landscape")
+	await capture("mini_passed_phone")
+	root.size = Vector2i(1280, 720)
+	check(account.answers == mini_before + 5, "Retry cannot farm repeated BKT updates")
+	var mini_saved: Dictionary = account.get_save_data()
+	var mini_restored: Node = memory_script.new()
+	mini_restored.apply_save_data(mini_saved)
+	check(not mini_restored.record_lesson_quiz_answer("mod_01", 0, str(player._quiz_items[0].id), true), "First responses remain deduplicated after save reload")
+	check(mini_restored.answers == 0, "Reloaded repeated response leaves mastery unchanged")
+	mini_restored.apply_save_data({})
+	check(mini_restored.lesson_quiz_responses.is_empty(), "Account switch clears prior student's quiz evidence")
+	mini_restored.free()
 	player._on_continue()
 	var sim: Control = player._simulation
 	check(not sim._started, "Simulation begins with its mission briefing")
@@ -200,6 +252,30 @@ func _run() -> void:
 	check(player._web._canvas.ready_for_test, "Reduced motion keeps completion highlight without animation")
 	settings.reduced_motion = old_motion
 	root.size = Vector2i(1280, 720)
+	var router: Node = root.get_node("Router")
+	var old_tutorial: bool = router.is_tutorial
+	var ungraded_before: int = account.answers
+	# Completed lesson review and the tutorial both retain the same 5-question
+	# gate without recording fresh BKT evidence or completion.
+	for tutorial: bool in [false, true]:
+		router.is_tutorial = tutorial
+		player._load_module("mod_01", not tutorial, tutorial)
+		player._open_lesson()
+		for page: int in 3:
+			player._on_continue()
+		for index: int in 5:
+			answer_mini(player, true)
+			if index < 4:
+				player._on_continue()
+		check(player._quiz_passed and player._quiz_score == 5, "Review/tutorial still requires five submitted answers")
+		check(account.answers == ungraded_before, "Review/tutorial leaves mastery unchanged")
+	router.is_tutorial = old_tutorial
+	account.lesson_progress["mod_01"] = 0
+	router.is_tutorial = true
+	check(not account.record_lesson_quiz_answer("mod_01", 0, "tutorial-not-graded", true), "Account guard rejects tutorial evidence even if called directly")
+	router.is_tutorial = old_tutorial
+	check(not account.record_lesson_quiz_answer("mod_01", 2, "future-lesson", true), "Future lesson cannot submit evidence")
+	check(not account.record_lesson_quiz_answer("mod_02", 0, "locked-module", true), "Locked module cannot submit evidence")
 	player.queue_free()
 	await settle()
 	picker.queue_free()

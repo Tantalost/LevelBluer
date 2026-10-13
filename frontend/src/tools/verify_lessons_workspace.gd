@@ -3,6 +3,18 @@ extends SceneTree
 var failures := 0
 var investigation_passes: int = 0
 
+func answer_mini(screen: Control, correct: bool) -> void:
+	var item: Dictionary = screen._quiz_items[screen._quiz_index]
+	if correct:
+		for index: int in item.correct:
+			screen._pick(index)
+	else:
+		for index: int in item.options.size():
+			if index not in item.correct:
+				screen._pick(index)
+				break
+	screen._check_quiz()
+
 func record_investigation_pass() -> void:
 	investigation_passes += 1
 
@@ -127,6 +139,16 @@ func _run() -> void:
 	for id in catalog.module_ids():
 		for index in catalog.lesson_count(id):
 			var content: Dictionary = study.build(id, index)
+			var mini: Array[Dictionary] = study.mini_quiz(id, index)
+			check(mini.size() == 5, "Five curated questions: %s/%d" % [id, index])
+			if mini.size() != 5:
+				quit(1)
+				return
+			var unique: Dictionary = {}
+			for item: Dictionary in mini:
+				check(not unique.has(item.id) and item.module_id == id, "Unique questions stay in their module")
+				unique[item.id] = true
+				check(not str(item.feedback).is_empty() and not item.correct.is_empty(), "Every question has an explanation and answer")
 			check(not str(content.scenario).is_empty(), "Scenario: " + id)
 			check(not content.correct.is_empty(), "Quiz has correct answer")
 			for answer in content.correct:
@@ -151,18 +173,24 @@ func _run() -> void:
 			screen._on_continue()
 			screen._check_quiz()
 			check(not screen._quiz_passed, "Empty quiz cannot pass")
-			for i in content.options.size():
-				if i not in content.correct:
-					screen._pick(i)
-					break
-			screen._check_quiz()
+			check(not screen._quiz_resolved, "Empty submission does not consume a question")
+			var first_item: Dictionary = screen._quiz_items[0]
+			if bool(first_item.multi) and first_item.correct.size() > 1:
+				screen._pick(int(first_item.correct[0]))
+				screen._check_quiz()
+				check(screen._quiz_score == 0, "Partial multi-select earns no point")
+			else:
+				answer_mini(screen, false)
 			check(not screen._quiz_passed, "Wrong answer cannot pass")
 			check(screen._answer_effect._active and screen._answer_effect._ink == screen.Feedback.ERROR, "Wrong quiz shows red feedback")
-			screen._picks.clear()
-			for answer in content.correct:
-				screen._pick(answer)
 			screen._check_quiz()
-			check(screen._quiz_passed, "Correct answer passes: %s/%d" % [id, index])
+			check(screen._quiz_score == 0, "Repeated submit cannot change the first answer")
+			for question_index: int in range(1, 5):
+				screen._on_continue()
+				answer_mini(screen, true)
+				if question_index < 4:
+					check(not screen._quiz_passed, "Must answer all five even after reaching three correct")
+			check(screen._quiz_passed and screen._quiz_score == 4, "4/5 passes: %s/%d" % [id, index])
 			check(screen._answer_effect._ink == screen.Feedback.SUCCESS and not screen._answer_effect._moving, "Correct quiz replaces error with green and stops shake")
 			screen._on_continue()
 			check(not screen._answer_effect._active, "Phase change clears quiz feedback")
@@ -245,15 +273,15 @@ func _run() -> void:
 	await settle()
 	await capture("lessons_mini_quiz")
 	var resting_position: Vector2 = screen._answer_effect._target.position
-	screen._check_quiz()
+	answer_mini(screen, false)
 	await create_timer(0.08).timeout
 	screen._check_quiz()
 	await create_timer(0.65).timeout
 	check(screen._answer_effect._target.position.is_equal_approx(resting_position), "Repeated error shakes restore panel position")
 	await capture("lessons_quiz_incorrect")
-	for answer in screen._data.correct:
-		screen._pick(answer)
-	screen._check_quiz()
+	for question_index: int in range(1, 5):
+		screen._on_continue()
+		answer_mini(screen, true)
 	await create_timer(0.35).timeout
 	check(screen._answer_effect._active, "Success remains visible after animation")
 	await capture("lessons_quiz_correct")

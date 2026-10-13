@@ -28,6 +28,13 @@ var _review_mode := false
 var _busy := false
 var _phase: Phase = Phase.DEFINITION
 var _quiz_passed := false
+var _quiz_items: Array[Dictionary] = []
+var _quiz_index: int = 0
+var _quiz_score: int = 0
+var _quiz_resolved: bool = false
+var _quiz_finished: bool = false
+var _quiz_last_correct: bool = false
+var _quiz_answers: Array[bool] = []
 var _simulation_passed := false
 var _picks: Array[int] = []
 var _data: Dictionary = {}
@@ -173,6 +180,7 @@ func _start_lesson() -> void:
 	_read_passed = false
 	_reading_page = 0
 	_data = Study.build(_module_id, _lesson_index)
+	_reset_mini_quiz()
 	_refresh_topic_info()
 	_set_phase(Phase.DEFINITION)
 	_show_roadmap()
@@ -329,16 +337,7 @@ func _set_phase(phase: Phase) -> void:
 			_build_reading_page()
 			_submit_button.text = "START MINI QUIZ  >" if _reading_page == 2 else "CONTINUE  >"
 		Phase.QUIZ:
-			_content.add_child(UI.label(str(_data.question), 28))
-			_content.add_child(UI.label(str(_data.get("quiz_scenario", _data.scenario)), 24, UI.MUTED))
-			if bool(_data.multi):
-				_content.add_child(UI.label("Select every correct detail, then check your answer.", 22, UI.GOLD))
-			for i in _data.options.size():
-				var button := UI.button(str(_data.options[i]), _pick.bind(i))
-				_quiz_buttons.append(button)
-				_content.add_child(button)
-			_refresh_choices()
-			_submit_button.text = "START SIMULATION  >" if _quiz_passed else "CHECK ANSWER"
+			_build_mini_quiz()
 		Phase.SIMULATION:
 			_simulation = Desktop.new()
 			_content.add_child(_simulation)
@@ -398,12 +397,95 @@ func _build_reading_page() -> void:
 			var body := UI.column(card)
 			body.add_child(UI.label("YOUR SAFE RESPONSE", 16, UI.TEAL, true))
 			body.add_child(UI.label(str(_data.rule), 28))
-			_content.add_child(UI.label("Ready? Try a short quiz, then practice the response on a training desktop.", 26, UI.MUTED))
+			_content.add_child(UI.label("Ready for five quick checks? Finish all five and score at least 3/5 to unlock your simulation. Read each explanation before moving on.", 26, UI.MUTED))
+
+func _reset_mini_quiz() -> void:
+	_quiz_items = Study.mini_quiz(_module_id, _lesson_index)
+	_quiz_index = 0
+	_quiz_score = 0
+	_quiz_resolved = false
+	_quiz_finished = false
+	_quiz_passed = false
+	_picks.clear()
+	_quiz_answers.clear()
+	# Keep question identities stable for first-response BKT; vary answer positions
+	# on a retry so the player must read rather than memorize button positions.
+	for item: Dictionary in _quiz_items:
+		var order: Array[int] = []
+		for index: int in item.options.size():
+			order.append(index)
+		order.shuffle()
+		var options: Array[String] = []
+		var correct: Array[int] = []
+		for index: int in order:
+			if index in item.correct:
+				correct.append(options.size())
+			options.append(str(item.options[index]))
+		item.options = options
+		item.correct = correct
+
+func _build_mini_quiz() -> void:
+	if _quiz_items.size() != Study.MINI_COUNT:
+		_content.add_child(UI.label("This lesson's five-question quiz is unavailable. Return to the path and try again. No pass has been awarded.", 26, UI.GOLD))
+		_submit_button.disabled = true
+		_submit_button.text = "QUIZ UNAVAILABLE"
+		return
+	if _quiz_finished:
+		_phase_label.text = "QUIZ COMPLETE / SCORE %d/5 / %s" % [_quiz_score, "PASSED" if _quiz_passed else "KEEP PRACTICING"]
+		_content.add_child(UI.label("Simulation unlocked!" if _quiz_passed else "Almost there. Review and retry!", 30, UI.TEAL if _quiz_passed else UI.GOLD))
+		_content.add_child(UI.label("You answered all five questions. You need at least 3/5 to proceed. Your completed lessons are safe.", 24, UI.MUTED))
+		for index: int in _quiz_answers.size():
+			if _quiz_answers[index]:
+				continue
+			var missed: Dictionary = _quiz_items[index]
+			var card: PanelContainer = UI.panel(_content, UI.PANEL)
+			var body: VBoxContainer = UI.column(card, 8)
+			body.add_child(UI.label("REVISIT QUESTION %d" % (index + 1), 22, UI.GOLD))
+			body.add_child(UI.label(str(missed.question), 24))
+			if not str(missed.quiz_scenario).is_empty():
+				body.add_child(UI.label(str(missed.quiz_scenario), 24, UI.MUTED))
+			var correct_labels: PackedStringArray = []
+			for answer: int in missed.correct:
+				correct_labels.append(str(missed.options[answer]))
+			body.add_child(UI.label("Correct response: " + " / ".join(correct_labels) + "\n" + str(missed.feedback), 24, UI.MUTED))
+		_content.add_child(UI.label("You can revisit the lesson below. Retrying these questions does not add more BKT credit.", 22, UI.MUTED))
+		_submit_button.disabled = false
+		_submit_button.text = "START SIMULATION  >" if _quiz_passed else "RETRY MINI QUIZ"
+		return
+	var item: Dictionary = _quiz_items[_quiz_index]
+	_phase_label.text = "MINI QUIZ / %d OF 5 / %d CORRECT" % [_quiz_index + 1, _quiz_score]
+	_content.add_child(UI.label("Finish all 5 / Pass with 3 correct / No timer", 22, UI.TEAL))
+	_content.add_child(UI.label(str(item.question), 28))
+	if not str(item.quiz_scenario).is_empty():
+		var evidence: PanelContainer = UI.panel(_content, UI.PANEL)
+		evidence.add_child(UI.label(str(item.quiz_scenario), 24, UI.MUTED))
+	if bool(item.multi):
+		_content.add_child(UI.label("Select every correct detail. Each question is worth one point; no partial credit.", 22, UI.GOLD))
+	for index: int in item.options.size():
+		var button: Button = UI.button(str(item.options[index]), _pick.bind(index))
+		_quiz_buttons.append(button)
+		_content.add_child(button)
+	_refresh_choices()
+	_submit_button.text = "CHECK ANSWER"
+	_submit_button.disabled = _picks.is_empty()
+	if _quiz_resolved:
+		_status_scroll.show()
+		var answers: PackedStringArray = []
+		for index: int in item.correct:
+			answers.append(str(item.options[index]))
+		_status_label.text = ("Correct. " if _quiz_last_correct else "Not quite. Correct response: %s. " % " / ".join(answers)) + str(item.feedback)
+		_status_label.add_theme_color_override("font_color", Feedback.SUCCESS if _quiz_last_correct else Feedback.ERROR)
+		_submit_button.disabled = false
+		_submit_button.text = "NEXT QUESTION  >"
+	_content.add_child(UI.label("Tutorial practice: no mastery changes." if Router.is_tutorial else "Only your first response to each new mini-quiz question updates mastery. Retrying is practice, not extra mastery credit.", 22, UI.MUTED))
 
 func _pick(index: int) -> void:
-	if _phase != Phase.QUIZ or _quiz_passed:
+	if _phase != Phase.QUIZ or _quiz_resolved or _quiz_items.size() != Study.MINI_COUNT:
 		return
-	if bool(_data.multi):
+	var item: Dictionary = _quiz_items[_quiz_index]
+	if index < 0 or index >= item.options.size():
+		return
+	if bool(item.multi):
 		if index in _picks:
 			_picks.erase(index)
 		else:
@@ -413,36 +495,38 @@ func _pick(index: int) -> void:
 	_refresh_choices()
 
 func _refresh_choices() -> void:
+	if _quiz_items.is_empty():
+		return
+	var item: Dictionary = _quiz_items[_quiz_index]
 	for i in _quiz_buttons.size():
 		var button := _quiz_buttons[i]
-		button.text = ("[X]  " if i in _picks else "[ ]  ") + str(_data.options[i])
-		button.disabled = _quiz_passed
+		button.text = ("[X]  " if i in _picks else "[ ]  ") + str(item.options[i])
+		button.disabled = _quiz_resolved
 		button.add_theme_stylebox_override("normal", UI.box(Color("29464e") if i in _picks else UI.PANEL, UI.TEAL if i in _picks else Color("3b626a"), 10))
-		if _quiz_passed and i in _picks:
+		if _quiz_resolved and i in item.correct:
 			button.add_theme_stylebox_override("disabled", UI.box(Color("193a2a"), Feedback.SUCCESS, 10))
 			button.add_theme_color_override("font_disabled_color", Feedback.SUCCESS)
+	_submit_button.disabled = not _quiz_resolved and _picks.is_empty()
 
 func _check_quiz() -> void:
-	if _phase != Phase.QUIZ:
+	if _phase != Phase.QUIZ or _quiz_resolved or _picks.is_empty() or _quiz_items.size() != Study.MINI_COUNT:
 		return
-	var correct: Array = _data.correct
-	var ok := _picks.size() == correct.size()
-	for index in correct:
+	var item: Dictionary = _quiz_items[_quiz_index]
+	var correct: Array = item.correct
+	var ok: bool = _picks.size() == correct.size()
+	for index: int in correct:
 		ok = ok and index in _picks
+	_quiz_resolved = true # Lock before recording or emitting feedback.
+	_quiz_last_correct = ok
+	_quiz_answers.append(ok)
+	_quiz_score += 1 if ok else 0
+	_quiz_finished = _quiz_index == Study.MINI_COUNT - 1
+	_quiz_passed = _quiz_finished and _quiz_score >= Study.MINI_PASS
+	if not Router.is_tutorial and not _review_mode and _lesson_index == account.get_lesson_progress(_module_id):
+		account.record_lesson_quiz_answer(_module_id, _lesson_index, str(item.id), ok, item.bkt)
 	AudioManager.play_sfx("ui_success" if ok else "ui_error")
-	if not ok:
-		_status_scroll.show()
-		_status_label.text = "Not quite. Re-read the case and try again. You must identify every correct option." if bool(_data.multi) else "Not quite. Verify the request rather than trusting a name or deadline. Try again."
-		_status_label.add_theme_color_override("font_color", Feedback.ERROR)
-		_answer_effect.show_result(false)
-		return
-	_quiz_passed = true
-	_status_scroll.show()
-	_status_label.text = "Correct. " + str(_data.feedback)
-	_status_label.add_theme_color_override("font_color", Feedback.SUCCESS)
-	_answer_effect.show_result(true)
-	_refresh_choices()
-	_submit_button.text = "START SIMULATION  >"
+	_set_phase(Phase.QUIZ)
+	_answer_effect.show_result(_quiz_passed if _quiz_finished else ok)
 
 func _on_simulation_passed() -> void:
 	if _phase != Phase.SIMULATION or not _quiz_passed:
@@ -469,6 +553,14 @@ func _on_continue() -> void:
 		Phase.QUIZ:
 			if _quiz_passed:
 				_set_phase(Phase.SIMULATION)
+			elif _quiz_finished:
+				_reset_mini_quiz()
+				_set_phase(Phase.QUIZ)
+			elif _quiz_resolved:
+				_quiz_index += 1
+				_quiz_resolved = false
+				_picks.clear()
+				_set_phase(Phase.QUIZ)
 			else:
 				_check_quiz()
 		Phase.SIMULATION:

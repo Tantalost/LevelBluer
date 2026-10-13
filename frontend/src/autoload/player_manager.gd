@@ -37,6 +37,7 @@ var cleared_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
 var lesson_post_quiz_scores: Dictionary = {}
+var lesson_quiz_responses: Dictionary = {}
 var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
 var tech_ranks: Dictionary = {}
@@ -217,6 +218,24 @@ func has_lesson_post_quiz(module_id: String) -> bool:
 	return int(lesson_post_quiz_scores.get(module_id, 0)) >= 20
 
 
+func record_lesson_quiz_answer(module_id: String, lesson_index: int, question_id: String, correct: bool, params: Dictionary = {}) -> bool:
+	if Router.is_tutorial or module_id not in LessonCatalog.module_ids() or question_id.is_empty():
+		return false
+	if lesson_index < 0 or lesson_index >= LessonCatalog.lesson_count(module_id) or lesson_index != get_lesson_progress(module_id) or not can_access_lesson_module(module_id):
+		return false
+	var responses: Dictionary = lesson_quiz_responses.get(module_id, {})
+	if responses.has(question_id):
+		return false
+	responses[question_id] = correct
+	lesson_quiz_responses[module_id] = responses
+	var skill: String = str(LessonCatalog.module_by_id(module_id).domain)
+	# Persist the first-response marker and its one local BKT update together.
+	# No official-BKT submission: that would grade the same response twice.
+	update_mastery(skill, correct, params, false)
+	_save_progress()
+	return true
+
+
 func can_access_lesson_module(module_id: String) -> bool:
 	var ids: Array[String] = LessonCatalog.module_ids()
 	var index: int = ids.find(module_id)
@@ -287,6 +306,7 @@ func reset_to_defaults() -> void:
 	completed_lessons.clear()
 	lesson_progress.clear()
 	lesson_post_quiz_scores.clear()
+	lesson_quiz_responses.clear()
 	purchased_items.clear()
 	unlocked_skills.clear()
 	unlocked_towers = ["base"]
@@ -917,6 +937,7 @@ func get_save_data() -> Dictionary:
 		"has_stateful_inspection": has_stateful_inspection,
 		"lesson_progress": lesson_progress.duplicate(true),
 		"lesson_post_quiz_scores": lesson_post_quiz_scores.duplicate(true),
+		"lesson_quiz_responses": lesson_quiz_responses.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
 		"seen_module_intros": seen_module_intros.duplicate(),
@@ -956,6 +977,17 @@ func apply_save_data(data: Dictionary) -> void:
 			var score: Variant = checkpoints.get(module_id, 0)
 			if score is int or score is float:
 				lesson_post_quiz_scores[module_id] = clampi(int(score), 0, 25)
+	var mini_responses: Variant = data.get("lesson_quiz_responses", {})
+	if mini_responses is Dictionary:
+		for module_id: String in LessonCatalog.module_ids():
+			var responses: Variant = mini_responses.get(module_id, {})
+			if responses is Dictionary:
+				var valid: Dictionary = {}
+				for question_id: Variant in responses:
+					if question_id is String and not question_id.is_empty() and responses[question_id] is bool:
+						valid[question_id] = responses[question_id]
+				if not valid.is_empty():
+					lesson_quiz_responses[module_id] = valid
 	max_stage_cleared_by_module.clear()
 	if data.has("max_stage_cleared_by_module") and typeof(data["max_stage_cleared_by_module"]) == TYPE_DICTIONARY:
 		var saved_ceilings: Dictionary = data["max_stage_cleared_by_module"] as Dictionary

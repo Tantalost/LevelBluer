@@ -268,6 +268,13 @@ func _run() -> void:
 	check(JSON.stringify(player.mastery_matrix) == mastery_before, "online PvP never touches mastery")
 	check(int(player.pvp_tokens) == tokens_before, "online PvP never pays tokens")
 	check(sections_done == SECTIONS, "every screen section ran to completion (%d/%d)" % [sections_done, SECTIONS])
+	# Router transitions deliberately play audio. Let the audio server release
+	# playback handles before ending this short-lived test process.
+	var audio: Node = root.get_node("AudioManager")
+	audio._kill_bgm_tween()
+	audio._stop_music()
+	audio._stop_effects()
+	await create_timer(0.1).timeout
 	print("[PVP ONLINE SCREEN] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
 
