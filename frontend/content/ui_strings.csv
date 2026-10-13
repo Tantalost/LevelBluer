@@ -218,3 +218,15 @@ PROFILE_TOWER_XP,TOWER LV.%d - XP,TOWER LV.%d - XP
 PROFILE_LEGEND_LOW,0-49%,0-49%
 PROFILE_LEGEND_MID,50-74%,50-74%
 PROFILE_LEGEND_HIGH,75%+,75%+
+RECOVERY_FORGOT,Forgot password?,Nakalimutan ang password?
+RECOVERY_BACK,Back to sign in,Bumalik sa pag-sign in
+RECOVERY_TITLE,Need a hand?,Kailangan ng tulong?
+RECOVERY_INTRO,Ask your teacher for password assistance.,Humingi ng tulong sa guro para sa password.
+RECOVERY_HELP,Enter your registered email. After teacher approval you will receive a reset link. Never share your password.,Ilagay ang rehistradong email. Kapag inaprubahan ng guro ay makakatanggap ka ng reset link. Huwag ibahagi ang password.
+RECOVERY_SEND,Request assistance,Humingi ng tulong
+RECOVERY_RECEIPT,If this email matches a student account your teacher will receive your request. After approval check your inbox and spam for a reset link. Your progress stays safe.,Kung may student account ang email na ito matatanggap ng guro ang kahilingan. Pagkaapruba tingnan ang inbox at spam para sa reset link. Ligtas ang iyong progreso.
+RECOVERY_EMAIL_ERROR,Enter a valid registered student email.,Ilagay ang wastong rehistradong student email.
+RECOVERY_UNAVAILABLE,Password assistance is unavailable right now. Please try again later.,Hindi available ang tulong sa password ngayon. Subukan muli mamaya.
+RECOVERY_WAIT,Please wait a minute before requesting again.,Maghintay ng isang minuto bago humiling muli.
+RECOVERY_RATE_LIMIT,Too many requests. Please wait 15 minutes before trying again.,Masyadong maraming kahilingan. Maghintay ng 15 minuto bago subukang muli.
+RECOVERY_NETWORK_ERROR,We could not confirm your request. Check your connection and retry shortly; duplicate requests are combined.,Hindi makumpirma ang kahilingan. Suriin ang koneksyon at subukan muli mamaya; pinagsasama ang dobleng kahilingan.

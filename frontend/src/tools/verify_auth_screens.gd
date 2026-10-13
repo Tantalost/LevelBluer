@@ -35,6 +35,17 @@ func _run() -> void:
 	login.call("_set_busy", true)
 	check(not email.editable and (login.get_node("%TogglePassword") as Button).disabled, "Login is locked while busy")
 	login.call("_set_busy", false)
+	login.call("_toggle_recovery")
+	check(not (password.get_parent() as Control).visible, "Assistance does not ask for a password")
+	email.text = "invalid"
+	login.call("_attempt_login")
+	check((login.get_node("%ErrorPanel") as Control).visible, "Invalid recovery email rejected without network")
+	login.call("_set_busy", true)
+	check((login.get_node("%AssistanceButton") as Button).disabled, "Cannot leave recovery while submitting")
+	login.call("_set_busy", false)
+	login.call("_toggle_recovery")
+	email.text = ""
+	check((password.get_parent() as Control).visible, "Back restores password field")
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
 		root.size = dimensions
 		# Match the project's canvas_items scale on landscape phones.
@@ -42,7 +53,9 @@ func _run() -> void:
 		root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 		root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
 		await settle()
-		for mode: String in ["login", "password"]:
+		for mode: String in ["login", "recovery", "password"]:
+			if bool(login.get("_recovery_mode")) != (mode == "recovery"):
+				login.call("_toggle_recovery")
 			if mode == "password":
 				modal.call("open")
 			else:
@@ -75,6 +88,21 @@ func _run() -> void:
 			panel.set("_keyboard_height", 0)
 			panel.call("_layout")
 			panel.set_process(true)
+	# Offline server-response simulation: never contact an account or send email.
+	modal.call("close")
+	login.call("_toggle_recovery")
+	login.call("_set_busy", true)
+	(login.get_node("RecoveryRequest") as HTTPRequest).request_completed.emit(HTTPRequest.RESULT_SUCCESS, 202, PackedStringArray(), PackedByteArray())
+	check(bool(login.get("_recovery_sent")), "Accepted assistance shows neutral confirmation")
+	check(not (login.get_node("%LoginButton") as Button).visible, "Receipt prevents accidental duplicate submission")
+	await settle()
+	check((login.get_node("%AuthScroll") as Control).get_global_rect().encloses((login.get_node("%AuthCard") as Control).get_global_rect()), "Assistance receipt fits landscape phone")
+	login.call("_toggle_recovery")
+	login.call("_toggle_recovery")
+	login.call("_set_busy", true)
+	(login.get_node("RecoveryRequest") as HTTPRequest).request_completed.emit(HTTPRequest.RESULT_SUCCESS, 429, PackedStringArray(), PackedByteArray())
+	check(not bool(login.get("_busy")) and (login.get_node("%ErrorPanel") as Control).visible, "Rate-limit error restores usable form")
+	login.call("_toggle_recovery")
 	modal.call("open")
 	var new_password: LineEdit = modal.get_node("%NewPasswordField") as LineEdit
 	var confirm: LineEdit = modal.get_node("%ConfirmPasswordField") as LineEdit

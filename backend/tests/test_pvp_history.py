@@ -512,6 +512,9 @@ class StatsTest(unittest.TestCase):
 
 class HistoryApiTest(unittest.TestCase):
     def setUp(self) -> None:
+        account_lookup = patch("app.services.auth_service.fetch_student_by_id", side_effect=lambda student_id: {"id": student_id, "session_version": 0})
+        account_lookup.start()
+        self.addCleanup(account_lookup.stop)
         self.db = FakeDb()
         patcher = patch.object(pvp_history, "supabase", self.db)
         patcher.start()

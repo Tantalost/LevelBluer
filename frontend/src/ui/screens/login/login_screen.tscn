@@ -119,12 +119,14 @@ theme_override_constants/separation = 12
 alignment = 1
 
 [node name="Heading" type="Label" parent="SafeArea/AuthScroll/Center/AuthCard/Row/Terminal/FormRoot"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "LOGIN_WELCOME"
 autowrap_mode = 2
 theme_type_variation = &"AuthHeading"
 
 [node name="Intro" type="Label" parent="SafeArea/AuthScroll/Center/AuthCard/Row/Terminal/FormRoot"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "LOGIN_INTRO"
 autowrap_mode = 2
@@ -212,10 +214,23 @@ show_percentage = false
 indeterminate = true
 
 [node name="Help" type="Label" parent="SafeArea/AuthScroll/Center/AuthCard/Row/Terminal/FormRoot"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "LOGIN_HELP"
 theme_type_variation = &"AuthMuted"
 autowrap_mode = 2
+
+[node name="AssistanceButton" type="Button" parent="SafeArea/AuthScroll/Center/AuthCard/Row/Terminal/FormRoot"]
+layout_mode = 2
+unique_name_in_owner = true
+text = "RECOVERY_FORGOT"
+custom_minimum_size = Vector2(0, 56)
+mouse_default_cursor_shape = 2
+
+[node name="RecoveryRequest" type="HTTPRequest" parent="."]
+timeout = 25.0
+max_redirects = 0
+body_size_limit = 65536
 
 [node name="PasswordChangeModal" parent="." instance=ExtResource("3")]
 unique_name_in_owner = true

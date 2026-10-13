@@ -100,10 +100,11 @@ def _map_student(row: dict) -> StudentUserPayload:
     )
 
 
-def _create_token(student_id: str) -> str:
+def _create_token(student_id: str, session_version: int = 0) -> str:
     payload = {
         "id": student_id,
         "role": "student",
+        "sessionVersion": session_version,
         "exp": datetime.now(UTC) + timedelta(days=JWT_EXPIRY_DAYS),
         "iat": datetime.now(UTC),
     }
@@ -112,12 +113,24 @@ def _create_token(student_id: str) -> str:
 
 def verify_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.jwt_secret, algorithms=[JWT_ALGORITHM])
+        claims = jwt.decode(token, settings.jwt_secret, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         ) from exc
+    if claims.get("role") == "student":
+        if not claims.get("id"):
+            raise HTTPException(status_code=401, detail="Invalid student session")
+        try:
+            student = fetch_student_by_id(str(claims["id"]))
+        except HTTPException as exc:
+            if exc.status_code == 404:
+                raise HTTPException(status_code=401, detail="Student session no longer available") from exc
+            raise
+        if claims.get("sessionVersion", 0) != (student.get("session_version") or 0):
+            raise HTTPException(status_code=401, detail="Your session has ended. Please sign in again.")
+    return claims
 
 
 def fetch_student_by_id(student_id: str) -> dict:
@@ -174,7 +187,7 @@ def login_student(email: str, password: str) -> LoginResponse:
             detail="Invalid email or password",
         )
 
-    token = _create_token(str(student["id"]))
+    token = _create_token(str(student["id"]), int(student.get("session_version") or 0))
     if isinstance(token, bytes):
         token = token.decode("utf-8")
 

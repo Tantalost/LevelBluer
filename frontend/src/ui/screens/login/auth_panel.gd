@@ -86,6 +86,8 @@ func _process(_delta: float) -> void:
 func _layout() -> void:
 	if not is_node_ready():
 		return
+	# Reset keyboard clearance even when no native window/safe-area is available.
+	add_theme_constant_override("margin_bottom", extra_margin)
 	super._apply()
 	var scale_y: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	var font_size: int = maxi(24, ceili(16.0 / scale_y))

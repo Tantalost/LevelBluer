@@ -4,6 +4,8 @@ WebSocket auth: send ``Authorization: Bearer <jwt>`` in the handshake (Godot 4:
 ``WebSocketPeer.handshake_headers``). Tokens are never read from the URL or messages.
 """
 from typing import Any
+import asyncio
+import time
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
@@ -18,6 +20,7 @@ router = APIRouter(prefix="/api/pvp", tags=["pvp"])
 CLOSE_UNAUTHORIZED = 4401
 CLOSE_FORBIDDEN = 4403
 CLOSE_NOT_FOUND = 4404
+SESSION_RECHECK_SECONDS = 15.0
 
 _STATUS = {
     "room_not_found": 404,
@@ -49,7 +52,7 @@ def _failure(exc: PvpError) -> JSONResponse:
 
 @router.post("/rooms")
 async def create_room(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
-    user_id = _student_id(authorization)
+    user_id = await asyncio.to_thread(_student_id, authorization)
     try:
         return JSONResponse(status_code=201, content=_hub(request.app).service.create_room(user_id))
     except PvpError as exc:
@@ -58,7 +61,7 @@ async def create_room(request: Request, authorization: str | None = Header(defau
 
 @router.post("/rooms/{code}/join")
 async def join_room(code: str, request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
-    user_id = _student_id(authorization)
+    user_id = await asyncio.to_thread(_student_id, authorization)
     hub = _hub(request.app)
     try:
         if hub.service.member_of(code, user_id):
@@ -72,7 +75,7 @@ async def join_room(code: str, request: Request, authorization: str | None = Hea
 
 @router.get("/rooms/{code}")
 async def room_state(code: str, request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
-    user_id = _student_id(authorization)
+    user_id = await asyncio.to_thread(_student_id, authorization)
     hub = _hub(request.app)
     try:
         view = hub.service.state(code, user_id)
@@ -84,7 +87,7 @@ async def room_state(code: str, request: Request, authorization: str | None = He
 
 @router.post("/matchmaking/join")
 async def join_matchmaking(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
-    user_id = _student_id(authorization)
+    user_id = await asyncio.to_thread(_student_id, authorization)
     try:
         return JSONResponse(content=_hub(request.app).service.join_queue(user_id))
     except PvpError as exc:
@@ -93,13 +96,13 @@ async def join_matchmaking(request: Request, authorization: str | None = Header(
 
 @router.post("/matchmaking/cancel")
 async def cancel_matchmaking(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
-    user_id = _student_id(authorization)
+    user_id = await asyncio.to_thread(_student_id, authorization)
     return JSONResponse(content=_hub(request.app).service.cancel_queue(user_id))
 
 
 @router.get("/matchmaking/status")
 async def matchmaking_status(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
-    user_id = _student_id(authorization)
+    user_id = await asyncio.to_thread(_student_id, authorization)
     return JSONResponse(content=_hub(request.app).service.queue_status(user_id))
 
 
@@ -127,7 +130,7 @@ def my_matches(limit: int = Query(default=10, ge=1, le=pvp_history.RECENT_LIMIT_
 async def room_socket(websocket: WebSocket, code: str) -> None:
     hub = _hub(websocket.app)
     try:
-        user_id = _student_id(websocket.headers.get("authorization"))
+        user_id = await asyncio.to_thread(_student_id, websocket.headers.get("authorization"))
     except HTTPException as exc:
         await websocket.close(code=CLOSE_UNAUTHORIZED if exc.status_code == 401 else CLOSE_FORBIDDEN)
         return
@@ -141,10 +144,20 @@ async def room_socket(websocket: WebSocket, code: str) -> None:
         return
     await websocket.accept()
     connection = await hub.attach(code, user_id, websocket)
+    next_check = time.monotonic() + SESSION_RECHECK_SECONDS
     try:
         while True:
+            if time.monotonic() >= next_check:
+                try:
+                    await asyncio.to_thread(_student_id, websocket.headers.get("authorization"))
+                except HTTPException:
+                    await websocket.close(code=CLOSE_UNAUTHORIZED)
+                    break
+                next_check = time.monotonic() + SESSION_RECHECK_SECONDS
             try:
-                message = await websocket.receive_json()
+                message = await asyncio.wait_for(websocket.receive_json(), timeout=max(0.01, next_check - time.monotonic()))
+            except asyncio.TimeoutError:
+                continue
             except WebSocketDisconnect:
                 break
             except (ValueError, KeyError):
