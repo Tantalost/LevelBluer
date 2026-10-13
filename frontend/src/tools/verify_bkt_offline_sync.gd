@@ -124,6 +124,10 @@ func _run() -> void:
 		_sdb.upsert_student({"id": TEST_STUDENT_ID, "name": "BKT Offline Test", "section": "Test"})
 		_auth._signed_in = true
 		_auth._participant_code = TEST_STUDENT_ID
+		_sdb.mark_needs_sync(TEST_STUDENT_ID)
+		_player.tutorial_complete = true
+		check(_auth.progress_mastery_snapshot().all(func(row: Dictionary) -> bool: return not bool(row.assessed)),
+			"Tutorial-only pending sync does not turn gameplay priors into assessed mastery")
 
 		print("== A. Offline gameplay survives a stale-cache pull_official_bkt() while pending ==")
 		_player.mastery_matrix["phishing"] = 0.10

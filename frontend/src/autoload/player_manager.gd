@@ -63,6 +63,11 @@ var tutorial_complete: bool = false
 var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
+var _hydrated_participant: String = ""
+## Durable evidence summary, separate from the acknowledged outbound event queue.
+var learning_evidence: Dictionary = {}
+const SUPPORT_GRACE_SECONDS: int = 72 * 60 * 60
+const LEARNING_SESSION_IDLE_SECONDS: int = 30 * 60
 const TRACE_MODULE_IDS: PackedStringArray = ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]
 var trace_seen_by_module: Dictionary = {}
 var trace_missed_by_module: Dictionary = {}
@@ -130,10 +135,11 @@ func stats_bonus_for(tower_id: String) -> Dictionary:
 	return ContentDB.tech_stats_bonus(tower_id, tech_rank(tower_id, "stats"))
 
 
-func grant_tutorial_capacity_rank() -> void:
-	if tech_rank("base", "capacity") >= 1:
+func grant_tutorial_inspection() -> void:
+	if tech_rank("base", "skill") >= 1 and has_stateful_inspection:
 		return
-	_set_tech_rank("base", "capacity", 1)
+	_set_tech_rank("base", "skill", 1)
+	has_stateful_inspection = true
 	SaveService.save_game()
 
 
@@ -176,6 +182,7 @@ func _apply_rank_effects(tower_id: String, track_id: String, rank: int) -> void:
 
 
 func _ready() -> void:
+	reset_to_defaults()
 	AuthService.session_changed.connect(_on_session_changed)
 	if AuthService.is_signed_in():
 		_hydrate_signed_in_session()
@@ -184,15 +191,17 @@ func _ready() -> void:
 func _on_session_changed(signed_in: bool) -> void:
 	if not signed_in:
 		_session_hydrated = false
+		_hydrated_participant = ""
 		reset_to_defaults()
 		return
-	if _session_hydrated:
+	if _session_hydrated and _hydrated_participant == AuthService.participant_code():
 		return
 	await _hydrate_signed_in_session()
 
 
 func _hydrate_signed_in_session() -> void:
 	reset_to_defaults()
+	_hydrated_participant = AuthService.participant_code()
 	SaveService.load_game()
 	_session_hydrated = true
 	SaveService.fetch_cloud_save()
@@ -267,6 +276,7 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 func reset_to_defaults() -> void:
 	remediation_state = {"sessions": []}
 	learning_events.clear()
+	learning_evidence.clear()
 	max_stage_cleared_by_module.clear()
 	credits = 0
 	pvp_tokens = 0
@@ -282,7 +292,8 @@ func reset_to_defaults() -> void:
 	unlocked_towers = ["base"]
 	tech_ranks.clear()
 	_ensure_default_capacity_rank()
-	has_stateful_inspection = false
+	_set_tech_rank("base", "skill", 1)
+	has_stateful_inspection = true
 	module_1_complete = false
 	seen_module_intros.clear()
 	tutorial_complete = false
@@ -752,6 +763,9 @@ func bkt_params_from(question: Dictionary) -> Dictionary:
 
 
 func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}, persist: bool = true) -> void:
+	# Practice in the onboarding sandbox is never a graded learning response.
+	if Router.is_tutorial:
+		return
 	var key: String = skill_id if not skill_id.is_empty() else "phishing"
 	var p_guess: float = _bkt_param(params, ["p_g", "p_guess"], P_GUESS)
 	var p_slip: float = _bkt_param(params, ["p_s", "p_slip"], P_SLIP)
@@ -762,6 +776,7 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {},
 	if not is_correct:
 		new_mastery = clampf(maxf(new_mastery, p_learned - MAX_WRONG_DROP), MIN_MASTERY, MAX_MASTERY)
 	mastery_matrix[key] = new_mastery
+	_record_graded_response(key, int(Time.get_unix_time_from_system()))
 	record_learning_event("mastery", str(LEARNING_MODULES.get(key, "")), {"mastery":new_mastery}, false)
 	print(
 		"[BKT] local %s %s  P(L) %.3f -> %.3f  (G=%.2f S=%.2f T=%.2f)"
@@ -871,6 +886,7 @@ func _posterior(p_learned: float, is_correct: bool, p_guess: float = P_GUESS, p_
 
 func get_save_data() -> Dictionary:
 	return {
+		"learning_evidence": learning_evidence.duplicate(true),
 		"learning_events": learning_events.duplicate(true),
 		"max_stage_cleared_by_module": max_stage_cleared_by_module.duplicate(true),
 		# Legacy field kept for older clients/detection only (see
@@ -906,6 +922,9 @@ func get_save_data() -> Dictionary:
 
 
 func apply_save_data(data: Dictionary) -> void:
+	# A snapshot replaces account state; absent legacy keys must not retain it.
+	reset_to_defaults()
+	_restore_learning_evidence(data.get("learning_evidence", {}))
 	remediation_state = Remediation.restore(data.get("remediation_state", {}))
 	learning_events.clear()
 	var events: Variant = data.get("learning_events", [])
@@ -1016,14 +1035,9 @@ func apply_save_data(data: Dictionary) -> void:
 	_sanitize_tech_ranks()
 	_ensure_default_capacity_rank()
 
-	if data.has("has_stateful_inspection"):
-		var flag_raw: Variant = data["has_stateful_inspection"]
-		var flag_type: int = typeof(flag_raw)
-		if flag_type == TYPE_BOOL:
-			has_stateful_inspection = flag_raw
-		elif flag_type == TYPE_INT or flag_type == TYPE_FLOAT:
-			has_stateful_inspection = int(flag_raw) != 0
-	has_stateful_inspection = has_stateful_inspection or tech_rank("base", "skill") >= 1
+	# Inspection is now standard starter equipment, including for legacy saves.
+	_set_tech_rank("base", "skill", 1)
+	has_stateful_inspection = true
 	_sync_evolution_unlocks()
 
 	if data.has("unlocked_skills") and typeof(data["unlocked_skills"]) == TYPE_ARRAY:
@@ -1142,6 +1156,63 @@ func _ensure_default_capacity_rank() -> void:
 	if tech_rank("base", "capacity") >= 1:
 		return
 	_set_tech_rank("base", "capacity", 1)
+
+
+func has_graded_evidence(skill_id: String) -> bool:
+	var topics: Dictionary = learning_evidence.get("topics", {})
+	return int(topics.get(skill_id.to_lower(), 0)) > 0
+
+
+func _record_graded_response(skill_id: String, now: int) -> void:
+	if not AuthService.is_signed_in() or Router.is_tutorial or skill_id not in _OFFICIAL_SKILLS:
+		return
+	var previous: int = int(learning_evidence.get("last_at", 0))
+	if previous <= 0:
+		learning_evidence["first_at"] = now
+	if previous <= 0 or now - previous >= LEARNING_SESSION_IDLE_SECONDS:
+		learning_evidence["sessions"] = int(learning_evidence.get("sessions", 0)) + 1
+	learning_evidence["last_at"] = maxi(now, previous)
+	learning_evidence["responses"] = int(learning_evidence.get("responses", 0)) + 1
+	var topics: Dictionary = learning_evidence.get("topics", {})
+	topics[skill_id] = int(topics.get(skill_id, 0)) + 1
+	learning_evidence["topics"] = topics
+
+
+func learning_support_eligible(now: int = -1) -> bool:
+	if not AuthService.is_signed_in() or not tutorial_complete or Router.is_tutorial:
+		return false
+	var first: int = int(learning_evidence.get("first_at", 0))
+	var clock: int = int(Time.get_unix_time_from_system()) if now < 0 else now
+	return first > 0 and clock - first >= SUPPORT_GRACE_SECONDS \
+		and int(learning_evidence.get("responses", 0)) >= 10 \
+		and int(learning_evidence.get("sessions", 0)) >= 2
+
+
+func _restore_learning_evidence(raw: Variant) -> void:
+	learning_evidence = {}
+	if not raw is Dictionary:
+		return
+	var topics: Variant = raw.get("topics", {})
+	if not topics is Dictionary:
+		return
+	var clean_topics: Dictionary = {}
+	var responses: int = 0
+	for skill: String in _OFFICIAL_SKILLS:
+		var count: Variant = topics.get(skill, 0)
+		if (count is int or count is float) and is_finite(float(count)):
+			var safe_count: int = clampi(int(count), 0, 1000000)
+			if safe_count > 0:
+				clean_topics[skill] = safe_count
+				responses += safe_count
+	for key: String in ["first_at", "last_at", "sessions"]:
+		var value: Variant = raw.get(key, 0)
+		if not (value is int or value is float) or not is_finite(float(value)):
+			return
+	if responses <= 0 or int(raw.get("first_at", 0)) <= 0:
+		return
+	learning_evidence = {"topics": clean_topics, "responses": responses,
+		"first_at": int(raw.first_at), "last_at": maxi(int(raw.first_at), int(raw.get("last_at", 0))),
+		"sessions": clampi(int(raw.get("sessions", 0)), 1, responses)}
 
 
 func _sanitize_tech_ranks() -> void:

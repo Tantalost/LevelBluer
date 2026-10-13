@@ -125,6 +125,7 @@ func _ready() -> void:
 	_mode_modal.mode_confirmed.connect(_on_mode_confirmed)
 	AuthService.progress_changed.connect(_queue_access_refresh)
 	AuthService.session_changed.connect(_access_session_changed)
+	SaveService.cloud_fetch_completed.connect(_cloud_account_loaded)
 	get_viewport().size_changed.connect(_queue_access_refresh)
 
 
@@ -232,7 +233,7 @@ func _refresh_data() -> void:
 func _refresh_at_risk() -> void:
 	var avg := AuthService.average_mastery()
 	var weak := AuthService.weak_mastery_topics()
-	var is_at_risk := avg >= 0.0 and avg < 0.40
+	var is_at_risk: bool = PlayerManager.learning_support_eligible() and avg >= 0.0 and avg < 0.40
 	_at_risk.visible = is_at_risk
 	if not is_at_risk:
 		return
@@ -297,10 +298,14 @@ func _access_session_changed(_signed_in: bool) -> void:
 	_close_access()
 	_queue_access_refresh()
 
+func _cloud_account_loaded(_success: bool) -> void:
+	_queue_access_refresh()
+
 func _refresh_access() -> void:
 	_access_queued = false
 	if not is_inside_tree():
 		return
+	_refresh_at_risk()
 	_refresh_world()
 	if is_instance_valid(_access_modal) and _access_modal.visible:
 		_fill_access()

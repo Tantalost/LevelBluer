@@ -320,7 +320,7 @@ func _on_tutorial_tower_placed(_tower: TowerBase) -> void:
 		return
 	var placed: int = _tower_placer.placed_count()
 	if placed == 1:
-		PlayerManager.grant_tutorial_capacity_rank()
+		PlayerManager.grant_tutorial_inspection()
 		_refresh_shop_cards()
 	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
 		return
@@ -343,7 +343,7 @@ func _on_tutorial_defend_requested() -> void:
 func _on_tutorial_upgrades_requested() -> void:
 	if not Router.is_tutorial:
 		return
-	PlayerManager.grant_tutorial_capacity_rank()
+	PlayerManager.grant_tutorial_inspection()
 	Router.open_tutorial_upgrades()
 
 

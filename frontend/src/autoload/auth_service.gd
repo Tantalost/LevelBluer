@@ -189,17 +189,24 @@ func progress_mastery_snapshot() -> Array[Dictionary]:
 		var topic: String = topics[i]
 		var key := topic.to_lower()
 		var raw: Variant = _mastery.get(topic, normalized.get(key))
+		# A stored default prior is not evidence, even after a tutorial save/sync.
+		var official_assessed: bool = (raw is float or raw is int) and is_finite(float(raw)) \
+			and float(raw) > 0.0 and not is_equal_approx(float(raw), PlayerManager.DEFAULT_MASTERY)
+		var local_assessed: bool = PlayerManager.has_graded_evidence(key)
+		var pretested: bool = has_module_pretest("mod_%02d" % (i + 1))
 		var pending := false
+		var queued_response: bool = false
 		for job in _bkt_queue:
 			if _signed_in and str(job.get("participant_code", "")) == _participant_code and str(job.get("skill_id", "")).to_lower() == key:
 				pending = true
+				queued_response = true
 				if PlayerManager.mastery_matrix.has(key):
 					raw = PlayerManager.mastery_matrix[key]
-		if local_sync_pending and PlayerManager.mastery_matrix.has(key):
-			pending = true
+		if (local_assessed or (local_sync_pending and (official_assessed or pretested))) and PlayerManager.mastery_matrix.has(key):
+			pending = local_sync_pending
 			raw = PlayerManager.mastery_matrix[key]
 		var numeric := (raw is float or raw is int) and is_finite(float(raw))
-		var assessed := numeric and (float(raw) > 0.0 or pending or has_module_pretest("mod_%02d" % (i + 1)))
+		var assessed: bool = numeric and (official_assessed or local_assessed or pretested or queued_response)
 		result.append({"id": key, "name": topic, "assessed": assessed,
 			"value": clampf(float(raw), 0.0, 1.0) if assessed else 0.0, "pending": pending and assessed})
 	return result
@@ -243,19 +250,20 @@ func completed_module_pretest_ids() -> Array:
 
 
 func average_mastery() -> float:
-	if _mastery.is_empty():
-		return -1.0
-	var total := 0.0
-	for value in _mastery.values():
-		total += float(value)
-	return total / float(_mastery.size())
+	var total: float = 0.0
+	var count: int = 0
+	for row: Dictionary in progress_mastery_snapshot():
+		if bool(row.assessed):
+			total += float(row.value)
+			count += 1
+	return total / float(count) if count > 0 else -1.0
 
 
 func weak_mastery_topics(threshold: float = 0.40) -> PackedStringArray:
 	var topics: PackedStringArray = []
-	for topic in _mastery.keys():
-		if float(_mastery[topic]) < threshold:
-			topics.append(str(topic))
+	for row: Dictionary in progress_mastery_snapshot():
+		if bool(row.assessed) and float(row.value) < threshold:
+			topics.append(str(row.name))
 	return topics
 
 
