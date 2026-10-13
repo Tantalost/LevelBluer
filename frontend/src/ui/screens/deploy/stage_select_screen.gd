@@ -73,11 +73,13 @@ func _ready() -> void:
 	AuthService.session_changed.connect(_session_changed)
 	_refresh()
 
-func on_enter(_args: Dictionary) -> void:
+func on_enter(args: Dictionary) -> void:
 	visible = true
 	_active = true
 	_modules = LessonCatalog.modules()
 	_selected = _first_unlocked()
+	if args.has("module_index"):
+		_selected = clampi(int(args.module_index), 0, _modules.size() - 1)
 	AssetManager.bind_texture(_avatar, "ui_pfp")
 	_refresh()
 
@@ -210,16 +212,14 @@ func _build_detail() -> void:
 	bar.add_theme_stylebox_override("background", UI.box(UI.BG, UI.BG, 0))
 	bar.add_theme_stylebox_override("fill", UI.box(accent, accent, 0))
 	content.add_child(bar)
-	if _selected == 0:
-		var clears := 0
-		for stage_id in range(1, 11):
-			if PlayerManager.has_cleared_stage("mod_01", stage_id):
-				clears += 1
-		content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
-	else:
-		content.add_child(_label("STAGES COMING SOON", UI.GOLD, -1))
+	var clears: int = 0
+	for stage_id: int in range(1, 11):
+		if PlayerManager.has_cleared_stage(module_id, stage_id):
+			clears += 1
+	content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
+	content.add_child(_label("L1: S1–2 / L2: S3–4 / L3: S5–6 / L4: S7–8 / L5: S9 / L6 + POST-TEST: S10", UI.MUTED, -2))
 	if available:
-		content.add_child(_label("Choose a stage and defend the network." if _selected == 0 else "Module access unlocked. Authored stages are coming soon.", UI.MUTED, -1))
+		content.add_child(_label("Complete this module's lessons and clear stages in order.", UI.MUTED, -1))
 	_breach_button = _button("OPEN MODULE  >", _on_breach_pressed, true)
 	_breach_button.disabled = not available
 	if not available:
@@ -229,8 +229,7 @@ func _build_detail() -> void:
 func _lock_reason(index: int) -> String:
 	if _is_unlocked(index):
 		return ""
-	var required := 0 if index == 0 else index - 1
-	return "Complete the %s lessons in Module %d to unlock this operation." % [str(_modules[required].title), required + 1]
+	return StageManager.lesson_access_reason(1, str(_modules[index].id))
 
 func _preview_module(index: int) -> void:
 	if index < 0 or index >= _modules.size():
@@ -258,9 +257,7 @@ func _first_unlocked() -> int:
 func _is_unlocked(index: int) -> bool:
 	if index < 0 or index >= _modules.size():
 		return false
-	if index == 0:
-		return PlayerManager.is_module_deploy_unlocked(str(_modules[index].id))
-	return _is_complete(index - 1)
+	return PlayerManager.is_module_deploy_unlocked(str(_modules[index].id))
 
 func _is_complete(index: int) -> bool:
 	if index < 0 or index >= _modules.size():

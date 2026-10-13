@@ -162,20 +162,30 @@ func _run() -> void:
 	auth.session_changed.emit(false)
 	await settle()
 	check(screen._tab == "Overview" and screen._snapshot.assessed == 0, "Session change clears previous student display")
-	# Shared deployment gate parity: keep progression and remediation behavior unchanged.
-	var stage_manager := root.get_node("StageManager")
-	for unlocked in [false, true]:
-		player.completed_lessons.clear()
-		if unlocked:
-			player.completed_lessons.assign(["mod_01"])
-		for ceiling in [1, 5, 10]:
-			player.max_stage_cleared_by_module = {"mod_01": ceiling}
+	# Progress must display the authoritative lesson, clear and post-test gates.
+	var stage_manager: Node = root.get_node("StageManager")
+	player.completed_lessons.clear()
+	player.remediation_state = {}
+	player.lesson_post_quiz_scores = {}
+	for lesson_count: int in [0, 1, 3, 6]:
+		player.lesson_progress = {"mod_01": lesson_count}
+		for cleared_count: int in [0, 2, 9]:
+			player.cleared_stages = {}
+			for id: int in range(1, cleared_count + 1):
+				player.cleared_stages[player.stage_progress_key("mod_01", id)] = true
+			# An old maximum must not manufacture missing clears.
+			player.max_stage_cleared_by_module = {"mod_01": 10}
 			player.locked_stages = {"mod_01:3": true}
-			for id in range(1, 11):
-				var config: Dictionary = stage_manager.get_stage_config(id)
-				var req := str(config.get("req_lesson", ""))
-				var old_rule: bool = player.is_module_deploy_unlocked("mod_01") and not config.is_empty() and id <= ceiling + 1 and (req.is_empty() or player.has_completed_lesson(req)) and not player.is_stage_locked("mod_01", id)
-				check(stage_manager.access_reason(id).is_empty() == old_rule, "Shared stage access parity")
+			state = Data.snapshot()
+			for row: Dictionary in state.stages:
+				var reason: String = stage_manager.access_reason(int(row.id), "mod_01")
+				check(row.reason == reason, "Progress shows authoritative stage requirement")
+				var expected: String = "Completed" if row.done else ("Available" if reason.is_empty() else "Locked")
+				check(row.status == expected, "Progress status follows real clears and shared gates")
+	check(state.stages[9].reason.contains("post-test"), "Progress explains Stage 10 post-test requirement")
+	player.lesson_post_quiz_scores = {"mod_01": 20}
+	state = Data.snapshot()
+	check(state.stages[9].status == "Available", "Progress opens final stage after qualifying post-test")
 	auth._mastery = {"Phishing": 0.25, "Smishing": 0.4, "Vishing": 0.7, "Pretexting": 0.85, "Baiting": 0.95}
 	# Render real viewport scaling with phone-landscape safe-area simulation.
 	for resolution in [Vector2i(960,600), Vector2i(844,390)]:

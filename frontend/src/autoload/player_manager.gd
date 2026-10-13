@@ -585,7 +585,17 @@ func has_completed_lesson(lesson_id: String) -> bool:
 
 
 func is_module_deploy_unlocked(module_id: String) -> bool:
-	return has_completed_lesson(module_id)
+	return deployment_lesson_count(module_id) >= 1
+
+
+func deployment_lesson_count(module_id: String) -> int:
+	if module_id not in LessonCatalog.module_ids():
+		return 0
+	var total: int = LessonCatalog.lesson_count(module_id)
+	# Older complete-module saves may have no per-lesson counter.
+	if has_completed_lesson(module_id):
+		return total
+	return clampi(get_lesson_progress(module_id), 0, total)
 
 
 func has_seen_module_intro(module_id: String) -> bool:

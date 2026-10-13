@@ -89,17 +89,24 @@ func _run() -> void:
 	auth._completed_module_ids = ["mod_01"]
 	player.lesson_progress = {"mod_01": 3}
 	screen._refresh_world()
-	check(screen._world_access.short.contains("3 / 6") and not screen._world_access.explanation.contains("Complete its pre-test"), "Passed pretest shows remaining lesson requirement")
+	check(screen._world_access.heading == "STAGE 1 READY", "Partial lesson completion already opens deployment")
 	player.lesson_progress = {"mod_01": 6}
 	player.completed_lessons.assign(["mod_01"])
 	screen._refresh_world()
 	check(screen._world_access.heading == "STAGE 1 READY", "Cleared module unlocks actual stage")
-	check(screen._world_access.modules[1].reason.contains("coming soon"), "Future maps not mistaken for unlockable authored stages")
+	check(screen._world_access.modules[1].reason.contains("Module 2 Lesson 1"), "Module 2 explains its own lesson requirement")
+	player.lesson_progress["mod_02"] = 1
+	screen._refresh_world()
+	journal.refresh(screen._world_access)
+	journal.select_world(1)
+	check(journal._route == &"stage_select" and journal.action.text == "OPEN DEPLOY", "World 2 offers deployment after its own Lesson 1")
+	check(screen._world_access.modules[1].stages[0].status == "AVAILABLE" and screen._world_access.modules[1].stages[2].reason.contains("Lesson 2"), "World 2 checklist uses its own per-stage lesson gates")
+	journal.select_world(0)
 	await settle()
 	await capture("ready")
 	player.cleared_stages = {"mod_01:1": true, "mod_01:2": true}
 	screen._refresh_world()
-	check(screen._world_access.heading == "STAGE 3 LOCKED" and screen._world_access.route == &"stage_select", "Sequential gate guidance matches actual ceiling")
+	check(screen._world_access.heading == "STAGE 3 READY" and screen._world_access.route == &"stage_select", "Explicit Stage 1 and 2 clears open Stage 3 without a stale ceiling")
 	player.max_stage_cleared_by_module = {"mod_01": 3}
 	player.locked_stages = {"mod_01:3": true}
 	screen._refresh_world()

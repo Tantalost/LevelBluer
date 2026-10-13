@@ -601,6 +601,12 @@ func _begin_gameplay(stage_index: int, context: MatchContext = null) -> void:
 	if context == null:
 		context = _context_for_stage(stage_index)
 	context.stage_id = stage_index + 1
+	if context.persistent and not context.tutorial and not context.preview and not StageManager.access_reason(context.stage_id, context.module_id).is_empty():
+		push_warning("Router: complete the displayed lesson and stage requirements before deploying.")
+		_set_ui_stack_active(true)
+		if not _stack.is_empty():
+			_stack.back().on_resume()
+		return
 	if context.geometric and context.persistent:
 		var supported: bool = DecisionScenarios.is_decision_stage(context.module_id, context.stage_id) or (context.module_id in ["mod_01", "mod_02"] and context.stage_id == 10)
 		if not supported or is_tutorial or not StageManager.access_reason(context.stage_id, context.module_id).is_empty():

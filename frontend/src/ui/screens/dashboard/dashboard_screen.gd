@@ -336,8 +336,9 @@ func _fill_access() -> void:
 	_access_modal.refresh(_world_access)
 
 func _access_go(route: StringName) -> void:
+	var module_index: int = _access_modal._selected if is_instance_valid(_access_modal) else 0
 	_close_access()
-	Router.push(route)
+	Router.push(route, {"module_index": module_index} if route == &"stage_select" else {})
 
 func _access_missions() -> void:
 	_close_access()

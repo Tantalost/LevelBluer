@@ -55,7 +55,11 @@ func _run() -> void:
 	player.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
 	screen.on_resume()
 	await settle()
-	check(screen._is_unlocked(0) and screen._is_unlocked(1), "Existing first/second module rules preserved")
+	check(screen._is_unlocked(0) and screen._is_unlocked(1), "Modules open after their own first lesson")
+	player.lesson_progress["mod_02"] = 0
+	check(not screen._is_unlocked(1), "Completed Module 1 alone cannot open Module 2")
+	player.lesson_progress["mod_02"] = 1
+	check(screen._is_unlocked(1), "Module 2 Lesson 1 opens Module 2")
 	check(not screen._is_unlocked(2), "Partial previous lessons do not unlock next module")
 	check(not screen._breach_button.disabled, "Open CTA enabled for available operation")
 	check(screen._module_route(0).route == &"module_intro", "First module keeps introduction route")
