@@ -161,6 +161,8 @@ func _is_complete(index: int) -> bool:
 	var module: Dictionary = _snapshot.modules[index]
 	if int(module.done) < int(module.total) or module.get("stages", []).is_empty():
 		return false
+	if not PlayerManager.has_lesson_post_quiz(str(module.id)):
+		return false
 	for stage: Dictionary in module.stages:
 		if not bool(stage.done):
 			return false

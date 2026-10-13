@@ -30,6 +30,7 @@ var _visual_review: bool = false
 var _preview: Control
 var _enlarge: Button
 var _layout: VBoxContainer
+var _review_nav: HBoxContainer
 
 func _ready() -> void:
 	var shell := UI.shell(self, "MODULE CHECK-IN", func() -> void: Router.request_back())
@@ -84,6 +85,10 @@ func _ready() -> void:
 	_error = UI.label("", 22, UI.GOLD)
 	_error.hide()
 	column.add_child(_error)
+	_review_nav = HBoxContainer.new()
+	_review_nav.add_theme_constant_override("separation", 16)
+	column.add_child(_review_nav)
+	_review_nav.hide()
 	_next = UI.button("SAVE ANSWER  >", _on_next_pressed, true)
 	_next.disabled = true
 	column.add_child(_next)
@@ -92,6 +97,7 @@ func _ready() -> void:
 func on_enter(args: Dictionary) -> void:
 	_module_id = str(args.get("module_id", "mod_01")).strip_edges()
 	_finished = false
+	_review_nav.hide()
 	_index = 0
 	_answers.clear()
 	_selected = null
@@ -244,12 +250,24 @@ func _show_review_card() -> void:
 	_question.text = str(card.question)
 	_update_example(int(card.get("id", -1)), _question.text, true)
 	UI.clear(_options)
-	_options.add_child(UI.label("CORRECT" if card.correct else "REVISIT THIS", 17, UI.TEAL if card.correct else UI.GOLD, true))
-	_options.add_child(UI.label("Your answer: " + str(card.submitted), 25, UI.MUTED))
-	_options.add_child(UI.label("Remember: " + str(card.answer), 28))
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	_options.add_child(row)
+	_options.add_theme_constant_override("v_separation", 22)
+	_card.add_theme_constant_override("separation", 24)
+	var verdict: Label = UI.label("CORRECT / Well spotted" if card.correct else "REVISIT / A clue to practice", 25, UI.TEAL if card.correct else UI.GOLD)
+	verdict.size_flags_horizontal = SIZE_EXPAND_FILL
+	_options.add_child(verdict)
+	var submitted_panel: PanelContainer = UI.panel(_options, Color("#102040"))
+	submitted_panel.size_flags_horizontal = SIZE_EXPAND_FILL
+	var submitted: VBoxContainer = UI.column(submitted_panel, 12)
+	submitted.add_child(UI.label("YOUR ANSWER", 22, UI.MUTED))
+	submitted.add_child(UI.label(str(card.submitted), 28))
+	var answer_panel: PanelContainer = UI.panel(_options, Color("#0E2A28"))
+	answer_panel.size_flags_horizontal = SIZE_EXPAND_FILL
+	var answer: VBoxContainer = UI.column(answer_panel, 12)
+	answer.add_child(UI.label("TAKE THIS WITH YOU", 22, UI.TEAL))
+	answer.add_child(UI.label(str(card.answer), 28))
+	UI.clear(_review_nav)
+	_review_nav.show()
+	var row: HBoxContainer = _review_nav
 	var previous := UI.button("< Previous", _review_move.bind(-1))
 	previous.size_flags_horizontal = SIZE_EXPAND_FILL
 	previous.disabled = _review_index == 0
@@ -385,5 +403,5 @@ func _close_example() -> void:
 		_enlarge.grab_focus()
 
 func _fit_example() -> void:
-	if is_inside_tree() and not _visual.is_empty():
+	if is_inside_tree() and (not _visual.is_empty() or _finished):
 		UI.fit_touch(self)

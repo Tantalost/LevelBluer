@@ -65,7 +65,7 @@ func flush() -> void:
 	await get_tree().process_frame
 
 
-func save_game(sync_cloud: bool = true) -> void:
+func save_game(sync_cloud: bool = true, defer_cloud: bool = false) -> void:
 	var data: Dictionary = PlayerManager.get_save_data()
 	var json_string: String = JSON.stringify(data)
 	var path: String = _resolve_save_path()
@@ -77,9 +77,16 @@ func save_game(sync_cloud: bool = true) -> void:
 	file.close()
 	if not sync_cloud:
 		return
-	print("[SaveService] Game saved successfully. path=", path)
+	if not defer_cloud:
+		print("[SaveService] Game saved successfully. path=", path)
 	if AuthService.is_signed_in():
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
+		# Frequent mission counters may wait for the retry timer, but a previous
+		# upload must not acknowledge a newer local snapshot as already synced.
+		if defer_cloud and _sync_in_flight:
+			_resync_queued = true
+	if defer_cloud:
+		return
 	_sync_to_cloud()
 
 

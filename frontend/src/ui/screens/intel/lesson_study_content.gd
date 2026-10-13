@@ -3,6 +3,41 @@ extends RefCounted
 const Quiz: GDScript = preload("res://src/gameplay/quiz_content.gd")
 const MINI_COUNT: int = 5
 const MINI_PASS: int = 3
+const CONTEXT_CUES: Dictionary = {
+	"mod_01:0": [["help@harb0r-civic.net", "WHO / The zero in harb0r imitates the school name. A familiar display name is not proof."], ["Open this page now and type it again", "REQUEST / They want your campus password entered on their page."], ["12 minutes", "PRESSURE / The countdown is meant to rush you past verification."]],
+	"mod_01:1": [["it.help@gmail.com", "WHO / Check the mailbox, not just the Helpdesk name."], ["Reply with your campus password", "REQUEST / Never send your password in an email reply."], ["before lab starts", "PRESSURE / A familiar school deadline does not make this safe."]],
+	"mod_01:2": [["westfie1d.edu", "ADDRESS / The digit 1 replaces the letter l. Lookalike spelling matters."], ["Re-enter your password", "REQUEST / Open your saved school portal instead of this login link."]],
+	"mod_01:4": [["mia.santos.group@outlook.com", "WHO / A classmate's name does not verify this public mailbox."], ["sign in with your campus account", "REQUEST / Verify the shared folder with Mia using a known contact."], ["before 10", "PRESSURE / Pause even when the message sets a deadline."]],
+	"mod_01:5": [["wifi@westfie1d.edu", "ADDRESS / This is the lookalike school name again."], ["Re-enter your password here", "REQUEST / This would hand your password to the linked page."], ["at noon", "PRESSURE / Don't let a threatened disconnection choose for you."]],
+	"mod_02:0": [["metro-ride-help.tk", "DESTINATION / A familiar brand name does not verify a different website."], ["10 minutes", "PRESSURE / Verify the charge in the app you already have, not under this timer."]],
+	"mod_02:1": [["bit.ly/navo-hold", "DESTINATION / The short link hides the destination."], ["student number plus password", "REQUEST / A book reservation is no reason to give away your password."], ["about to be given away", "PRESSURE / Fear of losing the book is the hook."]],
+	"mod_02:3": [["metro-ride-help.tk/refund", "DESTINATION / Check the charge through your installed app, not this odd site."], ["10 minutes", "PRESSURE / The timer encourages a rushed tap."]],
+	"mod_02:4": [["tap a link and type a password", "ATTACKER'S GOAL / Notice the action and secret the trick is designed to get."], ["under a minute", "PRESSURE / Rushing removes time to check the request."]],
+}
+
+static func context_clues(module_id: String, index: int) -> Array[Dictionary]:
+	var source: Dictionary = LessonCatalog.lessons_for(module_id)[index]
+	var scenario: String = _scenario(source)
+	var clues: Array[Dictionary] = []
+	for pair: Array in CONTEXT_CUES.get("%s:%d" % [module_id, index], []):
+		if scenario.contains(str(pair[0])):
+			clues.append({"quote": str(pair[0]), "note": str(pair[1])})
+	if not clues.is_empty():
+		return clues
+	for segment: Dictionary in source.get("segments", []):
+		if bool(segment.is_tell):
+			clues.append({"quote": str(segment.text), "note": str(segment.why)})
+	if source.has("events"):
+		clues.append({"quote": str(source.events[int(source.suspicion_index)]), "note": str(source.explanation)})
+	if clues.is_empty():
+		# Other authored formats retain their own explanation, never a guessed tell.
+		var note: String = str(source.get("hint", source.get("explanation", source.get("beat4_summary", "Compare this request with the safe response."))))
+		if source.has("items"):
+			note = str(source.items[0].why)
+		if source.has("beat1_guided_example"):
+			note = str(source.beat1_guided_example.observations[0].plain_language_note)
+		clues.append({"quote": scenario.split("\n")[0], "note": note})
+	return clues
 # Four curated transfer checks supplement each lesson's original question.
 # Suffixes refer to the existing module bank, not random module-wide samples.
 const MINI_CHECKS: Dictionary = {

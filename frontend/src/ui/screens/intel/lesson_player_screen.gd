@@ -59,6 +59,13 @@ var _in_lesson := false
 var _reading_progress: ProgressBar
 var _header_title: Label
 var _status_scroll: ScrollContainer
+var _reading_blocks: Array[RichTextLabel] = []
+var _reading_block: int = 0
+var _reading_cursor: float = 0.0
+var _reading_pause: float = 0.0
+var _revealing: bool = false
+var _reveal_button: Button
+signal lesson_celebrated
 
 func _ready() -> void:
 	if account == null:
@@ -112,6 +119,10 @@ func _ready() -> void:
 	_page_back = UI.button("< PREVIOUS", _previous_page)
 	_page_back.custom_minimum_size.x = 190
 	actions.add_child(_page_back)
+	_reveal_button = UI.button("SHOW ALL", _finish_reading_reveal)
+	_reveal_button.tooltip_text = "Reveal the text immediately. Text speed can also be set to Instant in Settings."
+	actions.add_child(_reveal_button)
+	_reveal_button.hide()
 	_submit_button = UI.button("START MINI QUIZ  >", _on_continue, true)
 	_submit_button.size_flags_horizontal = SIZE_EXPAND_FILL
 	actions.add_child(_submit_button)
@@ -201,6 +212,7 @@ func _refresh_roadmap() -> void:
 	_fit_readability.call_deferred()
 
 func _show_roadmap() -> void:
+	_finish_reading_reveal()
 	_post_active = false
 	if is_instance_valid(_post_quiz):
 		_post_quiz.get_parent().remove_child(_post_quiz)
@@ -222,6 +234,8 @@ func _open_lesson() -> void:
 	_workspace.show()
 	_header_title.text = str(_data.title).to_upper()
 	_close_button.text = "< PATH"
+	if _phase == Phase.DEFINITION:
+		_start_reading_reveal()
 	_fit_readability.call_deferred()
 
 func _open_step(index: int, step: int) -> void:
@@ -284,6 +298,10 @@ func _fit_readability() -> void:
 	for control in find_children("*", "Control", true, false):
 		if _web.is_ancestor_of(control):
 			continue
+		if control is RichTextLabel:
+			if not control.has_meta("lesson_font_size"):
+				control.set_meta("lesson_font_size", control.get_theme_font_size("normal_font_size"))
+			control.add_theme_font_size_override("normal_font_size", maxi(int(control.get_meta("lesson_font_size")), ceili(16.0 / physical_scale)))
 		if control is Label or control is Button or control is LineEdit:
 			if not control.has_meta("lesson_font_size"):
 				control.set_meta("lesson_font_size", control.get_theme_font_size("font_size"))
@@ -318,6 +336,8 @@ func _set_phase(phase: Phase) -> void:
 	if phase == Phase.COMPLETE and (not _quiz_passed or not _simulation_passed):
 		return
 	_phase = phase
+	_finish_reading_reveal()
+	_reading_blocks.clear()
 	_answer_effect.reset()
 	UI.clear(_content)
 	_quiz_buttons.clear()
@@ -357,17 +377,19 @@ func _set_phase(phase: Phase) -> void:
 			_set_phase(Phase.DEFINITION)
 		))
 	_fit_readability.call_deferred()
+	if _phase == Phase.DEFINITION and _in_lesson:
+		_start_reading_reveal()
 
 func _build_reading_page() -> void:
 	match _reading_page:
 		0:
 			_content.add_child(UI.label("Meet the idea", 26, UI.TEAL))
 			_content.add_child(UI.label(str(_data.term), 34))
-			_content.add_child(UI.label(str(_data.definition), 30))
+			_reading_text(_content, str(_data.definition), 30)
 			var card := UI.panel(_content, Color("18333a"))
 			var body := UI.column(card, 12)
 			body.add_child(UI.label("KEEP THIS IN MIND", 16, UI.GOLD, true))
-			body.add_child(UI.label(str(_data.rule), 28))
+			_reading_text(body, str(_data.rule), 28)
 		1:
 			_content.add_child(UI.label("See it in context", 30))
 			# An accessible, code-native illustration of the actual authored case.
@@ -388,15 +410,22 @@ func _build_reading_page() -> void:
 			app.size_flags_horizontal = SIZE_EXPAND_FILL
 			heading.add_child(app)
 			body.add_child(HSeparator.new())
-			body.add_child(UI.label(str(_data.scenario), 28))
-			_content.add_child(UI.label("Pause and notice: who is asking, what do they want, and are they pressuring you to act?", 26, UI.GOLD))
+			var clues: Array[Dictionary] = Study.context_clues(_module_id, _lesson_index)
+			var marked: String = _escape_reading(str(_data.scenario))
+			for index: int in clues.size():
+				var quote: String = _escape_reading(str(clues[index].quote))
+				marked = marked.replace(quote, "[color=#8FF0E6][u]" + quote + "[/u] [lb]%d][/color]" % (index + 1))
+			_reading_text(body, marked, 28, true)
+			_content.add_child(UI.label("FOLLOW THE CLUES / Match each number to the highlighted words", 24, UI.GOLD))
+			for index: int in clues.size():
+				_reading_text(_content, "[%d] %s" % [index + 1, clues[index].note], 26)
 		2:
 			_content.add_child(UI.label("Connect the clues", 30))
-			_content.add_child(UI.label(str(_data.takeaway), 28))
+			_reading_text(_content, str(_data.takeaway), 28)
 			var card := UI.panel(_content, Color("18333a"))
 			var body := UI.column(card)
 			body.add_child(UI.label("YOUR SAFE RESPONSE", 16, UI.TEAL, true))
-			body.add_child(UI.label(str(_data.rule), 28))
+			_reading_text(body, str(_data.rule), 28)
 			_content.add_child(UI.label("Ready for five quick checks? Finish all five and score at least 3/5 to unlock your simulation. Read each explanation before moving on.", 26, UI.MUTED))
 
 func _reset_mini_quiz() -> void:
@@ -544,6 +573,9 @@ func _on_continue() -> void:
 		return
 	match _phase:
 		Phase.DEFINITION:
+			if _revealing:
+				_finish_reading_reveal()
+				return
 			if _reading_page < 2:
 				_reading_page += 1
 				_set_phase(Phase.DEFINITION)
@@ -710,6 +742,8 @@ func _finish_lesson() -> void:
 	_start_lesson()
 	if completed_index == progress and not _review_mode:
 		_web.celebrate(completed_index)
+		AudioManager.play_sfx("ui_success")
+		lesson_celebrated.emit()
 
 func _begin_tutorial_coach() -> void:
 	_tutorial_overlay = TutorialOverlay.mount_on(self)
@@ -738,6 +772,7 @@ func _show_tutorial_lesson_done() -> void:
 		_tutorial_overlay.show_lesson_done()
 
 func on_exit() -> void:
+	_finish_reading_reveal()
 	_answer_effect.reset()
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
@@ -757,3 +792,65 @@ func _open_post_quiz() -> void:
 	(_workspace.get_parent() as Control).add_child(_post_quiz)
 	_post_quiz.return_requested.connect(_show_roadmap)
 	_post_quiz.setup(_module_id)
+
+func _escape_reading(text: String) -> String:
+	return text.replace("[", "[lb]")
+
+func _reading_text(parent: Node, text: String, font_size: int, formatted: bool = false) -> void:
+	for paragraph: String in text.split("\n\n", false):
+		var block: RichTextLabel = RichTextLabel.new()
+		block.bbcode_enabled = true
+		block.text = paragraph if formatted else _escape_reading(paragraph)
+		block.fit_content = true
+		block.scroll_active = false
+		block.size_flags_horizontal = SIZE_EXPAND_FILL
+		block.add_theme_font_override("normal_font", UI.FONT)
+		block.add_theme_font_size_override("normal_font_size", font_size)
+		block.add_theme_color_override("default_color", UI.TEXT)
+		block.mouse_filter = Control.MOUSE_FILTER_PASS
+		block.gui_input.connect(_reading_input)
+		parent.add_child(block)
+		_reading_blocks.append(block)
+
+func _reading_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_finish_reading_reveal()
+
+func _start_reading_reveal() -> void:
+	if SettingsService.text_speed == "instant" or SettingsService.reduced_motion or Router.is_tutorial:
+		_finish_reading_reveal()
+		return
+	_reading_block = 0
+	_reading_cursor = 0.0
+	_reading_pause = 0.0
+	_revealing = not _reading_blocks.is_empty()
+	for block: RichTextLabel in _reading_blocks:
+		block.visible_characters = 0
+	_reveal_button.visible = _revealing
+
+func _finish_reading_reveal() -> void:
+	_revealing = false
+	for block: RichTextLabel in _reading_blocks:
+		if is_instance_valid(block):
+			block.visible_characters = -1
+	if is_instance_valid(_reveal_button):
+		_reveal_button.hide()
+
+func _process(delta: float) -> void:
+	if not _revealing or not _in_lesson or not is_visible_in_tree():
+		return
+	if SettingsService.text_speed == "instant" or SettingsService.reduced_motion:
+		_finish_reading_reveal()
+		return
+	_reading_pause = maxf(0.0, _reading_pause - delta)
+	if _reading_pause > 0.0:
+		return
+	var block: RichTextLabel = _reading_blocks[_reading_block]
+	_reading_cursor += delta * 42.0 * SettingsService.text_speed_multiplier()
+	block.visible_characters = mini(int(_reading_cursor), block.get_total_character_count())
+	if block.visible_characters >= block.get_total_character_count():
+		_reading_block += 1
+		_reading_cursor = 0.0
+		_reading_pause = 0.45
+		if _reading_block >= _reading_blocks.size():
+			_finish_reading_reveal()

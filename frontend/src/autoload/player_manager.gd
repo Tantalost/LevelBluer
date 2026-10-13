@@ -1,5 +1,6 @@
 extends Node
 signal avatar_changed
+signal progress_changed
 const Avatars = preload("res://src/ui/screens/profile/avatar_portrait.gd")
 const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
 var remediation_state: Dictionary = {"sessions": []}
@@ -38,6 +39,8 @@ var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
 var lesson_post_quiz_scores: Dictionary = {}
 var lesson_quiz_responses: Dictionary = {}
+var mission_progress: Dictionary = {}
+var pretest_baselines: Dictionary = {}
 var purchased_items: Array[String] = []
 var unlocked_towers: Array[String] = ["base"]
 var tech_ranks: Dictionary = {}
@@ -208,6 +211,20 @@ func _hydrate_signed_in_session() -> void:
 	SaveService.fetch_cloud_save()
 
 
+func record_pretest_baseline(module_id: String, answers: Array) -> void:
+	if Router.is_tutorial or pretest_baselines.has(module_id):
+		return
+	var grade: Dictionary = PretestBank.grade(module_id, answers, 0.0)
+	if not bool(grade.get("ok", false)):
+		return
+	pretest_baselines[module_id] = {"correct": int(grade.correct_count), "total": int(grade.total)}
+	_save_progress()
+
+
+func pretest_baseline(module_id: String) -> Dictionary:
+	return (pretest_baselines.get(module_id, {}) as Dictionary).duplicate(true)
+
+
 func get_lesson_progress(module_id: String) -> int:
 	if module_id.is_empty() or not lesson_progress.has(module_id):
 		return 0
@@ -293,6 +310,8 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 
 
 func reset_to_defaults() -> void:
+	mission_progress.clear()
+	pretest_baselines.clear()
 	remediation_state = {"sessions": []}
 	learning_events.clear()
 	learning_evidence.clear()
@@ -326,6 +345,7 @@ func reset_to_defaults() -> void:
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
+	progress_changed.emit()
 
 
 func get_decision_stage_state(stage_key: String) -> Dictionary:
@@ -485,6 +505,7 @@ func spend_credits(amount: int) -> bool:
 
 func _save_progress() -> void:
 	SaveService.save_game()
+	progress_changed.emit()
 
 
 ## Canonical identity for stage-progression state (cleared/locked/ceiling).
@@ -647,6 +668,7 @@ func mark_stage_cleared(module_id: String, stage_id: int) -> void:
 	max_stage_cleared_by_module[mid] = maxi(max_stage_cleared(mid), stage_id)
 	cleared_stages[stage_progress_key(mid, stage_id)] = true
 	SaveService.save_game()
+	progress_changed.emit()
 
 
 func has_cleared_stage(module_id: String, stage_id: int) -> bool:
@@ -916,6 +938,8 @@ func _posterior(p_learned: float, is_correct: bool, p_guess: float = P_GUESS, p_
 
 func get_save_data() -> Dictionary:
 	return {
+		"mission_progress": mission_progress.duplicate(true),
+		"pretest_baselines": pretest_baselines.duplicate(true),
 		"learning_evidence": learning_evidence.duplicate(true),
 		"learning_events": learning_events.duplicate(true),
 		"max_stage_cleared_by_module": max_stage_cleared_by_module.duplicate(true),
@@ -955,6 +979,20 @@ func get_save_data() -> Dictionary:
 func apply_save_data(data: Dictionary) -> void:
 	# A snapshot replaces account state; absent legacy keys must not retain it.
 	reset_to_defaults()
+	var saved_missions: Variant = data.get("mission_progress", {})
+	if saved_missions is Dictionary:
+		mission_progress = saved_missions.duplicate(true)
+	var baselines: Variant = data.get("pretest_baselines", {})
+	if baselines is Dictionary:
+		for module_id: String in LessonCatalog.module_ids():
+			var baseline: Variant = baselines.get(module_id, {})
+			if not baseline is Dictionary:
+				continue
+			var correct: Variant = baseline.get("correct")
+			var total: Variant = baseline.get("total")
+			if (correct is int or correct is float) and (total is int or total is float):
+				if is_finite(float(correct)) and is_finite(float(total)) and float(total) > 0 and float(total) <= 100 and float(correct) >= 0 and float(correct) <= float(total) and float(correct) == floorf(float(correct)) and float(total) == floorf(float(total)):
+					pretest_baselines[module_id] = {"correct": int(correct), "total": int(total)}
 	_restore_learning_evidence(data.get("learning_evidence", {}))
 	remediation_state = Remediation.restore(data.get("remediation_state", {}))
 	learning_events.clear()
@@ -1139,6 +1177,7 @@ func apply_save_data(data: Dictionary) -> void:
 	if module_1_complete:
 		cleared_stages[stage_progress_key("mod_01", 10)] = true
 	_normalize_mastery_keys()
+	progress_changed.emit()
 
 
 ## Normalizes either representation of a stage-progress set (cleared_stages

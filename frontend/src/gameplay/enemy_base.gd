@@ -371,7 +371,7 @@ func _begin_death() -> void:
 		var vfx: Node = _autoload("VfxManager")
 		if vfx != null:
 			vfx.call("spawn_vfx", "death", global_position)
-	if match_context.persistent:
+	if match_context.persistent and not match_context.preview and not match_context.tutorial:
 		var task_manager: Object = task_gateway if task_gateway != null else _autoload("TaskManager")
 		if task_manager != null:
 			task_manager.call("record_enemy_defeated", _type_id)

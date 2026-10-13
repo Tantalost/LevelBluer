@@ -100,6 +100,7 @@ func capture(name: String) -> void:
 		root.get_texture().get_image().save_png("res://.godot/" + name + ".png")
 
 func _run() -> void:
+	root.get_node("SettingsService").text_speed = "instant"
 	var player: Node = load("res://src/autoload/player_manager.gd").new()
 	player.lesson_progress = {}
 	var catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")

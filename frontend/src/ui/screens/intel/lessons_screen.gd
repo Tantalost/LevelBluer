@@ -13,6 +13,7 @@ var _track: Control
 var _tile: Button
 var _title: Label
 var _description: Label
+var _baseline: Label
 var _status: Label
 var _progress_text: Label
 var _liquid: LiquidBar
@@ -222,10 +223,16 @@ func _ready() -> void:
 	_hero.item_rect_changed.connect(_hologram.queue_redraw)
 	_hero_label.item_rect_changed.connect(_hologram.queue_redraw)
 	_hologram.resized.connect(_hologram.queue_redraw)
-	_info = UI.column(row, 18)
-	_info.size_flags_horizontal = SIZE_EXPAND_FILL
-	_info.size_flags_stretch_ratio = 1.2
-	_info.size_flags_vertical = SIZE_SHRINK_CENTER
+	_info = UI.scroll_column(row)
+	var info_scroll: ScrollContainer = _info.get_parent() as ScrollContainer
+	info_scroll.size_flags_horizontal = SIZE_EXPAND_FILL
+	info_scroll.size_flags_stretch_ratio = 1.2
+	info_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_info.add_theme_constant_override("separation", 18)
+	var baseline_panel: PanelContainer = UI.panel(_info, Color("#0E2A28"))
+	baseline_panel.name = "StartingKnowledge"
+	_baseline = UI.label("", 24, CYAN)
+	baseline_panel.add_child(_baseline)
 	_title = UI.label("", 32, Color("#F3ECD6"))
 	_info.add_child(_title)
 	_description = UI.label("", 25, UI.MUTED)
@@ -423,6 +430,12 @@ func _select(index: int, animate: bool = true, open_detail: bool = true) -> void
 	var checkpoint: bool = account.has_lesson_post_quiz(id)
 	var ratio: float = float(done + (1 if checkpoint else 0)) / 7.0
 	_title.text = str(_modules[index].title).to_upper()
+	var baseline: Dictionary = account.pretest_baseline(id) if account.has_method("pretest_baseline") else {}
+	_baseline.text = "STARTING KNOWLEDGE / Take the pre-test to discover your starting point."
+	if not baseline.is_empty():
+		_baseline.text = "STARTING KNOWLEDGE / %d of %d correct (%d%%)\nYour initial pre-test result, not your current BKT mastery." % [baseline.correct, baseline.total, roundi(100.0 * float(baseline.correct) / float(baseline.total))]
+	elif AuthService.has_module_pretest(id):
+		_baseline.text = "STARTING KNOWLEDGE / Starting result unavailable.\nYour completed pre-test and learning progress are unchanged."
 	_description.text = str(_modules[index].desc) + "."
 	_progress_text.text = "%d%% COMPLETE  /  %d OF 6 LESSONS" % [roundi(ratio * 100), done]
 	_checkpoint_status.text = "CHECKPOINT PASSED\nNext module unlocked" if checkpoint else ("CHECKPOINT READY\n20 / 25 correct to pass" if done == 6 else "CHECKPOINT LOCKED\nFinish all 6 lessons first")

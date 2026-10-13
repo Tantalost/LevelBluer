@@ -109,7 +109,7 @@ func _enemy_health_scale() -> float:
 	return float(story.get("enemy_hp_multiplier", 1.0)) if college else 1.0
 
 func _enemy_task_gateway() -> Object:
-	return tasks if college else null
+	return tasks
 
 func begin_defend() -> void:
 	super.begin_defend()

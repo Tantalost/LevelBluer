@@ -455,6 +455,7 @@ func submit_pretest(module_id: String, answers: Array) -> Result:
 	session_changed.emit(_signed_in)
 	PlayerManager.seed_from_official_mastery()
 	var skill: String = str(PlayerManager.LEARNING_MODULES.find_key(module_id))
+	PlayerManager.record_pretest_baseline(module_id, answers)
 	PlayerManager.record_learning_event("mastery", module_id, {"mastery":PlayerManager.get_mastery(skill)})
 	flush_pending_pretests()
 	return Result.OK

@@ -4,6 +4,7 @@ var Checkpoint: GDScript
 var Catalog: GDScript
 const Quiz = preload("res://src/gameplay/quiz_content.gd")
 var failures: int = 0
+var celebrations: int = 0
 
 
 func _initialize() -> void:
@@ -55,6 +56,7 @@ func answer_mini(screen: Control, correct: bool) -> void:
 
 func _run() -> void:
 	await settle()
+	root.get_node("SettingsService").text_speed = "instant"
 	Checkpoint = load("res://src/ui/screens/intel/lesson_post_quiz.gd")
 	Catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")
 	var memory_script: GDScript = GDScript.new()
@@ -165,6 +167,40 @@ func _run() -> void:
 		check(root.get_visible_rect().encloses(player._start_button.get_global_rect()), "Start action fits " + str(dimensions))
 		await capture("web_%dx%d" % [dimensions.x, dimensions.y])
 	root.size = Vector2i(1280, 720)
+	settings.text_speed = "normal"
+	player._open_step(0, 0)
+	check(player._revealing and player._reading_blocks[0].visible_characters == 0, "Reading starts with a progressive reveal")
+	player._process(0.1)
+	check(player._reading_blocks[0].visible_characters > 0, "Text advances at the configured speed")
+	player._on_continue()
+	check(not player._revealing and player._reading_page == 0, "First Continue reveals text without skipping the page")
+	player._on_continue()
+	await settle()
+	check(player._reading_page == 1 and player._revealing, "Next reading page restarts progressive reveal")
+	var annotated: String = ""
+	for block: RichTextLabel in player._reading_blocks:
+		annotated += block.text
+	check(annotated.contains("[u]help@harb0r-civic.net[/u]") and annotated.contains("WHO /") and annotated.contains("PRESSURE /"), "School email highlights exact sender, request and pressure with matching callouts")
+	root.size = Vector2i(844, 390)
+	await settle()
+	check(root.get_visible_rect().encloses(player._reveal_button.get_global_rect()), "Show All fits phone landscape")
+	player._finish_reading_reveal()
+	await capture("context_clues_phone")
+	player._previous_page()
+	settings.text_speed = "instant"
+	player._process(0.1)
+	check(not player._revealing and player._reading_blocks[0].visible_characters == -1, "Changing to Instant immediately reveals all reading text")
+	settings.text_speed = "normal"
+	settings.reduced_motion = true
+	player._start_reading_reveal()
+	check(not player._revealing, "Reduced motion displays reading text without animation")
+	settings.reduced_motion = false
+	player._start_reading_reveal()
+	player.on_exit()
+	check(not player._revealing, "Leaving the lesson stops text animation")
+	settings.reduced_motion = old_motion
+	settings.text_speed = "instant"
+	root.size = Vector2i(1280, 720)
 	player._open_step(0, 0)
 	player._on_continue()
 	player._on_continue()
@@ -230,10 +266,12 @@ func _run() -> void:
 	await settle()
 	check(player._simulation_passed, "Original evidence simulation still completes")
 	player._on_continue()
+	player.lesson_celebrated.connect(func() -> void: celebrations += 1)
 	player._finish_lesson()
 	check(account.get_lesson_progress("mod_01") == 1 and player._lesson_index == 1, "Full lesson unlocks exactly one next node")
 	player._finish_lesson()
 	check(account.get_lesson_progress("mod_01") == 1, "Stale completion cannot increment again")
+	check(celebrations == 1, "New completion celebrates once; stale completion never repeats it")
 	await create_timer(0.9).timeout
 	await capture("completed_path")
 	account.lesson_progress["mod_01"] = 6
@@ -350,6 +388,51 @@ func _run() -> void:
 	var easy: Dictionary = Checkpoint.select_next(pool, empty_used, {}, "easy", 3, lessons)
 	var hard: Dictionary = Checkpoint.select_next(pool, empty_used, {}, "hard", 3, lessons)
 	check(easy.difficulty == "easy" and hard.difficulty == "hard", "BKT band changes question difficulty while preserving lesson coverage")
+	await verify_baseline(memory_script)
 	account.free()
 	print("[LESSON JOURNEY] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func verify_baseline(memory_script: GDScript) -> void:
+	var account: Node = memory_script.new()
+	var bank: GDScript = load("res://src/data/pretest_bank.gd")
+	var answers: Array = []
+	for question: Dictionary in bank._bank_for("mod_01"):
+		answers.append({"id": question.id, "answer": question.answer})
+	var mastery_before: Dictionary = account.mastery_matrix.duplicate(true)
+	account.record_pretest_baseline("mod_01", answers)
+	check(account.pretest_baseline("mod_01") == {"correct": 15, "total": 15}, "Baseline saves exact first score")
+	answers[0].answer = -1
+	account.record_pretest_baseline("mod_01", answers)
+	check(account.pretest_baseline("mod_01").correct == 15, "Retry cannot replace the first baseline")
+	check(account.mastery_matrix == mastery_before and account.answers == 0, "Storing baseline never updates BKT a second time")
+	account.apply_save_data(JSON.parse_string(JSON.stringify(account.get_save_data())))
+	check(account.pretest_baseline("mod_01").correct == 15, "Baseline survives JSON roundtrip")
+	var picker: Control = load("res://src/ui/screens/intel/lessons_screen.tscn").instantiate()
+	picker.account = account
+	root.add_child(picker)
+	picker._select(0, false)
+	await settle()
+	check(picker._baseline.text.contains("15 of 15") and picker._baseline.text.contains("not your current BKT"), "Overview separates initial knowledge from changing mastery")
+	await capture("baseline_overview")
+	account.apply_save_data({})
+	check(account.pretest_baseline("mod_01").is_empty(), "New/legacy account never inherits another baseline")
+	var auth: Node = root.get_node("AuthService")
+	var prior_modules: Array = auth._completed_module_ids.duplicate()
+	auth._completed_module_ids = ["mod_01"]
+	picker._select(0, false)
+	check(picker._baseline.text.contains("unavailable"), "Old completed pretest never invents a score")
+	auth._completed_module_ids = prior_modules
+	account.apply_save_data({"pretest_baselines": {"mod_01": {"correct": 20, "total": 15}}})
+	check(account.pretest_baseline("mod_01").is_empty(), "Invalid baseline fails closed")
+	var study: GDScript = load("res://src/ui/screens/intel/lesson_study_content.gd")
+	for module_id: String in Catalog.module_ids():
+		for index: int in 6:
+			var data: Dictionary = study.build(module_id, index)
+			var clues: Array[Dictionary] = study.context_clues(module_id, index)
+			check(not clues.is_empty(), "Every lesson has contextual guidance")
+			for clue: Dictionary in clues:
+				check(not str(clue.quote).is_empty() and str(data.scenario).contains(str(clue.quote)) and not str(clue.note).is_empty(), "Every callout refers to text actually in that lesson's example")
+	picker.queue_free()
+	await settle()
+	account.free()

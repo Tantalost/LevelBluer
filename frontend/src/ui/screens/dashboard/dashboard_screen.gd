@@ -124,6 +124,7 @@ func _ready() -> void:
 	_deploy_button.pressed.connect(_on_deploy_pressed)
 	_mode_modal.mode_confirmed.connect(_on_mode_confirmed)
 	AuthService.progress_changed.connect(_queue_access_refresh)
+	PlayerManager.progress_changed.connect(_queue_access_refresh)
 	AuthService.session_changed.connect(_access_session_changed)
 	SaveService.cloud_fetch_completed.connect(_cloud_account_loaded)
 	get_viewport().size_changed.connect(_queue_access_refresh)

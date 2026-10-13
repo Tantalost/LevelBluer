@@ -112,6 +112,15 @@ func _run() -> void:
 	await settle()
 	evidence = screen._example.find_child("SenderEvidence", true, false)
 	check(screen._example.visible and evidence.get_meta("highlighted"), "Submitted baseline review highlights sender evidence")
+	for review_control: Control in screen._options.get_children():
+		check(review_control.size.x >= screen._options.size.x - 2.0, "Review cards fill the available width")
+	var navigation_rect: Rect2 = screen._review_nav.get_global_rect()
+	(screen._card.get_parent() as ScrollContainer).scroll_vertical = 10000
+	await settle()
+	check(screen._review_nav.get_global_rect() == navigation_rect, "Review navigation stays fixed while answers scroll")
+	await capture("pretest_review_answers_phone")
+	(screen._card.get_parent() as ScrollContainer).scroll_vertical = 0
+	await settle()
 	var recorded: Array = screen._payload().duplicate(true)
 	await capture("pretest_email_review")
 	screen._open_example()
