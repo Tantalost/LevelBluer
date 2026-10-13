@@ -8,7 +8,7 @@ LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at passwor
 LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
 LOGIN_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
 LOGIN_ERR_UNKNOWN,Something went wrong. Try again.,May nangyaring mali. Subukan ulit.
-PWD_TITLE,Security Alert,Babala sa Seguridad
+PWD_TITLE,Secure your account,I-secure ang iyong account
 PWD_SUBTITLE,Update Temporary Password,I-update ang Pansamantalang Password
 PWD_NEW_LABEL,New Password,Bagong Password
 PWD_CONFIRM_LABEL,Confirm Password,Kumpirmahin ang Password
@@ -26,6 +26,20 @@ PWD_ERR_MISMATCH,Passwords do not match.,Hindi magkatugma ang password.
 PWD_ERR_SERVER,Could not update your password. Try again.,Hindi na-update ang password. Subukan ulit.
 PWD_SUBMIT,Update Password,I-update ang Password
 PWD_BUSY,Updating...,Ina-update...
+AUTH_SHOW,Show,Ipakita
+AUTH_HIDE,Hide,Itago
+AUTH_ACCESS,STUDENT ACCESS / LEVELBLUE,STUDENT ACCESS / LEVELBLUE
+AUTH_TERMINAL,01 / MISSION ACCESS,01 / PASUKAN NG MISYON
+AUTH_SETUP,02 / ACCOUNT SETUP,02 / PAGHAHANDA NG ACCOUNT
+AUTH_BRAND_NOTE,Your next mission starts here.,Dito nagsisimula ang susunod mong misyon.
+LOGIN_WELCOME,Welcome back,Maligayang pagbabalik
+LOGIN_INTRO,Sign in to continue your mission.,Mag-log in para ituloy ang iyong misyon.
+LOGIN_HELP,Use the student account provided by your teacher.,Gamitin ang student account na ibinigay ng iyong guro.
+LOGIN_EMAIL_PLACEHOLDER,Student email,Email ng mag-aaral
+LOGIN_PASSWORD_PLACEHOLDER,Your password,Iyong password
+PWD_CHECKLIST,Your checklist,Iyong checklist
+PWD_CONFIRM_HELP,Enter the same password in both fields.,Ilagay ang parehong password sa dalawang field.
+PWD_MATCH,Passwords match. Ready to continue.,Magkatugma ang password. Handa nang magpatuloy.
 LOADING_TITLE,Loading,Naglo-load
 LOADING_SETTINGS,Loading settings,Nilo-load ang settings
 LOADING_PROFILE,Loading profile,Nilo-load ang profile

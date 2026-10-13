@@ -1,12 +1,6 @@
 extends BaseScreen
-## Login screen — matches the React Native prototype layout.
-##
-## The interesting problem here is not the form, it is the Android virtual
-## keyboard. In landscape it covers roughly half the screen height, and this
-## form is vertically centred — without the handling below, the password field
-## sits behind the keyboard and the player cannot see what they are typing.
+## Student access terminal. AuthPanel owns responsive presentation and keyboard clearance.
 
-@onready var _form: Control = %FormRoot
 @onready var _email: LineEdit = %EmailField
 @onready var _password: LineEdit = %PasswordField
 @onready var _submit: Button = %LoginButton
@@ -16,114 +10,80 @@ extends BaseScreen
 @onready var _tagline: Label = %TaglineLabel
 @onready var _email_label: Label = %EmailLabel
 @onready var _password_label: Label = %PasswordLabel
-@onready var _password_modal = %PasswordChangeModal
+@onready var _password_modal: PasswordChangeModal = %PasswordChangeModal
+@onready var _toggle_password: Button = %TogglePassword
 
-var _form_home_y: float = 0.0
 var _busy: bool = false
-var _keyboard_lift_supported: bool = false
 
 
 func _ready() -> void:
-	_keyboard_lift_supported = DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD)
-
 	_email.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_EMAIL_ADDRESS
 	_email.caret_blink = true
 	_password.secret = true
 	_password.virtual_keyboard_type = LineEdit.KEYBOARD_TYPE_PASSWORD
 
-	_email.text_submitted.connect(func(_t): _password.grab_focus())
-	_password.text_submitted.connect(func(_t): _attempt_login())
+	_email.text_submitted.connect(func(_text: String) -> void: _password.grab_focus())
+	_password.text_submitted.connect(func(_text: String) -> void: _attempt_login())
+	_toggle_password.pressed.connect(_toggle_visibility)
 	_submit.pressed.connect(_attempt_login)
 	_password_modal.completed.connect(_on_password_changed)
 	AssetManager.bind_texture(get_node_or_null("Background") as CanvasItem, "ui_background")
 	AssetManager.bind_texture(find_child("Logo", true, false) as CanvasItem, "ui_logo")
 
-	for field in [_email, _password]:
-		field.focus_entered.connect(_on_field_focus_entered)
-		field.focus_exited.connect(_on_field_focus_exited)
-
-	set_process(false)
+	_apply_copy()
 
 
 func on_enter(_args: Dictionary) -> void:
 	await get_tree().process_frame
-	_form_home_y = _form.position.y
 	_hide_error()
 	_apply_copy()
-	_email.grab_focus()
+	_password.secret = true
+	_toggle_password.text = tr("AUTH_SHOW")
+	for control: Control in [_email, _password, _submit, _toggle_password]:
+		control.focus_mode = Control.FOCUS_ALL
+	# Do not open a mobile keyboard before the player chooses a field.
+	_submit.grab_focus()
 
 
 func on_exit() -> void:
 	_password.text = ""
 	_password_modal.close()
-	_slide_form(_form_home_y)
+	_password.secret = true
+	_toggle_password.text = tr("AUTH_SHOW")
 
 
 func can_go_back() -> bool:
-	return not _password_modal.visible
+	return not _busy and not _password_modal.visible
 
 
 func _apply_copy() -> void:
-	_tagline.text = tr("LOGIN_TAGLINE").to_upper()
+	_tagline.text = tr("LOGIN_TAGLINE").replace("\\n", "\n").to_upper()
 	_email_label.text = tr("LOGIN_EMAIL_LABEL").to_upper()
 	_password_label.text = tr("LOGIN_PASSWORD_LABEL").to_upper()
 	_refresh_submit_label()
 
 
-func _process(_delta: float) -> void:
-	_track_keyboard()
-
-
-func _on_field_focus_entered() -> void:
-	if _keyboard_lift_supported:
-		set_process(true)
-
-
-func _on_field_focus_exited() -> void:
-	await get_tree().process_frame
-	if _email.has_focus() or _password.has_focus():
-		return
-	set_process(false)
-	_slide_form(_form_home_y)
-
-
-func _track_keyboard() -> void:
-	if not _keyboard_lift_supported:
-		return
-
-	var keyboard_px := DisplayServer.virtual_keyboard_get_height()
-	if keyboard_px <= 0:
-		_slide_form(_form_home_y)
-		return
-
-	var window_height := DisplayServer.window_get_size().y
-	if window_height <= 0:
-		return
-	var viewport_scale := get_viewport().get_visible_rect().size.y / float(window_height)
-	var keyboard_units := keyboard_px * viewport_scale
-	_slide_form(_form_home_y - keyboard_units * 0.5)
-
-
-func _slide_form(target_y: float) -> void:
-	if is_equal_approx(_form.position.y, target_y):
-		return
-	var tween := create_tween()
-	tween.tween_property(_form, "position:y", target_y, 0.18) \
-		.set_trans(Tween.TRANS_SINE) \
-		.set_ease(Tween.EASE_OUT)
+func _toggle_visibility() -> void:
+	_password.secret = not _password.secret
+	_toggle_password.text = tr("AUTH_SHOW") if _password.secret else tr("AUTH_HIDE")
 
 
 func _attempt_login() -> void:
 	if _busy:
 		return
 
-	var email := _email.text.strip_edges()
-	var password := _password.text
+	var email: String = _email.text.strip_edges()
+	var password: String = _password.text
 
 	if email.is_empty() or password.is_empty():
 		_show_error("LOGIN_ERR_EMPTY")
 		return
 
+	_hide_error()
+	_email.release_focus()
+	_password.release_focus()
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		DisplayServer.virtual_keyboard_hide()
 	_set_busy(true)
 	var result: AuthService.Result = await AuthService.sign_in(email, password)
 	if result == AuthService.Result.OK:
@@ -136,6 +96,9 @@ func _attempt_login() -> void:
 		AuthService.Result.OK:
 			Router.replace_all(&"dashboard")
 		AuthService.Result.MUST_CHANGE_PASSWORD:
+			_password.text = ""
+			for control: Control in [_email, _password, _submit, _toggle_password]:
+				control.focus_mode = Control.FOCUS_NONE
 			_password_modal.open()
 		AuthService.Result.INVALID_CREDENTIALS:
 			_show_error("LOGIN_ERR_INVALID")
@@ -151,6 +114,7 @@ func _set_busy(busy: bool) -> void:
 	_busy_spinner.visible = busy
 	_email.editable = not busy
 	_password.editable = not busy
+	_toggle_password.disabled = busy
 	if not busy:
 		_refresh_submit_label()
 
@@ -158,11 +122,11 @@ func _set_busy(busy: bool) -> void:
 func _refresh_submit_label() -> void:
 	if _busy:
 		return
-	_submit.text = "▶  %s" % tr("LOGIN_SUBMIT")
+	_submit.text = tr("LOGIN_SUBMIT").to_upper()
 
 
 func _show_error(key: String) -> void:
-	_error.text = "⚠  %s" % tr(key)
+	_error.text = tr(key)
 	_error_panel.visible = true
 	_password.text = ""
 	_password.grab_focus()

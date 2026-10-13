@@ -1,6 +1,6 @@
 class_name PasswordChangeModal
 extends Control
-## Security Alert modal — matches the React Native prototype password overlay.
+## First-login account setup, using the same terminal chrome as student login.
 ##
 ## Shown on first login when the student still has a temporary password.
 ## Validation rules live in PasswordRules; this file only renders and submits.
@@ -20,8 +20,10 @@ signal completed
 @onready var _error: Label = %ErrorLabel
 @onready var _submit: Button = %SubmitButton
 @onready var _busy_spinner: ProgressBar = %BusySpinner
+@onready var _match: Label = %MatchLabel
 
 var _rule_rows: Dictionary = {}
+var _rule_lights: Dictionary = {}
 var _busy: bool = false
 var _show_new: bool = false
 var _show_confirm: bool = false
@@ -39,8 +41,10 @@ func _ready() -> void:
 	_build_rule_rows()
 	_apply_copy()
 
-	_new_password.text_changed.connect(func(_t): _refresh())
-	_confirm.text_changed.connect(func(_t): _refresh())
+	_new_password.text_changed.connect(func(_text: String) -> void: _refresh())
+	_confirm.text_changed.connect(func(_text: String) -> void: _refresh())
+	_new_password.text_submitted.connect(func(_text: String) -> void: _confirm.grab_focus())
+	_confirm.text_submitted.connect(func(_text: String) -> void: _attempt_change())
 	_toggle_new.pressed.connect(_toggle_new_visibility)
 	_toggle_confirm.pressed.connect(_toggle_confirm_visibility)
 	_submit.pressed.connect(_attempt_change)
@@ -54,18 +58,26 @@ func open() -> void:
 	_confirm.secret = true
 	_new_password.text = ""
 	_confirm.text = ""
+	_toggle_new.text = tr("AUTH_SHOW")
+	_toggle_confirm.text = tr("AUTH_SHOW")
 	_hide_error()
 	_set_busy(false)
 	_refresh()
-	_new_password.grab_focus()
+	_toggle_new.grab_focus()
 
 
 func close() -> void:
 	visible = false
+	_new_password.text = ""
+	_confirm.text = ""
+	_new_password.secret = true
+	_confirm.secret = true
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		DisplayServer.virtual_keyboard_hide()
 
 
 func _apply_copy() -> void:
-	_title.text = tr("PWD_TITLE")
+	_title.text = tr("PWD_TITLE").to_upper()
 	_subtitle.text = tr("PWD_SUBTITLE").to_upper()
 	_new_label.text = tr("PWD_NEW_LABEL").to_upper()
 	_confirm_label.text = tr("PWD_CONFIRM_LABEL").to_upper()
@@ -75,47 +87,64 @@ func _apply_copy() -> void:
 
 
 func _build_rule_rows() -> void:
-	for child in _rule_list.get_children():
+	for child: Node in _rule_list.get_children():
 		child.queue_free()
 
-	for rule in PasswordRules.RULE_ORDER:
-		var row := Label.new()
-		row.add_theme_font_size_override("font_size", 12)
-		_rule_list.add_child(row)
+	for rule: StringName in PasswordRules.RULE_ORDER:
+		var line: HBoxContainer = HBoxContainer.new()
+		line.add_theme_constant_override("separation", 10)
+		_rule_list.add_child(line)
+		var light: ColorRect = ColorRect.new()
+		light.custom_minimum_size = Vector2(8, 8)
+		light.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		light.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		line.add_child(light)
+		_rule_lights[rule] = light
+		var row: Label = Label.new()
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		line.add_child(row)
 		_rule_rows[rule] = row
 
 
 func _refresh() -> void:
-	var password := _new_password.text
-	var results := PasswordRules.evaluate(password)
+	var password: String = _new_password.text
+	var results: Dictionary = PasswordRules.evaluate(password)
 
-	for rule in PasswordRules.RULE_ORDER:
+	for rule: StringName in PasswordRules.RULE_ORDER:
 		var row: Label = _rule_rows[rule]
 		var passed: bool = results[rule]
-		var marker := "✓ " if passed else "○ "
+		var light: ColorRect = _rule_lights[rule] as ColorRect
+		light.color = Color("33d17a") if passed else Color("173058")
+		var marker: String = "[OK] " if passed else "[  ] "
 		row.text = marker + tr(PasswordRules.RULE_KEYS[rule])
 		row.add_theme_color_override(
 			"font_color",
-			Color("4CAF50") if passed else Color("7ab8d4")
+			Color("33d17a") if passed else Color("a0b7bb")
 		)
+	var matches: bool = PasswordRules.confirmation_matches(password, _confirm.text)
+	_match.text = tr("PWD_MATCH") if matches else tr("PWD_CONFIRM_HELP" if _confirm.text.is_empty() else "PWD_ERR_MISMATCH")
+	_match.add_theme_color_override("font_color", Color("33d17a") if matches else Color("a0b7bb"))
 
 
 func _toggle_new_visibility() -> void:
 	_show_new = not _show_new
 	_new_password.secret = not _show_new
+	_toggle_new.text = tr("AUTH_HIDE") if _show_new else tr("AUTH_SHOW")
 
 
 func _toggle_confirm_visibility() -> void:
 	_show_confirm = not _show_confirm
 	_confirm.secret = not _show_confirm
+	_toggle_confirm.text = tr("AUTH_HIDE") if _show_confirm else tr("AUTH_SHOW")
 
 
 func _attempt_change() -> void:
 	if _busy:
 		return
 
-	var password := _new_password.text
-	var confirmation := _confirm.text
+	var password: String = _new_password.text
+	var confirmation: String = _confirm.text
 
 	if password.is_empty() or confirmation.is_empty():
 		_show_error("PWD_ERR_EMPTY")
@@ -128,6 +157,10 @@ func _attempt_change() -> void:
 		return
 
 	_hide_error()
+	_new_password.release_focus()
+	_confirm.release_focus()
+	if DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		DisplayServer.virtual_keyboard_hide()
 	_set_busy(true)
 
 	var result: AuthService.Result = await AuthService.change_password(password)
@@ -147,6 +180,8 @@ func _set_busy(busy: bool) -> void:
 	_busy_spinner.visible = busy
 	_new_password.editable = not busy
 	_confirm.editable = not busy
+	_toggle_new.disabled = busy
+	_toggle_confirm.disabled = busy
 	if not busy:
 		_refresh_submit_label()
 
@@ -154,11 +189,11 @@ func _set_busy(busy: bool) -> void:
 func _refresh_submit_label() -> void:
 	if _busy:
 		return
-	_submit.text = "▶  %s" % tr("PWD_SECURE_SUBMIT")
+	_submit.text = tr("PWD_SECURE_SUBMIT").to_upper()
 
 
 func _show_error(key: String) -> void:
-	_error.text = "⚠  %s" % tr(key)
+	_error.text = tr(key)
 	_error_panel.visible = true
 
 
