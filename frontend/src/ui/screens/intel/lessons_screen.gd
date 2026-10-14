@@ -40,7 +40,54 @@ var _next: Button
 var _page_label: Label
 var _pan_tween: Tween
 var _returning: bool = false
-var _lane_width: float = 340.0
+var _lane_width: float = 520.0
+var _journey_backdrop: Control
+
+class JourneyBackdrop extends Control:
+	## Static edge decoration: no textures, input interception, or per-frame work.
+	func _ready() -> void:
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var unit: float = minf(size.x, size.y)
+		var ink: Color = Color("#4FE0D4")
+		# Cropped orbital outlines frame the path without resembling lesson nodes.
+		for center: Vector2 in [size * Vector2(0.96, 0.13), size * Vector2(0.04, 0.94)]:
+			for ring: int in 3:
+				var radius: float = unit * (0.17 + float(ring) * 0.035)
+				draw_arc(center, radius, 0, TAU, 80, Color(ink, 0.075), 1.5, true)
+		# A few quiet, oversized facets occupy the empty top/bottom margins.
+		for center: Vector2 in [size * Vector2(0.32, 0.22), size * Vector2(0.73, 0.83)]:
+			var vertices: PackedVector2Array = []
+			for vertex: int in 6:
+				vertices.append(center + Vector2.from_angle(PI / 6.0 + TAU * float(vertex) / 6.0) * unit * 0.095)
+			draw_colored_polygon(vertices, Color("#102040", 0.28))
+			vertices.append(vertices[0])
+			draw_polyline(vertices, Color(ink, 0.065), 1.5, true)
+		for anchor: Vector2 in [size * Vector2(0.56, 0.21), size * Vector2(0.39, 0.83)]:
+			for column: int in 5:
+				for row: int in 3:
+					draw_circle(anchor + Vector2(column * 18, row * 18), 1.5, Color(ink, 0.11))
+
+class CheckpointLink extends Control:
+	var ready_for_test: bool = false
+	var passed: bool = false
+	var terminal: bool = false
+	var clock: float = 0.0
+	func _process(delta: float) -> void:
+		if not is_visible_in_tree() or SettingsService.reduced_motion or not ready_for_test or passed:
+			return
+		clock += delta
+		queue_redraw()
+	func _draw() -> void:
+		var midpoint: float = size.x if terminal else size.x * 0.5
+		var incoming: Color = GREEN if passed else (CYAN if ready_for_test else Color("#173058"))
+		draw_line(Vector2.ZERO, Vector2(midpoint, 0), incoming, 3)
+		draw_line(Vector2(midpoint, 0), Vector2(size.x, 0), GREEN if passed else Color("#173058"), 3)
+		if ready_for_test and not passed and not SettingsService.reduced_motion:
+			var travel: float = fmod(clock * 0.4, 1.0)
+			draw_circle(Vector2(travel * midpoint, 0), 5, Color(CYAN, 0.25))
+			draw_circle(Vector2(travel * midpoint, 0), 2, Color("#F3ECD6"))
 
 class Hologram extends Control:
 	var clock: float = 0.0
@@ -79,9 +126,21 @@ class Hologram extends Control:
 			draw_line(corner, corner + Vector2(0, direction.y * 30), Color(ink, 0.5), 2)
 
 class FlagMark extends Control:
+	var ready_for_test: bool = false
+	var passed: bool = false
+	var clock: float = 0.0
+	func _process(delta: float) -> void:
+		if not is_visible_in_tree() or SettingsService.reduced_motion or not ready_for_test or passed:
+			return
+		clock += delta
+		queue_redraw()
 	func _draw() -> void:
-		draw_line(Vector2(5, 3), Vector2(5, 31), Color("#8FF0E6"), 3)
-		draw_colored_polygon(PackedVector2Array([Vector2(7, 4), Vector2(30, 4), Vector2(24, 13), Vector2(30, 21), Vector2(7, 21)]), Color("#4FE0D4"))
+		var ink: Color = GREEN if passed else (CYAN if ready_for_test else UI.MUTED)
+		if ready_for_test and not passed:
+			var alpha: float = 0.35 if SettingsService.reduced_motion else 0.35 + sin(clock * 1.8) * 0.12
+			draw_arc(Vector2(18, 17), 28, 0, TAU, 48, Color(ink, alpha), 2)
+		draw_line(Vector2(5, 3), Vector2(5, 31), ink, 3)
+		draw_colored_polygon(PackedVector2Array([Vector2(7, 4), Vector2(30, 4), Vector2(24, 13), Vector2(30, 21), Vector2(7, 21)]), ink)
 
 class Orb extends Button:
 	var morph: float = 0.0:
@@ -142,6 +201,13 @@ func _ready() -> void:
 	if account == null:
 		account = PlayerManager
 	var shell: Dictionary = UI.shell(self, "LEARNING JOURNEY", func() -> void: Router.request_back())
+	_journey_backdrop = JourneyBackdrop.new()
+	_journey_backdrop.name = "JourneyBackdrop"
+	_journey_backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_journey_backdrop.clip_contents = true
+	add_child(_journey_backdrop)
+	_journey_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	move_child(_journey_backdrop, 1) # Above the base fill, below all interactive UI.
 	var layout: VBoxContainer = shell.layout
 	var school_button: Button = UI.button("School Content", func() -> void: Router.push(&"school_content"))
 	school_button.custom_minimum_size.x = 200
@@ -283,6 +349,7 @@ func can_go_back() -> bool:
 
 func _set_detail_visible(value: bool) -> void:
 	_showing_detail = value
+	_journey_backdrop.visible = not value
 	_overview.visible = not value
 	_detail.visible = value
 	_heading.text = "MODULE OVERVIEW" if value else "LEARNING JOURNEY"
@@ -307,14 +374,16 @@ func _refresh_list_ui() -> void:
 		_track.add_child(group)
 		var x: float = 98.0
 		var id: String = _module_id(i)
-		if i < _modules.size() - 1:
-			var line: ColorRect = ColorRect.new()
-			line.name = "Connector"
-			line.color = GREEN if account.has_lesson_post_quiz(id) else Color("#173058")
-			line.position = Vector2(x + 144, 112)
-			line.size = Vector2(196, 2)
-			line.mouse_filter = MOUSE_FILTER_IGNORE
-			group.add_child(line)
+		var passed: bool = account.has_lesson_post_quiz(id)
+		var ready_for_test: bool = _is_complete(i) and _is_unlocked(i)
+		var line: CheckpointLink = CheckpointLink.new()
+		line.name = "Connector"
+		line.ready_for_test = ready_for_test
+		line.passed = passed
+		line.terminal = i == _modules.size() - 1
+		line.position = Vector2(x + 72, 112)
+		line.mouse_filter = MOUSE_FILTER_IGNORE
+		group.add_child(line)
 		var orb: Orb = Orb.new()
 		orb.name = "Module%d" % (i + 1)
 		orb.position = Vector2(x, 40)
@@ -347,31 +416,31 @@ func _refresh_list_ui() -> void:
 		caption.size = Vector2(280, 44)
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		group.add_child(caption)
-		var stem: ColorRect = ColorRect.new()
-		stem.position = Vector2(169, 242)
-		stem.size = Vector2(2, 28)
-		stem.color = GREEN if account.has_lesson_post_quiz(id) else Color("#173058")
-		stem.mouse_filter = MOUSE_FILTER_IGNORE
-		group.add_child(stem)
-		var flag: Button = UI.button("POST-QUIZ", _open_checkpoint.bind(i))
+		var flag: Button = UI.button("", _open_checkpoint.bind(i))
 		flag.name = "Checkpoint%d" % (i + 1)
-		flag.position = Vector2(50, 274)
-		flag.size = Vector2(240, 72)
+		flag.size = Vector2(104, 84)
+		flag.accessibility_name = "Module %d post-quiz: %s" % [i + 1, "passed" if passed else ("ready" if ready_for_test else "locked")]
 		flag.add_theme_font_size_override("font_size", 20)
 		flag.add_theme_stylebox_override("disabled", UI.box(Color("#0A1730"), Color("#173058"), 10))
 		flag.add_theme_stylebox_override("normal", UI.box(Color("#0E2A28"), Color("#4FE0D4"), 10))
 		var mark: FlagMark = FlagMark.new()
-		mark.position = Vector2(14, 19)
+		mark.name = "CheckpointMark"
+		mark.ready_for_test = ready_for_test
+		mark.passed = passed
+		mark.position = Vector2(34, 25)
 		mark.size = Vector2(36, 34)
 		mark.mouse_filter = MOUSE_FILTER_IGNORE
 		flag.add_child(mark)
-		flag.text = "    POST-QUIZ"
-		flag.disabled = not _is_complete(i) or not _is_unlocked(i)
+		flag.disabled = not ready_for_test
 		flag.tooltip_text = "25 questions / 20 correct to pass" if not flag.disabled else "Finish all six lessons, quizzes and simulations first."
 		if account.has_lesson_post_quiz(id):
-			flag.text = "    PASSED"
 			flag.add_theme_stylebox_override("normal", UI.box(Color("#153B37"), GREEN, 8))
 		group.add_child(flag)
+		var checkpoint_caption: Label = UI.label("POST-QUIZ %02d\n%s" % [i + 1, "PASSED" if passed else ("READY" if ready_for_test else "LOCKED")], 22, GREEN if passed else (CYAN if ready_for_test else UI.MUTED))
+		checkpoint_caption.name = "CheckpointCaption"
+		checkpoint_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		checkpoint_caption.size = Vector2(180, 68)
+		group.add_child(checkpoint_caption)
 	_select(clampi(_selected_index, 0, _modules.size() - 1), false, _showing_detail)
 	_fit_touch.call_deferred()
 	_layout_timeline.call_deferred()
@@ -379,16 +448,24 @@ func _refresh_list_ui() -> void:
 func _layout_timeline() -> void:
 	if not is_instance_valid(_track) or _modules.is_empty():
 		return
-	var visible_count: int = clampi(floori((_scroll.size.x - 64.0) / 340.0), 1, _modules.size())
-	_lane_width = maxf(340.0, (_scroll.size.x - 64.0) / float(visible_count))
-	_track.custom_minimum_size.x = _lane_width * _modules.size() + 64.0
+	var visible_count: int = clampi(floori((_scroll.size.x - 160.0) / 520.0), 1, _modules.size())
+	_lane_width = maxf(520.0, (_scroll.size.x - 160.0) / float(visible_count))
+	_track.custom_minimum_size.x = _lane_width * _modules.size() + 160.0
 	for i: int in _track.get_child_count():
 		var group: Control = _track.get_child(i) as Control
-		group.position = Vector2(32 + i * _lane_width + (_lane_width - 340) * 0.5, 0)
+		group.position = Vector2(32 + i * _lane_width + (_lane_width - 340) * 0.5, 66)
 		group.size = Vector2(340, 372)
-		var connector: ColorRect = group.get_node_or_null("Connector") as ColorRect
-		if connector != null:
-			connector.size.x = _lane_width - 144
+		var connector: CheckpointLink = group.get_node("Connector") as CheckpointLink
+		connector.size = Vector2(_lane_width, 2)
+		# The final checkpoint terminates the journey; there is no phantom Module 6.
+		if i == _modules.size() - 1:
+			connector.size.x = _lane_width * 0.5
+		connector.queue_redraw()
+		var flag: Button = group.get_node("Checkpoint%d" % (i + 1)) as Button
+		flag.position = Vector2(170 + _lane_width * 0.5 - flag.size.x * 0.5, 112 - flag.size.y * 0.5)
+		(flag.get_node("CheckpointMark") as Control).position = (flag.size - Vector2(36, 34)) * 0.5
+		var caption: Label = group.get_node("CheckpointCaption") as Label
+		caption.position = Vector2(170 + _lane_width * 0.5 - caption.size.x * 0.5, 172)
 	_update_navigation.call_deferred()
 
 func _update_navigation() -> void:

@@ -55,6 +55,8 @@ func answer_mini(screen: Control, correct: bool) -> void:
 	screen._check_quiz()
 
 func _run() -> void:
+	# Pin the initial landscape size; headless defaults differ from the renderer.
+	root.size = Vector2i(1280, 720)
 	await settle()
 	root.get_node("SettingsService").text_speed = "instant"
 	Checkpoint = load("res://src/ui/screens/intel/lesson_post_quiz.gd")
@@ -87,7 +89,11 @@ func _run() -> void:
 	await settle()
 	check(picker._cards.size() == 5 and picker._cards[1].disabled, "Timeline presents five gated modules")
 	check(picker._overview.visible and not picker._detail.visible, "Initial screen shows only the timeline")
+	var backdrop: Control = picker.get_node("JourneyBackdrop")
+	check(backdrop.visible and backdrop.mouse_filter == Control.MOUSE_FILTER_IGNORE and backdrop.focus_mode == Control.FOCUS_NONE, "Journey decoration never intercepts touch or keyboard input")
+	check(not backdrop.is_processing() and backdrop.get_index() == 1, "Journey decoration is static and behind the interface")
 	check(not picker._scroll.get_h_scroll_bar().visible, "Timeline scrollbar is hidden")
+	verify_timeline_checkpoints(picker)
 	picker._pan(1)
 	await create_timer(0.4).timeout
 	check(picker._scroll.scroll_horizontal > 0, "Arrow navigation reaches offscreen modules")
@@ -98,11 +104,13 @@ func _run() -> void:
 	root.size = Vector2i(844, 390)
 	await settle()
 	await capture("timeline_phone")
+	verify_timeline_checkpoints(picker)
 	picker._cards[0].pressed.emit()
 	await create_timer(0.25).timeout
 	await capture("transition_phone")
 	await create_timer(0.65).timeout
 	check(picker._detail.visible and not picker._overview.visible, "Module tap opens a separate detail view")
+	check(not backdrop.visible, "Journey shapes do not overlap the module hologram")
 	check(root.get_visible_rect().encloses(picker._tile.get_global_rect()), "Module entry fits phone")
 	check(root.get_visible_rect().encloses(picker._status.get_global_rect()), "Module description fits phone")
 	await capture("detail_phone")
@@ -111,6 +119,7 @@ func _run() -> void:
 	check(not picker.can_go_back(), "Back from details stays inside Lessons")
 	await create_timer(0.5).timeout
 	check(picker._overview.visible and not picker._detail.visible and picker.can_go_back(), "Back restores timeline before leaving Lessons")
+	check(backdrop.visible, "Returning to the journey restores the shapes")
 	root.size = Vector2i(1280, 720)
 	await settle()
 	picker._select(0)
@@ -123,6 +132,34 @@ func _run() -> void:
 	picker.on_resume()
 	await settle()
 	check(not picker._checkpoint.disabled, "Completed lessons enable the overview checkpoint action")
+	var ready_group: Control = picker._track.get_child(0)
+	check(not ready_group.get_node("Checkpoint1").disabled and ready_group.get_node("Connector").ready_for_test, "Six lessons illuminate the path to the checkpoint")
+	check(picker._cards[1].disabled and not ready_group.get_node("Connector").passed, "Ready checkpoint does not unlock the next module before passing")
+	picker._set_detail_visible(false)
+	await settle()
+	await capture("timeline_checkpoint_ready")
+	var motion_preferences: Node = root.get_node("SettingsService")
+	var motion_before: bool = motion_preferences.reduced_motion
+	var ready_link: Control = ready_group.get_node("Connector")
+	var ready_mark: Control = ready_group.get_node("Checkpoint1/CheckpointMark")
+	motion_preferences.reduced_motion = true
+	var link_clock: float = ready_link.clock
+	var mark_clock: float = ready_mark.clock
+	ready_link._process(1.0)
+	ready_mark._process(1.0)
+	check(ready_link.clock == link_clock and ready_mark.clock == mark_clock, "Reduced motion keeps checkpoint highlights static")
+	motion_preferences.reduced_motion = false
+	ready_link._process(0.5)
+	ready_mark._process(0.5)
+	check(ready_link.clock > link_clock and ready_mark.clock > mark_clock, "Ready checkpoint animates the incoming light and flag halo")
+	motion_preferences.reduced_motion = motion_before
+	account.lesson_post_quiz_scores["mod_01"] = 20
+	picker.on_resume()
+	await settle()
+	check(not picker._cards[1].disabled and picker._track.get_child(0).get_node("Connector").passed, "Passing lights the onward connector and unlocks the next module")
+	await capture("timeline_checkpoint_passed")
+	account.lesson_post_quiz_scores.clear()
+	picker._select(0, false)
 	await create_timer(0.7).timeout
 	await capture("detail_ready")
 	account.lesson_progress.clear()
@@ -392,6 +429,23 @@ func _run() -> void:
 	account.free()
 	print("[LESSON JOURNEY] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func verify_timeline_checkpoints(picker: Control) -> void:
+	for i: int in picker._cards.size():
+		var group: Control = picker._track.get_child(i)
+		var flag: Button = group.get_node("Checkpoint%d" % (i + 1))
+		var orb: Control = picker._cards[i]
+		var center: Vector2 = flag.get_global_rect().get_center()
+		check(absf(center.y - orb.get_global_rect().get_center().y) <= 1.0, "Checkpoint lies on the module centerline: %s / %s" % [center, orb.get_global_rect().get_center()])
+		check(not flag.get_global_rect().intersects(orb.get_global_rect()), "Checkpoint never overlaps its module")
+		if i < picker._cards.size() - 1:
+			var next_orb: Control = picker._cards[i + 1]
+			check(absf(center.x - (orb.get_global_rect().get_center().x + next_orb.get_global_rect().get_center().x) * 0.5) <= 1.0, "Checkpoint is centered between its module and the next")
+			check(not flag.get_global_rect().intersects(next_orb.get_global_rect()), "Checkpoint clears the next module")
+		else:
+			check(group.get_node("Connector").terminal, "Final checkpoint has no onward module branch")
+			check(flag.get_global_rect().end.x <= picker._track.global_position.x + picker._track.custom_minimum_size.x, "Final checkpoint is reachable inside scroll content")
+		check(flag.size.x >= 48 and flag.size.y >= 48, "Checkpoint retains a touch-sized hit target")
 
 func verify_baseline(memory_script: GDScript) -> void:
 	var account: Node = memory_script.new()

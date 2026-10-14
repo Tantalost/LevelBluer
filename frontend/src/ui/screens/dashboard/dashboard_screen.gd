@@ -4,7 +4,7 @@ extends BaseScreen
 
 const FONT_PATH := "res://assets/fonts/PressStart2P-Regular.ttf"
 const DEFAULT_MATERIALS := 200
-const DEFAULT_THREAT_POINTS := 1000
+const DEFAULT_THREAT_POINTS := 0
 const DEFAULT_CURRENT_STAGE := 1
 const STAGE_TOTAL := 10
 const HEADER_FILL := Color("18252bf2")
@@ -70,6 +70,8 @@ var _power_overlay: PowerOverlay
 var _power_tween: Tween
 var _mode_transitioning: bool = false
 var _pending_mode: StringName = &"SOLO"
+var _greeting_pending: bool = false
+var _greeting_delay: float = 3.0
 
 class PowerOverlay extends Control:
 	var closure: float = 0.0:
@@ -112,6 +114,7 @@ func _ready() -> void:
 	if Engine.is_editor_hint():
 		return
 	_setup_mode_workspace()
+	%Companion.dialogue_started.connect(_consume_greeting)
 	_store_button.pressed.connect(func() -> void: Router.push(&"store"))
 	_lessons_button.pressed.connect(func() -> void: Router.push(&"lessons"))
 	_codex_button.pressed.connect(func() -> void: Router.push(&"codex"))
@@ -137,6 +140,7 @@ func on_enter(_args: Dictionary) -> void:
 	_apply_lock_state()
 	_update_mode_ui()
 	_apply_tutorial_gate()
+	_schedule_greeting()
 
 
 func _bind_remote_art() -> void:
@@ -153,13 +157,41 @@ func on_resume() -> void:
 	_apply_lock_state()
 	_apply_tutorial_gate()
 	_update_mode_ui()
+	_schedule_greeting()
 
 
 func on_exit() -> void:
+	_consume_greeting()
 	_close_access()
 	_mode_modal.dismiss()
 	_cancel_mode_transition()
 	%Companion.close_dialogue()
+
+
+func _schedule_greeting() -> void:
+	_greeting_pending = true
+	_greeting_delay = 3.0
+	%Companion.set_interaction_enabled(not PlayerManager.needs_tutorial() and not Router.is_tutorial)
+
+
+func _consume_greeting() -> void:
+	_greeting_pending = false
+
+
+func _process(delta: float) -> void:
+	if Engine.is_editor_hint() or not _greeting_pending or not is_visible_in_tree():
+		return
+	var blocked: bool = PlayerManager.needs_tutorial() or Router.is_tutorial or _selected_mode != &"SOLO" or _mode_transitioning or _mode_modal.visible
+	blocked = blocked or (is_instance_valid(_tutorial_gate) and _tutorial_gate.visible)
+	blocked = blocked or (is_instance_valid(_access_modal) and _access_modal.visible)
+	if blocked:
+		_greeting_delay = 3.0
+		return
+	_greeting_delay -= delta
+	if _greeting_delay <= 0.0:
+		_consume_greeting()
+		%Companion.set_interaction_enabled(true)
+		%Companion.greet()
 
 
 func _style_chrome() -> void:
@@ -199,12 +231,9 @@ func _apply_lock_state() -> void:
 
 
 func _refresh_data() -> void:
-	_threat_points = AuthService.wallet_threat_points()
-	_materials = PlayerManager.credits
+	_refresh_wallet()
 	_current_stage = AuthService.current_stage()
 	_player_name.text = AuthService.display_name().to_upper()
-	_threat_value.text = str(_threat_points)
-	_materials_value.text = str(_materials)
 	_rank.text = AuthService.rank_title().to_upper()
 	_deploy_button.title = "DEPLOY"
 	_deploy_button.subtitle = ""
@@ -229,6 +258,14 @@ func _refresh_data() -> void:
 	_refresh_at_risk()
 	_refresh_world()
 	_refresh_updates()
+
+
+func _refresh_wallet() -> void:
+	# Store and dashboard share the account-owned PvP wallet; never fall back to legacy points.
+	_threat_points = PlayerManager.pvp_tokens
+	_materials = PlayerManager.credits
+	_threat_value.text = str(_threat_points)
+	_materials_value.text = str(_materials)
 
 
 func _refresh_at_risk() -> void:
@@ -306,6 +343,7 @@ func _refresh_access() -> void:
 	_access_queued = false
 	if not is_inside_tree():
 		return
+	_refresh_wallet()
 	_refresh_at_risk()
 	_refresh_world()
 	if is_instance_valid(_access_modal) and _access_modal.visible:

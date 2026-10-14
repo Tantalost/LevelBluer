@@ -113,7 +113,8 @@ func _ready() -> void:
 	panel.size_flags_horizontal = SIZE_EXPAND_FILL
 	panel.add_theme_stylebox_override("panel", UI.journal_box(NAVY, Color("305C76"), 22))
 	_detail = UI.column(panel, 16)
-	_status = UI.label("Earn tokens through PvP. Match rewards are not available yet.", 20, UI.MUTED)
+	_status = UI.label("", 20, UI.MUTED)
+	_status.hide()
 	layout.add_child(_status)
 	_build_modal()
 	resized.connect(_layout)
@@ -145,7 +146,7 @@ func _art(item: Dictionary, height: float) -> Control:
 	return art
 
 func _refresh() -> void:
-	_wallet.text = "%d PVP TOKENS" % PlayerManager.pvp_tokens
+	_wallet.text = "%d THREAT" % PlayerManager.pvp_tokens
 	UI.clear(_grid)
 	_cards.clear()
 	for item: Dictionary in PlayerManager.store_items():
@@ -171,7 +172,7 @@ func _refresh() -> void:
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(name_label)
 		var owned: bool = PlayerManager.owns_store_item(str(item.id))
-		var price: Label = UI.label("OWNED" if owned else "%d TOKENS" % int(item.price), 22, Color("33D17A") if owned else CYAN)
+		var price: Label = UI.label("OWNED" if owned else "%d THREAT" % int(item.price), 22, Color("33D17A") if owned else CYAN)
 		price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		column.add_child(price)
 		_grid.add_child(card)
@@ -190,18 +191,19 @@ func _show_detail() -> void:
 	_detail.add_child(UI.label(str(item.description), 24, UI.TEXT))
 	var owned: bool = PlayerManager.owns_store_item(_selected)
 	var affordable: bool = PlayerManager.pvp_tokens >= int(item.price)
-	_detail.add_child(UI.label("IN YOUR COLLECTION" if owned else "%d PVP TOKENS" % int(item.price), 26, Color("33D17A") if owned else CYAN))
-	_buy = UI.button("OWNED" if owned else ("BUY ITEM" if affordable else "EARN TOKENS IN PVP"), _open_modal, true)
+	_detail.add_child(UI.label("IN YOUR COLLECTION" if owned else "%d THREAT" % int(item.price), 26, Color("33D17A") if owned else CYAN))
+	_buy = UI.button("OWNED" if owned else ("BUY ITEM" if affordable else "NOT ENOUGH THREAT"), _open_modal, true)
 	_buy.disabled = owned or not affordable
 	_detail.add_child(_buy)
 	if not owned and not affordable:
-		_detail.add_child(UI.label("%d more tokens needed." % (int(item.price) - PlayerManager.pvp_tokens), 22, UI.MUTED))
+		_detail.add_child(UI.label("%d more Threat needed." % (int(item.price) - PlayerManager.pvp_tokens), 22, UI.MUTED))
 	_detail.add_child(UI.label("COSMETIC ONLY / No combat advantage\n" + ("Choose this avatar from your profile." if str(item.art) == "avatar" else "Collection only. Equipping is not available yet."), 20, UI.MUTED))
 	_detail_scroll.scroll_vertical = 0
 
 func _select_category(category: String) -> void:
 	if _modal.visible:
 		return
+	_status.hide()
 	_category = category
 	_details_open = false
 	for item: Dictionary in PlayerManager.store_items():
@@ -214,6 +216,7 @@ func _select_category(category: String) -> void:
 func _select_item(id: String) -> void:
 	if _modal.visible:
 		return
+	_status.hide()
 	_selected = id
 	_details_open = true
 	_refresh()
@@ -257,7 +260,7 @@ func _open_modal() -> void:
 		return
 	_pending = _selected
 	_return_focus = get_viewport().gui_get_focus_owner()
-	_modal_text.text = "%s\n\n%d PVP TOKENS\nBalance after purchase: %d\n\nAdds this cosmetic to your collection." % [item.name, int(item.price), PlayerManager.pvp_tokens - int(item.price)]
+	_modal_text.text = "%s\n\n%d THREAT\nBalance after purchase: %d Threat\n\nAdds this cosmetic to your collection." % [item.name, int(item.price), PlayerManager.pvp_tokens - int(item.price)]
 	_modal.show()
 	_cancel.grab_focus()
 
@@ -274,7 +277,8 @@ func _on_confirm() -> void:
 	var success: bool = PlayerManager.purchase_store_item(_pending)
 	_hide_modal()
 	_refresh()
-	_status.text = "Added to your collection." if success else "Purchase unavailable. Check your token balance or ownership."
+	_status.text = "Added to your collection." if success else "Purchase unavailable. Check your Threat balance or ownership."
+	_status.show()
 	_back.grab_focus()
 
 func _layout() -> void:
@@ -313,6 +317,7 @@ func _back_pressed() -> void:
 
 func on_enter(args: Dictionary) -> void:
 	_details_open = false
+	_status.hide()
 	_hide_modal()
 	var requested: Dictionary = PlayerManager.store_item(str(args.get("item_id", "")))
 	if not requested.is_empty():

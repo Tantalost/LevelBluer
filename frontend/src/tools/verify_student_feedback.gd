@@ -169,9 +169,10 @@ func _test_entry_points() -> void:
 	settings.on_enter({})
 	var scroll: ScrollContainer = settings.get_node("SafeAreaContainer/ScreenLayout/ScrollContainer") as ScrollContainer
 	await settle()
-	scroll.ensure_control_visible(settings._feedback_button)
+	scroll.scroll_vertical = 10000
 	await settle()
-	check(scroll.get_global_rect().encloses(settings._feedback_button.get_global_rect()), "Settings feedback is reachable by scrolling")
+	check(root.get_visible_rect().encloses(settings._feedback_button.get_global_rect()) and settings._feedback_button.get_global_rect().end.y <= scroll.get_global_rect().position.y, "Settings feedback stays in the fixed header while scrolling")
+	check(root.get_visible_rect().encloses(settings._logout_button.get_global_rect()) and settings._logout_button.get_global_rect().position.y >= scroll.get_global_rect().end.y, "Logout stays in the fixed footer while scrolling")
 	if "--render" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://.godot/feedback_settings_entry.png")

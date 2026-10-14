@@ -571,7 +571,17 @@ focus_mode = 0
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="LogoutButton" type="Button" parent="SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox"]
+[node name="AccountFooter" type="HBoxContainer" parent="SafeAreaContainer/ScreenLayout"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="FooterNote" type="Label" parent="SafeAreaContainer/ScreenLayout/AccountFooter"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "YOUR SETUP / Changes save automatically"
+vertical_alignment = 1
+
+[node name="LogoutButton" type="Button" parent="SafeAreaContainer/ScreenLayout/AccountFooter"]
 unique_name_in_owner = true
 layout_mode = 2
 focus_mode = 0

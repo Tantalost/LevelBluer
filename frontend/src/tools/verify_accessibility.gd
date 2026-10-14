@@ -1,9 +1,5 @@
 extends SceneTree
 ## Presentation-only accessibility checks. No settings file or player save writes.
-const Workspace = preload("res://src/gameplay/decision/decision_workspace.gd")
-const InvestigationPanel = preload("res://src/gameplay/decision/decision_investigation_panel.gd")
-const ReconstructionPanel = preload("res://src/gameplay/decision/decision_reconstruction_panel.gd")
-const CallPanel = preload("res://src/gameplay/decision/decision_call_panel.gd")
 
 var failures: int = 0
 
@@ -20,6 +16,10 @@ func settle() -> void:
 		await process_frame
 
 func _run() -> void:
+	var Workspace: GDScript = load("res://src/gameplay/decision/decision_workspace.gd")
+	var InvestigationPanel: GDScript = load("res://src/gameplay/decision/decision_investigation_panel.gd")
+	var ReconstructionPanel: GDScript = load("res://src/gameplay/decision/decision_reconstruction_panel.gd")
+	var CallPanel: GDScript = load("res://src/gameplay/decision/decision_call_panel.gd")
 	var settings: Node = root.get_node("SettingsService")
 	var prior_speed: String = settings.text_speed
 	var before: Dictionary = root.get_node("PlayerManager").get_save_data()
@@ -91,6 +91,25 @@ func _run() -> void:
 	await settle()
 	screen.on_enter({})
 	check(screen._reduced_motion_toggle != null and screen._timer_assist_select.item_count == 3 and screen._text_speed_select.item_count == 4, "Settings expose motion, timer assist, and text speed")
+	var scroll: ScrollContainer = screen.get_node("SafeAreaContainer/ScreenLayout/ScrollContainer")
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		for bottom: bool in [false, true]:
+			scroll.scroll_vertical = 100000 if bottom else 0
+			await settle()
+			check(root.get_visible_rect().encloses(screen._feedback_button.get_global_rect()), "Feedback fits landscape header")
+			check(root.get_visible_rect().encloses(screen._logout_button.get_global_rect()), "Logout fits landscape footer")
+			check(screen._feedback_button.get_global_rect().end.y <= scroll.get_global_rect().position.y, "Feedback never scrolls with settings")
+			check(screen._logout_button.get_global_rect().position.y >= scroll.get_global_rect().end.y, "Logout never scrolls with settings")
+			check(scroll.size.y >= 200, "Settings retain usable scroll area")
+			if "--render" in OS.get_cmdline_user_args():
+				await RenderingServer.frame_post_draw
+				root.get_texture().get_image().save_png("res://.godot/settings-%dx%d-%s.png" % [dimensions.x, dimensions.y, "bottom" if bottom else "top"])
+		check(screen._text_speed_select.get_popup().has_theme_stylebox_override("panel"), "Accessibility dropdown matches the game theme")
+		check(screen._logout_button.focus_mode == Control.FOCUS_ALL, "Footer logout supports keyboard/controller focus")
+		check(screen._sfx_toggle.text == ("ON" if settings.sound_enabled else "OFF"), "Toggle copy agrees with loaded preference")
+	screen.on_exit()
 	screen.queue_free()
 	await settle()
 	check(root.get_node("PlayerManager").get_save_data() == before, "Accessibility checks never mutate BKT, rewards, or progression")
