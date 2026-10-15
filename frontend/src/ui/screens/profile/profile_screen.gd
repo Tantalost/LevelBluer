@@ -5,6 +5,12 @@ const Data = preload("res://src/ui/screens/progress/progress_data.gd")
 const Briefing = preload("res://src/ui/screens/profile/profile_briefing.gd")
 const Badge = preload("res://src/ui/screens/progress/rank_badge.gd")
 const AvatarPicker = preload("res://src/ui/screens/profile/avatar_picker.gd")
+## PvP card uses the multiplayer blues so it never reads as part of the teal/gold campaign rank.
+const PVP_BORDER := Color("4f8cff")
+const PVP_FILL := Color("102040")
+const PVP_TITLE := Color("8ff0e6")
+const PVP_RANK := Color("4fe0d4")
+const PVP_BAR := Color("2e6bff")
 var _avatar_picker: Control
 var _avatar_button: Button
 var _body: HBoxContainer
@@ -25,6 +31,7 @@ var _touch := 64.0
 var _active := true
 var _queued := false
 var _server_busy := false
+var _pvp_loading := false
 var _sync_copy := "CACHED PROFILE"
 
 func _ready() -> void:
@@ -75,6 +82,7 @@ func _session_changed(_signed_in: bool) -> void:
 		_avatar_picker.dismiss()
 	_details_open = false
 	_sync_copy = "CACHED PROFILE"
+	_pvp_loading = false
 	_request_refresh()
 
 func _request_refresh() -> void:
@@ -89,6 +97,12 @@ func _refresh_from_server() -> void:
 	_server_busy = true
 	var account := AuthService.participant_code()
 	var success := await AuthService.refresh_profile()
+	# Sequential: AuthService shares one HTTPRequest and cancels overlapping calls.
+	if is_inside_tree() and account == AuthService.participant_code():
+		_pvp_loading = true
+		_request_refresh()
+		await AuthService.fetch_pvp_standing()
+		_pvp_loading = false
 	_server_busy = false
 	if not is_inside_tree() or not _active or account != AuthService.participant_code():
 		return
@@ -134,7 +148,7 @@ func _panel(parent: Node, accent: Color = Color("3b626a"), fill: Color = UI.PANE
 	panel.add_theme_stylebox_override("panel", UI.box(fill, accent, 20))
 	return UI.column(panel, 14)
 
-func _bar(parent: Node, value: float, total: float) -> void:
+func _bar(parent: Node, value: float, total: float, fill: Color = UI.TEAL) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.max_value = maxf(1, total)
 	bar.value = value
@@ -142,8 +156,9 @@ func _bar(parent: Node, value: float, total: float) -> void:
 	bar.custom_minimum_size.y = 12
 	bar.mouse_filter = MOUSE_FILTER_IGNORE
 	bar.add_theme_stylebox_override("background", UI.box(UI.BG, UI.BG, 0))
-	bar.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
+	bar.add_theme_stylebox_override("fill", UI.box(fill, fill, 0))
 	parent.add_child(bar)
+	return bar
 
 func _build_identity() -> void:
 	var card := _panel(_identity, UI.TEAL, Color("182c32"))
@@ -180,6 +195,7 @@ func _build_identity() -> void:
 	card.add_child(_label("%d RANK POINTS" % _snapshot.points, UI.TEXT, 2))
 	_bar(card, _snapshot.rank_value, _snapshot.rank_span)
 	card.add_child(_label("Maximum rank / Commander" if _snapshot.max_rank else "%d points to %s" % [maxi(0, int(_snapshot.next_points) - int(_snapshot.points)), AuthService.RANKS[mini(int(_snapshot.rank_index) + 1, AuthService.RANKS.size() - 1)]], UI.MUTED))
+	_build_pvp_standing()
 	_details_button = _button(("HIDE" if _details_open else "VIEW") + " PERSONAL RECORD", _toggle_details)
 	_identity.add_child(_details_button)
 	_details_content = _panel(_identity)
@@ -198,6 +214,57 @@ func _build_identity() -> void:
 	else:
 		_details_content.add_child(_label("Post-test / No confirmed result", UI.MUTED))
 	_details_content.add_child(_label("Account records are separate from mastery estimates and stage completion.", UI.MUTED, -2))
+
+## Multiplayer standing, shown exactly as the backend reports it; separate from campaign rank points.
+func _build_pvp_standing() -> void:
+	var card := _panel(_identity, PVP_BORDER, PVP_FILL)
+	card.get_parent().name = "PvpStandingCard"
+	card.name = "PvpStanding"
+	card.add_child(_label("PVP STANDING", PVP_TITLE, -2))
+	var standing: Dictionary = AuthService.pvp_standing()
+	if standing.is_empty():
+		card.add_child(_label("LOADING..." if _pvp_loading else "STANDING UNAVAILABLE", UI.MUTED))
+		return
+	var rank: Label = _label(str(standing.get("rank", "")).to_upper(), PVP_RANK, 12)
+	rank.name = "PvpRank"
+	card.add_child(rank)
+	var points: int = _whole(standing.get("points"))
+	card.add_child(_label("%s PVP POINTS" % _grouped(points), UI.TEXT, 2))
+	var next_rank: Variant = standing.get("next_rank")
+	var remaining: Variant = standing.get("points_to_next_rank")
+	if next_rank == null or remaining == null:
+		card.add_child(_label("MAX RANK", PVP_TITLE))
+	else:
+		card.add_child(_label("%s POINTS TO %s" % [_grouped(_whole(remaining)), str(next_rank).to_upper()], UI.MUTED))
+		var floor_points: Variant = standing.get("current_threshold")
+		var ceiling: Variant = standing.get("next_threshold")
+		if _is_number(floor_points) and _is_number(ceiling) and _whole(ceiling) > _whole(floor_points):
+			var span: int = _whole(ceiling) - _whole(floor_points)
+			var progress: ProgressBar = _bar(card, clampi(points - _whole(floor_points), 0, span), span, PVP_BAR)
+			progress.name = "PvpProgress"
+	var matches: int = _whole(standing.get("rated_matches"))
+	var wins: int = _whole(standing.get("wins"))
+	var losses: int = _whole(standing.get("losses"))
+	var draws: int = _whole(standing.get("draws"))
+	card.add_child(_label("%s RATED %s" % [_grouped(matches), "MATCH" if matches == 1 else "MATCHES"], UI.MUTED, -2))
+	var tally := "%s %s / %s %s" % [_grouped(wins), "WIN" if wins == 1 else "WINS", _grouped(losses), "LOSS" if losses == 1 else "LOSSES"]
+	if draws > 0:
+		tally += " / %s %s" % [_grouped(draws), "DRAW" if draws == 1 else "DRAWS"]
+	card.add_child(_label(tally, UI.MUTED, -2))
+
+static func _is_number(value: Variant) -> bool:
+	return typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT
+
+static func _whole(value: Variant) -> int:
+	return int(value) if _is_number(value) else 0
+
+static func _grouped(value: int) -> String:
+	var digits := str(absi(value))
+	var out := ""
+	while digits.length() > 3:
+		out = "," + digits.right(3) + out
+		digits = digits.left(digits.length() - 3)
+	return ("-" if value < 0 else "") + digits + out
 
 func _toggle_details() -> void:
 	_details_open = not _details_open
