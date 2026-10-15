@@ -37,6 +37,7 @@ var current_question: Dictionary = {}
 var current_wave_index: int = 0
 var current_stage_config: Dictionary = {}
 var exam_questions_asked: int = 0
+var _assessment_responses: Array[Dictionary] = []
 var exam_questions_correct: int = 0
 var exam_history: Array[String] = []
 var _asked_question_ids: Array[String] = []
@@ -420,6 +421,7 @@ func change_phase(new_phase: GamePhase) -> void:
 			_wave_intel_hidden = false
 			if current_wave_index == 0:
 				exam_questions_asked = 0
+				_assessment_responses.clear()
 				exam_questions_correct = 0
 				exam_history.clear()
 			_set_quiz_locked(false)
@@ -690,6 +692,7 @@ func _load_stage_config() -> void:
 		}
 		current_wave_index = 0
 		exam_questions_asked = 0
+		_assessment_responses.clear()
 		exam_questions_correct = 0
 		_wave_questions_asked = 0
 		exam_history.clear()
@@ -711,6 +714,7 @@ func _load_stage_config() -> void:
 		current_stage_config = StageManager.get_stage_config(1)
 	current_wave_index = 0
 	exam_questions_asked = 0
+	_assessment_responses.clear()
 	exam_questions_correct = 0
 	_wave_questions_asked = 0
 	exam_history.clear()
@@ -1588,6 +1592,8 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		exam_questions_correct += 1
 	if not preload("res://src/gameplay/quiz_content.gd").repeat_wrong_answer(_graded_wrong, current_question, _quiz_pick, is_correct):
 		_record_bkt(_current_skill_id(), is_correct, PlayerManager.bkt_params_from(current_question))
+	if _is_summative() and not Router.is_tutorial:
+		_assessment_responses.append(preload("res://src/gameplay/quiz_content.gd").assessment_response(current_question, _quiz_pick, is_correct))
 	_quiz_pick = null
 	if not Router.is_tutorial:
 		PlayerManager.record_trace_result(_current_module_id(), _question_key(current_question), is_correct)
@@ -1616,7 +1622,7 @@ func _resolve_quiz(reward: int, is_correct: bool) -> void:
 		return
 	_quiz_modal.visible = false
 	if _is_summative() and exam_questions_asked == exam_count and exam_count == 15 and not Router.is_tutorial and not _learning_attempt.is_empty():
-		PlayerManager.record_learning_event("posttest", _current_module_id(), {"attempt_id":_learning_attempt, "instrument":"stage-exam-v1", "correct":exam_questions_correct, "answered":exam_questions_asked, "total":exam_count})
+		PlayerManager.record_learning_event("posttest", _current_module_id(), {"attempt_id":_learning_attempt, "instrument":"stage-exam-v1", "correct":exam_questions_correct, "answered":exam_questions_asked, "total":exam_count, "responses":_assessment_responses})
 	if _is_summative() and exam_questions_asked >= exam_count:
 		var accuracy: float = float(exam_questions_correct) / float(exam_count)
 		if accuracy < _exam_required_score():

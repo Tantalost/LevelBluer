@@ -234,3 +234,28 @@ static func options(q: Dictionary) -> Array[Dictionary]:
 	for i in rows.size():
 		out.append({"text": str(rows[i]), "value": i})
 	return out
+
+
+## Snapshot the presented item and actual answer before the adaptive deck changes.
+static func assessment_response(q: Dictionary, picked: Variant, correct: bool) -> Dictionary:
+	var choice_rows: Array[Dictionary] = options(q)
+	var option_text: Array[String] = []
+	var selected: Array[String] = []
+	var expected: Array[String] = []
+	for row: Dictionary in choice_rows:
+		var text: String = str(row.text).left(2000)
+		option_text.append(text)
+		var chosen: bool = row.value in (picked as Array) if picked is Array else row.value == picked
+		if chosen:
+			selected.append(text)
+		var right: bool = int(row.value) in _int_list(q.get("correct_indices", [])) if is_multi(q) else grade(q, row.value)
+		if right:
+			expected.append(text)
+	var selected_text: String = " | ".join(selected)
+	if selected.is_empty():
+		selected_text = "No suspicious lines" if picked is Array and (picked as Array).is_empty() else str(picked)
+	var expected_text: String = " | ".join(expected)
+	if expected.is_empty():
+		expected_text = "No suspicious lines" if is_multi(q) else str(q.get("correct_answer", q.get("answer", "Not recorded")))
+	return {"question_id": _question_key(q).left(512), "prompt": (_format_scenario(q) + "\n" + _format_prompt(q)).strip_edges().left(8000),
+		"options": option_text.slice(0, 50), "selected_answer": selected_text.left(8000), "correct_answer": expected_text.left(8000), "correct": correct}

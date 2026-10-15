@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import HTTPException
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, StrictBool, model_validator
 from app.data.pretest_questions import questions_for_module
 from app.schemas.pretest import PretestAnswerPayload
 from app.services.pretest_grading import is_correct
@@ -34,6 +34,29 @@ class StageDetails(BaseModel):
         return self
 
 
+class AssessmentResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    question_id: str = Field(min_length=1, max_length=512)
+    prompt: str = Field(max_length=8000)
+    options: list[Annotated[str, StringConstraints(max_length=2000)]] = Field(default_factory=list, max_length=50)
+    selected_answer: str = Field(max_length=8000)
+    correct_answer: str = Field(max_length=8000)
+    correct: StrictBool
+
+
+def pretest_response(question: dict, answer: bool | int | str) -> dict:
+    options = question.get("options") or (["True", "False"] if question.get("type") == "true_false" else [])
+    def label(value):
+        if type(value) is bool:
+            return "True" if value else "False"
+        if type(value) is int and 0 <= value < len(options):
+            return options[value]
+        return str(value)
+    return {"question_id": str(question["id"]), "prompt": question["text"], "options": options,
+            "selected_answer": label(answer), "correct_answer": label(question["answer"]),
+            "correct": is_correct(question, answer)}
+
+
 class LearningEvent(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     event_id: UUID
@@ -49,6 +72,7 @@ class LearningEvent(BaseModel):
     total: int | None = Field(default=None, ge=1, le=100)
     mastery: float | None = Field(default=None, ge=0, le=1)
     answers: list[PretestAnswerPayload] | None = Field(default=None, max_length=100)
+    responses: list[AssessmentResponse] | None = Field(default=None, max_length=100)
     details: StageDetails | None = None
 
     @model_validator(mode="after")
@@ -63,10 +87,15 @@ class LearningEvent(BaseModel):
             raise ValueError("Stage details require a terminal stage outcome")
         if self.kind == "mastery" and self.mastery is None:
             raise ValueError("Mastery observation is required")
+        if self.responses is not None and self.kind != "posttest":
+            raise ValueError("Response snapshots are only accepted for post-tests; pre-tests are server graded")
         if self.kind == "posttest":
             expected = 25 if self.instrument == "lesson-checkpoint-v1" else 15
             if self.instrument is None or self.attempt_id is None or self.total != expected or self.answered != expected or self.correct is None or self.correct > expected:
                 raise ValueError("Only fully answered assessments can record a score")
+            if self.responses is not None:
+                if len(self.responses) != expected or sum(r.correct for r in self.responses) != self.correct:
+                    raise ValueError("Response count and results must match the assessment score")
         if self.kind == "pretest":
             bank = questions_for_module(self.module_id)
             if not self.answers or len(self.answers) != len(bank) or {a.id for a in self.answers} != {q["id"] for q in bank}:
@@ -86,10 +115,13 @@ class LearningEvent(BaseModel):
             answers = {a.id: a.answer for a in self.answers}
             correct = sum(is_correct(q, answers[q["id"]]) for q in bank)
             version = sha256(json.dumps(bank, sort_keys=True).encode()).hexdigest()[:16]
+            data.update(response_version=1, responses=[pretest_response(q, answers[q["id"]]) for q in bank])
             data.update(source="server-graded", instrument="pretest-" + version, correct=correct, total=len(bank), score=100 * correct / len(bank), scale="percent", completed=True, comparison_key=None)
         else:
             # Equal percentages alone do not make different instruments comparable.
             data.update(attempt_id=str(self.attempt_id), instrument=self.instrument, correct=self.correct, total=self.total, score=100 * self.correct / self.total, scale="percent", completed=True, comparison_key=None)
+            if self.responses is not None:
+                data.update(response_version=1, responses=[r.model_dump() for r in self.responses])
         return {"event_id": str(self.event_id), "kind": self.kind, "module_id": self.module_id, "occurred_at": self.occurred_at.isoformat(), "data": data}
 
 

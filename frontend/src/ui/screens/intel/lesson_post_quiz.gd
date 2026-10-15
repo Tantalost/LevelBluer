@@ -29,6 +29,7 @@ var _feedback: Label
 var _action: Button
 var _started: bool = false
 var _recorded: bool = false
+var _assessment_responses: Array[Dictionary] = []
 var _skill: String = ""
 var _graded_wrong: Dictionary = {}
 
@@ -190,6 +191,7 @@ func submit() -> void:
 			values.append(int(_choices[index].value))
 		picked = values
 	var correct: bool = Quiz.grade(question, picked)
+	_assessment_responses.append(Quiz.assessment_response(question, picked, correct))
 	answered += 1
 	if correct:
 		score += 1
@@ -215,7 +217,7 @@ func submit() -> void:
 	if answered == COUNT and not _recorded:
 		_recorded = true
 		if not review:
-			account.record_lesson_post_quiz(module_id, score, answered)
+			account.record_lesson_post_quiz(module_id, score, answered, _assessment_responses)
 		finished.emit(score >= PASS)
 
 func _advance() -> void:

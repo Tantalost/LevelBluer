@@ -16,6 +16,7 @@ var missed_questions: Array[Dictionary] = []
 var review_index: int = -1
 const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
 var _graded_wrong: Dictionary = {}
+var _assessment_responses: Array[Dictionary] = []
 const ROUTE: Array[Vector2i] = [Vector2i(0, 3), Vector2i(2, 3), Vector2i(2, 0), Vector2i(11, 0), Vector2i(11, 6), Vector2i(4, 6), Vector2i(4, 3), Vector2i(8, 3)]
 
 func _valid_context() -> bool:
@@ -130,9 +131,11 @@ func resolve_answer(expired: bool = false) -> void:
 	super.resolve_answer(expired)
 	if answered == previous:
 		return
-	if answered == int(config.get("exam_question_count", 15)) and account == PlayerManager:
-		PlayerManager.record_learning_event("posttest", match_context.module_id, {"attempt_id":_learning_attempt, "instrument":"stage-exam-v1", "correct":correct_answers, "answered":answered, "total":15})
 	var correct: bool = correct_answers > previous_correct
+	var recorded_pick: Variant = selected_answers.duplicate() if Quiz.is_multi(question) else (selected_answers[0] if not selected_answers.is_empty() else null)
+	_assessment_responses.append(Quiz.assessment_response(question, recorded_pick, correct))
+	if answered == int(config.get("exam_question_count", 15)) and account == PlayerManager:
+		PlayerManager.record_learning_event("posttest", match_context.module_id, {"attempt_id":_learning_attempt, "instrument":"stage-exam-v1", "correct":correct_answers, "answered":answered, "total":15, "responses":_assessment_responses})
 	if college and not correct:
 		missed_questions.append(question.duplicate(true))
 	if _has_targeted_review():

@@ -260,12 +260,15 @@ func can_access_lesson_module(module_id: String) -> bool:
 	return index >= 0 and (index == 0 or get_lesson_progress(module_id) > 0 or has_lesson_post_quiz(ids[index - 1]))
 
 
-func record_lesson_post_quiz(module_id: String, score: int, answered: int) -> bool:
+func record_lesson_post_quiz(module_id: String, score: int, answered: int, responses: Array[Dictionary] = []) -> bool:
 	if module_id not in LessonCatalog.module_ids() or answered != 25 or score < 0 or score > answered:
 		return false
 	if get_lesson_progress(module_id) < LessonCatalog.lesson_count(module_id):
 		return false
-	record_learning_event("posttest", module_id, {"attempt_id":learning_id(), "instrument":"lesson-checkpoint-v1", "correct":score, "answered":answered, "total":25})
+	var evidence: Dictionary = {"attempt_id":learning_id(), "instrument":"lesson-checkpoint-v1", "correct":score, "answered":answered, "total":25}
+	if not responses.is_empty():
+		evidence["responses"] = responses.duplicate(true)
+	record_learning_event("posttest", module_id, evidence)
 	if score > int(lesson_post_quiz_scores.get(module_id, 0)):
 		lesson_post_quiz_scores[module_id] = score
 		_save_progress()
