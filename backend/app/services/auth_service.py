@@ -1,6 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 import re
+import logging
 
 import bcrypt
 import httpx
@@ -16,12 +17,16 @@ from app.schemas.auth import (
     StudentUserPayload,
 )
 from app.supabase_client import supabase
+from app.services.database_diagnostics import safe_database_error
+
+logger = logging.getLogger(__name__)
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 365
 
 
-def _supabase_error(exc: Exception) -> HTTPException:
+def _supabase_error(exc: Exception, operation: str = "database_request") -> HTTPException:
+    logger.warning("Database operation=%s %s", operation, safe_database_error(exc))
     if isinstance(exc, httpx.ConnectError):
         return HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -48,7 +53,8 @@ def _completed_module_ids(row: dict) -> list[str]:
             .limit(1)
             .execute()
         )
-    except Exception:
+    except Exception as exc:
+        logger.warning("Database operation=login_save_fallback %s", safe_database_error(exc))
         return []
     rows = response.data or []
     if not rows:
@@ -137,7 +143,7 @@ def fetch_student_by_id(student_id: str) -> dict:
     try:
         response = supabase.table("students").select("*").eq("id", student_id).execute()
     except Exception as exc:
-        raise _supabase_error(exc) from exc
+        raise _supabase_error(exc, "student_session_lookup") from exc
     rows = response.data or []
     if not rows:
         raise HTTPException(
@@ -156,7 +162,7 @@ def _fetch_student_by_email(email: str) -> dict | None:
     try:
         response = supabase.table("students").select("*").eq("email", normalized).execute()
     except Exception as exc:
-        raise _supabase_error(exc) from exc
+        raise _supabase_error(exc, "login_student_lookup") from exc
     rows = response.data or []
     return rows[0] if rows else None
 
@@ -246,7 +252,7 @@ def change_student_password(student_id: str, new_password: str) -> None:
             .execute()
         )
     except Exception as exc:
-        raise _supabase_error(exc) from exc
+        raise _supabase_error(exc, "student_password_update") from exc
 
     if getattr(response, "error", None):
         raise HTTPException(

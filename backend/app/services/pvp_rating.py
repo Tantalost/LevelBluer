@@ -27,6 +27,7 @@ from app.services.pvp_service import (
     MatchRecord,
 )
 from app.supabase_client import supabase
+from app.services.database_diagnostics import safe_database_error
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +210,7 @@ class RatingQueue:
         except Exception as exc:
             self._recovery_attempts += 1
             self._recovery_next_at = now + self.retry_delay(self._recovery_attempts)
-            logger.warning("PvP rating recovery failed (attempt %d): %s", self._recovery_attempts, type(exc).__name__)
+            logger.warning("PvP rating recovery failed (attempt %d) operation=pvp_rating_recovery %s", self._recovery_attempts, safe_database_error(exc))
             return False
         self.recovered = True
         if self._jobs:
