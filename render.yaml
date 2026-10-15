@@ -1,0 +1,26 @@
+# Separate Python game API; does not replace the existing Node/web backend.
+# Secrets are entered privately during Render Blueprint creation.
+services:
+  - type: web
+    name: levelblue-game-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    numInstances: 1
+    autoDeployTrigger: "off"
+    buildCommand: pip install -r requirements.txt
+    # Room state is process-local. Never enable multiple workers or --reload.
+    startCommand: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.14"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      # Must match the existing web backend; do not generate a separate secret.
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://web-llevelblue.vercel.app
