@@ -320,7 +320,7 @@ func _on_tutorial_tower_placed(_tower: TowerBase) -> void:
 		return
 	var placed: int = _tower_placer.placed_count()
 	if placed == 1:
-		PlayerManager.grant_tutorial_capacity_rank()
+		PlayerManager.grant_tutorial_inspection()
 		_refresh_shop_cards()
 	if _tutorial_overlay == null or not is_instance_valid(_tutorial_overlay):
 		return
@@ -343,7 +343,7 @@ func _on_tutorial_defend_requested() -> void:
 func _on_tutorial_upgrades_requested() -> void:
 	if not Router.is_tutorial:
 		return
-	PlayerManager.grant_tutorial_capacity_rank()
+	PlayerManager.grant_tutorial_inspection()
 	Router.open_tutorial_upgrades()
 
 
@@ -3132,5 +3132,9 @@ func _decision_clear_presentation() -> Dictionary:
 
 func _finish_learning_attempt(outcome: String) -> void:
 	if not _learning_attempt.is_empty() and _learning_owner == AuthService.participant_code():
-		PlayerManager.finish_learning_attempt(_learning_attempt, _current_module_id(), Router.active_stage_index + 1, outcome)
+		var details: Dictionary = {"phase":str(current_phase), "health":maxi(0, base_health)}
+		if _is_summative():
+			details["answered"] = exam_questions_asked
+			details["correct"] = exam_questions_correct
+		PlayerManager.finish_learning_attempt(_learning_attempt, _current_module_id(), Router.active_stage_index + 1, outcome, details)
 	_learning_attempt = ""

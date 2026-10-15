@@ -6,6 +6,7 @@ import threading
 import time
 import types
 import unittest
+from unittest.mock import patch
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 
@@ -125,6 +126,10 @@ def wait_until(condition, timeout: float = 3.0) -> bool:
 
 class RealtimeHarness(unittest.TestCase):
     def setUp(self) -> None:
+        self.session_versions: dict[str, int] = {}
+        account_lookup = patch("app.services.auth_service.fetch_student_by_id", side_effect=lambda student_id: {"id": student_id, "session_version": self.session_versions.get(student_id, 0)})
+        account_lookup.start()
+        self.addCleanup(account_lookup.stop)
         self.clock = Clock()
         self.service = PvpService(bank=fixture_bank(), clock=self.clock, seed=11, active_grace_ms=GRACE_MS, waiting_grace_ms=GRACE_MS * 4, closed_ttl_ms=TTL_MS, stale_waiting_ms=STALE_MS)
         self.hub = PvpHub(self.service, tick_seconds=0.01, cleanup_seconds=0.02)
@@ -448,6 +453,21 @@ class LeakAndOrderingTest(RealtimeHarness):
         stale = [m for m in host.seen if m["type"] == "round_started"][0]
         latest = max(m["revision"] for m in host.seen if "revision" in m)
         self.assertLess(stale["revision"], latest)
+
+
+class RecoveryRevocationTest(RealtimeHarness):
+    def test_password_reset_revokes_existing_rest_session(self) -> None:
+        self.session_versions[HOST] = 1
+        self.assertEqual(self.client.post("/api/pvp/rooms", headers=auth(HOST)).status_code, 401)
+
+    def test_password_reset_disconnects_idle_socket(self) -> None:
+        with patch("app.routes.pvp.SESSION_RECHECK_SECONDS", 0.05):
+            code = self.room()
+            host = self.open(code, HOST)
+            host.next("room_state")
+            self.session_versions[HOST] = 1
+            closed = host.next("__closed__")
+            self.assertEqual(closed["code"], 4401)
 
 
 if __name__ == "__main__":

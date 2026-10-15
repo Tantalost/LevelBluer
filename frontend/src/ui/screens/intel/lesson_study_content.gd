@@ -1,5 +1,115 @@
 extends RefCounted
 ## Adapts the existing thirty lessons, keeping their scenarios and correct answers.
+const Quiz: GDScript = preload("res://src/gameplay/quiz_content.gd")
+const MINI_COUNT: int = 5
+const MINI_PASS: int = 3
+const CONTEXT_CUES: Dictionary = {
+	"mod_01:0": [["help@harb0r-civic.net", "WHO / The zero in harb0r imitates the school name. A familiar display name is not proof."], ["Open this page now and type it again", "REQUEST / They want your campus password entered on their page."], ["12 minutes", "PRESSURE / The countdown is meant to rush you past verification."]],
+	"mod_01:1": [["it.help@gmail.com", "WHO / Check the mailbox, not just the Helpdesk name."], ["Reply with your campus password", "REQUEST / Never send your password in an email reply."], ["before lab starts", "PRESSURE / A familiar school deadline does not make this safe."]],
+	"mod_01:2": [["westfie1d.edu", "ADDRESS / The digit 1 replaces the letter l. Lookalike spelling matters."], ["Re-enter your password", "REQUEST / Open your saved school portal instead of this login link."]],
+	"mod_01:4": [["mia.santos.group@outlook.com", "WHO / A classmate's name does not verify this public mailbox."], ["sign in with your campus account", "REQUEST / Verify the shared folder with Mia using a known contact."], ["before 10", "PRESSURE / Pause even when the message sets a deadline."]],
+	"mod_01:5": [["wifi@westfie1d.edu", "ADDRESS / This is the lookalike school name again."], ["Re-enter your password here", "REQUEST / This would hand your password to the linked page."], ["at noon", "PRESSURE / Don't let a threatened disconnection choose for you."]],
+	"mod_02:0": [["metro-ride-help.tk", "DESTINATION / A familiar brand name does not verify a different website."], ["10 minutes", "PRESSURE / Verify the charge in the app you already have, not under this timer."]],
+	"mod_02:1": [["bit.ly/navo-hold", "DESTINATION / The short link hides the destination."], ["student number plus password", "REQUEST / A book reservation is no reason to give away your password."], ["about to be given away", "PRESSURE / Fear of losing the book is the hook."]],
+	"mod_02:3": [["metro-ride-help.tk/refund", "DESTINATION / Check the charge through your installed app, not this odd site."], ["10 minutes", "PRESSURE / The timer encourages a rushed tap."]],
+	"mod_02:4": [["tap a link and type a password", "ATTACKER'S GOAL / Notice the action and secret the trick is designed to get."], ["under a minute", "PRESSURE / Rushing removes time to check the request."]],
+}
+
+static func context_clues(module_id: String, index: int) -> Array[Dictionary]:
+	var source: Dictionary = LessonCatalog.lessons_for(module_id)[index]
+	var scenario: String = _scenario(source)
+	var clues: Array[Dictionary] = []
+	for pair: Array in CONTEXT_CUES.get("%s:%d" % [module_id, index], []):
+		if scenario.contains(str(pair[0])):
+			clues.append({"quote": str(pair[0]), "note": str(pair[1])})
+	if not clues.is_empty():
+		return clues
+	for segment: Dictionary in source.get("segments", []):
+		if bool(segment.is_tell):
+			clues.append({"quote": str(segment.text), "note": str(segment.why)})
+	if source.has("events"):
+		clues.append({"quote": str(source.events[int(source.suspicion_index)]), "note": str(source.explanation)})
+	if clues.is_empty():
+		# Other authored formats retain their own explanation, never a guessed tell.
+		var note: String = str(source.get("hint", source.get("explanation", source.get("beat4_summary", "Compare this request with the safe response."))))
+		if source.has("items"):
+			note = str(source.items[0].why)
+		if source.has("beat1_guided_example"):
+			note = str(source.beat1_guided_example.observations[0].plain_language_note)
+		clues.append({"quote": scenario.split("\n")[0], "note": note})
+	return clues
+# Four curated transfer checks supplement each lesson's original question.
+# Suffixes refer to the existing module bank, not random module-wide samples.
+const MINI_CHECKS: Dictionary = {
+	"mod_01": [
+		["sa_08", "tv_04", "sa_01", "tf_01"], # Sender and safe school notices.
+		["sa_05", "tv_09", "tf_02", "st_03"], # Display name versus the real request.
+		["us_01", "us_06", "tf_06", "st_09"], # Lookalike and compound domains.
+		["tv_03", "st_02", "tf_03", "sa_03"], # Disguised file and library source.
+		["it_01", "it_05", "it_06", "tf_04"], # Mixed inbox and pressure.
+		["us_05", "tv_10", "tf_05", "tf_08"], # Safe navigation and reporting.
+	],
+	"mod_02": [
+		["sa_01", "tv_03", "st_01", "tf_07"],
+		["sa_03", "tv_05", "us_02", "tf_04"],
+		["sa_05", "tv_02", "tf_01", "st_08"],
+		["tv_01", "tv_04", "st_06", "tf_09"],
+		["st_07", "tv_07", "tf_02", "tf_10"],
+		["st_04", "us_03", "tf_05", "tf_06"],
+	],
+	"mod_03": [
+		["sa_01", "st_01", "us_01", "tf_01"],
+		["sa_03", "st_03", "us_08", "tf_02"],
+		["st_05", "us_06", "tf_03", "sa_10"],
+		["st_07", "us_07", "tf_10", "sa_09"],
+		["sa_04", "st_02", "tf_07", "us_04"],
+		["sa_08", "st_08", "tf_04", "tf_09"],
+	],
+	"mod_04": [
+		["sa_01", "st_01", "us_01", "tf_01"],
+		["sa_03", "st_02", "us_02", "tf_04"],
+		["sa_02", "st_03", "us_03", "tf_06"],
+		["sa_04", "st_04", "us_07", "tf_03"],
+		["sa_05", "st_05", "us_06", "tf_07"],
+		["sa_07", "st_10", "us_10", "tf_09"],
+	],
+	"mod_05": [
+		["sa_01", "tv_02", "us_01", "tf_01"],
+		["sa_03", "tv_05", "st_02", "tf_03"],
+		["sa_02", "tv_01", "st_03", "tf_02"],
+		["sa_10", "tv_03", "st_09", "tf_04"],
+		["it_03", "it_04", "it_05", "it_07"],
+		["st_07", "tv_08", "us_06", "tf_07"],
+	],
+}
+
+static func mini_quiz(module_id: String, index: int) -> Array[Dictionary]:
+	var sets: Array = MINI_CHECKS.get(module_id, [])
+	if index < 0 or index >= sets.size():
+		return []
+	var original: Dictionary = build(module_id, index)
+	original["id"] = "%s_l%d_mini_v1" % [module_id, index + 1]
+	original["quiz_scenario"] = original.get("quiz_scenario", original.scenario)
+	original["bkt"] = {"p_g": 0.2 if original.multi else 1.0 / original.options.size()}
+	var result: Array[Dictionary] = [original]
+	var bank: Dictionary = {}
+	for raw: Dictionary in ContentDB.get_module_questions(module_id):
+		bank[str(raw.get("id", ""))] = raw
+	for suffix: String in sets[index]:
+		var id: String = module_id.replace("_", "") + "_" + suffix
+		if not bank.has(id):
+			return [] # Fail closed: never shorten the assessment silently.
+		var raw: Dictionary = bank[id]
+		var choices: Array[Dictionary] = Quiz.options(raw)
+		var row: Dictionary = {"id": id, "module_id": module_id, "question": Quiz._format_prompt(raw), "quiz_scenario": Quiz._format_scenario(raw), "options": [], "correct": [], "multi": false, "feedback": Quiz.explanation(raw, true, null), "bkt": raw.get("bkt", {})}
+		for choice: Dictionary in choices:
+			if Quiz.grade(raw, choice.value):
+				row.correct.append(row.options.size())
+			row.options.append("Suspicious / attack" if choice.text == "Phishing" else str(choice.text))
+		if row.correct.size() != 1 or row.options.size() < 2 or str(row.question).is_empty():
+			return []
+		result.append(row)
+	return result
 const DOMAIN := {
 	"phishing": {"term": "Phishing", "definition": "Phishing is a deceptive message that impersonates a trusted sender to steal information or make you open an unsafe link or file.", "rule": "Check the full sender address and destination. Verify through a known site; never reply with a password or one-time code.", "app": "Mail", "inspect": "Inspect sender and request", "verify": "Open trusted contact directory", "action": "Report phishing", "unsafe": "Open link / attachment"},
 	"smishing": {"term": "Smishing", "definition": "Smishing is phishing delivered by text message. Familiar names, short links and urgent warnings can hide a request for your login or code.", "rule": "Read the request, not just the sender name. Check in the official app or use contact details you already trust.", "app": "Messages", "inspect": "Inspect message details", "verify": "Check the official app", "action": "Block and report sender", "unsafe": "Reply with the code"},

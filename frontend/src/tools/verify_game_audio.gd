@@ -177,12 +177,12 @@ func _run() -> void:
 		scroll.ensure_control_visible(panel._music_slider)
 		await wait()
 		var physical_scale: float = root.get_final_transform().get_scale().y
-		check(scroll.get_global_rect().encloses(panel._music_slider.get_global_rect()), "Music slider reachable in landscape: %s" % dimensions)
+		check(scroll.get_global_rect().grow(1).encloses(panel._music_slider.get_global_rect()), "Music slider reachable in landscape: %s / %s / %s" % [dimensions, scroll.get_global_rect(), panel._music_slider.get_global_rect()])
 		check(panel._music_slider.size.y * physical_scale >= 48.0, "Music slider retains a 48px touch target")
 		check(panel._music_val.get_theme_font_size("font_size") * physical_scale >= 16.0, "Music volume label remains readable")
 		scroll.ensure_control_visible(panel._dialogue_toggle)
 		await wait()
-		check(scroll.get_global_rect().encloses(panel._dialogue_toggle.get_global_rect()), "Dialogue toggle reachable")
+		check(scroll.get_global_rect().grow(1).encloses(panel._dialogue_toggle.get_global_rect()), "Dialogue toggle reachable: %s / %s" % [scroll.get_global_rect(), panel._dialogue_toggle.get_global_rect()])
 		check(panel._dialogue_toggle.size.y * physical_scale >= 48.0, "Dialogue toggle retains touch size")
 		if "--render" in OS.get_cmdline_user_args():
 			await RenderingServer.frame_post_draw

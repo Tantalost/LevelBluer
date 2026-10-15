@@ -8,7 +8,7 @@ LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at passwor
 LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
 LOGIN_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
 LOGIN_ERR_UNKNOWN,Something went wrong. Try again.,May nangyaring mali. Subukan ulit.
-PWD_TITLE,Security Alert,Babala sa Seguridad
+PWD_TITLE,Secure your account,I-secure ang iyong account
 PWD_SUBTITLE,Update Temporary Password,I-update ang Pansamantalang Password
 PWD_NEW_LABEL,New Password,Bagong Password
 PWD_CONFIRM_LABEL,Confirm Password,Kumpirmahin ang Password
@@ -26,6 +26,20 @@ PWD_ERR_MISMATCH,Passwords do not match.,Hindi magkatugma ang password.
 PWD_ERR_SERVER,Could not update your password. Try again.,Hindi na-update ang password. Subukan ulit.
 PWD_SUBMIT,Update Password,I-update ang Password
 PWD_BUSY,Updating...,Ina-update...
+AUTH_SHOW,Show,Ipakita
+AUTH_HIDE,Hide,Itago
+AUTH_ACCESS,STUDENT ACCESS / LEVELBLUE,STUDENT ACCESS / LEVELBLUE
+AUTH_TERMINAL,01 / MISSION ACCESS,01 / PASUKAN NG MISYON
+AUTH_SETUP,02 / ACCOUNT SETUP,02 / PAGHAHANDA NG ACCOUNT
+AUTH_BRAND_NOTE,Your next mission starts here.,Dito nagsisimula ang susunod mong misyon.
+LOGIN_WELCOME,Welcome back,Maligayang pagbabalik
+LOGIN_INTRO,Sign in to continue your mission.,Mag-log in para ituloy ang iyong misyon.
+LOGIN_HELP,Use the student account provided by your teacher.,Gamitin ang student account na ibinigay ng iyong guro.
+LOGIN_EMAIL_PLACEHOLDER,Student email,Email ng mag-aaral
+LOGIN_PASSWORD_PLACEHOLDER,Your password,Iyong password
+PWD_CHECKLIST,Your checklist,Iyong checklist
+PWD_CONFIRM_HELP,Enter the same password in both fields.,Ilagay ang parehong password sa dalawang field.
+PWD_MATCH,Passwords match. Ready to continue.,Magkatugma ang password. Handa nang magpatuloy.
 LOADING_TITLE,Loading,Naglo-load
 LOADING_SETTINGS,Loading settings,Nilo-load ang settings
 LOADING_PROFILE,Loading profile,Nilo-load ang profile
@@ -55,8 +69,8 @@ DASH_DEFEND,DEFEND,DEFEND
 DASH_MINI_LABEL,Current Mission,Kasalukuyang Misyon
 DASH_MODULE_NUM,MODULE %d,MODULE %d
 DASH_MINI_PROGRESS,Stage %d/5 • %d/%d Lessons,Yugto %d/5 • %d/%d Aralin
-DASH_AT_RISK_TITLE,PERFORMANCE ALERT — AT-RISK STATUS,BABALA SA PERFORMANCE — AT-RISK
-DASH_AT_RISK_BODY,Your avg. BKT P(L) is %.1f%%.%s A peer mentor has been dispatched to help.,Ang avg. BKT P(L) mo ay %.1f%%.%s May peer mentor na ipinadala para tumulong.
+DASH_AT_RISK_TITLE,LEARNING SUPPORT,TULONG SA PAG-AARAL
+DASH_AT_RISK_BODY,Your assessed-topic mastery estimate is %.1f%%.%s Revisit these topics in Lessons for more practice.,Ang mastery estimate sa nasuring paksa ay %.1f%%.%s Balikan ang mga paksang ito sa Lessons para magsanay.
 DASH_AT_RISK_WEAK, Weakest: %s., Pinakamahina: %s.
 DASH_MODE_TITLE,SELECT GAME MODE,PUMILI NG GAME MODE
 DASH_MODE_SUBTITLE,Choose how you want to deploy,Piliin kung paano mag-deploy
@@ -96,9 +110,9 @@ TUTORIAL_BUILD_ONE,Capacity rank 1 is live. Place the second node.,Live na ang C
 TUTORIAL_BUILD_DONE,Two up. Tap a tower then a pad to move it for 1G. Defend comes next.,Dalawa na. I-tap ang tower tapos ang pad para ilipat (1G). Defend ang susunod.
 TUTORIAL_CHOICE_DEFEND,START DEFEND,SIMULAN ANG DEFEND
 TUTORIAL_DEFEND_DONE,That's defend. Empty hearts fail a live stage. Training still moves on.,Iyan ang defend. Ubos na hearts = talo sa totoong stage. Dito, tuloy pa rin.
-TUTORIAL_RESULTS,Capacity Rank 1 is yours. Open Upgrades to see the four Basic Node tracks.,Sa iyo na ang Capacity Rank 1. Buksan ang Upgrades para sa apat na track ng Basic Node.
+TUTORIAL_RESULTS,Inspection is your starter upgrade. Open Upgrades to see the four Basic Node tracks.,Inspection ang starter upgrade mo. Buksan ang Upgrades para sa apat na track ng Basic Node.
 TUTORIAL_CHOICE_UPGRADE,OPEN UPGRADES,BUKSAN ANG UPGRADES
-TUTORIAL_UPGRADE_BUY,Tap Capacity Rank 1. Already owned. That's your first Basic Node track.,I-tap ang Capacity Rank 1. Owned na. Unang track iyan ng Basic Node.
+TUTORIAL_UPGRADE_BUY,Tap Inspection. Already installed. Other upgrades are earned with your own credits.,I-tap ang Inspection. Installed na ito. Gamitin ang sarili mong credits para sa ibang upgrades.
 TUTORIAL_UPGRADE_DONE,"Research upgrades stay with you. Next, try one lesson from the Learning Journey.",Mananatili ang research upgrades mo. Subukan ang isang lesson sa Learning Journey.
 TUTORIAL_FAIL_LOCK,"Each lesson has Learn, Quiz and Simulation. Finish all three to unlock its next node.","May Learn, Quiz at Simulation ang bawat lesson. Tapusin ang tatlo para buksan ang susunod na node."
 TUTORIAL_CHOICE_LESSON,OPEN LESSON,BUKSAN ANG LESSON
@@ -204,3 +218,15 @@ PROFILE_TOWER_XP,TOWER LV.%d - XP,TOWER LV.%d - XP
 PROFILE_LEGEND_LOW,0-49%,0-49%
 PROFILE_LEGEND_MID,50-74%,50-74%
 PROFILE_LEGEND_HIGH,75%+,75%+
+RECOVERY_FORGOT,Forgot password?,Nakalimutan ang password?
+RECOVERY_BACK,Back to sign in,Bumalik sa pag-sign in
+RECOVERY_TITLE,Need a hand?,Kailangan ng tulong?
+RECOVERY_INTRO,Ask your teacher for password assistance.,Humingi ng tulong sa guro para sa password.
+RECOVERY_HELP,Enter your registered email. After teacher approval you will receive a reset link. Never share your password.,Ilagay ang rehistradong email. Kapag inaprubahan ng guro ay makakatanggap ka ng reset link. Huwag ibahagi ang password.
+RECOVERY_SEND,Request assistance,Humingi ng tulong
+RECOVERY_RECEIPT,If this email matches a student account your teacher will receive your request. After approval check your inbox and spam for a reset link. Your progress stays safe.,Kung may student account ang email na ito matatanggap ng guro ang kahilingan. Pagkaapruba tingnan ang inbox at spam para sa reset link. Ligtas ang iyong progreso.
+RECOVERY_EMAIL_ERROR,Enter a valid registered student email.,Ilagay ang wastong rehistradong student email.
+RECOVERY_UNAVAILABLE,Password assistance is unavailable right now. Please try again later.,Hindi available ang tulong sa password ngayon. Subukan muli mamaya.
+RECOVERY_WAIT,Please wait a minute before requesting again.,Maghintay ng isang minuto bago humiling muli.
+RECOVERY_RATE_LIMIT,Too many requests. Please wait 15 minutes before trying again.,Masyadong maraming kahilingan. Maghintay ng 15 minuto bago subukang muli.
+RECOVERY_NETWORK_ERROR,We could not confirm your request. Check your connection and retry shortly; duplicate requests are combined.,Hindi makumpirma ang kahilingan. Suriin ang koneksyon at subukan muli mamaya; pinagsasama ang dobleng kahilingan.

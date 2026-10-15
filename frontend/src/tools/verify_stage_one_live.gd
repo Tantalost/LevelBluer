@@ -83,7 +83,7 @@ func settle() -> void:
 		await process_frame
 
 func fingerprint() -> String:
-	return JSON.stringify([root.get_node("PlayerManager").get_save_data(), root.get_node("TaskManager").daily_tasks, root.get_node("AuthService")._mastery, root.get_node("AuthService")._bkt_queue])
+	return JSON.stringify([root.get_node("PlayerManager").get_save_data(), root.get_node("TaskManager").get_active_tasks(), root.get_node("AuthService")._mastery, root.get_node("AuthService")._bkt_queue])
 
 ## Checks the currently-loaded dialogue block's lines (see
 ## decision_workspace.gd's _lines) for a substring — used to confirm

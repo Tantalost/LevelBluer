@@ -14,7 +14,7 @@ func check(ok: bool, copy: String) -> void:
 		push_error(copy)
 
 func fingerprint() -> String:
-	return JSON.stringify([root.get_node("PlayerManager").get_save_data(), root.get_node("TaskManager").daily_tasks, root.get_node("AuthService")._mastery, root.get_node("AuthService")._bkt_queue])
+	return JSON.stringify([root.get_node("PlayerManager").get_save_data(), root.get_node("TaskManager").get_active_tasks(), root.get_node("AuthService")._mastery, root.get_node("AuthService")._bkt_queue])
 
 func settle() -> void:
 	for i in 8:

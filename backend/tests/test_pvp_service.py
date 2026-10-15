@@ -74,8 +74,10 @@ class PvpHarness(unittest.TestCase):
 
 
 class BankTest(unittest.TestCase):
-    def test_backend_bank_is_a_byte_copy_of_the_canonical_frontend_bank(self):
-        self.assertEqual(BANK_PATH.read_bytes(), FRONTEND_BANK.read_bytes())
+    def test_backend_bank_matches_canonical_frontend_text(self):
+        # Git can check out one file as CRLF on Windows. Ignore only newline
+        # encoding, not wording, options, ordering, ids or answer keys.
+        self.assertEqual(BANK_PATH.read_text(encoding="utf-8"), FRONTEND_BANK.read_text(encoding="utf-8"))
 
     def test_all_100_questions_load_and_are_well_formed(self):
         bank = load_bank()

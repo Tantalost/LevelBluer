@@ -145,7 +145,7 @@ func _session_changed(_signed_in: bool) -> void:
 func _state_key() -> String:
 	return str([PlayerManager.max_stage_cleared_by_module, PlayerManager.cleared_stages,
 		PlayerManager.lesson_progress, PlayerManager.completed_lessons,
-		PlayerManager.locked_stages, PlayerManager.credits])
+		PlayerManager.locked_stages, PlayerManager.credits, PlayerManager.pvp_tokens])
 
 func _process(delta: float) -> void:
 	_poll += delta
@@ -182,7 +182,7 @@ func _refresh_all() -> void:
 	_profile.tooltip_text = "%s / %s — Open profile" % [AuthService.display_name(), AuthService.rank_title()]
 	_profile_name.add_theme_font_size_override("font_size", _font)
 	_profile_rank.add_theme_font_size_override("font_size", _font - 4)
-	_wallet.text = "THREAT   %d\nCREDITS  %d" % [maxi(0, AuthService.wallet_threat_points()), maxi(0, PlayerManager.credits)]
+	_wallet.text = "THREAT   %d\nCREDITS  %d" % [PlayerManager.pvp_tokens, maxi(0, PlayerManager.credits)]
 	_wallet.add_theme_font_size_override("font_size", _font - 2)
 	_summary.text = "OPERATIONS  /  %d OF %d CLEARED" % [_cleared_count(), _authored_count()]
 	_summary.add_theme_font_size_override("font_size", _font - 2)

@@ -3,6 +3,7 @@
 Development only; not part of unittest discovery. Run from backend/:
     .venv\\Scripts\\python.exe tests\\live_pvp_e2e.py [scenario ...]
 Set GODOT to the Godot 4 binary if it is not at the default path.
+Use --isolated for synthetic students, a disposable signing key and no database access.
 Tokens are minted with the server's own signer for two distinct student ids and are only
 written to the per-run temp directory; they are never printed.
 """
@@ -18,6 +19,8 @@ import urllib.request
 import uuid
 from pathlib import Path
 from typing import Any
+from contextlib import asynccontextmanager
+from unittest.mock import patch
 
 BACKEND = Path(__file__).resolve().parents[1]
 FRONTEND = BACKEND.parent / "frontend"
@@ -35,7 +38,42 @@ CLIENT_TIMEOUT_S = 300
 
 sys.path.insert(0, str(BACKEND))
 os.chdir(BACKEND)
+ISOLATED = "--isolated" in sys.argv or "--serve-isolated" in sys.argv
+if "--isolated" in sys.argv:
+    # Child processes inherit these test-only settings; never edit .env or the
+    # production app's authentication, and never use real account ids here.
+    os.environ["SUPABASE_URL"] = "http://127.0.0.1:9"
+    os.environ["SUPABASE_SERVICE_KEY"] = "isolated-pvp-no-database"
+    os.environ["JWT_SECRET"] = uuid.uuid4().hex + uuid.uuid4().hex
+    os.environ.pop("PVP_E2E_HOST_ID", None)
+    os.environ.pop("PVP_E2E_GUEST_ID", None)
 from app.services.auth_service import _create_token  # noqa: E402
+
+
+def serve_isolated() -> None:
+    """Real transports and server rules; only student storage is substituted."""
+    import uvicorn
+    from fastapi import FastAPI, HTTPException
+    from app.routes.pvp import router
+    from app.services.pvp_hub import PvpHub
+    from app.services.pvp_service import PvpService
+
+    def student_lookup(student_id: str) -> dict[str, Any]:
+        if not student_id.startswith(("e2e-a-", "e2e-b-")):
+            raise HTTPException(status_code=404, detail="Synthetic student not found")
+        return {"id": student_id, "session_version": 0}
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        hub = PvpHub(PvpService()) # No recorder: persistence is tested with FakeDb separately.
+        app.state.pvp_hub = hub
+        with patch("app.services.auth_service.fetch_student_by_id", side_effect=student_lookup):
+            async with hub.running():
+                yield
+
+    app = FastAPI(lifespan=lifespan)
+    app.include_router(router)
+    uvicorn.run(app, host="127.0.0.1", port=PORT, workers=1)
 
 
 class Run:
@@ -50,9 +88,11 @@ class Run:
 
 def start_server(log_path: Path) -> subprocess.Popen[bytes]:
     log = open(log_path, "ab")
+    command = [sys.executable, str(Path(__file__).resolve()), "--serve-isolated"] if ISOLATED else [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT), "--workers", "1"]
     proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(PORT), "--workers", "1"],
+        command,
         cwd=BACKEND, stdout=log, stderr=subprocess.STDOUT,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
     deadline = time.time() + 40
     while time.time() < deadline:
@@ -72,6 +112,7 @@ def client(work: Path, role: str, scenario: str, api: str) -> subprocess.Popen[b
         [GODOT, "--headless", "--path", str(FRONTEND), "--script", "res://src/tools/live_pvp_client.gd", "--",
          f"role={role}", f"scenario={scenario}", f"dir={work.as_posix()}", f"api={api}"],
         stdout=out, stderr=subprocess.STDOUT,
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
     )
 
 
@@ -484,4 +525,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if "--serve-isolated" in sys.argv:
+        serve_isolated()
+    else:
+        sys.exit(main())

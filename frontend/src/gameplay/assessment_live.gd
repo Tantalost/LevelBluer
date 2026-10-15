@@ -109,7 +109,7 @@ func _enemy_health_scale() -> float:
 	return float(story.get("enemy_hp_multiplier", 1.0)) if college else 1.0
 
 func _enemy_task_gateway() -> Object:
-	return tasks if college else null
+	return tasks
 
 func begin_defend() -> void:
 	super.begin_defend()
@@ -121,6 +121,7 @@ func resolve_answer(expired: bool = false) -> void:
 	if phase == "Trace" and not resolved and not paused and (expired or time_left <= 0):
 		resolved = true
 		selected_answers.clear()
+		_record_learning_answer(false, true)
 		_finish(false)
 		return
 	var previous: int = answered

@@ -85,3 +85,25 @@ class LearningRecordsTests(unittest.TestCase):
             with self.assertRaises(HTTPException):
                 sync_student_progress("owner",ProgressSyncRequest(learning_events=[event()]))
         self.assertFalse(fake.updates)
+
+
+class StageEvidenceTests(unittest.TestCase):
+    def test_stage_details_bounded_and_optional_for_legacy_clients(self):
+        payload = dict(event(), kind="stage", attempt_id=str(uuid4()), stage=1, outcome="failed")
+        self.assertNotIn("details", LearningEvent(**payload).record()["data"])
+        details = dict(phase="Trace", health=0, answered=3, correct=0, waves_completed=0, waves_total=3, timed_out=True, missed_question_ids=["q1"])
+        self.assertEqual(LearningEvent(**dict(payload,details=details)).record()["data"]["details"]["correct"],0)
+        for invalid in [dict(details,correct=4),dict(details,missed_question_ids=["x"]*51),dict(details,waves_completed=4),dict(details,student_id="forged")]:
+            with self.assertRaises(ValidationError):
+                LearningEvent(**dict(payload,details=invalid))
+        with self.assertRaises(ValidationError):
+            LearningEvent(**dict(payload,outcome="started",details=details))
+
+    def test_old_mobile_snapshots_cannot_write_enrollment(self):
+        from app.services.progress_service import sync_student_progress
+        fake=FakeSupabase()
+        payload=ProgressSyncRequest(student={"section":"Old","section_id":"old","grade_level":"Grade 11","enrollment_status":"active","academic_year":"2026-2027","enrollment_version":0}, section="Old")
+        with patch("app.services.progress_service.fetch_student_by_id",return_value={"id":"owner","section":"New","grade_level":"Grade 12","enrollment_status":"graduated"}),patch("app.services.progress_service.supabase",fake):
+            sync_student_progress("owner",payload)
+        for update in fake.updates.get("students",[]):
+            self.assertFalse(set(update)&{"section","section_id","grade_level","enrollment_status","academic_year","enrollment_version"})

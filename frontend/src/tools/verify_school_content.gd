@@ -7,6 +7,13 @@ func check(ok: bool, message: String) -> void:
 	if not ok:
 		failures += 1
 		push_error(message)
+func settle() -> void:
+	for frame: int in 5:
+		await process_frame
+func capture(filename: String) -> void:
+	if "--render" in OS.get_cmdline_user_args():
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/" + filename + ".png")
 func _run() -> void:
 	await process_frame
 	var db: Node = root.get_node("ContentDB")
@@ -33,8 +40,7 @@ func _run() -> void:
 	var scene: PackedScene = load("res://src/ui/screens/intel/school_content_screen.tscn")
 	var screen: Control = scene.instantiate()
 	root.add_child(screen)
-	root.content_scale_size = Vector2i.ZERO
-	await process_frame
+	await settle()
 	check(screen._body.get_child_count() == 3, "All resource types visible")
 	screen._open("lesson")
 	check(not screen.can_go_back() and screen._selected.is_empty(), "Android back returns to list first")
@@ -47,15 +53,36 @@ func _run() -> void:
 	screen._choose_answer(0, catalog.items[1].content)
 	check(screen._answer.text.begins_with("Correct."), "Correct answer gives feedback")
 	screen._open("codex")
-	check(screen._body.get_child_count() >= 6, "Codex definition and safety notes rendered")
-	for viewport: Vector2i in [Vector2i(1280,720),Vector2i(844,390),Vector2i(390,844)]:
+	check(screen._body.get_child_count() == 5 and screen._reader_header.visible, "Codex definition and separate warning/response panels rendered")
+	for viewport: Vector2i in [Vector2i(1280,720),Vector2i(844,390)]:
 		root.size = viewport
-		await process_frame
-		await process_frame
-		check(screen.get_combined_minimum_size().x <= viewport.x, "Reader fits viewport width")
-		if "--render" in OS.get_cmdline_user_args():
-			await RenderingServer.frame_post_draw
-			root.get_texture().get_image().save_png("res://.godot/school-content-%dx%d.png" % [viewport.x, viewport.y])
+		await settle()
+		check(root.get_visible_rect().encloses(screen._reader_header.get_global_rect()), "Fixed reader navigation fits landscape")
+		await capture("school-reader-%dx%d" % [viewport.x, viewport.y])
+		screen._open("")
+		screen._kind.select(0)
+		screen._filter_changed(0)
+		await settle()
+		check(screen._count.text == "03 RESOURCES", "Resource count reflects filters")
+		check(screen._count.get_line_count() == 1, "Resource count stays on one line")
+		check((screen._body.get_parent() as Control).size.y >= 200, "Landscape library keeps room for resource cards")
+		check(root.get_visible_rect().encloses(screen._filters.get_global_rect()), "Filters fit landscape")
+		check(not (screen._body.get_parent() as ScrollContainer).get_v_scroll_bar().visible, "Resource scrollbar is hidden without removing scrolling")
+		await capture("school-library-%dx%d" % [viewport.x, viewport.y])
+		for filter: OptionButton in [screen._topic, screen._kind]:
+			var popup: PopupMenu = filter.get_popup()
+			check(popup.has_theme_font_override("font") and popup.has_theme_stylebox_override("panel") and popup.has_theme_stylebox_override("hover"), "Expanded filter uses game styling")
+			filter.show_popup()
+			await settle()
+			check(popup.visible, "Filter popup opens")
+			await capture("school-%s-%dx%d" % [filter.name, viewport.x, viewport.y])
+			screen.on_exit()
+			check(not popup.visible, "Leaving school content closes popup")
+		screen._topic.select(3)
+		screen._filter_changed(3)
+		check(screen._count.text == "00 RESOURCES" and screen._body.get_child_count() == 1, "Empty filters show guidance")
+		screen._topic.select(0)
+		screen._open("codex")
 	check(player.mastery_matrix == before.mastery and player.cleared_stages == before.cleared and player.completed_lessons == before.lessons and player.unlocked_skills == before.unlocks, "Browsing and practice preserve progress")
 	db._school_feed_failed()
 	check(db.school_items.size() == 3, "Transient failure retains current-session catalog")

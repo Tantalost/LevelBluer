@@ -19,6 +19,8 @@ var _fetch_in_flight: bool = false
 var _last_fetch_ok: bool = false
 var _retry_left: float = 0.0
 var _learning_session: String = ""
+var _sync_callback: Callable
+var _fetch_callback: Callable
 
 
 func _ready() -> void:
@@ -26,13 +28,11 @@ func _ready() -> void:
 	_http_request.timeout = SYNC_TIMEOUT_SEC
 	_http_request.use_threads = true
 	add_child(_http_request)
-	_http_request.request_completed.connect(_on_sync_completed)
 
 	_http_fetch = HTTPRequest.new()
 	_http_fetch.timeout = SYNC_TIMEOUT_SEC
 	_http_fetch.use_threads = true
 	add_child(_http_fetch)
-	_http_fetch.request_completed.connect(_on_fetch_completed)
 	_learning_session = AuthService.participant_code()
 	AuthService.session_changed.connect(_learning_session_changed)
 	set_process(true)
@@ -65,7 +65,7 @@ func flush() -> void:
 	await get_tree().process_frame
 
 
-func save_game(sync_cloud: bool = true) -> void:
+func save_game(sync_cloud: bool = true, defer_cloud: bool = false) -> void:
 	var data: Dictionary = PlayerManager.get_save_data()
 	var json_string: String = JSON.stringify(data)
 	var path: String = _resolve_save_path()
@@ -77,9 +77,16 @@ func save_game(sync_cloud: bool = true) -> void:
 	file.close()
 	if not sync_cloud:
 		return
-	print("[SaveService] Game saved successfully. path=", path)
+	if not defer_cloud:
+		print("[SaveService] Game saved successfully. path=", path)
 	if AuthService.is_signed_in():
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
+		# Frequent mission counters may wait for the retry timer, but a previous
+		# upload must not acknowledge a newer local snapshot as already synced.
+		if defer_cloud and _sync_in_flight:
+			_resync_queued = true
+	if defer_cloud:
+		return
 	_sync_to_cloud()
 
 
@@ -131,8 +138,11 @@ func fetch_cloud_save() -> void:
 		"Authorization: Bearer " + token,
 	]
 	_fetch_in_flight = true
+	_fetch_callback = _on_fetch_completed.bind(AuthService.participant_code())
+	_http_fetch.request_completed.connect(_fetch_callback, CONNECT_ONE_SHOT)
 	var error: Error = _http_fetch.request(url, headers, HTTPClient.METHOD_GET)
 	if error != OK:
+		_http_fetch.request_completed.disconnect(_fetch_callback)
 		push_warning("[SaveService] Failed to initiate cloud fetch. error=" + str(error))
 		_finish_fetch(false)
 
@@ -148,7 +158,10 @@ func _on_fetch_completed(
 	response_code: int,
 	_headers: PackedStringArray,
 	body: PackedByteArray,
+	request_owner: String,
 ) -> void:
+	if not AuthService.is_signed_in() or request_owner != AuthService.participant_code():
+		return
 	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
 		push_warning("[SaveService] Cloud fetch failed or offline. response_code=" + str(response_code))
 		_finish_fetch(false)
@@ -241,8 +254,11 @@ func _sync_to_cloud() -> void:
 	]
 
 	_sync_in_flight = true
+	_sync_callback = _on_sync_completed.bind(AuthService.participant_code())
+	_http_request.request_completed.connect(_sync_callback, CONNECT_ONE_SHOT)
 	var error: Error = _http_request.request(url, headers, HTTPClient.METHOD_POST, json_string)
 	if error != OK:
+		_http_request.request_completed.disconnect(_sync_callback)
 		_sync_in_flight = false
 		_retry_left = RETRY_SEC
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
@@ -254,7 +270,10 @@ func _on_sync_completed(
 	response_code: int,
 	_headers: PackedStringArray,
 	body: PackedByteArray,
+	request_owner: String,
 ) -> void:
+	if not AuthService.is_signed_in() or request_owner != AuthService.participant_code():
+		return
 	_sync_in_flight = false
 	var ok: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	if result != HTTPRequest.RESULT_SUCCESS:
@@ -283,7 +302,8 @@ func _on_sync_completed(
 
 	if _resync_queued:
 		_resync_queued = false
-		_sync_to_cloud()
+		# Let this one-shot callback disconnect before binding the next request.
+		_sync_to_cloud.call_deferred()
 
 
 func _api_base() -> String:
@@ -307,6 +327,11 @@ func _learning_session_changed(_signed_in: bool) -> void:
 	_learning_session = current
 	_http_request.cancel_request()
 	_http_fetch.cancel_request()
+	if _sync_callback.is_valid() and _http_request.request_completed.is_connected(_sync_callback):
+		_http_request.request_completed.disconnect(_sync_callback)
+	if _fetch_callback.is_valid() and _http_fetch.request_completed.is_connected(_fetch_callback):
+		_http_fetch.request_completed.disconnect(_fetch_callback)
 	_sync_in_flight = false
-	_fetch_in_flight = false
 	_resync_queued = false
+	_retry_left = RETRY_SEC
+	_finish_fetch(false)

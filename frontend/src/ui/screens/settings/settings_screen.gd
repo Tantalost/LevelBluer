@@ -1,5 +1,6 @@
 extends BaseScreen
-## Settings screen — 100% matches SettingsScreen.tsx from the React Native prototype.
+## Fixed account actions around a scrollable, themed settings workspace.
+const UI: Script = preload("res://src/ui/screens/intel/study_ui.gd")
 
 @onready var _safe: MarginContainer = $SafeAreaContainer
 @onready var _back_button: Button = %BackButton
@@ -37,6 +38,7 @@ var _accessibility_labels: Array[Label] = []
 var _reduced_motion_toggle: CheckButton
 var _timer_assist_select: OptionButton
 var _text_speed_select: OptionButton
+var _feedback_button: Button
 
 
 func _ready() -> void:
@@ -44,12 +46,18 @@ func _ready() -> void:
 	_build_music_volume()
 	_build_dialogue_toggle()
 	_build_accessibility_controls()
-	get_viewport().size_changed.connect(_apply_scale)
+	_feedback_button = UI.button("SEND FEEDBACK", func() -> void:
+		preload("res://src/ui/screens/settings/student_feedback.gd").open(self)
+	)
+	$SafeAreaContainer/ScreenLayout/HeaderBar.add_child(_feedback_button)
+	_style_workspace()
+	get_viewport().size_changed.connect(_apply_scale.call_deferred)
 
 	_back_button.pressed.connect(func(): Router.request_back())
 	_logout_button.pressed.connect(_on_logout_pressed)
 
 	_setup_control_handlers()
+	_apply_scale()
 
 
 func on_enter(_args: Dictionary) -> void:
@@ -66,7 +74,16 @@ func _load_font() -> void:
 
 
 func _build_music_volume() -> void:
-	var column: VBoxContainer = %BgmLabel.get_parent() as VBoxContainer
+	var section: VBoxContainer = %SecAudio.get_parent() as VBoxContainer
+	var panel: PanelContainer = UI.panel(section)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	panel.add_child(row)
+	var copy: VBoxContainer = UI.column(row, 8)
+	copy.size_flags_horizontal = SIZE_EXPAND_FILL
+	copy.add_child(UI.label("Music volume", 28))
+	copy.add_child(UI.label("Set the background music level", 24, UI.MUTED))
+	var column: VBoxContainer = UI.column(row, 8)
 	_music_val = Label.new()
 	column.add_child(_music_val)
 	_music_slider = HSlider.new()
@@ -83,7 +100,14 @@ func _build_music_volume() -> void:
 	)
 
 func _build_dialogue_toggle() -> void:
-	var column: VBoxContainer = %SfxLabel.get_parent() as VBoxContainer
+	var section: VBoxContainer = %SecAudio.get_parent() as VBoxContainer
+	var panel: PanelContainer = UI.panel(section)
+	var column: HBoxContainer = HBoxContainer.new()
+	column.add_theme_constant_override("separation", 24)
+	panel.add_child(column)
+	var label: Label = UI.label("Retro character voices", 28)
+	label.size_flags_horizontal = SIZE_EXPAND_FILL
+	column.add_child(label)
 	_dialogue_toggle = CheckButton.new()
 	_dialogue_toggle.name = "DialogueBlipsToggle"
 	_dialogue_toggle.text = "Dialogue blips"
@@ -112,7 +136,8 @@ func _build_accessibility_controls() -> void:
 	section.add_child(motion_label)
 	_accessibility_labels.append(motion_label)
 	_reduced_motion_toggle = CheckButton.new()
-	_reduced_motion_toggle.text = "NO SCREEN SHAKE OR PORTRAIT JOLTS"
+	_reduced_motion_toggle.text = "Reduce motion"
+	_reduced_motion_toggle.tooltip_text = "Reduce screen shake, portrait jolts, and animated interface effects."
 	section.add_child(_reduced_motion_toggle)
 	var timer_label := Label.new()
 	timer_label.text = "Timed decisions"
@@ -194,6 +219,8 @@ func _load_ui_from_service() -> void:
 	_reduced_motion_toggle.set_pressed_no_signal(SettingsService.reduced_motion)
 	_timer_assist_select.select(maxi(0, SettingsService.TIMED_DECISION_ASSIST_MODES.find(SettingsService.timed_decision_assist)))
 	_text_speed_select.select(maxi(0, SettingsService.TEXT_SPEED_MODES.find(SettingsService.text_speed)))
+	for toggle: CheckButton in [_sfx_toggle, _bgm_toggle, _vibration_toggle, _autodeploy_toggle, _damage_toggle, _push_toggle, _reminders_toggle, _hq_toggle, _fps_toggle]:
+		toggle.text = "ON" if toggle.button_pressed else "OFF"
 
 
 func _setup_control_handlers() -> void:
@@ -274,49 +301,81 @@ func _on_logout_pressed() -> void:
 
 
 func _apply_scale() -> void:
-	var view_w := get_viewport().get_visible_rect().size.x
-	var scaled := func(value: float) -> int: return UiScale.n(value, view_w)
+	if not is_instance_valid(_feedback_button):
+		return
+	var physical_scale: float = maxf(0.25, minf(float(get_window().size.x) / get_viewport_rect().size.x, float(get_window().size.y) / get_viewport_rect().size.y))
+	UI.fit_touch(self)
+	for control: Node in find_children("*", "HSlider", true, false):
+		var slider: HSlider = control as HSlider
+		slider.custom_minimum_size = Vector2(maxf(240, ceilf(140 / physical_scale)), maxf(48, ceilf(48 / physical_scale)))
+	for select: OptionButton in [_timer_assist_select, _text_speed_select]:
+		select.get_popup().add_theme_font_size_override("font_size", maxi(24, ceili(16 / physical_scale)))
+		select.get_popup().add_theme_constant_override("v_separation", ceili(24 / physical_scale))
 
-	_safe.add_theme_constant_override("margin_left", scaled.call(24))
-	_safe.add_theme_constant_override("margin_top", scaled.call(24))
-	_safe.add_theme_constant_override("margin_right", scaled.call(24))
-	_safe.add_theme_constant_override("margin_bottom", scaled.call(24))
+func _style_workspace() -> void:
+	$Background.color = Color("#050B18")
+	var header: HBoxContainer = $SafeAreaContainer/ScreenLayout/HeaderBar
+	header.get_node("HeaderSpacerLeft").hide()
+	header.get_node("HeaderSpacerRight").hide()
+	header.get_node("HeaderRightPad").hide()
+	header.add_theme_constant_override("separation", 24)
+	_title_label.size_flags_horizontal = SIZE_EXPAND_FILL
+	_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	var scroll: ScrollContainer = $SafeAreaContainer/ScreenLayout/ScrollContainer
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	var content: VBoxContainer = scroll.get_node("ContentVBox")
+	content.get_node("LogoutSpacer").hide()
+	content.add_theme_constant_override("separation", 24)
+	for node: Node in find_children("*", "Control", true, false):
+		if node is Label:
+			var label: Label = node as Label
+			label.add_theme_font_override("font", UI.FONT)
+			label.add_theme_font_size_override("font_size", 24 if str(label.name).ends_with("Sub") else 28)
+			label.add_theme_color_override("font_color", Color("#A0B7BB") if str(label.name).ends_with("Sub") else Color("#F3ECD6"))
+			label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		elif node is PanelContainer:
+			(node as PanelContainer).add_theme_stylebox_override("panel", UI.box(Color("#102040"), Color("#173058"), 20))
+		elif node is Button:
+			var button: Button = node as Button
+			button.focus_mode = FOCUS_ALL
+			button.size_flags_vertical = SIZE_SHRINK_CENTER
+			button.add_theme_font_override("font", UI.FONT)
+			button.add_theme_font_size_override("font_size", 24)
+			button.add_theme_color_override("font_color", Color("#F3ECD6"))
+			button.add_theme_color_override("font_hover_color", Color("#8FF0E6"))
+			button.add_theme_stylebox_override("normal", UI.box(Color("#0A1730"), Color("#173058"), 12))
+			button.add_theme_stylebox_override("hover", UI.box(Color("#153B37"), Color("#4FE0D4"), 12))
+			button.add_theme_stylebox_override("pressed", UI.box(Color("#0E2A28"), Color("#4FE0D4"), 12))
+			button.add_theme_stylebox_override("focus", UI.box(Color.TRANSPARENT, Color("#FFB648"), 0))
+			if button is CheckButton and button.text.is_empty():
+				button.text = "ON" if button.button_pressed else "OFF"
+				button.toggled.connect(func(enabled: bool) -> void: button.text = "ON" if enabled else "OFF")
+	for heading: Label in [%SecAudio, %SecGameplay, %SecNotif, %SecDisplay, _accessibility_labels[0]]:
+		heading.add_theme_color_override("font_color", Color("#8FF0E6"))
+		heading.add_theme_font_size_override("font_size", 26)
+	_apply_pixel_font(_title_label, 20)
+	_title_label.add_theme_constant_override("shadow_outline_size", 0)
+	for row: Node in content.find_children("Row", "HBoxContainer", true, false):
+		(row as HBoxContainer).add_theme_constant_override("separation", 24)
+	for slider: HSlider in [_master_slider, _sfx_slider, _music_slider]:
+		slider.focus_mode = FOCUS_ALL
+		var track: StyleBoxFlat = UI.box(Color("#050B18"), Color("#173058"), 5)
+		slider.add_theme_stylebox_override("slider", track)
+		slider.add_theme_stylebox_override("grabber_area", UI.box(Color("#2E6BFF"), Color("#4FE0D4"), 5))
+		slider.add_theme_stylebox_override("grabber_area_highlight", UI.box(Color("#4F8CFF"), Color("#8FF0E6"), 5))
+	for select: OptionButton in [_timer_assist_select, _text_speed_select]:
+		var popup: PopupMenu = select.get_popup()
+		popup.add_theme_font_override("font", UI.FONT)
+		popup.add_theme_color_override("font_color", Color("#F3ECD6"))
+		popup.add_theme_color_override("font_hover_color", Color("#8FF0E6"))
+		popup.add_theme_stylebox_override("panel", UI.box(Color("#0A1730"), Color("#4FE0D4"), 12))
+		popup.add_theme_stylebox_override("hover", UI.box(Color("#153B37"), Color("#4FE0D4"), 8))
+	_logout_button.add_theme_color_override("font_color", Color("#FF5C5C"))
+	_logout_button.add_theme_stylebox_override("normal", UI.box(Color("#0A1730"), Color("#FF5C5C"), 12))
 
-	_apply_pixel_font_button(_back_button, scaled.call(14))
-	_apply_pixel_font(_title_label, scaled.call(24))
-	_apply_pixel_font_button(_logout_button, scaled.call(14))
-
-	for title in [%SecAudio, %SecGameplay, %SecNotif, %SecDisplay]:
-		_apply_pixel_font(title, scaled.call(12))
-
-	for label in [
-		%MasterVolLabel, %SfxLabel, %SfxVolLabel, %BgmLabel,
-		%VibrationLabel, %AutoDeployLabel, %DamageNumLabel,
-		%PushNotifLabel, %RemindersLabel,
-		%HqGraphicsLabel, %FpsCounterLabel
-	]:
-		_apply_pixel_font(label, scaled.call(14))
-
-	for sub in [
-		%MasterVolSub, %SfxSub, %SfxVolSub, %BgmSub,
-		%VibrationSub, %AutoDeploySub, %DamageNumSub,
-		%PushNotifSub, %RemindersSub,
-		%HqGraphicsSub, %FpsCounterSub
-	]:
-		_apply_pixel_font(sub, scaled.call(10))
-
-	for val in [_master_val, _sfx_val]:
-		_apply_pixel_font(val, scaled.call(10))
-	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
-	_apply_pixel_font(_music_val, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
-	_music_slider.custom_minimum_size.y = maxf(48.0, ceilf(48.0 / physical_scale))
-	_apply_pixel_font_button(_dialogue_toggle, maxi(scaled.call(12), ceili(16.0 / physical_scale)))
-	_dialogue_toggle.custom_minimum_size.y = ceilf(48.0 / physical_scale)
-	for label: Label in _accessibility_labels:
-		_apply_pixel_font(label, scaled.call(14))
-	_apply_pixel_font_button(_reduced_motion_toggle, scaled.call(11))
-	_apply_pixel_font_button(_timer_assist_select, scaled.call(12))
-	_apply_pixel_font_button(_text_speed_select, scaled.call(12))
+func on_exit() -> void:
+	_timer_assist_select.get_popup().hide()
+	_text_speed_select.get_popup().hide()
 
 
 func _apply_pixel_font(label: Label, font_size: int) -> void:

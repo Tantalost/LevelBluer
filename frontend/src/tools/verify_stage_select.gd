@@ -39,7 +39,7 @@ func _run() -> void:
 	check(screen._rows.size() == 10 and screen._authored_count() == 10, "Ten authored Module 1 stages")
 	check(screen.get_node("CRTOverlay").visible, "Shared permanent CRT")
 	check(screen._breach_button.disabled, "Fresh user gated by lessons")
-	check(screen._lock_reason(0).contains("lessons"), "Lesson gate explained")
+	check(screen._lock_reason(0).contains("Lesson 1"), "Exact lesson gate explained")
 	check(screen._cleared_count() == 0, "Mock progression not counted as stage clears")
 	check(screen._rows[1].get_theme_stylebox("normal").bg_color != screen.COMPLETED_FILL, "Uncleared stage has no completion tint")
 	var before := fingerprint(p, a)
@@ -58,6 +58,13 @@ func _run() -> void:
 	screen._select_stage(0)
 	await settle()
 	await capture("fresh_1280")
+	p.lesson_progress = {"mod_01": 1}
+	screen.on_resume()
+	await settle()
+	check(not screen._breach_button.disabled and screen._can_play(0), "Lesson 1 immediately refreshes Stage 1 launch button")
+	check(not screen._can_play(1), "Stage 2 still needs Stage 1 cleared")
+	p.cleared_stages["mod_01:1"] = true
+	check(screen._can_play(1) and not screen._can_play(2), "Lesson 1 permits Stage 2 but not Stage 3 after first clear")
 	p.lesson_progress = {"mod_01": 6}
 	p.completed_lessons.assign(["mod_01", "mod1_all"])
 	p.max_stage_cleared_by_module = {"mod_01": 3}
@@ -79,7 +86,9 @@ func _run() -> void:
 	await capture("partial_1280")
 	screen._select_stage(9)
 	await settle()
-	check(screen._lock_reason(9).contains("preceding"), "Sequential gate explained")
+	check(screen._lock_reason(9).contains("post-test"), "Stage 10 post-test gate explained")
+	p.lesson_post_quiz_scores["mod_01"] = 20
+	check(screen._lock_reason(9).contains("preceding"), "Passing post-test does not bypass stage sequence")
 	await capture("locked_1280")
 	p.locked_stages = {"mod_01:1": true}
 	screen._select_stage(0)

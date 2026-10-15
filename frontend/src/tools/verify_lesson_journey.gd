@@ -4,6 +4,7 @@ var Checkpoint: GDScript
 var Catalog: GDScript
 const Quiz = preload("res://src/gameplay/quiz_content.gd")
 var failures: int = 0
+var celebrations: int = 0
 
 
 func _initialize() -> void:
@@ -41,8 +42,23 @@ func answer(quiz: Control, correct: bool) -> void:
 				break
 	quiz.submit()
 
+func answer_mini(screen: Control, correct: bool) -> void:
+	var item: Dictionary = screen._quiz_items[screen._quiz_index]
+	if correct:
+		for index: int in item.correct:
+			screen._pick(index)
+	else:
+		for index: int in item.options.size():
+			if index not in item.correct:
+				screen._pick(index)
+				break
+	screen._check_quiz()
+
 func _run() -> void:
+	# Pin the initial landscape size; headless defaults differ from the renderer.
+	root.size = Vector2i(1280, 720)
 	await settle()
+	root.get_node("SettingsService").text_speed = "instant"
 	Checkpoint = load("res://src/ui/screens/intel/lesson_post_quiz.gd")
 	Catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")
 	var memory_script: GDScript = GDScript.new()
@@ -73,7 +89,11 @@ func _run() -> void:
 	await settle()
 	check(picker._cards.size() == 5 and picker._cards[1].disabled, "Timeline presents five gated modules")
 	check(picker._overview.visible and not picker._detail.visible, "Initial screen shows only the timeline")
+	var backdrop: Control = picker.get_node("JourneyBackdrop")
+	check(backdrop.visible and backdrop.mouse_filter == Control.MOUSE_FILTER_IGNORE and backdrop.focus_mode == Control.FOCUS_NONE, "Journey decoration never intercepts touch or keyboard input")
+	check(not backdrop.is_processing() and backdrop.get_index() == 1, "Journey decoration is static and behind the interface")
 	check(not picker._scroll.get_h_scroll_bar().visible, "Timeline scrollbar is hidden")
+	verify_timeline_checkpoints(picker)
 	picker._pan(1)
 	await create_timer(0.4).timeout
 	check(picker._scroll.scroll_horizontal > 0, "Arrow navigation reaches offscreen modules")
@@ -84,11 +104,13 @@ func _run() -> void:
 	root.size = Vector2i(844, 390)
 	await settle()
 	await capture("timeline_phone")
+	verify_timeline_checkpoints(picker)
 	picker._cards[0].pressed.emit()
 	await create_timer(0.25).timeout
 	await capture("transition_phone")
 	await create_timer(0.65).timeout
 	check(picker._detail.visible and not picker._overview.visible, "Module tap opens a separate detail view")
+	check(not backdrop.visible, "Journey shapes do not overlap the module hologram")
 	check(root.get_visible_rect().encloses(picker._tile.get_global_rect()), "Module entry fits phone")
 	check(root.get_visible_rect().encloses(picker._status.get_global_rect()), "Module description fits phone")
 	await capture("detail_phone")
@@ -97,6 +119,7 @@ func _run() -> void:
 	check(not picker.can_go_back(), "Back from details stays inside Lessons")
 	await create_timer(0.5).timeout
 	check(picker._overview.visible and not picker._detail.visible and picker.can_go_back(), "Back restores timeline before leaving Lessons")
+	check(backdrop.visible, "Returning to the journey restores the shapes")
 	root.size = Vector2i(1280, 720)
 	await settle()
 	picker._select(0)
@@ -109,6 +132,34 @@ func _run() -> void:
 	picker.on_resume()
 	await settle()
 	check(not picker._checkpoint.disabled, "Completed lessons enable the overview checkpoint action")
+	var ready_group: Control = picker._track.get_child(0)
+	check(not ready_group.get_node("Checkpoint1").disabled and ready_group.get_node("Connector").ready_for_test, "Six lessons illuminate the path to the checkpoint")
+	check(picker._cards[1].disabled and not ready_group.get_node("Connector").passed, "Ready checkpoint does not unlock the next module before passing")
+	picker._set_detail_visible(false)
+	await settle()
+	await capture("timeline_checkpoint_ready")
+	var motion_preferences: Node = root.get_node("SettingsService")
+	var motion_before: bool = motion_preferences.reduced_motion
+	var ready_link: Control = ready_group.get_node("Connector")
+	var ready_mark: Control = ready_group.get_node("Checkpoint1/CheckpointMark")
+	motion_preferences.reduced_motion = true
+	var link_clock: float = ready_link.clock
+	var mark_clock: float = ready_mark.clock
+	ready_link._process(1.0)
+	ready_mark._process(1.0)
+	check(ready_link.clock == link_clock and ready_mark.clock == mark_clock, "Reduced motion keeps checkpoint highlights static")
+	motion_preferences.reduced_motion = false
+	ready_link._process(0.5)
+	ready_mark._process(0.5)
+	check(ready_link.clock > link_clock and ready_mark.clock > mark_clock, "Ready checkpoint animates the incoming light and flag halo")
+	motion_preferences.reduced_motion = motion_before
+	account.lesson_post_quiz_scores["mod_01"] = 20
+	picker.on_resume()
+	await settle()
+	check(not picker._cards[1].disabled and picker._track.get_child(0).get_node("Connector").passed, "Passing lights the onward connector and unlocks the next module")
+	await capture("timeline_checkpoint_passed")
+	account.lesson_post_quiz_scores.clear()
+	picker._select(0, false)
 	await create_timer(0.7).timeout
 	await capture("detail_ready")
 	account.lesson_progress.clear()
@@ -153,15 +204,89 @@ func _run() -> void:
 		check(root.get_visible_rect().encloses(player._start_button.get_global_rect()), "Start action fits " + str(dimensions))
 		await capture("web_%dx%d" % [dimensions.x, dimensions.y])
 	root.size = Vector2i(1280, 720)
+	settings.text_speed = "normal"
+	player._open_step(0, 0)
+	check(player._revealing and player._reading_blocks[0].visible_characters == 0, "Reading starts with a progressive reveal")
+	player._process(0.1)
+	check(player._reading_blocks[0].visible_characters > 0, "Text advances at the configured speed")
+	player._on_continue()
+	check(not player._revealing and player._reading_page == 0, "First Continue reveals text without skipping the page")
+	player._on_continue()
+	await settle()
+	check(player._reading_page == 1 and player._revealing, "Next reading page restarts progressive reveal")
+	var annotated: String = ""
+	for block: RichTextLabel in player._reading_blocks:
+		annotated += block.text
+	check(annotated.contains("[u]help@harb0r-civic.net[/u]") and annotated.contains("WHO /") and annotated.contains("PRESSURE /"), "School email highlights exact sender, request and pressure with matching callouts")
+	root.size = Vector2i(844, 390)
+	await settle()
+	check(root.get_visible_rect().encloses(player._reveal_button.get_global_rect()), "Show All fits phone landscape")
+	player._finish_reading_reveal()
+	await capture("context_clues_phone")
+	player._previous_page()
+	settings.text_speed = "instant"
+	player._process(0.1)
+	check(not player._revealing and player._reading_blocks[0].visible_characters == -1, "Changing to Instant immediately reveals all reading text")
+	settings.text_speed = "normal"
+	settings.reduced_motion = true
+	player._start_reading_reveal()
+	check(not player._revealing, "Reduced motion displays reading text without animation")
+	settings.reduced_motion = false
+	player._start_reading_reveal()
+	player.on_exit()
+	check(not player._revealing, "Leaving the lesson stops text animation")
+	settings.reduced_motion = old_motion
+	settings.text_speed = "instant"
+	root.size = Vector2i(1280, 720)
 	player._open_step(0, 0)
 	player._on_continue()
 	player._on_continue()
 	player._on_continue()
 	await settle()
-	for value: int in player._data.correct:
-		player._pick(value)
-	player._check_quiz()
-	check(player._quiz_passed, "Original mini quiz still grades")
+	var mini_before: int = account.answers
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		check(root.get_visible_rect().encloses(player._submit_button.get_global_rect()), "Mini-quiz submit fits landscape viewport")
+		check(player._submit_button.disabled, "Mini-quiz requires a selected answer")
+		await capture("mini_%dx%d" % [dimensions.x, dimensions.y])
+	for index: int in 5:
+		answer_mini(player, index < 2)
+		player._check_quiz()
+		if index < 4:
+			player._on_continue()
+	check(player._quiz_score == 2 and not player._quiz_passed and player._quiz_finished, "2/5 fails after all five questions")
+	await settle()
+	await capture("mini_failed_phone")
+	check(account.answers == mini_before + 5, "Exactly five first-response BKT updates, including mistakes")
+	player._set_phase(2)
+	check(player._phase == 1 and player._simulation == null, "Failed quiz cannot enter simulation")
+	player.can_go_back()
+	player._open_step(0, 2)
+	check(not player._in_lesson, "Simulation satellite cannot bypass failed attempt")
+	player._open_step(0, 1)
+	check(player._quiz_finished and player._quiz_score == 2, "Returning from path preserves failed result")
+	player._on_continue()
+	check(player._quiz_index == 0 and player._quiz_score == 0 and not player._quiz_finished, "Retry starts a fresh five-question attempt")
+	for index: int in 5:
+		answer_mini(player, index < 3)
+		if index < 4:
+			check(not player._quiz_passed, "Three correct does not skip the remaining questions")
+			player._on_continue()
+	check(player._quiz_passed and player._quiz_score == 3, "Exactly 3/5 unlocks simulation")
+	await settle()
+	check(root.get_visible_rect().encloses(player._submit_button.get_global_rect()), "Mini-quiz result action fits phone landscape")
+	await capture("mini_passed_phone")
+	root.size = Vector2i(1280, 720)
+	check(account.answers == mini_before + 5, "Retry cannot farm repeated BKT updates")
+	var mini_saved: Dictionary = account.get_save_data()
+	var mini_restored: Node = memory_script.new()
+	mini_restored.apply_save_data(mini_saved)
+	check(not mini_restored.record_lesson_quiz_answer("mod_01", 0, str(player._quiz_items[0].id), true), "First responses remain deduplicated after save reload")
+	check(mini_restored.answers == 0, "Reloaded repeated response leaves mastery unchanged")
+	mini_restored.apply_save_data({})
+	check(mini_restored.lesson_quiz_responses.is_empty(), "Account switch clears prior student's quiz evidence")
+	mini_restored.free()
 	player._on_continue()
 	var sim: Control = player._simulation
 	check(not sim._started, "Simulation begins with its mission briefing")
@@ -178,10 +303,12 @@ func _run() -> void:
 	await settle()
 	check(player._simulation_passed, "Original evidence simulation still completes")
 	player._on_continue()
+	player.lesson_celebrated.connect(func() -> void: celebrations += 1)
 	player._finish_lesson()
 	check(account.get_lesson_progress("mod_01") == 1 and player._lesson_index == 1, "Full lesson unlocks exactly one next node")
 	player._finish_lesson()
 	check(account.get_lesson_progress("mod_01") == 1, "Stale completion cannot increment again")
+	check(celebrations == 1, "New completion celebrates once; stale completion never repeats it")
 	await create_timer(0.9).timeout
 	await capture("completed_path")
 	account.lesson_progress["mod_01"] = 6
@@ -200,6 +327,30 @@ func _run() -> void:
 	check(player._web._canvas.ready_for_test, "Reduced motion keeps completion highlight without animation")
 	settings.reduced_motion = old_motion
 	root.size = Vector2i(1280, 720)
+	var router: Node = root.get_node("Router")
+	var old_tutorial: bool = router.is_tutorial
+	var ungraded_before: int = account.answers
+	# Completed lesson review and the tutorial both retain the same 5-question
+	# gate without recording fresh BKT evidence or completion.
+	for tutorial: bool in [false, true]:
+		router.is_tutorial = tutorial
+		player._load_module("mod_01", not tutorial, tutorial)
+		player._open_lesson()
+		for page: int in 3:
+			player._on_continue()
+		for index: int in 5:
+			answer_mini(player, true)
+			if index < 4:
+				player._on_continue()
+		check(player._quiz_passed and player._quiz_score == 5, "Review/tutorial still requires five submitted answers")
+		check(account.answers == ungraded_before, "Review/tutorial leaves mastery unchanged")
+	router.is_tutorial = old_tutorial
+	account.lesson_progress["mod_01"] = 0
+	router.is_tutorial = true
+	check(not account.record_lesson_quiz_answer("mod_01", 0, "tutorial-not-graded", true), "Account guard rejects tutorial evidence even if called directly")
+	router.is_tutorial = old_tutorial
+	check(not account.record_lesson_quiz_answer("mod_01", 2, "future-lesson", true), "Future lesson cannot submit evidence")
+	check(not account.record_lesson_quiz_answer("mod_02", 0, "locked-module", true), "Locked module cannot submit evidence")
 	player.queue_free()
 	await settle()
 	picker.queue_free()
@@ -274,6 +425,68 @@ func _run() -> void:
 	var easy: Dictionary = Checkpoint.select_next(pool, empty_used, {}, "easy", 3, lessons)
 	var hard: Dictionary = Checkpoint.select_next(pool, empty_used, {}, "hard", 3, lessons)
 	check(easy.difficulty == "easy" and hard.difficulty == "hard", "BKT band changes question difficulty while preserving lesson coverage")
+	await verify_baseline(memory_script)
 	account.free()
 	print("[LESSON JOURNEY] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func verify_timeline_checkpoints(picker: Control) -> void:
+	for i: int in picker._cards.size():
+		var group: Control = picker._track.get_child(i)
+		var flag: Button = group.get_node("Checkpoint%d" % (i + 1))
+		var orb: Control = picker._cards[i]
+		var center: Vector2 = flag.get_global_rect().get_center()
+		check(absf(center.y - orb.get_global_rect().get_center().y) <= 1.0, "Checkpoint lies on the module centerline: %s / %s" % [center, orb.get_global_rect().get_center()])
+		check(not flag.get_global_rect().intersects(orb.get_global_rect()), "Checkpoint never overlaps its module")
+		if i < picker._cards.size() - 1:
+			var next_orb: Control = picker._cards[i + 1]
+			check(absf(center.x - (orb.get_global_rect().get_center().x + next_orb.get_global_rect().get_center().x) * 0.5) <= 1.0, "Checkpoint is centered between its module and the next")
+			check(not flag.get_global_rect().intersects(next_orb.get_global_rect()), "Checkpoint clears the next module")
+		else:
+			check(group.get_node("Connector").terminal, "Final checkpoint has no onward module branch")
+			check(flag.get_global_rect().end.x <= picker._track.global_position.x + picker._track.custom_minimum_size.x, "Final checkpoint is reachable inside scroll content")
+		check(flag.size.x >= 48 and flag.size.y >= 48, "Checkpoint retains a touch-sized hit target")
+
+func verify_baseline(memory_script: GDScript) -> void:
+	var account: Node = memory_script.new()
+	var bank: GDScript = load("res://src/data/pretest_bank.gd")
+	var answers: Array = []
+	for question: Dictionary in bank._bank_for("mod_01"):
+		answers.append({"id": question.id, "answer": question.answer})
+	var mastery_before: Dictionary = account.mastery_matrix.duplicate(true)
+	account.record_pretest_baseline("mod_01", answers)
+	check(account.pretest_baseline("mod_01") == {"correct": 15, "total": 15}, "Baseline saves exact first score")
+	answers[0].answer = -1
+	account.record_pretest_baseline("mod_01", answers)
+	check(account.pretest_baseline("mod_01").correct == 15, "Retry cannot replace the first baseline")
+	check(account.mastery_matrix == mastery_before and account.answers == 0, "Storing baseline never updates BKT a second time")
+	account.apply_save_data(JSON.parse_string(JSON.stringify(account.get_save_data())))
+	check(account.pretest_baseline("mod_01").correct == 15, "Baseline survives JSON roundtrip")
+	var picker: Control = load("res://src/ui/screens/intel/lessons_screen.tscn").instantiate()
+	picker.account = account
+	root.add_child(picker)
+	picker._select(0, false)
+	await settle()
+	check(picker._baseline.text.contains("15 of 15") and picker._baseline.text.contains("not your current BKT"), "Overview separates initial knowledge from changing mastery")
+	await capture("baseline_overview")
+	account.apply_save_data({})
+	check(account.pretest_baseline("mod_01").is_empty(), "New/legacy account never inherits another baseline")
+	var auth: Node = root.get_node("AuthService")
+	var prior_modules: Array = auth._completed_module_ids.duplicate()
+	auth._completed_module_ids = ["mod_01"]
+	picker._select(0, false)
+	check(picker._baseline.text.contains("unavailable"), "Old completed pretest never invents a score")
+	auth._completed_module_ids = prior_modules
+	account.apply_save_data({"pretest_baselines": {"mod_01": {"correct": 20, "total": 15}}})
+	check(account.pretest_baseline("mod_01").is_empty(), "Invalid baseline fails closed")
+	var study: GDScript = load("res://src/ui/screens/intel/lesson_study_content.gd")
+	for module_id: String in Catalog.module_ids():
+		for index: int in 6:
+			var data: Dictionary = study.build(module_id, index)
+			var clues: Array[Dictionary] = study.context_clues(module_id, index)
+			check(not clues.is_empty(), "Every lesson has contextual guidance")
+			for clue: Dictionary in clues:
+				check(not str(clue.quote).is_empty() and str(data.scenario).contains(str(clue.quote)) and not str(clue.note).is_empty(), "Every callout refers to text actually in that lesson's example")
+	picker.queue_free()
+	await settle()
+	account.free()

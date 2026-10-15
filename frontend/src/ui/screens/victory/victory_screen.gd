@@ -35,6 +35,8 @@ var _weak_skill: String = ""
 var _tip_full: String = ""
 var _tip_index: int = 0
 var _type_acc: float = 0.0
+var _feedback_context: Dictionary = {}
+var _feedback_button: Button
 
 
 func _ready() -> void:
@@ -47,9 +49,22 @@ func _ready() -> void:
 	_materials_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_grade_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_process(false)
+	_feedback_button = preload("res://src/ui/screens/intel/study_ui.gd").button("Give feedback", func() -> void:
+		preload("res://src/ui/screens/settings/student_feedback.gd").open(self, _feedback_context)
+	)
+	$SafeArea/ScreenLayout/BottomBar.add_child(_feedback_button)
+	$SafeArea/ScreenLayout/BottomBar.move_child(_feedback_button, 1)
+	get_viewport().size_changed.connect(_scale_feedback_button)
+	_scale_feedback_button()
+
+func _scale_feedback_button() -> void:
+	var physical_scale: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	_feedback_button.custom_minimum_size = Vector2(220, maxf(48, ceilf(48 / physical_scale)))
+	_feedback_button.add_theme_font_size_override("font_size", maxi(24, ceili(16 / physical_scale)))
 
 
 func on_enter(args: Dictionary) -> void:
+	_feedback_context = {"module_id": str(args.get("module_id", Router.active_module_id)), "stage": int(args.get("stage", Router.active_stage_index + 1)), "won": bool(args.get("won", true))}
 	_won = bool(args.get("won", true))
 	AudioManager.play_sfx("ui_success" if _won else "ui_error")
 	_materials_gained = maxi(0, int(args.get("credits", args.get("materials", args.get("gold", 0)))))

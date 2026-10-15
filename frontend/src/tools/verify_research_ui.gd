@@ -23,14 +23,15 @@ func _run() -> void:
 	var router := root.get_node("Router")
 	var player := root.get_node("PlayerManager")
 	router.is_tutorial = false
+	player.reset_to_defaults()
 	player.credits = 132
-	player.tech_ranks = {}
 	player.unlocked_towers.assign(["base"])
 	var before := JSON.stringify([player.credits, player.tech_ranks, player.unlocked_towers])
 	var screen: Control = load("res://src/ui/screens/deploy/upgrade_screen.tscn").instantiate()
 	root.add_child(screen)
 	await _settle()
 	_check(screen._select_cards.size() == 3, "Three research cards")
+	_check(screen._select_cards["base"].ranks == 1, "Only Inspection counts as an installed starter upgrade")
 	var portrait_script = load("res://src/ui/screens/deploy/research_portrait.gd")
 	_check(portrait_script.get_script_constant_map().get("Glyphs") == load("res://src/gameplay/preview/unit_glyphs.gd"), "Armory shares the actual gameplay shape renderer")
 	for id in screen._select_cards:
@@ -52,6 +53,8 @@ func _run() -> void:
 		count += screen._track_nodes[track].size()
 	_check(count == 9, "All nine existing ranks rendered")
 	_check(screen._root_button.tower_id == "base", "Research core uses selected tower silhouette")
+	_check(screen._rank_state("skill", 1) == "OWNED", "Inspection starts installed")
+	_check(screen._rank_state("capacity", 1) == "BASE KIT", "Default slots are base equipment, not earned upgrades")
 	screen._inspect_rank("stats", 1)
 	_check(screen._purchase_button.disabled, "Insufficient credits cannot buy")
 	_check(screen._detail_state.text.contains("18"), "Exact missing credits displayed")
@@ -93,7 +96,7 @@ func _run() -> void:
 	for track in screen._track_nodes:
 		for button in screen._track_nodes[track]:
 			_check(Rect2(Vector2.ZERO, screen._tree_canvas.size).encloses(button.get_rect()), "Node fits compact canvas: " + track)
-	_check(screen._capacity_rank1_button != null, "Tutorial capacity target preserved")
+	_check(screen._inspection_button != null, "Tutorial inspection target exists")
 	await _capture("research_tree_compact")
 	screen._show_selection()
 	await _settle()
@@ -132,10 +135,10 @@ func _run() -> void:
 	_check(before == JSON.stringify([player.credits, player.tech_ranks, player.unlocked_towers]), "Inspecting all ranks is read only")
 	router.is_tutorial = true
 	screen._rebuild_tree()
-	_check(not screen._capacity_rank1_button.disabled, "Tutorial capacity target remains enabled")
+	_check(not screen._inspection_button.disabled, "Tutorial inspection target remains enabled")
 	for track in screen._track_nodes:
 		for node in screen._track_nodes[track]:
-			if not (track == "capacity" and node.rank == 1):
+			if not (track == "skill" and node.rank == 1):
 				_check(node.disabled, "Tutorial other nodes disabled")
 	router.is_tutorial = false
 	player.tech_ranks = {"base": {"stats": 3, "capacity": 3, "skill": 1, "evolution": 2}}
@@ -143,6 +146,7 @@ func _run() -> void:
 	screen._inspect_rank("stats", 3)
 	_check(screen._purchase_button.disabled and screen._rank_state("stats", 3) == "OWNED", "Maximum rank cannot repurchase")
 	screen._session_changed(false)
+	await _settle()
 	_check(screen._active_tower.is_empty() and screen._selection_screen.visible, "Account change returns to armory")
 	print("[RESEARCH UI] failures=%d" % failures)
 	screen.queue_free()

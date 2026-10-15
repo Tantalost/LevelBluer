@@ -23,6 +23,7 @@ var _back: Button
 var _close: Button
 var _heading: Label
 var _tween: Tween
+var _refresh_queued: bool = false
 
 func _ready() -> void:
 	var dimmer: ColorRect = ColorRect.new()
@@ -73,7 +74,15 @@ func _ready() -> void:
 	_details = _scroll(right)
 	right.add_child(UI.label("Rewards are credited automatically.", 22, UI.MUTED))
 	resized.connect(_layout)
+	TaskManager.progress_changed.connect(_queue_refresh)
 	_refresh_body()
+
+func _queue_refresh() -> void:
+	# Rebuild after the current input/signal finishes, without freeing its sender.
+	if _refresh_queued:
+		return
+	_refresh_queued = true
+	_refresh_body.call_deferred()
 
 func _panel(parent: Node, fill: Color, border: Color, padding: int) -> PanelContainer:
 	var panel: PanelContainer = PanelContainer.new()
@@ -143,6 +152,9 @@ func _set_tab(index: int) -> void:
 	_tabs[_tab_index].grab_focus()
 
 func _refresh_body() -> void:
+	_refresh_queued = false
+	if not is_inside_tree():
+		return
 	_tasks.clear()
 	if _tab_index == 0:
 		_tasks = TaskManager.get_active_tasks()
@@ -255,9 +267,9 @@ func _progress(current: int, target: int) -> ProgressBar:
 
 func _task_blurb(task_id: String) -> String:
 	if task_id == "defeat_fast":
-		return "Intercept fast packets in any deployed stage."
+		return "Defeat fast packets in deployed stages. Tutorial and practice do not count. Resets daily at 00:00 UTC."
 	if task_id == "clear_stages":
-		return "Clear stages to complete this directive."
+		return "Win 3 deployed stage runs. Replays count; losses, tutorial and practice do not. Resets daily at 00:00 UTC."
 	return "Complete this directive during deploy."
 
 func _return_to_list() -> void:

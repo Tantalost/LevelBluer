@@ -8,6 +8,9 @@ const PAPER := Color("e8e8da")
 const ACCENT := Color("8dc9bd")
 const IDLE_EXPR := "npc_calm"
 const TALK_EXPR := "npc_talk"
+signal dialogue_started
+const GREETING_LINES: Array[int] = [0, 1, 3, 18]
+var _greeting_index: int = 0
 const LINES: Array[String] = [
 	"Good to see you, Commander. The outpost is quiet. Ready for your next deployment?",
 	"A little preparation goes a long way. Visit Lessons before tackling a new threat.",
@@ -164,6 +167,16 @@ func talk() -> void:
 		_finish_line()
 		return
 	_line = _draw_line()
+	_start_line()
+
+func greet() -> void:
+	if not _enabled or Engine.is_editor_hint() or _dialogue.visible:
+		return
+	_line = GREETING_LINES[_greeting_index % GREETING_LINES.size()]
+	_greeting_index += 1
+	_start_line()
+
+func _start_line() -> void:
 	_body.text = LINES[_line]
 	_body.visible_characters = 0
 	_elapsed = 0
@@ -173,6 +186,9 @@ func talk() -> void:
 	_next.text = "REVEAL  >"
 	_refresh_portrait(_spoken_expression())
 	AudioManager.play_sfx("ui_click")
+	dialogue_started.emit()
+	if SettingsService.text_speed == "instant":
+		_finish_line()
 
 func close_dialogue() -> void:
 	_typing = false
@@ -191,10 +207,13 @@ func _process(delta: float) -> void:
 	if not is_visible_in_tree():
 		return
 	_idle_time += delta
-	_portrait_button.position.y = _portrait_home.y + sin(_idle_time * 1.5) * 2
+	_portrait_button.position.y = _portrait_home.y if SettingsService.reduced_motion else _portrait_home.y + sin(_idle_time * 1.5) * 2
 	if not _typing:
 		return
-	_elapsed += delta
+	if SettingsService.text_speed == "instant":
+		_finish_line()
+		return
+	_elapsed += delta * SettingsService.text_speed_multiplier()
 	var count := int(_elapsed / 0.028)
 	_body.visible_characters = count
 	_refresh_portrait(_typing_expression(count))

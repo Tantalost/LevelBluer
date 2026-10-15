@@ -44,6 +44,7 @@ func _run() -> void:
 		_save_backup = FileAccess.get_file_as_string(_save_path)
 
 	_test_new_player_state()
+	_test_lesson_stage_mapping()
 	_test_clearing_mod1_stage1_is_isolated()
 	_test_clearing_mod2_stage1_is_isolated()
 	_test_clearing_mod1_stage5_does_not_touch_mod2_stage5()
@@ -146,7 +147,8 @@ func _test_module1_progression_through_stage10() -> void:
 	_player.reset_to_defaults()
 	_player.completed_lessons.assign(["mod_01"])
 	check(_stages.access_reason(1, "mod_01").is_empty(), "Stage 1 is open by default")
-	check(_stages.access_reason(2, "mod_01").is_empty(), "Stage 2 is open by default (existing baseline preserved)")
+	check(not _stages.access_reason(2, "mod_01").is_empty(), "Stage 2 requires a real Stage 1 clear")
+	_player.lesson_post_quiz_scores = {"mod_01": 20}
 	check(not _stages.access_reason(3, "mod_01").is_empty(), "Stage 3 is locked before Stage 2 is cleared")
 	for stage_id in range(1, 11):
 		_player.mark_stage_cleared("mod_01", stage_id)
@@ -161,6 +163,74 @@ func _test_cross_module_ids_never_collide() -> void:
 	check(_player.stage_progress_key("mod_01", 1) != _player.stage_progress_key("mod_02", 1), "mod_01:1 key differs from mod_02:1 key")
 	check(_player.stage_progress_key("mod_01", 1) == "mod_01:1", "Canonical key format is module_id:stage_id")
 	check(_player.stage_progress_key("mod_02", 1) == "mod_02:1", "Canonical key format is module_id:stage_id")
+
+
+func _test_lesson_stage_mapping() -> void:
+	var expected: Array[int] = [1, 1, 2, 2, 3, 3, 4, 4, 5, 6]
+	var catalog: GDScript = load("res://src/ui/screens/intel/lesson_catalog.gd")
+	for module_id: String in catalog.module_ids():
+		for lessons_done: int in range(0, 7):
+			_player.reset_to_defaults()
+			_player.lesson_progress[module_id] = lessons_done
+			check(_player.is_module_deploy_unlocked(module_id) == (lessons_done >= 1), "%s module entry needs its own Lesson 1: %d" % [module_id, lessons_done])
+			for stage: int in range(1, 11):
+				# Satisfy stage sequence independently to isolate lesson requirements.
+				_player.cleared_stages[_player.stage_progress_key(module_id, stage)] = true
+			for stage: int in range(1, 11):
+				var allowed: bool = lessons_done >= expected[stage - 1] and stage != 10
+				check(_stages.access_reason(stage, module_id).is_empty() == allowed, "%s L%d / S%d mapping" % [module_id, lessons_done, stage])
+			_player.lesson_post_quiz_scores[module_id] = 19
+			check(not _stages.access_reason(10, module_id).is_empty(), "19/25 cannot unlock final stage")
+			_player.lesson_post_quiz_scores[module_id] = 20
+			check(_stages.access_reason(10, module_id).is_empty() == (lessons_done == 6), "20/25 requires Lesson 6 as well")
+	_player.reset_to_defaults()
+	_player.lesson_progress = {"mod_01": 6}
+	_player.lesson_post_quiz_scores = {"mod_01": 25}
+	check(not _player.is_module_deploy_unlocked("mod_02"), "Module 1 completion does not unlock Module 2 deployment")
+	_player.lesson_progress["mod_02"] = 6
+	for stage: int in range(1, 10):
+		_player.cleared_stages[_player.stage_progress_key("mod_02", stage)] = true
+	check(_stages.access_reason(10, "mod_02").contains("post-test"), "Module 1 post-test cannot unlock Module 2 Stage 10")
+	_player.lesson_post_quiz_scores["mod_02"] = 20
+	check(_stages.access_reason(10, "mod_02").is_empty(), "Module 2 Stage 10 uses its own post-test")
+	_player.cleared_stages.erase("mod_02:2")
+	_player.max_stage_cleared_by_module["mod_02"] = 9
+	check(_stages.access_reason(3, "mod_02").contains("preceding"), "A high ceiling cannot bypass a missing preceding clear")
+	_player.lesson_progress.clear()
+	_player.completed_lessons.assign(["mod_02"])
+	check(_player.deployment_lesson_count("mod_02") == 6, "Legacy completed-module marker preserves lesson completion")
+	var saved: Dictionary = _player.get_save_data()
+	_player.apply_save_data(JSON.parse_string(JSON.stringify(saved)) as Dictionary)
+	check(_player.has_lesson_post_quiz("mod_02") and _player.deployment_lesson_count("mod_02") == 6, "Post-test and lesson gates survive save roundtrip")
+	_player.reset_to_defaults()
+	_player.lesson_progress["mod_01"] = 1
+	_player.locked_stages["mod_01:1"] = true
+	check(_stages.access_reason(1, "mod_01").contains("exam"), "Lesson completion never removes an exam lock")
+	check(not _stages.access_reason(0, "mod_01").is_empty() and not _stages.access_reason(11, "mod_01").is_empty() and not _stages.access_reason(1, "missing").is_empty(), "Unknown modules and stage IDs fail closed")
+	var router: Node = root.get_node("Router")
+	router.is_tutorial = false
+	var context: MatchContext = MatchContext.stage_one_live()
+	context.module_id = "mod_01"
+	router._begin_gameplay(2, context)
+	check(not is_instance_valid(router._gameplay), "Direct launch cannot bypass Lesson 2 for Stage 3")
+	# Keep production gate and review routing; replace only screen construction.
+	var script: GDScript = GDScript.new()
+	script.source_code = FileAccess.get_file_as_string("res://src/autoload/screen_router.gd").replace("func _push_now(", "func _production_push_now(")
+	script.source_code += "\nvar destination: Dictionary = {}\nfunc _push_now(id: StringName, args: Dictionary = {}) -> void:\n\tdestination = {\"screen\": id, \"args\": args}\n"
+	check(script.reload() == OK, "Isolated production router compiles")
+	var review_router: Node = script.new()
+	_player.remediation_state = {"sessions": [{"module_id": "mod_01", "stage": 1, "status": "pending"}]}
+	check(_stages.access_reason(1, "mod_01").is_empty(), "Pending review makes review entry available, not gameplay")
+	review_router._begin_gameplay(0, context)
+	check(review_router.destination.get("screen") == &"lesson_player" and review_router.destination.get("args", {}).get("remediation_stage") == 1 and review_router._gameplay == null, "Real gate routes pending review to exact lesson without spawning gameplay")
+	_player.lesson_progress.clear()
+	review_router.destination = {}
+	review_router._begin_gameplay(0, context)
+	check(review_router.destination.is_empty(), "Review route cannot bypass missing lesson prerequisite")
+	review_router.free()
+	_player.reset_to_defaults()
+	_player.complete_lesson_unit("mod_01", 6, catalog.module_ids())
+	check(not _player.has_completed_lesson("mod_01") and _stages.access_reason(1, "mod_01").is_empty(), "Actual first-lesson completion unlocks Stage 1 without completing the entire module")
 
 
 func _test_save_reload_preserves_module_scoped_state() -> void:

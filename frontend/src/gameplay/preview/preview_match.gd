@@ -46,6 +46,8 @@ var incident: Dictionary = {}
 var global_patch := false
 var _learning_attempt: String = ""
 var _learning_owner: String = ""
+var _learning_missed: Array[String] = []
+var _learning_timed_out: bool = false
 var hud: Control
 
 func _ready() -> void:
@@ -217,6 +219,7 @@ func resolve_answer(expired: bool = false) -> void:
 	answered += 1
 	question_index += 1
 	correct_answers += int(correct)
+	_record_learning_answer(correct, expired)
 	var reward: int = _answer_gold(correct)
 	gold += reward
 	if correct and _allows_answer_patch() and not global_patch and randf() <= LevelManager.GLOBAL_PATCH_CHANCE:
@@ -598,5 +601,18 @@ func _intent(id: String, value: Variant) -> void:
 
 func _finish_learning(outcome: String) -> void:
 	if not _learning_attempt.is_empty() and _learning_owner == AuthService.participant_code():
-		PlayerManager.finish_learning_attempt(_learning_attempt, match_context.module_id, match_context.stage_id, outcome)
+		var details: Dictionary = {"phase":phase, "health":health, "answered":answered, "correct":correct_answers,
+			"waves_completed":waves_completed, "waves_total":config.get("waves", []).size(),
+			"timed_out":_learning_timed_out, "missed_question_ids":_learning_missed.duplicate()}
+		PlayerManager.finish_learning_attempt(_learning_attempt, match_context.module_id, match_context.stage_id, outcome, details)
 	_learning_attempt = ""
+
+
+func _record_learning_answer(correct: bool, timed_out: bool) -> void:
+	_learning_timed_out = _learning_timed_out or timed_out
+	if correct or _learning_attempt.is_empty():
+		return
+	# IDs only: no answer keys or question text are copied into staff records.
+	var question_id: String = str(question.get("id", "")).left(96)
+	if not question_id.is_empty() and question_id not in _learning_missed and _learning_missed.size() < 50:
+		_learning_missed.append(question_id)

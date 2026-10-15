@@ -156,13 +156,14 @@ func refresh(state: Dictionary) -> void:
 	_layout()
 
 func _is_complete(index: int) -> bool:
-	# Future worlds cannot be cleared before their stages exist.
-	if index != 0 or _snapshot.stages.is_empty():
+	if index < 0 or index >= _snapshot.modules.size():
 		return false
 	var module: Dictionary = _snapshot.modules[index]
-	if int(module.done) < int(module.total):
+	if int(module.done) < int(module.total) or module.get("stages", []).is_empty():
 		return false
-	for stage: Dictionary in _snapshot.stages:
+	if not PlayerManager.has_lesson_post_quiz(str(module.id)):
+		return false
+	for stage: Dictionary in module.stages:
 		if not bool(stage.done):
 			return false
 	return true
@@ -210,7 +211,7 @@ func _rebuild_cards() -> void:
 		copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var color: Color = CREAM if index == _selected else INK
 		copy.add_child(UI.label("%02d  /  %s" % [index + 1, module.name], 28, color))
-		copy.add_child(UI.label("CLEARED" if _is_complete(index) else (str(module.status) if index == 0 else "STAGES COMING SOON"), 20, CYAN if index == _selected else Color("#52616B")))
+		copy.add_child(UI.label("CLEARED" if _is_complete(index) else str(module.status), 20, CYAN if index == _selected else Color("#52616B")))
 		copy.add_child(UI.label("Lessons  %d / %d" % [module.done, module.total], 22, color))
 		_cards.add_child(card)
 	if available.is_empty():
@@ -249,20 +250,18 @@ func _rebuild_details() -> void:
 		action.text = str(_snapshot.action)
 	else:
 		requirements.add_child(UI.label(str(module.reason), 26, CREAM))
-		_route = &"lessons"
-		action.text = "OPEN LESSONS"
+		_route = &"stage_select" if str(module.status) == "AVAILABLE" else &"lessons"
+		action.text = "OPEN DEPLOY" if _route == &"stage_select" else "OPEN LESSONS"
 	_details.add_child(UI.label("JOURNEY CHECKLIST", 22, CYAN))
 	_check_row("Lesson preparation", "%d / %d lessons complete" % [module.done, module.total], int(module.done) >= int(module.total), false)
-	if _selected == 0:
-		for stage: Dictionary in _snapshot.stages:
-			var note: String = "Cleared" if bool(stage.done) else "Ready to deploy"
-			if str(stage.status) == "LOCKED":
-				note = str(stage.reason)
-				if PlayerManager.is_stage_locked("mod_01", int(stage.id)):
-					note += " Reviewing does not automatically remove this lock."
-			_check_row(str(stage.title), note, bool(stage.done), str(stage.status) == "LOCKED")
-	else:
-		_details.add_child(UI.label("No stages published for this world yet.", 24, MUTED))
+	_check_row("Lesson post-test", "Pass with at least 20/25 to unlock Stage 10.", PlayerManager.has_lesson_post_quiz(str(module.id)), false)
+	for stage: Dictionary in module.get("stages", []):
+		var note: String = "Cleared" if bool(stage.done) else "Ready to deploy"
+		if str(stage.status) == "LOCKED":
+			note = str(stage.reason)
+		elif str(stage.status) == "REVIEW":
+			note = "Open this stage in Deploy to finish its targeted review before retrying."
+		_check_row(str(stage.title), note, bool(stage.done), str(stage.status) == "LOCKED")
 
 func _check_row(title: String, note: String, done: bool, locked: bool) -> void:
 	var row: PanelContainer = UI.panel(_details, Color("#153B37") if done else Color("#102040"))

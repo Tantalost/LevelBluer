@@ -192,6 +192,67 @@ func _verify_remote_pvp_art(screen: Control) -> void:
 	screen._mode_modal._refresh_art()
 	screen._pvp_hub._refresh_art()
 
+func _verify_greeting(screen: Control, handler: Control) -> void:
+	var player: Node = root.get_node("PlayerManager")
+	var router: Node = root.get_node("Router")
+	var settings: Node = root.get_node("SettingsService")
+	var prior_tutorial: bool = player.tutorial_complete
+	var prior_routing: bool = router.is_tutorial
+	var prior_speed: String = settings.text_speed
+	player.tutorial_complete = true
+	router.is_tutorial = false
+	settings.text_speed = "normal"
+	handler.close_dialogue()
+	screen._schedule_greeting()
+	screen._process(2.9)
+	_check(not handler._dialogue.visible, "Greeting waits three seconds")
+	screen._process(0.2)
+	_check(handler._dialogue.visible and handler._typing, "Greeting starts automatically after delay")
+	var first_line: int = handler._line
+	handler.close_dialogue()
+	screen._process(30.0)
+	_check(not handler._dialogue.visible, "Greeting is once per dashboard visit, not a loop")
+	screen._schedule_greeting()
+	handler.talk()
+	handler.close_dialogue()
+	screen._process(4.0)
+	_check(not handler._dialogue.visible, "Manual conversation consumes pending greeting")
+	screen._schedule_greeting()
+	screen._mode_modal.show()
+	screen._process(10.0)
+	_check(not handler._dialogue.visible, "Mode modal suppresses greeting")
+	screen._mode_modal.hide()
+	screen._process(2.0)
+	_check(not handler._dialogue.visible, "Full quiet delay restarts after modal")
+	screen._process(1.1)
+	_check(handler._dialogue.visible and handler._line != first_line, "Next visit rotates welcoming dialogue")
+	handler.close_dialogue()
+	player.tutorial_complete = false
+	screen._schedule_greeting()
+	screen._process(10.0)
+	_check(not handler._dialogue.visible and not handler._enabled, "New accounts stay quiet during tutorial")
+	player.tutorial_complete = true
+	router.is_tutorial = true
+	screen._process(10.0)
+	_check(not handler._dialogue.visible, "Active tutorial routing suppresses greeting")
+	router.is_tutorial = false
+	screen._schedule_greeting()
+	screen.hide()
+	screen._process(10.0)
+	_check(not handler._dialogue.visible, "Hidden dashboard cannot greet")
+	screen.show()
+	screen.on_exit()
+	screen._process(10.0)
+	_check(not handler._dialogue.visible and not screen._greeting_pending, "Exit cancels pending greeting")
+	screen._schedule_greeting()
+	settings.text_speed = "instant"
+	screen._process(3.1)
+	_check(handler._dialogue.visible and not handler._typing and handler._body.visible_characters == -1, "Instant setting also applies to greeting")
+	handler.close_dialogue()
+	player.tutorial_complete = prior_tutorial
+	router.is_tutorial = prior_routing
+	settings.text_speed = prior_speed
+
 func _run() -> void:
 	var screen: Control = load("res://src/ui/screens/dashboard/dashboard_screen.tscn").instantiate()
 	root.add_child(screen)
@@ -282,6 +343,7 @@ func _run() -> void:
 	# behavior directly rather than asserting the old side effect.
 	screen._apply_lock_state()
 	_check(not screen.get_node("PreTestLock").visible, "_apply_lock_state() hides the retired pre-test lock overlay")
+	_verify_greeting(screen, handler)
 	_verify_remote_pvp_art(screen)
 	await _verify_modes(screen)
 	screen.on_exit()

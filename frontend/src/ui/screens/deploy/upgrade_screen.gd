@@ -31,7 +31,7 @@ var _tutorial_overlay: TutorialOverlay
 var _active_tower := ""
 var _selected_track := ""
 var _selected_rank := 0
-var _capacity_rank1_button: Button
+var _inspection_button: Button
 var _root_button: Button
 var _track_nodes: Dictionary = {}
 var _select_cards: Dictionary = {}
@@ -64,6 +64,7 @@ func _ready() -> void:
 	_build_tree_shell()
 	get_viewport().size_changed.connect(_on_resized)
 	AuthService.session_changed.connect(_session_changed)
+	SaveService.cloud_fetch_completed.connect(_cloud_state_loaded)
 	_show_selection()
 	_apply_scale()
 
@@ -127,7 +128,12 @@ func _build_tree_shell() -> void:
 	_tree_canvas.resized.connect(_queue_tree_refresh)
 
 func _session_changed(_signed_in: bool) -> void:
-	_show_selection()
+	# Refresh after all autoload session handlers have reset/hydrated the owner.
+	_show_selection.call_deferred()
+
+func _cloud_state_loaded(success: bool) -> void:
+	if success:
+		_show_selection.call_deferred()
 
 func _on_resized() -> void:
 	_apply_scale()
@@ -251,6 +257,9 @@ func _refresh_selection_cards() -> void:
 		for track in ContentDB.tech_track_ids(id):
 			card.total_ranks += ContentDB.tech_max_rank(id, track)
 			card.ranks += PlayerManager.tech_rank(id, track)
+			if id == "base" and track == "capacity":
+				card.total_ranks -= 1
+				card.ranks -= mini(1, PlayerManager.tech_rank(id, track))
 		card.requirement = _lock_reason(id)
 		card.body_font = _font
 		card.custom_minimum_size = Vector2(0, 480 + (_font - 28) * 8)
@@ -300,7 +309,7 @@ func _rebuild_tree() -> void:
 	UI.clear(_node_layer)
 	UI.clear(_trace_layer)
 	_track_nodes.clear()
-	_capacity_rank1_button = null
+	_inspection_button = null
 	_root_button = null
 	var tracks := ContentDB.tech_track_ids(_active_tower)
 	_empty_hint.visible = tracks.is_empty()
@@ -330,8 +339,8 @@ func _rebuild_tree() -> void:
 				_: center = Vector2(width * 0.5, 374 + (rank - 1) * 172)
 			var button := _make_rank_node(track, rank, count, center)
 			nodes.append(button)
-			if track == "capacity" and rank == 1:
-				_capacity_rank1_button = button
+			if track == "skill" and rank == 1:
+				_inspection_button = button
 			var line := Line2D.new()
 			line.points = PackedVector2Array([previous, center])
 			line.width = 3 if _rank_state(track, rank) == "OWNED" else 2
@@ -351,6 +360,8 @@ func _make_rank_node(track: String, rank: int, count: int, center: Vector2) -> B
 	node.state = _rank_state(track, rank)
 	node.accent = TRACK_COLORS[track]
 	node.caption = str(TITLES[track])
+	if track == "capacity" and rank == 1:
+		node.caption = "BASE KIT"
 	if track == "evolution":
 		node.caption = "SCANNER" if rank == 1 else "SANDBOX"
 	node.font_size = maxi(23, _font - 4)
@@ -358,7 +369,7 @@ func _make_rank_node(track: String, rank: int, count: int, center: Vector2) -> B
 	node.position = center - Vector2(70, 54)
 	node.selected = track == _selected_track and rank == _selected_rank
 	node.pressed.connect(_inspect_rank.bind(track, rank))
-	if Router.is_tutorial and not (track == "capacity" and rank == 1):
+	if Router.is_tutorial and not (track == "skill" and rank == 1):
 		node.disabled = true
 	_node_layer.add_child(node)
 	return node
@@ -414,6 +425,10 @@ func _refresh_inspector() -> void:
 	_detail_cost.text = "COST  /  %d CREDITS" % cost
 	_purchase_button.disabled = state != "BUY" or PlayerManager.credits < cost
 	match state:
+		"BASE KIT":
+			_detail_state.text = "STANDARD / Two deploy slots are included, not an earned upgrade."
+			_detail_cost.text = "INCLUDED WITH BASIC NODE"
+			_purchase_button.text = "BASE KIT"
 		"OWNED":
 			_detail_state.text = "INSTALLED / This upgrade is active."
 			_purchase_button.text = "ALREADY OWNED"
@@ -433,6 +448,8 @@ func _refresh_coins_label() -> void:
 	_coins_value.text = "%d CR" % PlayerManager.credits
 
 func _rank_state(track_id: String, rank: int) -> String:
+	if _active_tower == "base" and track_id == "capacity" and rank == 1:
+		return "BASE KIT"
 	var owned: int = PlayerManager.tech_rank(_active_tower, track_id)
 	if owned >= rank:
 		return "OWNED"
@@ -445,10 +462,10 @@ func _on_rank_pressed(track_id: String, rank: int) -> void:
 	if not _is_tower_selectable(_active_tower) or ContentDB.tech_rank_entry(_active_tower, track_id, rank).is_empty():
 		return
 	if Router.is_tutorial:
-		if track_id != "capacity" or rank != 1:
+		if track_id != "skill" or rank != 1:
 			return
-		if PlayerManager.tech_rank("base", "capacity") >= 1:
-			_on_tutorial_capacity_ack()
+		if PlayerManager.tech_rank("base", "skill") >= 1:
+			_on_tutorial_inspection_ack()
 			return
 	var state: String = _rank_state(track_id, rank)
 	if state == "OWNED":
@@ -464,13 +481,13 @@ func _on_rank_pressed(track_id: String, rank: int) -> void:
 		if _track_nodes.has(track_id):
 			_track_nodes[track_id][rank - 1].celebrate()
 		_detail_state.text = "UPGRADE INSTALLED / Ready for deployment."
-		if Router.is_tutorial and track_id == "capacity" and rank == 1:
-			_on_tutorial_capacity_ack()
+		if Router.is_tutorial and track_id == "skill" and rank == 1:
+			_on_tutorial_inspection_ack()
 	else:
 		print("[TechTree] Insufficient credits for %s R%d" % [track_id, rank])
 
 
-func _on_tutorial_capacity_ack() -> void:
+func _on_tutorial_inspection_ack() -> void:
 	if _tutorial_overlay != null and is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.show_upgrade_owned()
 
@@ -485,7 +502,7 @@ func _apply_tutorial_coach() -> void:
 			_show_selection()
 		return
 	_back_button.visible = false
-	PlayerManager.grant_tutorial_capacity_rank()
+	PlayerManager.grant_tutorial_inspection()
 	_refresh_coins_label()
 	await _open_tower("base")
 	_tutorial_overlay = TutorialOverlay.mount_on(self, 20)
@@ -498,8 +515,8 @@ func _apply_tutorial_coach() -> void:
 	if not is_inside_tree():
 		return
 	var glow := Rect2()
-	if _capacity_rank1_button != null:
-		glow = _capacity_rank1_button.get_global_rect()
+	if _inspection_button != null:
+		glow = _inspection_button.get_global_rect()
 	_tutorial_overlay.setup_upgrade(glow)
 
 
