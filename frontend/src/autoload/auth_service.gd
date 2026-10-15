@@ -51,6 +51,9 @@ var _post_score: int = 0
 var _tower_level: int = 1
 var _glade_level: int = 1
 var _forge_level: int = 1
+## Server-owned PvP standing, memory only and only for the account that fetched it.
+var _pvp_standing: Dictionary = {}
+var _pvp_standing_account: String = ""
 
 
 func _ready() -> void:
@@ -418,6 +421,8 @@ func sign_out() -> void:
 	_tower_level = 1
 	_glade_level = 1
 	_forge_level = 1
+	_pvp_standing = {}
+	_pvp_standing_account = ""
 	StudentDatabase.clear_session()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SESSION_PATH))
 	session_changed.emit(false)
@@ -504,6 +509,32 @@ func refresh_profile() -> bool:
 		return _signed_in and not _participant_code.is_empty()
 	_apply_user_profile(parsed)
 	_persist(_signed_in, false, false)
+	return true
+
+
+## Empty until the backend has answered for the signed-in account.
+func pvp_standing() -> Dictionary:
+	if _participant_code.is_empty() or _pvp_standing_account != _participant_code:
+		return {}
+	return _pvp_standing.duplicate()
+
+
+func fetch_pvp_standing() -> bool:
+	if _token.is_empty():
+		return false
+	var account: String = _participant_code
+	var parsed: Variant = await _request_json("/api/pvp/me/rank", HTTPClient.METHOD_GET, {}, true)
+	if account != _participant_code or typeof(parsed) != TYPE_DICTIONARY:
+		return false
+	var payload: Dictionary = parsed
+	if payload.has("error") or payload.has("detail"):
+		return false
+	var points: Variant = payload.get("points")
+	var rank: Variant = payload.get("rank")
+	if not (typeof(points) == TYPE_INT or typeof(points) == TYPE_FLOAT) or typeof(rank) != TYPE_STRING:
+		return false
+	_pvp_standing = payload
+	_pvp_standing_account = account
 	return true
 
 

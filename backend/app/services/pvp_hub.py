@@ -21,6 +21,7 @@ from app.services.pvp_service import PvpError, PvpService
 
 if TYPE_CHECKING:
     from app.services.pvp_history import MatchRecorder
+    from app.services.pvp_rating import RatingQueue
 
 logger = logging.getLogger(__name__)
 
@@ -42,12 +43,13 @@ class Connection:
 
 
 class PvpHub:
-    def __init__(self, service: PvpService, tick_seconds: float = TICK_SECONDS, cleanup_seconds: float = CLEANUP_SECONDS, recorder: MatchRecorder | None = None, record_seconds: float = RECORD_SECONDS) -> None:
+    def __init__(self, service: PvpService, tick_seconds: float = TICK_SECONDS, cleanup_seconds: float = CLEANUP_SECONDS, recorder: MatchRecorder | None = None, record_seconds: float = RECORD_SECONDS, rating: RatingQueue | None = None) -> None:
         self.service = service
         self.tick_seconds = tick_seconds
         self.cleanup_seconds = cleanup_seconds
         self.recorder = recorder
         self.record_seconds = record_seconds
+        self.rating = rating
         self._connections: dict[tuple[str, str], Connection] = {}
         self._last_cleanup = 0.0
 
@@ -164,9 +166,17 @@ class PvpHub:
         if self.recorder is None:
             return 0
         self.recorder.add(records)
-        if not self.recorder.pending:
-            return 0
-        return await asyncio.to_thread(self.recorder.flush)
+        written = await asyncio.to_thread(self.recorder.flush) if self.recorder.pending else 0
+        if self.rating is not None and (self.rating.pending or not self.rating.recovered):
+            await asyncio.to_thread(self._rate)
+        return written
+
+    def _rate(self) -> None:
+        # History first (above), then ratings: a match is only rated once its history row is stored.
+        if self.rating is None:
+            return
+        self.rating.recover()
+        self.rating.flush()
 
     async def _record_loop(self, stop: asyncio.Event) -> None:
         # Separate from the ticker so a slow database never delays round deadlines.

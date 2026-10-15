@@ -13,6 +13,7 @@ from app.routes.progress import router as progress_router
 from app.routes.content import router as content_router
 from app.routes.pvp import router as pvp_router
 from app.services.pvp_history import MatchRecorder
+from app.services.pvp_rating import RatingQueue, history_blocker
 from app.services.pvp_hub import PvpHub
 from app.services.pvp_service import PvpService
 
@@ -20,13 +21,16 @@ from app.services.pvp_service import PvpService
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Online PvP rooms are in-memory: run exactly one worker (no --workers N).
+    recorder = MatchRecorder()
+    rating = RatingQueue(history_blocked=history_blocker(recorder))
+    recorder.on_stored = rating.add
     hub = PvpHub(PvpService(
         active_grace_ms=settings.pvp_active_grace_seconds * 1000,
         waiting_grace_ms=settings.pvp_waiting_grace_seconds * 1000,
         closed_ttl_ms=settings.pvp_closed_ttl_seconds * 1000,
         stale_waiting_ms=settings.pvp_stale_waiting_seconds * 1000,
         queue_ttl_ms=settings.pvp_queue_ttl_seconds * 1000,
-    ), recorder=MatchRecorder())
+    ), recorder=recorder, rating=rating)
     app.state.pvp_hub = hub
     async with hub.running():
         yield

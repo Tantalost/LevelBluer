@@ -10,7 +10,7 @@ import time
 from fastapi import APIRouter, Header, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
-from app.services import pvp_history
+from app.services import pvp_history, pvp_rating
 from app.services.auth_service import verify_token
 from app.services.pvp_hub import PvpHub
 from app.services.pvp_service import PvpError
@@ -124,6 +124,15 @@ def my_matches(limit: int = Query(default=10, ge=1, le=pvp_history.RECENT_LIMIT_
         return JSONResponse(content={"matches": pvp_history.recent_matches(user_id, limit)})
     except pvp_history.HistoryUnavailable:
         return JSONResponse(status_code=503, content={"error": "PvP history is unavailable right now", "code": "history_unavailable"})
+
+
+@router.get("/me/rank")
+def my_rank(authorization: str | None = Header(default=None)) -> JSONResponse:
+    user_id = _student_id(authorization)
+    try:
+        return JSONResponse(content=pvp_rating.student_standing(user_id))
+    except pvp_rating.RatingUnavailable:
+        return JSONResponse(status_code=503, content={"error": "PvP Points are unavailable right now", "code": "rating_unavailable"})
 
 
 @router.websocket("/rooms/{code}/ws")

@@ -89,8 +89,9 @@ func _run() -> void:
 	player.mastery_matrix["smishing"] = 0.42
 	screen._refresh()
 	check(screen._dossier.practice.pending and is_equal_approx(float(screen._dossier.practice.value), 0.42), "Pending owned assessment uses local estimate and sync label")
-	auth._signed_in = false
 	auth._bkt_queue.clear()
+	await verify_pvp_standing()
+	auth._signed_in = false
 	screen._refresh()
 	(screen._briefing.get_parent() as ScrollContainer).scroll_vertical = 10000
 	await settle()
@@ -148,6 +149,111 @@ func _run() -> void:
 	await settle()
 	print("PROFILE_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)
+
+func card_lines(card_name: String) -> PackedStringArray:
+	var lines := PackedStringArray()
+	var card: Node = screen._identity.find_child(card_name, true, false)
+	if card == null:
+		return lines
+	for child: Node in card.get_children():
+		if child is Label:
+			lines.append((child as Label).text)
+	return lines
+
+func identity_text() -> String:
+	var lines := PackedStringArray()
+	for label: Node in screen._identity.find_children("*", "Label", true, false):
+		lines.append((label as Label).text)
+	return "\n".join(lines)
+
+func pvp_bar() -> ProgressBar:
+	return screen._identity.find_child("PvpProgress", true, false) as ProgressBar
+
+func campaign_intact() -> bool:
+	var text := identity_text()
+	return text.contains(str(screen._snapshot.rank)) and text.contains("%d RANK POINTS" % screen._snapshot.points)
+
+func verify_pvp_standing() -> void:
+	var silver := {"points": 1048, "rank": "Silver", "current_threshold": 900, "next_rank": "Gold", "next_threshold": 1200, "points_to_next_rank": 152, "rated_matches": 10, "wins": 7, "losses": 3, "draws": 0}
+	var campaign_rank: String = str(screen._snapshot.rank)
+	auth._pvp_standing = {}
+	auth._pvp_standing_account = ""
+	screen._pvp_loading = true
+	screen._refresh()
+	check(card_lines("PvpStanding") == PackedStringArray(["PVP STANDING", "LOADING..."]), "Loading state before the first answer")
+	screen._pvp_loading = false
+	screen._refresh()
+	check(card_lines("PvpStanding") == PackedStringArray(["PVP STANDING", "STANDING UNAVAILABLE"]), "No successful fetch shows unavailable, not a guess")
+	check(pvp_bar() == null, "No progress bar without server data")
+	check(campaign_intact(), "Campaign rank card unchanged while PvP is unavailable")
+	auth._pvp_standing = silver
+	auth._pvp_standing_account = "profile-fixture"
+	screen._refresh()
+	check(card_lines("PvpStanding") == PackedStringArray(["PVP STANDING", "SILVER", "1,048 PVP POINTS", "152 POINTS TO GOLD", "10 RATED MATCHES", "7 WINS / 3 LOSSES"]), "Silver standing copy")
+	check(pvp_bar() != null and is_equal_approx(pvp_bar().value, 148) and is_equal_approx(pvp_bar().max_value, 300), "Bar spans the server's current_threshold..next_threshold")
+	check(str(screen._snapshot.rank) == campaign_rank and campaign_intact(), "Campaign RECRUIT rank and RANK POINTS stay unchanged next to PvP")
+	check(not identity_text().contains("SILVER RANK POINTS") and identity_text().count("SILVER") == 1, "Silver never replaces the campaign rank")
+	screen._pvp_loading = true
+	screen._refresh()
+	check(card_lines("PvpStanding")[1] == "SILVER", "A refresh in flight keeps showing this account's last standing")
+	screen._pvp_loading = false
+	await verify_pvp_layout()
+	auth._pvp_standing = {"points": 2846, "rank": "Grandmaster", "current_threshold": 2700, "next_rank": null, "next_threshold": null, "points_to_next_rank": null, "rated_matches": 42, "wins": 30, "losses": 12, "draws": 0}
+	screen._refresh()
+	check(card_lines("PvpStanding") == PackedStringArray(["PVP STANDING", "GRANDMASTER", "2,846 PVP POINTS", "MAX RANK", "42 RATED MATCHES", "30 WINS / 12 LOSSES"]), "Grandmaster standing copy")
+	check(pvp_bar() == null, "Max rank has no progress bar")
+	await capture("pvp_grandmaster")
+	auth._pvp_standing = {"points": 5, "rank": "Diamond", "current_threshold": 2100, "next_rank": "Grandmaster", "next_threshold": 2700, "points_to_next_rank": 1234567, "rated_matches": 1, "wins": 1, "losses": 1, "draws": 2}
+	screen._refresh()
+	check(card_lines("PvpStanding") == PackedStringArray(["PVP STANDING", "DIAMOND", "5 PVP POINTS", "1,234,567 POINTS TO GRANDMASTER", "1 RATED MATCH", "1 WIN / 1 LOSS / 2 DRAWS"]), "Server values are shown verbatim, never recalculated locally")
+	check(pvp_bar() != null and is_equal_approx(pvp_bar().value, 0), "Inconsistent payload only clamps the visual bar")
+	var profile_source: String = FileAccess.get_file_as_string("res://src/ui/screens/profile/profile_screen.gd")
+	for local_rule: String in ["Bronze", "Platinum", "\"Gold\"", "\"Silver\"", "900", "1200", "1600", "2100", "2700"]:
+		check(not profile_source.contains(local_rule), "Profile has no local PvP rank rule: " + local_rule)
+	auth._participant_code = "another-account"
+	screen._session_changed(true)
+	await settle()
+	check(card_lines("PvpStanding") == PackedStringArray(["PVP STANDING", "STANDING UNAVAILABLE"]), "Another account never sees the previous standing")
+	auth._participant_code = "profile-fixture"
+	screen._session_changed(true)
+	await settle()
+	check(card_lines("PvpStanding")[1] == "SILVER" or card_lines("PvpStanding")[1] == "DIAMOND", "Standing is keyed to its own account")
+	# sign_out() deletes the real session file, so its reset and the no-persistence rule are checked in source.
+	var source: String = FileAccess.get_file_as_string("res://src/autoload/auth_service.gd")
+	var sign_out_body: String = source.get_slice("func sign_out()", 1).get_slice("\nfunc ", 0)
+	check(sign_out_body.contains("_pvp_standing = {}") and sign_out_body.contains("_pvp_standing_account = \"\""), "Sign out clears the in-memory standing")
+	check(source.count("_pvp_standing") == source.get_slice("func _persist(", 0).count("_pvp_standing"), "PvP standing is never persisted")
+	auth._pvp_standing = {}
+	auth._pvp_standing_account = ""
+	auth._participant_code = "profile-fixture"
+
+func verify_pvp_layout() -> void:
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		var scroll := screen._identity.get_parent() as ScrollContainer
+		var card := screen._identity.find_child("PvpStandingCard", true, false) as Control
+		var personnel := screen._identity.get_child(0) as Control
+		var tag := " at %dx%d" % [dimensions.x, dimensions.y]
+		check(card != null and personnel != card, "PvP card is its own panel" + tag)
+		if card == null:
+			continue
+		check(card.get_index() == personnel.get_index() + 1, "PvP card sits directly below the personnel card" + tag)
+		check(personnel.get_rect().end.y <= card.get_rect().position.y, "No overlap with the personnel card" + tag)
+		check(card.get_rect().end.y <= screen._details_button.get_rect().position.y, "No overlap with the record button" + tag)
+		check(card.get_global_rect().position.x >= scroll.get_global_rect().position.x - 0.5 and card.get_global_rect().end.x <= scroll.get_global_rect().end.x + 0.5, "PvP card fits the column width" + tag)
+		check(screen._body.get_global_rect().end.x <= root.get_visible_rect().end.x, "No horizontal viewport overflow" + tag)
+		for label: Label in card.find_children("*", "Label", true, false):
+			check(label.get_rect().end.x <= label.get_parent_control().size.x + 0.5 and label.get_minimum_size().y <= label.size.y + 0.5, "Label not clipped: %s%s" % [label.text, tag])
+		var rank := card.find_child("PvpRank", true, false) as Label
+		check(rank != null and rank.get_theme_font_size("font_size") > screen._font, "PvP rank is visually prominent" + tag)
+		scroll.ensure_control_visible(card)
+		await settle()
+		check(scroll.get_global_rect().intersects(card.get_global_rect()), "Scrolling reaches the PvP card" + tag)
+		await capture("pvp_%dx%d" % [dimensions.x, dimensions.y])
+		scroll.scroll_vertical = 0
+	root.size = Vector2i(1280, 720)
+	await settle()
 
 func tap(control: Control) -> void:
 	var point: Vector2 = control.get_global_rect().get_center()

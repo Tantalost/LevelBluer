@@ -109,6 +109,7 @@ def insert_match(row: dict[str, Any]) -> None:
 
 @dataclass
 class _Pending:
+    record: MatchRecord
     row: dict[str, Any]
     attempts: int = 0
     next_at: float = 0.0
@@ -128,6 +129,7 @@ class MatchRecorder:
         clock: Callable[[], float] = time.monotonic,
         base_seconds: float = RETRY_BASE_SECONDS,
         max_seconds: float = RETRY_MAX_SECONDS,
+        on_stored: Callable[[MatchRecord], None] | None = None,
     ) -> None:
         self._writer = writer
         self._clock = clock
@@ -135,10 +137,15 @@ class MatchRecorder:
         self._max = max_seconds
         self._pending: dict[str, _Pending] = {}
         self.conflicts = 0
+        # Fired only after the history row is confirmed stored (Phase 4B rating hook).
+        self.on_stored = on_stored
 
     @property
     def pending(self) -> int:
         return len(self._pending)
+
+    def pending_records(self) -> list[MatchRecord]:
+        return [item.record for item in self._pending.values()]
 
     def retry_delay(self, attempts: int) -> float:
         return min(self._max, self._base * 2 ** max(0, attempts - 1))
@@ -148,7 +155,7 @@ class MatchRecorder:
             if not (is_student_id(record.player1.user_id) and is_student_id(record.player2.user_id)):
                 logger.warning("PvP match %s not recorded: player ids are not student accounts", record.match_id)
                 continue
-            self._pending.setdefault(record.match_id, _Pending(match_row(record)))
+            self._pending.setdefault(record.match_id, _Pending(record, match_row(record)))
 
     def flush(self) -> int:
         written = 0
@@ -171,6 +178,8 @@ class MatchRecorder:
                 continue
             del self._pending[match_id]
             written += 1
+            if self.on_stored is not None:
+                self.on_stored(item.record)
         return written
 
 
