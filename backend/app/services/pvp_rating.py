@@ -99,6 +99,22 @@ def student_standing(student_id: str) -> dict[str, Any]:
     return standing(rows[0] if rows else None)
 
 
+def match_rating(student_id: str, match_id: str) -> dict[str, Any]:
+    """Read this student's exact ledger event, never infer a reward from totals."""
+    try:
+        rows = supabase.table("pvp_rating_events").select("points_before,points_after,points_delta").eq("student_id", student_id).eq("match_id", match_id).limit(1).execute().data or []
+    except Exception as exc:
+        raise RatingUnavailable from exc
+    if not rows:
+        return {"status": "pending"}
+    row = rows[0]
+    return {"status": "applied", "match_id": match_id, **row,
+            "current_threshold": standing({"points": row["points_after"]})["current_threshold"],
+            "next_threshold": standing({"points": row["points_after"]})["next_threshold"],
+            "rank_before": rank_for(int(row["points_before"])),
+            "rank_after": rank_for(int(row["points_after"]))}
+
+
 # ---- database calls -----------------------------------------------------------------------
 
 def apply_rating(match_id: str) -> dict[str, Any]:

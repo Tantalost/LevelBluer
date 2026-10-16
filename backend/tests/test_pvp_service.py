@@ -73,6 +73,46 @@ class PvpHarness(unittest.TestCase):
         self.assertEqual(caught.exception.code, code)
 
 
+class OverclockTest(PvpHarness):
+    def test_three_wins_charge_next_hit_and_duplicate_cannot_consume_twice(self):
+        service, clock, code = self.make()
+        self.start(service, clock, code)
+        for index in range(3):
+            right, _ = self.positions(service, code)
+            service.submit_answer(code, HOST, index + 1, right)
+            view = service.state(code, HOST)
+            self.assertEqual(view["charge"][HOST], index + 1)
+            self.assertEqual(view["result"]["damage"][GUEST], 20)
+            self.next_round(service, clock, code)
+        right, _ = self.positions(service, code)
+        service.submit_answer(code, HOST, 4, right)
+        view = service.state(code, HOST)
+        self.assertEqual(view["hp"][GUEST], 15)
+        self.assertEqual(view["result"]["damage"][GUEST], 25)
+        self.assertEqual(view["charge"][HOST], 0)
+        with self.assertRaises(PvpError):
+            service.submit_answer(code, HOST, 4, right)
+        self.assertEqual(service.state(code, HOST)["hp"][GUEST], 15)
+
+    def test_incomplete_chain_resets_but_loaded_charge_survives_timeout(self):
+        service, clock, code = self.make()
+        self.start(service, clock, code)
+        right, _ = self.positions(service, code)
+        service.submit_answer(code, HOST, 1, right)
+        self.next_round(service, clock, code)
+        clock.now = service.state(code, HOST)["round"]["ends_at"]
+        self.assertEqual(service.state(code, HOST)["charge"][HOST], 0)
+        # Already-loaded charge is retained across a lost round and reconnect.
+        service._room(code).host.charge = 3
+        self.next_round(service, clock, code)
+        right, _ = self.positions(service, code)
+        service.submit_answer(code, GUEST, 3, right)
+        view = service.state(code, HOST)
+        self.assertEqual(view["charge"], {HOST: 3, GUEST: 1})
+        self.assertEqual(view["hp"][HOST], 80)
+        self.assertTrue(view["match_id"])
+
+
 class BankTest(unittest.TestCase):
     def test_backend_bank_matches_canonical_frontend_text(self):
         # Git can check out one file as CRLF on Windows. Ignore only newline

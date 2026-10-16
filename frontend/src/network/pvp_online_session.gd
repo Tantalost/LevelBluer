@@ -118,6 +118,7 @@ var hp: Dictionary = {}
 var current_round: Dictionary = {}
 var countdown_ends_at: int = 0
 var last_result: Dictionary = {}
+var charge: Dictionary = {}
 var finish_result: Dictionary = {}
 var clock_offset_ms: int = 0
 var has_clock_sample: bool = false
@@ -579,6 +580,7 @@ func _begin_session() -> void:
 	current_round = {}
 	countdown_ends_at = 0
 	last_result = {}
+	charge = {}
 	finish_result = {}
 	last_error_code = ""
 	reconnect_attempts = 0
@@ -609,6 +611,7 @@ func _accept_room_reply(reply: Dictionary) -> bool:
 
 
 func _apply_view(view: Dictionary) -> void:
+	charge = (view.get("charge", {}) as Dictionary).duplicate()
 	host_id = str(view.get("host_id", ""))
 	guest_id = "" if view.get("guest_id", null) == null else str(view.get("guest_id", ""))
 	_apply_hp(view.get("hp", null))
@@ -633,6 +636,9 @@ func _finish(source: Dictionary) -> void:
 	_apply_hp(source.get("hp", null))
 	var already: bool = state == State.FINISHED
 	finish_result = {
+		"match_id": str(source.get("match_id", "")),
+		"origin": str(source.get("origin", "private")),
+		"stats": source.get("stats", {}),
 		"state": str(source.get("state", "finished")),
 		"reason": str(source.get("reason", source.get("finish_reason", ""))),
 		"winner_id": "" if source.get("winner_id", null) == null else str(source.get("winner_id", "")),
@@ -654,6 +660,8 @@ func _apply_hp(raw: Variant) -> void:
 
 
 func _result_from(source: Dictionary) -> Dictionary:
+	if source.get("charge", null) is Dictionary:
+		charge = (source["charge"] as Dictionary).duplicate()
 	var damage: Dictionary = {}
 	var raw_damage: Variant = source.get("damage", {})
 	if typeof(raw_damage) == TYPE_DICTIONARY:
@@ -736,7 +744,7 @@ static func public_round(source: Dictionary) -> Dictionary:
 
 static func public_view(view: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
-	for key: String in ["code", "state", "host_id", "guest_id", "ready", "connected", "hp", "round_number", "countdown_ends_at", "winner_id", "retired_by", "finish_reason"]:
+	for key: String in ["code", "state", "host_id", "guest_id", "ready", "connected", "hp", "round_number", "countdown_ends_at", "winner_id", "retired_by", "finish_reason", "match_id", "origin", "charge", "stats"]:
 		if view.has(key):
 			out[key] = view[key]
 	return out

@@ -32,6 +32,8 @@ ROUND_MS = 10_000
 COUNTDOWN_MS = 3_000
 RESULT_MS = 2_500
 DAMAGE_HIT = 20
+OVERCLOCK_BONUS = 5
+OVERCLOCK_WINS = 3
 OPTION_COUNT = 4
 ROOM_CODE_LENGTH = 6
 ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -90,6 +92,7 @@ class Player:
     correct: int = 0
     wrong: int = 0
     timeouts: int = 0
+    charge: int = 0
 
 
 @dataclass
@@ -695,8 +698,17 @@ class PvpService:
         if winner_id is not None:
             loser = room.opponent(winner_id)
             if loser is not None:
-                loser.hp = max(0, loser.hp - DAMAGE_HIT)
-                live.damage[loser.user_id] = DAMAGE_HIT
+                winner = next(player for player in room.players() if player.user_id == winner_id)
+                charged = winner.charge >= OVERCLOCK_WINS
+                damage = DAMAGE_HIT + (OVERCLOCK_BONUS if charged else 0)
+                winner.charge = 0 if charged else winner.charge + 1
+                loser.hp = max(0, loser.hp - damage)
+                live.damage[loser.user_id] = damage
+        # A loaded charge persists until the next successful hit; an incomplete
+        # chain requires consecutive round wins. Neither client controls this.
+        for player in room.players():
+            if player.user_id != winner_id and player.charge < OVERCLOCK_WINS:
+                player.charge = 0
         room.result_ends_at = at_ms + RESULT_MS
         knocked_out = any(player.hp <= 0 for player in room.players())
         room.state = RoomState.FINISHED if knocked_out else RoomState.ROUND_RESULT
@@ -705,6 +717,7 @@ class PvpService:
             "winner_id": winner_id,
             "reason": reason,
             "damage": dict(live.damage),
+            "charge": self._charge(room),
             "hp": self._hp(room),
             "correct_option": live.correct_position(),
             "result_ends_at": room.result_ends_at,
@@ -727,6 +740,9 @@ class PvpService:
         room.finish_reason = reason
         room.closed_at = self._clock()
         self._emit(room, "match_finished", {
+            "match_id": room.match_id,
+            "origin": room.origin,
+            "stats": {player.user_id: {"correct": player.correct, "wrong": player.wrong, "timeouts": player.timeouts} for player in room.players()},
             "state": room.state.value,
             "reason": reason,
             "winner_id": room.winner_id,
@@ -778,6 +794,10 @@ class PvpService:
         return {player.user_id: player.hp for player in room.players()}
 
     @staticmethod
+    def _charge(room: Room) -> dict[str, int]:
+        return {player.user_id: player.charge for player in room.players()}
+
+    @staticmethod
     def round_payload(live: Round) -> dict[str, Any]:
         return {
             "round": live.number,
@@ -791,6 +811,9 @@ class PvpService:
     def _view(self, room: Room, user_id: str) -> dict[str, Any]:
         view: dict[str, Any] = {
             "code": room.code,
+            "match_id": room.match_id,
+            "charge": self._charge(room),
+            "stats": {player.user_id: {"correct": player.correct, "wrong": player.wrong, "timeouts": player.timeouts} for player in room.players()},
             "state": room.state.value,
             "host_id": room.host.user_id,
             "guest_id": room.guest.user_id if room.guest else None,

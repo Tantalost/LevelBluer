@@ -30,6 +30,7 @@ func _run() -> void:
 	_check_guards()
 	_check_hidden_bot()
 	_check_damage_cases()
+	_check_overclock()
 	_check_ko()
 	_check_first_correct_race()
 	_check_match_continues_until_ko()
@@ -39,6 +40,7 @@ func _run() -> void:
 	_check_result_hold_and_retired_match()
 	await _check_screen()
 	await _check_screen_hardening()
+	await _check_redesign()
 	check(JSON.stringify(player.mastery_matrix) == mastery_before, "PvP leaves mastery unchanged")
 	check(player.pvp_tokens == tokens_before, "PvP leaves the token wallet unchanged")
 	var battle_source: String = FileAccess.get_file_as_string("res://src/gameplay/pvp/pvp_battle.gd")
@@ -298,6 +300,66 @@ func _check_damage_cases() -> void:
 	play_round(wrong_timeout, 0, 1000, false, 20000)
 	check(wrong_timeout.player_hp == 100 and wrong_timeout.bot_hp == 100, "wrong versus timeout deals no damage")
 	check(wrong_timeout.side_timed_out(false), "the late bot times out")
+
+
+func _check_overclock() -> void:
+	var battle: Battle = fresh(scripted(false, 20000))
+	for index: int in 3:
+		play_round(battle, 1, 500, false, 20000)
+		check(battle.player_charge == index + 1 and battle.damage_to(false) == 20, "three unboosted wins build Overclock")
+	play_round(battle, null, -1, false, 20000)
+	check(battle.player_charge == 3, "a loaded charge persists until a successful hit")
+	play_round(battle, 1, 500, false, 20000)
+	check(battle.damage_to(false) == 25 and battle.bot_hp == 15 and battle.player_charge == 0, "next hit consumes +5 bonus once")
+	var broken: Battle = fresh(scripted(false, 20000))
+	play_round(broken, 1, 500, false, 20000)
+	play_round(broken, null, -1, false, 20000)
+	check(broken.player_charge == 0, "timeout breaks an unfinished chain")
+	var rival: Battle = fresh(scripted(true, 1000))
+	for index: int in 4:
+		play_round(rival, 0, 500, true, 1000)
+	check(rival.player_hp == 15 and rival.bot_charge == 0, "bot uses the same capped bonus")
+
+
+func _check_redesign() -> void:
+	var settings: Node = root.get_node("SettingsService")
+	var prior_motion: bool = bool(settings.get("reduced_motion"))
+	settings.set("reduced_motion", true)
+	var screen: Control = (load("res://src/ui/screens/pvp/pvp_battle_screen.tscn") as PackedScene).instantiate() as Control
+	root.add_child(screen)
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen.set_process(false)
+	var battle: Battle = screen.get("_battle") as Battle
+	battle.tick(battle.countdown_ends_at)
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		screen.call("_show_panels", true, false, false, false)
+		screen.call("_show_charge", 3, 1)
+		screen.call("_fit_arena")
+		await settle()
+		screen.call("_fit_answer_text")
+		await settle()
+		check(root.get_visible_rect().encloses((screen.get("_quiz") as Control).get_global_rect()), "question panel fits landscape %s" % dimensions)
+		await _capture("battle", dimensions)
+		screen.call("_show_panels", false, false, false, true)
+		battle.match_result = Battle.Outcome.PLAYER_WIN
+		screen.call("_render_end")
+		screen.call("_animate_rating", {"points_before": 1190, "points_after": 1206, "points_delta": 16, "rank_before": "Silver", "rank_after": "Gold", "current_threshold": 1200, "next_threshold": 1600})
+		await settle()
+		check(root.get_visible_rect().encloses((screen.get("_end_card") as Control).get_global_rect()), "result card fits landscape %s" % dimensions)
+		check((screen.get("_end_reward") as Label).text == "1206 PVP POINTS", "reduced motion jumps to confirmed total")
+		check((screen.get("_end_rank") as Label).text.begins_with("RANK UP"), "rank crossing is celebrated")
+		await _capture("victory", dimensions)
+	settings.set("reduced_motion", prior_motion)
+	screen.queue_free()
+	await settle()
+
+
+func _capture(state: String, dimensions: Vector2i) -> void:
+	if not OS.get_cmdline_user_args().has("--render"):
+		return
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://.godot/pvp_%s_%dx%d.png" % [state, dimensions.x, dimensions.y])
 
 
 func _check_ko() -> void:

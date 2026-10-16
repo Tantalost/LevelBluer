@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 if "app.supabase_client" not in sys.modules:
     stub = types.ModuleType("app.supabase_client")
@@ -54,6 +54,30 @@ def reference_delta(points_a: int, points_b: int, score_a: float) -> int:
 def reference_apply(points_a: int, points_b: int, score_a: float) -> tuple[int, int]:
     delta = reference_delta(points_a, points_b, score_a)
     return max(0, points_a + delta), max(0, points_b - delta)
+
+
+class MatchRewardReadTest(unittest.TestCase):
+    def test_read_is_scoped_to_student_and_match_and_uses_ledger(self):
+        db = MagicMock()
+        query = db.table.return_value
+        query.select.return_value = query
+        query.eq.return_value = query
+        query.limit.return_value = query
+        query.execute.return_value.data = [{"points_before": 1190, "points_after": 1206, "points_delta": 16}]
+        with patch.object(pvp_rating, "supabase", db):
+            result = pvp_rating.match_rating("student-a", "match-a")
+        db.table.assert_called_once_with("pvp_rating_events")
+        self.assertEqual(query.eq.call_args_list[0].args, ("student_id", "student-a"))
+        self.assertEqual(query.eq.call_args_list[1].args, ("match_id", "match-a"))
+        self.assertEqual(result["points_delta"], 16)
+        self.assertEqual(result["rank_before"], "Silver")
+        self.assertEqual(result["rank_after"], "Gold")
+        query.execute.return_value.data = []
+        with patch.object(pvp_rating, "supabase", db):
+            self.assertEqual(pvp_rating.match_rating("student-a", "match-a"), {"status": "pending"})
+        query.execute.side_effect = RuntimeError("offline")
+        with patch.object(pvp_rating, "supabase", db), self.assertRaises(pvp_rating.RatingUnavailable):
+            pvp_rating.match_rating("student-a", "match-a")
 
 
 class FakeRatingDb:
@@ -469,6 +493,11 @@ class HubTest(unittest.TestCase):
 
 class RankApiTest(unittest.TestCase):
     def setUp(self) -> None:
+        # Auth now verifies the account's session version. Keep that lookup
+        # isolated as in the realtime API tests instead of hitting a stub DB.
+        lookup = patch("app.services.auth_service.fetch_student_by_id", side_effect=lambda sid: {"id": sid, "session_version": 0})
+        lookup.start()
+        self.addCleanup(lookup.stop)
         self.rows: dict[str, dict[str, Any]] = {}
         self.fail = False
         test = self
@@ -508,6 +537,19 @@ class RankApiTest(unittest.TestCase):
 
     def test_requires_a_student_jwt(self):
         self.assertEqual(self.client.get("/api/pvp/me/rank").status_code, 401)
+
+    def test_match_rating_endpoint_scopes_identity_and_validates_id(self):
+        match_id, me, other = str(uuid.uuid4()), student(), student()
+        path = f"/api/pvp/me/matches/{match_id}/rating"
+        self.assertEqual(self.client.get(path).status_code, 401)
+        with patch.object(pvp_rating, "match_rating", return_value={"status": "pending"}) as read:
+            response = self.client.get(path + f"?student_id={other}", headers=auth(me))
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json(), {"status": "pending"})
+            read.assert_called_once_with(me, match_id)
+        self.assertEqual(self.client.get("/api/pvp/me/matches/bad/rating", headers=auth(me)).status_code, 400)
+        with patch.object(pvp_rating, "match_rating", side_effect=pvp_rating.RatingUnavailable):
+            self.assertEqual(self.client.get(path, headers=auth(me)).status_code, 503)
 
     def test_new_player_and_existing_player(self):
         me = student()

@@ -26,6 +26,12 @@ var _lock_note: String = ""
 var _opponent_offline: bool = false
 var _opponent_grace_ends_at: int = 0
 var _ready_sent: bool = false
+var _rating_http: HTTPRequest
+var _rating_retry: Timer
+var _rating_match: String = ""
+var _rating_owner: String = ""
+var _rating_attempts: int = 0
+var _rating_applied: bool = false
 
 var _lobby_host: ScrollContainer
 var _entry: VBoxContainer
@@ -70,6 +76,10 @@ func on_enter(args: Dictionary) -> void:
 
 
 func on_exit() -> void:
+	if _rating_http != null:
+		_rating_http.cancel_request()
+	if _rating_retry != null:
+		_rating_retry.stop()
 	super()
 	_drop_session()
 
@@ -171,6 +181,10 @@ func _leave_online() -> void:
 	if _leaving or _left:
 		return
 	_leaving = true
+	if _rating_http != null:
+		_rating_http.cancel_request()
+	if _rating_retry != null:
+		_rating_retry.stop()
 	_abandon.hide()
 	_lobby_status.text = "Leaving…"
 	if _session != null:
@@ -470,7 +484,7 @@ func _build_question(round_data: Dictionary) -> void:
 	_answer_buttons.clear()
 	_choices.clear()
 	UI.clear(_body)
-	var prompt: Label = UI.label(str(round_data.get("question", "")), 18, Palette.CREAM)
+	var prompt: Label = UI.label(str(round_data.get("question", "")), 26, Palette.CREAM)
 	prompt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.add_child(prompt)
@@ -492,6 +506,7 @@ func _build_question(round_data: Dictionary) -> void:
 		button.custom_minimum_size = Vector2(0, button_height)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_answer_buttons.append(button)
+		_style_answer(button)
 		grid.add_child(button)
 	UI.fit_touch(self)
 	_fit_answer_text.call_deferred()
@@ -569,6 +584,24 @@ func _render_finish() -> void:
 		title = "DEFEAT"
 		color = Palette.DANGER
 	_fill_end_card(title, color, _finish_line(finish))
+	var stats: Dictionary = finish.get("stats", {}) as Dictionary
+	if stats.has(_session.self_id) and stats.has(_session.opponent_id()):
+		(_end_you_correct.get_parent() as Control).show()
+		_end_you_correct.text = "CORRECT  %d" % int((stats[_session.self_id] as Dictionary).get("correct", 0))
+		_end_rival_correct.text = "CORRECT  %d" % int((stats[_session.opponent_id()] as Dictionary).get("correct", 0))
+	if str(finish.get("origin", "private")) != "matchmaking":
+		_end_reward.text = "PRIVATE MATCH / NO RATING CHANGE"
+		_end_rank.text = "Play Find Opponent to compete for rating."
+	elif not str(finish.get("match_id", "")).is_empty() and not winner.is_empty():
+		if _rating_match.is_empty():
+			_rating_match = str(finish["match_id"])
+			_rating_owner = _session.self_id
+			_end_reward.text = "RATING UPDATE PENDING"
+			_end_rank.text = "Waiting for the server's match record."
+			_fetch_rating()
+	else:
+		_end_reward.text = "NO RATING CHANGE"
+		_end_rank.text = "No rated result was recorded."
 
 
 func _finish_line(finish: Dictionary) -> String:
@@ -589,6 +622,9 @@ func _render_lost() -> void:
 	_show_arena(true)
 	_show_panels(false, false, false, true)
 	_fill_end_card("DISCONNECTED", Palette.WARNING, Session.safe_message(_session.last_error_code))
+	if not _rating_applied:
+		_end_reward.text = "RESULT NOT CONFIRMED"
+		_end_rank.text = "Reconnect to check the server result."
 
 
 func _fill_end_card(title: String, color: Color, line: String) -> void:
@@ -601,6 +637,61 @@ func _fill_end_card(title: String, color: Color, line: String) -> void:
 	_end_rounds.text = line
 	_end_rounds.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_footer.show()
+	_present_finish(title, color)
+
+
+func _fetch_rating() -> void:
+	if _leaving or not is_inside_tree() or _rating_applied or _rating_attempts >= 5:
+		return
+	var token: String = AuthService.auth_token()
+	if Session.token_subject(token) != _rating_owner:
+		return
+	if _rating_http == null:
+		_rating_http = HTTPRequest.new()
+		_rating_http.timeout = 8.0
+		_rating_http.max_redirects = 0
+		add_child(_rating_http)
+		_rating_http.request_completed.connect(_rating_received)
+		_rating_retry = Timer.new()
+		_rating_retry.one_shot = true
+		_rating_retry.wait_time = 2.0
+		add_child(_rating_retry)
+		_rating_retry.timeout.connect(_fetch_rating)
+	_rating_attempts += 1
+	var base: String = str(ProjectSettings.get_setting("levelblue/api_base_url", Session.DEFAULT_API_BASE)).trim_suffix("/")
+	var error: Error = _rating_http.request(base + "/api/pvp/me/matches/" + _rating_match.uri_encode() + "/rating", PackedStringArray(["Authorization: Bearer " + token, "Accept: application/json"]))
+	if error != OK:
+		if _rating_attempts < 5:
+			_rating_retry.start()
+		else:
+			_end_rank.text = "Still syncing. Check your PvP profile later."
+
+
+func _rating_received(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if _leaving or _rating_applied or Session.token_subject(AuthService.auth_token()) != _rating_owner:
+		return
+	var parsed: Variant = JSON.parse_string(body.get_string_from_utf8())
+	if result == HTTPRequest.RESULT_SUCCESS and status == 200 and parsed is Dictionary:
+		var record: Dictionary = parsed as Dictionary
+		if str(record.get("status", "")) == "applied" and str(record.get("match_id", "")) == _rating_match:
+			if _valid_rating(record) and not _rating_applied:
+				_rating_applied = true
+				_animate_rating(record)
+				return
+	if status == 401 or status == 403:
+		_end_rank.text = "Sign in again to check your rating."
+	elif _rating_attempts < 5:
+		_rating_retry.start()
+	else:
+		_end_rank.text = "Still syncing. Check your PvP profile later."
+
+
+static func _valid_rating(record: Dictionary) -> bool:
+	for key: String in ["points_before", "points_after", "points_delta"]:
+		var value: Variant = record.get(key)
+		if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floor(float(value)):
+			return false
+	return int(record["points_before"]) >= 0 and int(record["points_after"]) >= 0 and int(record["points_after"]) - int(record["points_before"]) == int(record["points_delta"]) and record.get("rank_before") is String and record.get("rank_after") is String
 
 
 func _play_result_fx(result: Dictionary) -> void:
@@ -608,6 +699,8 @@ func _play_result_fx(result: Dictionary) -> void:
 	if _session == null or number <= _fx_round or not is_inside_tree():
 		return
 	_fx_round = number
+	var damage: Dictionary = result.get("damage", {}) as Dictionary
+	_float_damage(str(result.get("winner_id", "")) == _session.self_id, maxi(int(damage.get(_session.self_id, 0)), int(damage.get(_session.opponent_id(), 0))))
 	_clear_fx()
 	if _arena == null or _arena.size.x < 2.0:
 		return
@@ -621,6 +714,7 @@ func _play_result_fx(result: Dictionary) -> void:
 
 
 func _update_online_hud() -> void:
+	_show_charge(int(_session.charge.get(_session.self_id, 0)), int(_session.charge.get(_session.opponent_id(), 0)))
 	var mine: int = _session.my_hp()
 	var theirs: int = _session.opponent_hp()
 	_player_hp.text = str(mine)

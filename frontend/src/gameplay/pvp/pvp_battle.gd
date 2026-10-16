@@ -46,6 +46,8 @@ class RoundState:
 
 var phase: Phase = Phase.PREPARING
 var player_hp: int = MAX_HP
+var player_charge: int = 0
+var bot_charge: int = 0
 var bot_hp: int = MAX_HP
 var round_number: int = 0
 var rounds_played: int = 0
@@ -336,6 +338,8 @@ func winner() -> Outcome:
 func _reset() -> void:
 	phase = Phase.PREPARING
 	player_hp = MAX_HP
+	player_charge = 0
+	bot_charge = 0
 	bot_hp = MAX_HP
 	round_number = 0
 	rounds_played = 0
@@ -526,11 +530,23 @@ func _refill_deck() -> bool:
 
 
 func _damage_for(round_state: RoundState) -> Vector2i:
+	var hit: Vector2i = Vector2i.ZERO
 	if round_state.player.correct:
-		return Vector2i(0, DAMAGE_HIT)
-	if round_state.bot.correct:
-		return Vector2i(DAMAGE_HIT, 0)
-	return Vector2i.ZERO
+		hit.y = DAMAGE_HIT + (5 if player_charge == 3 else 0)
+		player_charge = 0 if player_charge == 3 else player_charge + 1
+		if bot_charge < 3:
+			bot_charge = 0
+	elif round_state.bot.correct:
+		hit.x = DAMAGE_HIT + (5 if bot_charge == 3 else 0)
+		bot_charge = 0 if bot_charge == 3 else bot_charge + 1
+		if player_charge < 3:
+			player_charge = 0
+	else:
+		if player_charge < 3:
+			player_charge = 0
+		if bot_charge < 3:
+			bot_charge = 0
+	return hit
 
 
 func _choose_bot(question: Dictionary) -> Dictionary:

@@ -24,13 +24,27 @@ const ATTACK_BODY_TOP := 180.0
 const ATTACK_BODY_BOTTOM := 572.0
 const ATTACK_BODY_CENTER_X := 142.5
 
+class ResultHost extends CenterContainer:
+	func _ready() -> void:
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		draw_rect(Rect2(Vector2.ZERO, size), Color(0.02, 0.04, 0.09, 0.88))
+
 class HpBar extends Control:
 	var value: int = 100
+	var displayed: float = 100.0
 	var fill: Color = Color("#4FE0D4")
 
 	func _ready() -> void:
-		custom_minimum_size.y = 12
+		custom_minimum_size.y = 18
 		resized.connect(queue_redraw)
+
+	func _process(delta: float) -> void:
+		if is_equal_approx(displayed, float(value)):
+			return
+		displayed = float(value) if SettingsService.reduced_motion else move_toward(displayed, float(value), delta * 90.0)
+		queue_redraw()
 
 	func set_hp(next_hp: int) -> void:
 		value = clampi(next_hp, 0, 100)
@@ -38,9 +52,12 @@ class HpBar extends Control:
 
 	func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Palette.NAVY_700)
-		var width: float = size.x * float(value) / 100.0
+		var width: float = size.x * displayed / 100.0
 		if width > 0.0:
 			draw_rect(Rect2(Vector2.ZERO, Vector2(width, size.y)), fill)
+		for segment: int in range(1, 10):
+			var x: float = size.x * float(segment) / 10.0
+			draw_line(Vector2(x, 0), Vector2(x, size.y), Color(0.02, 0.04, 0.09, 0.4), 2.0)
 
 var _battle: Battle
 var _layout: VBoxContainer
@@ -96,6 +113,18 @@ var _attack_tween: Tween
 var _fx_round: int = -1
 var _attacking: bool = false
 var _pulse_fired: bool = false
+var _player_charge_label: Label
+var _rival_charge_label: Label
+var _end_card: PanelContainer
+var _end_portrait: TextureRect
+var _end_reward: Label
+var _end_rank: Label
+var _end_progress: ProgressBar
+var _end_tween: Tween
+var _reward_tween: Tween
+var _end_signature: String = ""
+var _damage_label: Label
+var _damage_tween: Tween
 
 
 func _ready() -> void:
@@ -108,7 +137,12 @@ func _ready() -> void:
 	var back: Button = shell["back"] as Button
 	back.name = "BackButton"
 	var title: Label = shell["title"] as Label
-	title.visible = false
+	title.text = "CYBER DUEL"
+	title.add_theme_color_override("font_color", Palette.CYAN_300)
+	var rule: Label = UI.label("3 ROUND WINS / CHARGE +5 DAMAGE", 18, Palette.CYAN_300)
+	rule.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rule.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	title.get_parent().add_child(rule)
 	_build_hud()
 	_build_arena()
 	_build_quiz()
@@ -116,6 +150,7 @@ func _ready() -> void:
 	_build_end_card()
 	_build_abandon()
 	resized.connect(_fit_arena)
+	resized.connect(func() -> void: _fit_answer_text.call_deferred())
 	_fit_arena()
 	_start_match()
 
@@ -151,6 +186,10 @@ func consume_back() -> bool:
 
 
 func _start_match() -> void:
+	_end_signature = ""
+	_end_reward.text = "PRACTICE MATCH / NO RATING CHANGE"
+	_end_rank.text = "Train your timing. Build your streak."
+	_end_progress.hide()
 	_abandon.hide()
 	_pause_started = -1
 	_paused_total = 0
@@ -239,7 +278,7 @@ func _render_question() -> void:
 		_render_unavailable()
 		return
 	var question: Dictionary = shared.get("question", {}) as Dictionary
-	var prompt: Label = UI.label(Quiz._format_prompt(question), 18, Palette.CREAM)
+	var prompt: Label = UI.label(Quiz._format_prompt(question), 26, Palette.CREAM)
 	prompt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_body.add_child(prompt)
@@ -264,6 +303,7 @@ func _render_question() -> void:
 		button.custom_minimum_size = Vector2(0, button_height)
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_answer_buttons.append(button)
+		_style_answer(button)
 		grid.add_child(button)
 
 
@@ -297,6 +337,7 @@ func _render_end() -> void:
 	_end_you_avg.text = "AVG  %s" % _format_average(_battle.average_correct_ms(true))
 	_end_rival_avg.text = "AVG  %s" % _format_average(_battle.average_correct_ms(false))
 	_footer.show()
+	_present_finish(title, color)
 
 
 func _render_unavailable() -> void:
@@ -379,9 +420,9 @@ func _build_hud() -> void:
 	center.custom_minimum_size.x = 156
 	center.add_theme_constant_override("separation", 0)
 	var bot_box: VBoxContainer = _fighter_column()
-	row.add_child(player_box)
+	_fighter_panel(row, player_box, DEFENDER_TEX, Palette.CYAN_400)
 	row.add_child(center)
-	row.add_child(bot_box)
+	_fighter_panel(row, bot_box, RIVAL_TEX, Palette.DANGER)
 	var player_label: String = AuthService.display_name().strip_edges()
 	if player_label.is_empty():
 		player_label = "OPERATOR"
@@ -397,6 +438,8 @@ func _build_hud() -> void:
 	_player_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	player_box.add_child(_player_name)
 	player_box.add_child(_hp_line(_player_hp, _player_bar, true))
+	_player_charge_label = UI.label("", 16, Palette.CYAN_300)
+	player_box.add_child(_player_charge_label)
 	_round_label = UI.label("ROUND 1", 14, Palette.CREAM, true)
 	_round_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_round_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -419,6 +462,48 @@ func _build_hud() -> void:
 	_bot_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	bot_box.add_child(_bot_name)
 	bot_box.add_child(_hp_line(_bot_hp, _bot_bar, false))
+	_rival_charge_label = UI.label("", 16, Palette.DANGER)
+	_rival_charge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	bot_box.add_child(_rival_charge_label)
+	_show_charge(0, 0)
+
+
+func _fighter_panel(parent: HBoxContainer, column: VBoxContainer, texture: Texture2D, accent: Color) -> void:
+	var panel: PanelContainer = PanelContainer.new()
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.add_theme_stylebox_override("panel", UI.journal_box(Palette.NAVY_900, accent.darkened(0.45), 8))
+	parent.add_child(panel)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	panel.add_child(row)
+	var portrait: TextureRect = TextureRect.new()
+	var crop: AtlasTexture = AtlasTexture.new()
+	crop.atlas = texture
+	var dimensions: Vector2 = texture.get_size()
+	crop.region = Rect2(dimensions * Vector2(0.30, 0.04), dimensions * Vector2(0.4, 0.36))
+	portrait.texture = crop
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.custom_minimum_size = Vector2(52, 52)
+	row.add_child(portrait)
+	row.add_child(column)
+
+
+func _show_charge(mine: int, rival: int) -> void:
+	var labels: Array[Label] = [_player_charge_label, _rival_charge_label]
+	var values: Array[int] = [clampi(mine, 0, 3), clampi(rival, 0, 3)]
+	for index: int in 2:
+		var count: int = values[index]
+		labels[index].text = "■ ".repeat(count) + "□ ".repeat(3 - count) + ("OVERCLOCK +5" if count == 3 else "CHARGE")
+		labels[index].tooltip_text = "Win 3 consecutive rounds to charge +5 damage on your next hit. A loaded charge lasts until used."
+
+
+func _style_answer(button: Button) -> void:
+	button.add_theme_stylebox_override("normal", UI.journal_box(Palette.NAVY_800, Palette.NAVY_700, 10))
+	button.add_theme_stylebox_override("hover", UI.journal_box(Palette.TEAL_800, Palette.CYAN_400, 10))
+	button.add_theme_stylebox_override("pressed", UI.journal_box(Palette.PRIMARY_BLUE, Palette.CYAN_300, 10))
+	button.add_theme_color_override("font_hover_color", Palette.CREAM)
+	button.add_theme_color_override("font_pressed_color", Palette.CREAM)
 
 
 func _hp_line(number: Label, bar: HpBar, number_first: bool) -> HBoxContainer:
@@ -488,18 +573,29 @@ func _build_result_card() -> void:
 
 
 func _build_end_card() -> void:
-	_end_host = CenterContainer.new()
+	_end_host = ResultHost.new()
 	_end_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_end_host.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_end_host.visible = false
-	_layout.add_child(_end_host)
+	add_child(_end_host)
+	_end_host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_end_host.z_index = 10
 	var card: PanelContainer = PanelContainer.new()
-	card.custom_minimum_size.x = 520
-	card.add_theme_stylebox_override("panel", UI.box(Palette.NAVY_900, Palette.NAVY_700, 12))
+	_end_card = card
+	card.custom_minimum_size.x = 720
+	card.add_theme_stylebox_override("panel", UI.journal_box(Palette.NAVY_900, Palette.CYAN_400, 22))
 	_end_host.add_child(card)
+	var spread: HBoxContainer = HBoxContainer.new()
+	spread.add_theme_constant_override("separation", 24)
+	card.add_child(spread)
+	_end_portrait = _pixel_rect(DEFENDER_TEX, "WinnerPortrait")
+	_end_portrait.custom_minimum_size = Vector2(180, 220)
+	spread.add_child(_end_portrait)
 	var column: VBoxContainer = VBoxContainer.new()
-	column.add_theme_constant_override("separation", 4)
-	card.add_child(column)
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 12)
+	spread.add_child(column)
+	column.add_child(UI.label("DUEL COMPLETE", 14, Palette.CYAN_300, true))
 	_end_title = UI.label("DRAW", 36, Palette.WARNING, true)
 	_end_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_end_you_hp = _end_stat("YOU  100")
@@ -516,6 +612,19 @@ func _build_end_card() -> void:
 	column.add_child(_end_pair(_end_you_correct, _end_rival_correct))
 	column.add_child(_end_rounds)
 	column.add_child(_end_pair(_end_you_avg, _end_rival_avg))
+	_end_reward = UI.label("PRACTICE MATCH / NO RATING CHANGE", 24, Palette.WARNING)
+	_end_reward.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_end_reward)
+	_end_progress = ProgressBar.new()
+	_end_progress.custom_minimum_size.y = 12
+	_end_progress.show_percentage = false
+	_end_progress.add_theme_stylebox_override("background", UI.box(Palette.NAVY_700, Palette.NAVY_700, 0))
+	_end_progress.add_theme_stylebox_override("fill", UI.box(Palette.CYAN_400, Palette.CYAN_400, 0))
+	_end_progress.hide()
+	column.add_child(_end_progress)
+	_end_rank = UI.label("Train your timing. Build your streak.", 20, Palette.CYAN_300)
+	_end_rank.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(_end_rank)
 	_footer = HBoxContainer.new()
 	_footer.alignment = BoxContainer.ALIGNMENT_CENTER
 	_footer.add_theme_constant_override("separation", 12)
@@ -523,7 +632,7 @@ func _build_end_card() -> void:
 	column.add_child(_footer)
 	var rematch: Button = UI.button("REMATCH", _on_rematch, true)
 	rematch.name = "RematchButton"
-	var leave: Button = UI.button("LEAVE", _on_leave)
+	var leave: Button = UI.button("CONTINUE", _on_leave)
 	leave.name = "LeaveButton"
 	_footer.add_child(rematch)
 	_footer.add_child(leave)
@@ -542,6 +651,10 @@ func _build_arena() -> void:
 	_background.stretch_mode = TextureRect.STRETCH_SCALE
 	_background.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_arena.add_child(_background)
+	_damage_label = UI.label("", 32, Palette.WARNING, true)
+	_damage_label.z_index = 6
+	_damage_label.hide()
+	_arena.add_child(_damage_label)
 	_player_shake = _fighter_sprite(DEFENDER_TEX, "CyberDefender", true)
 	_defender_idle = _player_shake.get_child(0) as TextureRect
 	_attack_atlas = AtlasTexture.new()
@@ -635,11 +748,23 @@ func _fighter_sprite(texture: Texture2D, node_name: String, player_side: bool) -
 func _fit_arena() -> void:
 	if _arena == null:
 		return
-	var short: bool = size.y < 520.0
-	var ratio: float = 0.36 if short else 0.43
+	var short: bool = get_window().size.y < 520
+	if _end_card != null:
+		_end_card.custom_minimum_size.x = minf(1180.0, size.x - 48.0)
+		_end_portrait.custom_minimum_size = Vector2(260, 300)
+		_end_title.add_theme_font_size_override("font_size", 48 if short else 40)
+		_end_reward.add_theme_font_size_override("font_size", 34 if short else 28)
+	var ratio: float = 0.23 if short else 0.38
 	var next_height: float = clampf(size.y * ratio, 110.0, size.y * 0.45)
+	if _quiz != null and _quiz.visible:
+		var occupied: float = 48.0
+		for child: Node in _layout.get_children():
+			var control: Control = child as Control
+			if control != null and control != _arena and control.visible:
+				occupied += control.get_combined_minimum_size().y + 8.0
+		next_height = minf(next_height, maxf(70.0, size.y - occupied))
 	var counting: bool = _countdown != null and _countdown.visible and (_quiz == null or not _quiz.visible)
-	_arena.size_flags_vertical = Control.SIZE_EXPAND_FILL if counting else Control.SIZE_FILL
+	_arena.size_flags_vertical = Control.SIZE_EXPAND_FILL if counting or (_end_host != null and _end_host.visible) else Control.SIZE_FILL
 	_arena.size_flags_stretch_ratio = 1.0
 	if not is_equal_approx(_arena.custom_minimum_size.y, next_height):
 		_arena.custom_minimum_size.y = next_height
@@ -685,8 +810,9 @@ func _layout_background() -> void:
 
 
 func _fit_answer_text() -> void:
-	_fit_stack()
+	UI.fit_touch(self)
 	if _answer_buttons.is_empty():
+		_fit_arena()
 		return
 	var sample: Button = _answer_buttons[0]
 	if not is_instance_valid(sample):
@@ -696,9 +822,9 @@ func _fit_answer_text() -> void:
 		cell_width = _body.size.x * (0.5 if _answer_buttons.size() > 1 else 1.0) - 12.0
 	if cell_width < 32.0:
 		return
-	var shared_height: float = sample.custom_minimum_size.y
-	if shared_height < 40.0:
-		shared_height = 52.0 if size.y >= 520.0 else 44.0
+	var physical: float = maxf(0.25, float(get_window().size.y) / get_viewport_rect().size.y)
+	var min_font: int = ceili(16.0 / physical)
+	var shared_height: float = maxf(56.0, 48.0 / physical)
 	var shared_font: int = 99
 	var arbitrary: bool = false
 	for button: Button in _answer_buttons:
@@ -709,11 +835,13 @@ func _fit_answer_text() -> void:
 		var font: Font = button.get_theme_font("font")
 		var font_size: int = button.get_theme_font_size("font_size")
 		var fitted: int = font_size
-		while fitted > 13 and not _answer_fits(font, button.text, fitted, cell_width - 28.0, shared_height - 20.0):
+		while fitted > min_font and not _answer_fits(font, button.text, fitted, cell_width - 28.0, shared_height - 20.0):
 			fitted -= 1
 			button.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 			arbitrary = true
 		shared_font = mini(shared_font, fitted)
+		while shared_height < 180.0 and not _answer_fits(font, button.text, fitted, cell_width - 28.0, shared_height - 20.0):
+			shared_height += 8.0
 	if shared_font == 99:
 		return
 	for button: Button in _answer_buttons:
@@ -722,6 +850,8 @@ func _fit_answer_text() -> void:
 		if arbitrary:
 			button.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
 		button.add_theme_font_size_override("font_size", shared_font)
+		button.custom_minimum_size.y = shared_height
+	_fit_arena()
 
 
 func _fit_stack() -> void:
@@ -847,6 +977,7 @@ func _present_round_fx() -> void:
 	if _fx_round == _battle.rounds_played:
 		return
 	_fx_round = _battle.rounds_played
+	_float_damage(_battle.damage_to(false) > 0, maxi(_battle.damage_to(false), _battle.damage_to(true)))
 	_clear_fx()
 	if _arena == null or _arena.size.x < 2.0:
 		return
@@ -1031,6 +1162,7 @@ func _build_abandon() -> void:
 func _update_hud(now: int) -> void:
 	if _battle == null:
 		return
+	_show_charge(_battle.player_charge, _battle.bot_charge)
 	var shown_round: int = maxi(_battle.round_number, 1)
 	_round_label.text = "ROUND %d" % shown_round
 	if _countdown_round != null:
@@ -1096,7 +1228,73 @@ func _bind_battle(next: Battle) -> void:
 	_battle.phase_changed.connect(_on_phase_changed)
 
 
+func _float_damage(player_attack: bool, amount: int) -> void:
+	if amount <= 0 or _damage_label == null:
+		return
+	if _damage_tween != null and _damage_tween.is_valid():
+		_damage_tween.kill()
+	_damage_label.text = "-%d%s" % [amount, "  OVERCLOCK" if amount > Battle.DAMAGE_HIT else ""]
+	_damage_label.position = Vector2(_arena.size.x * (0.64 if player_attack else 0.12), _arena.size.y * 0.22)
+	_damage_label.modulate.a = 1.0
+	_damage_label.show()
+	_damage_tween = create_tween()
+	if not SettingsService.reduced_motion:
+		_damage_tween.tween_property(_damage_label, "position:y", _damage_label.position.y - 22.0, 0.65).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	else:
+		_damage_tween.tween_interval(0.65)
+	_damage_tween.tween_property(_damage_label, "modulate:a", 0.0, 0.25)
+	_damage_tween.tween_callback(_damage_label.hide)
+
+
+func _present_finish(title: String, accent: Color) -> void:
+	_fit_arena()
+	_end_portrait.texture = RIVAL_TEX if title == "DEFEAT" else DEFENDER_TEX
+	_end_card.add_theme_stylebox_override("panel", UI.journal_box(Palette.NAVY_900, accent.darkened(0.2), 18))
+	if _end_signature == title:
+		return
+	_end_signature = title
+	if _end_tween != null and _end_tween.is_valid():
+		_end_tween.kill()
+	_end_host.modulate.a = 1.0 if SettingsService.reduced_motion else 0.0
+	if not SettingsService.reduced_motion:
+		_end_tween = create_tween()
+		_end_tween.tween_property(_end_host, "modulate:a", 1.0, 0.4).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if title == "VICTORY":
+		AudioManager.play_sfx("ui_success")
+
+
+func _animate_rating(record: Dictionary) -> void:
+	var before: int = int(record["points_before"])
+	var after: int = int(record["points_after"])
+	var change: int = int(record["points_delta"])
+	if after - before != change:
+		return
+	_end_rank.text = "%s  /  %s%d PVP POINTS" % [str(record["rank_after"]).to_upper(), "+" if change >= 0 else "", change]
+	if change > 0 and str(record["rank_before"]) != str(record["rank_after"]):
+		_end_rank.text = "RANK UP / " + _end_rank.text
+		AudioManager.play_sfx("loading_ready")
+	_end_progress.min_value = float(record.get("current_threshold", 0))
+	var next: Variant = record.get("next_threshold")
+	_end_progress.max_value = maxf(float(after), float(next) if next != null else float(after + 1))
+	_end_progress.show()
+	if _reward_tween != null and _reward_tween.is_valid():
+		_reward_tween.kill()
+	if SettingsService.reduced_motion:
+		_rating_frame(float(after))
+		return
+	_reward_tween = create_tween()
+	_reward_tween.tween_method(_rating_frame, float(before), float(after), 1.2).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+
+
+func _rating_frame(value: float) -> void:
+	_end_reward.text = "%d PVP POINTS" % int(round(value))
+	_end_progress.value = value
+
+
 func _unbind_battle() -> void:
+	for animation: Tween in [_end_tween, _reward_tween, _damage_tween]:
+		if animation != null and animation.is_valid():
+			animation.kill()
 	_fx_round = -1
 	_clear_fx()
 	if _battle == null:

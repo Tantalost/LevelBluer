@@ -67,6 +67,28 @@ after changing servers; use two different student accounts.
 Do not claim live acceptance based only on local automated tests or `/health`.
 Godot native clients are the supported rehearsal path, not a browser export.
 
+## PvP presentation and Overclock update
+
+Deploy the updated Python backend before rebuilding both Godot clients. This
+update uses the existing PvP rating ledger; no new database migration is needed
+if the current rating migrations are already installed.
+
+- Three consecutive round wins charge Overclock. The next winning hit deals
+  25 damage instead of 20 and consumes the charge. Losing or tying a round
+  resets an incomplete streak; a fully charged buff remains until used.
+- Online damage and charge are server-authoritative. Bot practice follows the
+  same rules locally. Reconnect snapshots include charge and final statistics.
+- Ranked results read `GET /api/pvp/me/matches/{match_id}/rating`, authenticated
+  and scoped to the current student. Only an applied ledger entry animates the
+  before/after rating. Pending or unavailable rewards are retried up to five
+  times, then display a check-later message; the client never grants points.
+- Private rooms and bot practice remain unrated. PvP rating is not the Threat
+  store wallet. Reduced-motion mode skips the reward count-up and screen fade.
+
+Rehearse a ranked result, private-room result, charged hit, reconnect, and
+leaving during reward sync on two updated clients. Local regression tests do
+not replace this hosted acceptance check.
+
 ## Defense fallback
 
 Free Render services can spin down after inactivity. Before rehearsal/demo,

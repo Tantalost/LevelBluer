@@ -135,6 +135,20 @@ def my_rank(authorization: str | None = Header(default=None)) -> JSONResponse:
         return JSONResponse(status_code=503, content={"error": "PvP Points are unavailable right now", "code": "rating_unavailable"})
 
 
+@router.get("/me/matches/{match_id}/rating")
+def my_match_rating(match_id: str, authorization: str | None = Header(default=None)) -> JSONResponse:
+    from uuid import UUID
+    user_id = _student_id(authorization)
+    try:
+        canonical = str(UUID(match_id))
+    except ValueError:
+        return JSONResponse(status_code=400, content={"code": "invalid_match_id"})
+    try:
+        return JSONResponse(content=pvp_rating.match_rating(user_id, canonical))
+    except pvp_rating.RatingUnavailable:
+        return JSONResponse(status_code=503, content={"code": "rating_unavailable"})
+
+
 @router.websocket("/rooms/{code}/ws")
 async def room_socket(websocket: WebSocket, code: str) -> None:
     hub = _hub(websocket.app)

@@ -262,6 +262,7 @@ func _run() -> void:
 	await _check_reconnect_restores()
 	await _check_opponent_disconnect()
 	await _check_match_finished()
+	await _check_rating_presentation()
 	await _check_leave_cleanup()
 	await _check_leave_while_router_busy()
 	_check_source_guards()
@@ -514,6 +515,48 @@ func _check_match_finished() -> void:
 	check(screen._end_title.text == "DEFEAT" and screen._end_rounds.text == "KNOCKOUT" and screen._end_you_hp.text == "YOU  0", "a knockout defeat is shown from server HP")
 	await close_screen(screen)
 	sections_done += 1
+
+
+func _check_rating_presentation() -> void:
+	var screen: Control = await active_screen()
+	var socket: FakeSocket = sockets.back()
+	socket.push(event("round_result", 4, {"round": 1, "winner_id": HOST_ID, "damage": {GUEST_ID: 20}, "hp": {HOST_ID: 100, GUEST_ID: 80}, "charge": {HOST_ID: 3, GUEST_ID: 0}}))
+	pump(screen)
+	check(screen._player_charge_label.text.contains("OVERCLOCK +5"), "server charge drives the HUD")
+	socket.push(event("match_finished", 5, {"winner_id": HOST_ID, "origin": "private", "match_id": "fixture", "reason": "ko", "stats": {HOST_ID: {"correct": 5}, GUEST_ID: {"correct": 2}}}))
+	pump(screen)
+	check(screen._end_reward.text.contains("NO RATING CHANGE") and screen._rating_http == null, "private matches never fetch or invent rewards")
+	check(screen._end_you_correct.text == "CORRECT  5", "server result statistics are displayed")
+	var auth: Node = root.get_node("AuthService")
+	var original: String = str(auth.get("_token"))
+	auth.set("_token", jwt(HOST_ID))
+	screen._rating_match = "fixture"
+	screen._rating_owner = HOST_ID
+	screen._rating_attempts = 5
+	screen._end_reward.text = "RATING UPDATE PENDING"
+	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 503, PackedStringArray(), "{}".to_utf8_buffer())
+	check(not screen._rating_applied and screen._end_reward.text == "RATING UPDATE PENDING", "outage does not invent a points change")
+	var record: Dictionary = {"status": "applied", "match_id": "fixture", "points_before": 1190, "points_after": 1206, "points_delta": 16, "rank_before": "Silver", "rank_after": "Gold", "current_threshold": 1200, "next_threshold": 1600}
+	var malformed: Dictionary = record.duplicate()
+	malformed["points_delta"] = 99
+	check(not screen._valid_rating(malformed), "inconsistent ledger is rejected")
+	var settings: Node = root.get_node("SettingsService")
+	var prior: bool = bool(settings.get("reduced_motion"))
+	settings.set("reduced_motion", false)
+	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), JSON.stringify(record).to_utf8_buffer())
+	var animation: Tween = screen._reward_tween
+	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), JSON.stringify(record).to_utf8_buffer())
+	check(screen._reward_tween == animation, "duplicate confirmation does not restart reward animation")
+	await create_timer(1.4).timeout
+	check(screen._end_reward.text == "1206 PVP POINTS" and screen._end_rank.text.begins_with("RANK UP"), "animation settles at confirmed rating and rank")
+	auth.set("_token", jwt(GUEST_ID))
+	record["points_after"] = 1220
+	record["points_delta"] = 30
+	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), JSON.stringify(record).to_utf8_buffer())
+	check(screen._end_reward.text == "1206 PVP POINTS", "account-switched response is ignored")
+	auth.set("_token", original)
+	settings.set("reduced_motion", prior)
+	await close_screen(screen)
 
 
 func _check_leave_cleanup() -> void:
