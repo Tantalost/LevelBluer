@@ -208,4 +208,4 @@ func _intent(id: String, value: Variant) -> void:
 	super._intent(id, value)
 
 func toggle_pause() -> void:
-	pass # Tutorial has no pause modal or route around the required steps.
+	Router.tutorial_leave_requested.emit()

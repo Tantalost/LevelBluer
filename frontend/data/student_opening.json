@@ -1,0 +1,77 @@
+{
+  "version": 4,
+  "room_art": "opening_john_room_wake_v1",
+  "after_intro": "tutorial",
+  "cast": {
+    "player": "John",
+    "collector": "The Collector",
+    "amani": "Amani",
+    "liza": "Liza",
+    "staff": "[Staff member — name pending]",
+    "classmate": "[Classmate — name pending]"
+  },
+  "message": {
+    "channel": "email",
+    "sender_name": "Prize Desk",
+    "sender_address": "awards@prize-claim.example",
+    "subject": "You won ₱1,000,000",
+    "body": "Congratulations! Your address was selected for ₱1,000,000. Claim within 10 minutes. Follow the link and confirm your account password to release the prize.",
+    "destination": "https://prize-claim.example/release",
+    "email_label": "NEW EMAIL",
+    "text_label": "NEW TEXT MESSAGE",
+    "safety_label": "FICTIONAL PRACTICE • No real links or credentials"
+  },
+  "intro": [
+    {"id": "wake", "title": "Morning light", "speaker": "player", "text": "My eyes slowly open. Morning light fills my room. Then I hear it... my phone is buzzing.", "visual": "blink", "art_path": "opening_john_room_wake_v1"},
+    {"id": "search", "title": "Where is my phone?", "speaker": "player", "text": "I turn toward the sound and reach across the bed. There it is. A new notification lights up the screen.", "visual": "room", "art_path": "opening_john_reaching_phone_v1"},
+    {"id": "prize", "title": "A new email", "speaker": "player", "text": "I unlock my phone. A message from Prize Desk is waiting for me.", "visual": "phone"},
+    {"id": "tap", "title": "One tempting promise", "speaker": "player", "text": "I open the message. It asks me to follow a link and confirm my account password to claim the prize.", "visual": "phone", "opened": true},
+    {"id": "claim", "title": "What if it is real?", "speaker": "player", "text": "A million pesos. For a moment, I imagine it. Before checking who sent the offer, I tap Claim Prize.", "visual": "room", "art_path": "opening_john_claim_prize_v1"},
+    {"id": "hit", "visual": "takeover", "art_path": "opening_john_claim_prize_v1", "reveal_art": "opening_john_got_you_v1"},
+    {"id": "collector", "visual": "meeting", "art_path": "opening_collector_meeting_v1"},
+    {"id": "victims", "visual": "montage", "art_path": "opening_five_victims_v1"},
+    {"id": "turn", "visual": "closing", "caption": "And this is how it began…", "art_path": "opening_five_victims_v1"}
+  ],
+  "panels": {
+    "amani": {"character": "amani", "emotion": "Confused", "caption": "Her phone has no signal. Her friends receive messages that appear to be hers. Someone is using the trust attached to her identity.", "art_path": "res://assets/story/comic_panel_amani_placeholder.svg"},
+    "liza": {"character": "liza", "emotion": "Crying", "caption": "A familiar voice asked for a payment. It went to the wrong account. The attacker used a voice she had reason to recognize.", "art_path": "res://assets/story/comic_panel_liza_placeholder.svg"},
+    "staff": {"character": "staff", "emotion": "Angry", "caption": "Her name approved a request for a confidential student list. She never approved it. The attacker borrowed her authority.", "art_path": "res://assets/story/comic_panel_staff_placeholder.svg"},
+    "classmate": {"character": "classmate", "emotion": "Sad", "caption": "A free offer led to lost account access. The attacker turned something appealing into a request for something private.", "art_path": "res://assets/story/comic_panel_classmate_placeholder.svg"}
+  },
+  "clues": [
+    {"id": "sender", "title": "Who sent it?", "value": "Prize Desk • awards@prize-claim.example", "note": "The display name sounds official, but this address does not independently establish who is offering a prize."},
+    {"id": "link", "title": "Where does it lead?", "value": "https://prize-claim.example/release", "note": "The destination requests an account password. Do not use this link to verify the message that supplied it."},
+    {"id": "pressure", "title": "Why the rush?", "value": "Claim within 10 minutes", "note": "The deadline pressures you to act before checking. Urgency is a clue to examine, not proof by itself."},
+    {"id": "claim", "title": "What is promised?", "value": "₱1,000,000 from a selection I did not enter", "note": "An unexpected reward plus a password request is a reason to stop. A prize should not need your account password."}
+  ],
+  "tutorial": {
+    "wake": {"title": "That morning, again", "text": "I am back beside my phone. This is practice: I can pause, go back, or leave at any time."},
+    "inbox": {"title": "A message arrives", "text": "Tap the notification on the phone to open the message. Opening it here is not the same as following its link."},
+    "message": {"title": "The promise is back", "text": "I can inspect the request before deciding. Tap Inspect to reveal details, or choose a response."},
+    "inspect": {"title": "Look beyond the promise", "text": "Tap a detail to examine it. Save at least three different clues to the Evidence Binder. Nothing here opens a real website."},
+    "binder": {"title": "Evidence Binder", "text": "These are the clues I saved for this practice. I can return to the message and choose a response."},
+    "respond": {"title": "What will I do?", "text": "Checking a message does not make its link safe. Choose an action that protects the account."},
+    "failure": {"title": "Got you.", "text": "This practice shows the trap, not an automatic infection. Following a prize link can lead to a page that asks for secrets. Opening the email alone did not cause that. Check the sender, destination, pressure, and reward claim before acting. The attacker designed the deception; this is not your fault."},
+    "review": {"title": "A safer choice — now find the evidence", "text": "You avoided the link. Before finishing this practice, inspect and save three clues so you can explain what made the request unsafe."},
+    "success": {"title": "My account stays mine", "text": "I kept my password private and did not follow the prize link. My evidence explains the warning signs. Familiar isn't verified."},
+    "summary": {"title": "Your controls, your pace", "text": "Tap a message to read it. Use Inspect to examine details. Save useful clues to the Evidence Binder. Choose a response after checking. Back revisits a step; Menu lets you pause or leave. Replay Intro and Replay Tutorial are in Settings. You can start Module 1 from Lessons; its existing learning requirements still apply."}
+  },
+  "responses": [
+    {"id": "ignore", "label": "Ignore the request", "safe": true, "feedback": "I leave the request unanswered and keep my credentials private."},
+    {"id": "report", "label": "Report as suspicious", "safe": true, "feedback": "I use the practice report control. No message or report is sent outside this simulation."},
+    {"id": "delete", "label": "Delete the message", "safe": true, "feedback": "I remove the practice message without following its link. My saved clues remain in the Binder."},
+    {"id": "link", "label": "Follow the prize link", "safe": false, "feedback": ""}
+  ],
+  "ui": {
+    "intro": "OPENING", "tutorial": "PHONE PRACTICE", "phone_status": "•••                 ▰", "back": "< BACK", "skip": "SKIP", "menu": "MENU",
+    "next": "CONTINUE >", "open": "OPEN MESSAGE", "inspect": "INSPECT", "respond": "CHOOSE RESPONSE",
+    "binder": "EVIDENCE BINDER", "save": "SAVE CLUE", "saved": "CLUE SAVED", "retry": "TRY AGAIN",
+    "return": "BACK TO MESSAGE", "hub": "GO TO HUB", "finish": "TUTORIAL COMPLETE",
+    "resume": "RESUME", "skip_opening": "SKIP OPENING", "replay_intro": "REPLAY INTRO", "exit": "EXIT GAME",
+    "reduce_motion": "REDUCE MOTION", "practice": "PRACTICE • NOT SCORED", "empty": "No clues saved yet.",
+    "progress": "{count} / {total}", "clue_count": "{count} / 3 clues saved", "placeholder": "PLACEHOLDER ILLUSTRATION",
+    "pause_title": "Take your time", "pause_text": "Nothing advances while this menu is open.", "from": "FROM",
+    "replay_short": "REPLAY", "reading": "READING", "ready": "CONTINUE", "reveal_text": "Tap to reveal the full dialogue",
+    "replay_note": "Replay only — your learning progress and completion status will not change."
+  }
+}

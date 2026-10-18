@@ -2,6 +2,28 @@
 
 The six central menu buttons keep their authored shapes, textures, actions, and relative arrangement. Only the surrounding screen is redesigned: slate header, quiet teal accents, scenic pixel-art background, compact field progress, and a right-side holographic Handler.
 
+## Optional tutorial and session controls
+
+Tutorial screens now have persistent Skip Tutorial, Dashboard, and Exit Game
+actions, including the initial dashboard introduction. Leaving asks for
+confirmation; cancel resumes the same practice. Returning discards the current
+tutorial run and restarts it when Replay Tutorial is selected in Settings.
+
+The per-account `tutorial_skipped` preference is separate from
+`tutorial_complete`. It survives save/cloud round trips but awards no mastery,
+assessment credit, stage unlocks, or currency. Actual lesson/stage requirements
+remain enforced. Replay uses the disposable training context, preserves existing
+progress, and cannot re-grant the tutorial intel bonus.
+
+Settings keeps Replay Tutorial, Log out, and Exit Game in its fixed footer.
+Exit confirms, flushes local progress, and closes without signing out. Pending
+cloud writes retry next session; online matches may count as forfeits. Escape,
+Android Back, and the window-close request use the same confirmation routing.
+
+Verification: `verify_tutorial.gd` covers save isolation, account reset, first
+visit, replay handoffs, cancellation/paused practice, teardown and landscape
+layouts at 1280x720 and 844x390. A physical Android lifecycle test is still needed.
+
 ## UI audio milestone
 
 The existing AudioManager now owns two crossfading music players and eight reusable SFX voices. Router screen signals select loading, Solo hub, PvP hub, or quiet study music; the dashboard's mode-switch completion signal changes the OS music. Repeated routes sharing a track do not restart it. Intermediate routes in one navigation operation are coalesced. Disclaimer/title remain silent, and UI music fades out on entry to battle (battle music is outside this milestone).

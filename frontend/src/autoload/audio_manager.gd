@@ -32,6 +32,11 @@ const REACTION_INTERVAL_MS: int = 1200
 var _reaction_streams: Dictionary[String, AudioStreamWAV] = {}
 var _reaction_active: bool = false
 var _last_reaction_ms: int = -10000
+var _opening_laugh: AudioStreamWAV
+var _opening_cues: Dictionary[String, AudioStreamWAV] = {}
+var _opening_owner: WeakRef
+var _opening_morning: bool = false
+var _opening_paused: bool = false
 var hub_track: AudioStream
 ## Reserved for existing combat callers; this milestone does not add battle music.
 var level_track: AudioStream
@@ -61,6 +66,14 @@ func _ready() -> void:
 			stream.loop = true
 			_tracks[key] = stream
 	hub_track = _tracks.get("hub") as AudioStream
+	var morning: AudioStreamWAV = load(BGM_PATH + "morning.wav") as AudioStreamWAV
+	if morning != null:
+		morning.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		morning.loop_begin = 0
+		morning.loop_end = int(morning.get_length() * morning.mix_rate)
+		_tracks["morning"] = morning
+	for key: String in ["alarm", "thump", "shuffle"]:
+		_opening_cues[key] = load(SFX_PATH + "opening_" + key + ".wav") as AudioStreamWAV
 	for key: String in SOUND_IDS:
 		var stream: AudioStream = load(SFX_PATH + key + ".wav") as AudioStream
 		if stream != null:
@@ -122,6 +135,10 @@ func _next_sfx_player() -> AudioStreamPlayer:
 func _on_screen_changed(screen_id: StringName) -> void:
 	stop_dialogue_blips()
 	_screen_id = screen_id
+	if screen_id != &"opening":
+		_opening_owner = null
+		_opening_morning = false
+		_opening_paused = false
 	# Router may replace Dashboard and push a child in one operation. Use its final route.
 	if not _route_queued:
 		_route_queued = true
@@ -148,6 +165,7 @@ func _select_music() -> void:
 			_stop_effects()
 		&"gameplay", &"pvp_battle", &"pvp_online": play_bgm(null)
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
+		&"opening": play_bgm(_tracks.get("morning") if _opening_morning else null)
 		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex": play_bgm(_tracks.get("study"))
 		&"login", &"password_change": play_bgm(hub_track)
 		_: play_bgm(_tracks.get("pvp" if _dashboard_mode == &"PVP" else "hub"))
@@ -171,7 +189,7 @@ func play_bgm(stream: AudioStream, crossfade_time: float = 0.65) -> void:
 			target.stream = stream
 			target.volume_linear = 0.0
 			target.play()
-			target.stream_paused = _suspended()
+			target.stream_paused = _music_paused()
 		bgm_player = target
 	var duration: float = maxf(0.01, crossfade_time)
 	_bgm_tween = create_tween().set_parallel(true)
@@ -180,7 +198,7 @@ func play_bgm(stream: AudioStream, crossfade_time: float = 0.65) -> void:
 		_bgm_tween.tween_property(deck, "volume_linear", MUSIC_GAIN if deck == target else 0.0, duration)
 		if deck != target:
 			_bgm_tween.tween_callback(deck.stop).set_delay(duration)
-	if _suspended():
+	if _music_paused():
 		_bgm_tween.pause()
 
 func _stop_music() -> void:
@@ -197,7 +215,7 @@ func _apply_buses() -> void:
 	_set_bus("Master", SettingsService.master_volume, false)
 	_set_bus("BGM", SettingsService.music_volume, not SettingsService.music_enabled)
 	_set_bus("SFX", SettingsService.sfx_volume, not SettingsService.sound_enabled)
-	if not SettingsService.dialogue_blips_enabled or SettingsService.text_speed == "instant":
+	if _screen_id != &"opening" and (not SettingsService.dialogue_blips_enabled or SettingsService.text_speed == "instant"):
 		stop_dialogue_blips()
 	if not SettingsService.sound_enabled or SettingsService.sfx_volume <= 0 or SettingsService.master_volume <= 0:
 		_stop_effects()
@@ -231,11 +249,11 @@ func _notification(what: int) -> void:
 	if not is_node_ready():
 		return
 	for deck: AudioStreamPlayer in _decks:
-		deck.stream_paused = _suspended()
+		deck.stream_paused = _music_paused()
 	if _suspended():
 		_stop_effects()
 	if _bgm_tween != null and _bgm_tween.is_valid():
-		if _suspended(): _bgm_tween.pause()
+		if _music_paused(): _bgm_tween.pause()
 		else: _bgm_tween.play()
 
 func _exit_tree() -> void:
@@ -341,6 +359,98 @@ func stop_dialogue_blips(source: Control = null) -> void:
 		dialogue_player.stop()
 	_dialogue_owner = null
 	_reaction_active = false
+
+
+func play_opening_laugh(source: Control) -> void:
+	# A source-owned, nonverbal SFX, independent of text-speed/blip preferences.
+	# Reuse the dialogue player so route changes, focus loss and mute stop it.
+	if not _opening_cue_allowed(source):
+		return
+	if _opening_laugh == null:
+		_opening_laugh = _synthesize_robot_laugh()
+	stop_dialogue_blips()
+	_dialogue_owner = weakref(source)
+	_reaction_active = true
+	dialogue_player.pitch_scale = 1.0
+	dialogue_player.stream = _opening_laugh
+	dialogue_player.play()
+
+
+func _opening_cue_allowed(source: Control) -> bool:
+	return _screen_id == &"opening" and not _opening_paused and not _suspended() and not get_tree().paused and is_instance_valid(source) and source.is_visible_in_tree() and source.can_process() and SettingsService.sound_enabled and SettingsService.sfx_volume > 0 and SettingsService.master_volume > 0
+
+
+func play_opening_cue(cue: String, source: Control) -> void:
+	if not _opening_cue_allowed(source) or not _opening_cues.has(cue):
+		return
+	stop_dialogue_blips()
+	_dialogue_owner = weakref(source)
+	_reaction_active = true
+	dialogue_player.pitch_scale = 1.0
+	dialogue_player.stream = _opening_cues[cue]
+	dialogue_player.play()
+
+
+func set_opening_morning(source: Control, morning: bool) -> void:
+	if not is_instance_valid(source) or not source.is_inside_tree():
+		return
+	# on_enter runs before Router emits screen_changed; remember this request.
+	_opening_owner = weakref(source)
+	_opening_morning = morning
+	if _screen_id == &"opening":
+		_select_music()
+
+
+func pause_opening_audio(source: Control, value: bool) -> void:
+	if _opening_owner == null or _opening_owner.get_ref() != source:
+		return
+	_opening_paused = value
+	if value:
+		stop_dialogue_blips(source)
+	for deck: AudioStreamPlayer in _decks:
+		deck.stream_paused = _music_paused()
+	if _bgm_tween != null and _bgm_tween.is_valid():
+		if _music_paused(): _bgm_tween.pause()
+		else: _bgm_tween.play()
+
+
+func release_opening_audio(source: Control) -> void:
+	if _opening_owner == null or _opening_owner.get_ref() != source:
+		return
+	pause_opening_audio(source, false)
+	stop_dialogue_blips(source)
+	_opening_owner = null
+	_opening_morning = false
+	if _screen_id == &"opening":
+		play_bgm(null)
+
+
+func _music_paused() -> bool:
+	return _suspended() or (_screen_id == &"opening" and _opening_paused)
+
+
+func _synthesize_robot_laugh() -> AudioStreamWAV:
+	# Five descending "ha" pulses, ring modulation and quantization; no samples.
+	var count: int = int(BLIP_RATE * 1.65)
+	var bytes: PackedByteArray = PackedByteArray()
+	bytes.resize(count * 2)
+	var phase: float = 0.0
+	for i: int in count:
+		var time: float = float(i) / BLIP_RATE
+		var pulse: int = mini(4, int(time / 0.33))
+		var local_time: float = fposmod(time, 0.33)
+		var hz: float = 175.0 - pulse * 13.0 + 42.0 * exp(-local_time * 18.0)
+		phase += TAU * hz / BLIP_RATE
+		var wave: float = sin(phase) + 0.35 * sin(phase * 3.0) + 0.18 * sin(phase * 7.0)
+		wave *= 0.65 + 0.35 * sin(TAU * 38.0 * time)
+		wave = roundf(wave * 14.0) / 14.0
+		var envelope: float = clampf(local_time / 0.018, 0.0, 1.0) * clampf((0.25 - local_time) / 0.12, 0.0, 1.0)
+		bytes.encode_s16(i * 2, int(clampf(wave * envelope * 0.24, -1.0, 1.0) * 32767.0))
+	var stream: AudioStreamWAV = AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = BLIP_RATE
+	stream.data = bytes
+	return stream
 
 func _process(_delta: float) -> void:
 	if not dialogue_player.playing:

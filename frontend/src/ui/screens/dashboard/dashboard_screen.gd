@@ -543,7 +543,7 @@ func _on_deploy_pressed() -> void:
 
 
 func _apply_tutorial_gate() -> void:
-	var gated: bool = PlayerManager.needs_tutorial()
+	var gated: bool = PlayerManager.needs_tutorial() or Router.is_tutorial
 	if not gated:
 		_lock_chrome(false)
 		if _tutorial_gate != null:
@@ -593,7 +593,7 @@ func _show_explore_overlay() -> void:
 
 
 func _on_tutorial_dismissed() -> void:
-	if not PlayerManager.needs_tutorial():
+	if not PlayerManager.needs_tutorial() and not Router.is_tutorial:
 		return
 	Router.finish_tutorial()
 	if _tutorial_gate != null:

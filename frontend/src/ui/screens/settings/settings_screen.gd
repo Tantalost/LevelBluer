@@ -50,6 +50,20 @@ func _ready() -> void:
 		preload("res://src/ui/screens/settings/student_feedback.gd").open(self)
 	)
 	$SafeAreaContainer/ScreenLayout/HeaderBar.add_child(_feedback_button)
+	var footer: HBoxContainer = $SafeAreaContainer/ScreenLayout/AccountFooter
+	footer.get_node("FooterNote").hide()
+	var replay: Button = UI.button("REPLAY TUTORIAL", func() -> void: Router.start_tutorial(true))
+	replay.name = "ReplayTutorialButton"
+	replay.size_flags_horizontal = SIZE_EXPAND_FILL
+	footer.add_child(replay)
+	footer.move_child(replay, 0)
+	var intro_replay: Button = UI.button("REPLAY INTRO", Router.replay_intro)
+	intro_replay.name = "ReplayIntroButton"
+	footer.add_child(intro_replay)
+	footer.move_child(intro_replay, 0)
+	var exit_button: Button = UI.button("EXIT GAME", Router.request_exit_game)
+	exit_button.name = "ExitGameButton"
+	footer.add_child(exit_button)
 	_style_workspace()
 	get_viewport().size_changed.connect(_apply_scale.call_deferred)
 

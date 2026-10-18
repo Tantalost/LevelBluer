@@ -40,10 +40,11 @@ func _run() -> void:
 	audio._focus_lost = false
 	audio._app_paused = false
 	audio._apply_buses()
-	check(audio._tracks.size() == 4 and audio._sounds.size() == 7, "All original audio assets load")
+	check(audio._tracks.size() == 5 and audio._sounds.size() == 7 and audio._opening_cues.size() == 3, "Original audio and new morning assets load")
 	for key: String in audio._tracks:
-		var stream: AudioStreamOggVorbis = audio._tracks[key]
-		check(stream.loop and stream.get_length() >= 17.0, "Music loops are long, nonempty and looping: " + key)
+		var stream: AudioStream = audio._tracks[key]
+		var looping: bool = stream.loop_mode == AudioStreamWAV.LOOP_FORWARD if stream is AudioStreamWAV else (stream as AudioStreamOggVorbis).loop
+		check(looping and stream.get_length() >= 17.0, "Music loops are long, nonempty and looping: " + key)
 	for key: String in audio._sounds:
 		var stream: AudioStreamWAV = audio._sounds[key]
 		check(stream.get_length() > 0.05 and stream.get_length() < 1.0, "Short, nonempty cue: " + key)
@@ -143,6 +144,7 @@ func _run() -> void:
 	await _test_dialogue_blips()
 	await _test_dialogue_reactions()
 	_test_module_dialogue_coverage()
+	await _test_opening_audio()
 	# Validate persistence through the real service code, redirected to an ignored test file.
 	var source: GDScript = load("res://src/autoload/settings_service.gd") as GDScript
 	var isolated: GDScript = GDScript.new()
@@ -200,6 +202,42 @@ func _run() -> void:
 	await wait()
 	print("[GAME AUDIO] failures=%d" % failures)
 	quit(1 if failures else 0)
+
+func _test_opening_audio() -> void:
+	var owner: Control = Control.new()
+	root.add_child(owner)
+	audio.set_opening_morning(owner, true)
+	audio._on_screen_changed(&"opening")
+	await wait(0.8)
+	check(audio.bgm_player.stream == audio._tracks.morning and music_voices() == 1, "Opening uses its distinct morning loop")
+	for cue: String in ["alarm", "thump", "shuffle"]:
+		var stream: AudioStreamWAV = audio._opening_cues[cue]
+		check(stream.get_length() > 0.1 and stream.get_length() < 1.0, "Opening cue is short: " + cue)
+		audio.play_opening_cue(cue, owner)
+		check(audio.dialogue_player.playing and audio.dialogue_player.stream == stream, "Opening cue plays: " + cue)
+	audio.pause_opening_audio(owner, true)
+	check(not audio.dialogue_player.playing and audio.bgm_player.stream_paused, "Opening menu stops cues and pauses music")
+	audio.play_opening_cue("alarm", owner)
+	check(not audio.dialogue_player.playing, "Paused opening cannot start delayed cues")
+	audio._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	audio._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(audio.bgm_player.stream_paused, "Refocusing cannot override the opening menu")
+	audio.pause_opening_audio(owner, false)
+	check(not audio.bgm_player.stream_paused and not audio.dialogue_player.playing, "Resume restores music without replaying old cues")
+	settings.sound_enabled = false
+	audio._apply_buses()
+	audio.play_opening_cue("thump", owner)
+	check(not audio.dialogue_player.playing, "Opening cues respect SFX mute")
+	settings.sound_enabled = true
+	audio._apply_buses()
+	audio.set_opening_morning(owner, false)
+	await wait(0.8)
+	check(music_voices() == 0, "Morning music fades out before the dark ending")
+	audio.release_opening_audio(owner)
+	audio._on_screen_changed(&"dashboard")
+	await wait(0.8)
+	check(music_voices() == 1, "Leaving opening restores dashboard music")
+	owner.queue_free()
 
 func _test_dialogue_blips() -> void:
 	settings.dialogue_blips_enabled = true

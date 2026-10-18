@@ -91,6 +91,10 @@ func _effect(key: String, notes: Array[int], duration: float, step: float, gain:
 	_save(buffer, "res://assets/audio/sfx/" + key + ".wav", gain)
 
 func _bake() -> void:
+	if "--opening-only" in OS.get_cmdline_user_args():
+		_bake_opening()
+		quit()
+		return
 	_music("loading", 108.0)
 	_music("hub", 90.0)
 	_music("pvp", 96.0)
@@ -111,3 +115,46 @@ func _bake() -> void:
 		sweep[i] = envelope * (smooth_noise * 0.5 + sin(TAU * (420 * t - 500 * t * t)) * 0.12)
 	_save(sweep, "res://assets/audio/sfx/ui_transition.wav", 0.22)
 	quit()
+
+
+func _bake_opening() -> void:
+	# Warm, sparse 80 BPM original loop: soft major-seventh plucks and a light pulse.
+	# Bake once, not at runtime. Only this milestone's four assets are written.
+	var beat: float = 0.75
+	var music: PackedFloat32Array = PackedFloat32Array()
+	music.resize(int(RATE * beat * 32.0))
+	var roots: Array[int] = [48, 53, 57, 55, 48, 53, 50, 55]
+	for bar: int in 8:
+		var root_note: int = roots[bar]
+		var third: int = 3 if bar in [2, 6] else 4
+		for interval: int in [0, third, 7, 11 if third == 4 else 10]:
+			_tone(music, bar * beat * 4.0, beat * 3.9, root_note + 12 + interval, 0.025, "pad", true)
+		_tone(music, bar * beat * 4.0, beat * 1.7, root_note, 0.065, "bass", true)
+		_tone(music, (bar * 4.0 + 0.5) * beat, beat * 1.3, root_note + 24 + third, 0.12, "pluck", true)
+		_tone(music, (bar * 4.0 + 2.5) * beat, beat * 1.2, root_note + 31, 0.085, "pluck", true)
+		for pulse: int in [0, 2]:
+			_tone(music, (bar * 4.0 + pulse) * beat, 0.15, 40, 0.045, "kick", true)
+		_tone(music, (bar * 4.0 + 3) * beat, 0.06, 60, 0.012, "hat", true)
+	var dry: PackedFloat32Array = music.duplicate()
+	for i: int in music.size():
+		music[i] += dry[posmod(i - int(RATE * beat * 0.75), music.size())] * 0.12
+	_save(music, "res://assets/audio/bgm/morning.wav", 0.25)
+	# Two gentle digital alarm pairs, ending before the thump cue at 0.82s.
+	var alarm: PackedFloat32Array = PackedFloat32Array()
+	alarm.resize(int(RATE * 0.72))
+	for i: int in 4:
+		_tone(alarm, i * 0.17, 0.12, 81 if i % 2 == 0 else 88, 0.3, "bass")
+	_save(alarm, "res://assets/audio/sfx/opening_alarm.wav", 0.25)
+	var thump: PackedFloat32Array = PackedFloat32Array()
+	thump.resize(int(RATE * 0.24))
+	_tone(thump, 0.0, 0.22, 42, 0.4, "kick")
+	_save(thump, "res://assets/audio/sfx/opening_thump.wav", 0.30)
+	var shuffle: PackedFloat32Array = PackedFloat32Array()
+	shuffle.resize(int(RATE * 0.58))
+	var noise: float = 0.0
+	for i: int in shuffle.size():
+		var t: float = float(i) / RATE
+		noise = lerpf(noise, _rng.randf_range(-1.0, 1.0), 0.16)
+		var envelope: float = pow(sin(PI * t / 0.58), 2.0) * (0.60 + 0.40 * sin(TAU * 6.0 * t))
+		shuffle[i] = noise * envelope
+	_save(shuffle, "res://assets/audio/sfx/opening_shuffle.wav", 0.20)

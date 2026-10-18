@@ -64,6 +64,9 @@ const STORE_ITEMS: Array[Dictionary] = [
 var module_1_complete: bool = false
 var seen_module_intros: Array[String] = []
 var tutorial_complete: bool = false
+var tutorial_skipped: bool = false
+## Presentation-only, per-account onboarding snapshot. Never learning evidence.
+var onboarding_state: Dictionary = {}
 var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
@@ -339,6 +342,8 @@ func reset_to_defaults() -> void:
 	module_1_complete = false
 	seen_module_intros.clear()
 	tutorial_complete = false
+	tutorial_skipped = false
+	onboarding_state = {}
 	has_intel_bonus = false
 	intel_bonus_module = ""
 	trace_seen_by_module = _empty_trace_history()
@@ -654,14 +659,38 @@ func mark_module_intro_seen(module_id: String) -> void:
 
 
 func needs_tutorial() -> bool:
-	return not tutorial_complete
+	return not tutorial_complete and not tutorial_skipped
+
+
+func needs_opening() -> bool:
+	# Existing accounts retain their onboarding choice; no forced migration.
+	return needs_tutorial() and str(onboarding_state.get("tutorial_status", "")) not in ["completed", "skipped"]
+
+
+func save_onboarding(state: Dictionary, outcome: String = "") -> void:
+	onboarding_state = state.duplicate(true)
+	if outcome == "completed":
+		tutorial_complete = true
+		tutorial_skipped = false
+	elif outcome == "skipped":
+		tutorial_skipped = true
+	# Same local-first snapshot/retry mechanism as existing presentation progress.
+	_save_progress()
+
+
+func skip_tutorial() -> void:
+	if tutorial_complete or tutorial_skipped:
+		return
+	tutorial_skipped = true
+	_save_progress()
 
 
 func mark_tutorial_complete() -> void:
 	if tutorial_complete:
 		return
 	tutorial_complete = true
-	SaveService.save_game()
+	tutorial_skipped = false
+	_save_progress()
 
 
 func mark_stage_cleared(module_id: String, stage_id: int) -> void:
@@ -969,6 +998,8 @@ func get_save_data() -> Dictionary:
 		"module_1_complete": module_1_complete,
 		"seen_module_intros": seen_module_intros.duplicate(),
 		"tutorial_complete": tutorial_complete,
+		"tutorial_skipped": tutorial_skipped,
+		"onboarding_state": onboarding_state.duplicate(true),
 		"has_intel_bonus": has_intel_bonus,
 		"intel_bonus_module": intel_bonus_module,
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
@@ -1147,6 +1178,9 @@ func apply_save_data(data: Dictionary) -> void:
 			if not intro_id.is_empty() and not seen_module_intros.has(intro_id):
 				seen_module_intros.append(intro_id)
 
+	tutorial_skipped = data.get("tutorial_skipped", false) == true
+	var saved_onboarding: Variant = data.get("onboarding_state", {})
+	onboarding_state = (saved_onboarding as Dictionary).duplicate(true) if saved_onboarding is Dictionary else {}
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)
@@ -1263,7 +1297,7 @@ func _record_graded_response(skill_id: String, now: int) -> void:
 
 
 func learning_support_eligible(now: int = -1) -> bool:
-	if not AuthService.is_signed_in() or not tutorial_complete or Router.is_tutorial:
+	if not AuthService.is_signed_in() or needs_tutorial() or Router.is_tutorial:
 		return false
 	var first: int = int(learning_evidence.get("first_at", 0))
 	var clock: int = int(Time.get_unix_time_from_system()) if now < 0 else now

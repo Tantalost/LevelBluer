@@ -502,7 +502,8 @@ func _apply_tutorial_coach() -> void:
 			_show_selection()
 		return
 	_back_button.visible = false
-	PlayerManager.grant_tutorial_inspection()
+	if not Router.tutorial_replay:
+		PlayerManager.grant_tutorial_inspection()
 	_refresh_coins_label()
 	await _open_tower("base")
 	_tutorial_overlay = TutorialOverlay.mount_on(self, 20)

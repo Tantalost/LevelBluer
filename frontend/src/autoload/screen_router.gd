@@ -13,9 +13,14 @@ extends Node
 ## script ever sees the notification.
 
 signal screen_changed(screen_id: StringName)
+signal tutorial_state_changed
+signal tutorial_leave_requested
+signal navigation_cancel_requested
+var navigation_confirmation_open: bool = false
 const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
 
 var is_tutorial: bool = false
+var tutorial_replay: bool = false
 var tutorial_beat: StringName = &""
 var active_stage_index: int = 0
 var active_module_id: String = "mod_01"
@@ -25,6 +30,7 @@ const SCREENS: Dictionary = {
 	&"asset_loading": "res://src/ui/screens/intro/splash_screen.tscn",
 	&"intro":        "res://src/ui/screens/intro/intro_screen.tscn",
 	&"login":        "res://src/ui/screens/login/login_screen.tscn",
+	&"opening":      "res://src/ui/screens/intro/student_opening.tscn",
 	&"dashboard":    "res://src/ui/screens/dashboard/dashboard_screen.tscn",
 	&"store":        "res://src/ui/screens/store/store_screen.tscn",
 	&"lessons":      "res://src/ui/screens/intel/lessons_screen.tscn",
@@ -97,17 +103,36 @@ func start_gameplay_preview() -> void:
 	await _navigate(true, func() -> void: _begin_gameplay(0, MatchContext.stage_one_preview()))
 
 
-func start_tutorial() -> void:
-	if not PlayerManager.needs_tutorial():
+func start_tutorial(replay: bool = false) -> void:
+	if _busy or _host == null or is_instance_valid(_gameplay):
+		return
+	await replace_all(&"opening", {"part": "tutorial", "replay": replay})
+
+
+func replay_intro() -> void:
+	if _busy or _host == null or is_instance_valid(_gameplay):
+		return
+	await replace_all(&"opening", {"part": "intro", "replay": true})
+
+
+## Retained defense drill; not the automatic student opening.
+func start_defense_training(replay: bool = false) -> void:
+	if _busy or _host == null or is_instance_valid(_gameplay):
+		return
+	if not replay and not PlayerManager.needs_tutorial():
 		open_module_select_screen()
 		return
+	tutorial_replay = replay
 	is_tutorial = true
 	tutorial_beat = &"match"
+	tutorial_state_changed.emit()
 	active_module_id = "mod_01"
 	await start_level(0)
 	if _gameplay == null or not is_instance_valid(_gameplay):
 		is_tutorial = false
+		tutorial_replay = false
 		tutorial_beat = &""
+		tutorial_state_changed.emit()
 
 
 func enter_gameplay(stage_index: int) -> void:
@@ -285,7 +310,30 @@ func open_tutorial_dashboard() -> void:
 func finish_tutorial() -> void:
 	PlayerManager.mark_tutorial_complete()
 	is_tutorial = false
+	tutorial_replay = false
 	tutorial_beat = &""
+	tutorial_state_changed.emit()
+
+
+## Dismiss onboarding, not the learning gates. Nothing is graded or unlocked.
+func leave_tutorial() -> void:
+	if _busy or _host == null:
+		return
+	await _navigate(true, func() -> void:
+		_teardown_gameplay()
+		PlayerManager.skip_tutorial()
+		is_tutorial = false
+		tutorial_replay = false
+		tutorial_beat = &""
+		_set_ui_stack_active(true)
+		_replace_all_now(&"dashboard")
+		tutorial_state_changed.emit()
+	, true)
+
+
+func request_exit_game() -> void:
+	if not _busy:
+		quit_requested.emit()
 
 
 func open_codex(skill_id: String) -> void:
@@ -421,9 +469,6 @@ func _teardown_gameplay() -> void:
 		_gameplay.queue_free()
 	_gameplay = null
 	active_match_context = MatchContext.new()
-	if not PlayerManager.needs_tutorial():
-		is_tutorial = false
-		tutorial_beat = &""
 	Engine.time_scale = 1.0
 	var tree: SceneTree = get_tree()
 	if tree != null:
@@ -437,7 +482,13 @@ func push(screen_id: StringName, args: Dictionary = {}) -> void:
 ## Clears the whole stack and starts fresh. Use this for login -> dashboard,
 ## where backing up into the login form would be wrong.
 func replace_all(screen_id: StringName, args: Dictionary = {}) -> void:
+	if screen_id == &"dashboard" and current_screen_id() in [&"login", &"password_change", &"intro", &"splash", &"asset_loading"]:
+		screen_id = student_home_screen()
 	await _navigate(not _is_overlay(screen_id), func() -> void: _replace_all_now(screen_id, args))
+
+
+func student_home_screen() -> StringName:
+	return &"opening" if PlayerManager.needs_opening() else &"dashboard"
 
 
 ## Drops the current screen and opens `screen_id` in its place. Back then
@@ -456,11 +507,15 @@ func pop() -> void:
 ## back arrows to this, not to pop(), so screens that must not be dismissed
 ## (the forced password change) can refuse in one place.
 func request_back() -> void:
+	if navigation_confirmation_open:
+		navigation_cancel_requested.emit()
+		return
 	var feedback: Node = get_tree().get_first_node_in_group("student_feedback_modal")
 	if feedback != null:
 		feedback.call("_dismiss")
 		return
-	if is_tutorial:
+	if is_tutorial or (current_screen_id() == &"dashboard" and PlayerManager.needs_tutorial()):
+		tutorial_leave_requested.emit()
 		return
 	if _gameplay != null and is_instance_valid(_gameplay):
 		if active_match_context.geometric and _gameplay.has_method("toggle_pause"):

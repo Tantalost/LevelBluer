@@ -242,7 +242,8 @@ func show_post_defend() -> void:
 
 
 func show_results() -> void:
-	PlayerManager.grant_tutorial_inspection()
+	if not Router.tutorial_replay:
+		PlayerManager.grant_tutorial_inspection()
 	_glow_rect = Rect2()
 	_prime_coach(103, tr("TUTORIAL_RESULTS"), 0.28, true, false)
 

@@ -4,6 +4,7 @@ signal closed
 signal message_read
 signal detail_inspected(id: String)
 signal investigation_confirmed
+signal claim_pressed
 
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 var guide_text_pixels: float = 16.0
@@ -40,6 +41,12 @@ var _read: bool = false
 var _investigating: bool = false
 var _locked: bool = false
 var _transition: Tween
+var _embedded: bool = false
+var _dim: ColorRect
+var _pin_tween: Tween
+var _pin_dots: Label
+var _pin_keys: Array[PanelContainer] = []
+var _claim_sent: bool = false
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
@@ -51,6 +58,7 @@ func _ready() -> void:
 	dim.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	dim.mouse_filter = MOUSE_FILTER_STOP
 	add_child(dim)
+	_dim = dim
 	_shell = UI.panel(self, Color("0A1730"))
 	_shell.name = "PixelPhone"
 	var frame: StyleBoxEmpty = StyleBoxEmpty.new()
@@ -102,8 +110,14 @@ func _queue_metrics() -> void:
 
 func configure(data: Dictionary) -> void:
 	_data = data.duplicate(true)
+	_embedded = bool(_data.get("embedded", false))
+	_dim.visible = not _embedded
+	_guide_panel.visible = not _embedded
+	_nav.visible = not _embedded
+	(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER if _embedded else ScrollContainer.SCROLL_MODE_AUTO
 	_status.text = str(_data.get("clock", "07:35"))
 	_unlocked = false
+	_claim_sent = false
 
 func reset_incident(config: Dictionary = {}) -> void:
 	stop()
@@ -149,7 +163,9 @@ func open_phone(investigating: bool = false) -> void:
 		_transition = create_tween()
 		_transition.finished.connect(func() -> void: _transition = null)
 		_transition.tween_property(_shell, "modulate:a", 1.0, 0.18)
-	if _app == "lock":
+	if _embedded:
+		_animate_pin()
+	elif _app == "lock":
 		_unlock_button.grab_focus()
 	else:
 		_close.grab_focus()
@@ -165,6 +181,7 @@ func _reduced_motion() -> bool:
 	return settings != null and bool(settings.get("reduced_motion"))
 
 func stop() -> void:
+	_stop_pin()
 	if _transition != null and _transition.is_valid():
 		_transition.kill()
 	_transition = null
@@ -176,6 +193,15 @@ func stop() -> void:
 
 func set_locked(value: bool) -> void:
 	_locked = value
+	if not value and _embedded and _app == "lock" and _reduced_motion():
+		_stop_pin()
+		_unlock()
+		return
+	if _pin_tween != null and _pin_tween.is_valid():
+		if value:
+			_pin_tween.pause()
+		else:
+			_pin_tween.play()
 	if _transition != null and _transition.is_valid():
 		if value:
 			_transition.pause()
@@ -217,6 +243,11 @@ func _render() -> void:
 	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	var titles: Dictionary = _data.get("app_titles", {"home": "HOME", "mail": "MAIL", "contacts": "SCHOOL CONTACTS", "pages": "SAVED PAGES"})
 	_title.text = str(titles.get(_app, "PHONE"))
+	if _embedded and _app in ["lock", "home"]:
+		_render_story_home()
+		_refresh()
+		_metrics()
+		return
 	if _card_open:
 		_render_card()
 		_refresh()
@@ -335,12 +366,100 @@ func _render_message() -> void:
 	_content.add_child(UI.label(str(_message.get("subject", "")), 24, UI.GOLD))
 	_content.add_child(UI.label("From: " + str(_message.get("sender", "")).get_slice("<", 0).strip_edges(), 22, UI.TEAL))
 	_content.add_child(UI.label(str(_message.get("body", "")), 22))
+	if _embedded:
+		if bool(_data.get("claim_enabled", false)):
+			var claim: Button = UI.button("CLAIM PRIZE", _claim, true)
+			claim.name = "ClaimPrize"
+			_content.add_child(claim)
+		return
 	if _items.is_empty():
 		_content.add_child(UI.button("VIEW SENDER DETAILS", _show_sender))
 		if _sender_revealed:
 			_content.add_child(UI.label(str(_message.get("sender", "")), 22, UI.TEAL))
 	_add_details("mail")
 	_content.add_child(UI.label("Preview only. Links and replies are inactive.", 20, UI.MUTED))
+
+## Embedded opening uses the existing device, without the investigation sidebar.
+## The PIN is staged animation, never a credential input or authentication call.
+func _render_story_home() -> void:
+	if _app == "home":
+		_content.add_child(UI.label("1 NEW EMAIL", 22, UI.TEAL))
+		var notification: Button = UI.button(str(_message.get("sender", "")).get_slice("<", 0).strip_edges() + "\n\n" + str(_message.get("subject", "")), _open_story_email, true)
+		notification.name = "EmailNotification"
+		_content.add_child(notification)
+		return
+	_pin_keys.clear()
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 24)
+	_content.add_child(row)
+	var clock_column: VBoxContainer = UI.column(row, 18)
+	clock_column.size_flags_horizontal = SIZE_EXPAND_FILL
+	clock_column.add_child(UI.label(str(_data.get("time", "07:35")), 32, UI.TEXT))
+	clock_column.add_child(UI.label("UNLOCKING", 22, UI.TEAL))
+	_pin_dots = UI.label("_ _ _ _", 26, UI.TEXT)
+	clock_column.add_child(_pin_dots)
+	var keypad: GridContainer = GridContainer.new()
+	keypad.columns = 3
+	keypad.size_flags_horizontal = SIZE_EXPAND_FILL
+	keypad.add_theme_constant_override("h_separation", 6)
+	keypad.add_theme_constant_override("v_separation", 6)
+	row.add_child(keypad)
+	for digit: String in ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", ""]:
+		var key: PanelContainer = PanelContainer.new()
+		key.size_flags_horizontal = SIZE_EXPAND_FILL
+		key.custom_minimum_size = Vector2(48, 36)
+		key.add_theme_stylebox_override("panel", UI.box(Color("102040"), Color("173058"), 4))
+		keypad.add_child(key)
+		var caption: Label = UI.label(digit, 22, UI.TEXT)
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		key.add_child(caption)
+		_pin_keys.append(key)
+
+func _animate_pin() -> void:
+	_stop_pin()
+	if _app != "lock":
+		return
+	_pin_tween = create_tween()
+	_pin_tween.tween_interval(0.35)
+	if not _reduced_motion():
+		for index: int in 4:
+			_pin_tween.tween_callback(_pin_press.bind(index))
+			_pin_tween.tween_interval(0.28)
+	_pin_tween.tween_callback(_unlock)
+	_pin_tween.finished.connect(func() -> void: _pin_tween = null)
+
+func _pin_press(index: int) -> void:
+	if not is_instance_valid(_pin_dots) or _app != "lock":
+		return
+	_pin_dots.text = "* ".repeat(index + 1) + "_ ".repeat(3 - index)
+	for key: PanelContainer in _pin_keys:
+		key.modulate = Color.WHITE
+	_pin_keys[[1, 4, 7, 10][index]].modulate = Color("4FE0D4")
+
+func _stop_pin() -> void:
+	if _pin_tween != null and _pin_tween.is_valid():
+		_pin_tween.kill()
+	_pin_tween = null
+
+func _open_story_email() -> void:
+	if _locked or not visible or not _unlocked:
+		return
+	_app = "mail"
+	_open_message()
+
+func show_open_message() -> void:
+	_stop_pin()
+	_unlocked = true
+	_app = "mail"
+	_reading = true
+	_read = true
+	_render()
+
+func _claim() -> void:
+	if _locked or not visible or not _reading or _app != "mail" or _claim_sent or not bool(_data.get("claim_enabled", false)):
+		return
+	_claim_sent = true
+	claim_pressed.emit()
 
 func _show_sender() -> void:
 	if _locked or not visible or not _reading or _sender_revealed:
@@ -564,22 +683,28 @@ func _guide_button(button: Button, action: String) -> void:
 	button.tooltip_text = ("Next: " if highlighted else "") + button.accessibility_name
 
 func _metrics() -> void:
-	if not is_instance_valid(_shell):
+	if not is_inside_tree() or not is_instance_valid(_shell):
 		return
 	var scale_factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
 	_guide.add_theme_font_size_override("normal_font_size", maxi(22, ceili(guide_text_pixels / scale_factor)))
 	for node: Node in find_children("*", "Control", true, false):
 		if node is Label or node is Button:
-			(node as Control).add_theme_font_size_override("font_size", maxi(22, ceili((40.0 if node.has_meta("phone_clock") else 16.0) / scale_factor)))
+			var text_pixels: float = 20.0 if _embedded else 16.0
+			(node as Control).add_theme_font_size_override("font_size", maxi(22, ceili((40.0 if node.has_meta("phone_clock") else text_pixels) / scale_factor)))
 		if node is Button:
 			(node as Button).custom_minimum_size.y = maxf(48.0 / scale_factor, 52.0)
 	_fit_shell.call_deferred()
 	_shell.queue_redraw()
 
 func _fit_shell() -> void:
-	if not is_instance_valid(_shell) or not is_instance_valid(_nav):
+	if not is_inside_tree() or not is_instance_valid(_shell) or not is_instance_valid(_nav):
 		return
 	var scale_factor: float = maxf(0.1, get_viewport().get_final_transform().get_scale().y)
+	if _embedded:
+		_shell.position = Vector2(maxf(0.0, (size.x - 680.0) * 0.5), 4.0)
+		_shell.size = Vector2(minf(680.0, size.x), maxf(0.0, size.y - 14.0))
+		_shell.queue_redraw()
+		return
 	var nav_height: float = maxf(52.0, 48.0 / scale_factor)
 	var gap: float = 24.0 / scale_factor
 	var side_guide: bool = size.x >= size.y
@@ -610,7 +735,7 @@ func _draw_frame() -> void:
 		return
 	# Only the decorative device continues below the viewport in close-up;
 	# scrollable app content and navigation remain inside the safe area.
-	var rect: Rect2 = Rect2(Vector2.ZERO, _shell.size + Vector2(0, 220.0 * _zoom))
+	var rect: Rect2 = Rect2(Vector2.ZERO, _shell.size + Vector2(0, 0.0 if _embedded else 220.0 * _zoom))
 	_shell.draw_colored_polygon(_bezel(Rect2(rect.position + Vector2(4, 7), rect.size).grow(3), 36), Color("050B18"))
 	_shell.draw_colored_polygon(_bezel(rect, 36), Color("727a83"))
 	_shell.draw_colored_polygon(_bezel(rect.grow(-3), 32), Color("b4b3a7"))
@@ -676,6 +801,7 @@ func _draw_ridge(screen: Rect2, heights: PackedFloat32Array, ink: Color) -> void
 	_wallpaper_polygon(points, ink)
 
 func _exit_tree() -> void:
+	_stop_pin()
 	if _transition != null and _transition.is_valid():
 		_transition.kill()
 	if _zoom_tween != null and _zoom_tween.is_valid():

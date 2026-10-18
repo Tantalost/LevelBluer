@@ -729,7 +729,8 @@ func _finish_lesson() -> void:
 		return
 	_busy = true
 	if Router.is_tutorial and Router.tutorial_beat == &"lesson":
-		PlayerManager.grant_intel_bonus(_module_id)
+		if not Router.tutorial_replay:
+			PlayerManager.grant_intel_bonus(_module_id)
 		_show_tutorial_lesson_done()
 		return
 	var completed_index: int = _lesson_index

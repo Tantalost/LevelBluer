@@ -333,6 +333,12 @@ func _map_environment_catalog() -> Array[Dictionary]:
 
 func _ui_catalog() -> Array[Dictionary]:
 	return [
+		_catalog_entry("opening_john_got_you_v1", "Opening / john got you", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_got_you_v1.png"),
+		_catalog_entry("opening_john_reaching_phone_v1", "Opening / john reaching phone", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_reaching_phone_v1.png"),
+		_catalog_entry("opening_collector_meeting_v1", "Opening / collector meeting", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/collector_meeting_v1.png"),
+		_catalog_entry("opening_john_room_wake_v1", "Opening / john room wake", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_room_wake_v1.png"),
+		_catalog_entry("opening_john_claim_prize_v1", "Opening / john claim prize", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_claim_prize_v1.png"),
+		_catalog_entry("opening_five_victims_v1", "Opening / five victims", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/five_victims_v1.png"),
 		_catalog_entry("ui_intro", "Intro cinematic art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338103/Gemini_Generated_Image_3bwb7g3bwb7g3bwb.jpg"),
 		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),
