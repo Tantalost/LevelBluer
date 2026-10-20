@@ -30,6 +30,21 @@ var _password_field: Button
 var _password_submit: Button
 var _keyboard: GridContainer
 var _notepad_open: bool = false
+var _item_preview: bool = false
+
+func show_item_preview() -> void:
+	# Static, non-interactive prop: finish the reveal before locking its tweens.
+	_item_preview = true
+	if _transition != null and _transition.is_valid():
+		_transition.kill()
+	_transition = null
+	if _zoom_tween != null and _zoom_tween.is_valid():
+		_zoom_tween.kill()
+	_zoom_tween = null
+	_shell.modulate = Color.WHITE
+	_zoom = 0.0
+	set_locked(true)
+	_metrics()
 
 func _ready() -> void:
 	super._ready()
@@ -578,6 +593,8 @@ func _changed() -> void:
 
 func _refresh() -> void:
 	super._refresh()
+	if _item_preview:
+		_nav.hide()
 	if is_instance_valid(_camera_tools):
 		_camera_tools.visible = mode == "capture" and _app == "mail"
 		_camera_tools.disabled = _locked
@@ -603,6 +620,14 @@ func _refresh() -> void:
 			_camera.cancel_drag()
 
 func _metrics() -> void:
+	if _item_preview:
+		# Fixed logical preview size is scaled by the showcase host. Do not apply
+		# interactive touch/font minimums twice to this non-interactive miniature.
+		for node: Node in find_children("*", "Control", true, false):
+			if node is Label or node is Button:
+				(node as Control).add_theme_font_size_override("font_size", 22)
+		_fit_shell.call_deferred()
+		return
 	super._metrics()
 	if not is_inside_tree():
 		return

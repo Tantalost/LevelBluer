@@ -68,7 +68,7 @@
     {"id": "inspect", "label": "Check the message first"}
   ],
   "ui": {
-    "intro": "OPENING", "tutorial": "PHONE PRACTICE", "phone_status": "•••                 ▰", "back": "< BACK", "skip": "SKIP", "menu": "MENU",
+    "intro": "OPENING", "tutorial": "PHONE PRACTICE", "phone_status": "•••                 ▰", "back": "BACK", "skip": "SKIP", "menu": "MENU",
     "next": "CONTINUE >", "open": "OPEN MESSAGE", "inspect": "INSPECT", "respond": "CHOOSE RESPONSE",
     "binder": "EVIDENCE BINDER", "save": "SAVE CLUE", "saved": "CLUE SAVED", "retry": "TRY AGAIN",
     "return": "BACK TO MESSAGE", "hub": "GO TO HUB", "finish": "TUTORIAL COMPLETE",

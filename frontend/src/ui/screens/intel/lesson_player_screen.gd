@@ -223,7 +223,7 @@ func _show_roadmap() -> void:
 	_workspace.hide()
 	_panes.show()
 	_header_title.text = "LEARNING PATH"
-	_close_button.text = "< BACK"
+	_close_button.text = "BACK"
 	_answer_effect.reset()
 	_refresh_roadmap()
 

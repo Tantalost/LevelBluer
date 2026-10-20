@@ -384,7 +384,7 @@ func _layout() -> void:
 	_compact = size.x * physical < 1000.0
 	_list_panel.visible = not _compact or not _mobile_details
 	_detail_panel.visible = not _compact or _mobile_details
-	_back_button.text = "< INDEX" if _compact and _mobile_details else "< BACK"
+	_back_button.text = "< INDEX" if _compact and _mobile_details else "BACK"
 	UI.fit_touch(self)
 	if is_instance_valid(_preview):
 		_preview.custom_minimum_size = Vector2(maxf(180, 80 / physical), maxf(164, 80 / physical))

@@ -149,7 +149,7 @@ TUTORIAL_RETRY_DEFENSE,RESTART PRACTICE,ULITIN ANG PAGSASANAY
 TUTORIAL_COMPLETE_TITLE,TUTORIAL COMPLETE,TAPOS NA ANG TUTORIAL
 TUTORIAL_TIMER_HINT,"Story decisions can have a countdown. It starts after evidence is confirmed, and Logs do not stop it. Settings can extend or disable it. Choose using the clues, not the email's pressure.","Maaaring may countdown ang desisyon. Nagsisimula ito matapos kumpirmahin ang ebidensya at hindi hihinto sa Logs. Puwede itong baguhin sa Settings. Gamitin ang clues sa pagpili."
 SETT_TITLE,SETTINGS,SETTINGS
-SETT_BACK,< BACK,< BUMALIK
+SETT_BACK,BACK,BUMALIK
 SETT_SEC_AUDIO,AUDIO,AUDIO
 SETT_MASTER_VOL,Master Volume,Pangunahing Boses
 SETT_MASTER_VOL_DESC,Adjust overall game volume,I-adjust ang kabuuang boses ng laro

@@ -93,7 +93,7 @@ func _ready() -> void:
 	_nav = HBoxContainer.new()
 	_nav.add_theme_constant_override("separation", 12)
 	add_child(_nav)
-	_back = UI.button("< BACK", _go_back)
+	_back = UI.button("BACK", _go_back)
 	_close = UI.button("CLOSE", _request_close)
 	_close.accessibility_name = "Close phone and return to story"
 	for button: Button in [_back, _close]:

@@ -203,7 +203,7 @@ func _show_selection() -> void:
 	_selection_screen.visible = true
 	_tree_screen.visible = false
 	_title_label.text = "NODE ARMORY"
-	_back_button.text = "< BACK"
+	_back_button.text = "BACK"
 	_refresh_selection_cards()
 	_refresh_coins_label()
 

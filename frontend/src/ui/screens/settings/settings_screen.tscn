@@ -110,7 +110,7 @@ theme_override_font_sizes/font_size = 14
 theme_override_styles/normal = SubResource("StyleBoxFlat_back_btn")
 theme_override_styles/hover = SubResource("StyleBoxFlat_back_btn")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_back_btn")
-text = "< BACK"
+text = "BACK"
 
 [node name="HeaderSpacerLeft" type="Control" parent="SafeAreaContainer/ScreenLayout/HeaderBar"]
 layout_mode = 2

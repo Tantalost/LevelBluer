@@ -1,6 +1,19 @@
 # Opening and phone tutorial — implementation handoff
 
-## Current milestone: decision staging and completion celebration (2026-10-20)
+## Current milestone: visual-novel item showcase and choice bars (2026-10-20)
+
+Replaces the centered presentation for `choice`, `inspect_intro` and `next_issue` only:
+
+- Left: rounded navy choice bars with neutral cyan circular envelope/delete/inspect icons. All choices use the same emphasis. Hover/focus outlines, pressed shading and staggered fades improve feedback without hinting at the correct answer.
+- Right: a rounded item card reuses the existing cream phone at a fixed presentation scale, with a readable caption beneath it. Its preview is non-interactive and fully revealed before input is locked; no miniature Close controls are shown. Entering investigation creates the normal interactive phone.
+- Bottom: full-width translucent dialogue stays visible, above the blur/dim layer. The background alone is blurred; narration, choices and the item remain sharp.
+- Header and presentation buttons share rounded styling. Back, Skip and Menu remain available. Existing menu/background pause, reduced-motion, evidence, retry and save rules are unchanged.
+
+No new scripts, raster assets, gameplay rules or dependencies. The existing opening screen owns the layout and signals; the tutorial phone owns its static-preview state.
+
+Rendered practice verification and the full headless tutorial regression suite both pass with zero failures. Checks include pointer-driven choices and non-overlapping item/dialogue bounds at 1280×720 and 844×390 landscape. Actual Android GPU blur performance remains a device check.
+
+## Previous milestone: decision staging and completion celebration (2026-10-20)
 
 This revision supersedes the previous tutorial presentation below; it does not change the intro, chapter economy, mastery or campaign rules.
 

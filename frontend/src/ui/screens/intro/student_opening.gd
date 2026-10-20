@@ -1172,7 +1172,7 @@ func _overlay_column(blur: bool = true, event: bool = false) -> VBoxContainer:
 		_practice_layer.add_child(_item_caption)
 		_phone_view.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
 		_phone_view.size = Vector2(480, 840)
-		_phone_view._zoom_app(0.0)
+		_phone_view.show_item_preview()
 	var margin: MarginContainer = MarginContainer.new()
 	_practice_margin = margin
 	_practice_blurred = blur

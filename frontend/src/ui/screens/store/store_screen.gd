@@ -290,7 +290,7 @@ func _layout() -> void:
 	_detail_scroll.visible = not _compact or _details_open
 	# Landscape-only gallery; compact landscape phones still use a detail page.
 	_grid.columns = 2
-	_back.text = "< ITEMS" if _compact and _details_open else "< BACK"
+	_back.text = "< ITEMS" if _compact and _details_open else "BACK"
 	_modal_card.custom_minimum_size.x = minf(size.x - 48, 480.0 / physical)
 	UI.fit_touch(self)
 	for card: Button in _cards:

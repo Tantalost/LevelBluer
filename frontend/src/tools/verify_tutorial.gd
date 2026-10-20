@@ -826,7 +826,8 @@ func _check_practice(opening: Control) -> void:
 	await capture_opening(opening, "practice_choices")
 	await create_timer(1.0).timeout
 	await capture_opening(opening, "practice_decisions_revealed")
-	print("[ITEM LAYOUT] host=", opening._phone_host.get_global_rect(), " phone=", opening._phone_view.get_global_rect(), " shell=", opening._phone_view._shell.get_global_rect(), " visible=", opening._phone_view._shell.is_visible_in_tree(), " scale=", opening._phone_view.scale)
+	check(opening._phone_view._shell.modulate.a == 1.0, "Item preview is fully revealed before input lock")
+	check(not opening._phone_view._nav.visible, "Static item preview has no miniature interactive controls")
 	check(opening._practice_buttons.size() == 3, "Three left-side decisions outside the phone")
 	check(opening._event_layout and opening._dialogue.visible, "Item introduction keeps bottom narration")
 	check(opening._practice_card.get_global_rect().end.x < opening._item_card.get_global_rect().position.x, "Choices sit to the left of the item showcase")

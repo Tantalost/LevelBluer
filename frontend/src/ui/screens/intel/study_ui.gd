@@ -166,7 +166,7 @@ static func shell(host: Control, title: String, back: Callable) -> Dictionary:
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 20)
 	layout.add_child(header)
-	var back_button := button("< BACK", back)
+	var back_button := button("BACK", back)
 	back_button.custom_minimum_size.x = 110
 	header.add_child(back_button)
 	var name_label := label(title, 20, TEXT, true)

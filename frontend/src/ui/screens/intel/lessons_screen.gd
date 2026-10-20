@@ -353,7 +353,7 @@ func _set_detail_visible(value: bool) -> void:
 	_overview.visible = not value
 	_detail.visible = value
 	_heading.text = "MODULE OVERVIEW" if value else "LEARNING JOURNEY"
-	_back.text = "< MAP" if value else "< BACK"
+	_back.text = "< MAP" if value else "BACK"
 
 func on_resume() -> void:
 	_refresh_list_ui()
