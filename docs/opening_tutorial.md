@@ -1,6 +1,114 @@
 # Opening and phone tutorial — implementation handoff
 
-## Current priority update: hosted opening art and meeting captions
+## Current milestone: decision staging and completion celebration (2026-10-20)
+
+This revision supersedes the previous tutorial presentation below; it does not change the intro, chapter economy, mastery or campaign rules.
+
+- Reading Mail enables the existing circular dialogue advance **outside** the phone. It opens a centered **“What should I do?”** overlay over the blurred/dimmed scene. Claim Prize, Delete and Investigate appear after a short beat; the background phone cannot accept input.
+- Claim Prize opens a staged password page. Tapping its button-like password field animates eight masked characters and highlighted keyboard keys. It is not a LineEdit and cannot collect credentials. Only **Submit** remains within the app after typing; it leads to the failure explanation and Retry returns to the centered decision. Global Back/Skip/Menu remain escape controls.
+- Investigate begins with centered **“Read between the lines”**. Mail contains the message, not the old instructional heading or phrase-tapping paragraph. Each tapped clue emits a thought signal to a cream bubble outside the device. The thought types slowly; its button becomes available when the line finishes.
+- Three distinct flags unlock **“Alright, what next could be the issue?”**. The marked message fades, then the player continues to a separate sender step. No sender or domain-entry controls are exposed during highlighting.
+- Opening sender details reveals the full address. **Open Notepad** returns to phone home, where the Notepad banner and notebook icon are interactive. Notepad has its own content/title and domain field. Close returns home; Mail can be reopened to check the address. Only a validated canonical domain is persisted, never an arbitrary draft or password.
+- Existing camera and local evidence submission follow. The freeze caption remains unchanged.
+- Successful completion now uses a centered navy/gold panel with a sealed-evidence emblem, success SFX, a 3-second cyan/gold/cream confetti burst, **Continue** and **Replay Tutorial**. Skip is still a separate paused/skipped screen and never celebrates completion.
+
+The existing opening screen owns the presentation layer and bounded Tween; the existing tutorial phone emits thought/evidence/action signals. No additional scripts, image/audio assets, manager, or backend endpoint. Menu/app backgrounding pause presentation and typing; navigation kills old callbacks. Reduced Motion uses dimming/static artwork without confetti or animated key highlights. Audio follows existing mute/volume controls.
+
+Save schema version 6 adds sequential presentation steps while preserving valid version-5 evidence. Physical Android keyboard behavior, GPU blur performance, and touch acceptance remain device checks.
+
+Verification for this revision:
+
+- Rendered `verify_tutorial.gd -- --practice-only --render`: zero failures and no script errors. Covers real pointer input on the decision overlay, password animation gating, failure/retry, staged evidence, notebook icon, Mail/Notepad round trip, camera capture, submission, completion, menu pause, reduced motion, skip, and invalid saved-progress recovery.
+- Full headless `verify_tutorial.gd`: zero failures, including opening navigation, existing tutorial safeguards, replay isolation and progress checks.
+- Layout captures checked at 1280×720 and 844×390 landscape. Completion actions remain on-screen; screenshot outputs stay in ignored `.godot/`.
+
+## Previous milestone: hands-on rewind tutorial (2026-10-20)
+
+Scope: replace only the onboarding practice. The cinematic intro remains intact. The broader Day/Night chapter loop, coins, perks and chapter progression are **not** implemented by this milestone.
+
+The existing opening screen owns navigation and onboarding persistence. One new strictly typed `tutorial_phone.gd` extends the existing cream `opening_phone.gd`, owns its interactive controls, and emits evidence snapshots, a local image preview, and guarded navigation intents. No extra manager/autoload or backend route.
+
+### Current playable script
+
+1. **That morning, again** — room art, eye-opening and bottom translucent narration. Advance opens the alarm/PIN/home/Mail phone.
+2. **One unread message** — read the prize email; opening it does not compromise the account.
+3. **Before I act** — three alternative branches, not three sequential quiz questions:
+   - **Claim** opens a simulated password-request page. Submit a fixed fictional placeholder (no password input) for the explanatory bad ending. Retry returns to the same decision; Stop goes back.
+   - **Delete** is a safe ending, not a mistake. Investigate a practice copy or leave for now; leaving does not falsely mark the investigation complete.
+   - **Check the message** opens the investigation.
+4. **Event 1 / Look closer** — tap the unexpected reward, deadline and password request; a greeting is not evidence. Open sender details, type only `prize-claim.example`, and save the note. Case/outer spaces normalize; lookalike spelling and a full address do not pass. A hint is optional and recorded. All three flags plus a correctly read domain gate the next event.
+5. **Event 2 / Keep the context** — drag a camera frame and its blue resize corner over sender, subject and request. TOOLS switches to directional/resize buttons, framing assistance and Capture; FRAME returns to the sheet. Partial crops cannot advance. Moving the crop invalidates its previous capture/seal.
+6. **Build the exhibit** — review the captured image and attachments. Send animates a paper into an envelope, then seals the practice exhibit. This is explicitly a local simulation, not the existing student-feedback or teacher-intervention service.
+7. **Practice exhibit sealed** — success SFX and reflection, then advance.
+8. **Freeze frame** — existing John/phone artwork freezes under a gentle dark fade; exact centered caption: **“If only John thought of this before....”**. Hold two seconds, then the circular advance becomes available.
+9. **TUTORIAL COMPLETE** — Hub and Replay Tutorial. Skip remains a distinct paused/skipped result. No coins, BKT evidence, assessment attempts, upgrades, or chapter unlocks.
+
+### Lifecycle, privacy and compatibility
+
+- Save version 5 stores flags, canonical domain, hint use, crop and captured/sealed metadata. Older click-to-save tutorial progress resumes at the new start; existing account completion flags are not reset. Intro cursor migrations remain intact.
+- Camera previews render only an immutable simulated message in a temporary SubViewport; never the entire screen. Textures stay in memory, and a resumed exhibit shows its saved source summary. No screenshot files or arbitrary typed strings are saved/uploaded.
+- Back/Skip/Menu/Exit stay available. Menu and app backgrounding pause sending; replacing the phone stops its tweens. Deferred actions verify their source instance and active step. Replay does not write account progress.
+- Reduced Motion retains a static sealed envelope instead of movement and gentle closing fades. Existing mute/volume settings apply. No new flashes or vibration.
+- Uses existing remote/cached artwork; no new PNG/audio asset downloads or dependencies.
+
+### Verification
+
+Godot 4.7.2 checks use `verify_tutorial.gd -- --practice-only`, `--opening-only`, and optional `--render`. Coverage includes all branches, duplicate flags/sends, exact domain matching, partial crops, touch movement and tap controls, local rendered capture, JSON resume, stale callback cancellation, pause/backgrounding, and replay isolation. Landscape render fixtures cover 1280×720 and 844×390.
+
+Final results: full headless tutorial/navigation regression **0 failures**; rendered opening/tutorial regression **0 failures**; focused rendered practice **0 failures**. Inspected choice, inspection, capture/tools, submission, closing and completion screenshots. `git diff --check` passes (repository line-ending normalization notice only).
+
+Physical Android soft-keyboard placement, touch feel and device background/resume still require a device acceptance pass. The sections below record earlier milestones and do not describe the replaced click-to-save tutorial.
+
+## Artwork correction: Amani's extra hand (2026-10-19)
+
+Removed the hand beneath Amani's mouth in the second victim panel, preserving her phone-holding hand and worried expression. The full 1672×941 montage retains its existing panel boundaries. Both montage and closing now reference `opening_five_victims_v3` at https://res.cloudinary.com/nfd5bhkz/image/upload/v1792420653/five_victims_v3.png. Previous remote versions remain available; no PNG is tracked/bundled.
+
+Built-in imagegen precise-object edit, guided by the imagegen skill. Workspace preview: `C:/Users/John Lloyd/OneDrive/Documents/level-blue/frontend/.godot/five_victims_v3.png` (ignored). Generated original: `C:/Users/John Lloyd/.codex/generated_images/01a07a9a-7037-7471-bd7f-2e5ae97dbb79/exec-7f7838b6-ba78-44ee-99c2-b33d59c020d6.png`.
+
+Final prompt: “Use case: precise-object-edit. Image 1 is the edit target: LEVELBLUE five-panel victim montage. Make ONE localized correction in the SECOND panel from the left (long-haired woman in pale sweater): remove the extra hand and wrist directly beneath/near her mouth. Reconstruct the obscured neck, sweater neckline and chest naturally with matching pixel-art texture, lighting and fabric folds. Keep her existing lower hand holding the dark blue phone EXACTLY as is. Her other arm is lowered out of view, not near her face. Preserve her face, worried expression, hair, phone, background and pose. Preserve the other FOUR panels unchanged. Preserve original full landscape dimensions/aspect ratio, exact straight panel boundaries and all framing, colors, lighting and style. Do not crop, rearrange, redraw characters, add hands, add text, or add objects. Output the full five-panel image, not an isolated portrait.”
+
+## Previous milestone: Scenes 6–9 (2026-10-19)
+
+Opening only: no module ending, assessment, BKT, account, or progression changes. The optional unclosable popup is omitted.
+
+| Scene | Implemented timing |
+| --- | --- |
+| 6 — Got You, 6 seconds | Hard music/UI-tail cut; 0.6-second silence; 1.2-second rising buzz, small growing shake and radial red spread from phone. At 1.8 seconds: red-phone art, low impact, two rendered frames of RGB separation. Layered robotic laugh with a lower voice and six decaying echoes. Red recedes and one slow glow breath settles before Advance. |
+| 7 — Meeting, 7 seconds | Four masked figures/four lamps; empty central chair in shadow. 8% push-in. Five staggered HAHAHAHA captions with a small overshoot; largest rises from center toward the right edge, partially off-screen. Rising drone and one heartbeat; **no extra laugh**. One lamp dim/recover cycle, then black. |
+| 8 — Victims, 9 seconds | John first; five independent reveals 0.7 seconds apart, 5% face push-ins, detuned chimes. Tap completes only the current panel; later audio cues stay synchronized. Accelerating heartbeat; thin red connecting line draws and glows once with a low note. |
+| 9 — Closing, 6 seconds + rewind | Image darkens; red line contracts. Whole-word caption reveal ends at 2.8 seconds, cutting heartbeat completely. Two-second caption hold followed by fade to black. Player's Advance triggers a one-second reverse clock/whoosh, then practice and fading-in morning music. |
+
+The existing screen owns one cinematic Tween and an inner presentation-only `CinematicEffects` Control. No new manager or scene file. Existing source-owned AudioManager SFX playback handles five offline-baked mixes (approximately 1.22 MiB source WAVs), generated with `bake_game_audio.gd -- --cinematic-only`. Scene mixes respect SFX mute/volume; morning track respects Music controls. No external voice samples.
+
+Menu pauses timeline and score. Backgrounding freezes the timeline, stops audio, and resumes at its saved offset; returning with Menu open stays paused. Back/Skip/replay/exit cancel callbacks and audio, including rewind. Reduced Motion keeps narrative timing with fades and static artwork: no shake, RGB split, camera zoom, caption overshoot or spinning clock. Android vibration respects its preference and is suppressed by Reduced Motion. No flashing loops.
+
+Two revised Cloudinary assets replace the meeting/montage entries; original v1 uploads remain untouched. Other four opening images retain the user's original URLs:
+
+- `opening_collector_meeting_v2`: https://res.cloudinary.com/nfd5bhkz/image/upload/v1792338328/collector_meeting_v2.png
+- `opening_five_victims_v2`: https://res.cloudinary.com/nfd5bhkz/image/upload/v1792338338/five_victims_v2.png
+
+The victim atlas uses measured source edges `[0.0, 0.2177, 0.407, 0.597, 0.785, 1.0]`, mapped into equal-width screen panels without stretching faces. All five remain visible in extra-wide landscape. Downloads were verified through AssetManager. First download requires internet; later playback uses the cache. No generated PNG is bundled or tracked in Git.
+
+### New artwork provenance and prompt set
+
+Mode: built-in imagegen, reference-image edits. The imagegen skill guided continuity-preserving edits and independent panel framing. Ignored previews: `frontend/.godot/collector_meeting_v2.png` and `frontend/.godot/five_victims_v2.png`. Generated originals:
+
+- `C:/Users/John Lloyd/.codex/generated_images/01a07a9a-7037-7471-bd7f-2e5ae97dbb79/exec-f2f007d4-aa3f-420e-ba92-cf224d7c0a24.png`
+- `C:/Users/John Lloyd/.codex/generated_images/01a07a9a-7037-7471-bd7f-2e5ae97dbb79/exec-c1774e3d-0474-4e17-bae7-0de0ab8848a7.png`
+
+Meeting prompt: “Use case: precise-object-edit. Asset: LEVELBLUE visual-novel cinematic background, 16:9 landscape. Edit the supplied meeting illustration, preserving its crisp pixel-art/anime rendering, dark navy room and muted red/cyan light. Redesign composition to have EXACTLY FOUR masked figures, two on each side of a table, laughing in distinct poses. Exactly FOUR small pendant lamps, each directly above one figure. Arrange lights near normalized coordinates (0.18,0.20), (0.37,0.17), (0.63,0.17), (0.82,0.20) so game can animate their illumination. Leave a strong empty pool of darkness at table center near (0.50,0.58), suggesting a hidden fifth chair but showing NO fifth person, face, silhouette or mask. Figures and lamps stay inside central 80% for slow push-in. Center table leads viewer into darkness. No central overhead lamp. No text, captions, logos, UI, watermark, extra figures. Final polished background only.”
+
+Victims prompt: “Use case: identity-preserve / illustration-story. Edit this LEVELBLUE five-victim montage into a game animation atlas. Keep EXACTLY the same five characters, facial identities, hairstyles, clothes, emotions and cyber-scam contexts, in SAME left-to-right order: John shocked navy tee holding red phone with prize email background; Amani confused long black hair pale sweater with lost-signal/impersonation messages; Liza crying bun dark tee holding phone to ear with diverted payment/voice call graphics; adult female school staff angry glasses high bun beige shirt lanyard holding unauthorized student-list document; male classmate sad wavy black hair light hoodie holding phone with free gift and locked-account background. Change ONLY the panel geometry and framing: five EXACTLY EQUAL WIDTH vertical rectangular panels filling a 16:9 landscape image, perfectly straight vertical boundaries at 20%,40%,60%,80%. No angled/slanted separators. No outer margin or gutter, no text/captions/watermarks. Each person's face centered horizontally in their own panel near 47% image height; all five heads fully within their panels with breathing room for 5% face push-in. Crisp pixel-art/anime rendering and dramatic navy/warm lighting as reference. Each panel must be a complete self-contained illustration suitable for independent rectangular cropping. Preserve all five cause-in-background storytelling elements.”
+
+### Verification
+
+Passed on Godot 4.7.2: full tutorial regression, opening-only rendered regression, and game-audio suite; all report zero failures. Final rendered runs have no stderr warnings/errors. Inspected 1280×720 and 844×390 landscape captures. Checks include menu/focus interruption, rewind cancellation, reduced motion, source-owned audio, exact 0.6-second initial silence and no heartbeat tail after 2.8 seconds. Replay/account state remains unchanged. `git diff --check` passes (only the repository's LF/CRLF normalization notice).
+
+Physical Android haptics/touch, background-resume on device, and subjective loudness/mix still need a device acceptance pass. The four-lamp payoff in Module 1 is not implemented in this opening-only milestone.
+
+## Previous milestone: hosted opening art and meeting captions
+
+The remaining sections are historical implementation/provenance notes. Where timing, art versions or reduced-motion behavior differ, the current milestone above supersedes them.
 
 All six opening PNGs now come from the supplied Cloudinary `v1792317115` URLs in `AssetManager._ui_catalog()`. The data file retains the `room_art`, `art_path`, and `reveal_art` field names, but their values are AssetManager IDs (`opening_<filename_without_extension>`), not resource paths. The existing startup catalog sync downloads and version-caches them under `user://assets/`; opening rendering only reads that cache. A receiver-owned `sync_finished` connection updates the current scene without replaying animations or applying an old scene's art.
 

@@ -40,7 +40,7 @@ func _run() -> void:
 	audio._focus_lost = false
 	audio._app_paused = false
 	audio._apply_buses()
-	check(audio._tracks.size() == 5 and audio._sounds.size() == 7 and audio._opening_cues.size() == 3, "Original audio and new morning assets load")
+	check(audio._tracks.size() == 5 and audio._sounds.size() == 7 and audio._opening_cues.size() == 8, "Original audio, morning assets and five cinematic mixes load")
 	for key: String in audio._tracks:
 		var stream: AudioStream = audio._tracks[key]
 		var looping: bool = stream.loop_mode == AudioStreamWAV.LOOP_FORWARD if stream is AudioStreamWAV else (stream as AudioStreamOggVorbis).loop
@@ -233,6 +233,31 @@ func _test_opening_audio() -> void:
 	audio.set_opening_morning(owner, false)
 	await wait(0.8)
 	check(music_voices() == 0, "Morning music fades out before the dark ending")
+	for cue: String in ["takeover", "meeting", "montage", "closing", "rewind"]:
+		var expected: float = {"takeover": 6.0, "meeting": 7.0, "montage": 9.0, "closing": 6.0, "rewind": 1.0}[cue]
+		check(absf(audio._opening_cues[cue].get_length() - expected) < 0.01, "Cinematic score duration: " + cue)
+		audio.play_opening_score(cue, owner)
+		check(audio.dialogue_player.playing and audio._opening_score, "Scene mix uses the bounded source-owned player: " + cue)
+		audio.pause_opening_audio(owner, true)
+		check(audio.dialogue_player.stream_paused, "Menu pauses cinematic score without losing its place")
+		audio.pause_opening_audio(owner, false)
+		check(not audio.dialogue_player.stream_paused, "Resume continues cinematic score")
+	audio.cut_opening_audio(owner)
+	check(music_voices() == 0 and voices() == 0 and not audio.dialogue_player.playing, "Silence cut stops music, UI tails and scene audio")
+	var takeover_pcm: AudioStreamWAV = AudioStreamWAV.load_from_file("res://assets/audio/sfx/opening_takeover.wav")
+	var closing_pcm: AudioStreamWAV = AudioStreamWAV.load_from_file("res://assets/audio/sfx/opening_closing.wav")
+	var silent_start: bool = true
+	for sample: int in int(takeover_pcm.mix_rate * 0.6):
+		if takeover_pcm.data.decode_s16(sample * 2) != 0:
+			silent_start = false
+			break
+	check(silent_start, "Takeover PCM is completely silent for the first 0.6 seconds")
+	var silent_tail: bool = true
+	for sample: int in range(int(ceil(closing_pcm.mix_rate * 2.8)), closing_pcm.data.size() / 2):
+		if closing_pcm.data.decode_s16(sample * 2) != 0:
+			silent_tail = false
+			break
+	check(silent_tail, "Closing heartbeat has no tail after the final word")
 	audio.release_opening_audio(owner)
 	audio._on_screen_changed(&"dashboard")
 	await wait(0.8)

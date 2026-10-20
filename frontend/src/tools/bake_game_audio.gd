@@ -91,6 +91,10 @@ func _effect(key: String, notes: Array[int], duration: float, step: float, gain:
 	_save(buffer, "res://assets/audio/sfx/" + key + ".wav", gain)
 
 func _bake() -> void:
+	if "--cinematic-only" in OS.get_cmdline_user_args():
+		_bake_cinematic()
+		quit()
+		return
 	if "--opening-only" in OS.get_cmdline_user_args():
 		_bake_opening()
 		quit()
@@ -158,3 +162,78 @@ func _bake_opening() -> void:
 		var envelope: float = pow(sin(PI * t / 0.58), 2.0) * (0.60 + 0.40 * sin(TAU * 6.0 * t))
 		shuffle[i] = noise * envelope
 	_save(shuffle, "res://assets/audio/sfx/opening_shuffle.wav", 0.20)
+
+
+func _heartbeat(buffer: PackedFloat32Array, at: float, gain: float) -> void:
+	_tone(buffer, at, 0.18, 36, gain, "kick")
+	_tone(buffer, at + 0.16, 0.14, 36, gain * 0.55, "kick")
+
+
+func _bake_cinematic() -> void:
+	# Original, offline scene mixes: one bounded source-owned player at runtime.
+	var hit: PackedFloat32Array = PackedFloat32Array()
+	hit.resize(RATE * 6)
+	for i: int in int(RATE * 1.2):
+		var t: float = float(i) / RATE
+		var ramp: float = t / 1.2
+		hit[int(0.6 * RATE) + i] += sin(TAU * 92.0 * t) * (0.7 + 0.3 * sin(TAU * 19.0 * t)) * ramp * 0.15 * minf(1.0, (1.2 - t) / 0.04)
+	_tone(hit, 1.8, 0.65, 30, 0.65, "kick")
+	_tone(hit, 1.8, 1.2, 24, 0.08, "bass")
+	# Two synchronized voices plus decaying echoes; not repeated player nodes.
+	var laugh: PackedFloat32Array = PackedFloat32Array()
+	laugh.resize(int(RATE * 1.65))
+	var phase: float = 0.0
+	for i: int in laugh.size():
+		var t: float = float(i) / RATE
+		var syllable: int = mini(4, int(t / 0.33))
+		var local: float = fposmod(t, 0.33)
+		phase += TAU * (175.0 - syllable * 13.0 + 42.0 * exp(-local * 18.0)) / RATE
+		var upper: float = sin(phase) + 0.35 * sin(phase * 3.0) + 0.18 * sin(phase * 7.0)
+		var lower: float = sin(phase * 0.67) + 0.25 * sin(phase * 2.01)
+		var envelope: float = clampf(local / 0.018, 0, 1) * clampf((0.25 - local) / 0.12, 0, 1)
+		laugh[i] = roundf((upper + lower * 0.65) * 14.0) / 14.0 * envelope * 0.16
+	for echo: int in 6:
+		var offset: int = int((1.94 + echo * 0.39) * RATE)
+		for i: int in laugh.size():
+			if offset + i < hit.size():
+				hit[offset + i] += laugh[i] * pow(0.48, echo)
+	_save(hit, "res://assets/audio/sfx/opening_takeover.wav", 0.48)
+	var meeting: PackedFloat32Array = PackedFloat32Array()
+	meeting.resize(RATE * 7)
+	for i: int in meeting.size():
+		var t: float = float(i) / RATE
+		var envelope: float = minf(t / 1.5, 1.0) * clampf((6.65 - t) / 0.55, 0, 1)
+		meeting[i] = (sin(TAU * (42.0 * t + 0.6 * t * t)) + 0.3 * sin(TAU * 63.0 * t)) * envelope * (0.03 + t * 0.006)
+	_heartbeat(meeting, 5.4, 0.3)
+	_save(meeting, "res://assets/audio/sfx/opening_meeting.wav", 0.33)
+	var victims: PackedFloat32Array = PackedFloat32Array()
+	victims.resize(RATE * 9)
+	for panel: int in 5:
+		var at: float = 0.4 + panel * 0.7
+		_tone(victims, at, 0.3, 78 - panel, 0.12, "pluck")
+		_tone(victims, at + 0.045, 0.27, 79 - panel, 0.045, "pluck")
+	var beat_at: float = 0.4
+	var beat_index: int = 0
+	while beat_at < 8.7:
+		_heartbeat(victims, beat_at, 0.16)
+		beat_at += lerpf(1.05, 0.72, minf(beat_index / 5.0, 1.0))
+		beat_index += 1
+	_tone(victims, 6.4, 1.0, 31, 0.13, "bass")
+	_save(victims, "res://assets/audio/sfx/opening_montage.wav", 0.38)
+	var closing: PackedFloat32Array = PackedFloat32Array()
+	closing.resize(RATE * 6)
+	for beat: int in 5:
+		_heartbeat(closing, beat * 0.64, 0.17 + beat * 0.035)
+	# The final word lands at 2.8s; no tail may cross that silence boundary.
+	for i: int in closing.size():
+		closing[i] *= clampf((2.8 - float(i) / RATE) / 0.08, 0, 1)
+	_save(closing, "res://assets/audio/sfx/opening_closing.wav", 0.40)
+	var rewind: PackedFloat32Array = PackedFloat32Array()
+	rewind.resize(RATE)
+	var smooth_noise: float = 0.0
+	for i: int in rewind.size():
+		var t: float = float(i) / RATE
+		smooth_noise = lerpf(smooth_noise, _rng.randf_range(-1, 1), 0.23)
+		var tape: float = sin(TAU * (1200.0 * t - 470.0 * t * t)) * (0.5 + 0.5 * sin(TAU * 21.0 * t))
+		rewind[i] = (smooth_noise * 0.25 + tape * 0.09) * sin(PI * t)
+	_save(rewind, "res://assets/audio/sfx/opening_rewind.wav", 0.32)

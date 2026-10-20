@@ -37,6 +37,7 @@ var _opening_cues: Dictionary[String, AudioStreamWAV] = {}
 var _opening_owner: WeakRef
 var _opening_morning: bool = false
 var _opening_paused: bool = false
+var _opening_score: bool = false
 var hub_track: AudioStream
 ## Reserved for existing combat callers; this milestone does not add battle music.
 var level_track: AudioStream
@@ -72,7 +73,7 @@ func _ready() -> void:
 		morning.loop_begin = 0
 		morning.loop_end = int(morning.get_length() * morning.mix_rate)
 		_tracks["morning"] = morning
-	for key: String in ["alarm", "thump", "shuffle"]:
+	for key: String in ["alarm", "thump", "shuffle", "takeover", "meeting", "montage", "closing", "rewind"]:
 		_opening_cues[key] = load(SFX_PATH + "opening_" + key + ".wav") as AudioStreamWAV
 	for key: String in SOUND_IDS:
 		var stream: AudioStream = load(SFX_PATH + key + ".wav") as AudioStream
@@ -357,6 +358,8 @@ func stop_dialogue_blips(source: Control = null) -> void:
 		return # An old workspace cannot stop a newer speaker's sound.
 	if is_instance_valid(dialogue_player):
 		dialogue_player.stop()
+		dialogue_player.stream_paused = false
+	_opening_score = false
 	_dialogue_owner = null
 	_reaction_active = false
 
@@ -391,6 +394,28 @@ func play_opening_cue(cue: String, source: Control) -> void:
 	dialogue_player.play()
 
 
+func play_opening_score(cue: String, source: Control, at: float = 0.0) -> void:
+	if not _opening_cue_allowed(source) or not _opening_cues.has(cue):
+		return
+	stop_dialogue_blips()
+	_dialogue_owner = weakref(source)
+	_opening_score = true
+	_reaction_active = true
+	dialogue_player.pitch_scale = 1.0
+	dialogue_player.stream = _opening_cues[cue]
+	dialogue_player.play(at)
+
+
+func cut_opening_audio(source: Control) -> void:
+	if _opening_owner == null or _opening_owner.get_ref() != source:
+		return
+	_opening_morning = false
+	_desired_bgm = null
+	_kill_bgm_tween()
+	_stop_music()
+	_stop_effects()
+
+
 func set_opening_morning(source: Control, morning: bool) -> void:
 	if not is_instance_valid(source) or not source.is_inside_tree():
 		return
@@ -405,7 +430,9 @@ func pause_opening_audio(source: Control, value: bool) -> void:
 	if _opening_owner == null or _opening_owner.get_ref() != source:
 		return
 	_opening_paused = value
-	if value:
+	if _opening_score:
+		dialogue_player.stream_paused = value or _suspended()
+	elif value:
 		stop_dialogue_blips(source)
 	for deck: AudioStreamPlayer in _decks:
 		deck.stream_paused = _music_paused()

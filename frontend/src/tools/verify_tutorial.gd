@@ -4,6 +4,7 @@ var failures: int = 0
 var game: Control
 var player: Node
 var router: Node
+var practice_checked: bool = false
 
 
 func _initialize() -> void:
@@ -40,7 +41,7 @@ func response_index(outcome: String) -> int:
 func _run() -> void:
 	player = root.get_node("PlayerManager")
 	router = root.get_node("Router")
-	if "--opening-only" in OS.get_cmdline_user_args():
+	if "--opening-only" in OS.get_cmdline_user_args() or "--practice-only" in OS.get_cmdline_user_args():
 		await _run_opening_only()
 		return
 	var before: String = JSON.stringify(player.get_save_data())
@@ -446,17 +447,38 @@ func _check_opening() -> void:
 			var elapsed: float = opening._cinematic_tween.get_total_elapsed_time()
 			await create_timer(0.2).timeout
 			check(is_equal_approx(elapsed, opening._cinematic_tween.get_total_elapsed_time()), "Menu pauses cinematic timeline")
-			check(not root.get_node("AudioManager").dialogue_player.playing, "Menu stops source-owned laugh")
+			check(root.get_node("AudioManager").dialogue_player.stream_paused or not root.get_node("AudioManager").dialogue_player.playing, "Menu silences the source-owned cinematic score")
 			opening._close_menu()
 			if index == 5:
-				await create_timer(0.35).timeout
-				check(opening._red_wash.modulate.a > 0.5, "Takeover covers the scene in red before the phone reveal")
+				# Check the silent frame deterministically; first shader compilation can
+				# consume the short real-time window on a rendered CI/device run.
+				opening._cinematic_tween.pause()
+				var prior_time: float = opening._cinematic_time
+				opening._cinematic_frame(0.3)
+				check(opening._cinematic_time < 0.6 and not opening._reveal_done, "Takeover begins with the silent hold before any hit")
+				opening._cinematic_frame(prior_time)
+				opening._cinematic_tween.play()
+				await create_timer(0.8).timeout
+				check(opening._effects.time > 0.6 and opening._effects.time < 1.8 and not opening._reveal_done, "Red spreads from phone while buzz builds before reveal")
 				await capture_opening(opening, "red_takeover")
+			elif index == 6:
+				await create_timer(5.1).timeout
+				check(opening._scene_art.scale.x > 1.04, "Meeting slowly pushes toward the table")
+				check(opening._laugh_captions[4].get_theme_font_size("font_size") > opening._laugh_captions[0].get_theme_font_size("font_size"), "Hidden fifth laugh is the largest")
+				await capture_opening(opening, "meeting_laughs")
+			elif index == 7:
+				await create_timer(0.45).timeout
+				var panel_tap: InputEventMouseButton = InputEventMouseButton.new()
+				panel_tap.button_index = MOUSE_BUTTON_LEFT
+				panel_tap.pressed = true
+				opening._panel_input(panel_tap)
+				check(opening._effects.fast_panels == [0] and opening._cinematic_busy, "Tap accelerates only the active first panel, not the scene")
+				await capture_opening(opening, "victim_first")
 			elif index == 8:
-				await create_timer(1.0).timeout
+				await create_timer(3.0).timeout
 				check(opening._closing_caption.text == "And this is how it began…" and opening._closing_caption.modulate.a > 0.9, "Closing caption overlays the montage")
 				await capture_opening(opening, "closing_caption")
-			await create_timer(4.2).timeout
+			await create_timer(maxf(0.1, opening._cinematic_duration - opening._cinematic_time + 0.2)).timeout
 			check(not opening._cinematic_busy and opening._cinematic_next.visible, "Cinematic finishes with an accessible advance prompt")
 			if index == 5:
 				check(opening._art_id == "opening_john_got_you_v1" and opening._scene_art.texture == assets.get_texture(opening._art_id), "Red takeover reveals the cached Cloudinary Got You phone")
@@ -467,7 +489,7 @@ func _check_opening() -> void:
 				check(opening._laugh_captions.size() == 5, "Meeting uses five scattered laughing captions")
 				for laugh: Label in opening._laugh_captions:
 					check(laugh.text == "HAHAHAHA", "Meeting captions express laughter rather than label it")
-					check(laugh.visible and laugh.modulate.a == 1.0 and root.get_visible_rect().encloses(laugh.get_global_rect()), "Laughing caption is visible and fits landscape")
+				check(opening._black_fade.modulate.a == 1.0, "Meeting cuts to black after the single light dip")
 			await capture_opening(opening, "cinematic_%d" % index)
 			root.size = Vector2i(844, 390)
 			await settle()
@@ -609,51 +631,28 @@ func _check_opening() -> void:
 			cinematic_tap.button_mask = 0
 			root.push_input(cinematic_tap, true)
 			await settle()
+			if index == 8:
+				check(opening._rewinding and opening.part == "intro", "Final tap starts rewind, not an immediate tutorial jump")
+				opening.advance()
+				opening._open_menu()
+				var rewind_time: float = opening._cinematic_time
+				await create_timer(0.15).timeout
+				check(opening._cinematic_time == rewind_time, "Menu pauses rewind")
+				opening._close_menu()
+				await create_timer(0.25).timeout
+				await capture_opening(opening, "rewind")
+				await create_timer(1.0).timeout
 			check(opening.intro_index == index + 1 or opening.part == "tutorial", "Cinematic advance receives real pointer input above the empty workspace")
 		else:
 			opening.advance()
 	check(opening.part == "tutorial" and opening.step == "wake", "Full intro hands control to tutorial")
 	opening._back()
 	check(opening.part == "intro" and opening.intro_index == opening._intro().size() - 1, "Tutorial Back returns to previous intro scene")
-	await create_timer(4.2).timeout
+	await create_timer(6.2).timeout
 	opening.advance()
-	opening.go("inbox")
-	opening.go("message")
-	opening.go("respond")
-	opening.respond("link")
-	check(opening.step == "failure", "Uninspected link shows explanatory retry, not game over")
-	await settle()
-	await capture_opening(opening, "failure")
-	opening.retry()
-	check(opening.step == "message", "Retry returns to the same practice message")
-	opening.go("respond")
-	opening.respond("report")
-	check(opening.step == "review", "Safe response without evidence requests practice inspection")
-	opening.go("inspect")
-	opening.save_clue("sender")
-	check(opening.clues.is_empty(), "Cannot save an uninspected clue")
-	for id: String in ["sender", "link", "pressure"]:
-		opening.go("inspect")
-		opening.inspect_clue(id)
-		opening.save_clue(id)
-		opening.save_clue(id)
-	check(opening.clues.size() == 3, "Binder holds three distinct inspected clues without duplicates")
-	opening.go("binder")
-	await settle()
-	await capture_opening(opening, "binder")
-	opening.go("respond")
-	opening.respond("link")
-	check(opening.step == "failure", "Inspecting does not make the unsafe link safe")
-	opening.retry()
-	opening.go("respond")
-	opening.respond("report")
-	check(opening.step == "success", "Evidence plus safe response succeeds")
-	for response_id: String in ["ignore", "delete"]:
-		opening.go("respond")
-		opening.respond(response_id)
-		check(opening.step == "success", "Evidence plus " + response_id + " is a safe response")
-	opening.finish()
-	check(opening.step == "summary" and opening.state.pending_outcome == "completed", "Explicit tutorial completion then controls summary")
+	await create_timer(1.2).timeout
+	await _check_practice(opening)
+	check(practice_checked, "Practice verification reached its final assertion")
 	check(player.get_save_data() == before, "Replay changes no account, mastery, reward, lesson or assessment fields")
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
 		root.size = dimensions
@@ -677,13 +676,8 @@ func _check_opening() -> void:
 	await settle()
 	opening = router._stack.back()
 	check(opening.part == "tutorial" and opening.step == "wake", "Replay Tutorial bypasses intro")
-	(opening.data["message"] as Dictionary)["channel"] = "text"
 	opening.go("inbox")
-	var has_text_label: bool = false
-	for label: Node in opening._hero.find_children("*", "Label", true, false):
-		if (label as Label).text == str(opening.data.message.text_label):
-			has_text_label = true
-	check(has_text_label, "Notification channel switches from data only")
+	check(opening._phone_view != null and opening._phone_view.mode == "read", "Tutorial uses the new simulated phone")
 	opening.go("wake")
 	opening.skip()
 	check(opening.step == "summary", "Tutorial skip shows controls summary")
@@ -697,8 +691,7 @@ func _check_opening() -> void:
 	var settings: Node = root.get_node("SettingsService")
 	var reduced: bool = settings.reduced_motion
 	settings.reduced_motion = true
-	opening.go("respond")
-	opening.respond("link")
+	opening.go("failure")
 	check(opening._motion == null, "Reduced motion suppresses shake and strong visual effects")
 	opening.go("wake")
 	check(opening._eyelids == null, "Reduced motion suppresses eyelid effect")
@@ -716,10 +709,40 @@ func _check_opening() -> void:
 	for cinematic_index: int in [5, 6, 7, 8]:
 		opening.intro_index = cinematic_index
 		opening._render()
-		check(not opening._cinematic_busy and opening._cinematic_tween == null and opening._scene_art.position == Vector2.ZERO, "Reduced motion skips cinematic shake and timed effects")
+		opening._cinematic_tween.pause()
+		opening._cinematic_frame(2.9)
+		check(opening._effects.reduced and opening._scene_art.position == Vector2.ZERO and opening._scene_art.scale == Vector2.ONE and opening._scene_art.material == null, "Reduced motion retains pacing but removes camera movement and RGB split")
 		if cinematic_index == 8:
-			check(opening._closing_caption.modulate.a == 1.0, "Reduced motion keeps the closing words readable")
+			check(opening._closing_caption.modulate.a == 1.0 and opening._closing_caption.visible_characters == opening._closing_caption.text.length(), "Reduced motion keeps complete closing words readable")
 	settings.reduced_motion = false
+	# App interruption must pause the timeline and seek the score on return,
+	# including returning while Menu is still open.
+	opening.intro_index = 6
+	opening._render()
+	await create_timer(0.1).timeout
+	var cinematic_audio: Node = root.get_node("AudioManager")
+	var paused_at: float = opening._cinematic_time
+	cinematic_audio._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	opening._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	await create_timer(0.1).timeout
+	check(opening._cinematic_time == paused_at and not cinematic_audio.dialogue_player.playing, "Focus loss freezes the cinematic and stops its score")
+	opening._open_menu()
+	cinematic_audio._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	opening._notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
+	check(opening._cinematic_time == paused_at, "Foreground does not resume beneath an open menu")
+	opening._close_menu()
+	check(cinematic_audio.dialogue_player.playing, "Closing Menu restores the interrupted score at the timeline offset")
+	# Cancelling rewind cannot fire its delayed transition into practice.
+	opening.intro_index = 8
+	opening._render()
+	opening._cinematic_tween.kill()
+	opening._finish_cinematic_visual()
+	opening.advance()
+	check(opening._rewinding, "Rewind starts after the closing card")
+	opening.skip()
+	await create_timer(1.2).timeout
+	check(opening.part == "tutorial" and opening.step == "wake" and not opening._rewinding, "Skip cancels rewind without a stale transition")
+	opening.part = "intro"
 	opening.intro_index = 5
 	opening._render()
 	await create_timer(1.1).timeout
@@ -736,10 +759,10 @@ func _check_opening() -> void:
 	var sample: Dictionary = before.duplicate(true)
 	sample["tutorial_complete"] = false
 	sample["tutorial_skipped"] = false
-	sample["onboarding_state"] = {"part": "tutorial", "step": "binder", "intro_status": "completed", "tutorial_status": "in_progress", "clues": ["sender", "link", "pressure"]}
+	sample["onboarding_state"] = {"version": 5, "part": "tutorial", "step": "capture", "intro_status": "completed", "tutorial_status": "in_progress", "practice": {"flags": ["reward", "pressure", "password"], "sender_opened": true, "domain": "prize-claim.example"}}
 	player.apply_save_data(JSON.parse_string(JSON.stringify(sample)) as Dictionary)
 	check(router.student_home_screen() == &"opening", "Interrupted onboarding remains eligible after reload")
-	check(player.onboarding_state.clues.size() == 3 and player.onboarding_state.step == "binder", "Clues and resume step survive snapshot serialization")
+	check(player.onboarding_state.practice.flags.size() == 3 and player.onboarding_state.step == "capture", "Hands-on evidence and resume step survive snapshot serialization")
 	player.tutorial_skipped = true
 	check(router.student_home_screen() == &"dashboard", "Skipped account goes to hub")
 	player.tutorial_skipped = false
@@ -786,6 +809,246 @@ func _check_opening_laugh(opening: Control) -> void:
 	audio._focus_lost = previous[5]
 
 
+func _check_practice(opening: Control) -> void:
+	practice_checked = false
+	opening.go("inbox")
+	var phone: Control = opening._phone_view
+	check(phone._app == "lock", "Practice begins on alarm lockscreen")
+	phone._dismiss_alarm()
+	await create_timer(2.0).timeout
+	phone._open_story_email()
+	await settle()
+	check(phone._app == "mail", "Alarm and PIN lead to Mail")
+	check(opening._advance_button.visible, "Reading enables the outside-phone decision prompt")
+	opening._advance_pressed()
+	await settle()
+	check(opening.step == "choice", "Reading leads to three decisions")
+	await capture_opening(opening, "practice_choices")
+	await create_timer(1.0).timeout
+	await capture_opening(opening, "practice_decisions_revealed")
+	print("[ITEM LAYOUT] host=", opening._phone_host.get_global_rect(), " phone=", opening._phone_view.get_global_rect(), " shell=", opening._phone_view._shell.get_global_rect(), " visible=", opening._phone_view._shell.is_visible_in_tree(), " scale=", opening._phone_view.scale)
+	check(opening._practice_buttons.size() == 3, "Three left-side decisions outside the phone")
+	check(opening._event_layout and opening._dialogue.visible, "Item introduction keeps bottom narration")
+	check(opening._practice_card.get_global_rect().end.x < opening._item_card.get_global_rect().position.x, "Choices sit to the left of the item showcase")
+	check(opening._phone_view._locked, "Decision overlay locks the background phone")
+	var decision_tap: InputEventMouseButton = InputEventMouseButton.new()
+	decision_tap.button_index = MOUSE_BUTTON_LEFT
+	decision_tap.pressed = true
+	decision_tap.position = opening._practice_buttons[0].get_global_rect().get_center()
+	root.push_input(decision_tap, true)
+	var decision_release: InputEventMouseButton = decision_tap.duplicate() as InputEventMouseButton
+	decision_release.pressed = false
+	root.push_input(decision_release, true)
+	await settle()
+	check(opening.step == "claim", "Claim opens fictional password page")
+	phone = opening._phone_view
+	check(phone.find_children("*", "LineEdit", true, false).is_empty(), "No real password input")
+	phone._request_action("failure")
+	check(opening.step == "claim", "Submission requires the staged keyboard first")
+	phone._type_password()
+	opening._open_menu()
+	await create_timer(0.3).timeout
+	check(not phone._password_ready, "Menu pauses keyboard animation")
+	opening._close_menu()
+	await create_timer(1.6).timeout
+	check(phone._password_ready and phone._password_field.text.length() == 8, "Scripted keyboard types masked fictional password")
+	check(not phone._close.visible and phone._password_submit.visible, "Only Submit remains in the prize app")
+	await capture_opening(opening, "practice_password")
+	phone._request_action("failure")
+	await settle()
+	check(opening.step == "failure", "Password submission reaches explanatory bad ending")
+	opening.retry()
+	await create_timer(1.0).timeout
+	check(opening.step == "choice", "Retry returns to the decision showcase")
+	opening._practice_buttons[1].pressed.emit()
+	await settle()
+	check(opening.step == "safe", "Deleting is a safe ending")
+	opening._phone_view._request_action("inspect")
+	await settle()
+	check(opening.step == "inspect_intro", "Investigation has a title and item showcase")
+	await create_timer(1.2).timeout
+	opening._practice_buttons[0].pressed.emit()
+	await settle()
+	phone = opening._phone_view
+	check(phone._domain_input == null, "Domain entry is absent from highlighting")
+	check(phone.find_child("InspectSender", true, false) == null, "Sender task stays hidden until flags are complete")
+	phone.mark_flag("greeting")
+	check((phone.evidence.get("flags", []) as Array).is_empty(), "Greeting alone is not evidence")
+	check(is_instance_valid(opening._thought_label) and phone._locked, "Outside thought bubble pauses interaction")
+	opening._dismiss_thought()
+	phone.set_locked(true)
+	phone.mark_flag("password")
+	check((phone.evidence.get("flags", []) as Array).is_empty(), "Paused phone rejects evidence input")
+	phone.set_locked(false)
+	for id: String in ["reward", "pressure", "password"]:
+		phone.mark_flag(id)
+		await create_timer(0.2).timeout
+		await capture_opening(opening, "thought_" + id)
+		opening._dismiss_thought()
+		await settle()
+	check(opening.step == "next_issue", "Third flag leads to the next-issue transition")
+	check(opening.practice.flags.size() == 3, "Three distinct flags saved")
+	await create_timer(1.7).timeout
+	await capture_opening(opening, "practice_next_issue")
+	opening._practice_buttons[0].pressed.emit()
+	await settle()
+	check(opening.step == "sender", "Sender is a separate investigation")
+	phone = opening._phone_view
+	phone._show_practice_sender()
+	check(phone._domain_input == null, "Mail never embeds the notes field")
+	opening._dismiss_thought()
+	phone._request_action("notes")
+	await settle()
+	phone = opening._phone_view
+	check(opening.step == "notes" and phone._app == "home", "Sender task returns to home to open Notepad")
+	await capture_opening(opening, "practice_notes_home")
+	var notepad_icon: Button = phone.find_child("NotepadIcon", true, false) as Button
+	check(notepad_icon != null, "Notebook home icon is available")
+	notepad_icon.pressed.emit()
+	await settle()
+	check(phone._title.text == "Notepad", "Separate Notepad app opens")
+	phone._domain_input.text = "prize-c1aim.example"
+	phone.check_domain()
+	check(not phone.ready_for_capture(), "Lookalike domain rejected")
+	opening._dismiss_thought()
+	phone._domain_input.text = " PRIZE-CLAIM.EXAMPLE "
+	phone.check_domain()
+	check(phone.ready_for_capture(), "Exact normalized domain completes Notepad")
+	opening._dismiss_thought()
+	await settle()
+	await capture_opening(opening, "practice_notepad")
+	phone._close_app()
+	phone._open_story_email()
+	await settle()
+	phone._request_action("notes")
+	check(phone._app == "home", "Reopened Mail returns to Notepad home")
+	phone._open_notepad()
+	await settle()
+	check(phone._domain_input.text == "prize-claim.example", "Saved domain survives switching apps")
+	phone._request_action("capture")
+	await settle()
+	phone = opening._phone_view
+	await phone.take_photo()
+	check(opening.step == "capture", "Incomplete framing cannot produce evidence")
+	phone._camera.nudge(Vector2(-0.10, -0.15))
+	phone._camera.grow_frame(Vector2(0.30, 0.50))
+	check(phone._camera.complete(), "Tap controls can frame all context without dragging")
+	var camera: Control = phone._camera
+	var before_drag: Rect2 = camera.frame
+	var touch: InputEventScreenTouch = InputEventScreenTouch.new()
+	touch.index = 0
+	touch.pressed = true
+	touch.position = camera.size * camera.frame.get_center()
+	camera._gui_input(touch)
+	var drag: InputEventScreenDrag = InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = touch.position - Vector2(10, 10)
+	camera._gui_input(drag)
+	touch.pressed = false
+	camera._gui_input(touch)
+	check(camera.frame.position != before_drag.position, "Touch dragging moves the camera frame")
+	camera.frame = before_drag
+	camera._commit()
+	await settle()
+	await capture_opening(opening, "practice_camera")
+	await phone.take_photo()
+	await settle()
+	check(opening.step == "submit" and opening.practice.captured, "Capture advances with local exhibit metadata")
+	var saved_practice: Dictionary = JSON.parse_string(JSON.stringify(opening.practice)) as Dictionary
+	opening.practice = saved_practice
+	opening._normalize_practice_step()
+	check(opening.step == "submit" and opening._practice_ready(), "JSON round-trip preserves evidence and domain gates")
+	if DisplayServer.get_name() != "headless":
+		check(opening._evidence_preview != null, "Rendered capture supplies an actual image preview")
+	await capture_opening(opening, "practice_submission")
+	phone = opening._phone_view
+	phone.send_evidence()
+	phone.send_evidence()
+	opening._open_menu()
+	await create_timer(1.5).timeout
+	check(opening.step == "submit" and not bool(opening.practice.get("sealed", false)), "Menu pauses evidence sending")
+	opening._close_menu()
+	await create_timer(1.6).timeout
+	check(opening.step == "sealed" and opening.practice.sealed, "Submission seals once after resume")
+	opening.go("submit")
+	phone = opening._phone_view
+	phone.send_evidence()
+	opening._notification(Control.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	await create_timer(1.5).timeout
+	check(phone._sending, "Backgrounded app pauses evidence animation")
+	opening._notification(Control.NOTIFICATION_APPLICATION_FOCUS_IN)
+	opening.go("sealed")
+	await create_timer(1.5).timeout
+	check(opening.step == "sealed", "Replacing the phone cancels its old sending callback")
+	opening.go("closing")
+	opening.finish()
+	check(opening.step == "closing", "Closing caption cannot be skipped by duplicate completion")
+	await create_timer(3.0).timeout
+	await capture_opening(opening, "practice_closing")
+	check(opening._closing_caption.text == "If only John thought of this before....", "Freeze-frame uses requested caption")
+	opening.finish()
+	check(opening.step == "summary" and opening.state.pending_outcome == "completed", "Sealed exhibit leads to explicit tutorial completion")
+	check(is_instance_valid(opening._celebration), "Completed tutorial displays celebration")
+	opening._open_menu()
+	var celebration_time: float = opening._celebration.time
+	await create_timer(0.2).timeout
+	check(opening._celebration.time == celebration_time, "Menu pauses confetti")
+	opening._close_menu()
+	await capture_opening(opening, "practice_complete")
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		for screen_step: String in ["choice", "inspect_intro", "next_issue", "inspect", "notes", "capture", "submit", "summary"]:
+			opening.go(screen_step)
+			await settle()
+			if screen_step in ["choice", "inspect_intro", "next_issue"]:
+				await create_timer(1.3).timeout
+				for button: Button in opening._practice_buttons:
+					check(button.visible and not button.disabled and root.get_visible_rect().encloses(button.get_global_rect()), "Choice bars are visible and fit landscape")
+					check(button.get_global_rect().end.y <= opening._dialogue.get_global_rect().position.y, "Choices do not overlap bottom dialogue")
+				check(root.get_visible_rect().encloses(opening._item_card.get_global_rect()), "Right item card fits landscape")
+				check(not opening._item_card.get_global_rect().intersects(opening._dialogue.get_global_rect()), "Item card stays above dialogue")
+			if screen_step == "summary":
+				check(is_instance_valid(opening._celebration), "Completion celebration exists in both landscape layouts")
+				await create_timer(0.8).timeout
+				for button: Button in opening._practice_buttons:
+					check(root.get_visible_rect().encloses(button.get_global_rect()), "Completion actions fit landscape")
+				await capture_opening(opening, "celebration_%dx%d" % [dimensions.x, dimensions.y])
+				continue
+			check(root.get_visible_rect().encloses(opening._phone_host.get_global_rect()), "Practice phone host fits landscape")
+			check(root.get_visible_rect().encloses(opening._phone_view._close.get_global_rect()), "Phone Close stays reachable in landscape")
+			if screen_step == "capture":
+				var scroll: ScrollContainer = opening._phone_view._content.get_parent()
+				check(opening._phone_view._camera.size.y <= scroll.size.y, "Entire camera sheet can fit in phone viewport")
+				check(root.get_visible_rect().encloses(opening._phone_view._camera_tools.get_global_rect()), "Camera tools stay reachable outside the dragging surface")
+				opening._phone_view._toggle_camera_tools()
+				check(opening._phone_view._tools_open, "Tools button opens tap framing controls")
+				opening._phone_view._toggle_camera_tools()
+			await capture_opening(opening, screen_step + "_%dx%d" % [dimensions.x, dimensions.y])
+			var phone_scroll: ScrollContainer = opening._phone_view._content.get_parent()
+			phone_scroll.scroll_vertical = int(phone_scroll.get_v_scroll_bar().max_value)
+			await settle()
+			await capture_opening(opening, screen_step + "_bottom_%dx%d" % [dimensions.x, dimensions.y])
+	opening.go("summary")
+	var completed: Dictionary = opening.practice.duplicate(true)
+	opening.practice = {"flags": [], "domain": "not-a-domain", "captured": true, "sealed": true}
+	opening.go("closing")
+	check(opening.step == "inspect" and not opening.practice.has("domain"), "Incomplete resume cannot skip investigation or retain arbitrary text")
+	opening.practice = completed
+	opening.state["pending_outcome"] = "completed"
+	opening.go("summary")
+	var settings: Node = root.get_node("SettingsService")
+	var old_reduced: bool = settings.reduced_motion
+	settings.reduced_motion = true
+	opening.go("summary")
+	check(opening._celebration.reduced, "Reduced motion disables falling confetti")
+	opening.skip()
+	check(not is_instance_valid(opening._celebration), "Skipping never displays the completion celebration")
+	settings.reduced_motion = old_reduced
+	opening.state["pending_outcome"] = "completed"
+	opening.go("summary")
+	practice_checked = true
+
+
 func capture_opening(_opening: Control, label: String) -> void:
 	if "--render" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
@@ -801,7 +1064,16 @@ func _run_opening_only() -> void:
 	check(navigation_script.reload() == OK, "Opening-only navigation fixture compiles")
 	shell.set_script(navigation_script)
 	root.add_child(shell)
-	await _check_opening()
+	if "--practice-only" in OS.get_cmdline_user_args():
+		await router.start_tutorial(true)
+		await settle()
+		var opening: Control = router._stack.back()
+		var before: Dictionary = player.get_save_data()
+		await _check_practice(opening)
+		check(practice_checked, "Practice fixture reached its final assertion")
+		check(player.get_save_data() == before, "Tutorial replay never changes account data")
+	else:
+		await _check_opening()
 	for screen: BaseScreen in router._stack:
 		screen.on_exit()
 	router._stack.clear()

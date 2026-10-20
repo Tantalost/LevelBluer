@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 6,
   "room_art": "opening_john_room_wake_v1",
   "after_intro": "tutorial",
   "cast": {
@@ -28,9 +28,9 @@
     {"id": "tap", "title": "One tempting promise", "speaker": "player", "text": "I open the message. It asks me to follow a link and confirm my account password to claim the prize.", "visual": "phone", "opened": true},
     {"id": "claim", "title": "What if it is real?", "speaker": "player", "text": "A million pesos. For a moment, I imagine it. Before checking who sent the offer, I tap Claim Prize.", "visual": "room", "art_path": "opening_john_claim_prize_v1"},
     {"id": "hit", "visual": "takeover", "art_path": "opening_john_claim_prize_v1", "reveal_art": "opening_john_got_you_v1"},
-    {"id": "collector", "visual": "meeting", "art_path": "opening_collector_meeting_v1"},
-    {"id": "victims", "visual": "montage", "art_path": "opening_five_victims_v1"},
-    {"id": "turn", "visual": "closing", "caption": "And this is how it began…", "art_path": "opening_five_victims_v1"}
+    {"id": "collector", "visual": "meeting", "art_path": "opening_collector_meeting_v2"},
+    {"id": "victims", "visual": "montage", "art_path": "opening_five_victims_v3"},
+    {"id": "turn", "visual": "closing", "caption": "And this is how it began…", "art_path": "opening_five_victims_v3"}
   ],
   "panels": {
     "amani": {"character": "amani", "emotion": "Confused", "caption": "Her phone has no signal. Her friends receive messages that appear to be hers. Someone is using the trust attached to her identity.", "art_path": "res://assets/story/comic_panel_amani_placeholder.svg"},
@@ -45,22 +45,27 @@
     {"id": "claim", "title": "What is promised?", "value": "₱1,000,000 from a selection I did not enter", "note": "An unexpected reward plus a password request is a reason to stop. A prize should not need your account password."}
   ],
   "tutorial": {
-    "wake": {"title": "That morning, again", "text": "I am back beside my phone. This is practice: I can pause, go back, or leave at any time."},
-    "inbox": {"title": "A message arrives", "text": "Tap the notification on the phone to open the message. Opening it here is not the same as following its link."},
-    "message": {"title": "The promise is back", "text": "I can inspect the request before deciding. Tap Inspect to reveal details, or choose a response."},
-    "inspect": {"title": "Look beyond the promise", "text": "Tap a detail to examine it. Save at least three different clues to the Evidence Binder. Nothing here opens a real website."},
-    "binder": {"title": "Evidence Binder", "text": "These are the clues I saved for this practice. I can return to the message and choose a response."},
-    "respond": {"title": "What will I do?", "text": "Checking a message does not make its link safe. Choose an action that protects the account."},
-    "failure": {"title": "Got you.", "text": "This practice shows the trap, not an automatic infection. Following a prize link can lead to a page that asks for secrets. Opening the email alone did not cause that. Check the sender, destination, pressure, and reward claim before acting. The attacker designed the deception; this is not your fault."},
-    "review": {"title": "A safer choice — now find the evidence", "text": "You avoided the link. Before finishing this practice, inspect and save three clues so you can explain what made the request unsafe."},
-    "success": {"title": "My account stays mine", "text": "I kept my password private and did not follow the prize link. My evidence explains the warning signs. Familiar isn't verified."},
-    "summary": {"title": "Your controls, your pace", "text": "Tap a message to read it. Use Inspect to examine details. Save useful clues to the Evidence Binder. Choose a response after checking. Back revisits a step; Menu lets you pause or leave. Replay Intro and Replay Tutorial are in Settings. You can start Module 1 from Lessons; its existing learning requirements still apply."}
+    "wake": {"title": "That morning, again", "text": "That message again. A million pesos… but why would they choose me? This time, I can stop and look."},
+    "inbox": {"title": "One unread message", "text": "My phone is buzzing. I unlock it and open Mail. Reading an email is not the same as trusting its link."},
+    "choice": {"title": "Before I act", "text": "The offer sounds tempting. Do I claim it, delete it, or find out what this message is really asking for?"},
+    "inspect_intro": {"title": "A closer look", "text": "Before I do anything, I'll look at what this message is asking me to believe—and what it wants me to do."},
+    "next_issue": {"title": "One more thing", "text": "I've noticed the promises and the pressure. Now I'll check who actually sent this message."},
+    "sender": {"title": "Who is behind the name?", "text": "Prize Desk sounds official, but a name is easy to copy. I will open the sender's full address."},
+    "notes": {"title": "A note to remember", "text": "I'll open Notepad and record the sender's domain. If I forget it, I can go back to Mail and check."},
+    "claim": {"title": "A prize with a price", "text": "The page wants my account password. Why would anyone need that to give me a prize? No real password belongs here."},
+    "failure": {"title": "The secret was the target", "text": "In this imagined ending, I gave the fake page a password. That could let an attacker access my account. Opening the email alone did not cause it. The deception was theirs; I can rewind and choose differently."},
+    "safe": {"title": "No prize, no risk taken", "text": "I deleted the request without sharing anything. That was a safe choice. But what did I miss? I can revisit a practice copy and investigate—or leave for now."},
+    "inspect": {"title": "Look closer", "text": "What is the offer, why the rush, and what secret do they want? I will mark the clues and read the full sender address."},
+    "capture": {"title": "Keep the context", "text": "Drag the frame; its blue corner resizes. Keep the sender, subject and request together. TOOLS offers tap controls and Capture."},
+    "submit": {"title": "Build the exhibit", "text": "The message, the sender's domain, and my warning signs belong together. This is the practice desk: sending here stays inside the game."},
+    "sealed": {"title": "Practice exhibit sealed", "text": "I kept my password private and preserved the evidence. I know what made this request unsafe—not just which button to press."},
+    "closing": {"title": "A different morning", "text": "If only John thought of this before...."},
+    "summary": {"title": "TUTORIAL COMPLETE", "text": "You examined a request, recorded its sender, captured the context and sealed a practice exhibit. Your next story is still ahead. This tutorial awards no coins or mastery."}
   },
   "responses": [
-    {"id": "ignore", "label": "Ignore the request", "safe": true, "feedback": "I leave the request unanswered and keep my credentials private."},
-    {"id": "report", "label": "Report as suspicious", "safe": true, "feedback": "I use the practice report control. No message or report is sent outside this simulation."},
-    {"id": "delete", "label": "Delete the message", "safe": true, "feedback": "I remove the practice message without following its link. My saved clues remain in the Binder."},
-    {"id": "link", "label": "Follow the prize link", "safe": false, "feedback": ""}
+    {"id": "claim", "label": "Claim the prize"},
+    {"id": "delete", "label": "Delete and move on"},
+    {"id": "inspect", "label": "Check the message first"}
   ],
   "ui": {
     "intro": "OPENING", "tutorial": "PHONE PRACTICE", "phone_status": "•••                 ▰", "back": "< BACK", "skip": "SKIP", "menu": "MENU",

@@ -3,6 +3,7 @@ extends BaseScreen
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 const DATA_PATH: String = "res://data/student_opening.json"
 const STORY_PHONE: GDScript = preload("res://src/gameplay/decision/opening_phone.gd")
+const PRACTICE_PHONE: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
 const BG: Color = Color("050B18")
 const PANEL: Color = Color("0A1730")
 const CARD: Color = Color("102040")
@@ -29,16 +30,93 @@ class HiddenFigure extends Control:
 		for line: int in range(0, int(size.y), 12):
 			draw_line(Vector2(size.x * 0.18, line), Vector2(size.x * 0.82, line), Color(0.31, 0.88, 0.83, 0.08))
 
+class CinematicEffects extends Control:
+	## Presentation-only layers; timeline values come from the owning screen.
+	var mode: String = ""
+	var time: float = 0.0
+	var reduced: bool = false
+	var texture: Texture2D
+	var fast_panels: Array[int] = []
+	var panel_edges: PackedFloat32Array = [0.0, 0.2177, 0.407, 0.597, 0.785, 1.0]
+	var art_rect: Rect2
+	func _radial(at: Vector2, radius: float, ink: Color) -> void:
+		for ring: int in range(20, 0, -1):
+			draw_circle(at, radius * ring / 20.0, Color(ink, ink.a / 10.0))
+	func _draw() -> void:
+		match mode:
+			"takeover":
+				var origin: Vector2 = art_rect.position + art_rect.size * Vector2(0.50, 0.52)
+				if time >= 0.6 and time < 1.8:
+					var spread: float = clampf((time - 0.6) / 1.2, 0, 1)
+					if reduced:
+						draw_rect(Rect2(Vector2.ZERO, size), Color(0.52, 0.04, 0.08, spread * 0.25))
+					else:
+						_radial(origin, size.length() * spread, Color(0.70, 0.03, 0.08, 0.55))
+				elif time >= 1.8:
+					var tail: float = clampf((3.0 - time) / 1.2, 0, 1)
+					draw_rect(Rect2(Vector2.ZERO, size), Color(0.55, 0.02, 0.06, tail * 0.20))
+					var breath: float = sin(PI * clampf((time - 3.0) / 2.5, 0, 1))
+					if not reduced:
+						_radial(origin, size.y * 0.30, Color(1, 0.03, 0.08, breath * 0.12))
+			"meeting":
+				# One dim/recover cycle at the four lamps, then a cut. No strobe.
+				if time >= 6.0 and time < 6.65:
+					var dip: float = sin(PI * (time - 6.0) / 0.65) * (0.25 if reduced else 0.75)
+					for x: float in [0.167, 0.356, 0.642, 0.833]:
+						_radial(art_rect.position + art_rect.size * Vector2(x, 0.16), art_rect.size.y * 0.20, Color(0, 0, 0, dip))
+			"montage", "closing":
+				_draw_victims()
+			"rewind":
+				draw_rect(Rect2(Vector2.ZERO, size), Color.BLACK)
+				var center: Vector2 = size * 0.5
+				var radius: float = minf(size.x, size.y) * 0.095
+				var alpha: float = sin(PI * clampf(time, 0, 1))
+				var ink: Color = Color("8FF0E6", alpha)
+				draw_arc(center, radius, 0, TAU, 48, ink, 3, true)
+				for tick: int in 12:
+					var direction: Vector2 = Vector2.from_angle(tick * TAU / 12.0)
+					draw_line(center + direction * radius * 0.85, center + direction * radius, ink, 2)
+				var angle: float = -PI * 0.5 if reduced else -PI * 0.5 - time * TAU * 2.0
+				draw_line(center, center + Vector2.from_angle(angle) * radius * 0.78, ink, 4, true)
+				draw_line(center, center + Vector2.from_angle(angle * 0.35) * radius * 0.45, ink, 4, true)
+	func _draw_victims() -> void:
+		if texture == null:
+			return
+		var texture_size: Vector2 = texture.get_size()
+		var fit: float = minf(size.x / texture_size.x, size.y / texture_size.y)
+		var bounds: Rect2 = Rect2((size - texture_size * fit) * 0.5, texture_size * fit)
+		for index: int in 5:
+			var progress: float = 1.0 if mode == "closing" or fast_panels.has(index) else clampf((time - 0.4 - index * 0.7) / 0.6, 0, 1)
+			if progress <= 0.0:
+				continue
+			var region: Rect2 = Rect2(texture_size * Vector2(panel_edges[index], 0), texture_size * Vector2(panel_edges[index + 1] - panel_edges[index], 1))
+			var target: Rect2 = Rect2(bounds.position + Vector2(bounds.size.x * index / 5.0, 0), Vector2(bounds.size.x / 5.0, bounds.size.y))
+			var zoom: float = 1.0 if reduced else lerpf(1.0, 1.05, progress)
+			var cover: float = maxf(target.size.x / region.size.x, target.size.y / region.size.y) * zoom
+			var crop_size: Vector2 = target.size / cover
+			region.position += (region.size - crop_size) * Vector2(0.5, 0.47)
+			region.size = crop_size
+			draw_texture_rect_region(texture, target, region, Color(1, 1, 1, progress))
+			draw_line(target.position, target.position + Vector2(0, target.size.y), Color("050B18"), 3)
+		var line_progress: float = 1.0 if mode == "closing" else clampf((time - 5.2) / 1.2, 0, 1)
+		if line_progress > 0:
+			var tighten: float = clampf(time / 1.8, 0, 1) if mode == "closing" else 0.0
+			var start: Vector2 = bounds.position + bounds.size * Vector2(lerpf(0.025, 0.5, tighten), 0.71)
+			var end: Vector2 = bounds.position + bounds.size * Vector2(lerpf(0.975, 0.5, tighten), 0.71)
+			end = start.lerp(end, line_progress)
+			var glow: float = maxf(0, sin(PI * (time - 6.4) / 1.2)) if mode == "montage" and time < 7.6 else 0.0
+			if reduced:
+				glow = 0.0
+			draw_line(start, end, Color(1, 0.10, 0.18, 0.12 + glow * 0.18), 9, true)
+			draw_line(start, end, Color("FF5C5C"), 2, true)
+
 var data: Dictionary = {}
 var state: Dictionary = {}
 var replay: bool = false
 var part: String = "intro"
 var step: String = "wake"
 var intro_index: int = 0
-var clues: Array[String] = []
-var inspected: Array[String] = []
 var history: Array[Dictionary] = []
-var feedback: String = ""
 var _layout: VBoxContainer
 var _header: HBoxContainer
 var _body: HBoxContainer
@@ -81,6 +159,89 @@ var _art_id: String = ""
 var _art_fallback: Label
 var _waking: bool = false
 var _wake_phase: String = ""
+var _effects: CinematicEffects
+var _cinematic_time: float = 0.0
+var _cinematic_duration: float = 0.0
+var _cinematic_mode: String = ""
+var _rewinding: bool = false
+var _reveal_done: bool = false
+var _glitch_until: int = -1
+var _rgb_material: ShaderMaterial
+var _cinematic_focus_lost: bool = false
+var _cinematic_app_paused: bool = false
+var practice: Dictionary = {}
+var _practice_layer: Control
+var _practice_tween: Tween
+var _practice_buttons: Array[Button] = []
+var _thought_label: Label
+var _thought_done: bool = false
+var _celebration: CelebrationArt
+var _practice_margin: MarginContainer
+var _practice_card: PanelContainer
+var _practice_blurred: bool = true
+var _event_layout: bool = false
+var _item_card: PanelContainer
+var _item_caption: Label
+
+class ChoiceIcon extends Control:
+	var kind: int = 0
+	func _draw() -> void:
+		var center: Vector2 = size * 0.5
+		draw_circle(center, 20, Color("8FF0E6"))
+		draw_arc(center, 23, 0, TAU, 40, Color("4FE0D4", 0.35), 1.5, true)
+		var ink: Color = Color("101623")
+		match kind:
+			0: # Envelope: claim.
+				draw_rect(Rect2(center - Vector2(11, 8), Vector2(22, 16)), ink, false, 2)
+				draw_polyline(PackedVector2Array([center + Vector2(-11, -8), center, center + Vector2(11, -8)]), ink, 2)
+			1: # Delete.
+				draw_rect(Rect2(center - Vector2(7, 5), Vector2(14, 16)), ink, false, 2)
+				draw_line(center + Vector2(-10, -8), center + Vector2(10, -8), ink, 2)
+				draw_line(center + Vector2(-4, -12), center + Vector2(4, -12), ink, 2)
+			2: # Inspect.
+				draw_arc(center - Vector2(3, 3), 8, 0, TAU, 24, ink, 2, true)
+				draw_line(center + Vector2(3, 3), center + Vector2(12, 12), ink, 3, true)
+			_:
+				draw_polyline(PackedVector2Array([center + Vector2(-4, -8), center + Vector2(5, 0), center + Vector2(-4, 8)]), ink, 3)
+
+class CelebrationArt extends Control:
+	var time: float = 0.0:
+		set(value):
+			time = value
+			queue_redraw()
+	var reduced: bool = false
+	var emblem_only: bool = false
+	func _draw() -> void:
+		if emblem_only:
+			var c: Vector2 = size * 0.5
+			draw_circle(c, 52, Color("153B37"))
+			draw_arc(c, 57, 0, TAU, 64, Color("FFB648"), 3)
+			draw_rect(Rect2(c - Vector2(34, 24), Vector2(68, 48)), Color("173058"))
+			draw_polyline(PackedVector2Array([c + Vector2(-34, -24), c, c + Vector2(34, -24)]), Color("4FE0D4"), 3)
+			draw_circle(c + Vector2(23, 23), 17, Color("33D17A"))
+			draw_polyline(PackedVector2Array([c + Vector2(14, 23), c + Vector2(21, 30), c + Vector2(33, 16)]), Color("101623"), 3)
+			return
+		if reduced or time > 3.0:
+			return
+		var colors: Array[Color] = [Color("4FE0D4"), Color("FFB648"), Color("F3ECD6")]
+		for index: int in 60:
+			var phase: float = float(index % 7) * 0.045
+			var elapsed: float = maxf(0, time - phase)
+			var x: float = size.x * 0.5 + sin(index * 2.399) * elapsed * size.x * 0.48
+			var y: float = size.y * 0.3 - elapsed * (90 + index % 90) + elapsed * elapsed * 170
+			var ink: Color = colors[index % 3]
+			ink.a *= clampf((3.0 - time) / 0.6, 0, 1)
+			draw_set_transform(Vector2(x, y), elapsed * (index % 5 + 1))
+			draw_rect(Rect2(-4, -2, 8, 4), ink)
+		draw_set_transform(Vector2.ZERO)
+
+class ThoughtTail extends Control:
+	func _draw() -> void:
+		draw_circle(Vector2.ZERO, 12, Color("4FE0D4"))
+		draw_circle(Vector2.ZERO, 10, Color("F3ECD6"))
+		draw_circle(Vector2(24, 18), 7, Color("F3ECD6"))
+		draw_circle(Vector2(42, 30), 4, Color("F3ECD6"))
+var _evidence_preview: Texture2D
 
 
 func _ready() -> void:
@@ -96,28 +257,31 @@ func _ready() -> void:
 func on_enter(args: Dictionary) -> void:
 	replay = bool(args.get("replay", false))
 	state = PlayerManager.onboarding_state.duplicate(true) if not replay else {}
+	var old_version: int = int(state.get("version", 1))
 	_migrate_art_sequence(state)
+	if old_version < 5 and not state.is_empty():
+		# Old click-to-save evidence does not satisfy the hands-on activities.
+		state["step"] = "wake"
+		state["history"] = []
+		state.erase("practice")
+		state.erase("pending_outcome")
+	practice = (state.get("practice", {}) as Dictionary).duplicate(true)
 	part = str(args.get("part", state.get("part", "intro")))
 	if part not in ["intro", "tutorial"]:
 		part = "intro"
 	intro_index = clampi(int(state.get("intro_index", 0)), 0, _intro().size() - 1)
 	step = str(state.get("step", "wake"))
-	if not (data.get("tutorial", {}) as Dictionary).has(step) and not step.begins_with("clue/"):
+	if not (data.get("tutorial", {}) as Dictionary).has(step):
 		step = "wake"
 	if args.has("part"):
 		intro_index = 0
 		step = "wake"
-	for entry: Variant in state.get("clues", []):
-		if _clue(str(entry)).size() > 0 and not clues.has(str(entry)):
-			clues.append(str(entry))
-	for entry: Variant in state.get("inspected", []):
-		if _clue(str(entry)).size() > 0 and not inspected.has(str(entry)):
-			inspected.append(str(entry))
 	for entry: Variant in state.get("history", []):
 		if entry is Dictionary:
 			history.append((entry as Dictionary).duplicate())
 	if args.has("part"):
 		history.clear()
+	_normalize_practice_step()
 	_render()
 	_persist()
 
@@ -157,13 +321,6 @@ func _name(key: String) -> String:
 
 func _intro() -> Array:
 	return data.get("intro", []) as Array
-
-
-func _clue(id: String) -> Dictionary:
-	for entry: Dictionary in data.get("clues", []):
-		if str(entry.get("id")) == id:
-			return entry
-	return {}
 
 
 func _build_shell() -> void:
@@ -335,6 +492,7 @@ func _add_button(parent: Node, key: String, callback: Callable, primary: bool = 
 	if parent == _header:
 		button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_style_story_button(button)
 	parent.add_child(button)
 	return button
 
@@ -348,6 +506,7 @@ func _panel_column(weight: float) -> VBoxContainer:
 
 
 func _render() -> void:
+	_clear_practice_layer()
 	_stop_cinematic()
 	_stop_motion()
 	_stop_dialogue()
@@ -368,7 +527,7 @@ func _render() -> void:
 	_art_fallback.hide()
 	_scene_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	_dialogue.show()
-	if part == "intro":
+	if part in ["intro", "tutorial"]:
 		_set_art(str(data["room_art"]))
 		_scene_art.show()
 	_hero = _panel_column(0.9)
@@ -377,7 +536,7 @@ func _render() -> void:
 	if replay:
 		_title.text += " / " + _text("replay_short")
 	_title.tooltip_text = _text("replay_note") if replay else ""
-	_counter.text = _text("progress").format({"count": intro_index + 1, "total": _intro().size()}) if part == "intro" else _text("practice")
+	_counter.text = _text("progress").format({"count": intro_index + 1, "total": _intro().size()}) if part == "intro" else "PRACTICE"
 	AudioManager.set_opening_morning(self, part == "tutorial" or intro_index <= 4)
 	if part == "intro":
 		_render_intro()
@@ -416,13 +575,16 @@ func _refresh_art(_success: bool) -> void:
 	if _leaving or _art_id.is_empty():
 		return
 	_scene_art.texture = AssetManager.get_texture(_art_id)
+	if is_instance_valid(_effects):
+		_effects.texture = _scene_art.texture
+		_effects.queue_redraw()
 	var descriptions: Dictionary[String, String] = {
 		"opening_john_room_wake_v1": "Morning light fills John's room.",
 		"opening_john_reaching_phone_v1": "John reaches across the bed for his buzzing phone.",
 		"opening_john_claim_prize_v1": "John taps Claim Prize before checking the offer.",
 		"opening_john_got_you_v1": "The phone turns red. Got You.",
-		"opening_collector_meeting_v1": "Masked scammers laugh around a table in a dark room.",
-		"opening_five_victims_v1": "Five people. Five traps. Shock, confusion, tears, anger and sadness."
+		"opening_collector_meeting_v2": "Four masked scammers. Four lights. An empty chair in shadow.",
+		"opening_five_victims_v3": "Five people. Five traps. Shock, confusion, tears, anger and sadness."
 	}
 	_art_fallback.text = descriptions.get(_art_id, "Opening scene") + "\n\nScene art unavailable. Connect and reload to download it."
 	_art_fallback.visible = _scene_art.texture == null
@@ -588,6 +750,15 @@ func _build_cinematic_layer() -> void:
 	_cinematic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_cinematic)
 	_cinematic.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_effects = CinematicEffects.new()
+	_effects.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cinematic.add_child(_effects)
+	_effects.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_effects.gui_input.connect(_panel_input)
+	var rgb_shader: Shader = Shader.new()
+	rgb_shader.code = "shader_type canvas_item; uniform float split = 0.0; void fragment(){ vec4 c = texture(TEXTURE, UV); vec2 d = vec2(TEXTURE_PIXEL_SIZE.x * split, 0.0); COLOR = vec4(texture(TEXTURE, UV+d).r, c.g, texture(TEXTURE, UV-d).b, c.a); }"
+	_rgb_material = ShaderMaterial.new()
+	_rgb_material.shader = rgb_shader
 	_red_wash = ColorRect.new()
 	_red_wash.color = Color("A51628")
 	_red_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -623,6 +794,8 @@ func _build_cinematic_layer() -> void:
 		laugh.hide()
 	_cinematic_next = UI.button(">", _advance_pressed)
 	_cinematic_next.name = "CinematicAdvanceButton"
+	_cinematic_next.set_meta("ui_sound", "")
+	_advance_button.set_meta("ui_sound", "") # No late click tail after the silence cut.
 	_cinematic_next.tooltip_text = _text("next")
 	_cinematic_next.custom_minimum_size = Vector2(64, 64)
 	_cinematic_next.add_theme_font_size_override("font_size", 32)
@@ -641,51 +814,106 @@ func _start_cinematic(beat: Dictionary) -> void:
 	_show_room(str(beat["art_path"]))
 	_stop_motion() # Cinematic tween owns the art; no competing room fade.
 	var visual: String = str(beat["visual"])
+	_cinematic_mode = visual
+	_cinematic_duration = {"takeover": 6.0, "meeting": 7.0, "montage": 9.0, "closing": 6.0}[visual]
+	_cinematic_time = 0.0
+	_reveal_done = false
+	_effects.mode = visual
+	_effects.texture = _scene_art.texture
+	_effects.reduced = SettingsService.reduced_motion
+	_effects.fast_panels.clear()
+	_effects.mouse_filter = Control.MOUSE_FILTER_STOP if visual == "montage" else Control.MOUSE_FILTER_IGNORE
+	_effects.show()
+	# Cuts both decks and pending UI click tails before the 0.6-second quiet.
+	AudioManager.cut_opening_audio(self)
+	AudioManager.play_opening_score(visual, self)
 	_closing_caption.text = str(beat.get("caption", ""))
+	_closing_caption.visible_characters = -1
 	if visual == "meeting":
 		_position_laugh_captions()
 		for laugh: Label in _laugh_captions:
 			laugh.show()
 			laugh.modulate.a = 0.0
 	if visual in ["montage", "closing"]:
-		# Keep all five faces, even on extra-wide phones. Never crop a victim out.
-		_scene_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	if SettingsService.reduced_motion:
-		_finish_cinematic_visual()
-		if visual == "takeover":
-			AudioManager.play_opening_laugh(self)
-		return
+		_scene_art.hide() # Five independently cropped panels are drawn by Effects.
 	_cinematic_tween = create_tween()
-	match visual:
-		"takeover":
-			_scene_art.pivot_offset = size * 0.5
-			_scene_art.scale = Vector2.ONE * 1.025
-			_cinematic_tween.tween_property(_red_wash, "modulate:a", 0.65, 0.3)
-			for offset: Vector2 in [Vector2(5, 2), Vector2(-5, -2), Vector2(3, 1), Vector2(-2, -1), Vector2.ZERO]:
-				_cinematic_tween.tween_property(_scene_art, "position", offset, 0.075)
-			_cinematic_tween.tween_interval(0.25)
-			_cinematic_tween.tween_callback(_reveal_red_phone)
-			_cinematic_tween.tween_property(_red_wash, "modulate:a", 0.0, 0.4)
-			_cinematic_tween.tween_interval(1.7)
-		"meeting":
-			_black_fade.modulate.a = 1.0
-			_cinematic_tween.tween_property(_black_fade, "modulate:a", 0.0, 0.65)
-			# Staggered appearances, not a flashing/strobing loop.
-			for laugh: Label in _laugh_captions:
-				_cinematic_tween.tween_property(laugh, "modulate:a", 1.0, 0.24)
-				_cinematic_tween.parallel().tween_property(laugh, "scale", Vector2.ONE, 0.24).from(Vector2.ONE * 0.88)
-			_cinematic_tween.tween_interval(0.5)
-		"montage":
-			_black_fade.modulate.a = 1.0
-			_cinematic_tween.tween_property(_black_fade, "modulate:a", 0.0, 0.65)
-			_cinematic_tween.tween_interval(1.0)
-		"closing":
-			_cinematic_tween.tween_property(_black_fade, "modulate:a", 0.45, 0.6)
-			_cinematic_tween.parallel().tween_property(_closing_caption, "modulate:a", 1.0, 0.8)
-			_cinematic_tween.tween_interval(2.0)
-			_cinematic_tween.tween_property(_black_fade, "modulate:a", 1.0, 1.2)
-			_cinematic_tween.parallel().tween_property(_closing_caption, "modulate:a", 0.0, 1.2)
+	_cinematic_tween.tween_method(_cinematic_frame, 0.0, _cinematic_duration, _cinematic_duration)
 	_cinematic_tween.tween_callback(_finish_cinematic_visual)
+	_cinematic_frame(0.0)
+
+
+func _cinematic_frame(time: float) -> void:
+	_cinematic_time = time
+	_effects.time = time
+	_effects.reduced = SettingsService.reduced_motion
+	var reduced: bool = SettingsService.reduced_motion
+	_scene_art.position = Vector2.ZERO
+	match _cinematic_mode:
+		"takeover":
+			if time >= 1.8 and not _reveal_done:
+				_reveal_done = true
+				_reveal_red_phone()
+				if not reduced:
+					_glitch_until = Engine.get_process_frames() + 2
+					_scene_art.material = _rgb_material
+					_rgb_material.set_shader_parameter("split", 3.0)
+					_vibrate(80)
+			if time >= 0.6 and time < 1.8 and not reduced:
+				var strength: float = (time - 0.6) / 1.2 * 3.0
+				_scene_art.position = Vector2(sin(time * 47.0), cos(time * 39.0)) * strength
+			if reduced:
+				_scene_art.modulate.a = clampf((time - 1.8) / 0.45, 0.0, 1.0) if time >= 1.8 else clampf((1.8 - time) / 0.45, 0.0, 1.0)
+		"meeting":
+			_scene_art.pivot_offset = size * Vector2(0.5, 0.60)
+			_scene_art.scale = Vector2.ONE * (1.0 if reduced else lerpf(1.0, 1.08, clampf(time / 7.0, 0, 1)))
+			_black_fade.modulate.a = maxf(1.0 - time / 0.65, clampf((time - 6.65) / 0.35, 0, 1))
+			_position_laugh_captions()
+			for index: int in 5:
+				var laugh: Label = _laugh_captions[index]
+				var reveal: float = clampf((time - 0.9 - index * 0.9) / 0.5, 0, 1)
+				laugh.modulate.a = reveal * (1.0 - clampf((time - 6.65) / 0.35, 0, 1))
+				laugh.scale = Vector2.ONE if reduced else Vector2.ONE * (1.0 + sin(reveal * PI) * 0.13)
+				if index == 4 and not reduced:
+					laugh.position.x -= (1.0 - reveal) * size.x * 0.30
+					laugh.position.y += (1.0 - reveal) * size.y * 0.10
+		"closing":
+			_black_fade.modulate.a = lerpf(0.0, 0.65, clampf(time / 1.4, 0, 1)) if time < 4.8 else lerpf(0.65, 1.0, (time - 4.8) / 1.2)
+			_closing_caption.modulate.a = clampf((time - 1.2) / 0.4, 0, 1) * (1.0 - clampf((time - 4.8) / 1.2, 0, 1))
+			# Reveal complete words. Last word lands at 2.8s, matching score silence.
+			var words: PackedStringArray = _closing_caption.text.split(" ")
+			var count: int = mini(words.size(), maxi(0, int((time - 1.2) / (1.6 / (words.size() - 1))) + 1)) if time >= 1.2 else 0
+			_closing_caption.visible_characters = " ".join(words.slice(0, count)).length()
+	_update_effect_art_rect()
+	_effects.queue_redraw()
+
+
+func _process(_delta: float) -> void:
+	if _glitch_until >= 0 and Engine.get_process_frames() >= _glitch_until:
+		_scene_art.material = null
+		_glitch_until = -1
+
+
+func _update_effect_art_rect() -> void:
+	if _scene_art.texture == null:
+		_effects.art_rect = Rect2(Vector2.ZERO, size)
+		return
+	var image_size: Vector2 = _scene_art.texture.get_size()
+	var cover: float = maxf(size.x / image_size.x, size.y / image_size.y)
+	var image_rect: Rect2 = Rect2((size - image_size * cover) * 0.5, image_size * cover)
+	image_rect.position = _scene_art.pivot_offset + (image_rect.position - _scene_art.pivot_offset) * _scene_art.scale + _scene_art.position
+	image_rect.size *= _scene_art.scale
+	_effects.art_rect = image_rect
+
+
+func _panel_input(event: InputEvent) -> void:
+	if _leaving or _menu.visible or _cinematic_mode != "montage" or not _cinematic_busy:
+		return
+	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.is_pressed()) or (event is InputEventScreenTouch and event.is_pressed()):
+		var index: int = int(floor((_cinematic_time - 0.4) / 0.7))
+		if index >= 0 and index < 5 and not _effects.fast_panels.has(index):
+			_effects.fast_panels.append(index)
+			_effects.queue_redraw()
+		accept_event()
 
 
 func _reveal_red_phone() -> void:
@@ -695,28 +923,16 @@ func _reveal_red_phone() -> void:
 	_scene_art.scale = Vector2.ONE
 	var beat: Dictionary = _intro()[intro_index] as Dictionary
 	_set_art(str(beat["reveal_art"]))
-	AudioManager.play_opening_laugh(self)
 
 
 func _finish_cinematic_visual() -> void:
 	if _leaving or not _cinematic_active:
 		return
-	var beat: Dictionary = _intro()[intro_index] as Dictionary
 	_scene_art.position = Vector2.ZERO
-	_scene_art.scale = Vector2.ONE
 	_red_wash.modulate.a = 0.0
-	_black_fade.modulate.a = 0.0
-	if str(beat["visual"]) == "takeover":
-		_set_art(str(beat["reveal_art"]))
-	elif str(beat["visual"]) == "meeting":
-		for laugh: Label in _laugh_captions:
-			laugh.modulate.a = 1.0
-			laugh.scale = Vector2.ONE
-	elif str(beat["visual"]) == "closing":
-		_black_fade.modulate.a = 1.0
-		# Reduced motion preserves the caption as a static card on black.
-		_closing_caption.modulate.a = 1.0 if SettingsService.reduced_motion else 0.0
+	_cinematic_frame(_cinematic_duration)
 	_cinematic_busy = false
+	_effects.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_update_advance_prompt()
 
 
@@ -726,6 +942,9 @@ func _stop_cinematic() -> void:
 	_cinematic_tween = null
 	_cinematic_active = false
 	_cinematic_busy = false
+	_rewinding = false
+	_glitch_until = -1
+	_cinematic_mode = ""
 	AudioManager.stop_dialogue_blips(self)
 	if is_instance_valid(_cinematic):
 		_cinematic.hide()
@@ -735,9 +954,12 @@ func _stop_cinematic() -> void:
 		_cinematic_next.hide()
 		for laugh: Label in _laugh_captions:
 			laugh.hide()
+		_effects.hide()
+		_effects.fast_panels.clear()
 	if is_instance_valid(_scene_art):
 		_scene_art.position = Vector2.ZERO
 		_scene_art.scale = Vector2.ONE
+		_scene_art.material = null
 
 
 func _phone_action(source: Control, beat_id: String) -> void:
@@ -748,115 +970,448 @@ func _phone_action(source: Control, beat_id: String) -> void:
 		advance()
 
 
-func _phone(opened: bool, interactive: bool) -> void:
+func _practice_phone(mode: String) -> void:
+	var host: Control = Control.new()
+	host.name = "TutorialPhoneHost"
+	host.clip_contents = true
+	add_child(host)
+	move_child(host, _menu.get_index())
+	_phone_host = host
+	_phone_view = PRACTICE_PHONE.new() as Control
+	host.add_child(_phone_view)
+	_phone_view.configure_practice(mode, practice, _evidence_preview)
 	var message: Dictionary = data["message"] as Dictionary
-	var center: CenterContainer = CenterContainer.new()
-	_hero.add_child(center)
-	var phone: PanelContainer = UI.panel(center)
-	phone.name = "PracticePhone"
-	phone.custom_minimum_size.x = 400
-	var frame: StyleBoxFlat = UI.box(BG, Color("173058"), 18)
-	frame.set_corner_radius_all(28)
-	frame.corner_detail = 6
-	frame.set_border_width_all(3)
-	phone.add_theme_stylebox_override("panel", frame)
-	var device: VBoxContainer = UI.column(phone, 16)
-	var speaker: Label = UI.label(_text("phone_status"), 20, CYAN)
-	speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	device.add_child(speaker)
-	var notification: PanelContainer = UI.panel(device)
-	var notification_style: StyleBoxFlat = UI.box(CARD, CYAN, 16)
-	notification_style.set_corner_radius_all(12)
-	notification.add_theme_stylebox_override("panel", notification_style)
-	var inside: VBoxContainer = UI.column(notification, 14)
-	inside.add_child(UI.label(str(message["text_label"] if str(message["channel"]) == "text" else message["email_label"]), 22, CYAN))
-	inside.add_child(UI.label(str(message["subject"]), 32, TEXT))
-	inside.add_child(UI.label(str(message["sender_name"]), 24, TEXT))
-	if opened:
-		inside.add_child(UI.label(str(message["body"]), 26, TEXT))
-	elif interactive:
-		_add_button(inside, "open", func() -> void: go("message"), true)
-	var spacer: Control = Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	device.add_child(spacer)
-	var home: Label = UI.label("—", 24, CYAN)
-	home.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	device.add_child(home)
-	_hero.add_child(UI.label(str(message["safety_label"]), 20, CYAN))
+	_phone_view.receive_message({"sender": str(message["sender_name"]) + " <" + str(message["sender_address"]) + ">", "subject": str(message["subject"]), "body": str(message["body"])})
+	_phone_view.practice_action.connect(_practice_action.bind(_phone_view), CONNECT_DEFERRED)
+	_phone_view.evidence_changed.connect(_practice_updated.bind(_phone_view))
+	_phone_view.photo_taken.connect(_practice_photo.bind(_phone_view))
+	_phone_view.thought_requested.connect(_practice_thought.bind(_phone_view))
+	_phone_view.message_read.connect(_practice_message_read.bind(_phone_view))
+	_phone_view.open_phone()
+	if mode == "notes":
+		_phone_view.show_notes_home()
+	elif mode != "read":
+		_phone_view.show_open_message()
+
+
+func _practice_message_read(source: Control) -> void:
+	if source != _phone_view or part != "tutorial" or step != "inbox":
+		return
+	_advance_action = func() -> void: go("choice")
+	_advance_slot.show()
+	_finish_reveal()
+
+
+func _practice_updated(snapshot: Dictionary, source: Control) -> void:
+	if source == _phone_view and not _leaving and part == "tutorial":
+		practice = snapshot.duplicate(true)
+		_persist()
+
+
+func _practice_photo(preview: Texture2D, source: Control) -> void:
+	if source == _phone_view and not _leaving:
+		_evidence_preview = preview
+
+
+func _practice_action(action: String, source: Control) -> void:
+	if source != _phone_view or _leaving or _menu.visible or part != "tutorial":
+		return
+	match step:
+		"inbox":
+			if action == "choice": go("choice")
+		"claim":
+			if action == "failure" and _phone_view._password_ready: go(action)
+		"safe":
+			if action == "inspect": go("inspect_intro")
+			elif action == "leave": skip()
+		"inspect":
+			if action == "flags_done" and _phone_view.flags_complete(): go("next_issue")
+		"sender":
+			if action == "notes" and bool(practice.get("sender_opened", false)): go("notes")
+		"notes":
+			if action == "capture" and _practice_ready(): go("capture")
+		"capture":
+			if action == "submit" and bool(practice.get("captured", false)): go("submit")
+		"submit":
+			if action == "sealed" and bool(practice.get("sealed", false)): go("sealed")
+
+
+func _practice_ready() -> bool:
+	var flags: Array = practice.get("flags", [])
+	return flags.has("reward") and flags.has("pressure") and flags.has("password") and str(practice.get("domain", "")) == "prize-claim.example" and bool(practice.get("sender_opened", false))
+
+
+func _normalize_practice_step() -> void:
+	# Only the canonical domain is persisted; never retain arbitrary typed text.
+	if str(practice.get("domain", "")) != "prize-claim.example":
+		practice.erase("domain")
+	var normalized_flags: Array[String] = []
+	if practice.get("flags", []) is Array:
+		for flag: Variant in practice.get("flags", []):
+			if str(flag) in ["reward", "pressure", "password"] and not normalized_flags.has(str(flag)):
+				normalized_flags.append(str(flag))
+	practice["flags"] = normalized_flags
+	if normalized_flags.size() < 3 and step in ["next_issue", "sender", "notes"]:
+		step = "inspect"
+	if not bool(practice.get("sender_opened", false)) and step == "notes":
+		step = "sender"
+	if not _practice_ready():
+		practice.erase("captured")
+		practice.erase("sealed")
+		if step in ["capture", "submit", "sealed", "closing"]: step = "inspect"
+	if not bool(practice.get("captured", false)):
+		practice.erase("sealed")
+		if step in ["submit", "sealed", "closing"]: step = "capture"
+	if not bool(practice.get("sealed", false)) and step in ["sealed", "closing"]:
+		step = "submit"
+	if not bool(practice.get("sealed", false)) and state.get("pending_outcome", "") == "completed":
+		state.erase("pending_outcome")
+	if not (data["tutorial"] as Dictionary).has(step):
+		step = "wake"
 
 
 func _render_tutorial() -> void:
-	if step.begins_with("clue/"):
-		var clue: Dictionary = _clue(step.trim_prefix("clue/"))
-		if clue.is_empty():
-			step = "inspect"
-			_render_tutorial()
-			return
-		_phone(true, false)
-		_narrate(str(clue["title"]), str(clue["value"]) + "\n\n" + str(clue["note"]))
-		var id: String = str(clue["id"])
-		var save: Button = _add_button(_footer, "saved" if clues.has(id) else "save", func() -> void: save_clue(id), true)
-		save.disabled = clues.has(id)
-		_add_button(_footer, "inspect", func() -> void: go("inspect"))
-		return
+	_show_room(str(data["room_art"]))
 	var copy: Dictionary = (data["tutorial"] as Dictionary)[step] as Dictionary
-	_narrate(str(copy["title"]), str(copy["text"]), _name("player"))
+	if step == "summary" and str(state.get("pending_outcome", "")) != "completed":
+		_narrate("PRACTICE PAUSED", "You can return to this tutorial from the menu. No coins, mastery, or chapter progress were awarded.")
+	else:
+		_narrate(str(copy["title"]), str(copy["text"]), _name("player"))
 	match step:
 		"wake":
-			_show_room(str(data["room_art"]))
 			_blink()
 			_advance_action = func() -> void: go("inbox")
-		"inbox":
-			_phone(false, true)
-			AudioManager.play_sfx("ui_notification")
-			_vibrate(70)
-		"message":
-			_phone(true, false)
-			_add_button(_footer, "inspect", func() -> void: go("inspect"), true)
-			_add_button(_footer, "respond", func() -> void: go("respond"))
-		"inspect":
-			_phone(true, false)
-			for clue: Dictionary in data["clues"]:
-				var id: String = str(clue["id"])
-				var button: Button = UI.button(str(clue["title"]), func() -> void: inspect_clue(id))
-				button.name = "Inspect_" + id
-				_copy.add_child(button)
-			_add_button(_footer, "binder", func() -> void: go("binder"), true)
-			_add_button(_footer, "respond", func() -> void: go("respond"))
-		"binder":
-			_phone(false, false)
-			if clues.is_empty():
-				_copy.add_child(UI.label(_text("empty"), 24, CYAN))
-			for id: String in clues:
-				var clue: Dictionary = _clue(id)
-				_copy.add_child(UI.label(str(clue["title"]) + "\n" + str(clue["value"]), 24, CYAN))
-			_add_button(_footer, "inspect", func() -> void: go("inspect"))
-			_add_button(_footer, "respond", func() -> void: go("respond"), true)
-		"respond":
-			_phone(true, false)
-			for response: Dictionary in data["responses"]:
-				var id: String = str(response["id"])
-				var button: Button = UI.button(str(response["label"]), func() -> void: respond(id))
-				button.name = "Response_" + id
-				_copy.add_child(button)
-			_add_button(_footer, "inspect", func() -> void: go("inspect"))
+		"inbox": _practice_phone("read")
+		"choice":
+			_practice_phone("read")
+			_phone_view.show_open_message()
+			_decision_overlay()
+		"inspect_intro":
+			_practice_phone("read")
+			_phone_view.show_open_message()
+			_title_overlay("Read between the lines", "inspect")
+		"next_issue":
+			_practice_phone("inspect")
+			_title_overlay("Alright, what next could be the issue?", "sender")
+			if not SettingsService.reduced_motion:
+				_practice_tween.parallel().tween_property(_phone_view._passage, "modulate:a", 0.0, 0.65)
+		"claim", "inspect", "sender", "notes", "capture", "submit": _practice_phone(step)
+		"safe": _practice_phone("deleted")
 		"failure":
-			_collector()
-			_hit()
+			_set_art("opening_john_got_you_v1")
+			AudioManager.play_sfx("ui_error")
 			_add_button(_footer, "retry", retry, true)
-		"review":
-			_phone(false, false)
-			_add_button(_footer, "inspect", func() -> void: go("inspect"), true)
-		"success":
-			_phone(false, false)
-			_dialogue_copy.add_child(UI.label(feedback, 24, CYAN))
+		"sealed":
 			AudioManager.play_sfx("ui_success")
-			_add_button(_footer, "finish", finish, true)
+			_advance_action = func() -> void: go("closing")
+		"closing": _practice_closing()
 		"summary":
-			_show_room(str(data["room_art"]))
-			_add_button(_footer, "hub", _hub, true)
-	if step in ["inspect", "binder", "respond"]:
-		_copy.add_child(UI.label(_text("clue_count").format({"count": clues.size()}), 22, CYAN))
+			if state.get("pending_outcome", "") == "completed":
+				_completion_overlay()
+			else:
+				_add_button(_footer, "hub", _hub, true)
+				_footer.add_child(UI.button("REPLAY TUTORIAL", _replay_practice))
+
+
+func _clear_practice_layer() -> void:
+	if _practice_tween != null and _practice_tween.is_valid():
+		_practice_tween.kill()
+	_practice_tween = null
+	if is_instance_valid(_practice_layer):
+		remove_child(_practice_layer)
+		_practice_layer.queue_free()
+	_practice_layer = null
+	_practice_buttons.clear()
+	_thought_label = null
+	_celebration = null
+	_event_layout = false
+	_item_card = null
+	_item_caption = null
+	_dialogue.z_index = 0
+
+
+func _overlay_column(blur: bool = true, event: bool = false) -> VBoxContainer:
+	_clear_practice_layer()
+	_event_layout = event
+	_practice_layer = Control.new()
+	_practice_layer.name = "PracticeOverlay"
+	add_child(_practice_layer)
+	move_child(_practice_layer, _menu.get_index())
+	_practice_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if blur:
+		_dialogue.hide()
+		if is_instance_valid(_phone_view): _phone_view.set_locked(true)
+		var shade: ColorRect = ColorRect.new()
+		shade.color = Color(0.02, 0.04, 0.09, 0.82)
+		_practice_layer.add_child(shade)
+		shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		if not SettingsService.reduced_motion:
+			var shader: Shader = Shader.new()
+			shader.code = "shader_type canvas_item; uniform sampler2D scene_tex : hint_screen_texture, filter_linear_mipmap; void fragment(){ vec3 c = textureLod(scene_tex, SCREEN_UV, 2.5).rgb; COLOR = vec4(mix(c, vec3(0.02,0.04,0.09),0.65),1.0); }"
+			var material: ShaderMaterial = ShaderMaterial.new()
+			material.shader = shader
+			shade.material = material
+	if event:
+		# The scene alone is blurred. Item and narration render above the veil.
+		_dialogue.show()
+		_dialogue.z_index = 1
+		move_child(_practice_layer, _phone_host.get_index())
+		_item_card = PanelContainer.new()
+		_item_card.name = "IntroducedItemCard"
+		_item_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_practice_layer.add_child(_item_card)
+		var item_style: StyleBoxFlat = UI.box(Color("0A1730EB"), Color("4FE0D470"), 14)
+		item_style.set_corner_radius_all(26)
+		item_style.corner_detail = 12
+		item_style.shadow_size = 12
+		_item_card.add_theme_stylebox_override("panel", item_style)
+		_item_caption = UI.label("JOHN'S PHONE\nOne unexpected prize email", 22, TEXT)
+		_item_caption.name = "IntroducedItemCaption"
+		_item_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_item_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_practice_layer.add_child(_item_caption)
+		_phone_view.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		_phone_view.size = Vector2(480, 840)
+		_phone_view._zoom_app(0.0)
+	var margin: MarginContainer = MarginContainer.new()
+	_practice_margin = margin
+	_practice_blurred = blur
+	_practice_layer.add_child(margin)
+	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_top", int(_header.get_global_rect().end.y + 18))
+	margin.add_theme_constant_override("margin_bottom", 18)
+	margin.add_theme_constant_override("margin_left", int(size.x * (0.15 if blur else 0.03)))
+	margin.add_theme_constant_override("margin_right", int(size.x * (0.15 if blur else 0.52)))
+	if not blur:
+		_practice_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var center: CenterContainer = CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(center)
+	var panel: PanelContainer = UI.panel(center)
+	_practice_card = panel
+	panel.name = "PracticeOverlayCard"
+	panel.custom_minimum_size.x = size.x * (0.65 if blur else 0.43)
+	var style: StyleBoxFlat = UI.box(PANEL if blur else Color("F3ECD6"), Color("FFB648") if blur else CYAN, 20)
+	if event:
+		style.bg_color = Color.TRANSPARENT
+		style.border_color = Color.TRANSPARENT
+		style.shadow_size = 0
+		style.set_content_margin_all(0)
+	style.set_corner_radius_all(18 if not blur else 8)
+	style.set_border_width_all(2)
+	panel.add_theme_stylebox_override("panel", style)
+	if not blur:
+		var tail_host: Control = Control.new()
+		tail_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_child(tail_host)
+		var tail: ThoughtTail = ThoughtTail.new()
+		tail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		tail_host.add_child(tail)
+		tail.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+		tail.offset_left = -70
+		tail.offset_right = -70
+		tail.offset_top = 6
+		tail.offset_bottom = 6
+	return UI.column(panel, 14)
+
+
+func _overlay_label(parent: Control, text: String, heading: bool = false, ink: Color = TEXT) -> Label:
+	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+	var label: Label = UI.label(text, ceili((28.0 if heading else 18.0) / physical), ink)
+	label.set_meta("practice_heading", heading)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(label)
+	return label
+
+
+func _style_story_button(button: Button, choice: bool = false) -> void:
+	for style_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var fill: Color = Color("102040F0")
+		var border: Color = Color("4FE0D478")
+		if style_name == "hover":
+			fill = Color("173058")
+			border = CYAN
+		elif style_name == "pressed":
+			fill = Color("153B37")
+			border = Color("8FF0E6")
+		elif style_name == "disabled":
+			fill = Color("0A1730")
+			border = Color("173058")
+		elif style_name == "focus":
+			fill = Color.TRANSPARENT
+			border = Color("8FF0E6")
+		var style: StyleBoxFlat = UI.box(fill, border, 12)
+		style.set_corner_radius_all(30 if choice else 12)
+		style.corner_detail = 12
+		style.set_border_width_all(2 if style_name in ["focus", "hover"] else 1)
+		style.content_margin_left = 76 if choice else 16
+		style.content_margin_right = 24 if choice else 16
+		style.shadow_size = 9 if style_name == "hover" else 4
+		style.shadow_color = Color("4FE0D428") if style_name == "hover" else Color("050B1870")
+		style.shadow_offset = Vector2(0, 2 if style_name == "pressed" else 4)
+		if style_name == "focus":
+			style.shadow_size = 0
+		button.add_theme_stylebox_override(style_name, style)
+	for color_name: String in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		button.add_theme_color_override(color_name, TEXT)
+
+
+func _overlay_button(parent: Control, caption: String, action: Callable, icon_kind: int = -1) -> Button:
+	var button: Button = UI.button(caption, func() -> void:
+		if not _menu.visible and not _leaving and not _cinematic_focus_lost and not _cinematic_app_paused:
+			action.call()
+	)
+	_style_story_button(button, _event_layout)
+	if _event_layout:
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.custom_minimum_size.y = 64
+		var icon: ChoiceIcon = ChoiceIcon.new()
+		icon.kind = icon_kind
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(icon)
+		icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+		icon.offset_left = 10
+		icon.offset_right = 62
+		icon.offset_top = -26
+		icon.offset_bottom = 26
+	parent.add_child(button)
+	_practice_buttons.append(button)
+	return button
+
+
+func _reveal_overlay_controls(delay: float) -> void:
+	for button: Button in _practice_buttons:
+		button.modulate.a = 0.0
+		button.disabled = true
+	_practice_tween = create_tween()
+	_practice_tween.tween_interval(delay if not SettingsService.reduced_motion else 0.05)
+	if not SettingsService.reduced_motion:
+		for button: Button in _practice_buttons:
+			_practice_tween.tween_property(button, "modulate:a", 1.0, 0.12)
+	_practice_tween.tween_callback(func() -> void:
+		for button: Button in _practice_buttons:
+			button.modulate.a = 1.0
+			button.disabled = false
+	)
+
+
+func _decision_overlay() -> void:
+	var column: VBoxContainer = _overlay_column(true, true)
+	var heading: Label = _overlay_label(column, "What should I do?", true)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	for option: String in ["Claim Prize", "Delete and move on", "Investigate"]:
+		var target: String = {"Claim Prize": "claim", "Delete and move on": "safe", "Investigate": "inspect_intro"}[option]
+		_overlay_button(column, option, go.bind(target), _practice_buttons.size())
+	_reveal_overlay_controls(0.5)
+
+
+func _title_overlay(caption: String, target: String) -> void:
+	var column: VBoxContainer = _overlay_column(true, true)
+	var heading: Label = _overlay_label(column, caption, true)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_overlay_button(column, "CONTINUE", go.bind(target))
+	_reveal_overlay_controls(0.9)
+
+
+func _practice_thought(text: String, complete: bool, source: Control) -> void:
+	if source != _phone_view or _menu.visible or _leaving:
+		return
+	_phone_view.set_locked(true)
+	_dialogue.hide()
+	_thought_done = complete
+	var column: VBoxContainer = _overlay_column(false)
+	_overlay_label(column, "John · thinking…", false, Color("173058"))
+	_thought_label = _overlay_label(column, text, false, Color("101623"))
+	_thought_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_overlay_button(column, "WHAT NEXT?" if complete else "KEEP LOOKING", _dismiss_thought)
+	_thought_label.visible_characters = -1 if SettingsService.reduced_motion else 0
+	_reveal_overlay_controls(0.05 if SettingsService.reduced_motion else maxf(0.4, text.length() / 45.0))
+	if not SettingsService.reduced_motion:
+		_practice_tween.kill()
+		_practice_tween = create_tween()
+		_practice_tween.tween_property(_thought_label, "visible_characters", text.length(), maxf(0.4, text.length() / 45.0))
+		_practice_tween.tween_callback(func() -> void:
+			for button: Button in _practice_buttons:
+				button.modulate.a = 1.0
+				button.disabled = false
+		)
+
+
+func _dismiss_thought() -> void:
+	if _menu.visible or _leaving:
+		return
+	var next: bool = _thought_done
+	_clear_practice_layer()
+	_dialogue.show()
+	if is_instance_valid(_phone_view): _phone_view.set_locked(false)
+	if next: go("next_issue")
+
+
+func _completion_overlay() -> void:
+	var column: VBoxContainer = _overlay_column()
+	_overlay_label(column, "TUTORIAL COMPLETE", true)
+	var emblem: CelebrationArt = CelebrationArt.new()
+	emblem.emblem_only = true
+	emblem.custom_minimum_size.y = 124
+	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(emblem)
+	_overlay_label(column, "You spotted the warning signs, preserved the evidence, and protected your information. Your story is just beginning.")
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 14)
+	column.add_child(actions)
+	var proceed: Button = _overlay_button(actions, "CONTINUE", _hub)
+	proceed.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	proceed.size_flags_stretch_ratio = 1.5
+	proceed.add_theme_stylebox_override("normal", UI.box(Color("2E6BFF"), Color("FFB648"), 12))
+	_overlay_button(actions, "REPLAY TUTORIAL", _replay_practice).size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_celebration = CelebrationArt.new()
+	_celebration.name = "CompletionConfetti"
+	_celebration.reduced = SettingsService.reduced_motion
+	_celebration.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_practice_layer.add_child(_celebration)
+	_celebration.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_practice_tween = create_tween()
+	_practice_tween.tween_property(_celebration, "time", 3.1, 3.1)
+	AudioManager.play_sfx("ui_success")
+
+
+func _pause_practice(paused: bool) -> void:
+	if _practice_tween != null and _practice_tween.is_valid():
+		if paused: _practice_tween.pause()
+		else: _practice_tween.play()
+
+
+func _practice_closing() -> void:
+	_stop_motion()
+	_set_art("opening_john_claim_prize_v1")
+	_dialogue.hide()
+	_cinematic_active = true
+	_cinematic_busy = true
+	_cinematic_mode = "practice_closing"
+	_cinematic.show()
+	_closing_caption.text = str((data["tutorial"] as Dictionary)["closing"]["text"])
+	_closing_caption.visible_characters = -1
+	_advance_action = finish
+	_cinematic_tween = create_tween()
+	_cinematic_tween.tween_property(_black_fade, "modulate:a", 0.65, 0.6)
+	_cinematic_tween.parallel().tween_property(_closing_caption, "modulate:a", 1.0, 0.8)
+	_cinematic_tween.tween_interval(2.0)
+	_cinematic_tween.tween_callback(func() -> void:
+		_cinematic_busy = false
+		_update_advance_prompt()
+	)
+
+
+func _replay_practice() -> void:
+	practice.clear()
+	_evidence_preview = null
+	history.clear()
+	state.erase("pending_outcome")
+	part = "tutorial"
+	step = "wake"
+	_render()
+	_persist()
 
 
 func _record_history() -> void:
@@ -871,6 +1426,7 @@ func go(target: String) -> void:
 		return
 	_record_history()
 	step = target
+	_normalize_practice_step()
 	_render()
 	_persist()
 
@@ -882,6 +1438,13 @@ func advance() -> void:
 		var id: String = str((_intro()[intro_index] as Dictionary)["id"])
 		if (id == "prize" and not bool(_phone_view.get("_read"))) or (id == "tap" and not bool(_phone_view.get("_claim_sent"))):
 			return
+	if intro_index == _intro().size() - 1:
+		_start_rewind()
+		return
+	_advance_story()
+
+
+func _advance_story() -> void:
 	_record_history()
 	if intro_index + 1 < _intro().size():
 		intro_index += 1
@@ -893,36 +1456,36 @@ func advance() -> void:
 	_persist()
 
 
-func inspect_clue(id: String) -> void:
-	if _leaving or _menu.visible or part != "tutorial" or step != "inspect" or _clue(id).is_empty():
+func _start_rewind() -> void:
+	if _rewinding or _leaving:
 		return
-	if not inspected.has(id):
-		inspected.append(id)
-	go("clue/" + id)
-
-
-func save_clue(id: String) -> void:
-	if _leaving or _menu.visible or step != "clue/" + id or not inspected.has(id) or clues.has(id):
-		return
-	clues.append(id)
-	AudioManager.play_sfx("ui_confirm")
-	_render()
-	_persist()
-
-
-func respond(id: String) -> void:
-	if _leaving or _menu.visible or step != "respond":
-		return
-	for response: Dictionary in data["responses"]:
-		if str(response["id"]) != id:
-			continue
-		feedback = str(response["feedback"])
-		go("failure" if not bool(response["safe"]) else ("success" if clues.size() >= 3 else "review"))
-		return
+	_rewinding = true
+	_cinematic_busy = true
+	_cinematic_mode = "rewind"
+	_cinematic_time = 0.0
+	_black_fade.modulate.a = 0.0
+	_closing_caption.modulate.a = 0.0
+	_effects.mode = "rewind"
+	_effects.time = 0.0
+	_effects.queue_redraw()
+	_update_advance_prompt()
+	AudioManager.cut_opening_audio(self)
+	AudioManager.play_opening_score("rewind", self)
+	_cinematic_tween = create_tween()
+	_cinematic_tween.tween_method(func(value: float) -> void:
+		_cinematic_time = value
+		_effects.time = value
+		_effects.queue_redraw()
+	, 0.0, 1.0, 1.0)
+	_cinematic_tween.tween_callback(func() -> void:
+		if not _leaving and _rewinding:
+			_advance_story()
+	)
 
 
 func retry() -> void:
-	go("message")
+	if step == "failure":
+		go("choice")
 
 
 func skip() -> void:
@@ -941,7 +1504,7 @@ func skip() -> void:
 
 
 func finish() -> void:
-	if step != "success" or _leaving:
+	if step != "closing" or _leaving or _menu.visible or _cinematic_busy or not bool(practice.get("sealed", false)):
 		return
 	state["pending_outcome"] = "completed"
 	go("summary")
@@ -966,9 +1529,10 @@ func _persist() -> void:
 	state["part"] = part
 	state["step"] = step
 	state["intro_index"] = intro_index
-	state["clues"] = clues.duplicate()
-	state["inspected"] = inspected.duplicate()
+	state.erase("clues")
+	state.erase("inspected")
 	state["history"] = history.duplicate(true)
+	state["practice"] = practice.duplicate(true)
 	state["tutorial_status"] = "in_progress" if part == "tutorial" else str(state.get("tutorial_status", "not_started"))
 	if part == "intro":
 		state["intro_status"] = "in_progress"
@@ -990,6 +1554,7 @@ func _back() -> void:
 	step = str(previous.get("step", "wake"))
 	intro_index = clampi(int(previous.get("intro_index", 0)), 0, _intro().size() - 1)
 	state.erase("pending_outcome")
+	_normalize_practice_step()
 	_render()
 	_persist()
 
@@ -1002,6 +1567,7 @@ func consume_back() -> bool:
 func _open_menu() -> void:
 	if _menu.visible or _leaving:
 		return
+	_pause_practice(true)
 	if _waking and _motion != null and _motion.is_valid():
 		_motion.pause()
 	else:
@@ -1009,7 +1575,8 @@ func _open_menu() -> void:
 	AudioManager.pause_opening_audio(self, true)
 	if _cinematic_tween != null and _cinematic_tween.is_valid():
 		_cinematic_tween.pause()
-	AudioManager.stop_dialogue_blips(self)
+	if not _cinematic_active:
+		AudioManager.stop_dialogue_blips(self)
 	if is_instance_valid(_phone_view):
 		_phone_view.set_locked(true)
 	if _typing != null and _typing.is_valid():
@@ -1026,6 +1593,7 @@ func _open_menu() -> void:
 
 func _close_menu() -> void:
 	_menu.hide()
+	_pause_practice(_cinematic_focus_lost or _cinematic_app_paused)
 	AudioManager.pause_opening_audio(self, false)
 	for node: Node in _layout.find_children("*", "BaseButton", true, false):
 		var button: BaseButton = node as BaseButton
@@ -1037,10 +1605,12 @@ func _close_menu() -> void:
 		_typing.play()
 	if _waking and _motion != null and _motion.is_valid():
 		_motion.play()
-	if _cinematic_tween != null and _cinematic_tween.is_valid():
+	if _cinematic_tween != null and _cinematic_tween.is_valid() and not _cinematic_focus_lost and not _cinematic_app_paused:
 		_cinematic_tween.play()
+		if _cinematic_busy:
+			AudioManager.play_opening_score(_cinematic_mode, self, _cinematic_time)
 	if is_instance_valid(_phone_view):
-		_phone_view.set_locked(false)
+		_phone_view.set_locked(_cinematic_focus_lost or _cinematic_app_paused or is_instance_valid(_practice_layer))
 		_phone_action.call_deferred(_phone_view, str((_intro()[intro_index] as Dictionary)["id"]))
 	_update_advance_prompt()
 
@@ -1070,7 +1640,18 @@ func _resize() -> void:
 	if _layout == null:
 		return
 	UI.fit_touch(self)
-	if is_instance_valid(_phone_view):
+	if is_instance_valid(_practice_layer) and not _event_layout:
+		_practice_margin.add_theme_constant_override("margin_top", int(_header.get_global_rect().end.y + 18))
+		_practice_margin.add_theme_constant_override("margin_left", int(size.x * (0.15 if _practice_blurred else 0.03)))
+		_practice_margin.add_theme_constant_override("margin_right", int(size.x * (0.15 if _practice_blurred else 0.52)))
+		_practice_card.custom_minimum_size.x = size.x * (0.65 if _practice_blurred else 0.43)
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+		for node: Node in _practice_layer.find_children("*", "Label", true, false):
+			if node.has_meta("practice_heading"):
+				(node as Label).add_theme_font_size_override("font_size", ceili((28.0 if node.get_meta("practice_heading") else 18.0) / physical))
+	if _event_layout:
+		_layout_event()
+	elif is_instance_valid(_phone_view):
 		_phone_view._metrics.call_deferred()
 		_phone_host.position = Vector2(size.x * 0.54, _header.get_global_rect().end.y + 12)
 		_phone_host.size = Vector2(size.x * 0.46 - 18, size.y - _phone_host.position.y - 12)
@@ -1079,7 +1660,8 @@ func _resize() -> void:
 	else:
 		_dialogue.size_flags_horizontal = Control.SIZE_FILL
 		_dialogue.custom_minimum_size.x = 0
-	_dialogue.custom_minimum_size.y = clampf(size.y * 0.30, 180.0, 240.0)
+	if not _event_layout:
+		_dialogue.custom_minimum_size.y = clampf(size.y * 0.30, 180.0, 240.0)
 	_position_advance()
 	_position_laugh_captions()
 	if is_instance_valid(_cinematic_next):
@@ -1095,11 +1677,46 @@ func _resize() -> void:
 		_focus_effect.size = size
 
 
+func _layout_event() -> void:
+	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+	_dialogue.size_flags_horizontal = Control.SIZE_FILL
+	_dialogue.custom_minimum_size.x = 0
+	_dialogue.custom_minimum_size.y = maxf(160.0, 104.0 / physical)
+	var top: float = _header.get_global_rect().end.y + 14
+	var bottom: float = minf(_dialogue.get_global_rect().position.y - 12, size.y - _dialogue.custom_minimum_size.y - 26)
+	var height: float = maxf(160, bottom - top)
+	_practice_margin.add_theme_constant_override("margin_top", int(top))
+	_practice_margin.add_theme_constant_override("margin_bottom", int(size.y - bottom))
+	_practice_margin.add_theme_constant_override("margin_left", int(size.x * 0.045))
+	_practice_margin.add_theme_constant_override("margin_right", int(size.x * 0.49))
+	_practice_card.custom_minimum_size.x = size.x * 0.44
+	_item_card.position = Vector2(size.x * 0.62, top)
+	_item_card.size = Vector2(size.x * 0.34, height)
+	var caption_height: float = maxf(60, 42 / physical)
+	_item_caption.position = _item_card.position + Vector2(14, height - caption_height)
+	_item_caption.size = Vector2(_item_card.size.x - 28, caption_height)
+	_item_caption.add_theme_font_size_override("font_size", ceili(16.0 / physical))
+	_phone_host.position = _item_card.position + Vector2(18, 8)
+	_phone_host.size = Vector2(_item_card.size.x - 36, maxf(100, height - caption_height - 16))
+	var fit: float = minf(_phone_host.size.x / 480.0, _phone_host.size.y / 840.0)
+	_phone_view.scale = Vector2.ONE * fit
+	_phone_view.position = (_phone_host.size - Vector2(480, 840) * fit) * 0.5
+	_phone_view._metrics.call_deferred()
+	for button: Button in _practice_buttons:
+		button.custom_minimum_size.y = maxf(64, 44 / physical)
+		button.add_theme_font_size_override("font_size", ceili(20.0 / physical))
+	for node: Node in _practice_layer.find_children("*", "Label", true, false):
+		if node.has_meta("practice_heading"):
+			(node as Label).add_theme_font_size_override("font_size", ceili((24.0 if node.get_meta("practice_heading") else 18.0) / physical))
+
+
 func _position_laugh_captions() -> void:
-	var positions: Array[Vector2] = [Vector2(0.5, 0.48), Vector2(0.22, 0.25), Vector2(0.72, 0.23), Vector2(0.29, 0.72), Vector2(0.76, 0.66)]
+	var positions: Array[Vector2] = [Vector2(0.19, 0.42), Vector2(0.34, 0.31), Vector2(0.66, 0.33), Vector2(0.83, 0.44), Vector2(0.80, 0.60)]
 	for index: int in _laugh_captions.size():
 		var laugh: Label = _laugh_captions[index]
-		laugh.size = Vector2(size.x * 0.26, 70)
+		laugh.autowrap_mode = TextServer.AUTOWRAP_OFF
+		laugh.add_theme_font_size_override("font_size", int(size.y * (0.17 if index == 4 else (0.045 + index * 0.004))))
+		laugh.size = Vector2(size.x * (0.75 if index == 4 else 0.28), size.y * (0.18 if index == 4 else 0.10))
 		laugh.position = size * positions[index] - laugh.size * 0.5
 		laugh.pivot_offset = laugh.size * 0.5
 
@@ -1236,17 +1853,46 @@ func _stop_motion() -> void:
 
 
 func _settings_changed() -> void:
+	if is_instance_valid(_celebration):
+		_celebration.reduced = SettingsService.reduced_motion
+		_celebration.queue_redraw()
 	if SettingsService.reduced_motion:
 		_stop_motion()
 		if _cinematic_active:
-			if _cinematic_tween != null and _cinematic_tween.is_valid():
-				_cinematic_tween.kill()
-			_cinematic_tween = null
-			_finish_cinematic_visual()
+			_scene_art.material = null
+			_glitch_until = -1
+			_effects.reduced = true
+			if not _rewinding:
+				_cinematic_frame(_cinematic_time)
 		_finish_reveal()
 
 
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_FOCUS_OUT: _cinematic_focus_lost = true
+		NOTIFICATION_APPLICATION_FOCUS_IN: _cinematic_focus_lost = false
+		NOTIFICATION_APPLICATION_PAUSED: _cinematic_app_paused = true
+		NOTIFICATION_APPLICATION_RESUMED: _cinematic_app_paused = false
+		_: return
+	if not is_node_ready():
+		return
+	_pause_practice(_cinematic_focus_lost or _cinematic_app_paused or _menu.visible)
+	if is_instance_valid(_phone_view):
+		_phone_view.set_locked(_cinematic_focus_lost or _cinematic_app_paused or _menu.visible or is_instance_valid(_practice_layer))
+	if not _cinematic_active or not _cinematic_busy:
+		return
+	if _cinematic_focus_lost or _cinematic_app_paused or _menu.visible:
+		if _cinematic_tween != null and _cinematic_tween.is_valid():
+			_cinematic_tween.pause()
+	else:
+		if _cinematic_tween != null and _cinematic_tween.is_valid():
+			_cinematic_tween.play()
+		# Backgrounding stopped the score: resume at the paused timeline offset.
+		AudioManager.play_opening_score(_cinematic_mode, self, _cinematic_time)
+
+
 func on_exit() -> void:
+	_clear_practice_layer()
 	AudioManager.release_opening_audio(self)
 	_stop_cinematic()
 	if is_instance_valid(_phone_view):
@@ -1257,6 +1903,8 @@ func on_exit() -> void:
 
 
 func _exit_tree() -> void:
+	if _practice_tween != null and _practice_tween.is_valid():
+		_practice_tween.kill()
 	AudioManager.release_opening_audio(self)
 	_stop_cinematic()
 	_stop_motion()
