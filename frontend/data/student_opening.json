@@ -29,8 +29,8 @@
     {"id": "claim", "title": "What if it is real?", "speaker": "player", "text": "A million pesos. For a moment, I imagine it. Before checking who sent the offer, I tap Claim Prize.", "visual": "room", "art_path": "opening_john_claim_prize_v1"},
     {"id": "hit", "visual": "takeover", "art_path": "opening_john_claim_prize_v1", "reveal_art": "opening_john_got_you_v1"},
     {"id": "collector", "visual": "meeting", "art_path": "opening_collector_meeting_v2"},
-    {"id": "victims", "visual": "montage", "art_path": "opening_five_victims_v3"},
-    {"id": "turn", "visual": "closing", "caption": "And this is how it began…", "art_path": "opening_five_victims_v3"}
+    {"id": "victims", "visual": "montage", "art_path": "opening_five_victims_john_v4"},
+    {"id": "turn", "visual": "closing", "caption": "And this is how it began…", "art_path": "opening_five_victims_john_v4"}
   ],
   "panels": {
     "amani": {"character": "amani", "emotion": "Confused", "caption": "Her phone has no signal. Her friends receive messages that appear to be hers. Someone is using the trust attached to her identity.", "art_path": "res://assets/story/comic_panel_amani_placeholder.svg"},

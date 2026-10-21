@@ -76,6 +76,17 @@ Physical Android soft-keyboard placement, touch feel and device background/resum
 
 Removed the hand beneath Amani's mouth in the second victim panel, preserving her phone-holding hand and worried expression. The full 1672×941 montage retains its existing panel boundaries. Both montage and closing now reference `opening_five_victims_v3` at https://res.cloudinary.com/nfd5bhkz/image/upload/v1792420653/five_victims_v3.png. Previous remote versions remain available; no PNG is tracked/bundled.
 
+### Personalized John artwork revision
+
+The montage and closing now use `opening_five_victims_john_v4`, hosted at
+https://res.cloudinary.com/nfd5bhkz/image/upload/v1792509486/opening_five_victims_john_personal_v4.png.
+John's first panel was regenerated using the supplied facial reference and white
+school uniform with green-and-black pocket stripes. The other four characters
+and existing panel layout were retained. Only the generated illustration was
+uploaded; the source portrait and uniform reference are not bundled or uploaded.
+Prior remote artwork remains available. This revision does not replace John's
+earlier bedroom/reaching/claim-prize artwork.
+
 Built-in imagegen precise-object edit, guided by the imagegen skill. Workspace preview: `C:/Users/John Lloyd/OneDrive/Documents/level-blue/frontend/.godot/five_victims_v3.png` (ignored). Generated original: `C:/Users/John Lloyd/.codex/generated_images/01a07a9a-7037-7471-bd7f-2e5ae97dbb79/exec-7f7838b6-ba78-44ee-99c2-b33d59c020d6.png`.
 
 Final prompt: “Use case: precise-object-edit. Image 1 is the edit target: LEVELBLUE five-panel victim montage. Make ONE localized correction in the SECOND panel from the left (long-haired woman in pale sweater): remove the extra hand and wrist directly beneath/near her mouth. Reconstruct the obscured neck, sweater neckline and chest naturally with matching pixel-art texture, lighting and fabric folds. Keep her existing lower hand holding the dark blue phone EXACTLY as is. Her other arm is lowered out of view, not near her face. Preserve her face, worried expression, hair, phone, background and pose. Preserve the other FOUR panels unchanged. Preserve original full landscape dimensions/aspect ratio, exact straight panel boundaries and all framing, colors, lighting and style. Do not crop, rearrange, redraw characters, add hands, add text, or add objects. Output the full five-panel image, not an isolated portrait.”

@@ -63,13 +63,14 @@ class CaptureFrame extends Control:
 	var _origin: Vector2
 	var _initial: Rect2
 	var _sheet: Label
+	var sheet_text: String = "FROM  Prize Desk\nawards@prize-claim.example\n\nYou won ₱1,000,000\n\nClaim within 10 minutes.\nConfirm your account password\nto release the prize."
 	const REQUIRED: Rect2 = Rect2(0.08, 0.08, 0.84, 0.82)
 	func _ready() -> void:
 		custom_minimum_size = Vector2(100, 350)
 		mouse_filter = MOUSE_FILTER_STOP
 		focus_mode = FOCUS_ALL
 		accessibility_name = "Evidence frame. Drag to move; drag the lower-right corner to resize. Tap controls are below."
-		_sheet = UI.label("FROM  Prize Desk\nawards@prize-claim.example\n\nYou won ₱1,000,000\n\nClaim within 10 minutes.\nConfirm your account password\nto release the prize.", 22, Color("101623"))
+		_sheet = UI.label(sheet_text, 22, Color("101623"))
 		_sheet.mouse_filter = MOUSE_FILTER_IGNORE
 		add_child(_sheet)
 		_sheet.set_anchors_and_offsets_preset(PRESET_FULL_RECT)

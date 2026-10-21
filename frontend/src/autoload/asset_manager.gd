@@ -308,6 +308,9 @@ func _college_story_catalog() -> Array[Dictionary]:
 
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	for person: String in ["john", "eric", "jobert"]:
+		var sprite_version: String = {"john":"1792535884", "eric":"1792535895", "jobert":"1792535908"}[person]
+		catalog.append(_catalog_entry("chapter1_" + person, "Chapter 1 / " + person, "image", "%s/v%s/levelblue_ch1_%s_expressions_20261021_v1.png" % [CLOUD_ROOT, sprite_version, person]))
 	for character: String in ["alex", "mia", "ms_reyes"]:
 		catalog.append(_catalog_entry("story_portrait_" + character, "School portrait / " + character, "sprite_sheet", "%s/v1790436023/%s_expressions.png" % [CLOUD_ROOT, character]))
 		catalog.append(_catalog_entry("story_dialogue_" + character, "School full-body dialogue / " + character, "sprite_sheet", "%s/v1790828276/%s_dialogue_atlas.png" % [CLOUD_ROOT, character]))
@@ -333,12 +336,13 @@ func _map_environment_catalog() -> Array[Dictionary]:
 
 func _ui_catalog() -> Array[Dictionary]:
 	return [
+		_catalog_entry("module1_email_tricks_title_v1", "Module 1 / Email Tricks cinematic title", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792510294/module1_email_tricks_john_personal_v1.png"),
 		_catalog_entry("opening_john_got_you_v1", "Opening / john got you", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_got_you_v1.png"),
 		_catalog_entry("opening_john_reaching_phone_v1", "Opening / john reaching phone", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_reaching_phone_v1.png"),
 		_catalog_entry("opening_collector_meeting_v2", "Opening / four lights meeting", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792338328/collector_meeting_v2.png"),
 		_catalog_entry("opening_john_room_wake_v1", "Opening / john room wake", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_room_wake_v1.png"),
 		_catalog_entry("opening_john_claim_prize_v1", "Opening / john claim prize", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_claim_prize_v1.png"),
-		_catalog_entry("opening_five_victims_v3", "Opening / five victim panels", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792420653/five_victims_v3.png"),
+		_catalog_entry("opening_five_victims_john_v4", "Opening / personalized John victim panels", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792509486/opening_five_victims_john_personal_v4.png"),
 		_catalog_entry("ui_intro", "Intro cinematic art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338103/Gemini_Generated_Image_3bwb7g3bwb7g3bwb.jpg"),
 		_catalog_entry("ui_intro_preview", "Intro title preview", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788338998/preview.png"),
 		_catalog_entry("ui_dashboard", "Dashboard art", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788336649/dashboard.png"),

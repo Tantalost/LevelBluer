@@ -167,7 +167,7 @@ func _select_music() -> void:
 		&"gameplay", &"pvp_battle", &"pvp_online": play_bgm(null)
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
 		&"opening": play_bgm(_tracks.get("morning") if _opening_morning else null)
-		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex": play_bgm(_tracks.get("study"))
+		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex", &"module_intro", &"survey_chapter": play_bgm(_tracks.get("study"))
 		&"login", &"password_change": play_bgm(hub_track)
 		_: play_bgm(_tracks.get("pvp" if _dashboard_mode == &"PVP" else "hub"))
 

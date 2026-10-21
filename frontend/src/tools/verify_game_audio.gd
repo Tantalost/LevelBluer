@@ -68,6 +68,9 @@ func _run() -> void:
 	audio._on_screen_changed(&"codex")
 	await wait()
 	check(audio.bgm_player.get_playback_position() >= position, "Shared study loop does not restart")
+	audio._on_screen_changed(&"module_intro")
+	await wait()
+	check(audio.bgm_player.stream == audio._tracks.study and music_voices() == 1, "Module prologue uses restrained study music")
 	# Rapid target changes must cancel old fade callbacks and stop the unused deck.
 	audio.play_bgm(audio._tracks.hub, 0.2)
 	await wait(0.05)

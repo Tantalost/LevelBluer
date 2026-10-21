@@ -67,6 +67,20 @@ var tutorial_complete: bool = false
 var tutorial_skipped: bool = false
 ## Presentation-only, per-account onboarding snapshot. Never learning evidence.
 var onboarding_state: Dictionary = {}
+## Story chapters are separate from legacy stages, onboarding and graded BKT.
+var chapter_progress: Dictionary = {}
+const SurveyChapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
+
+func save_survey_chapter(snapshot: Dictionary, persist: bool = true) -> void:
+	var previous: Dictionary = chapter_progress.get(SurveyChapter.ID, {})
+	if bool(previous.get("completed", false)):
+		return # Replays never replace the original exhibit or award twice.
+	var valid: Dictionary = SurveyChapter.clean(snapshot)
+	chapter_progress[SurveyChapter.ID] = valid
+	if bool(valid["completed"]):
+		credits += int(valid["reward"])
+	if persist:
+		SaveService.save_game(true, not bool(valid["completed"]))
 var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
@@ -344,6 +358,7 @@ func reset_to_defaults() -> void:
 	tutorial_complete = false
 	tutorial_skipped = false
 	onboarding_state = {}
+	chapter_progress = {}
 	has_intel_bonus = false
 	intel_bonus_module = ""
 	trace_seen_by_module = _empty_trace_history()
@@ -1000,6 +1015,7 @@ func get_save_data() -> Dictionary:
 		"tutorial_complete": tutorial_complete,
 		"tutorial_skipped": tutorial_skipped,
 		"onboarding_state": onboarding_state.duplicate(true),
+		"chapter_progress": chapter_progress.duplicate(true),
 		"has_intel_bonus": has_intel_bonus,
 		"intel_bonus_module": intel_bonus_module,
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
@@ -1181,6 +1197,9 @@ func apply_save_data(data: Dictionary) -> void:
 	tutorial_skipped = data.get("tutorial_skipped", false) == true
 	var saved_onboarding: Variant = data.get("onboarding_state", {})
 	onboarding_state = (saved_onboarding as Dictionary).duplicate(true) if saved_onboarding is Dictionary else {}
+	var saved_chapters: Variant = data.get("chapter_progress", {})
+	if saved_chapters is Dictionary and saved_chapters.get(SurveyChapter.ID) is Dictionary:
+		chapter_progress[SurveyChapter.ID] = SurveyChapter.clean(saved_chapters[SurveyChapter.ID])
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)

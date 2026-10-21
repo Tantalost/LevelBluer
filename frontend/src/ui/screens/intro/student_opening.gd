@@ -584,7 +584,7 @@ func _refresh_art(_success: bool) -> void:
 		"opening_john_claim_prize_v1": "John taps Claim Prize before checking the offer.",
 		"opening_john_got_you_v1": "The phone turns red. Got You.",
 		"opening_collector_meeting_v2": "Four masked scammers. Four lights. An empty chair in shadow.",
-		"opening_five_victims_v3": "Five people. Five traps. Shock, confusion, tears, anger and sadness."
+		"opening_five_victims_john_v4": "Five people. Five traps. Shock, confusion, tears, anger and sadness."
 	}
 	_art_fallback.text = descriptions.get(_art_id, "Opening scene") + "\n\nScene art unavailable. Connect and reload to download it."
 	_art_fallback.visible = _scene_art.texture == null

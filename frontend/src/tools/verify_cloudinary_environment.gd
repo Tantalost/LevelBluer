@@ -69,7 +69,7 @@ func _run() -> void:
 
 func _verify_school_story(assets: Node) -> void:
 	var entries: Array[Dictionary] = assets._school_story_catalog()
-	_check(entries.size() == 19, "Three portraits, three dialogue atlases, comic and twelve locations registered")
+	_check(entries.size() == 22, "School cast, three Chapter 1 sheets, comic and twelve locations registered")
 	for entry: Dictionary in entries:
 		var id: String = str(entry.asset_id)
 		if "--download" in OS.get_cmdline_user_args():
@@ -84,12 +84,12 @@ func _verify_school_story(assets: Node) -> void:
 		var portrait: bool = id.begins_with("story_portrait_")
 		var dialogue_atlas: bool = id.begins_with("story_dialogue_")
 		var expected_size: Vector2 = Vector2(2172, 724) if portrait else Vector2(800, 400)
-		if dialogue_atlas:
+		if dialogue_atlas or id.begins_with("chapter1_"):
 			expected_size = Vector2(1536, 1024)
 		elif id == "ui_module1_morning_comic":
 			expected_size = Vector2(1672, 941)
 		_check(texture.get_size() == expected_size, "Original dimensions retained: " + id)
-		if portrait or dialogue_atlas:
+		if portrait or dialogue_atlas or id.begins_with("chapter1_"):
 			_check(texture.get_image().get_pixel(0, 0).a == 0.0, "Portrait transparency retained: " + id)
 	if failures > 0:
 		return
@@ -125,15 +125,16 @@ func _verify_school_story(assets: Node) -> void:
 	var intro: Control = load("res://src/ui/screens/deploy/module_intro_screen.tscn").instantiate()
 	root.add_child(intro)
 	intro._load_art()
-	var comic: Texture2D = assets.get_texture("ui_module1_morning_comic")
-	_check(intro._art.texture == comic, "Comic uses the hosted morning art, not the old company comic")
-	assets._textures["ui_module1_morning_comic"] = null
+	var room: Texture2D = assets.get_texture("opening_john_room_wake_v1")
+	_check(intro._art.room == room, "Module intro reuses John's hosted room")
+	_check(intro._art.title_art == assets.get_texture("module1_email_tricks_title_v1"), "Title card loads its dedicated cinematic artwork")
+	assets._textures["opening_john_room_wake_v1"] = null
 	intro._load_art()
-	_check(intro._art.texture == null, "Missing comic does not reference a removed local file")
-	assets._textures["ui_module1_morning_comic"] = comic
+	_check(intro._art.room == null, "Missing room does not reference a removed local file")
+	assets._textures["opening_john_room_wake_v1"] = room
 	var sequence: int = intro._seq
 	assets.sync_finished.emit(true)
-	_check(intro._art.texture == comic and intro._seq == sequence, "Late comic arrival does not restart the sequence")
+	_check(intro._art.room == room and intro._seq == sequence, "Late art arrival does not restart the sequence")
 	subscribers = assets.sync_finished.get_connections().size()
 	intro.free()
 	_check(assets.sync_finished.get_connections().size() == subscribers - 1, "Freed intro disconnects its cache signal")

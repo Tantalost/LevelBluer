@@ -1,6 +1,7 @@
 extends SceneTree
 ## Read-only screen verification using in-memory account fixtures.
-var failures := 0
+var failures: int = 0
+var intro_checks_finished: bool = false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -104,5 +105,101 @@ func _run() -> void:
 	check(screen.visible, "Resume restores screen")
 	screen.queue_free()
 	await settle()
+	await check_intro(player, auth)
+	check(intro_checks_finished, "Intro checks reached completion")
 	print("MODULE_SELECT_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)
+
+func check_intro(player: Node, auth: Node) -> void:
+	var assets: Node = root.get_node("AssetManager")
+	if "--download-art" in OS.get_cmdline_user_args():
+		for entry: Dictionary in assets._ui_catalog():
+			if str(entry.asset_id) in ["module1_email_tricks_title_v1", "opening_five_victims_john_v4"]:
+				check(await assets._download_and_store(entry), "New cinematic art downloads and caches")
+	var settings: Node = root.get_node("SettingsService")
+	var previous_motion: bool = settings.reduced_motion
+	var previous_speed: String = settings.text_speed
+	settings.reduced_motion = false
+	settings.text_speed = "normal"
+	root.size = Vector2i(1280, 720)
+	var intro: Control = load("res://src/ui/screens/deploy/module_intro_screen.tscn").instantiate()
+	root.add_child(intro)
+	var before: String = fingerprint(player, auth)
+	var seen_before: String = JSON.stringify(player.seen_module_intros)
+	intro.on_enter({"module_index": 0})
+	await settle()
+	check(intro._skip_button.visible, "First-time readers can skip to title card")
+	check(intro._index == 0 and not intro._ending, "Intro begins with John's email")
+	intro._advance()
+	check(intro._index == 0 and intro._dialogue_text.visible_characters == -1, "First tap reveals line without skipping it")
+	intro._last_advance = -1000
+	intro._advance()
+	check(intro._index == 1, "Next tap advances exactly one beat")
+	intro._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
+	var characters: int = intro._dialogue_text.visible_characters
+	await create_timer(0.2).timeout
+	intro._last_advance = -1000
+	intro._advance()
+	check(intro._index == 1 and intro._dialogue_text.visible_characters == characters, "Focus loss freezes typing and input")
+	intro._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN)
+	settings.reduced_motion = true
+	intro._settings_changed()
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+		root.size = dimensions
+		await settle()
+		for beat: int in [0, 2, 7]:
+			intro._index = beat
+			intro._show_beat()
+			await settle()
+			var dialog_bounds: Rect2 = intro._dialogue.get_global_rect()
+			check(dialog_bounds.end.y <= intro.size.y + 1, "Narration fits viewport at beat %d / %d" % [beat, dimensions.x])
+			if intro._item.visible:
+				check(intro._item.get_global_rect().end.y <= dialog_bounds.position.y, "Item stays above narration at beat %d / %d" % [beat, dimensions.x])
+				check(intro._item.position.x < intro.size.x * 0.1 and intro._item.size.x < intro.size.x * 0.45, "Email evidence stays compact on the left")
+			check(intro._advance_button.size.y * root.get_final_transform().get_scale().y >= 47, "Intro advance has a mobile touch target")
+			await capture("intro_%d_%d" % [dimensions.x, beat])
+		for beat: int in [3, 4, 5, 6, 8]:
+			intro._index = beat
+			intro._show_beat()
+			await create_timer(0.45).timeout
+			check(intro._caption.visible and not intro._dialogue.visible and not intro._item.visible, "Thought captions hide narration and explanation cards")
+			check(intro._caption.text == str(intro.BEATS[beat]["line"]), "Only the current thought appears")
+			await capture("intro_%d_thought_%d" % [dimensions.x, beat])
+		intro._last_advance = -1000
+		intro._advance()
+		check(intro._ending, "Final line leads to title card")
+		await create_timer(0.4).timeout
+		check(not intro._start_button.disabled, "Title card offers Continue after reveal")
+		check(intro._chapter_label.text == "MODULE 1" and intro._ending_title.text == "Email Tricks", "Requested title card wording")
+		check(intro._start_button.get_global_rect().end.y <= intro.size.y + 1, "Title card Continue fits viewport")
+		await capture("intro_title_%d" % dimensions.x)
+		intro._restart()
+		check(intro._index == 0 and not intro._ending, "Replay resets narrative")
+	intro._index = 3
+	intro._show_beat()
+	await create_timer(2.9).timeout
+	check(intro._index == 4, "Centered thought fades out and advances automatically")
+	intro._skip()
+	await create_timer(3.0).timeout
+	check(intro._ending and not intro._caption.visible, "Skipped thought cannot resume its abandoned sequence")
+	intro._restart()
+	settings.reduced_motion = false
+	intro._skip()
+	check(intro._ending, "Skip still presents module title")
+	check(intro._start_button.disabled, "Normal-motion title waits for artwork reveal")
+	intro._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED)
+	var reveal: float = intro._art.reveal
+	await create_timer(0.2).timeout
+	check(is_equal_approx(intro._art.reveal, reveal), "App suspension pauses title reveal")
+	intro._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED)
+	await create_timer(1.1).timeout
+	check(not intro._start_button.disabled and is_equal_approx(intro._art.reveal, 1.0), "Normal-motion title finishes after resume")
+	intro.on_exit()
+	check(not intro.visible and intro._motion == null and intro._typing == null, "Exit cancels owned animations")
+	intro.on_resume()
+	check(intro.visible and not intro._start_button.disabled, "Resuming title cannot strand Continue")
+	check(fingerprint(player, auth) == before and JSON.stringify(player.seen_module_intros) == seen_before, "Reading, skipping and replaying never award progress or write seen status")
+	intro.free()
+	settings.reduced_motion = previous_motion
+	settings.text_speed = previous_speed
+	intro_checks_finished = true
