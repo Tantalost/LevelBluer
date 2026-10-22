@@ -1,6 +1,6 @@
 extends SceneTree
 ## --download validates the supplied URLs and populates the asset cache.
-## --story selects the 19 school story assets instead of the seven environment assets.
+## --story selects the 23 school/chapter story assets instead of environment assets.
 ## Default mode verifies offline cache reuse and real scene bindings; no saves.
 var failures := 0
 
@@ -69,7 +69,7 @@ func _run() -> void:
 
 func _verify_school_story(assets: Node) -> void:
 	var entries: Array[Dictionary] = assets._school_story_catalog()
-	_check(entries.size() == 22, "School cast, three Chapter 1 sheets, comic and twelve locations registered")
+	_check(entries.size() == 23, "School cast, Chapter 1 sheets/night desk, comic and twelve locations registered")
 	for entry: Dictionary in entries:
 		var id: String = str(entry.asset_id)
 		if "--download" in OS.get_cmdline_user_args():
@@ -86,7 +86,7 @@ func _verify_school_story(assets: Node) -> void:
 		var expected_size: Vector2 = Vector2(2172, 724) if portrait else Vector2(800, 400)
 		if dialogue_atlas or id.begins_with("chapter1_"):
 			expected_size = Vector2(1536, 1024)
-		elif id == "ui_module1_morning_comic":
+		elif id in ["ui_module1_morning_comic", "story_bg_john_desk_night"]:
 			expected_size = Vector2(1672, 941)
 		_check(texture.get_size() == expected_size, "Original dimensions retained: " + id)
 		if portrait or dialogue_atlas or id.begins_with("chapter1_"):

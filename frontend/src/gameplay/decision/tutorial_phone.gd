@@ -64,7 +64,8 @@ class CaptureFrame extends Control:
 	var _initial: Rect2
 	var _sheet: Label
 	var sheet_text: String = "FROM  Prize Desk\nawards@prize-claim.example\n\nYou won ₱1,000,000\n\nClaim within 10 minutes.\nConfirm your account password\nto release the prize."
-	const REQUIRED: Rect2 = Rect2(0.08, 0.08, 0.84, 0.82)
+	var minimum_font_pixels: float = 0.0
+	var capture_font_size: int = 0
 	func _ready() -> void:
 		custom_minimum_size = Vector2(100, 350)
 		mouse_filter = MOUSE_FILTER_STOP
@@ -84,7 +85,9 @@ class CaptureFrame extends Control:
 		_sheet.offset_right = -size.x * 0.10
 		_sheet.offset_top = size.y * 0.10
 		_sheet.offset_bottom = -size.y * 0.12
-		_sheet.add_theme_font_size_override("font_size", maxi(12, int(minf(size.y / 12.0, size.x / 22.0))))
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+		_sheet.add_theme_font_size_override("font_size", maxi(maxi(12, ceili(minimum_font_pixels / physical)), int(minf(size.y / 12.0, size.x / 22.0))))
+		if capture_font_size > 0: _sheet.add_theme_font_size_override("font_size", capture_font_size)
 		queue_redraw()
 	func _draw() -> void:
 		draw_rect(Rect2(Vector2.ZERO, size), Color("F3ECD6"))
@@ -143,7 +146,14 @@ class CaptureFrame extends Control:
 			frame.size += delta
 			_commit()
 	func complete() -> bool:
-		return frame.grow(0.002).encloses(REQUIRED)
+		if not is_instance_valid(_sheet) or size.x <= 0 or size.y <= 0: return false
+		var required: Rect2 = required_pixels()
+		var actual: Rect2 = Rect2(frame.position * size, frame.size * size)
+		# Match the wrapped text, not the blank bottom of its anchored Label.
+		return required.size.y > 0 and actual.grow(3.0).encloses(required)
+	func required_pixels() -> Rect2:
+		if not is_instance_valid(_sheet): return Rect2()
+		return Rect2(_sheet.position, Vector2(_sheet.size.x, _sheet.get_minimum_size().y))
 	func cancel_drag() -> void:
 		_dragging = false
 		_finger = -1
@@ -521,18 +531,20 @@ func take_photo() -> void:
 		# Render the immutable message separately: scrolling the phone must never
 		# capture the room, controls, or other content outside its viewport.
 		_capture_viewport = SubViewport.new()
-		_capture_viewport.size = Vector2i(480, 350)
+		var capture_size: Vector2i = Vector2i(_camera.size)
+		_capture_viewport.size = capture_size
 		_capture_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		add_child(_capture_viewport)
 		var sheet: CaptureFrame = CaptureFrame.new()
+		sheet.capture_font_size = _camera._sheet.get_theme_font_size("font_size")
 		sheet.locked = true
 		_capture_viewport.add_child(sheet)
-		sheet.size = Vector2(480, 350)
+		sheet.size = Vector2(capture_size)
 		await RenderingServer.frame_post_draw
 		if generation != _capture_generation or not is_instance_valid(_capture_viewport):
 			return
 		var image: Image = _capture_viewport.get_texture().get_image()
-		var region: Rect2i = Rect2i(Rect2(_camera.frame.position * Vector2(480, 350), _camera.frame.size * Vector2(480, 350)))
+		var region: Rect2i = Rect2i(Rect2(_camera.frame.position * Vector2(capture_size), _camera.frame.size * Vector2(capture_size))).intersection(Rect2i(Vector2i.ZERO, capture_size))
 		if region.has_area():
 			_preview = ImageTexture.create_from_image(image.get_region(region))
 		_capture_viewport.queue_free()

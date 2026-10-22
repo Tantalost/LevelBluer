@@ -140,7 +140,7 @@ func _build() -> void:
 	_header = HBoxContainer.new()
 	_header.add_theme_constant_override("separation", 12)
 	add_child(_header)
-	_back_button = _button("< BACK", _back)
+	_back_button = _button("BACK", _back)
 	_header.add_child(_back_button)
 	_counter = UI.label("", 20, Color("8FF0E6"))
 	_counter.size_flags_horizontal = Control.SIZE_EXPAND_FILL

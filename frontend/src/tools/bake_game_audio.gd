@@ -91,6 +91,10 @@ func _effect(key: String, notes: Array[int], duration: float, step: float, gain:
 	_save(buffer, "res://assets/audio/sfx/" + key + ".wav", gain)
 
 func _bake() -> void:
+	if "--chapter-complete-only" in OS.get_cmdline_user_args():
+		_bake_chapter_complete()
+		quit()
+		return
 	if "--cinematic-only" in OS.get_cmdline_user_args():
 		_bake_cinematic()
 		quit()
@@ -120,6 +124,22 @@ func _bake() -> void:
 	_save(sweep, "res://assets/audio/sfx/ui_transition.wav", 0.22)
 	quit()
 
+
+func _bake_chapter_complete() -> void:
+	# Original six-second major-key reward flourish, with a soft resolving tail.
+	var buffer: PackedFloat32Array = PackedFloat32Array()
+	buffer.resize(RATE * 6)
+	var chords: Array[int] = [48, 53, 55, 60]
+	for bar: int in chords.size():
+		var at: float = bar * 1.05
+		for interval: int in [0, 4, 7, 12]:
+			_tone(buffer, at, 1.7, chords[bar] + interval, 0.07, "pad")
+		_tone(buffer, at, 0.6, chords[bar] - 12, 0.13, "bass")
+		_tone(buffer, at, 0.2, 36, 0.08, "kick")
+	var melody: Array[int] = [72, 76, 79, 84, 81, 84, 86, 88, 86, 83, 79, 84]
+	for i: int in melody.size():
+		_tone(buffer, 0.15 + i * 0.28, 0.65 if i < 11 else 1.5, melody[i], 0.18, "pluck")
+	_save(buffer, "res://assets/audio/bgm/chapter_complete.wav", 0.62)
 
 func _bake_opening() -> void:
 	# Warm, sparse 80 BPM original loop: soft major-seventh plucks and a light pulse.

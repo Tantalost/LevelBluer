@@ -40,6 +40,26 @@ func _run() -> void:
 	audio._focus_lost = false
 	audio._app_paused = false
 	audio._apply_buses()
+	var title_source: Control = Control.new()
+	root.add_child(title_source)
+	var music_bus: int = AudioServer.get_bus_index("BGM")
+	audio.set_story_duck(title_source, 0.3)
+	check(is_equal_approx(db_to_linear(AudioServer.get_bus_volume_db(music_bus)), 0.55 * 0.3), "Story title ducks music without changing preference")
+	check(settings.music_volume == 55, "Music preference survives title duck")
+	settings.music_enabled = false
+	audio._apply_buses()
+	check(AudioServer.is_bus_mute(music_bus), "Story duck respects music mute")
+	settings.music_volume = 40
+	audio._apply_buses()
+	audio.set_story_duck(title_source, 1.0)
+	check(is_equal_approx(db_to_linear(AudioServer.get_bus_volume_db(music_bus)), 0.4), "Duck release restores the latest volume, not a stale snapshot")
+	audio.set_story_duck(title_source, 0.3)
+	title_source.queue_free()
+	await wait()
+	check(is_equal_approx(audio._story_duck_gain, 1.0), "Freed title owner cannot leave music permanently ducked")
+	settings.music_enabled = true
+	settings.music_volume = 55
+	audio._apply_buses()
 	check(audio._tracks.size() == 5 and audio._sounds.size() == 7 and audio._opening_cues.size() == 8, "Original audio, morning assets and five cinematic mixes load")
 	for key: String in audio._tracks:
 		var stream: AudioStream = audio._tracks[key]

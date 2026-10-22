@@ -9,24 +9,29 @@ const MESSAGES: Array[Dictionary] = [
 	{"id":"library", "sender":"School Library", "address":"library@school.example", "subject":"Book renewal confirmed", "body":"Your requested renewal is complete. Return your book by Friday. You can check the date at the library desk; no reply is needed.", "suspicious":false},
 	{"id":"urgent", "sender":"Survey Coordinator", "address":"survey.coordinator@yahoo.com", "subject":"Keep your survey slot", "body":"Your application is nearly ready.", "suspicious":true, "flag":"pressure", "phrase":"Reply with your contact number now. Do not ask the school; this offer expires in ten minutes.", "thought":"A deadline AND a reason not to check with anyone. Why would verification cost me the job?"},
 	{"id":"receipt", "sender":"Campus Print Desk", "address":"receipts@print.school.example", "subject":"Receipt for your print order", "body":"Your paid print order is ready for collection. This matches the order you made at the desk. No new payment or personal details are requested.", "suspicious":false},
-	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "thought":"'Recieve' could just be bad grammar. Asking for my birth date and home address without explaining why is the bigger concern."}
+	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "thought":"'Recieve' could just be bad grammar. But my birth date AND my home address? They haven't even explained why they need them."}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John", "face":2, "bg":"school_gate_morning", "line":"Five days before the disaster. I was late again. Back then, my biggest problem was getting through the gate before the bell."},
+	{"who":"John", "face":2, "bg":"school_gate_morning", "line":"Five days before everything went wrong. And here I was, late again. Come on, John. Just get through the gate before the bell."},
 	{"who":"Eric", "face":1, "bg":"hallway_day", "line":"John! You look like you ran the whole way. No coffee today?"},
 	{"who":"John", "face":2, "bg":"hallway_day", "line":"No coffee. No spare money either. Please tell me the meeting hasn't started."},
-	{"who":"Eric", "face":1, "bg":"clubroom", "line":"You're fine. Come on—I'll save you a seat."},
-	{"who":"John", "face":0, "bg":"clubroom", "chat":true, "line":"I drop a message into our club chat. It feels harmless. Just friends talking."},
-	{"who":"Eric", "face":1, "bg":"clubroom", "line":"That survey gig I mentioned? Easy work. I know the client personally."},
+	{"who":"Eric", "face":1, "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
+	{"who":"John", "face":0, "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
+	{"who":"Eric", "face":1, "bg":"clubroom", "line":"We're back. That survey gig I mentioned? Easy work. I know the client personally."},
 	{"who":"John", "face":4, "bg":"clubroom", "line":"Really? What's their name?"},
 	{"who":"Eric", "face":2, "bg":"clubroom", "line":"Uh… I'll send you the contact. They handle everything by email."},
-	{"who":"John", "face":0, "bg":"clubroom", "line":"He looks away for a second. I notice it. Then I think about the money instead."},
+	{"who":"John", "face":0, "bg":"clubroom", "line":"Why did he look away? Maybe I'm overthinking it. I could really use that money."},
 	{"who":"Jobert", "face":2, "bg":"clubroom", "line":"Careful with random surveys, John. Ask me if you're unsure. We can check who's behind it."},
 	{"who":"John", "face":1, "bg":"clubroom", "line":"Thanks. I'll take a look first. It's just a survey… right?"},
-	{"who":"John", "face":0, "bg":"classroom_sunset", "mail":true, "line":"By afternoon, six messages are waiting. Familiar school updates. Survey requests. I answer before I stop to compare them."},
-	{"who":"John", "face":2, "bg":"room", "line":"That night, I open my inbox again. Three messages keep bothering me. Maybe I should have looked closer."}
+	{"who":"John", "face":0, "bg":"classroom_sunset", "mail":true, "line":"Six new messages already? Some from school. Some about the survey. I'd better answer before I lose the job."},
+	{"who":"John", "face":2, "bg":"john_desk_night", "time":"night", "line":"That night, I open my inbox again. Three messages keep bothering me. Maybe I should have looked closer."}
 ]
-const CHAT: String = "CLUB GROUP CHAT\n\nJohn: I miss coffee. I need a side gig before my wallet gives up.\n\nEric: I have a survey job. Interested?\n\nJobert: Careful with random surveys. Ask me if you're unsure.\n\nJohn: Send it over. I'll have a look."
+const CHAT_MESSAGES: Array[Dictionary] = [
+	{"who":"John", "face":0, "text":"I miss coffee. I need a side gig before my wallet gives up."},
+	{"who":"Eric", "face":1, "text":"I have a survey job. Interested?"},
+	{"who":"Jobert", "face":2, "text":"Careful with random surveys. Ask me if you're unsure."},
+	{"who":"John", "face":1, "text":"Send it over. I'll have a look."},
+]
 
 static func fresh() -> Dictionary:
 	return {"version":1, "beat":0, "phase":"day", "read":[], "sorted":[], "flags":[], "domains":[], "captures":[], "mistakes":0, "hint_used":false, "sealed":false, "completed":false, "next_chapter_unlocked":false, "reward":0}

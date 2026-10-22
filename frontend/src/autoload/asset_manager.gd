@@ -308,9 +308,10 @@ func _college_story_catalog() -> Array[Dictionary]:
 
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	catalog.append(_catalog_entry("story_bg_john_desk_night", "Chapter 1 / John's nighttime desk", "image", "%s/v1792675006/john_desk_night_v1.png" % CLOUD_ROOT))
 	for person: String in ["john", "eric", "jobert"]:
-		var sprite_version: String = {"john":"1792535884", "eric":"1792535895", "jobert":"1792535908"}[person]
-		catalog.append(_catalog_entry("chapter1_" + person, "Chapter 1 / " + person, "image", "%s/v%s/levelblue_ch1_%s_expressions_20261021_v1.png" % [CLOUD_ROOT, sprite_version, person]))
+		var sprite_version: String = "1792675005" if person == "eric" else "1792675007"
+		catalog.append(_catalog_entry("chapter1_" + person, "Chapter 1 / " + person, "image", "%s/v%s/%s_poses_v1.png" % [CLOUD_ROOT, sprite_version, person]))
 	for character: String in ["alex", "mia", "ms_reyes"]:
 		catalog.append(_catalog_entry("story_portrait_" + character, "School portrait / " + character, "sprite_sheet", "%s/v1790436023/%s_expressions.png" % [CLOUD_ROOT, character]))
 		catalog.append(_catalog_entry("story_dialogue_" + character, "School full-body dialogue / " + character, "sprite_sheet", "%s/v1790828276/%s_dialogue_atlas.png" % [CLOUD_ROOT, character]))

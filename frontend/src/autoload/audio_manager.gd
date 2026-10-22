@@ -53,6 +53,8 @@ var _route_queued: bool = false
 var _focus_lost: bool = false
 var _app_paused: bool = false
 var _steal_index: int = 0
+var _story_duck_owner: WeakRef
+var _story_duck_gain: float = 1.0
 
 func _ready() -> void:
 	for speaker: String in VOICE_PROFILES:
@@ -215,6 +217,7 @@ func _kill_bgm_tween() -> void:
 func _apply_buses() -> void:
 	_set_bus("Master", SettingsService.master_volume, false)
 	_set_bus("BGM", SettingsService.music_volume, not SettingsService.music_enabled)
+	_apply_story_duck()
 	_set_bus("SFX", SettingsService.sfx_volume, not SettingsService.sound_enabled)
 	if _screen_id != &"opening" and (not SettingsService.dialogue_blips_enabled or SettingsService.text_speed == "instant"):
 		stop_dialogue_blips()
@@ -225,6 +228,24 @@ func _apply_buses() -> void:
 		_stop_music()
 	elif _desired_bgm != null and not bgm_player.playing:
 		play_bgm(_desired_bgm)
+
+## Temporary presentation gain never overwrites the player's volume preference.
+func set_story_duck(source: Control, gain: float) -> void:
+	var owner: Control = _story_duck_owner.get_ref() as Control if _story_duck_owner != null else null
+	if owner == source and is_equal_approx(_story_duck_gain, gain): return
+	if gain >= 1.0:
+		if owner != source and owner != null: return
+		_story_duck_owner = null
+		_story_duck_gain = 1.0
+	else:
+		_story_duck_owner = weakref(source)
+		_story_duck_gain = clampf(gain, 0.0, 1.0)
+	_apply_story_duck()
+
+func _apply_story_duck() -> void:
+	var index: int = AudioServer.get_bus_index("BGM")
+	if index >= 0:
+		AudioServer.set_bus_volume_db(index, linear_to_db(maxf(0.0001, SettingsService.music_volume / 100.0 * _story_duck_gain)))
 
 func _set_bus(bus_name: String, percent: int, muted: bool) -> void:
 	var index: int = AudioServer.get_bus_index(bus_name)
@@ -480,6 +501,12 @@ func _synthesize_robot_laugh() -> AudioStreamWAV:
 	return stream
 
 func _process(_delta: float) -> void:
+	if _story_duck_owner != null:
+		var source: Control = _story_duck_owner.get_ref() as Control
+		if source == null or not source.is_visible_in_tree():
+			_story_duck_owner = null
+			_story_duck_gain = 1.0
+			_apply_story_duck()
 	if not dialogue_player.playing:
 		return
 	var source: Control = _dialogue_owner.get_ref() as Control if _dialogue_owner != null else null
