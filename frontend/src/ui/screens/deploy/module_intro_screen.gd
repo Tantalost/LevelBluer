@@ -364,7 +364,7 @@ func _leave_to_stages() -> void:
 	_start_button.disabled = true
 	if _module_index == 0:
 		PlayerManager.mark_module_intro_seen("mod_01")
-	await Router.replace(&"survey_chapter" if _module_index == 0 else &"module_stages", {"module_index": _module_index})
+	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index == 0})
 
 func _can_interact() -> bool:
 	return _active and not _leaving and not _focus_lost and not _app_paused

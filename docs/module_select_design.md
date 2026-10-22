@@ -9,7 +9,10 @@ The existing `stage_select` route now uses the shared study-screen shell: a char
 - Open Module stays visible while the briefing scrolls. Selecting an unlocked card retains the original one-tap navigation.
 - Module 1 reports explicit clears out of its ten stages. Other modules say stages are coming soon, independently of lesson-based access.
 
-Unlock rules and destinations are unchanged: Module 1 uses the completed-module lesson record and opens its introduction; later modules use previous-module lesson counts and open their stage lists. This screen never writes progression, rewards or account data.
+Existing lesson-access checks remain unchanged. First-time Module 1 entry opens
+its intro; the saved intro-seen flag or existing Chapter 1 progress sends returning
+players to Chapter Select. Other modules retain their stage-list routes. This
+screen never awards progression or rewards.
 
 No new bitmap assets or Cloudinary uploads are required. The existing cached profile avatar is reused; module diagrams live in `module_signal_art.gd`.
 
@@ -37,8 +40,8 @@ The ending uses newly generated, dedicated Cloudinary art with John's supplied
 facial reference and white school shirt with a green-and-black pocket stripe.
 “MODULE 1” and “Email Tricks” remain runtime labels, not baked text.
 No PNG is bundled. Skip remains available on first viewing and
-leads to the title card. Replay is read-only. Continue opens `survey_chapter`
-for Module 1; other modules retain `module_stages`.
+leads to the title card. Replay is read-only. Continue opens `module_stages` in
+Chapter Select mode for Module 1; other modules retain legacy stage selection.
 
 Typing and title transitions pause on application focus loss/suspension and are
 cancelled on exit. Reduced motion, instant text, audio mute and cached/offline art
@@ -53,9 +56,33 @@ art assets into the normal Godot cache; combine with `--render` for screenshots.
 
 ## Module 1 / Chapter 1: The Survey (2026-10-21)
 
-Playable route: Deploy → Module 1 → introduction/title → Continue. Existing
-module lesson-access rules are unchanged. This replaces the Module 1 intro's
-old stage-list destination, without resetting legacy stage or assessment data.
+Playable route: Deploy → Module 1 → first-visit introduction/title → Chapter
+Select → Chapter 1. Returning players bypass the intro; a Replay Module Intro
+button remains available. The existing module_stages screen lists five chapters
+in this mode: only The Survey is playable; Chapters 2–5 are clearly coming soon.
+Legacy mission lists and assessment data are not repurposed or reset.
+
+Chapter Select now uses an illustrated preview with the existing Cloudinary
+night-desk artwork, a readability gradient, short synopsis and progress badge.
+A mint Start/Continue/Replay Chapter action stays beneath the preview; Replay
+Intro is a separate compact, single-line control. Numbered chapter cards use
+muted teal selection borders, sealed/available labels and muted Coming Soon states.
+The compact profile and credit header preserves Profile and Settings access.
+No new image files, routes, rewards or chapter content were added.
+
+The chapter screen follows Deploy's squared slate terminal theme, not a separate
+rounded navy/blue theme. Existing `study_ui.gd` button styling is shared through
+`style_button`, including hover, pressed, focus and disabled states. Chapter
+numbers are plain type rather than rounded badges; larger card labels and
+neutral credit text match the previous screen. The illustrated layout is retained.
+
+The chapter list scrolls independently on landscape phones. Selection fades
+respect reduced motion; owned tweens stop on exit or rebuild. Deferred scroll
+targets resolve against the latest cards so resize/progress refresh cannot
+reference a removed node. Missing artwork leaves a readable navy preview;
+late AssetManager synchronization refreshes only its texture. Verification
+includes fresh, in-progress, completed, pending and missing-art states at
+1280×720 and 844×390; physical-device touch testing is still recommended.
 
 - Day: late arrival, Eric's offer, club group chat, Jobert's caution, Eric's
   evasive answer about his client, then six inbox messages. John responds to
@@ -224,6 +251,12 @@ temporarily ducked, then restored. Returning from Upgrades/Settings cannot repla
 the payout or the music. No new gameplay controller or reward logic was added.
 
 ### Verification
+
+Results chrome has no duplicate header caption, clipped-corner reward shape or
+decorative corner brackets. Primary/secondary buttons share a centered grid,
+consistent corners and mobile touch spacing. The pause menu is a centered square
+with text rows and a blue keyboard/hover selection highlight. Its full-screen
+dim backdrop blocks interaction behind the modal; Resume restores HUD focus.
 
 Run `--headless --path frontend --script res://src/tools/verify_survey_chapter.gd`.
 Omit headless and add `-- --render` for screenshots in ignored `frontend/.godot/`;

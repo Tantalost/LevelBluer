@@ -37,6 +37,48 @@ var _profile_name: Label
 var _profile_rank: Label
 var _teaser_label: Label
 var _briefing_tween: Tween
+var _chapters: bool = false
+var _chapter_preview: ChapterPreview
+var _intro_button: Button
+
+class ChapterPreview extends Control:
+	var artwork: Texture2D
+	var chapter: int = 1
+	var sealed: bool = false
+	var started: bool = false
+
+	func _text(value: String, point: Vector2, pixels: int, ink: Color) -> void:
+		draw_string(UI.FONT, point, value, HORIZONTAL_ALIGNMENT_LEFT, -1, pixels, ink)
+
+	func _draw() -> void:
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+		var u: float = 1.0 / physical
+		var bounds: Rect2 = Rect2(Vector2.ZERO, size)
+		var panel: StyleBoxFlat = UI.box(Color("13242d"), Color("8dc9bd"), 0)
+		draw_style_box(panel, bounds)
+		if artwork != null and chapter == 1:
+			var source: Vector2 = artwork.get_size()
+			var ratio: float = maxf(size.x / source.x, size.y / source.y)
+			var crop: Vector2 = size / ratio
+			draw_texture_rect_region(artwork, bounds.grow(-2), Rect2((source - crop) * 0.5, crop))
+		# Darken only enough to keep cream text readable, with a stronger lower fade.
+		for band: int in 64:
+			var p: float = float(band) / 63.0
+			var opacity: float = lerpf(0.18, 0.98, smoothstep(0.12, 0.82, p))
+			draw_rect(Rect2(2, 2 + band * (size.y - 4) / 64.0, size.x - 4, (size.y - 4) / 64.0), Color(UI.BG, opacity))
+		var margin: float = 20 * u
+		var small: int = ceili(16 * u)
+		_text("MODULE 01   /   EMAIL TRICKS", Vector2(margin, 30 * u), small, UI.TEAL)
+		var title_y: float = maxf(95 * u, size.y - 102 * u)
+		_text("CHAPTER %02d" % chapter, Vector2(margin, title_y - 34 * u), small, UI.TEAL)
+		_text("The Survey" if chapter == 1 else "To be continued", Vector2(margin, title_y), ceili(32 * u), UI.TEXT)
+		_text("A friendly offer. Six messages." if chapter == 1 else "This chapter is still in preparation.", Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
+		_text("Something doesn't add up." if chapter == 1 else "Your next case will appear here.", Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
+		var status: String = ("EXHIBIT SEALED" if sealed else ("IN PROGRESS" if started else "READY TO BEGIN")) if chapter == 1 else "COMING SOON"
+		var badge: Rect2 = Rect2(margin, size.y - 31 * u, UI.FONT.get_string_size(status, HORIZONTAL_ALIGNMENT_LEFT, -1, small).x + 20 * u, 24 * u)
+		var badge_style: StyleBoxFlat = UI.box(Color("203a40") if chapter == 1 else UI.PANEL, Color("48635f"), 0)
+		draw_style_box(badge_style, badge)
+		_text(status, badge.position + Vector2(10, 17) * u, small, UI.TEAL)
 
 func _ready() -> void:
 	_modules = LessonCatalog.modules()
@@ -92,6 +134,9 @@ func _ready() -> void:
 	_detail = UI.scroll_column(briefing)
 	_breach_button = UI.button("DEPLOY  >", _on_breach_pressed, true)
 	briefing.add_child(_breach_button)
+	_intro_button = UI.button("REPLAY INTRO", func() -> void: Router.push(&"module_intro", {"module_index":0}))
+	_intro_button.hide()
+	briefing.add_child(_intro_button)
 	var missions := UI.column(_body, 12)
 	missions.size_flags_horizontal = SIZE_EXPAND_FILL
 	missions.size_flags_stretch_ratio = 0.45
@@ -109,12 +154,16 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_request_refresh)
 	AuthService.progress_changed.connect(_request_refresh)
 	AuthService.session_changed.connect(_session_changed)
+	AssetManager.sync_finished.connect(_chapter_art_ready)
+	(_detail.get_parent() as ScrollContainer).resized.connect(_fit_chapter_preview)
 	set_process(false)
 
 func on_enter(args: Dictionary) -> void:
 	_modules = LessonCatalog.modules()
 	_module_index = clampi(int(args.get("module_index", 0)), 0, maxi(0, _modules.size() - 1))
+	_chapters = _module_index == 0 and bool(args.get("chapters", false))
 	_selected = _first_playable()
+	if _chapters: _selected = 0
 	current_selected_stage = maxi(0, _launch_index(_selected))
 	_active = true
 	visible = true
@@ -145,7 +194,7 @@ func _session_changed(_signed_in: bool) -> void:
 func _state_key() -> String:
 	return str([PlayerManager.max_stage_cleared_by_module, PlayerManager.cleared_stages,
 		PlayerManager.lesson_progress, PlayerManager.completed_lessons,
-		PlayerManager.locked_stages, PlayerManager.credits, PlayerManager.pvp_tokens])
+		PlayerManager.locked_stages, PlayerManager.credits, PlayerManager.pvp_tokens, PlayerManager.chapter_progress])
 
 func _process(delta: float) -> void:
 	_poll += delta
@@ -184,6 +233,24 @@ func _refresh_all() -> void:
 	_profile_rank.add_theme_font_size_override("font_size", _font - 4)
 	_wallet.text = "THREAT   %d\nCREDITS  %d" % [PlayerManager.pvp_tokens, maxi(0, PlayerManager.credits)]
 	_wallet.add_theme_font_size_override("font_size", _font - 2)
+	_title.text = "CHAPTER\nSELECT" if _chapters else "MISSION\nSELECT"
+	_intro_button.visible = _chapters
+	if _chapters:
+		_profile.size_flags_horizontal = SIZE_SHRINK_END
+		_profile.custom_minimum_size = Vector2(210 / scale_y, _touch)
+		_profile_name.add_theme_font_size_override("font_size", ceili(20 / scale_y))
+		_profile_rank.add_theme_font_size_override("font_size", ceili(16 / scale_y))
+		_wallet.text = "%d CREDITS" % maxi(0, PlayerManager.credits)
+		_wallet.add_theme_color_override("font_color", UI.TEXT)
+		for button: Button in [_back, _settings, _intro_button]: UI.style_button(button)
+		UI.style_button(_breach_button, true)
+		_intro_button.custom_minimum_size.y = _touch
+		_intro_button.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_intro_button.add_theme_font_size_override("font_size", ceili(16 / scale_y))
+		_intro_button.size_flags_horizontal = SIZE_SHRINK_CENTER
+		_body.add_theme_constant_override("separation", ceili(24 / scale_y))
+		_build_chapters()
+		return
 	_summary.text = "OPERATIONS  /  %d OF %d CLEARED" % [_cleared_count(), _authored_count()]
 	_summary.add_theme_font_size_override("font_size", _font - 2)
 	_completion.max_value = maxi(1, _authored_count())
@@ -309,10 +376,114 @@ func _select_stage(index: int) -> void:
 	_briefing_tween.tween_property(_detail, "modulate:a", 1.0, 0.16)
 
 func _on_breach_pressed() -> void:
+	if _chapters:
+		if _active and _selected == 0 and PlayerManager.is_module_deploy_unlocked("mod_01"):
+			Router.push(&"survey_chapter", {"replay": bool(PlayerManager.chapter_progress.get("mod_01_ch_01", {}).get("completed", false))})
+		return
 	if not _active or not _can_play(_selected):
 		return
 	current_selected_stage = _launch_index(_selected)
 	Router.start_level(current_selected_stage, str(_module_entry().get("id", "mod_01")))
+
+func _build_chapters() -> void:
+	if _briefing_tween != null: _briefing_tween.kill()
+	_detail.modulate.a = 1.0
+	var focused: int = -1
+	for index: int in _rows.size():
+		if _rows[index].has_focus(): focused = index
+	var progress: Dictionary = PlayerManager.chapter_progress.get("mod_01_ch_01", {})
+	var complete: bool = bool(progress.get("completed", false))
+	_summary.text = "CHAPTERS    /    %d OF 5 SEALED" % (1 if complete else 0)
+	_summary.add_theme_font_size_override("font_size", _font - 2)
+	_completion.max_value = 5
+	_completion.value = 1 if complete else 0
+	UI.clear(_stage_list)
+	_rows.clear()
+	for index: int in 5:
+		var caption: String = "The Survey" if index == 0 else "Chapter %d" % (index + 1)
+		var status: String = ("EXHIBIT SEALED" if complete else "AVAILABLE") if index == 0 else "COMING SOON"
+		var row: Button = UI.button("", _select_chapter.bind(index))
+		row.accessibility_name = "Chapter %d. %s. %s" % [index + 1, caption, status]
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+		row.custom_minimum_size.y = 84 / physical
+		row.add_theme_stylebox_override("normal", UI.box(Color("203a40") if index == _selected else Color("13232c"), ACCENTS[0] if index == _selected else Color("364951"), 14))
+		row.add_theme_stylebox_override("hover", UI.box(Color("29444a"), ACCENTS[0], 14))
+		row.add_theme_stylebox_override("pressed", UI.box(Color("304c50"), UI.GOLD, 14))
+		_stage_list.add_child(row)
+		_rows.append(row)
+		var content: HBoxContainer = HBoxContainer.new()
+		content.mouse_filter = MOUSE_FILTER_IGNORE
+		content.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		content.offset_left = 18 / physical
+		content.offset_right = -18 / physical
+		content.offset_top = 12 / physical
+		content.offset_bottom = -12 / physical
+		content.add_theme_constant_override("separation", ceili(16 / physical))
+		row.add_child(content)
+		var number: Label = UI.label("%02d" % (index + 1), maxi(_font + 10, ceili(24 / physical)), ACCENTS[0] if index == 0 else UI.MUTED)
+		number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		number.custom_minimum_size.x = 48 / physical
+		content.add_child(number)
+		var copy: VBoxContainer = UI.column(content, 6)
+		copy.mouse_filter = MOUSE_FILTER_IGNORE
+		copy.size_flags_vertical = SIZE_SHRINK_CENTER
+		copy.size_flags_horizontal = SIZE_EXPAND_FILL
+		copy.add_child(UI.label(caption, maxi(_font, ceili(21 / physical)), UI.TEXT))
+		copy.add_child(UI.label(status, maxi(_font - 3, ceili(14 / physical)), ACCENTS[0] if index == 0 else UI.MUTED))
+		if index > 0:
+			var lock: IntelPixelIcon = IntelPixelIcon.new()
+			lock.kind = IntelPixelIcon.Kind.LOCK
+			lock.ink_override = UI.MUTED
+			lock.custom_minimum_size = Vector2(20,20) / physical
+			lock.size_flags_vertical = SIZE_SHRINK_CENTER
+			lock.mouse_filter = MOUSE_FILTER_IGNORE
+			content.add_child(lock)
+	UI.clear(_detail)
+	_chapter_preview = ChapterPreview.new()
+	_chapter_preview.chapter = _selected + 1
+	_chapter_preview.sealed = complete
+	_chapter_preview.started = not progress.is_empty()
+	_chapter_preview.artwork = AssetManager.get_texture("story_bg_john_desk_night")
+	_chapter_preview.mouse_filter = MOUSE_FILTER_IGNORE
+	_chapter_preview.accessibility_name = "The Survey. A friendly offer. Six messages. Something doesn't add up." if _selected == 0 else "Chapter %d. Coming soon." % (_selected + 1)
+	_detail.add_child(_chapter_preview)
+	_fit_chapter_preview()
+	if _selected == 0:
+		_breach_button.text = "REPLAY CHAPTER" if complete else ("CONTINUE CHAPTER" if not progress.is_empty() else "START CHAPTER")
+		_breach_button.disabled = not PlayerManager.is_module_deploy_unlocked("mod_01")
+	else:
+		_breach_button.text = "COMING SOON"
+		_breach_button.disabled = true
+	if focused >= 0 and focused < _rows.size(): _rows[focused].grab_focus()
+
+func _fit_chapter_preview() -> void:
+	if not _chapters or not is_instance_valid(_chapter_preview): return
+	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+	_chapter_preview.custom_minimum_size.y = maxf(190 / physical, (_detail.get_parent() as Control).size.y - 2)
+	_chapter_preview.queue_redraw()
+
+func _chapter_art_ready(_success: bool) -> void:
+	if not is_instance_valid(_chapter_preview): return
+	_chapter_preview.artwork = AssetManager.get_texture("story_bg_john_desk_night")
+	_chapter_preview.queue_redraw()
+
+func _select_chapter(index: int) -> void:
+	if _briefing_tween != null: _briefing_tween.kill()
+	_selected = clampi(index, 0, 4)
+	_build_chapters()
+	_rows[_selected].grab_focus()
+	_scroll_to_chapter.call_deferred()
+	_detail.modulate.a = 1.0
+	if not SettingsService.reduced_motion:
+		_detail.modulate.a = 0.65
+		_briefing_tween = create_tween()
+		_briefing_tween.tween_property(_detail, "modulate:a", 1.0, 0.2)
+
+func _scroll_to_chapter() -> void:
+	# A resize or progress refresh can replace cards before the deferred layout.
+	if _active and _chapters and _selected < _rows.size():
+		(_stage_list.get_parent() as ScrollContainer).ensure_control_visible(_rows[_selected])
 
 func _status(index: int) -> String:
 	if _stage_config(index).is_empty():

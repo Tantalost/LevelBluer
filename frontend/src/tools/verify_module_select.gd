@@ -2,6 +2,16 @@ extends SceneTree
 ## Read-only screen verification using in-memory account fixtures.
 var failures: int = 0
 var intro_checks_finished: bool = false
+var intro_fixture: Control
+var fixture_focus: bool = true
+
+func _process(_delta: float) -> bool:
+	# The human may use another window while rendered checks run.
+	# Disable this override around explicit focus-loss assertions below.
+	if fixture_focus and is_instance_valid(intro_fixture) and intro_fixture.is_node_ready() and intro_fixture._focus_lost:
+		intro_fixture._focus_lost = false
+		intro_fixture._apply_pause()
+	return false
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -33,6 +43,8 @@ func _run() -> void:
 	player.completed_lessons.clear()
 	player.cleared_stages = {}
 	player.credits = 229
+	player.seen_module_intros.clear()
+	player.chapter_progress = {}
 	var screen: Control = load("res://src/ui/screens/deploy/stage_select_screen.tscn").instantiate()
 	root.add_child(screen)
 	screen.on_enter({})
@@ -64,6 +76,75 @@ func _run() -> void:
 	check(not screen._is_unlocked(2), "Partial previous lessons do not unlock next module")
 	check(not screen._breach_button.disabled, "Open CTA enabled for available operation")
 	check(screen._module_route(0).route == &"module_intro", "First module keeps introduction route")
+	player.seen_module_intros.append("mod_01")
+	check(screen._module_route(0).route == &"module_stages" and screen._module_route(0).args.chapters, "Seen intro goes directly to chapter selection")
+	var intro_save: Dictionary = player.get_save_data()
+	player.seen_module_intros.clear()
+	player.apply_save_data(intro_save)
+	check(screen._module_route(0).route == &"module_stages", "Seen intro survives save reload")
+	player.seen_module_intros.clear()
+	player.chapter_progress = {"mod_01_ch_01": {"beat":4}}
+	check(screen._module_route(0).route == &"module_stages", "Existing chapter progress skips intro for older saves")
+	player.chapter_progress = {}
+	var chapters: Control = load("res://src/ui/screens/deploy/module_stage_screen.tscn").instantiate()
+	root.add_child(chapters)
+	chapters.on_enter({"module_index":0, "chapters":true})
+	await settle()
+	check(chapters._rows.size() == 5 and chapters._title.text == "CHAPTER\nSELECT", "Module 1 has five story chapters, not ten legacy stages")
+	check(not chapters._breach_button.disabled, "First chapter can start")
+	check(chapters._chapter_preview.chapter == 1 and not chapters._chapter_preview.sealed, "Fresh chapter preview reflects progress")
+	check(chapters._intro_button.autowrap_mode == TextServer.AUTOWRAP_OFF, "Replay intro stays on one line")
+	for state_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var chapter_style: StyleBoxFlat = chapters._breach_button.get_theme_stylebox(state_name) as StyleBoxFlat
+		var module_style: StyleBoxFlat = screen._breach_button.get_theme_stylebox(state_name) as StyleBoxFlat
+		check(chapter_style.bg_color == module_style.bg_color and chapter_style.border_color == module_style.border_color and chapter_style.corner_radius_top_left == module_style.corner_radius_top_left, "Chapter action matches Deploy theme: " + state_name)
+	check(chapters._breach_button.get_theme_color("font_color") == screen._breach_button.get_theme_color("font_color"), "Mint chapter action uses Deploy's dark text")
+	var chapter_card: StyleBoxFlat = chapters._rows[0].get_theme_stylebox("normal") as StyleBoxFlat
+	var module_card: StyleBoxFlat = screen._cards[0].get_theme_stylebox("normal") as StyleBoxFlat
+	check(chapter_card.bg_color == module_card.bg_color and chapter_card.border_color == module_card.border_color and chapter_card.corner_radius_top_left == 0, "Chapter cards match the selected Deploy card surface")
+	await capture("chapters_1280")
+	root.size = Vector2i(844,390)
+	await settle()
+	await capture("chapters_844")
+	check(chapters._breach_button.get_global_rect().end.y <= root.get_visible_rect().end.y, "Chapter launch button fits mobile viewport")
+	check(chapters._intro_button.get_global_rect().end.y <= root.get_visible_rect().end.y, "Replay intro fits mobile viewport")
+	check(chapters._settings.get_global_rect().end.x <= root.get_visible_rect().end.x, "Chapter header fits mobile viewport")
+	check(chapters._rows[0].size.y * root.get_final_transform().get_scale().y >= 48, "Chapter cards retain mobile touch targets")
+	root.size = Vector2i(1280,720)
+	await settle()
+	chapters._select_chapter(1)
+	check(chapters._breach_button.disabled, "Unimplemented chapter cannot launch a legacy stage")
+	await settle()
+	await capture("chapters_pending")
+	check(chapters._chapter_preview.chapter == 2, "Pending selection updates preview")
+	player.chapter_progress = {"mod_01_ch_01": {"beat":4}}
+	chapters._select_chapter(0)
+	check(chapters._breach_button.text == "CONTINUE CHAPTER", "Started chapter has Continue action")
+	player.chapter_progress = {"mod_01_ch_01": {"completed":true}}
+	chapters.on_resume()
+	await settle()
+	check(chapters._chapter_preview.sealed and chapters._breach_button.text == "REPLAY CHAPTER", "Completed chapter has sealed preview and Replay action")
+	check(chapters._completion.value == 1, "Completion progress counts sealed chapter")
+	await capture("chapters_complete")
+	chapters._chapter_preview.artwork = null
+	chapters._chapter_preview.queue_redraw()
+	await settle()
+	check(not chapters._breach_button.disabled, "Missing cached art does not prevent chapter launch")
+	await capture("chapters_fallback")
+	chapters._chapter_art_ready(true)
+	check(chapters._chapter_preview.artwork == root.get_node("AssetManager").get_texture("story_bg_john_desk_night"), "Late artwork sync refreshes preview without resetting progress")
+	var chapter_settings: Node = root.get_node("SettingsService")
+	var chapter_motion: bool = chapter_settings.reduced_motion
+	chapter_settings.reduced_motion = true
+	chapters._select_chapter(4)
+	check(is_equal_approx(chapters._detail.modulate.a, 1.0), "Reduced motion keeps chapter preview fully readable")
+	await settle()
+	check(chapters._rows[4].has_focus(), "Last chapter remains focusable and scrolls into view")
+	chapter_settings.reduced_motion = chapter_motion
+	player.chapter_progress = {}
+	chapters.on_exit()
+	chapters.queue_free()
+	await settle()
 	check(screen._module_route(4).route == &"module_stages", "Other modules keep stage route")
 	check(screen._module_route(4).args.module_index == 4, "Route module index preserved")
 	await capture("available_1280")
@@ -123,6 +204,7 @@ func check_intro(player: Node, auth: Node) -> void:
 	settings.text_speed = "normal"
 	root.size = Vector2i(1280, 720)
 	var intro: Control = load("res://src/ui/screens/deploy/module_intro_screen.tscn").instantiate()
+	intro_fixture = intro
 	root.add_child(intro)
 	var before: String = fingerprint(player, auth)
 	var seen_before: String = JSON.stringify(player.seen_module_intros)
@@ -135,6 +217,7 @@ func check_intro(player: Node, auth: Node) -> void:
 	intro._last_advance = -1000
 	intro._advance()
 	check(intro._index == 1, "Next tap advances exactly one beat")
+	fixture_focus = false
 	intro._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	var characters: int = intro._dialogue_text.visible_characters
 	await create_timer(0.2).timeout
@@ -142,6 +225,7 @@ func check_intro(player: Node, auth: Node) -> void:
 	intro._advance()
 	check(intro._index == 1 and intro._dialogue_text.visible_characters == characters, "Focus loss freezes typing and input")
 	intro._notification(MainLoop.NOTIFICATION_APPLICATION_FOCUS_IN)
+	fixture_focus = true
 	settings.reduced_motion = true
 	intro._settings_changed()
 	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:

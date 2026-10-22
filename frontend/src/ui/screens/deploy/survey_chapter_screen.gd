@@ -36,6 +36,9 @@ var _speaker: Label
 var _line: RichTextLabel
 var _advance_button: Button
 var _menu: PanelContainer
+var _menu_backdrop: ColorRect
+var _menu_body: VBoxContainer
+var _menu_title: Label
 var _seal: Practice.SealArt
 var _typing: Tween
 var _motion: Tween
@@ -145,7 +148,6 @@ class ChapterCelebration extends InvestigationReveal:
 		ink.shadow_color = Color("050B18", 0.65)
 		ink.shadow_size = 18
 		draw_style_box(ink, Rect2(Vector2.ZERO, size))
-		_brackets(Rect2(Vector2(10,10), size - Vector2(20,20)), 25 * unit, Color("FFB648", 0.7), 2)
 		var alpha: float = smoothstep(0.0, 0.55, elapsed)
 		var lift: float = 0.0 if gentle else (1.0 - smoothstep(0.0, 0.65, elapsed)) * 18 * unit
 		_text("CASE 01  /  THE SURVEY", center + Vector2(0, 36 * unit), _readable(20 * unit, 12), Color("8FF0E6", alpha))
@@ -158,7 +160,12 @@ class ChapterCelebration extends InvestigationReveal:
 		shown_award = roundi(award * progress)
 		shown_balance = balance - award + shown_award
 		var reward: Rect2 = Rect2(center + Vector2(-190, 193) * unit, Vector2(380, 104) * unit)
-		_plate(reward, Color("153B37", 0.8), Color("FFB648", 0.45), 12 * unit)
+		var reward_style: StyleBoxFlat = StyleBoxFlat.new()
+		reward_style.bg_color = Color("153B37", 0.8)
+		reward_style.border_color = Color("FFB648", 0.45)
+		reward_style.set_border_width_all(1)
+		reward_style.set_corner_radius_all(12)
+		draw_style_box(reward_style, reward)
 		_text("+%d" % shown_award, center + Vector2(0, 236 * unit), _readable(65 * unit, 34), Color("FFB648"))
 		_text("CREDITS EARNED" if not replaying else "REPLAY / NO REWARD", center + Vector2(0, 278 * unit), _readable(19 * unit, 12), Color("F3ECD6"))
 		_text("03", center + Vector2(-330, 225) * unit, _readable(46 * unit, 24), Color("8FF0E6"))
@@ -318,17 +325,40 @@ func _ready() -> void:
 	_heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_header.add_child(_heading)
 	_header.add_child(_button("MENU", _toggle_menu))
-	_menu = UI.panel(_area, Color("0A1730"))
-	var menu_body: VBoxContainer = UI.column(_menu)
-	menu_body.add_child(UI.label("CHAPTER PAUSED", 26, Color("4FE0D4")))
-	menu_body.add_child(_button("RESUME", _toggle_menu))
-	menu_body.add_child(_button("SETTINGS", _settings))
-	menu_body.add_child(_button("SAVE & RETURN TO MODULES", _leave))
+	_menu_backdrop = ColorRect.new()
+	_menu_backdrop.color = Color("050B18", 0.72)
+	_menu_backdrop.mouse_filter = MOUSE_FILTER_STOP
+	_menu_backdrop.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_area.add_child(_menu_backdrop)
+	_menu_backdrop.hide()
+	_menu = UI.panel(_area, Color("050B18"))
+	var pause_style: StyleBoxFlat = UI.box(Color("050B18", 0.96), Color("173058"), 24)
+	pause_style.set_corner_radius_all(16)
+	_menu.add_theme_stylebox_override("panel", pause_style)
+	_menu_body = UI.column(_menu, 12)
+	_menu_title = UI.label("PAUSED", 26, Color("8FF0E6"))
+	_menu_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_menu_body.add_child(_menu_title)
+	_menu_body.add_child(_menu_button("Resume", _toggle_menu))
+	_menu_body.add_child(_menu_button("Settings", _settings))
+	_menu_body.add_child(_menu_button("Save & return", _leave))
 	_menu.hide()
 	_area.resized.connect(_layout)
 	AssetManager.sync_finished.connect(_art_ready)
 	SettingsService.settings_changed.connect(_settings_changed)
 	AuthService.session_changed.connect(_session_changed)
+
+func _menu_button(caption: String, callback: Callable) -> Button:
+	var button: Button = _button(caption, callback)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	for style_name: String in ["normal", "hover", "pressed", "focus"]:
+		var style: StyleBoxFlat = UI.box(Color("2E6BFF", 0.85) if style_name != "normal" else Color("050B18", 0), Color.TRANSPARENT, 12)
+		style.set_border_width_all(0)
+		style.set_corner_radius_all(6)
+		button.add_theme_stylebox_override(style_name, style)
+	button.mouse_entered.connect(button.grab_focus)
+	button.add_theme_color_override("font_focus_color", Color("4FE0D4"))
+	return button
 
 func _button(caption: String, callback: Callable) -> Button:
 	var button: Button = UI.button(caption, callback)
@@ -357,6 +387,7 @@ func on_enter(args: Dictionary) -> void:
 	_active = true
 	_paused = false
 	_menu.hide()
+	_menu_backdrop.hide()
 	show()
 	_render()
 
@@ -386,6 +417,7 @@ func _render() -> void:
 		(_app_shortcuts.get_child(index) as Control).visible = (index < 2 and phase == "notes") or (index >= 2 and phase == "capture")
 	var night: bool = phase != "day" or Chapter.STORY[int(state["beat"])].get("time", "day") == "night"
 	_heading.text = "CHAPTER 1 / " + ("NIGHT" if night else "DAY") + (" / REPLAY" if replay else "")
+	if phase == "done": _heading.text = ""
 	if phase == "day":
 		var beat: Dictionary = Chapter.STORY[int(state["beat"])]
 		_speaker.text = str(beat["who"])
@@ -469,7 +501,7 @@ func _show_results() -> void:
 	_journal.hide()
 	_portrait.hide()
 	_dialogue.hide()
-	_heading.text = "CHAPTER 1 / COMPLETE"
+	_heading.text = ""
 	_results.award = 0 if replay else int(state["reward"])
 	_results.balance = PlayerManager.credits
 	_results.replaying = replay
@@ -765,8 +797,6 @@ func _layout() -> void:
 	if phase in ["seal", "done"]:
 		_journal.position = Vector2(w * 0.12,top)
 		_journal.size = Vector2(w * 0.76,h - top - (dialogue_height + 16 if phase == "seal" else 6))
-	_menu.position = Vector2(w * 0.2,h * 0.15)
-	_menu.size = Vector2(w * 0.6,h * 0.70)
 	for node: Node in _area.find_children("*", "Button", true, false):
 		var button: Button = node as Button
 		button.custom_minimum_size.y = touch
@@ -792,20 +822,43 @@ func _layout() -> void:
 	_heading.add_theme_font_size_override("font_size", maxi(20,int(14 / physical)))
 	_advance_button.custom_minimum_size = Vector2.ONE * touch
 	_advance_button.add_theme_font_size_override("font_size", ceili(28 / physical))
+	_layout_menu(w, h, physical)
 	_layout_results(w, h, top, physical)
 
+func _layout_menu(w: float, h: float, physical: float) -> void:
+	var padding: float = 20 / physical
+	var gap: float = 10 / physical
+	var side: float = minf(minf(380 / physical, w - padding * 2), h - padding * 2)
+	var style: StyleBoxFlat = _menu.get_theme_stylebox("panel") as StyleBoxFlat
+	for edge: String in ["left", "right", "top", "bottom"]: style.set("content_margin_" + edge, padding)
+	_menu_body.add_theme_constant_override("separation", int(gap))
+	_menu_title.add_theme_font_size_override("font_size", ceili(20 / physical))
+	_menu_title.custom_minimum_size.y = 36 / physical
+	for node: Node in _menu_body.get_children():
+		if node is Button:
+			var button: Button = node as Button
+			button.custom_minimum_size = Vector2(0, 48 / physical)
+			button.autowrap_mode = TextServer.AUTOWRAP_OFF
+			button.add_theme_font_size_override("font_size", ceili(24 / physical))
+	_menu.size = Vector2(side, side)
+	_menu.position = (Vector2(w, h) - _menu.size) * 0.5
+
 func _layout_results(w: float, h: float, top: float, physical: float) -> void:
-	_results.position = Vector2(w * 0.065, top + 8)
-	_results.size = Vector2(w * 0.87, h - top - 16)
+	var card_width: float = minf(w * 0.88, 1100 / physical)
+	_results.position = Vector2((w - card_width) * 0.5, top + 8)
+	_results.size = Vector2(card_width, h - top - 24 / physical)
 	var primary_height: float = 64.0 / physical
-	var secondary_height: float = 44.0 / physical
-	var gap: float = 10.0 / physical
+	var secondary_height: float = 48.0 / physical
+	var gap: float = 12.0 / physical
 	_results.action_space = primary_height + secondary_height + gap * 3
 	var margin: float = 28.0 / physical
-	_result_actions.position = Vector2(margin, _results.size.y - _results.action_space + gap)
-	_result_actions.size = Vector2(_results.size.x - margin * 2, primary_height)
-	_result_secondary.position = Vector2(_results.size.x * 0.23, _results.size.y - secondary_height - gap)
-	_result_secondary.size = Vector2(_results.size.x * 0.54, secondary_height)
+	var action_width: float = minf(_results.size.x - margin * 2, 760 / physical)
+	_result_actions.position = Vector2((_results.size.x - action_width) * 0.5, _results.size.y - _results.action_space + gap)
+	_result_actions.size = Vector2(action_width, primary_height)
+	_result_actions.add_theme_constant_override("separation", ceili(16 / physical))
+	_result_secondary.position = Vector2((_results.size.x - action_width) * 0.5, _results.size.y - secondary_height - gap)
+	_result_secondary.size = Vector2(action_width, secondary_height)
+	_result_secondary.add_theme_constant_override("separation", ceili(16 / physical))
 	for row: HBoxContainer in [_result_actions, _result_secondary]:
 		for node: Node in row.get_children():
 			var button: Button = node as Button
@@ -813,6 +866,9 @@ func _layout_results(w: float, h: float, top: float, physical: float) -> void:
 			button.autowrap_mode = TextServer.AUTOWRAP_OFF
 			button.custom_minimum_size = Vector2(0, primary_height if row == _result_actions else secondary_height)
 			button.add_theme_font_size_override("font_size", ceili((20.0 if row == _result_actions else 15.0) / physical))
+			for state_name: String in ["normal", "hover", "pressed"]:
+				var button_style: StyleBoxFlat = button.get_theme_stylebox(state_name) as StyleBoxFlat
+				if button_style != null: button_style.set_corner_radius_all(10)
 	_results.queue_redraw()
 
 func _can_act() -> bool:
@@ -858,6 +914,12 @@ func _toggle_menu() -> void:
 	if not _active: return
 	_paused = not _paused
 	_menu.visible = _paused
+	_menu_backdrop.visible = _paused
+	if _paused:
+		_layout()
+		(_menu_body.get_child(1) as Button).grab_focus()
+	else:
+		(_header.get_child(_header.get_child_count() - 1) as Button).grab_focus()
 	_apply_pause()
 
 func _apply_pause() -> void:
@@ -965,6 +1027,7 @@ func on_resume() -> void:
 	_active = true
 	_paused = false
 	_menu.hide()
+	_menu_backdrop.hide()
 	show()
 	if _resume_reveal:
 		_resume_reveal = false

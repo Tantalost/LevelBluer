@@ -65,6 +65,15 @@ static func button(text: String, callback: Callable, primary: bool = false) -> B
 	b.custom_minimum_size = Vector2(100, 48)
 	b.add_theme_font_override("font", FONT)
 	b.add_theme_font_size_override("font_size", 24)
+	style_button(b, primary)
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if callback.is_valid():
+		b.pressed.connect(callback)
+	return b
+
+## Reapply the same terminal chrome to existing controls without replacing signals.
+static func style_button(b: Button, primary: bool = false) -> void:
 	b.add_theme_color_override("font_color", BG if primary else TEXT)
 	b.add_theme_color_override("font_hover_color", BG)
 	b.add_theme_color_override("font_pressed_color", BG)
@@ -74,11 +83,6 @@ static func button(text: String, callback: Callable, primary: bool = false) -> B
 	b.add_theme_stylebox_override("pressed", box(GOLD, TEXT, 10))
 	b.add_theme_stylebox_override("focus", box(Color.TRANSPARENT, GOLD, 0))
 	b.add_theme_stylebox_override("disabled", box(BG, Color("29424b"), 10))
-	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	if callback.is_valid():
-		b.pressed.connect(callback)
-	return b
 
 static func column(parent: Node, spacing: int = 14) -> VBoxContainer:
 	var c := VBoxContainer.new()

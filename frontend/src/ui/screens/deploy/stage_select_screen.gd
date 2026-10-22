@@ -282,7 +282,8 @@ func _on_breach_pressed() -> void:
 		_open_module(_selected)
 
 func _module_route(index: int) -> Dictionary:
-	return {"route": &"module_intro" if index == 0 else &"module_stages", "args": {"module_index": index}}
+	var needs_intro: bool = index == 0 and not PlayerManager.has_seen_module_intro("mod_01") and PlayerManager.chapter_progress.get("mod_01_ch_01", {}).is_empty()
+	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index == 0}}
 
 func _open_module(index: int) -> void:
 	if not _is_unlocked(index):
