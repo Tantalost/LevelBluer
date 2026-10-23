@@ -171,6 +171,26 @@ func _run() -> void:
 	check(screen.state.captures == ["real","fake"], "Comparison preserves both messages as exhibits")
 	phone._finish_phase()
 	check(screen.state.phase == "report", "Comparison advances to report")
+	for dimensions: Vector2i in [Vector2i(1480,720), Vector2i(844,390)]:
+		root.size = dimensions
+		await settle()
+		var columns: HBoxContainer = phone._content.get_node("ReportColumns") as HBoxContainer
+		var form: VBoxContainer = columns.get_node("ReportForm") as VBoxContainer
+		var reference: PanelContainer = columns.get_node("ReportReference") as PanelContainer
+		check(reference.get_global_rect().end.x < form.get_global_rect().position.x, "Report reference and form have a clear gutter")
+		check(phone._content.get_parent().get_global_rect().position.y > phone._title.get_global_rect().end.y + 8, "Report content clears the Mail header")
+		check(columns.get_global_rect().end.x < phone._shell.get_global_rect().end.x, "Report form retains right padding")
+		check(phone._shell.size.x * root.get_final_transform().get_scale().x <= 1041, "Report uses a bounded reading width")
+		await capture("report_empty_%d" % dimensions.x)
+	phone._report_input.text = "sir.rham@schoo1.example"
+	phone._draft_changed(phone._report_input.text)
+	phone._submit_report()
+	await settle()
+	check(phone._content.find_child("ReportFeedback", true, false) != null, "Report guidance is grouped with its input")
+	await capture("report_full_address_844")
+	root.size = Vector2i(1480,720)
+	await settle()
+	await capture("report_full_address_1480")
 	phone._report_input.text = "school.example"
 	phone._submit_report()
 	check(screen.state.domains.is_empty(), "Genuine domain is not accepted as transcription of fake domain")
@@ -178,6 +198,18 @@ func _run() -> void:
 	phone._draft_changed("schoo1.example")
 	phone._submit_report()
 	check(screen.state.domains == ["fake"], "Exact fake domain accepted")
+	check(phone._notice_text.is_empty(), "Successful report clears stale error guidance")
+	await settle()
+	check(phone._content.find_child("ReportSuccess", true, false) != null, "Correct report has persistent success feedback")
+	var difference: RichTextLabel = phone._content.find_child("DomainDifference", true, false) as RichTextLabel
+	check(difference != null and difference.text.contains("[b]1[/b]") and difference.text.contains("[b]l[/b]"), "Success highlights the exact lookalike characters")
+	var success_style: StyleBoxFlat = phone._report_input.get_theme_stylebox("read_only") as StyleBoxFlat
+	check(success_style.border_color == Color("33D17A"), "Correct domain receives the design-system success tint")
+	phone.set_locked(true)
+	phone.set_locked(false)
+	check(not phone._report_input.editable, "Saved domain stays read-only after pausing and resuming")
+	await capture("report_saved_1480")
+	root.size = Vector2i(844,390)
 	await settle()
 	await capture("report_844")
 	var saved: Dictionary = player.get_save_data()

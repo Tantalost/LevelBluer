@@ -131,7 +131,7 @@ func _render() -> void:
 			"compare": _compare()
 			"report": _report()
 			"headers": _headers()
-	if not _notice_text.is_empty():
+	if not _notice_text.is_empty() and mode != "report":
 		var notice: Label = _ink(_notice_text)
 		if mode == "compare": notice.add_theme_color_override("font_color", Color("365b63"))
 		_content.move_child(notice, 0)
@@ -264,12 +264,40 @@ func _mark_difference(id: String) -> void:
 	_render()
 
 func _report() -> void:
-	_ink("REPORT TO IT · LOCAL SIMULATION")
-	_ink("Copy the sender domain, one character at a time. Nothing is submitted outside the game.")
-	_ink("SENDER\n" + str(Chapter.message("fake").address))
-	_ink("KNOWN DOMAIN\nschool.example")
+	_content.size_flags_vertical = SIZE_FILL
+	var heading: Label = _ink("Copy only the part after @. This report stays in the game.")
+	heading.set_meta("report_pixels", 16)
+	var columns: HBoxContainer = HBoxContainer.new()
+	columns.name = "ReportColumns"
+	columns.add_theme_constant_override("separation", 24)
+	_content.add_child(columns)
+	var reference: PanelContainer = UI.panel(columns, Color("e9efed"))
+	reference.name = "ReportReference"
+	reference.add_theme_stylebox_override("panel", UI.box(Color("e9efed"), Color("8aa9a3"), 20))
+	reference.size_flags_horizontal = SIZE_EXPAND_FILL
+	reference.size_flags_stretch_ratio = 0.9
+	var details: VBoxContainer = UI.column(reference, 14)
+	var sender_label: Label = _ink("EMAIL SENDER", details)
+	sender_label.set_meta("report_pixels", 14)
+	var sender: Label = _ink(str(Chapter.message("fake").address).replace("@", "\n@"), details)
+	sender.set_meta("report_pixels", 21)
+	sender.add_theme_font_override("font", ThemeDB.fallback_font)
+	sender.texture_filter = TEXTURE_FILTER_LINEAR
+	var known_label: Label = _ink("KNOWN SCHOOL DOMAIN", details)
+	known_label.set_meta("report_pixels", 14)
+	var known: Label = _ink("school.example", details)
+	known.set_meta("report_pixels", 21)
+	known.add_theme_font_override("font", ThemeDB.fallback_font)
+	known.texture_filter = TEXTURE_FILTER_LINEAR
+	var form: VBoxContainer = UI.column(columns, 14)
+	form.name = "ReportForm"
+	form.size_flags_horizontal = SIZE_EXPAND_FILL
+	form.size_flags_stretch_ratio = 1.3
+	var field_label: Label = _ink("SENDER DOMAIN", form)
+	field_label.set_meta("report_pixels", 14)
 	_report_input = LineEdit.new()
-	_report_input.placeholder_text = "Retype the sender domain"
+	_report_input.placeholder_text = "Type the domain after @"
+	_report_input.accessibility_name = "Sender domain, only the part after the at sign"
 	_report_input.text = str(state.report_draft)
 	_report_input.max_length = 80
 	_report_input.custom_minimum_size.y = 64
@@ -277,16 +305,55 @@ func _report() -> void:
 	_report_input.expand_to_text_length = false
 	_report_input.add_theme_font_size_override("font_size", 28)
 	_report_input.add_theme_color_override("font_color", INK)
+	_report_input.add_theme_color_override("font_placeholder_color", Color("607477"))
 	_report_input.add_theme_stylebox_override("normal", UI.box(Color.WHITE, Color("8aa9a3"), 12))
-	_content.add_child(_report_input)
-	_letter_feedback = _ink("")
+	form.add_child(_report_input)
+	_letter_feedback = _ink("", form)
+	_letter_feedback.set_meta("report_pixels", 16)
+	_letter_feedback.add_theme_font_override("font", ThemeDB.fallback_font)
+	_letter_feedback.texture_filter = TEXTURE_FILTER_LINEAR
 	_report_input.text_changed.connect(_draft_changed)
 	_report_input.text_submitted.connect(func(_value: String) -> void: _submit_report())
 	_draft_feedback()
-	_action("CHECK REPORT", _submit_report)
+	if not _notice_text.is_empty():
+		var feedback: PanelContainer = UI.panel(form, Color("f0e5d6"))
+		feedback.name = "ReportFeedback"
+		var message: Label = _ink(_notice_text, feedback)
+		message.set_meta("report_pixels", 16)
+	var check_button: Button = _action("CHECK REPORT", _submit_report)
+	check_button.name = "CheckReport"
+	check_button.reparent(form)
 	if phase_ready():
-		_ink("school.example  ≠  schoo1.example\nPosition 6: lowercase L → digit 1\nLookalike domain saved to the exhibit.")
-		_action("CONTINUE TO HEADER", _finish_phase)
+		check_button.hide()
+		_letter_feedback.hide()
+		var success_color: Color = Color("33D17A")
+		var success_fill: Color = PHONE_PAPER.lerp(success_color, 0.16)
+		var success_style: StyleBoxFlat = UI.box(success_fill, success_color, 12)
+		_report_input.editable = false
+		_report_input.add_theme_color_override("font_uneditable_color", INK)
+		_report_input.add_theme_stylebox_override("normal", success_style)
+		_report_input.add_theme_stylebox_override("read_only", success_style)
+		var success_panel: PanelContainer = UI.panel(form, success_fill)
+		success_panel.name = "ReportSuccess"
+		success_panel.add_theme_stylebox_override("panel", UI.box(success_fill, success_color, 16))
+		var success_details: VBoxContainer = UI.column(success_panel, 10)
+		var success: Label = _ink("✓ CORRECT / DOMAIN SAVED", success_details)
+		success.set_meta("report_pixels", 16)
+		var difference: RichTextLabel = RichTextLabel.new()
+		difference.name = "DomainDifference"
+		difference.bbcode_enabled = true
+		difference.fit_content = true
+		difference.scroll_active = false
+		difference.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		difference.add_theme_font_override("normal_font", ThemeDB.fallback_font)
+		difference.add_theme_color_override("default_color", INK)
+		difference.texture_filter = TEXTURE_FILTER_LINEAR
+		difference.text = "Known: schoo[bgcolor=#33D17A][b]l[/b][/bgcolor].example\nCopied: schoo[bgcolor=#33D17A][b]1[/b][/bgcolor].example"
+		success_details.add_child(difference)
+		var explanation: Label = _ink("You spotted digit 1 replacing lowercase L at position 6. The copied address is still suspicious.", success_details)
+		explanation.set_meta("report_pixels", 16)
+		var next: Button = _action("CONTINUE TO HEADER", _finish_phase)
+		next.reparent(form)
 
 func _draft_changed(value: String) -> void:
 	if _locked: return
@@ -296,14 +363,15 @@ func _draft_changed(value: String) -> void:
 
 func _draft_feedback() -> void:
 	if not is_instance_valid(_letter_feedback): return
-	_letter_feedback.text = "Your transcription: " + " · ".join(str(state.report_draft).split(""))
+	_letter_feedback.text = "Your transcription\n" + (" · ".join(str(state.report_draft).split("")) if not str(state.report_draft).is_empty() else "Characters appear here as you type.")
 
 func _submit_report() -> void:
-	if _locked or mode != "report" or not is_instance_valid(_report_input): return
+	if _locked or mode != "report" or phase_ready() or not is_instance_valid(_report_input): return
 	if not Chapter.domain_matches(_report_input.text):
-		_miss("Keep the sender visible. Copy the part after @ exactly, including the lookalike character.")
+		_miss("Enter only the domain after @, not the full email address." if _report_input.text.contains("@") else "Copy the domain exactly, including the lookalike character.")
 		return
 	_add("domains", "fake")
+	_notice_text = ""
 	_render()
 
 func _headers() -> void:
@@ -374,6 +442,9 @@ func _refresh() -> void:
 	_status.visible = mode not in ["compare","report","headers"]
 	if Chapter.STORY[int(state.get("beat", 0))].get("time", "") == "night": _status.text = "21:14  •  LTE  ▰"
 	if mode in ["compare","report","headers"]: _nav.hide()
+	if mode == "report":
+		_title.text = "✉ Mail / Report to IT"
+		_title.add_theme_color_override("font_color", INK)
 	if mode == "compare":
 		_title.text = "EMAIL COMPARISON"
 		_title.add_theme_color_override("font_color", INK)
@@ -399,6 +470,16 @@ func _fit_shell() -> void:
 	var frame: StyleBoxEmpty = _shell.get_theme_stylebox("panel") as StyleBoxEmpty
 	frame.content_margin_top = 38
 	frame.content_margin_bottom = 30
+	(_title.get_parent() as VBoxContainer).add_theme_constant_override("separation", 8)
+	if mode == "report" and _app == "mail":
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+		var padding: float = (44.0 if get_viewport_rect().size.y * physical >= 500 else 28.0) / physical
+		for edge: String in ["left", "right", "top", "bottom"]: frame.set("content_margin_" + edge, padding)
+		(_title.get_parent() as VBoxContainer).add_theme_constant_override("separation", ceili(20 / physical))
+		var width: float = minf(size.x - 16, 1040 / physical)
+		_shell.position.x = (size.x - width) * 0.5
+		_shell.size = Vector2(width, minf(size.y - 8, _content.get_combined_minimum_size().y + _title.get_combined_minimum_size().y + 20 / physical + padding * 2))
+		(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	if mode == "compare" and _app == "mail":
 		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
 		var padding: float = 44.0 if _title.visible else 24.0
@@ -408,7 +489,7 @@ func _fit_shell() -> void:
 		(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 
 func _draw_frame() -> void:
-	if mode != "compare" or _app != "mail":
+	if mode not in ["compare", "report"] or _app != "mail":
 		super._draw_frame()
 		return
 	var rect: Rect2 = Rect2(Vector2.ZERO, _shell.size)
@@ -430,11 +511,20 @@ func _metrics() -> void:
 			(node as Button).custom_minimum_size.y = 48 / physical
 	if mode in ["compare","report","headers"]:
 		for node: Node in _content.find_children("*", "Label", true, false):
-			(node as Label).add_theme_font_size_override("font_size", ceili(float(node.get_meta("compare_pixels", 18)) / physical))
+			(node as Label).add_theme_font_size_override("font_size", ceili(float(node.get_meta("report_pixels", node.get_meta("compare_pixels", 18))) / physical))
 			var compact: bool = get_viewport_rect().size.y * physical < 500
 			if node.has_meta("compare_value"): (node as Label).custom_minimum_size.y = (32.0 if compact else 90.0) / physical
 			if node.has_meta("compare_section") or node.has_meta("compare_instruction"): (node as Label).visible = not compact
 	if is_instance_valid(_report_input): _report_input.add_theme_font_size_override("font_size", ceili(20 / physical))
+	if mode == "report":
+		if is_instance_valid(_report_input): _report_input.custom_minimum_size.y = 52 / physical
+		for node: Node in _content.find_children("*", "RichTextLabel", true, false):
+			(node as RichTextLabel).add_theme_font_size_override("normal_font_size", ceili(20 / physical))
+			(node as RichTextLabel).add_theme_font_size_override("bold_font_size", ceili(20 / physical))
+		for node: Node in _content.find_children("*", "Button", true, false):
+			(node as Button).custom_minimum_size.y = 48 / physical
+		for node: Node in _content.find_children("*", "BoxContainer", true, false):
+			(node as BoxContainer).add_theme_constant_override("separation", ceili((24.0 if node.name == "ReportColumns" else 14.0) / physical))
 
 func phase_ready() -> bool:
 	if not _lead_in.is_empty(): return false
@@ -448,4 +538,4 @@ func phase_ready() -> bool:
 
 func set_locked(value: bool) -> void:
 	super.set_locked(value)
-	if is_instance_valid(_report_input): _report_input.editable = not value
+	if is_instance_valid(_report_input): _report_input.editable = not value and not phase_ready()
