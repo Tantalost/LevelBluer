@@ -308,6 +308,9 @@ func _college_story_catalog() -> Array[Dictionary]:
 
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	catalog.append(_catalog_entry("story_chapter2_cover", "Chapter 2 / The Advisor Email", "image", "%s/v1792721173/chapter2_advisor_cover_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_john_laugh", "John / Laughing pose", "image", "%s/v1792721629/john_laugh_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_john_bed_night", "Chapter 2 / John's nighttime investigation", "image", "%s/v1792721171/john_bed_night_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_desk_night", "Chapter 1 / John's nighttime desk", "image", "%s/v1792675006/john_desk_night_v1.png" % CLOUD_ROOT))
 	for person: String in ["john", "eric", "jobert"]:
 		var sprite_version: String = "1792675005" if person == "eric" else "1792675007"

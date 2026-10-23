@@ -1,9 +1,13 @@
 extends BaseScreen
-## Chapter 1 presentation and transitions. Phone reports intents, never saves.
+## Shared story presentation. Chapter data and phone activities are injected per case.
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
-const Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
+var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Phone: GDScript = preload("res://src/gameplay/decision/survey_phone.gd")
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
+const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
+var _perk_panel: PanelContainer
+var _perk_body: VBoxContainer
+var _perk_button: Button
 var state: Dictionary = {}
 var replay: bool = false
 var _active: bool = false
@@ -35,6 +39,9 @@ var _dialogue: PanelContainer
 var _speaker: Label
 var _line: RichTextLabel
 var _advance_button: Button
+var _caption_black: ColorRect
+var _caption: Label
+var _caption_next: Button
 var _menu: PanelContainer
 var _menu_backdrop: ColorRect
 var _menu_body: VBoxContainer
@@ -58,6 +65,8 @@ var _celebrate_pending: bool = false
 
 ## A vector-only title treatment: no downloaded artwork or extra scene manager.
 class InvestigationReveal extends Control:
+	var case_title: String = "CASE 01 / THE SURVEY"
+	var tagline: String = "Every message leaves a trace."
 	const FONT: Font = preload("res://assets/fonts/DigitalDisco.ttf")
 	var gentle: bool = false
 	var elapsed: float = 0.0:
@@ -102,8 +111,8 @@ class InvestigationReveal extends Control:
 		_text("INVESTIGATION", title_center + Vector2(0, 4 * unit), maxi(16, int(90 * unit * pop)), Color("2E6BFF", title_alpha * 0.45))
 		_text("INVESTIGATION", title_center, maxi(16, int(90 * unit * pop)), Color("F3ECD6", title_alpha))
 		_text("M O D E", center + Vector2(0, 57 * unit), maxi(14, int(37 * unit)), Color("4FE0D4", smoothstep(1.0, 1.3, elapsed) * fade))
-		_text("[  CASE 01  /  THE SURVEY  ]", center + Vector2(0, -174 * unit), maxi(12, int(24 * unit)), Color("8FF0E6", fade))
-		_text("Every message leaves a trace.", center + Vector2(0, 175 * unit), maxi(14, int(30 * unit)), Color("F3ECD6", smoothstep(1.35, 1.7, elapsed) * fade))
+		_text(case_title, center + Vector2(0, -174 * unit), maxi(12, int(24 * unit)), Color("8FF0E6", fade))
+		_text(tagline, center + Vector2(0, 175 * unit), maxi(14, int(30 * unit)), Color("F3ECD6", smoothstep(1.35, 1.7, elapsed) * fade))
 		var rail: Rect2 = Rect2(center + Vector2(-100, 214) * unit, Vector2(200, 3) * unit)
 		draw_rect(rail, Color("173058", fade))
 		rail.size.x *= smoothstep(0.5, 3.3, elapsed)
@@ -126,6 +135,7 @@ class InvestigationReveal extends Control:
 			draw_polyline(PackedVector2Array([p + Vector2(direction.x * length, 0), p, p + Vector2(0, direction.y * length)]), color, weight, true)
 
 class ChapterCelebration extends InvestigationReveal:
+	var assist_status: String = "unknown"
 	var award: int = 0
 	var balance: int = 0
 	var replaying: bool = false
@@ -150,7 +160,7 @@ class ChapterCelebration extends InvestigationReveal:
 		draw_style_box(ink, Rect2(Vector2.ZERO, size))
 		var alpha: float = smoothstep(0.0, 0.55, elapsed)
 		var lift: float = 0.0 if gentle else (1.0 - smoothstep(0.0, 0.65, elapsed)) * 18 * unit
-		_text("CASE 01  /  THE SURVEY", center + Vector2(0, 36 * unit), _readable(20 * unit, 12), Color("8FF0E6", alpha))
+		_text(case_title + " / " + assist_status.to_upper(), center + Vector2(0, 36 * unit), _readable(20 * unit, 12), Color("8FF0E6", alpha))
 		_text("CHAPTER COMPLETE", center + Vector2(0, 92 * unit + lift), _readable(64 * unit, 30), Color("F3ECD6", alpha))
 		var seal_center: Vector2 = center + Vector2(0, 153 * unit)
 		draw_circle(seal_center - Vector2(110 * unit, 0), 16 * unit, Color("153B37"))
@@ -172,7 +182,7 @@ class ChapterCelebration extends InvestigationReveal:
 		_text("EVIDENCE BUNDLES", center + Vector2(-330, 265) * unit, _readable(17 * unit, 12), Color("F3ECD6"))
 		_text(str(shown_balance), center + Vector2(330, 225) * unit, _readable(46 * unit, 24), Color("FFB648"))
 		_text("WALLET BALANCE", center + Vector2(330, 265) * unit, _readable(17 * unit, 12), Color("F3ECD6"))
-		var detail: String = "Replay complete. Your original rewards are unchanged." if replaying else "%d completion  +  %d clean-work bonus" % [Chapter.BASE_REWARD, maxi(0, award - Chapter.BASE_REWARD)]
+		var detail: String = "Replay complete. Your original rewards are unchanged." if replaying else "%d completion  +  %d clean-work bonus" % [100, maxi(0, award - 100)]
 		_text(detail, center + Vector2(0, 331 * unit), _readable(22 * unit), Color("8FF0E6"))
 		if not gentle and not replaying:
 			for coin: int in 5:
@@ -206,6 +216,12 @@ func _ready() -> void:
 	_bg.mouse_filter = MOUSE_FILTER_IGNORE
 	_bg.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	add_child(_bg)
+	_caption_black = ColorRect.new()
+	_caption_black.color = Color.BLACK
+	_caption_black.mouse_filter = MOUSE_FILTER_IGNORE
+	_caption_black.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_caption_black.hide()
+	add_child(_caption_black)
 	var safe: SafeAreaContainer = SafeAreaContainer.new()
 	safe.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	safe.extra_margin = 14
@@ -274,6 +290,15 @@ func _ready() -> void:
 	_advance_button.tooltip_text = "Reveal this sentence / next sentence"
 	_advance_button.accessibility_name = "Continue dialogue"
 	row.add_child(_advance_button)
+	_caption = UI.label("", 44, Color("F3ECD6"))
+	_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_caption.hide()
+	_area.add_child(_caption)
+	_caption_next = _button("›", _advance)
+	_caption_next.accessibility_name = "Continue to John's arrival"
+	_caption_next.hide()
+	_area.add_child(_caption_next)
 	_header = HBoxContainer.new()
 	_results = ChapterCelebration.new()
 	_results.name = "ChapterCelebration"
@@ -283,16 +308,16 @@ func _ready() -> void:
 	_result_actions = HBoxContainer.new()
 	_result_actions.add_theme_constant_override("separation", 16)
 	_results.add_child(_result_actions)
-	var next_chapter: Button = _button("NEXT CHAPTER\nComing soon", func() -> void: pass)
+	var next_chapter: Button = _button("NEXT CHAPTER", _next_chapter)
 	next_chapter.name = "NextChapter"
 	next_chapter.disabled = true
-	next_chapter.tooltip_text = "Chapter 2 access earned. Its story is not available yet."
+	next_chapter.tooltip_text = "Continue to the next available chapter."
 	next_chapter.add_theme_color_override("font_disabled_color", Color("F3ECD6", 0.65))
 	var unavailable: StyleBoxFlat = UI.box(Color("173058", 0.7), Color("173058"), 10)
 	unavailable.set_corner_radius_all(16)
 	next_chapter.add_theme_stylebox_override("disabled", unavailable)
 	_result_actions.add_child(next_chapter)
-	var upgrades: Button = _button("UPGRADES", _open_upgrades)
+	var upgrades: Button = _button("PERKS", _open_upgrades)
 	upgrades.name = "Upgrades"
 	var primary: StyleBoxFlat = UI.box(Color("2E6BFF"), Color("8FF0E6"), 10)
 	primary.set_corner_radius_all(16)
@@ -324,6 +349,8 @@ func _ready() -> void:
 	_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_header.add_child(_heading)
+	_perk_button = _button("PERKS", _open_perks)
+	_header.add_child(_perk_button)
 	_header.add_child(_button("MENU", _toggle_menu))
 	_menu_backdrop = ColorRect.new()
 	_menu_backdrop.color = Color("050B18", 0.72)
@@ -343,6 +370,9 @@ func _ready() -> void:
 	_menu_body.add_child(_menu_button("Settings", _settings))
 	_menu_body.add_child(_menu_button("Save & return", _leave))
 	_menu.hide()
+	_perk_panel = UI.panel(_area)
+	_perk_panel.hide()
+	_perk_body = UI.scroll_column(_perk_panel)
 	_area.resized.connect(_layout)
 	AssetManager.sync_finished.connect(_art_ready)
 	SettingsService.settings_changed.connect(_settings_changed)
@@ -383,11 +413,31 @@ func on_enter(args: Dictionary) -> void:
 	_owner = AuthService.participant_code()
 	_signed_owner = AuthService.is_signed_in()
 	replay = bool(args.get("replay", false))
-	state = Chapter.fresh() if replay else Chapter.clean(PlayerManager.chapter_progress.get(Chapter.ID, {}))
+	var chapter_id: String = str(args.get("chapter_id", "mod_01_ch_01"))
+	Chapter = PlayerManager.story_definition(chapter_id)
+	if Chapter == null or (chapter_id == "mod_01_ch_02" and not PlayerManager.story_unlocked(chapter_id)):
+		_active = false
+		hide()
+		return
+	var phone_script: GDScript = preload("res://src/gameplay/decision/advisor_phone.gd") if Chapter.NUMBER == 2 else Phone
+	if _phone.get_script() != phone_script:
+		_phone.stop()
+		_area.remove_child(_phone)
+		_phone.queue_free()
+		_phone = phone_script.new()
+		_area.add_child(_phone)
+		_area.move_child(_phone, _journal.get_index())
+		_phone.evidence_changed.connect(_evidence_changed)
+		_phone.thought_requested.connect(_thought)
+		_phone.phase_finished.connect(_phase_finished)
+		_phone.chat_speaker_changed.connect(_chat_focus)
+		_phone.view_changed.connect(_refresh_app_shortcuts)
+	state = PlayerManager.begin_story_attempt(chapter_id, replay, not _testing)
 	_active = true
 	_paused = false
 	_menu.hide()
 	_menu_backdrop.hide()
+	_perk_panel.hide()
 	show()
 	_render()
 
@@ -395,6 +445,11 @@ func _render() -> void:
 	_seq += 1
 	_stop_tweens()
 	_results.hide()
+	_caption_black.hide()
+	_caption.hide()
+	_caption_next.hide()
+	_heading.modulate.a = 1.0
+	_perk_button.visible = str(state.get("phase", "day")) != "done" and not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
 	UI.clear(_journal_body)
 	_seal = null
 	_phone.stop()
@@ -416,25 +471,23 @@ func _render() -> void:
 	for index: int in _app_shortcuts.get_child_count():
 		(_app_shortcuts.get_child(index) as Control).visible = (index < 2 and phase == "notes") or (index >= 2 and phase == "capture")
 	var night: bool = phase != "day" or Chapter.STORY[int(state["beat"])].get("time", "day") == "night"
-	_heading.text = "CHAPTER 1 / " + ("NIGHT" if night else "DAY") + (" / REPLAY" if replay else "")
+	_heading.text = "CHAPTER %d / " % Chapter.NUMBER + ("NIGHT" if night else "DAY") + (" / REPLAY" if replay else "")
 	if phase == "done": _heading.text = ""
 	if phase == "day":
 		var beat: Dictionary = Chapter.STORY[int(state["beat"])]
 		_speaker.text = str(beat["who"])
-		_set_line(str(beat["line"]))
-		if bool(beat.get("mail", false)):
+		_set_line((str(beat["caption"]) + " " if beat.has("caption") else "") + str(beat["line"]))
+		if bool(beat.get("mail", false)) and not _is_caption_sentence():
 			_phone.configure_chapter("read", state)
-	elif phase in ["sort", "highlight", "notes", "capture"]:
+	elif Chapter.TASKS.has(phase):
 		_portrait.hide()
 		_journal.show()
-		var titles: Dictionary = {"sort":"01 / Sort the inbox", "highlight":"02 / Read between the lines", "notes":"03 / Trace the senders", "capture":"04 / Keep the context"}
-		var tips: Dictionary = {"sort":"Open a message, then drag or tap to sort.", "highlight":"Tap the request that feels wrong.", "notes":"Check Mail → record the domain in Notepad.", "capture":"Frame the sender, subject and request."}
-		_journal.tooltip_text = str(tips[phase])
+		_journal.tooltip_text = str(Chapter.TASKS[phase].tip)
 		var progress_row: HBoxContainer = HBoxContainer.new()
 		_journal_body.add_child(progress_row)
 		var task_text: VBoxContainer = UI.column(progress_row, 4)
 		task_text.size_flags_horizontal = SIZE_EXPAND_FILL
-		var task_title: Label = UI.label(str(titles[phase]), 24, Color("4FE0D4"))
+		var task_title: Label = UI.label(str(Chapter.TASKS[phase].title), 24, Color("4FE0D4"))
 		task_title.set_meta("task_title", true)
 		task_text.add_child(task_title)
 		var summary: Label = UI.label(_evidence_summary(), 22, Color("F3ECD6"))
@@ -445,24 +498,27 @@ func _render() -> void:
 		hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 		progress_row.add_child(hint)
 		_phone.configure_chapter(phase, state)
-		_set_line({"sort":"Six messages. Which ones deserve another look?", "highlight":"Something about these requests feels off.", "notes":"Alright, what else feels wrong? Who actually sent these?", "capture":"I'd better keep a copy. The sender, the subject, the whole request."}[phase])
+		_set_line(str(Chapter.TASKS[phase].line))
 	elif phase == "seal":
 		_journal.show()
-		_journal_body.add_child(UI.label("EXHIBIT 01 / THE SURVEY", 28, Color("4FE0D4")))
-		_journal_body.add_child(UI.label("3 evidence bundles\n\n01 · Three message captures\n02 · Sender-domain notes\n03 · Payment, pressure and personal-data clues", 24))
-		_journal_body.add_child(UI.label("A typo or free mailbox alone is not proof. Keep each clue connected to the request it came from.", 22))
+		_journal_body.add_child(UI.label("EXHIBIT %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()], 28, Color("4FE0D4")))
+		_journal_body.add_child(UI.label(Chapter.EVIDENCE, 24))
 		for id: String in Chapter.suspicious_ids():
 			_journal_body.add_child(_button("REVIEW / " + str(Chapter.message(id)["subject"]), _review_capture.bind(id)))
 		_seal = Practice.SealArt.new()
 		_journal_body.add_child(_seal)
 		_journal_body.add_child(_button("SEAL EXHIBIT", _seal_exhibit))
-		_set_line("I still don't know who the client is. But now I have something more useful than a feeling.")
+		_set_line(Chapter.SEAL_LINE)
 	elif phase == "sleep":
-		_set_line("I put my phone down. Eric said he knew the client. Tomorrow, I'll ask him again.\n\nFor now, I need some sleep.")
+		_set_line(Chapter.SLEEP_LINE)
+	elif phase == "closing":
+		_set_line(Chapter.END_CAPTION)
 	else:
 		_show_results()
 	_load_art()
 	_layout()
+	# Wrapped caption minimum height settles after its first width assignment.
+	_layout.call_deferred()
 	if not SettingsService.reduced_motion:
 		_motion = create_tween().set_parallel(true)
 		_motion.finished.connect(func() -> void: _motion = null)
@@ -498,6 +554,10 @@ func _review_capture(id: String) -> void:
 	(_journal_body.get_parent() as ScrollContainer).ensure_control_visible.call_deferred(panel)
 
 func _show_results() -> void:
+	_results.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
+	var next_button: Button = _result_actions.get_child(0) as Button
+	next_button.text = "NEXT CHAPTER" if Chapter.NUMBER == 1 else "NEXT CHAPTER\nComing soon"
+	next_button.tooltip_text = "Continue to The Advisor Email" if Chapter.NUMBER == 1 else "Chapter 3 is not available yet."
 	_journal.hide()
 	_portrait.hide()
 	_dialogue.hide()
@@ -505,6 +565,7 @@ func _show_results() -> void:
 	_results.award = 0 if replay else int(state["reward"])
 	_results.balance = PlayerManager.credits
 	_results.replaying = replay
+	_results.assist_status = Perks.status(state.get("perk_run", {}), state.get("hint_used", false))
 	_results.gentle = SettingsService.reduced_motion
 	_results.accessibility_name = "Chapter complete. Three evidence bundles sealed. %d credits earned. Wallet balance %d." % [_results.award, _results.balance]
 	_results.show()
@@ -525,8 +586,12 @@ func _open_upgrades() -> void:
 	await Router.push(&"upgrades")
 
 func _evidence_summary() -> String:
-	var field: String = {"sort":"sorted", "highlight":"flags", "notes":"domains", "capture":"captures"}.get(str(state["phase"]), "captures")
-	return "%d / %d collected" % [state[field].size(), 6 if field == "sorted" else 3]
+	var task: Dictionary = Chapter.TASKS.get(str(state.phase), {"field":"captures","total":3})
+	return "%d / %d collected" % [state[task.field].size(), int(task.total)]
+
+func _next_chapter() -> void:
+	if _can_act() and state.get("completed", false) and Chapter.NUMBER == 1:
+		Router.push(&"upgrades", {"deploy":true, "chapter_id":"mod_01_ch_02", "replay":PlayerManager.chapter_progress.get("mod_01_ch_02", {}).get("completed", false)})
 
 func _set_line(text: String) -> void:
 	# Presentation pages leave authored beat IDs (and existing saves) unchanged.
@@ -550,6 +615,32 @@ func _show_sentence() -> void:
 	_line.text = text
 	_line.scroll_to_line(0)
 	_line.visible_characters = -1
+	var was_caption: bool = _caption_black.visible
+	var caption: bool = _is_caption_sentence()
+	_caption_black.visible = caption
+	_caption.visible = caption
+	_caption_next.visible = caption
+	# Preserve the header spacer so Menu stays at the upper-right corner.
+	_heading.modulate.a = 0.0 if caption else 1.0
+	_dialogue.visible = not caption
+	if caption:
+		_speaker.text = ""
+		_perk_button.hide()
+		_cast_stage.hide()
+		_caption.text = text
+		_caption.modulate.a = 0.0
+		_typing = create_tween()
+		_typing.tween_property(_caption, "modulate:a", 1.0, 0.2 if SettingsService.reduced_motion else 0.65)
+		_typing.finished.connect(func() -> void: _typing = null)
+		_update_advance()
+		return
+	if was_caption:
+		_perk_button.visible = not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
+		_speaker.text = str(Chapter.STORY[int(state["beat"])]["who"])
+		if state.phase == "day" and Chapter.STORY[int(state.beat)].get("mail", false): _phone.configure_chapter("read", state)
+		_load_art()
+	elif state.phase == "day" and Chapter.STORY[int(state.beat)].has("sentence_faces"):
+		_load_art()
 	if SettingsService.text_speed != "instant":
 		_line.visible_characters = 0
 		_typing = create_tween()
@@ -559,17 +650,21 @@ func _show_sentence() -> void:
 			_update_advance())
 	_update_advance()
 
+func _is_caption_sentence() -> bool:
+	return state.get("phase") == "closing" or (state.get("phase") == "day" and _sentence == 0 and Chapter.STORY[int(state.get("beat", 0))].has("caption"))
+
 func _update_advance() -> void:
+	_caption_next.disabled = not _can_act() or _sending
 	var typed: bool = _line.visible_characters < 0 or _line.visible_characters >= _line.text.length()
 	var last: bool = _sentence >= _sentences.size() - 1
 	_advance_button.text = "›" if typed else "…"
 	_advance_button.disabled = not _can_act() or _sending
-	if typed and last and state.get("phase") in ["sort", "highlight", "notes", "capture", "seal"]:
+	if typed and last and (Chapter.TASKS.has(state.get("phase")) or state.get("phase") == "seal"):
 		_advance_button.visible = false
 	else:
 		_advance_button.visible = true
-	if typed and last and state.get("phase") == "day" and int(state.get("beat", 0)) == 11:
-		_advance_button.disabled = state["read"].size() < 6 or not _can_act()
+	if typed and last and state.get("phase") == "day" and Chapter.STORY[int(state.beat)].get("mail", false):
+		_advance_button.disabled = not _phone.phase_ready() or not _can_act()
 	if typed and last and _is_chat_beat():
 		_advance_button.disabled = true
 		if not _chat_started and _chat_cue < 0.0 and _can_act():
@@ -614,14 +709,20 @@ func _advance() -> void:
 		return
 	if state["phase"] == "day":
 		if _is_chat_beat() and (not _chat_started or not _phone.visible or not _phone.phase_ready()): return
-		if int(state["beat"]) == 11 and state["read"].size() < 6: return
+		if Chapter.STORY[int(state.beat)].get("mail", false) and not _phone.phase_ready(): return
 		if int(state["beat"]) < Chapter.STORY.size() - 1:
 			state["beat"] = int(state["beat"]) + 1
 		else:
 			_start_investigation_reveal()
 			return
 	elif state["phase"] == "sleep":
-		state["completed"] = true
+		if not Chapter.END_CAPTION.is_empty(): state.phase = "closing"
+		else:
+			state["completed"] = true
+			state = Chapter.clean(state)
+			_celebrate_pending = true
+	elif state.phase == "closing":
+		state.completed = true
 		state = Chapter.clean(state)
 		_celebrate_pending = true
 	else:
@@ -633,6 +734,9 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 	if not _can_act(): return
 	for field: String in ["read", "sorted", "flags", "domains", "captures", "mistakes"]:
 		state[field] = snapshot[field]
+	if Chapter.NUMBER == 2:
+		state.headers = snapshot.headers
+		state.report_draft = snapshot.report_draft
 	var summary: Label = _journal_body.find_child("EvidenceSummary", true, false) as Label
 	if summary != null: summary.text = _evidence_summary()
 	_save()
@@ -640,6 +744,9 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 
 func _thought(text: String) -> void:
 	if not _can_act(): return
+	if Chapter.NUMBER == 2 and Chapter.TASKS.has(state.phase):
+		_phone.show_feedback(text)
+		return
 	_speaker.text = "John · Thinking"
 	_set_line(text)
 
@@ -652,14 +759,102 @@ func _phase_finished() -> void:
 		# Reading mail must not silently discard John's remaining thoughts.
 		_update_advance()
 		return
-	state["phase"] = {"sort":"highlight", "highlight":"notes", "notes":"capture", "capture":"seal"}.get(str(state["phase"]), "seal")
+	state["phase"] = Chapter.TASKS.get(str(state.phase), {}).get("next", "seal")
 	_save()
 	_render()
+
+func _open_perks() -> void:
+	if not _can_act() or _sending or _is_caption_sentence(): return
+	_paused = true
+	_menu_backdrop.show()
+	_perk_panel.show()
+	UI.clear(_perk_body)
+	_perk_body.add_child(UI.label("CHAPTER LOADOUT / OPTIONAL ASSISTS", 28, UI.TEAL))
+	_perk_body.add_child(UI.label("Using a perk removes the clean-work bonus, not the base chapter reward.", 24))
+	var run: Dictionary = state.get("perk_run", {})
+	for id: String in Perks.ids(run.get("loadout", []), 2):
+		var available: bool = Perks.allowed(run, id, "story_chapter", str(state.phase), state.captures)
+		var button: Button = _button(str(Perks.DATA[id].name).to_upper() + (" / USE" if available else " / UNAVAILABLE"), _use_perk.bind(id))
+		button.disabled = not available
+		_perk_body.add_child(button)
+		_perk_body.add_child(UI.label(str(Perks.DATA[id].limit) + " · Used %d" % int(run.get("uses", {}).get(id, 0)), 22, UI.MUTED))
+	_perk_body.add_child(_button("CLOSE", _close_perks))
+	_layout()
+	_apply_pause()
+	(_perk_body.get_child(_perk_body.get_child_count() - 1) as Button).grab_focus()
+
+func _close_perks() -> void:
+	_perk_panel.hide()
+	_menu_backdrop.hide()
+	_paused = false
+	_apply_pause()
+	_perk_button.grab_focus()
+
+func _use_perk(id: String) -> void:
+	if not _active or not _perk_panel.visible or _backgrounded or _suspended or _owner != AuthService.participant_code() or _signed_owner != AuthService.is_signed_in(): return
+	var run: Dictionary = state.get("perk_run", {})
+	if not Perks.activate(run, id, "story_chapter", str(state.phase), int(state.beat), state.captures): return
+	# Commit usage before revealing help; closing/reloading cannot refund a use.
+	_save()
+	UI.clear(_perk_body)
+	_perk_body.add_child(UI.label(str(Perks.DATA[id].name).to_upper() + " / ASSIST RECORDED", 28, UI.TEAL))
+	if id == "recap":
+		_perk_body.add_child(UI.label(_recap_text(), 26))
+	elif id == "perspective":
+		var hints: Dictionary = {"sort":"Compare what each sender wants from John. Does an expected school update ask for the same things as a paid survey?", "highlight":"Separate the promised reward from the action demanded. What is missing about payment, and what makes checking the offer difficult?", "notes":"A display name can sound official. The address after @ tells you which email service actually hosts the mailbox. Keep that distinction in your notes.", "capture":"A useful exhibit needs context: who sent it, what it is about, and the complete request. Leave all three visible."}
+		hints.merge({"compare":"Compare the exact domain, how the reader is addressed, and who signs the message. A matching subject prefix is not a difference.", "report":"Check the sixth character of the domain carefully. Is it a letter or a number?", "headers":"From is the displayed sender address. Reply-To controls where a reply goes. Subject is the title."})
+		_perk_body.add_child(UI.label(str(hints.get(str(state.phase), "")), 26))
+	elif id == "reference":
+		var columns: HBoxContainer = HBoxContainer.new()
+		columns.add_theme_constant_override("separation", 18)
+		_perk_body.add_child(columns)
+		for index: int in 2:
+			var column: VBoxContainer = UI.column(columns, 12)
+			column.size_flags_horizontal = SIZE_EXPAND_FILL
+			var picker: OptionButton = OptionButton.new()
+			picker.custom_minimum_size.y = 64
+			picker.add_theme_font_override("font", UI.FONT)
+			picker.add_theme_font_size_override("font_size", 24)
+			for message_id: String in state.captures: picker.add_item(str(Chapter.message(message_id).subject))
+			picker.selected = index
+			column.add_child(picker)
+			var copy: Label = UI.label("", 26)
+			column.add_child(copy)
+			var ids: Array = state.captures.duplicate()
+			picker.item_selected.connect(func(selected: int) -> void: copy.text = _reference_text(str(ids[selected])))
+			copy.text = _reference_text(str(ids[index]))
+	_perk_body.add_child(_button("CLOSE", _close_perks))
+	_layout()
+	(_perk_body.get_child(_perk_body.get_child_count() - 1) as Button).grab_focus()
+
+func _reference_text(id: String) -> String:
+	var message: Dictionary = Chapter.message(id)
+	return "FROM / %s\n\n%s\n\n%s\n\n%s" % [message.address, message.subject, message.body, message.get("phrase", "")]
+
+func _recap_text() -> String:
+	var lines: PackedStringArray = []
+	var last: int = int(state.beat) if state.phase == "day" else Chapter.STORY.size() - 1
+	for index: int in range(maxi(0, last - 5), last + 1):
+		var beat: Dictionary = Chapter.STORY[index]
+		var spoken: String = str(beat.line)
+		if state.phase == "day" and index == last:
+			var first_spoken_sentence: int = 1 if beat.has("caption") else 0
+			spoken = " ".join(_sentences.slice(first_spoken_sentence, _sentence))
+			spoken += " " + (_line.text if _line.visible_characters < 0 else _line.text.left(_line.visible_characters))
+		lines.append(str(beat.who) + ": " + spoken)
+	return "RECENTLY ENCOUNTERED\n\n" + "\n\n".join(lines)
 
 func _hint() -> void:
 	if not _can_act(): return
 	state["hint_used"] = true
+	var run: Dictionary = state.get("perk_run", {})
+	if not run.is_empty():
+		run["builtin_hints"] = int(run.get("builtin_hints", 0)) + 1
+		Perks.record(run, "builtin_hint", str(state.phase), int(state.beat))
 	_save()
+	if Chapter.NUMBER == 2:
+		_thought({"compare":"Compare the domain, wording and signature. The club subject prefix is shared by both.", "report":"The new domain uses digit 1 where the genuine domain has lowercase L.", "headers":"From: sender. Reply-To: reply destination. Subject: title."}.get(str(state.phase), "Keep the context with the evidence."))
+		return
 	if state["phase"] == "capture" and is_instance_valid(_phone._camera):
 		_phone._camera.frame = Rect2(0.02,0.02,0.96,0.96)
 		_phone._camera._commit()
@@ -682,21 +877,21 @@ func _seal_exhibit() -> void:
 	_update_advance()
 
 func _save() -> void:
-	if not replay and _owner == AuthService.participant_code() and _signed_owner == AuthService.is_signed_in():
-		PlayerManager.save_survey_chapter(state, not _testing)
+	if _owner == AuthService.participant_code() and _signed_owner == AuthService.is_signed_in():
+		PlayerManager.save_story_attempt(state, replay, not _testing, Chapter.ID)
 
 func _replay() -> void:
 	if not _can_act(): return
 	replay = true
 	_phone._previews.clear()
-	state = Chapter.fresh()
+	state = PlayerManager.begin_story_attempt(Chapter.ID, true, not _testing)
 	_render()
 
 func _load_art() -> void:
 	if state.is_empty(): return
 	var phase: String = str(state["phase"])
 	var beat: Dictionary = Chapter.STORY[int(state["beat"])]
-	var location: String = str(beat["bg"]) if phase == "day" else "john_desk_night"
+	var location: String = str(beat["bg"]) if phase == "day" else Chapter.NIGHT_BACKGROUND
 	_bg.texture = AssetManager.get_texture("story_bg_" + location)
 	var person: String = str(beat["who"]).to_lower() if phase == "day" else "john"
 	if _chat_started and _is_chat_beat():
@@ -704,13 +899,18 @@ func _load_art() -> void:
 		person = "john"
 	else:
 		_poses[person] = int(beat.get("face", 0)) if phase == "day" else 2
+		if phase == "day" and beat.has("sentence_faces"):
+			var faces: Array = beat.sentence_faces
+			var line_index: int = _sentence - (1 if beat.has("caption") else 0)
+			_poses[person] = int(faces[clampi(line_index, 0, faces.size() - 1)])
 	var present: Array[String] = ["john"]
 	if phase == "day" and location == "hallway_day": present = ["john", "eric"]
 	if phase == "day" and location == "clubroom": present = ["john", "eric", "jobert"]
+	if phase == "day" and beat.has("cast"): present.assign(beat.cast)
 	# Includes the lead-in and phone home, not only the open chat app.
 	if _is_chat_beat(): present = ["john"]
 	# John is already seated in the night artwork; never overlay a second John.
-	_cast_stage.visible = location != "john_desk_night" and phase in ["day", "seal", "sleep"]
+	_cast_stage.visible = not _is_caption_sentence() and location != Chapter.NIGHT_BACKGROUND and phase in ["day", "seal", "sleep"]
 	for id: String in _cast:
 		_cast[id].visible = present.has(id)
 		_cast[id].texture = _actor_texture(id, _poses[id])
@@ -729,6 +929,17 @@ func _load_art() -> void:
 	_layout()
 
 func _actor_texture(person: String, face: int) -> Texture2D:
+	if person == "john" and face == 6:
+		var laugh: Texture2D = AssetManager.get_texture("story_john_laugh")
+		if laugh != null:
+			var sprite: AtlasTexture = AtlasTexture.new()
+			sprite.atlas = laugh
+			sprite.region = Rect2(Vector2.ZERO, laugh.get_size())
+			var padding: float = maxf(0.0, laugh.get_height() * 608.0 / 550.0 - laugh.get_width())
+			sprite.margin = Rect2(Vector2(padding * 0.5, 0), Vector2(padding, 0))
+			return sprite
+		# An offline first launch still has a happy pose until art sync completes.
+		face = 1
 	var texture: Texture2D = AssetManager.get_texture("chapter1_" + person)
 	if texture != null and texture.get_width() == 1536 and texture.get_height() == 1024:
 		var split: int = {"john":512,"eric":524,"jobert":546}[person]
@@ -763,7 +974,7 @@ func _layout() -> void:
 	var has_phone: bool = _phone.visible
 	var phase: String = str(state.get("phase", "day"))
 	var top: float = touch + 16
-	var investigation: bool = phase in ["sort", "highlight", "notes", "capture"]
+	var investigation: bool = Chapter.TASKS.has(phase)
 	var task_height: float = touch + 20 / physical
 	var phone_top: float = top + (task_height + 10 if investigation else 0.0)
 	_phone.set_anchors_and_offsets_preset(PRESET_TOP_LEFT)
@@ -794,6 +1005,13 @@ func _layout() -> void:
 	if investigation:
 		_journal.position = Vector2(w * 0.49, top)
 		_journal.size = Vector2(w * 0.51, task_height)
+	if investigation and Chapter.NUMBER == 2:
+		_phone.position = Vector2(w * 0.02, phone_top)
+		_phone.size = Vector2(w * 0.96, h - phone_top)
+		_phone._metrics()
+		_journal.position = Vector2(w * 0.02, top)
+		_journal.size = Vector2(w * 0.96, task_height)
+		_dialogue.hide()
 	if phase in ["seal", "done"]:
 		_journal.position = Vector2(w * 0.12,top)
 		_journal.size = Vector2(w * 0.76,h - top - (dialogue_height + 16 if phase == "seal" else 6))
@@ -822,7 +1040,16 @@ func _layout() -> void:
 	_heading.add_theme_font_size_override("font_size", maxi(20,int(14 / physical)))
 	_advance_button.custom_minimum_size = Vector2.ONE * touch
 	_advance_button.add_theme_font_size_override("font_size", ceili(28 / physical))
+	_caption.add_theme_font_size_override("font_size", ceili(clampf(w * physical * 0.035, 28, 44) / physical))
+	_caption.size = Vector2(w * 0.80, h * 0.30)
+	_caption.position = Vector2(w * 0.10, h * 0.35)
+	_caption_next.custom_minimum_size = Vector2.ONE * touch
+	_caption_next.size = Vector2.ONE * touch
+	_caption_next.position = Vector2((w - touch) * 0.5, h * 0.72)
+	_caption_next.add_theme_font_size_override("font_size", ceili(28 / physical))
 	_layout_menu(w, h, physical)
+	_perk_panel.position = Vector2(w * 0.07, top)
+	_perk_panel.size = Vector2(w * 0.86, h - top - 12)
 	_layout_results(w, h, top, physical)
 
 func _layout_menu(w: float, h: float, physical: float) -> void:
@@ -881,6 +1108,8 @@ func _start_investigation_reveal() -> void:
 	_stop_tweens()
 	_revealing = true
 	_reveal.gentle = SettingsService.reduced_motion
+	_reveal.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
+	_reveal.tagline = "A familiar name. An unfamiliar destination." if Chapter.NUMBER == 2 else "Every message leaves a trace."
 	_reveal.elapsed = 0.0
 	_reveal.show()
 	for control: Control in [_dialogue, _journal, _phone, _app_shortcuts]: control.hide()
@@ -899,7 +1128,7 @@ func _finish_investigation_reveal() -> void:
 	_revealing = false
 	_reveal.hide()
 	AudioManager.set_story_duck(self, 1.0)
-	state["phase"] = "sort"
+	state["phase"] = Chapter.FIRST_PHASE
 	_save()
 	_render()
 
@@ -912,6 +1141,9 @@ func _cancel_investigation_reveal() -> void:
 
 func _toggle_menu() -> void:
 	if not _active: return
+	if _perk_panel.visible:
+		_close_perks()
+		return
 	_paused = not _paused
 	_menu.visible = _paused
 	_menu_backdrop.visible = _paused
@@ -924,6 +1156,7 @@ func _toggle_menu() -> void:
 
 func _apply_pause() -> void:
 	var locked: bool = not _can_act()
+	_perk_button.disabled = locked or _sending
 	if _result_tween != null and _result_tween.is_valid():
 		if locked: _result_tween.pause()
 		else: _result_tween.play()
@@ -932,7 +1165,7 @@ func _apply_pause() -> void:
 		if _result_audio.playing: AudioManager.set_story_duck(self, 1.0 if locked else 0.22)
 	for row: HBoxContainer in [_result_actions, _result_secondary]:
 		for node: Node in row.get_children():
-			(node as Button).disabled = locked or node.name == "NextChapter"
+			(node as Button).disabled = locked or (node.name == "NextChapter" and Chapter.NUMBER != 1)
 	if _revealing:
 		AudioManager.set_story_duck(self, 0.3 if _can_present() else 1.0)
 		if _reveal_tween != null and _reveal_tween.is_valid():
@@ -966,6 +1199,7 @@ func _settings_changed() -> void:
 	if SettingsService.text_speed == "instant":
 		if _typing != null and _typing.is_valid(): _typing.kill()
 		_line.visible_characters = -1
+		_caption.modulate.a = 1.0
 	if SettingsService.reduced_motion and not _sending:
 		if _motion != null and _motion.is_valid(): _motion.kill()
 		for control: Control in [_dialogue, _journal, _phone]: control.modulate.a = 1.0
@@ -1028,6 +1262,7 @@ func on_resume() -> void:
 	_paused = false
 	_menu.hide()
 	_menu_backdrop.hide()
+	_perk_panel.hide()
 	show()
 	if _resume_reveal:
 		_resume_reveal = false

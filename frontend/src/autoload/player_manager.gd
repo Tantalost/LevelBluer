@@ -70,13 +70,93 @@ var onboarding_state: Dictionary = {}
 ## Story chapters are separate from legacy stages, onboarding and graded BKT.
 var chapter_progress: Dictionary = {}
 const SurveyChapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
+const AdvisorChapter: GDScript = preload("res://src/gameplay/decision/advisor_chapter.gd")
+var chapter_replays: Dictionary = {}
+
+func story_definition(id: String) -> GDScript:
+	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter}.get(id)
+
+func story_unlocked(id: String) -> bool:
+	return is_module_deploy_unlocked("mod_01") and (id == SurveyChapter.ID or (id == AdvisorChapter.ID and chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)))
+
+func story_checkpoint(id: String, is_replay: bool) -> Dictionary:
+	return (chapter_replay_progress if id == SurveyChapter.ID else chapter_replays.get(id, {})) if is_replay else chapter_progress.get(id, {})
+const StoryPerks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
+var owned_perks: Array[String] = ["recap"]
+var perk_loadout: Array[String] = []
+var perk_attempts: Array[Dictionary] = []
+var chapter_replay_progress: Dictionary = {}
+
+func purchase_perk(id: String, persist: bool = true) -> bool:
+	if id not in StoryPerks.IDS or id in owned_perks: return false
+	var price: int = int(StoryPerks.DATA[id].cost)
+	if credits < price: return false
+	credits -= price
+	owned_perks.append(id)
+	if persist: SaveService.save_game()
+	return true
+
+func equip_perk(id: String, persist: bool = true) -> bool:
+	if id not in owned_perks: return false
+	if id in perk_loadout: perk_loadout.erase(id)
+	elif perk_loadout.size() < 2: perk_loadout.append(id)
+	else: return false
+	if persist: SaveService.save_game()
+	return true
+
+func begin_survey_attempt(is_replay: bool, persist: bool = true) -> Dictionary:
+	return begin_story_attempt(SurveyChapter.ID, is_replay, persist)
+
+func begin_story_attempt(chapter_id: String, is_replay: bool, persist: bool = true) -> Dictionary:
+	var definition: GDScript = story_definition(chapter_id)
+	if definition == null or (chapter_id == AdvisorChapter.ID and not story_unlocked(chapter_id)): return {}
+	var raw: Dictionary = story_checkpoint(chapter_id, is_replay)
+	if is_replay and raw.get("completed", false): raw = {}
+	var snapshot: Dictionary = definition.clean(raw)
+	if (snapshot.get("perk_run", {}) as Dictionary).is_empty() and not snapshot.get("completed", false):
+		var starting_loadout: Array[String] = []
+		if raw.is_empty(): starting_loadout.assign(perk_loadout)
+		snapshot["perk_run"] = StoryPerks.new_run(learning_id(), starting_loadout, is_replay, raw.is_empty(), chapter_id)
+	save_story_attempt(snapshot, is_replay, persist, chapter_id)
+	return snapshot
+
+func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = true, chapter_id: String = "mod_01_ch_01") -> void:
+	var definition: GDScript = story_definition(chapter_id)
+	if definition == null or (chapter_id == AdvisorChapter.ID and not story_unlocked(chapter_id)): return
+	var valid: Dictionary = definition.clean(snapshot)
+	var run: Dictionary = valid.get("perk_run", {})
+	if not run.is_empty():
+		# Preserve pre-perk hint evidence across migration and ledger reloads.
+		if valid.hint_used: run["builtin_hints"] = maxi(1, int(run.get("builtin_hints", 0)))
+		run["completed"] = bool(valid.completed)
+		if run.completed and float(run.finished_at) == 0.0: run.finished_at = Time.get_unix_time_from_system()
+		run["assist_status"] = StoryPerks.status(run, valid.hint_used)
+		run["mistakes"] = valid.mistakes
+		run["coins_awarded"] = int(valid.reward) if valid.completed and not is_replay else 0
+		var found: bool = false
+		for index: int in perk_attempts.size():
+			if perk_attempts[index].id == run.id:
+				if not perk_attempts[index].get("completed", false): perk_attempts[index] = run.duplicate(true)
+				found = true
+				break
+		if not found: perk_attempts.append(run.duplicate(true))
+	if is_replay:
+		if chapter_id == SurveyChapter.ID: chapter_replay_progress = valid
+		else: chapter_replays[chapter_id] = valid
+		if persist: SaveService.save_game()
+	else: save_chapter(valid, chapter_id, persist)
 
 func save_survey_chapter(snapshot: Dictionary, persist: bool = true) -> void:
-	var previous: Dictionary = chapter_progress.get(SurveyChapter.ID, {})
+	save_chapter(snapshot, SurveyChapter.ID, persist)
+
+func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true) -> void:
+	var definition: GDScript = story_definition(chapter_id)
+	if definition == null or (chapter_id == AdvisorChapter.ID and not story_unlocked(chapter_id)): return
+	var previous: Dictionary = chapter_progress.get(chapter_id, {})
 	if bool(previous.get("completed", false)):
 		return # Replays never replace the original exhibit or award twice.
-	var valid: Dictionary = SurveyChapter.clean(snapshot)
-	chapter_progress[SurveyChapter.ID] = valid
+	var valid: Dictionary = definition.clean(snapshot)
+	chapter_progress[chapter_id] = valid
 	if bool(valid["completed"]):
 		credits += int(valid["reward"])
 	if persist:
@@ -359,6 +439,11 @@ func reset_to_defaults() -> void:
 	tutorial_skipped = false
 	onboarding_state = {}
 	chapter_progress = {}
+	owned_perks = ["recap"]
+	perk_loadout = []
+	perk_attempts = []
+	chapter_replay_progress = {}
+	chapter_replays = {}
 	has_intel_bonus = false
 	intel_bonus_module = ""
 	trace_seen_by_module = _empty_trace_history()
@@ -1016,6 +1101,11 @@ func get_save_data() -> Dictionary:
 		"tutorial_skipped": tutorial_skipped,
 		"onboarding_state": onboarding_state.duplicate(true),
 		"chapter_progress": chapter_progress.duplicate(true),
+		"owned_perks": owned_perks.duplicate(),
+		"perk_loadout": perk_loadout.duplicate(),
+		"perk_attempts": perk_attempts.duplicate(true),
+		"chapter_replay_progress": chapter_replay_progress.duplicate(true),
+		"chapter_replays": chapter_replays.duplicate(true),
 		"has_intel_bonus": has_intel_bonus,
 		"intel_bonus_module": intel_bonus_module,
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
@@ -1198,8 +1288,31 @@ func apply_save_data(data: Dictionary) -> void:
 	var saved_onboarding: Variant = data.get("onboarding_state", {})
 	onboarding_state = (saved_onboarding as Dictionary).duplicate(true) if saved_onboarding is Dictionary else {}
 	var saved_chapters: Variant = data.get("chapter_progress", {})
+	owned_perks = StoryPerks.ids(data.get("owned_perks", []))
+	if "recap" not in owned_perks: owned_perks.append("recap")
+	for id: String in StoryPerks.ids(data.get("perk_loadout", []), 2):
+		if id in owned_perks: perk_loadout.append(id)
+	var attempts: Variant = data.get("perk_attempts", [])
+	if attempts is Array:
+		var seen_attempts: Array[String] = []
+		for raw: Variant in attempts:
+			var run: Dictionary = StoryPerks.clean_run(raw)
+			if run.is_empty() or run.id in seen_attempts: continue
+			seen_attempts.append(run.id)
+			run["assist_status"] = StoryPerks.status(run)
+			for field: String in ["mistakes", "coins_awarded"]:
+				var value: Variant = raw.get(field, 0)
+				if (value is int or value is float) and is_finite(float(value)): run[field] = maxi(0, int(value))
+			perk_attempts.append(run)
+	var replay_data: Variant = data.get("chapter_replay_progress", {})
+	if replay_data is Dictionary and not replay_data.is_empty(): chapter_replay_progress = SurveyChapter.clean(replay_data)
 	if saved_chapters is Dictionary and saved_chapters.get(SurveyChapter.ID) is Dictionary:
 		chapter_progress[SurveyChapter.ID] = SurveyChapter.clean(saved_chapters[SurveyChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(AdvisorChapter.ID) is Dictionary:
+		chapter_progress[AdvisorChapter.ID] = AdvisorChapter.clean(saved_chapters[AdvisorChapter.ID])
+	var replays: Variant = data.get("chapter_replays", {})
+	if replays is Dictionary and replays.get(AdvisorChapter.ID) is Dictionary:
+		chapter_replays[AdvisorChapter.ID] = AdvisorChapter.clean(replays[AdvisorChapter.ID])
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)

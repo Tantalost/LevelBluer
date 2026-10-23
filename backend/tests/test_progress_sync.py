@@ -100,6 +100,29 @@ class ProgressSyncFailureTest(unittest.TestCase):
         result = self._run(FakeSupabase())
         self.assertTrue(result.ok)
 
+    def test_story_perks_survive_save_blob_without_assessment_events(self):
+        fake = FakeSupabase()
+        tracking = {
+            "owned_perks": ["recap", "perspective"],
+            "perk_loadout": ["recap"],
+            "perk_attempts": [{"id": "attempt-1", "assist_status": "assisted",
+                               "uses": {"recap": 1}, "replay": False}],
+            "chapter_replay_progress": {"perk_run": {"id": "replay-1"}},
+        }
+        payload = ProgressSyncRequest(**tracking)
+        with (
+            patch("app.services.progress_service.fetch_student_by_id",
+                  return_value={"id": "stu-1", "highest_unlocked_stage": 1}),
+            patch("app.services.progress_service.supabase", fake),
+            patch("app.services.progress_service.record_learning_events", return_value=[]) as record,
+        ):
+            self.assertTrue(sync_student_progress("stu-1", payload).ok)
+            record.assert_called_once_with("stu-1", [])
+        stored = fake.upserts["player_saves"][0]["payload"]
+        for key, value in tracking.items():
+            self.assertEqual(stored[key], value)
+        self.assertNotIn("bkt_records", fake.upserts)
+
     def test_repeated_sync_updates_existing_mastery_without_duplicates(self):
         fake = FakeSupabase()
         self.assertTrue(self._run(fake).ok)

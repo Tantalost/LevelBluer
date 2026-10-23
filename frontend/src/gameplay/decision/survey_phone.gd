@@ -5,7 +5,8 @@ signal thought_requested(text: String)
 signal phase_finished
 signal chat_speaker_changed(person: String, pose: int)
 signal view_changed
-const Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
+var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
+var chat_entries: Array[Dictionary] = []
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
 const INK: Color = Color("101623")
 var state: Dictionary = {}
@@ -50,7 +51,7 @@ func _tick_chat(delta: float) -> void:
 	if _locked or not is_visible_in_tree() or mode != "chat" or _app != "mail": return
 	if _chat_stage in ["stopped", "done", "send"]: return
 	_chat_elapsed += delta
-	var entry: Dictionary = Chapter.CHAT_MESSAGES[_chat_index]
+	var entry: Dictionary = chat_entries[_chat_index]
 	if _chat_stage == "draft":
 		var letters: int = str(entry["text"]).length()
 		_chat_draft.visible_characters = letters if SettingsService.text_speed == "instant" else mini(letters, int(_chat_elapsed * 28.0 * SettingsService.text_speed_multiplier()))
@@ -67,11 +68,11 @@ func _tick_chat(delta: float) -> void:
 
 func _begin_chat_turn() -> void:
 	_chat_elapsed = 0.0
-	if _chat_index >= Chapter.CHAT_MESSAGES.size():
+	if _chat_index >= chat_entries.size():
 		_chat_stage = "done"
 		_render()
 		return
-	var entry: Dictionary = Chapter.CHAT_MESSAGES[_chat_index]
+	var entry: Dictionary = chat_entries[_chat_index]
 	_chat_stage = "draft" if entry["who"] == "John" else "typing"
 	chat_speaker_changed.emit(str(entry["who"]), int(entry["face"]))
 	_render()
@@ -89,7 +90,7 @@ func _deliver_chat() -> void:
 
 func _build_chat() -> void:
 	for index: int in _chat_history:
-		var entry: Dictionary = Chapter.CHAT_MESSAGES[index]
+		var entry: Dictionary = chat_entries[index]
 		var own: bool = entry["who"] == "John"
 		var bubble: PanelContainer = UI.panel(_content)
 		var style: StyleBoxFlat = UI.box(Color("153B37") if own else Color("FFFFFF"), Color("d9cbb8"), 14)
@@ -101,7 +102,7 @@ func _build_chat() -> void:
 	_chat_status = UI.label("", 22, Color("365b63"))
 	_content.add_child(_chat_status)
 	if _chat_stage == "typing":
-		_chat_status.text = str(Chapter.CHAT_MESSAGES[_chat_index]["who"]) + " is typing…"
+		_chat_status.text = str(chat_entries[_chat_index]["who"]) + " is typing…"
 	elif _chat_stage in ["draft", "send"]:
 		_chat_status.text = "John · Writing a message"
 	elif _chat_stage == "done":
@@ -122,7 +123,7 @@ func _build_chat() -> void:
 	_chat_draft.size_flags_horizontal = SIZE_EXPAND_FILL
 	composer_row.add_child(_chat_draft)
 	if _chat_footer.visible:
-		_chat_draft.text = str(Chapter.CHAT_MESSAGES[_chat_index]["text"])
+		_chat_draft.text = str(chat_entries[_chat_index]["text"])
 		_chat_draft.visible_characters = _chat_draft.text.length() if _chat_stage == "send" else int(_chat_elapsed * 28.0 * SettingsService.text_speed_multiplier())
 	_chat_send = UI.button("↑", _send_chat, true)
 	_chat_send.accessibility_name = "Send John's message"
@@ -155,6 +156,9 @@ class SortBin extends Button:
 		card_dropped.emit(str(data["survey_card"]))
 
 func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
+	chat_entries.assign(Chapter.CHAT_MESSAGES)
+	if Chapter.ID == "mod_01_ch_02" and Chapter.STORY[int(snapshot.beat)].get("chat_id", "") == "private":
+		chat_entries.assign(Chapter.PRIVATE_CHAT)
 	_clipboard = ""
 	_drafts.clear()
 	_domain = null

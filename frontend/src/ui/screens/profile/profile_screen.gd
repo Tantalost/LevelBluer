@@ -292,7 +292,7 @@ func _build_briefing() -> void:
 	shortcuts.add_theme_constant_override("separation", 12)
 	_briefing.add_child(shortcuts)
 	_summary(shortcuts, "FIELD RECORD", "%d / %d STAGES" % [_snapshot.stage_done, _snapshot.stage_total], "%d / %d lesson topics" % [_snapshot.lesson_done, _snapshot.lesson_total], &"progress")
-	_summary(shortcuts, "TOWER ARMORY", "%d CREDITS" % maxi(PlayerManager.credits, 0), "Inspect your tower upgrades", &"upgrades")
+	_summary(shortcuts, "PERK COLLECTION", "%d CREDITS" % maxi(PlayerManager.credits, 0), "Choose your story investigation loadout", &"upgrades")
 	var intel := _panel(_briefing)
 	intel.add_child(_label("PERSONAL INTELLIGENCE", UI.TEAL))
 	if _dossier.strongest.is_empty():

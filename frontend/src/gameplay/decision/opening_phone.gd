@@ -1,4 +1,10 @@
 extends "res://src/gameplay/decision/story_phone.gd"
+
+# Shared phone palette, including close-up investigation views.
+const PHONE_FRAME_COLORS: Array[Color] = [Color("29252e"), Color("d1bda3"), Color("fff3d8"), Color("fffbed"), Color("302933"), Color("141b30")]
+const PHONE_PAPER: Color = Color("fff7ed")
+const PHONE_STATUS: Color = Color("cb8b8b")
+const PHONE_HEADER: Color = Color("f6b5a6")
 ## Opening-only portrait skin. Inherits local email actions and tween cleanup.
 var _alarm_pending: bool = true
 var _dismiss: Button
@@ -413,16 +419,15 @@ func _draw_frame() -> void:
 		return
 	var rect: Rect2 = Rect2(Vector2.ZERO, Vector2(_shell.size.x, _shell.size.x / 0.52))
 	for layer: int in 6:
-		var colors: Array[Color] = [Color("29252e"), Color("d1bda3"), Color("fff3d8"), Color("fffbed"), Color("302933"), Color("141b30")]
-		_shell.draw_colored_polygon(_bezel(rect.grow(-layer * 4), 32 - layer * 3), colors[layer])
+		_shell.draw_colored_polygon(_bezel(rect.grow(-layer * 4), 32 - layer * 3), PHONE_FRAME_COLORS[layer])
 	var screen: Rect2 = rect.grow(-24)
 	_wallpaper_clip = _bezel(screen, 14)
 	if _app == "mail":
-		_wallpaper_rect(screen, Color("fff7ed"))
+		_wallpaper_rect(screen, PHONE_PAPER)
 		var status_bottom: float = _status.position.y + _status.size.y + 20
 		var header_bottom: float = _title.position.y + _title.size.y + 20
-		_wallpaper_rect(Rect2(screen.position, Vector2(screen.size.x, status_bottom)), Color("cb8b8b"))
-		_wallpaper_rect(Rect2(screen.position + Vector2(0, status_bottom), Vector2(screen.size.x, header_bottom - status_bottom)), Color("f6b5a6"))
+		_wallpaper_rect(Rect2(screen.position, Vector2(screen.size.x, status_bottom)), PHONE_STATUS)
+		_wallpaper_rect(Rect2(screen.position + Vector2(0, status_bottom), Vector2(screen.size.x, header_bottom - status_bottom)), PHONE_HEADER)
 	else:
 		for band: int in 100:
 			var ratio: float = band / 99.0

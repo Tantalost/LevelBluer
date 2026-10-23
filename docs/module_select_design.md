@@ -76,6 +76,14 @@ rounded navy/blue theme. Existing `study_ui.gd` button styling is shared through
 numbers are plain type rather than rounded badges; larger card labels and
 neutral credit text match the previous screen. The illustrated layout is retained.
 
+Completed Chapter 1 cards retain a green surface even when another chapter is
+selected, with a right-aligned COMPLETED badge and explicit accessible status.
+The preview's exhibit seal and earned progress bar use the same completion green.
+Keyboard focus retains its separate gold outline. These are presentation-only
+indicators from the existing saved completion flag, not new reward or unlock logic.
+Verification checks completed/unfinished states and badge containment/non-overlap
+at desktop and landscape-phone sizes.
+
 The chapter list scrolls independently on landscape phones. Selection fades
 respect reduced motion; owned tweens stop on exit or rebuild. Deferred scroll
 targets resolve against the latest cards so resize/progress refresh cannot
@@ -119,6 +127,15 @@ snapshot schema allows additional fields; hosted sync has not been live-tested
 for this new field. Conflicting simultaneous devices use existing sync rules.
 
 ### Presentation and lifecycle
+
+Chapter 1 opens with the anonymous caption “Five days before everything went
+wrong.” centered on pure black. John, the location art, dialogue panel and day
+heading are hidden for this sentence; Back/Menu remain available. The caption
+fades gently and waits for Continue before John's arrival line begins. It uses
+separate authored caption metadata, not John's speech, while keeping existing
+beat IDs and sentence paging intact. The fade pauses with the menu/background,
+stops on exit and has a reduced-motion duration. Late artwork cannot reveal the
+cast over the title card. Desktop and landscape-phone checks cover this handoff.
 
 Full-screen school/room art, translucent bottom dialogue, compact teal nameplate,
 expression sprites and right-side phone reuse the opening's visual language.
@@ -274,3 +291,137 @@ protection, replay isolation, invalid saves, account switching, and 1280×720 /
 844×390 layouts. Also run tutorial, module-select and cloud-story regressions.
 Physical Android keyboard, scrolling/drag feel and background/resume still need
 a device acceptance pass. This milestone does not implement Chapter 2.
+
+### Story perks and pre-deployment loadout
+
+The player-facing Upgrades destination is now Perk Collection. It reuses the
+slate/mint rectangular cards, circular glowing nodes, selection rail and right
+detail panel from the old armory. Chapter selection opens this screen with a
+deployment action and two optional slots. Empty loadouts are supported. On small
+landscape screens, details scroll and the purchase/equip action remains fixed.
+The profile, module menu and chapter-completion shortcut use the Perks label.
+
+Initial permanent unlocks (provisional balance):
+- Case Recap: free; once per attempt, only already encountered dialogue.
+- Fresh Perspective: 100 credits; one contextual Night investigation hint.
+- Cross-Reference: 150 credits; compare already captured messages, reusable.
+
+`story_perks.gd` is a pure policy/data helper, not an autoload. The existing
+PlayerManager owns purchases, loadouts and attempt records; the chapter screen
+owns the paused assist modal. The policy requires the explicit `story_chapter`
+context and known Chapter 1 phases. Checks, checkpoints, research tests and other
+contexts are denied. No assessment scoring, BKT updates or automatic evidence
+completion is attached to perk activation. Readability/accessibility settings
+remain free and outside the perk system. Connections are visual loadout options,
+not upgrade prerequisites or ranks.
+
+A chapter attempt snapshots its two-slot loadout. Resuming retains that snapshot
+even if the global loadout changes. Activation is saved before help is displayed.
+Merely equipping a perk does not mark assistance: actual use or a built-in hint
+does. Assisted completion keeps the 100-credit base reward, but not the 25-credit
+clean-work bonus. Original clears still award once; replays have separate progress
+and records and never overwrite the original clear or award more credits.
+
+Save fields are `owned_perks`, `perk_loadout`, `perk_attempts` and
+`chapter_replay_progress`. Each attempt retains ID, chapter/content/perk versions,
+equipped IDs, activation events/counts, built-in hint count, timestamps, replay and
+completion flags, mistakes, coins awarded and assisted/unassisted/unknown status.
+Old completed saves are not retroactively labeled unassisted. Legacy in-progress
+runs resume with an empty loadout and unknown tracking, retaining known hint use.
+Old tower purchases/ranks are preserved without automatic refunds; the old armory
+remains routed separately for legacy tutorial/defeat flows.
+
+The existing backend accepts and stores these fields in its generic player-save
+payload; a mocked sync regression verifies retention without assessment events.
+They are not yet a researcher dashboard/export dataset. Live hosted sync and
+cross-device acceptance were not exercised for this milestone. Separating test
+effects does not erase prior learning from hints; study analysis should still
+account for assistance exposure and replay attempts.
+
+Verification: `verify_story_perks.gd` checks purchases, limits, frozen loadouts,
+save/reload, migration, isolated contexts, reward/replay behavior, account guards,
+the three assist panels and 1280x720 / 844x390 layouts. Add `-- --render` to capture
+ignored `.godot/perks_*.png` screenshots. Also run `verify_survey_chapter.gd`,
+`verify_module_select.gd`, `verify_research_ui.gd` and backend
+`tests.test_progress_sync`. These fixtures do not make live purchases or uploads.
+
+### Chapter 2 — The Advisor Email
+
+Chapter 2 is now authored and playable after Chapter 1 completion. Chapter 1's
+Next Chapter action and the chapter-select card both open the chapter-specific
+perk loadout. Chapter 3 still shows Coming soon, even after access is earned.
+
+The existing `survey_chapter_screen.gd` is now shared presentation, configured by
+chapter ID. Each case supplies story beats, task metadata, evidence descriptions,
+phase transitions and validation. Both cases use the same dialogue paging,
+character lighting, night desk, title animation, pause/settings behavior, perk
+modal and completion celebration. Explicit cast lists prevent remote chat members
+from appearing in John's room. `advisor_phone.gd` extends the existing chapter
+phone, sharing its skin, chat timing and lifecycle; it only adds these activities:
+
+- Compare the earlier and new email side by side by sender, format, wording or
+  signature. The matching format is a distractor, not a fourth mismatch.
+- Retype the lookalike domain in a local Report to IT form. The sender stays
+  visible, the draft persists, and accepted transcription exposes L versus 1.
+- Match From, Reply-To and Subject using drag/drop or tap-label/tap-field.
+
+All addresses are fictional `.example` values and the report never sends mail.
+Comparison preserves both messages; the domain and raw-header results form the
+remaining exhibit context. Knowledge of the club format and Dan's jokes are not
+treated as proof. The approved opening and closing are anonymous black captions.
+Dan appears only in chat and Sir Rham only through emails; no substitute portraits
+are used. Their supplied photos are references for future physical appearances,
+not new assets uploaded or copied into the repository in this milestone.
+
+PlayerManager now has chapter-keyed definition, checkpoint, unlock, begin and save
+methods. Chapter 1 compatibility wrappers and its old replay field remain intact.
+Chapter 2 replays use `chapter_replays[chapter_id]`. Perk attempts include chapter
+ID; both validators reject another chapter's perk run. The assessment deny-list
+boundary is unchanged: only explicit story contexts and that case's phases work.
+
+Run `verify_advisor_chapter.gd` (optionally `-- --render`) for the full story/chat,
+comparison, transcription, header drag/tap, pause, save/reload, perks, sealing,
+closing, reward, replay and 1280x720 / 844x390 checks. Existing Chapter 1,
+module-select and perk suites cover shared regressions. Screenshots go to ignored
+`.godot/chapter2_*.png`. Physical Android keyboard/drag feel and live cross-device
+cloud acceptance still require a device pass; no hosted data was changed.
+
+
+### Chapter 2 presentation polish (23 October 2026)
+
+Visual consistency: refine spacing and hierarchy without introducing a new skin.
+Phone investigations retain the shared cream paper, muted-pink header/accent,
+ink text, raised beige controls and pixel bezel. The comparison view consumes
+the palette in `opening_phone.gd`; it must not become a separate navy/blue UI.
+
+The first incoming advisor email now starts with a tappable notification and the
+existing `ui_notification` cue (respects audio settings). Private chat opens through
+a pause-aware Contacts scroll and Jobert selection with tap feedback. The shared
+chat composer/timing remains unchanged; the private footer no longer claims group
+read receipts. Per-sentence pose metadata changes laughter to a smile, then concern.
+Chapter-specific night background metadata prevents duplicate standing sprites.
+
+Artwork was generated with the built-in image tool using the existing John sprite
+and night desk art as identity/style references. Cloudinary is the runtime source;
+no generated image binaries are tracked by Git. Local originals are saved under
+`frontend/.godot/chapter2_art/` (ignored cache; Cloudinary is the durable copy).
+
+Final prompts and local filenames:
+
+#### Chapter-select illustration
+
+Local: `frontend/.godot/chapter2_art/chapter2_advisor_cover_v1.png`
+
+Use case: illustration-story. Asset type: 16:9 landscape visual novel chapter-select illustration for Chapter 2 The Advisor Email. Input image: reference for John's exact established face, curly black hair, slim build, white short-sleeve school shirt with green-and-black pocket stripe, and painterly anime/pixel-textured environment style. New scene: John alone in a sunlit school corridor, waist-up three-quarter view, holding his phone near chest level, eyebrows slightly raised and focused as an unexpected email arrives. A subtle envelope notification icon glows on the phone, no legible message text. Preserve his distinctive face and clothing. Face and phone in upper/middle portion, bottom quarter quieter for game title overlay. Cinematic warm daylight against teal shadows; polished narrative illustration. No UI frame, no title, no text, no watermark, no extra people.
+
+#### Night investigation background
+
+Local: `frontend/.godot/chapter2_art/john_bed_night_v1.png`
+
+Use case: illustration-story. Asset type: 16:9 visual novel investigation background. Reference image supplies John's exact face, curly black hair, slim build, illustrated anime style and bedroom continuity (teal curtains, books, plants, dark blue bedding). Create a NEW viewpoint: John lying flat on his back on his bed at night, head resting naturally on pillow, BOTH hands holding his phone raised ABOVE his face, arms bent upward, eyes looking up at the phone messages. Phone SCREEN FACES JOHN, cool screen light clearly illuminates his cheeks, nose, eyes and hands. Three-quarter side view from beside the bed, medium-wide room composition. Keep his recognizable facial features; white school shirt with green-and-black pocket stripe. Midnight blue ambience, faint city lights through window, subtle warm bedside accent, suspenseful but quiet. Frame his face/raised phone around left-middle, keep right and bottom less busy for investigation UI. Anatomically natural hands, exactly two arms. No floating text, no UI, no other people, no watermark.
+
+#### Laughing pose
+
+Local: `frontend/.godot/chapter2_art/john_laugh_v1.png`
+
+Use case: identity-preserve. Asset: one transparent-background visual novel character sprite, no scene, no grid. Reference image is John's existing six-pose character sheet: preserve his exact face, curly black hair, warm skin, slender build, white short-sleeve school shirt with green and black pocket stripes, black belt/slacks, same polished anime illustration. Create ONE new waist-up pose of John genuinely laughing softly at a friend's joke: eyes happily narrowed/closed, eyebrows relaxed, mouth open in a natural laugh with teeth visible, shoulders relaxed, one hand loosely near his mouth, other arm resting naturally. No waving, no worried eyebrows. Frame from hair top to below belt, entire head elbows and hands inside frame, consistent proportions with reference. Transparent background, no shadow backdrop, no text or extra people.

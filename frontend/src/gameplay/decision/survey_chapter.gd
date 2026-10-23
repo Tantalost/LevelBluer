@@ -1,8 +1,23 @@
 extends RefCounted
 ## Authored Chapter 1 content and validation. No scene, account or network access.
 const ID: String = "mod_01_ch_01"
+const NUMBER: int = 1
+const TITLE: String = "The Survey"
+const NIGHT_BACKGROUND: String = "john_desk_night"
+const FIRST_PHASE: String = "sort"
+const TASKS: Dictionary = {
+	"sort":{"title":"01 / Sort the inbox", "tip":"Open a message, then drag or tap to sort.", "line":"Six messages. Which ones deserve another look?", "field":"sorted", "total":6, "next":"highlight"},
+	"highlight":{"title":"02 / Read between the lines", "tip":"Tap the request that feels wrong.", "line":"Something about these requests feels off.", "field":"flags", "total":3, "next":"notes"},
+	"notes":{"title":"03 / Trace the senders", "tip":"Check Mail → record the domain in Notepad.", "line":"Alright, what else feels wrong? Who actually sent these?", "field":"domains", "total":3, "next":"capture"},
+	"capture":{"title":"04 / Keep the context", "tip":"Frame the sender, subject and request.", "line":"I'd better keep a copy. The sender, the subject, the whole request.", "field":"captures", "total":3, "next":"seal"}
+}
+const EVIDENCE: String = "3 evidence bundles\n\n01 · Three message captures\n02 · Sender-domain notes\n03 · Payment, pressure and personal-data clues\n\nA typo or free mailbox alone is not proof. Keep each clue connected to its request."
+const SEAL_LINE: String = "I still don't know who the client is. But now I have something more useful than a feeling."
+const SLEEP_LINE: String = "I put my phone down. Eric said he knew the client. Tomorrow, I'll ask him again.\n\nFor now, I need some sleep."
+const END_CAPTION: String = ""
 const BASE_REWARD: int = 100
 const CLEAN_BONUS: int = 25
+const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const MESSAGES: Array[Dictionary] = [
 	{"id":"club", "sender":"Jobert", "address":"jobert@club.school.example", "subject":"Tomorrow's club meeting", "body":"Meeting at 3 PM in our usual clubroom. The same details are on the club noticeboard. Bring your project notes.", "suspicious":false},
 	{"id":"survey", "sender":"Survey Rewards Team", "address":"survey.rewards@gmail.com", "subject":"Your first survey job", "body":"Thanks for joining!", "suspicious":true, "flag":"pay", "phrase":"Earn big rewards. We will tell you the payment amount after you finish.", "thought":"They want my time, but won't tell me what the job pays. Who is actually hiring me?"},
@@ -12,7 +27,7 @@ const MESSAGES: Array[Dictionary] = [
 	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "thought":"'Recieve' could just be bad grammar. But my birth date AND my home address? They haven't even explained why they need them."}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John", "face":2, "bg":"school_gate_morning", "line":"Five days before everything went wrong. And here I was, late again. Come on, John. Just get through the gate before the bell."},
+	{"who":"John", "face":2, "bg":"school_gate_morning", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
 	{"who":"Eric", "face":1, "bg":"hallway_day", "line":"John! You look like you ran the whole way. No coffee today?"},
 	{"who":"John", "face":2, "bg":"hallway_day", "line":"No coffee. No spare money either. Please tell me the meeting hasn't started."},
 	{"who":"Eric", "face":1, "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
@@ -66,6 +81,8 @@ static func clean(raw: Dictionary) -> Dictionary:
 		if (value is int or value is float) and is_finite(float(value)):
 			state[field] = clampi(int(value), 0, STORY.size() - 1 if field == "beat" else 9999)
 	state["hint_used"] = raw.get("hint_used", false) == true
+	state["perk_run"] = Perks.clean_run(raw.get("perk_run", {}))
+	if state.perk_run.get("chapter", ID) != ID: state.perk_run = {}
 	var phase: String = str(raw.get("phase", "day"))
 	if phase in ["day", "sort", "highlight", "notes", "capture", "seal", "sleep", "done"]:
 		state["phase"] = phase
@@ -86,7 +103,7 @@ static func clean(raw: Dictionary) -> Dictionary:
 	if state["completed"]:
 		state["next_chapter_unlocked"] = true
 		state["phase"] = "done"
-		state["reward"] = BASE_REWARD + (CLEAN_BONUS if not state["hint_used"] and int(state["mistakes"]) == 0 else 0)
+		state["reward"] = BASE_REWARD + (CLEAN_BONUS if Perks.status(state["perk_run"], state["hint_used"]) != "assisted" and int(state["mistakes"]) == 0 else 0)
 	elif state["phase"] == "done":
 		state["phase"] = "seal"
 	return state

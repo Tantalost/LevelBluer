@@ -88,10 +88,37 @@ func _run() -> void:
 	root.add_child(screen)
 	screen.on_enter({"test":true})
 	await settle()
+	check(screen._caption.visible and screen._caption_black.visible and screen._caption_black.color == Color.BLACK, "Chapter opens with an anonymous black title card")
+	check(not screen._dialogue.visible and not screen._cast_stage.visible and screen._heading.modulate.a == 0.0, "Title card hides John, dialogue and day heading")
+	check(screen._caption.text == "Five days before everything went wrong." and screen._speaker.text.is_empty(), "Timeline caption has no speaker attribution")
+	for dimensions: Vector2i in [Vector2i(1280,720), Vector2i(844,390)]:
+		root.size = dimensions
+		await settle()
+		await create_timer(0.25).timeout
+		check(screen._caption.get_global_rect().get_center().distance_to(screen.get_global_rect().get_center()) < screen.size.y * 0.06, "Timeline caption is centered")
+		check(screen._caption_next.size.y * root.get_final_transform().get_scale().y >= 47, "Title card continue retains mobile touch target")
+		await capture("opening_caption_%d" % dimensions.x)
+	root.size = Vector2i(1280,720)
+	settings.reduced_motion = false
+	screen._render()
+	screen._toggle_menu()
+	var caption_alpha: float = screen._caption.modulate.a
+	await create_timer(0.15).timeout
+	check(is_equal_approx(caption_alpha, screen._caption.modulate.a), "Menu pauses caption fade")
+	screen._advance()
+	check(screen._sentence == 0, "Paused title card cannot advance")
+	screen._toggle_menu()
+	screen._art_ready(true)
+	check(not screen._cast_stage.visible, "Late artwork cannot reveal John over title card")
+	await create_timer(0.75).timeout
+	settings.reduced_motion = true
 	await capture("day")
-	await click(screen._advance_button)
+	await click(screen._caption_next)
 	check(screen.state.beat == 0 and screen._sentence == 1, "Real pointer advances one sentence, not the entire beat")
 	check(screen._line.text == "And here I was, late again.", "Only the current sentence appears")
+	check(not screen._caption_black.visible and not screen._caption.visible and screen._dialogue.visible and screen._cast_stage.visible, "Continue restores John's arrival scene")
+	check(screen._speaker.text == "John", "John speaks only the following arrival line")
+	await capture("arrival_after_caption")
 	finish_beat()
 	await settle()
 	await capture("eric_updated")
@@ -318,8 +345,8 @@ func _run() -> void:
 	check(screen.state.next_chapter_unlocked, "Next chapter access earned without publishing unfinished content")
 	check(player.credits == 150, "One base reward with no clean bonus after mistake")
 	check(screen._results.visible and not screen._journal.visible, "Completion uses the dedicated celebration card")
-	check(screen._result_actions.get_child(0).disabled, "Unimplemented next chapter is clearly unavailable")
-	check(screen._result_actions.get_child(1).text == "UPGRADES", "Completion exposes the existing Upgrades destination")
+	check(not screen._result_actions.get_child(0).disabled, "Completed Chapter 1 exposes the authored Chapter 2")
+	check(screen._result_actions.get_child(1).text == "PERKS", "Completion exposes the Perks destination")
 	check(screen._result_audio.stream != null and screen._result_audio.stream.get_length() >= 5.5, "Original celebration music loads")
 	await create_timer(1.2).timeout
 	screen._toggle_menu()
@@ -509,9 +536,11 @@ func _run() -> void:
 	screen.state = Chapter.fresh()
 	screen._render()
 	screen._advance()
-	check(screen._sentence == 0 and screen._line.visible_characters == -1, "First tap reveals text without skipping a sentence")
+	check(screen._sentence == 1 and not screen._caption.visible, "Title-card Continue starts John's first spoken sentence")
 	screen._advance()
-	check(screen._sentence == 1, "Second tap starts the next sentence")
+	check(screen._sentence == 1 and screen._line.visible_characters == -1, "First dialogue tap reveals text without skipping a sentence")
+	screen._advance()
+	check(screen._sentence == 2, "Second dialogue tap starts the next sentence")
 	screen._toggle_menu()
 	var letters: int = screen._line.visible_characters
 	await create_timer(0.2).timeout

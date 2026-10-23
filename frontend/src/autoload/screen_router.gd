@@ -38,7 +38,8 @@ const SCREENS: Dictionary = {
 	&"lesson_player": "res://src/ui/screens/intel/lesson_player_screen.tscn",
 	&"codex":        "res://src/ui/screens/intel/codex_screen.tscn",
 	&"progress":     "res://src/ui/screens/progress/progress_screen.tscn",
-	&"upgrades":     "res://src/ui/screens/deploy/upgrade_screen.tscn",
+	&"upgrades":     "res://src/ui/screens/deploy/perk_screen.tscn",
+	&"legacy_upgrades": "res://src/ui/screens/deploy/upgrade_screen.tscn",
 	&"missions":     "res://src/ui/screens/deploy/missions_screen.tscn",
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
 	&"module_intro": "res://src/ui/screens/deploy/module_intro_screen.tscn",
@@ -197,7 +198,7 @@ func open_defeat_upgrades() -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
-		_push_now(&"upgrades")
+		_push_now(&"legacy_upgrades")
 	)
 
 
@@ -277,7 +278,7 @@ func open_tutorial_upgrades() -> void:
 		_teardown_gameplay()
 		_set_ui_stack_active(true)
 		_replace_all_now(&"dashboard")
-		_push_now(&"upgrades")
+		_push_now(&"legacy_upgrades")
 	)
 
 

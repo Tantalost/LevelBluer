@@ -46,6 +46,7 @@ class ChapterPreview extends Control:
 	var chapter: int = 1
 	var sealed: bool = false
 	var started: bool = false
+	var unlocked: bool = true
 
 	func _text(value: String, point: Vector2, pixels: int, ink: Color) -> void:
 		draw_string(UI.FONT, point, value, HORIZONTAL_ALIGNMENT_LEFT, -1, pixels, ink)
@@ -56,7 +57,7 @@ class ChapterPreview extends Control:
 		var bounds: Rect2 = Rect2(Vector2.ZERO, size)
 		var panel: StyleBoxFlat = UI.box(Color("13242d"), Color("8dc9bd"), 0)
 		draw_style_box(panel, bounds)
-		if artwork != null and chapter == 1:
+		if artwork != null and chapter <= 2:
 			var source: Vector2 = artwork.get_size()
 			var ratio: float = maxf(size.x / source.x, size.y / source.y)
 			var crop: Vector2 = size / ratio
@@ -71,14 +72,15 @@ class ChapterPreview extends Control:
 		_text("MODULE 01   /   EMAIL TRICKS", Vector2(margin, 30 * u), small, UI.TEAL)
 		var title_y: float = maxf(95 * u, size.y - 102 * u)
 		_text("CHAPTER %02d" % chapter, Vector2(margin, title_y - 34 * u), small, UI.TEAL)
-		_text("The Survey" if chapter == 1 else "To be continued", Vector2(margin, title_y), ceili(32 * u), UI.TEXT)
-		_text("A friendly offer. Six messages." if chapter == 1 else "This chapter is still in preparation.", Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
-		_text("Something doesn't add up." if chapter == 1 else "Your next case will appear here.", Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
-		var status: String = ("EXHIBIT SEALED" if sealed else ("IN PROGRESS" if started else "READY TO BEGIN")) if chapter == 1 else "COMING SOON"
+		_text("The Survey" if chapter == 1 else ("The Advisor Email" if chapter == 2 else "To be continued"), Vector2(margin, title_y), ceili(32 * u), UI.TEXT)
+		_text("A friendly offer. Six messages." if chapter == 1 else ("A familiar name. An unfamiliar address." if chapter == 2 else "This chapter is still in preparation."), Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
+		_text("Something doesn't add up." if chapter == 1 else ("One character changes everything." if chapter == 2 else "Your next case will appear here."), Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
+		var status: String = ("EXHIBIT SEALED" if sealed else ("COMPLETE CHAPTER 1" if not unlocked else ("IN PROGRESS" if started else "READY TO BEGIN"))) if chapter <= 2 else "COMING SOON"
 		var badge: Rect2 = Rect2(margin, size.y - 31 * u, UI.FONT.get_string_size(status, HORIZONTAL_ALIGNMENT_LEFT, -1, small).x + 20 * u, 24 * u)
-		var badge_style: StyleBoxFlat = UI.box(Color("203a40") if chapter == 1 else UI.PANEL, Color("48635f"), 0)
+		var is_complete: bool = chapter <= 2 and sealed
+		var badge_style: StyleBoxFlat = UI.box(COMPLETED_FILL if is_complete else (Color("203a40") if chapter == 1 else UI.PANEL), COMPLETED_INK if is_complete else Color("48635f"), 0)
 		draw_style_box(badge_style, badge)
-		_text(status, badge.position + Vector2(10, 17) * u, small, UI.TEAL)
+		_text(status, badge.position + Vector2(10, 17) * u, small, COMPLETED_INK if is_complete else UI.TEAL)
 
 func _ready() -> void:
 	_modules = LessonCatalog.modules()
@@ -377,8 +379,9 @@ func _select_stage(index: int) -> void:
 
 func _on_breach_pressed() -> void:
 	if _chapters:
-		if _active and _selected == 0 and PlayerManager.is_module_deploy_unlocked("mod_01"):
-			Router.push(&"survey_chapter", {"replay": bool(PlayerManager.chapter_progress.get("mod_01_ch_01", {}).get("completed", false))})
+		var chapter_id: String = "mod_01_ch_%02d" % (_selected + 1)
+		if _active and _selected < 2 and PlayerManager.story_unlocked(chapter_id):
+			Router.push(&"upgrades", {"deploy":true, "chapter_id":chapter_id, "replay": bool(PlayerManager.chapter_progress.get(chapter_id, {}).get("completed", false))})
 		return
 	if not _active or not _can_play(_selected):
 		return
@@ -391,24 +394,35 @@ func _build_chapters() -> void:
 	var focused: int = -1
 	for index: int in _rows.size():
 		if _rows[index].has_focus(): focused = index
-	var progress: Dictionary = PlayerManager.chapter_progress.get("mod_01_ch_01", {})
+	var chapter_id: String = "mod_01_ch_%02d" % (_selected + 1)
+	var progress: Dictionary = PlayerManager.chapter_progress.get(chapter_id, {})
 	var complete: bool = bool(progress.get("completed", false))
-	_summary.text = "CHAPTERS    /    %d OF 5 SEALED" % (1 if complete else 0)
+	var sealed_count: int = 0
+	for id: String in ["mod_01_ch_01", "mod_01_ch_02"]:
+		if PlayerManager.chapter_progress.get(id, {}).get("completed", false): sealed_count += 1
+	_summary.text = "CHAPTERS    /    %d OF 5 SEALED" % sealed_count
 	_summary.add_theme_font_size_override("font_size", _font - 2)
 	_completion.max_value = 5
-	_completion.value = 1 if complete else 0
+	_completion.value = sealed_count
+	_completion.add_theme_stylebox_override("fill", UI.box(COMPLETED_INK if complete else UI.TEAL, COMPLETED_INK if complete else UI.TEAL, 0))
 	UI.clear(_stage_list)
 	_rows.clear()
 	for index: int in 5:
-		var caption: String = "The Survey" if index == 0 else "Chapter %d" % (index + 1)
-		var status: String = ("EXHIBIT SEALED" if complete else "AVAILABLE") if index == 0 else "COMING SOON"
+		var id: String = "mod_01_ch_%02d" % (index + 1)
+		var completed: bool = PlayerManager.chapter_progress.get(id, {}).get("completed", false)
+		var unlocked: bool = PlayerManager.story_unlocked(id)
+		var selected: bool = index == _selected
+		var caption: String = "The Survey" if index == 0 else ("The Advisor Email" if index == 1 else "Chapter %d" % (index + 1))
+		var status: String = ("EXHIBIT SEALED" if completed else ("AVAILABLE" if unlocked else "COMPLETE CHAPTER 1")) if index < 2 else "COMING SOON"
 		var row: Button = UI.button("", _select_chapter.bind(index))
-		row.accessibility_name = "Chapter %d. %s. %s" % [index + 1, caption, status]
+		row.accessibility_name = "Chapter %d. %s. %s" % [index + 1, caption, "Completed. Exhibit sealed." if completed else status]
 		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
 		row.custom_minimum_size.y = 84 / physical
-		row.add_theme_stylebox_override("normal", UI.box(Color("203a40") if index == _selected else Color("13232c"), ACCENTS[0] if index == _selected else Color("364951"), 14))
-		row.add_theme_stylebox_override("hover", UI.box(Color("29444a"), ACCENTS[0], 14))
-		row.add_theme_stylebox_override("pressed", UI.box(Color("304c50"), UI.GOLD, 14))
+		var fill: Color = (COMPLETED_SELECTED_FILL if selected else COMPLETED_FILL) if completed else (Color("203a40") if selected else Color("13232c"))
+		var border: Color = COMPLETED_INK if completed else (ACCENTS[0] if selected else Color("364951"))
+		row.add_theme_stylebox_override("normal", UI.box(fill, border, 14))
+		row.add_theme_stylebox_override("hover", UI.box(Color("30543d") if completed else Color("29444a"), border, 14))
+		row.add_theme_stylebox_override("pressed", UI.box(COMPLETED_SELECTED_FILL if completed else Color("304c50"), UI.GOLD, 14))
 		_stage_list.add_child(row)
 		_rows.append(row)
 		var content: HBoxContainer = HBoxContainer.new()
@@ -420,7 +434,7 @@ func _build_chapters() -> void:
 		content.offset_bottom = -12 / physical
 		content.add_theme_constant_override("separation", ceili(16 / physical))
 		row.add_child(content)
-		var number: Label = UI.label("%02d" % (index + 1), maxi(_font + 10, ceili(24 / physical)), ACCENTS[0] if index == 0 else UI.MUTED)
+		var number: Label = UI.label("%02d" % (index + 1), maxi(_font + 10, ceili(24 / physical)), COMPLETED_INK if completed else (ACCENTS[0] if index == 0 else UI.MUTED))
 		number.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		number.custom_minimum_size.x = 48 / physical
@@ -430,8 +444,15 @@ func _build_chapters() -> void:
 		copy.size_flags_vertical = SIZE_SHRINK_CENTER
 		copy.size_flags_horizontal = SIZE_EXPAND_FILL
 		copy.add_child(UI.label(caption, maxi(_font, ceili(21 / physical)), UI.TEXT))
-		copy.add_child(UI.label(status, maxi(_font - 3, ceili(14 / physical)), ACCENTS[0] if index == 0 else UI.MUTED))
-		if index > 0:
+		copy.add_child(UI.label(status, maxi(_font - 3, ceili(14 / physical)), COMPLETED_INK if completed else (ACCENTS[0] if index == 0 else UI.MUTED)))
+		if completed:
+			var badge: Label = UI.label("COMPLETED", ceili(14 / physical), COMPLETED_INK)
+			badge.name = "CompletionBadge"
+			badge.autowrap_mode = TextServer.AUTOWRAP_OFF
+			badge.size_flags_vertical = SIZE_SHRINK_CENTER
+			badge.add_theme_stylebox_override("normal", UI.box(Color("0e271b"), Color("5b936a"), ceili(8 / physical)))
+			content.add_child(badge)
+		if not unlocked:
 			var lock: IntelPixelIcon = IntelPixelIcon.new()
 			lock.kind = IntelPixelIcon.Kind.LOCK
 			lock.ink_override = UI.MUTED
@@ -444,14 +465,16 @@ func _build_chapters() -> void:
 	_chapter_preview.chapter = _selected + 1
 	_chapter_preview.sealed = complete
 	_chapter_preview.started = not progress.is_empty()
-	_chapter_preview.artwork = AssetManager.get_texture("story_bg_john_desk_night")
+	_chapter_preview.unlocked = PlayerManager.story_unlocked(chapter_id)
+	_chapter_preview.artwork = AssetManager.get_texture("story_chapter2_cover" if _selected == 1 else "story_bg_john_desk_night")
 	_chapter_preview.mouse_filter = MOUSE_FILTER_IGNORE
-	_chapter_preview.accessibility_name = "The Survey. A friendly offer. Six messages. Something doesn't add up." if _selected == 0 else "Chapter %d. Coming soon." % (_selected + 1)
+	_chapter_preview.accessibility_name = "The Survey. A friendly offer. Six messages." if _selected == 0 else ("The Advisor Email. A familiar name. An unfamiliar address." if _selected == 1 else "Chapter %d. Coming soon." % (_selected + 1))
 	_detail.add_child(_chapter_preview)
 	_fit_chapter_preview()
-	if _selected == 0:
+	if _selected < 2:
 		_breach_button.text = "REPLAY CHAPTER" if complete else ("CONTINUE CHAPTER" if not progress.is_empty() else "START CHAPTER")
-		_breach_button.disabled = not PlayerManager.is_module_deploy_unlocked("mod_01")
+		_breach_button.disabled = not PlayerManager.story_unlocked(chapter_id)
+		if _breach_button.disabled: _breach_button.text = "COMPLETE CHAPTER 1 FIRST" if _selected == 1 else "COMPLETE LESSON FIRST"
 	else:
 		_breach_button.text = "COMING SOON"
 		_breach_button.disabled = true
@@ -465,7 +488,7 @@ func _fit_chapter_preview() -> void:
 
 func _chapter_art_ready(_success: bool) -> void:
 	if not is_instance_valid(_chapter_preview): return
-	_chapter_preview.artwork = AssetManager.get_texture("story_bg_john_desk_night")
+	_chapter_preview.artwork = AssetManager.get_texture("story_chapter2_cover" if _selected == 1 else "story_bg_john_desk_night")
 	_chapter_preview.queue_redraw()
 
 func _select_chapter(index: int) -> void:

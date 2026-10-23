@@ -92,6 +92,7 @@ func _run() -> void:
 	await settle()
 	check(chapters._rows.size() == 5 and chapters._title.text == "CHAPTER\nSELECT", "Module 1 has five story chapters, not ten legacy stages")
 	check(not chapters._breach_button.disabled, "First chapter can start")
+	check(chapters._rows[0].find_child("CompletionBadge", true, false) == null, "Fresh chapter has no completion badge")
 	check(chapters._chapter_preview.chapter == 1 and not chapters._chapter_preview.sealed, "Fresh chapter preview reflects progress")
 	check(chapters._intro_button.autowrap_mode == TextServer.AUTOWRAP_OFF, "Replay intro stays on one line")
 	for state_name: String in ["normal", "hover", "pressed", "disabled", "focus"]:
@@ -113,7 +114,7 @@ func _run() -> void:
 	root.size = Vector2i(1280,720)
 	await settle()
 	chapters._select_chapter(1)
-	check(chapters._breach_button.disabled, "Unimplemented chapter cannot launch a legacy stage")
+	check(chapters._breach_button.disabled, "Chapter 2 requires Chapter 1 completion")
 	await settle()
 	await capture("chapters_pending")
 	check(chapters._chapter_preview.chapter == 2, "Pending selection updates preview")
@@ -125,7 +126,38 @@ func _run() -> void:
 	await settle()
 	check(chapters._chapter_preview.sealed and chapters._breach_button.text == "REPLAY CHAPTER", "Completed chapter has sealed preview and Replay action")
 	check(chapters._completion.value == 1, "Completion progress counts sealed chapter")
+	chapters._select_chapter(1)
+	check(not chapters._breach_button.disabled and chapters._breach_button.text == "START CHAPTER", "Chapter 2 unlocks after sealing Chapter 1")
+	check(chapters._chapter_preview.artwork == root.get_node("AssetManager").get_texture("story_chapter2_cover"), "Chapter 2 uses its own cover")
+	chapters._chapter_preview.artwork = null
+	chapters._chapter_art_ready(true)
+	check(chapters._chapter_preview.artwork == root.get_node("AssetManager").get_texture("story_chapter2_cover"), "Late sync preserves selected Chapter 2 artwork")
+	await settle()
+	await capture("chapter2_cover")
+	chapters._select_chapter(2)
+	check(chapters._breach_button.disabled, "Chapter 3 remains unavailable")
+	chapters._select_chapter(0)
 	await capture("chapters_complete")
+	for dimensions: Vector2i in [Vector2i(1280,720), Vector2i(844,390)]:
+		root.size = dimensions
+		await settle()
+		var badge: Label = chapters._rows[0].find_child("CompletionBadge", true, false) as Label
+		check(badge != null and badge.text == "COMPLETED", "Completed chapter has an explicit right-side badge")
+		if badge != null:
+			check(chapters._rows[0].get_global_rect().encloses(badge.get_global_rect()), "Completion badge fits inside card")
+			var copy: Control = badge.get_parent().get_child(1) as Control
+			check(copy.get_global_rect().end.x <= badge.get_global_rect().position.x, "Completion badge does not overlap chapter copy")
+		check(chapters._rows[0].accessibility_name.contains("Completed"), "Completion is announced without relying on color")
+		var complete_style: StyleBoxFlat = chapters._rows[0].get_theme_stylebox("normal") as StyleBoxFlat
+		check(complete_style.bg_color == chapters.COMPLETED_SELECTED_FILL, "Selected completed chapter uses green surface")
+		await capture("chapters_complete_%d" % dimensions.x)
+	chapters._select_chapter(1)
+	var unselected_complete: StyleBoxFlat = chapters._rows[0].get_theme_stylebox("normal") as StyleBoxFlat
+	check(unselected_complete.bg_color == chapters.COMPLETED_FILL, "Completed chapter stays green when another chapter is selected")
+	check(chapters._rows[1].find_child("CompletionBadge", true, false) == null, "Coming Soon chapter never displays completion badge")
+	root.size = Vector2i(1280,720)
+	chapters._select_chapter(0)
+	await settle()
 	chapters._chapter_preview.artwork = null
 	chapters._chapter_preview.queue_redraw()
 	await settle()

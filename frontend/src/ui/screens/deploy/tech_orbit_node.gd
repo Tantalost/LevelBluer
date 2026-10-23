@@ -12,6 +12,7 @@ var accent := Color("85d9c3")
 var caption := "OUTPUT"
 var selected := false
 var is_root := false
+var badge_override: String = ""
 var font_size := 23
 var _pulse := 0.0
 
@@ -56,6 +57,7 @@ func _draw() -> void:
 		draw_circle(lock, 11, Color("0c1821"))
 		Glyphs.paint(self, lock, 8, "lock", ink)
 	var badge := "CORE" if is_root else "%d/%d" % [rank, max_rank]
+	if not badge_override.is_empty(): badge = badge_override
 	var baseline := c.y + r + 17
 	draw_rect(Rect2(c.x - 32, baseline - 17, 64, 24), Color("0b141c"))
 	draw_string(FONT, Vector2(0, baseline + 2), badge, HORIZONTAL_ALIGNMENT_CENTER, size.x, font_size, ink)
