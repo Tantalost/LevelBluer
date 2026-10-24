@@ -2,6 +2,7 @@
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 import json
+import logging
 from typing import Annotated, Literal
 from uuid import UUID
 
@@ -13,6 +14,23 @@ from app.services.pretest_grading import is_correct
 from app.supabase_client import supabase
 
 MODULES = {"mod_01": "Phishing", "mod_02": "Smishing", "mod_03": "Vishing", "mod_04": "Pretexting", "mod_05": "Baiting"}
+logger = logging.getLogger(__name__)
+
+def _log_operational_failure(exc: Exception) -> None:
+    """Store a sanitized sync failure. Never include payloads, tokens, or student answers."""
+    cause = exc.__cause__ or exc
+    text = " ".join(str(part) for part in getattr(cause, "args", (cause,))).lower()
+    if "already used with different content" in text or "duplicate key" in text:
+        category, message = "duplicate-event", "A learning event id was already stored with different content."
+    elif "invalid learning batch" in text:
+        category, message = "invalid-event", "A learning event batch was rejected."
+    else:
+        category, message = "sync-failure", "Learning records could not be saved."
+    try:
+        supabase.rpc("levelblue_log_operational_event", {"p_category": category, "p_message": message, "p_code": category, "p_route": "/api/progress/sync", "p_status": 503}).execute()
+    except Exception:
+        logger.warning("Operational monitoring event was not stored")
+
 
 class StageDetails(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
@@ -133,5 +151,6 @@ def record_learning_events(student_id: str, events: list[LearningEvent]) -> list
         if getattr(response, "error", None):
             raise RuntimeError("Learning records write failed")
     except Exception as exc:
+        _log_operational_failure(exc)
         raise HTTPException(status_code=503, detail="Learning records could not be saved. Apply the learning-records migration and retry; queued results remain on this device.") from exc
     return [str(event.event_id) for event in events]

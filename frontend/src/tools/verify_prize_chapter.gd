@@ -94,7 +94,24 @@ func _run() -> void:
 				if phone._chat_stage == "send": phone._send_chat()
 			check(phone.phase_ready(), "Unanswered private chat completes")
 			check(phone._chat_status.text.contains("No reply") and not phone._chat_status.text.contains("everyone"), "Offline private-chat receipt is accurate")
+			for viewport_size: Vector2i in [Vector2i(1480,720), Vector2i(844,390)]:
+				root.size = viewport_size
+				await settle()
+				var continue_button: Button = phone._close
+				check(continue_button.is_visible_in_tree() and not continue_button.disabled, "Completed chat exposes an enabled Continue button at %s" % viewport_size)
+				check(continue_button.text == "CONTINUE →", "Completed chat labels the next action")
+				var button_rect: Rect2 = continue_button.get_global_rect()
+				check(root.get_visible_rect().encloses(button_rect), "Chat Continue stays within the mobile viewport")
+				check(button_rect.size.y * root.get_final_transform().get_scale().y >= 48.0, "Chat Continue retains a 48-pixel touch target")
+			phone.set_locked(true)
+			phone._close.pressed.emit()
+			check(screen.state.beat == beat_index and phone._close.disabled, "Paused chat cannot continue")
+			phone.set_locked(false)
 			await capture("offline_chat")
+			phone._close.pressed.emit()
+			check(screen.state.beat == beat_index + 1, "Chat Continue advances to the next story beat")
+			root.size = Vector2i(1480,720)
+			await settle()
 		elif beat.get("mail",false):
 			check(not phone.phase_ready(), "Mail action gates the story")
 			phone._claim()

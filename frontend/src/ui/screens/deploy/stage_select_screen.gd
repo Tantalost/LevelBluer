@@ -92,6 +92,11 @@ func on_exit() -> void:
 	_active = false
 	visible = false
 
+func consume_back() -> bool:
+	# Router handles popups first; Modules always returns to a single Dashboard.
+	Router.replace_all(&"dashboard")
+	return true
+
 func _session_changed(_signed_in: bool) -> void:
 	_selected = 0
 	_request_refresh()

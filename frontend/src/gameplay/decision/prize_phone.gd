@@ -329,9 +329,13 @@ func _case_note() -> void:
 	var form: VBoxContainer = UI.column(columns,14)
 	form.size_flags_horizontal = SIZE_EXPAND_FILL
 	_ink("The prize email arrived ___ minutes after ___.",form)
-	_minutes = _field(str(state.minutes_draft),"Minutes elapsed",form)
+	_ink("How many minutes later?",form)
+	_minutes = _field(str(state.minutes_draft),"Enter the number of minutes",form)
 	_minutes.max_length = 32
-	_after = _field(str(state.event_draft),"After which event?",form)
+	_ink("Count from 08:12 to 08:14. Type how many minutes passed, not the clock time.",form)
+	_ink("What happened first?",form)
+	_after = _field(str(state.event_draft),"Name the earlier event",form)
+	_ink("Look for the survey reply in the reference on the left.",form)
 	_minutes.text_changed.connect(_save_note)
 	_after.text_changed.connect(_save_note)
 	_after.text_submitted.connect(func(_value: String) -> void: _check_note())
@@ -353,7 +357,7 @@ func _check_note() -> void:
 	if _locked or mode != "case_note" or phase_ready(): return
 	_save_note("")
 	if not Chapter.note_matches(state.minutes_draft,state.event_draft):
-		_notice_text = "Use the reference: 08:12 to 08:14 is two minutes after the survey confirmation reply. The ten-second last-seen interval is a separate observation."
+		_notice_text = "Try this: 08:12 → 08:13 is 1 minute, then 08:13 → 08:14 is 1 more. Type 2 in the first box and survey confirmation reply in the second. Jobert's last-seen time is a different clue."
 		_render()
 		return
 	_notice_text = ""
@@ -379,7 +383,8 @@ func _claim() -> void:
 func _refresh() -> void:
 	super._refresh()
 	if state.is_empty(): return
-	_nav.hide()
+	# The shared navigation button is the only exit from the completed chat.
+	_nav.visible = mode == "chat" and phase_ready()
 	_status.visible = mode in ["read","chat"]
 	_status.text = "08:14  •  LTE  ▰"
 	_title.visible = mode not in Chapter.TASKS or get_viewport_rect().size.y * get_viewport().get_final_transform().get_scale().y >= 500

@@ -36,6 +36,18 @@ func touch_geometry(node: Node) -> void:
 		check(button.size.x/scale_unit >= 47.5,"Touch target width: "+button.text)
 	for child: Node in node.get_children(): touch_geometry(child)
 
+func feedback_geometry() -> void:
+	var overlay: Control = screen._overlay
+	check(overlay.size.x >= screen.size.x * 0.75,"Feedback uses a readable sheet width after rebuilding the debate")
+	check(screen.get_global_rect().encloses(overlay.get_global_rect()),"Feedback stays inside the mobile viewport")
+	var content: VBoxContainer = overlay.get_child(0) as VBoxContainer
+	var action: Button = content.get_child(content.get_child_count()-1) as Button
+	check(action != null and overlay.get_global_rect().encloses(action.get_global_rect()),"Feedback action stays visible outside the scrolling text")
+	touch_geometry(overlay)
+	var elapsed: float = screen._elapsed
+	screen._process(20)
+	check(screen._elapsed == elapsed,"Feedback pauses the debate while the player reads")
+
 func seed_chapters(player: Node) -> void:
 	player.lesson_progress = {"mod_01":1}
 	var first: Dictionary = Survey.fresh()
@@ -159,10 +171,14 @@ func _run() -> void:
 	check(screen._armed == "domain" and not is_instance_valid(screen._overlay),"Evidence buttons route selected record to the debate")
 	screen._fire("domain",Case.ROUNDS[0].weak)
 	check(screen.state.credibility == 10 and screen.state.mistakes == 1,"Wrong record costs ten")
+	await settle()
+	feedback_geometry()
+	await capture("wrong_record_844")
 	screen._retry()
 	screen._fire("borrow",Case.ROUNDS[0].weak)
 	check(screen.state.credibility == 0 and screen.state.auto_hints.has(0),"Two mistakes mark and highlight assist")
 	await settle()
+	feedback_geometry()
 	await capture("retry_844")
 	screen._retry()
 	check(screen.state.credibility == 20 and screen.state.restarts == 1,"Zero resets round to a recoverable checkpoint")
@@ -321,6 +337,14 @@ func _run() -> void:
 		await capture("evidence_%d" % dimensions.x)
 		touch_geometry(screen)
 		screen._close_overlay()
+		screen._voice = 3
+		screen._fire("short",Case.ROUNDS[1].weak)
+		await settle()
+		feedback_geometry()
+		await capture("wrong_record_%d" % dimensions.x)
+		var content: VBoxContainer = screen._overlay.get_child(0) as VBoxContainer
+		(content.get_child(content.get_child_count()-1) as Button).pressed.emit()
+		check(not is_instance_valid(screen._overlay) and screen.state.phase == "debate","Feedback action returns to the debate")
 	screen.on_exit()
 	screen.queue_free()
 	await settle()

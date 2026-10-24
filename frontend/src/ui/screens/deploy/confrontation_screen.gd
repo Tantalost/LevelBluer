@@ -672,9 +672,12 @@ func _modal(title: String, compact: bool = false) -> VBoxContainer:
 	_overlay.offset_right = -20*_u
 	_overlay.offset_top = 18*_u
 	_overlay.offset_bottom = -18*_u
-	if is_instance_valid(_layout):
-		_overlay.offset_left = maxf(_overlay.offset_left,_layout.position.x+_safe.position.x)
-		_overlay.offset_right = minf(_overlay.offset_right,_layout.position.x+_safe.position.x+_layout.size.x-size.x)
+	# A freshly rebuilt layout has not been sized yet. Use stable safe-area insets.
+	if is_instance_valid(_safe):
+		_overlay.offset_left = maxf(_overlay.offset_left,_safe.get_theme_constant("margin_left"))
+		_overlay.offset_right = -maxf(-_overlay.offset_right,_safe.get_theme_constant("margin_right"))
+		_overlay.offset_top = maxf(_overlay.offset_top,_safe.get_theme_constant("margin_top"))
+		_overlay.offset_bottom = -maxf(-_overlay.offset_bottom,_safe.get_theme_constant("margin_bottom"))
 	if compact:
 		_overlay.set_anchors_and_offsets_preset(PRESET_CENTER)
 		var dimensions: Vector2 = Vector2(minf(440*_u,size.x-40*_u),minf(280*_u,size.y-36*_u))

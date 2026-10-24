@@ -1,6 +1,8 @@
 extends SceneTree
 ## In-memory fixtures; no gameplay launch, backend writes, or save calls.
 var failures := 0
+var _quit_requests: int = 0
+var _cancel_requests: int = 0
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -21,6 +23,78 @@ func capture(label: String) -> void:
 
 func fingerprint(p: Node, a: Node) -> String:
 	return str([p.lesson_progress, p.completed_lessons, p.cleared_stages, p.locked_stages, p.max_stage_cleared_by_module, p.credits, a._mastery, a._points])
+
+func wait_navigation(router: Node) -> void:
+	while router.is_busy():
+		await process_frame
+	await settle()
+
+func verify_modules_back() -> void:
+	var router: Node = root.get_node("Router")
+	var player: Node = root.get_node("PlayerManager")
+	root.get_node("AuthService")._signed_in = false
+	player.tutorial_complete = true
+	player.credits = 325
+	var chapter: Dictionary = load("res://src/gameplay/decision/prize_chapter.gd").fresh()
+	chapter.beat = 4
+	player.chapter_progress["mod_01_ch_04"] = chapter
+	var before: Dictionary = player.get_save_data()
+	var host: Control = Control.new()
+	root.add_child(host)
+	host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	router.register_host(host)
+	var quit_callback: Callable = func() -> void: _quit_requests += 1
+	var cancel_callback: Callable = func() -> void:
+		_cancel_requests += 1
+		router.navigation_confirmation_open = false
+	router.quit_requested.connect(quit_callback)
+	router.navigation_cancel_requested.connect(cancel_callback)
+	await router.replace_all(&"dashboard")
+	for repetition: int in 3:
+		await router.push(&"stage_select")
+		var modules: Control = router._stack.back()
+		modules._back.pressed.emit()
+		# Rapid repeated taps during the transition must not enqueue more screens.
+		modules._back.pressed.emit()
+		await wait_navigation(router)
+		check(router.current_screen_id() == &"dashboard", "Dashboard -> Modules -> Back returns to Dashboard")
+		check(router._stack.size() == 1 and host.get_child_count() == 1, "Repeated Modules navigation leaves exactly one screen")
+	await router.replace_all(&"stage_select")
+	check(router._stack.size() == 1, "Modules can be the root with no previous screen")
+	var modules: Control = router._stack.back()
+	router.navigation_confirmation_open = true
+	modules._back.pressed.emit()
+	await wait_navigation(router)
+	check(_cancel_requests == 1 and not router.navigation_confirmation_open and router._stack.back() == modules, "Back handles navigation confirmation before leaving Modules")
+	var feedback: CanvasLayer = load("res://src/ui/screens/settings/student_feedback.gd").open(modules)
+	modules._back.pressed.emit()
+	await wait_navigation(router)
+	check(not is_instance_valid(feedback) and router._stack.back() == modules, "Back closes feedback popup and stays on Modules")
+	modules._back.pressed.emit()
+	await wait_navigation(router)
+	check(router.current_screen_id() == &"dashboard" and router._stack.size() == 1, "Modules with no history returns to Dashboard")
+	check(_quit_requests == 0, "Modules Back never requests quit")
+	await router.push(&"settings")
+	await router.push(&"stage_select")
+	router.request_back()
+	await wait_navigation(router)
+	check(router.current_screen_id() == &"dashboard" and router._stack.size() == 1 and host.get_child_count() == 1, "Modules ignores a non-Dashboard parent and removes stale history")
+	await router.push(&"stage_select")
+	await router.push(&"settings")
+	router.request_back()
+	await wait_navigation(router)
+	check(router.current_screen_id() == &"stage_select" and router._stack.size() == 2, "Settings Back still returns to its previous Modules screen")
+	router._notification(Node.NOTIFICATION_WM_GO_BACK_REQUEST)
+	await wait_navigation(router)
+	check(router.current_screen_id() == &"dashboard" and router._stack.size() == 1, "Android Back on Modules also returns to Dashboard")
+	check(player.get_save_data() == before, "Modules navigation preserves chapter progress, credits and all saved player data")
+	router.quit_requested.disconnect(quit_callback)
+	router.navigation_cancel_requested.disconnect(cancel_callback)
+	for current: BaseScreen in router._stack: current.on_exit()
+	router._stack.clear()
+	router.register_host(null)
+	host.queue_free()
+	await settle()
 
 func _run() -> void:
 	var p := root.get_node("PlayerManager")
@@ -172,5 +246,6 @@ func _run() -> void:
 	screen.on_exit()
 	screen.queue_free()
 	await settle()
+	await verify_modules_back()
 	print("STAGE_SELECT_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)

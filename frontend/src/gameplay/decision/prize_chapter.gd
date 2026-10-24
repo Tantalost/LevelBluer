@@ -15,7 +15,7 @@ const FIRST_PHASE: String = "timeline"
 const TASKS: Dictionary = {
 	"timeline":{"title":"01 / Reconstruct the morning", "tip":"Place all four records from earliest to latest. Read the timestamps, not the order of the cards.", "line":"Pause the moment. Reconstruct what happened.", "field":"timeline_checked", "total":1, "next":"board"},
 	"board":{"title":"02 / Connect the pattern", "tip":"Connect coffee to the group message, the repeated typo to the earlier email, and the ten-second gap to the matching last seen.", "line":"A connection is not the same as a confession.", "field":"connections", "total":3, "next":"case_note"},
-	"case_note":{"title":"03 / Record the gap", "tip":"The email arrived at 08:14. The survey confirmation arrived at 08:12. Keep your conclusion factual.", "line":"Write what the records show. Not who I suspect.", "field":"notes", "total":1, "next":"seal"}
+	"case_note":{"title":"03 / Record the gap", "tip":"1. Count the minutes: 08:12 → 08:13 → 08:14. That is 2 minutes. Type 2 in the first box, not 08:14.\n2. The earlier event was the survey confirmation reply. Type survey confirmation reply in the second box.", "line":"Write what the records show. Not who I suspect.", "field":"notes", "total":1, "next":"seal"}
 }
 const TIMELINE: Array[Dictionary] = [
 	{"id":"survey","time":"08:12:00","label":"Survey confirmation reply received"},
