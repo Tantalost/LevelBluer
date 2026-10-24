@@ -71,13 +71,22 @@ var onboarding_state: Dictionary = {}
 var chapter_progress: Dictionary = {}
 const SurveyChapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const AdvisorChapter: GDScript = preload("res://src/gameplay/decision/advisor_chapter.gd")
+const PayoutChapter: GDScript = preload("res://src/gameplay/decision/payout_chapter.gd")
+const PrizeChapter: GDScript = preload("res://src/gameplay/decision/prize_chapter.gd")
+const ConfrontationChapter: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.gd")
 var chapter_replays: Dictionary = {}
 
 func story_definition(id: String) -> GDScript:
-	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter}.get(id)
+	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
 func story_unlocked(id: String) -> bool:
-	return is_module_deploy_unlocked("mod_01") and (id == SurveyChapter.ID or (id == AdvisorChapter.ID and chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)))
+	if not is_module_deploy_unlocked("mod_01"): return false
+	if id == SurveyChapter.ID: return true
+	if id == AdvisorChapter.ID: return chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)
+	if id == PayoutChapter.ID: return chapter_progress.get(AdvisorChapter.ID, {}).get("completed", false) and chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)
+	if id == PrizeChapter.ID: return story_unlocked(PayoutChapter.ID) and chapter_progress.get(PayoutChapter.ID, {}).get("completed", false)
+	if id == ConfrontationChapter.ID: return story_unlocked(PrizeChapter.ID) and chapter_progress.get(PrizeChapter.ID, {}).get("completed", false)
+	return false
 
 func story_checkpoint(id: String, is_replay: bool) -> Dictionary:
 	return (chapter_replay_progress if id == SurveyChapter.ID else chapter_replays.get(id, {})) if is_replay else chapter_progress.get(id, {})
@@ -109,7 +118,7 @@ func begin_survey_attempt(is_replay: bool, persist: bool = true) -> Dictionary:
 
 func begin_story_attempt(chapter_id: String, is_replay: bool, persist: bool = true) -> Dictionary:
 	var definition: GDScript = story_definition(chapter_id)
-	if definition == null or (chapter_id == AdvisorChapter.ID and not story_unlocked(chapter_id)): return {}
+	if definition == null or (chapter_id != SurveyChapter.ID and not story_unlocked(chapter_id)): return {}
 	var raw: Dictionary = story_checkpoint(chapter_id, is_replay)
 	if is_replay and raw.get("completed", false): raw = {}
 	var snapshot: Dictionary = definition.clean(raw)
@@ -122,7 +131,7 @@ func begin_story_attempt(chapter_id: String, is_replay: bool, persist: bool = tr
 
 func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = true, chapter_id: String = "mod_01_ch_01") -> void:
 	var definition: GDScript = story_definition(chapter_id)
-	if definition == null or (chapter_id == AdvisorChapter.ID and not story_unlocked(chapter_id)): return
+	if definition == null or (chapter_id != SurveyChapter.ID and not story_unlocked(chapter_id)): return
 	var valid: Dictionary = definition.clean(snapshot)
 	var run: Dictionary = valid.get("perk_run", {})
 	if not run.is_empty():
@@ -151,7 +160,7 @@ func save_survey_chapter(snapshot: Dictionary, persist: bool = true) -> void:
 
 func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true) -> void:
 	var definition: GDScript = story_definition(chapter_id)
-	if definition == null or (chapter_id == AdvisorChapter.ID and not story_unlocked(chapter_id)): return
+	if definition == null or (chapter_id != SurveyChapter.ID and not story_unlocked(chapter_id)): return
 	var previous: Dictionary = chapter_progress.get(chapter_id, {})
 	if bool(previous.get("completed", false)):
 		return # Replays never replace the original exhibit or award twice.
@@ -1313,6 +1322,18 @@ func apply_save_data(data: Dictionary) -> void:
 	var replays: Variant = data.get("chapter_replays", {})
 	if replays is Dictionary and replays.get(AdvisorChapter.ID) is Dictionary:
 		chapter_replays[AdvisorChapter.ID] = AdvisorChapter.clean(replays[AdvisorChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(PayoutChapter.ID) is Dictionary:
+		chapter_progress[PayoutChapter.ID] = PayoutChapter.clean(saved_chapters[PayoutChapter.ID])
+	if replays is Dictionary and replays.get(PayoutChapter.ID) is Dictionary:
+		chapter_replays[PayoutChapter.ID] = PayoutChapter.clean(replays[PayoutChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(PrizeChapter.ID) is Dictionary:
+		chapter_progress[PrizeChapter.ID] = PrizeChapter.clean(saved_chapters[PrizeChapter.ID])
+	if replays is Dictionary and replays.get(PrizeChapter.ID) is Dictionary:
+		chapter_replays[PrizeChapter.ID] = PrizeChapter.clean(replays[PrizeChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(ConfrontationChapter.ID) is Dictionary:
+		chapter_progress[ConfrontationChapter.ID] = ConfrontationChapter.clean(saved_chapters[ConfrontationChapter.ID])
+	if replays is Dictionary and replays.get(ConfrontationChapter.ID) is Dictionary:
+		chapter_replays[ConfrontationChapter.ID] = ConfrontationChapter.clean(replays[ConfrontationChapter.ID])
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)

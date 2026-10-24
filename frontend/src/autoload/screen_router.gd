@@ -44,6 +44,7 @@ const SCREENS: Dictionary = {
 	&"stage_select": "res://src/ui/screens/deploy/stage_select_screen.tscn",
 	&"module_intro": "res://src/ui/screens/deploy/module_intro_screen.tscn",
 	&"survey_chapter": "res://src/ui/screens/deploy/survey_chapter_screen.tscn",
+	&"confrontation": "res://src/ui/screens/deploy/confrontation_screen.tscn",
 	&"module_stages": "res://src/ui/screens/deploy/module_stage_screen.tscn",
 	&"password_change": "res://src/ui/screens/login/password_change_screen.tscn",
 	&"settings":     "res://src/ui/screens/settings/settings_screen.tscn",

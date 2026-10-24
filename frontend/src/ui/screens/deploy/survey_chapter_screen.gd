@@ -19,6 +19,7 @@ var _testing: bool = false
 var _owner: String = ""
 var _signed_owner: bool = false
 var _bg: TextureRect
+var _story_art_override: String = ""
 var _portrait: TextureRect
 var _cast_stage: Control
 var _cast: Dictionary[String, TextureRect] = {}
@@ -248,6 +249,7 @@ func _ready() -> void:
 	_phone.phase_finished.connect(_phase_finished)
 	_phone.chat_speaker_changed.connect(_chat_focus)
 	_phone.view_changed.connect(_refresh_app_shortcuts)
+	_phone.story_art_changed.connect(_story_art_changed)
 	_journal = UI.panel(_area, Color("0A1730", 0.92))
 	var journal_style: StyleBoxFlat = UI.box(Color("0A1730", 0.90), Color("173058"), 20)
 	journal_style.set_corner_radius_all(18)
@@ -415,11 +417,11 @@ func on_enter(args: Dictionary) -> void:
 	replay = bool(args.get("replay", false))
 	var chapter_id: String = str(args.get("chapter_id", "mod_01_ch_01"))
 	Chapter = PlayerManager.story_definition(chapter_id)
-	if Chapter == null or (chapter_id == "mod_01_ch_02" and not PlayerManager.story_unlocked(chapter_id)):
+	if Chapter == null or (chapter_id != "mod_01_ch_01" and not PlayerManager.story_unlocked(chapter_id)):
 		_active = false
 		hide()
 		return
-	var phone_script: GDScript = preload("res://src/gameplay/decision/advisor_phone.gd") if Chapter.NUMBER == 2 else Phone
+	var phone_script: GDScript = {2:preload("res://src/gameplay/decision/advisor_phone.gd"), 3:preload("res://src/gameplay/decision/payout_phone.gd"), 4:preload("res://src/gameplay/decision/prize_phone.gd")}.get(Chapter.NUMBER, Phone)
 	if _phone.get_script() != phone_script:
 		_phone.stop()
 		_area.remove_child(_phone)
@@ -432,6 +434,7 @@ func on_enter(args: Dictionary) -> void:
 		_phone.phase_finished.connect(_phase_finished)
 		_phone.chat_speaker_changed.connect(_chat_focus)
 		_phone.view_changed.connect(_refresh_app_shortcuts)
+		_phone.story_art_changed.connect(_story_art_changed)
 	state = PlayerManager.begin_story_attempt(chapter_id, replay, not _testing)
 	_active = true
 	_paused = false
@@ -443,6 +446,7 @@ func on_enter(args: Dictionary) -> void:
 
 func _render() -> void:
 	_seq += 1
+	_story_art_override = ""
 	_stop_tweens()
 	_results.hide()
 	_caption_black.hide()
@@ -472,6 +476,8 @@ func _render() -> void:
 		(_app_shortcuts.get_child(index) as Control).visible = (index < 2 and phase == "notes") or (index >= 2 and phase == "capture")
 	var night: bool = phase != "day" or Chapter.STORY[int(state["beat"])].get("time", "day") == "night"
 	_heading.text = "CHAPTER %d / " % Chapter.NUMBER + ("NIGHT" if night else "DAY") + (" / REPLAY" if replay else "")
+	if Chapter.get("MORNING") == true:
+		_heading.text = "CHAPTER %d / " % Chapter.NUMBER + ("INVESTIGATION" if Chapter.TASKS.has(phase) or phase == "seal" else "MORNING") + (" / REPLAY" if replay else "")
 	if phase == "done": _heading.text = ""
 	if phase == "day":
 		var beat: Dictionary = Chapter.STORY[int(state["beat"])]
@@ -556,8 +562,8 @@ func _review_capture(id: String) -> void:
 func _show_results() -> void:
 	_results.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
 	var next_button: Button = _result_actions.get_child(0) as Button
-	next_button.text = "NEXT CHAPTER" if Chapter.NUMBER == 1 else "NEXT CHAPTER\nComing soon"
-	next_button.tooltip_text = "Continue to The Advisor Email" if Chapter.NUMBER == 1 else "Chapter 3 is not available yet."
+	next_button.text = "NEXT CHAPTER"
+	next_button.tooltip_text = "Continue to " + ({1:"The Advisor Email",2:"The Payout",3:"The Prize",4:"Confrontation"}.get(Chapter.NUMBER,"Next chapter"))
 	_journal.hide()
 	_portrait.hide()
 	_dialogue.hide()
@@ -590,8 +596,9 @@ func _evidence_summary() -> String:
 	return "%d / %d collected" % [state[task.field].size(), int(task.total)]
 
 func _next_chapter() -> void:
-	if _can_act() and state.get("completed", false) and Chapter.NUMBER == 1:
-		Router.push(&"upgrades", {"deploy":true, "chapter_id":"mod_01_ch_02", "replay":PlayerManager.chapter_progress.get("mod_01_ch_02", {}).get("completed", false)})
+	if _can_act() and state.get("completed", false) and Chapter.NUMBER < 5:
+		var next_id: String = "mod_01_ch_%02d" % (Chapter.NUMBER + 1)
+		Router.push(&"confrontation" if Chapter.NUMBER == 4 else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
 
 func _set_line(text: String) -> void:
 	# Presentation pages leave authored beat IDs (and existing saves) unchanged.
@@ -651,7 +658,13 @@ func _show_sentence() -> void:
 	_update_advance()
 
 func _is_caption_sentence() -> bool:
-	return state.get("phase") == "closing" or (state.get("phase") == "day" and _sentence == 0 and Chapter.STORY[int(state.get("beat", 0))].has("caption"))
+	if state.get("phase") == "closing": return true
+	if state.get("phase") != "day": return false
+	var caption: String = str(Chapter.STORY[int(state.get("beat", 0))].get("caption", ""))
+	if caption.is_empty(): return false
+	var boundary: RegEx = RegEx.new()
+	boundary.compile("(?<=[.!?…])\\s+|\\n+")
+	return _sentence <= boundary.search_all(caption.strip_edges()).size()
 
 func _update_advance() -> void:
 	_caption_next.disabled = not _can_act() or _sending
@@ -664,6 +677,11 @@ func _update_advance() -> void:
 	else:
 		_advance_button.visible = true
 	if typed and last and state.get("phase") == "day" and Chapter.STORY[int(state.beat)].get("mail", false):
+		_advance_button.disabled = not _phone.phase_ready() or not _can_act()
+	if typed and last and state.get("phase") == "sleep" and Chapter.get("EPILOGUE_PHONE") == true:
+		if not _phone.visible:
+			_phone.configure_chapter("epilogue",state)
+			_layout.call_deferred()
 		_advance_button.disabled = not _phone.phase_ready() or not _can_act()
 	if typed and last and _is_chat_beat():
 		_advance_button.disabled = true
@@ -680,6 +698,7 @@ func _process(delta: float) -> void:
 		_open_chat(_seq)
 
 func _is_chat_beat() -> bool:
+	if state.get("phase") == "sleep" and Chapter.get("SLEEP_CHAT") is Array: return true
 	return state.get("phase") == "day" and bool(Chapter.STORY[int(state.get("beat", 0))].get("chat", false))
 
 func _open_chat(generation: int) -> void:
@@ -716,6 +735,8 @@ func _advance() -> void:
 			_start_investigation_reveal()
 			return
 	elif state["phase"] == "sleep":
+		if Chapter.get("EPILOGUE_PHONE") == true and (not _phone.visible or not _phone.phase_ready()): return
+		if _is_chat_beat() and (not _chat_started or not _phone.phase_ready()): return
 		if not Chapter.END_CAPTION.is_empty(): state.phase = "closing"
 		else:
 			state["completed"] = true
@@ -737,6 +758,10 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 	if Chapter.NUMBER == 2:
 		state.headers = snapshot.headers
 		state.report_draft = snapshot.report_draft
+	if Chapter.NUMBER == 3:
+		for field: String in ["revealed","expanded","hotspots","reviewed"]: state[field] = snapshot[field]
+	if Chapter.NUMBER == 4:
+		for field: String in ["timeline_order","timeline_checked","connections","wrong_pairs","notes","minutes_draft","event_draft","claimed"]: state[field] = snapshot[field]
 	var summary: Label = _journal_body.find_child("EvidenceSummary", true, false) as Label
 	if summary != null: summary.text = _evidence_summary()
 	_save()
@@ -744,7 +769,7 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 
 func _thought(text: String) -> void:
 	if not _can_act(): return
-	if Chapter.NUMBER == 2 and Chapter.TASKS.has(state.phase):
+	if Chapter.NUMBER >= 2 and Chapter.TASKS.has(state.phase):
 		_phone.show_feedback(text)
 		return
 	_speaker.text = "John · Thinking"
@@ -752,6 +777,9 @@ func _thought(text: String) -> void:
 
 func _phase_finished() -> void:
 	if not _can_act() or not _phone.phase_ready(): return
+	if state.phase == "sleep" and (_is_chat_beat() or Chapter.get("EPILOGUE_PHONE") == true):
+		_advance()
+		return
 	if state["phase"] == "day":
 		if _is_chat_beat():
 			_advance()
@@ -803,6 +831,8 @@ func _use_perk(id: String) -> void:
 	elif id == "perspective":
 		var hints: Dictionary = {"sort":"Compare what each sender wants from John. Does an expected school update ask for the same things as a paid survey?", "highlight":"Separate the promised reward from the action demanded. What is missing about payment, and what makes checking the offer difficult?", "notes":"A display name can sound official. The address after @ tells you which email service actually hosts the mailbox. Keep that distinction in your notes.", "capture":"A useful exhibit needs context: who sent it, what it is about, and the complete request. Leave all three visible."}
 		hints.merge({"compare":"Compare the exact domain, how the reader is addressed, and who signs the message. A matching subject prefix is not a difference.", "report":"Check the sixth character of the domain carefully. Is it a letter or a number?", "headers":"From is the displayed sender address. Reply-To controls where a reply goes. Subject is the title."})
+		hints.merge({"reveal":"Hold the link and compare the displayed wallet domain with the short-link service underneath.", "expand":"Select or drag the shortened link into the expander. Read the domain of its destination, not just its path.", "flaws":"Compare the known wallet domain with the address bar. HTTP and the security indicator describe the same connection issue; branding clues support the address findings."})
+		hints.merge({"timeline":"Compare hours, minutes and seconds. Eric is at :45, Jobert at :50, then the prize at the next minute.", "board":"Everyone could read the coffee comment. Match exact text and intervals; do not infer a sender from presence status.", "case_note":"08:12 to 08:14 gives the minute interval. Name the survey confirmation reply, not a person."})
 		_perk_body.add_child(UI.label(str(hints.get(str(state.phase), "")), 26))
 	elif id == "reference":
 		var columns: HBoxContainer = HBoxContainer.new()
@@ -852,6 +882,9 @@ func _hint() -> void:
 		run["builtin_hints"] = int(run.get("builtin_hints", 0)) + 1
 		Perks.record(run, "builtin_hint", str(state.phase), int(state.beat))
 	_save()
+	if Chapter.NUMBER in [3,4]:
+		_thought(str(Chapter.TASKS.get(str(state.phase), {}).get("tip", "Keep the link and page findings together.")))
+		return
 	if Chapter.NUMBER == 2:
 		_thought({"compare":"Compare the domain, wording and signature. The club subject prefix is shared by both.", "report":"The new domain uses digit 1 where the genuine domain has lowercase L.", "headers":"From: sender. Reply-To: reply destination. Subject: title."}.get(str(state.phase), "Keep the context with the evidence."))
 		return
@@ -892,13 +925,17 @@ func _load_art() -> void:
 	var phase: String = str(state["phase"])
 	var beat: Dictionary = Chapter.STORY[int(state["beat"])]
 	var location: String = str(beat["bg"]) if phase == "day" else Chapter.NIGHT_BACKGROUND
-	_bg.texture = AssetManager.get_texture("story_bg_" + location)
+	var background_id: String = "story_bg_" + location
+	if Chapter.get("BACKGROUND_ASSET") is String:
+		background_id = str(beat.get("art",Chapter.get("BACKGROUND_ASSET"))) if phase == "day" else str(Chapter.get("BACKGROUND_ASSET"))
+	if not _story_art_override.is_empty(): background_id = _story_art_override
+	_bg.texture = AssetManager.get_texture(background_id)
 	var person: String = str(beat["who"]).to_lower() if phase == "day" else "john"
 	if _chat_started and _is_chat_beat():
 		# Chat senders are remote, not physical actors in John's room.
 		person = "john"
 	else:
-		_poses[person] = int(beat.get("face", 0)) if phase == "day" else 2
+		if _cast.has(person): _poses[person] = int(beat.get("face", 0)) if phase == "day" else 2
 		if phase == "day" and beat.has("sentence_faces"):
 			var faces: Array = beat.sentence_faces
 			var line_index: int = _sentence - (1 if beat.has("caption") else 0)
@@ -910,11 +947,11 @@ func _load_art() -> void:
 	# Includes the lead-in and phone home, not only the open chat app.
 	if _is_chat_beat(): present = ["john"]
 	# John is already seated in the night artwork; never overlay a second John.
-	_cast_stage.visible = not _is_caption_sentence() and location != Chapter.NIGHT_BACKGROUND and phase in ["day", "seal", "sleep"]
+	_cast_stage.visible = not _is_caption_sentence() and location not in ["john_desk_night", "john_bed_night", "intro_morning"] and phase in ["day", "seal", "sleep"]
 	for id: String in _cast:
 		_cast[id].visible = present.has(id)
 		_cast[id].texture = _actor_texture(id, _poses[id])
-	_portrait = _cast[person]
+	_portrait = _cast.get(person, _cast["john"])
 	_cast_stage.move_child(_portrait, _cast_stage.get_child_count() - 1)
 	if _focus != null and _focus.is_valid(): _focus.kill()
 	_focus = create_tween().set_parallel(true)
@@ -959,6 +996,10 @@ func _actor_texture(person: String, face: int) -> Texture2D:
 		atlas.filter_clip = true
 		return atlas
 	return null
+
+func _story_art_changed(asset_id: String) -> void:
+	_story_art_override = asset_id
+	_bg.texture = AssetManager.get_texture(asset_id)
 
 func _art_ready(_success: bool) -> void:
 	_load_art()
@@ -1005,7 +1046,7 @@ func _layout() -> void:
 	if investigation:
 		_journal.position = Vector2(w * 0.49, top)
 		_journal.size = Vector2(w * 0.51, task_height)
-	if investigation and Chapter.NUMBER == 2:
+	if investigation and Chapter.NUMBER >= 2:
 		_phone.position = Vector2(w * 0.02, phone_top)
 		_phone.size = Vector2(w * 0.96, h - phone_top)
 		_phone._metrics()
@@ -1047,6 +1088,8 @@ func _layout() -> void:
 	_caption_next.size = Vector2.ONE * touch
 	_caption_next.position = Vector2((w - touch) * 0.5, h * 0.72)
 	_caption_next.add_theme_font_size_override("font_size", ceili(28 / physical))
+	# Re-evaluate after touch minima shrink when returning from a compact viewport.
+	_header.size = Vector2(w,touch)
 	_layout_menu(w, h, physical)
 	_perk_panel.position = Vector2(w * 0.07, top)
 	_perk_panel.size = Vector2(w * 0.86, h - top - 12)
@@ -1109,7 +1152,7 @@ func _start_investigation_reveal() -> void:
 	_revealing = true
 	_reveal.gentle = SettingsService.reduced_motion
 	_reveal.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
-	_reveal.tagline = "A familiar name. An unfamiliar destination." if Chapter.NUMBER == 2 else "Every message leaves a trace."
+	_reveal.tagline = {2:"A familiar name. An unfamiliar destination.", 3:"FOLLOW THE LINK / Read the destination. Not the promise.",4:"CONNECT THE PATTERN / Reconstruct the morning."}.get(Chapter.NUMBER, "Every message leaves a trace.")
 	_reveal.elapsed = 0.0
 	_reveal.show()
 	for control: Control in [_dialogue, _journal, _phone, _app_shortcuts]: control.hide()
@@ -1165,7 +1208,7 @@ func _apply_pause() -> void:
 		if _result_audio.playing: AudioManager.set_story_duck(self, 1.0 if locked else 0.22)
 	for row: HBoxContainer in [_result_actions, _result_secondary]:
 		for node: Node in row.get_children():
-			(node as Button).disabled = locked or (node.name == "NextChapter" and Chapter.NUMBER != 1)
+			(node as Button).disabled = locked or (node.name == "NextChapter" and Chapter.NUMBER >= 5)
 	if _revealing:
 		AudioManager.set_story_duck(self, 0.3 if _can_present() else 1.0)
 		if _reveal_tween != null and _reveal_tween.is_valid():

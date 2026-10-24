@@ -5,6 +5,7 @@ signal thought_requested(text: String)
 signal phase_finished
 signal chat_speaker_changed(person: String, pose: int)
 signal view_changed
+signal story_art_changed(asset_id: String)
 var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 var chat_entries: Array[Dictionary] = []
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
@@ -157,6 +158,10 @@ class SortBin extends Button:
 
 func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
 	chat_entries.assign(Chapter.CHAT_MESSAGES)
+	if Chapter.STORY[int(snapshot.beat)].has("messages"):
+		chat_entries.assign(Chapter.STORY[int(snapshot.beat)].messages)
+	if snapshot.get("phase", "") == "sleep" and Chapter.get("SLEEP_CHAT") is Array:
+		chat_entries.assign(Chapter.get("SLEEP_CHAT"))
 	if Chapter.ID == "mod_01_ch_02" and Chapter.STORY[int(snapshot.beat)].get("chat_id", "") == "private":
 		chat_entries.assign(Chapter.PRIVATE_CHAT)
 	_clipboard = ""

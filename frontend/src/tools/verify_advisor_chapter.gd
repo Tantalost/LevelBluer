@@ -259,7 +259,7 @@ func _run() -> void:
 	screen._save()
 	check(player.credits == credits + 100, "Repeated save cannot duplicate coins")
 	check(JSON.stringify(player.chapter_progress[Survey.ID]) == first_record, "Chapter 2 never changes Chapter 1 exhibit")
-	check(screen._result_actions.get_child(0).disabled, "Chapter 3 CTA remains unavailable")
+	check(not screen._result_actions.get_child(0).disabled, "Chapter 2 completion enables Chapter 3 CTA")
 	await settle()
 	await capture("complete")
 	var replay: Dictionary = player.begin_story_attempt(Case.ID, true, false)

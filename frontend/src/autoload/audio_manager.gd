@@ -138,7 +138,7 @@ func _next_sfx_player() -> AudioStreamPlayer:
 func _on_screen_changed(screen_id: StringName) -> void:
 	stop_dialogue_blips()
 	_screen_id = screen_id
-	if screen_id != &"opening":
+	if screen_id not in [&"opening", &"confrontation"]:
 		_opening_owner = null
 		_opening_morning = false
 		_opening_paused = false
@@ -170,6 +170,7 @@ func _select_music() -> void:
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
 		&"opening": play_bgm(_tracks.get("morning") if _opening_morning else null)
 		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex", &"module_intro", &"survey_chapter": play_bgm(_tracks.get("study"))
+		&"confrontation": play_bgm(_tracks.get("pvp"))
 		&"login", &"password_change": play_bgm(hub_track)
 		_: play_bgm(_tracks.get("pvp" if _dashboard_mode == &"PVP" else "hub"))
 
@@ -301,7 +302,7 @@ func _synthesize_blip(profile: Dictionary) -> AudioStreamWAV:
 	return stream
 
 func _dialogue_allowed(source: Control) -> bool:
-	if _screen_id != &"gameplay" or _suspended() or get_tree().paused or not is_instance_valid(source) or not source.is_visible_in_tree() or not source.can_process():
+	if _screen_id not in [&"gameplay", &"confrontation"] or _suspended() or get_tree().paused or not is_instance_valid(source) or not source.is_visible_in_tree() or not source.can_process():
 		return false
 	if not SettingsService.dialogue_blips_enabled or not SettingsService.sound_enabled or SettingsService.sfx_volume <= 0 or SettingsService.master_volume <= 0 or SettingsService.text_speed == "instant":
 		return false
@@ -401,7 +402,7 @@ func play_opening_laugh(source: Control) -> void:
 
 
 func _opening_cue_allowed(source: Control) -> bool:
-	return _screen_id == &"opening" and not _opening_paused and not _suspended() and not get_tree().paused and is_instance_valid(source) and source.is_visible_in_tree() and source.can_process() and SettingsService.sound_enabled and SettingsService.sfx_volume > 0 and SettingsService.master_volume > 0
+	return _screen_id in [&"opening", &"confrontation"] and not _opening_paused and not _suspended() and not get_tree().paused and is_instance_valid(source) and source.is_visible_in_tree() and source.can_process() and SettingsService.sound_enabled and SettingsService.sfx_volume > 0 and SettingsService.master_volume > 0
 
 
 func play_opening_cue(cue: String, source: Control) -> void:
@@ -474,7 +475,7 @@ func release_opening_audio(source: Control) -> void:
 
 
 func _music_paused() -> bool:
-	return _suspended() or (_screen_id == &"opening" and _opening_paused)
+	return _suspended() or (_screen_id in [&"opening", &"confrontation"] and _opening_paused)
 
 
 func _synthesize_robot_laugh() -> AudioStreamWAV:

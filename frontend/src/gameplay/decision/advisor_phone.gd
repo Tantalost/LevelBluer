@@ -489,7 +489,7 @@ func _fit_shell() -> void:
 		(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 
 func _draw_frame() -> void:
-	if mode not in ["compare", "report"] or _app != "mail":
+	if mode not in ["compare", "report", "reveal", "expand", "flaws", "timeline", "board", "case_note"] or _app != "mail":
 		super._draw_frame()
 		return
 	var rect: Rect2 = Rect2(Vector2.ZERO, _shell.size)

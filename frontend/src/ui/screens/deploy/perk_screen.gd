@@ -221,7 +221,7 @@ func _unequip(id: String) -> void:
 
 func _deploy_chapter() -> void:
 	if _active and _deploy and PlayerManager.story_unlocked(_chapter_id):
-		Router.push(&"survey_chapter", {"replay":_replay, "chapter_id":_chapter_id})
+		Router.push(&"confrontation" if _chapter_id == "mod_01_ch_05" else &"survey_chapter", {"replay":_replay, "chapter_id":_chapter_id})
 
 func _back() -> void:
 	if not _selected.is_empty():

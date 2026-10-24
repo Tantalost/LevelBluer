@@ -20,7 +20,7 @@ static func new_run(id: String, loadout: Array[String], replay: bool, known: boo
 	return {"id":id, "chapter":chapter_id, "content_version":1, "perk_version":VERSION, "loadout":loadout.duplicate(), "replay":replay, "known":known, "uses":{}, "events":[], "builtin_hints":0, "completed":false, "started_at":Time.get_unix_time_from_system(), "finished_at":0.0}
 
 static func clean_run(raw: Variant) -> Dictionary:
-	if not raw is Dictionary or str(raw.get("id", "")).is_empty() or raw.get("chapter") not in [CHAPTER, "mod_01_ch_02"]: return {}
+	if not raw is Dictionary or str(raw.get("id", "")).is_empty() or raw.get("chapter") not in [CHAPTER, "mod_01_ch_02", "mod_01_ch_03", "mod_01_ch_04", "mod_01_ch_05"]: return {}
 	var run: Dictionary = new_run(str(raw.id).left(80), ids(raw.get("loadout", []), 2), raw.get("replay", false) == true, raw.get("known", false) == true, str(raw.chapter))
 	for key: String in ["content_version", "perk_version", "builtin_hints"]:
 		var value: Variant = raw.get(key, run[key])
@@ -47,15 +47,18 @@ static func status(run: Dictionary, hint_used: bool = false) -> String:
 
 static func allowed(run: Dictionary, id: String, context: String, phase: String, captures: Array) -> bool:
 	# Deny by default: no test/checkpoint/assessment context can activate a perk.
-	if context != "story_chapter" or run.get("chapter") not in [CHAPTER, "mod_01_ch_02"] or run.get("completed", false): return false
+	if context != "story_chapter" or run.get("chapter") not in [CHAPTER, "mod_01_ch_02", "mod_01_ch_03", "mod_01_ch_04", "mod_01_ch_05"] or run.get("completed", false): return false
 	if int(run.get("perk_version", 0)) != VERSION or id not in run.get("loadout", []): return false
 	var phases: Array = ["day", "sort", "highlight", "notes", "capture", "seal", "sleep"] if run.chapter == CHAPTER else ["day", "compare", "report", "headers", "seal", "sleep"]
+	if run.chapter == "mod_01_ch_03": phases = ["day", "reveal", "expand", "flaws", "seal", "sleep"]
+	if run.chapter == "mod_01_ch_04": phases = ["day","timeline","board","case_note","seal","sleep"]
+	if run.chapter == "mod_01_ch_05": phases = ["debate","final","comic"]
 	if phase not in phases: return false
 	if id != "reference" and int(run.get("uses", {}).get(id, 0)) > 0: return false
 	match id:
 		"recap": return true
-		"perspective": return phase in ["sort", "highlight", "notes", "capture", "compare", "report", "headers"]
-		"reference": return phase in ["capture", "compare", "report", "headers", "seal", "sleep"] and captures.size() >= 2
+		"perspective": return phase in ["sort", "highlight", "notes", "capture", "compare", "report", "headers", "reveal", "expand", "flaws", "timeline", "board", "case_note", "debate", "final", "comic"]
+		"reference": return phase in ["capture", "compare", "report", "headers", "seal", "sleep", "debate", "final", "comic"] and captures.size() >= 2
 	return false
 
 static func activate(run: Dictionary, id: String, context: String, phase: String, beat: int, captures: Array) -> bool:
