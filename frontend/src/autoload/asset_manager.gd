@@ -391,6 +391,9 @@ func _ui_catalog() -> Array[Dictionary]:
 		_catalog_entry("npc_disgust", "NPC disgust", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Disgust.png"),
 		_catalog_entry("npc_aggression", "NPC aggression", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Aggression.png"),
 		_catalog_entry("npc_astonishment", "NPC astonishment", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Astonishment.png"),
+		_catalog_entry("hearing_debate_v1", "Hearing / debate stage", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792930826/hearing_debate_v1.png"),
+		_catalog_entry("hearing_mystery_v1", "Hearing / mystery", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792930833/hearing_mystery_v1.png"),
+		_catalog_entry("john_counter_lettered_v1", "John / counter", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792930834/john_counter_lettered_v1.png"),
 	]
 
 

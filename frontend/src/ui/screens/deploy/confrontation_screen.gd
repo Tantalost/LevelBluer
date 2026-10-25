@@ -39,6 +39,12 @@ var _chat_text: RichTextLabel
 var _chat_status: Label
 var _chat_match: Button
 var _result_audio: AudioStreamPlayer
+var _suspect_selected: String = ""
+var _round_intro: float = 0.0
+var _reflecting: bool = false
+var _counter_sound: bool = false
+var _connecting: bool = false
+var _arrival_cue: int = -1
 
 func _ready() -> void:
 	var background: ColorRect = ColorRect.new()
@@ -175,6 +181,7 @@ func _build() -> void:
 		return
 	_credit.text = "CREDIBILITY / %d" % int(state.credibility)
 	_bar.value = int(state.credibility)
+	AudioManager.set_hearing_decision(self,state.phase == "suspect",state.phase in ["debate","rebuttal"])
 	match str(state.phase):
 		"prep": _prep()
 		"suspect": _suspects()
@@ -202,21 +209,32 @@ func _prep() -> void:
 	var visual: VBoxContainer = UI.column(row,ceili(8*_u))
 	visual.size_flags_horizontal = SIZE_EXPAND_FILL
 	visual.add_child(W.copy("THE HEARING",_u,W.CREAM,28))
-	var art: TextureRect = W.art("story_bg_john_bed_night",40*_u)
+	var art: TextureRect = _hearing_art()
 	art.size_flags_vertical = SIZE_EXPAND_FILL
 	visual.add_child(art)
-	visual.add_child(W.copy("Four exhibits sealed.\nOne last conversation.",_u,W.CYAN))
-	var actions: VBoxContainer = UI.scroll_column(row)
-	actions.add_child(W.copy("PREPARATION",_u,W.CYAN,22))
-	actions.add_child(W.copy("Load evidence, then tap an orange claim to challenge it. Hold pauses the conversation without an assist penalty.",_u))
-	actions.add_child(W.button("SIR RHAM / NEW EXHIBITS"+ (" / READ" if state.briefed else ""),_briefing,_u))
-	actions.add_child(W.button("REVIEW CASE RECORD",_evidence.bind(true,false),_u))
+	var action_area: VBoxContainer = UI.column(row,ceili(8*_u))
+	action_area.size_flags_horizontal = SIZE_EXPAND_FILL
+	var actions: VBoxContainer = UI.scroll_column(action_area)
+	actions.add_theme_constant_override("separation",ceili(8*_u))
+	actions.add_child(_large_action("NEW EXHIBITS"+ (" / READ" if state.briefed else ""),_briefing))
+	actions.add_child(_large_action("REVIEW CASE RECORD",_evidence.bind(true,false)))
 	var loadout: Array = state.perk_run.get("loadout",[])
-	actions.add_child(W.button("SET PERKS / %d OF 2" % loadout.size(),_set_perks,_u))
-	var begin: Button = W.button("FINISH PREPARATIONS",_begin,_u,true)
+	actions.add_child(_large_action("SET PERKS / %d OF 2" % loadout.size(),_set_perks))
+	var begin: Button = _large_action("FINISH PREPARATIONS",_begin,true)
 	begin.disabled = not state.briefed
-	actions.add_child(begin)
-	if not state.briefed: actions.add_child(W.copy("Read the new exhibits before joining.",_u,W.ORANGE,16))
+	if begin.disabled: begin.text = "READ EXHIBITS FIRST"
+	action_area.add_child(begin)
+	begin.tooltip_text = "Read the new exhibits before joining." if not state.briefed else "Enter the hearing"
+
+func _large_action(text: String, action: Callable, primary: bool = false) -> Button:
+	var button: Button = W.button(text,action,_u,primary)
+	button.custom_minimum_size.y = 64*_u
+	button.add_theme_font_size_override("font_size",ceili(21*_u))
+	return button
+
+func _hearing_art() -> TextureRect:
+	var art: TextureRect = W.art("hearing_mystery_v1",40*_u)
+	return art
 
 func _set_perks() -> void:
 	if _interactive() and state.phase == "prep" and not _testing:
@@ -240,27 +258,63 @@ func _begin() -> void:
 	_change("suspect")
 
 func _suspects() -> void:
-	var column: VBoxContainer = _column()
-	column.add_child(W.copy("BEFORE YOU JOIN / YOUR THEORY",_u,W.CYAN,22))
-	column.add_child(W.copy("Who should John question? A theory earns a starting bonus; evidence must still carry the hearing.",_u))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	row.add_theme_constant_override("separation",ceili(18*_u))
+	_body.add_child(row)
+	var visual: VBoxContainer = UI.column(row,ceili(8*_u))
+	visual.size_flags_horizontal = SIZE_EXPAND_FILL
+	visual.size_flags_stretch_ratio = .32
+	visual.add_child(W.copy("WHO IS BEHIND IT?",_u,W.CREAM,26))
+	var art: TextureRect = _hearing_art()
+	art.size_flags_vertical = SIZE_EXPAND_FILL
+	visual.add_child(art)
+	visual.add_child(W.copy("FOUR NAMES. ONE THEORY.",_u,W.CYAN,16))
+	var column: VBoxContainer = UI.column(row,ceili(10*_u))
+	column.size_flags_horizontal = SIZE_EXPAND_FILL
+	column.size_flags_stretch_ratio = .68
 	var scroll: VBoxContainer = UI.scroll_column(column)
+	scroll.add_theme_constant_override("separation",ceili(6*_u))
+	scroll.add_child(W.copy("CHOOSE WHO TO QUESTION",_u,W.CYAN,23))
+	scroll.add_child(W.copy("Trust your evidence. A theory is not a verdict.",_u,W.CREAM,17))
 	var grid: GridContainer = GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation",ceili(12*_u))
-	grid.add_theme_constant_override("v_separation",ceili(12*_u))
+	grid.add_theme_constant_override("v_separation",ceili(8*_u))
 	scroll.add_child(grid)
 	for person: String in Case.SUSPECTS:
-		var choice: Button = W.button(person,_pick_suspect.bind(person),_u)
+		var selected: bool = _suspect_selected == person
+		var index: int = Case.SUSPECTS.find(person)+1
+		var caption: String = "SELECTED" if selected else "TAP TO SELECT"
+		if state.suspect_guesses.has(person): caption = "RECONSIDERED"
+		var choice: Button = W.button("%02d / %s\n%s" % [index,person.to_upper(),caption],_select_suspect.bind(person),_u)
+		choice.name = "Suspect_"+person
+		choice.custom_minimum_size.y = 64*_u
+		choice.add_theme_font_size_override("font_size",ceili(19*_u))
+		choice.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		choice.add_theme_stylebox_override("normal",UI.box(Color("153b37") if selected else W.CARD,W.CYAN if selected else W.BORDER,ceili(12*_u)))
 		choice.size_flags_horizontal = SIZE_EXPAND_FILL
 		choice.disabled = state.theory_done or state.suspect_guesses.has(person)
 		grid.add_child(choice)
 	if not state.suspect_guesses.is_empty(): scroll.add_child(W.copy(Case.NAME_HINTS[mini(2,state.suspect_guesses.size()-1)],_u,W.ORANGE))
 	if state.theory_done:
 		scroll.add_child(W.copy("THEORY BONUS / +15 CREDIBILITY" if state.theory_bonus else "JOINING / 20 CREDIBILITY",_u,W.GREEN if state.theory_bonus else W.CREAM))
-		column.add_child(W.button("JOIN HEARING",_join,_u,true))
+		column.add_child(_large_action("JOIN HEARING",_join,true))
+	else:
+		var confirm: Button = _large_action("QUESTION " + _suspect_selected.to_upper() if not _suspect_selected.is_empty() else "SELECT A SUSPECT",_pick_suspect.bind(_suspect_selected),true)
+		confirm.name = "ConfirmSuspect"
+		confirm.disabled = _suspect_selected.is_empty()
+		column.add_child(confirm)
+
+func _select_suspect(person: String) -> void:
+	if not _interactive() or state.phase != "suspect" or state.theory_done or state.suspect_guesses.has(person): return
+	_suspect_selected = person
+	AudioManager.play_sfx("ui_click")
+	_build()
 
 func _pick_suspect(person: String) -> void:
 	if not _interactive() or state.phase != "suspect" or state.theory_done or person not in Case.SUSPECTS or state.suspect_guesses.has(person): return
+	_suspect_selected = ""
 	if person == "Jobert":
 		state.theory_done = true
 		state.theory_bonus = true
@@ -277,21 +331,38 @@ func _join() -> void:
 	if _interactive() and state.phase == "suspect" and state.theory_done:
 		_elapsed = 0
 		_impact = false
+		_connecting = false
+		_arrival_cue = -1
 		_change("intro")
-		AudioManager.play_opening_cue("thump",self)
+		AudioManager.play_sfx("ui_notification")
 
 func _intro() -> void:
 	var column: VBoxContainer = _column()
-	var title: W.TitleImpact = W.TitleImpact.new()
+	var title: W.JoiningImpact = W.JoiningImpact.new()
 	title.size_flags_vertical = SIZE_EXPAND_FILL
 	title.gentle = SettingsService.reduced_motion
 	title.elapsed = _elapsed
+	title.connecting = _connecting
 	column.add_child(title)
 	_stage = title
-	column.add_child(W.button("BEGIN DEBATE",_start_round,_u,true))
+	if not _connecting:
+		var join_link: Button = _large_action("OPEN ZOOM LINK",_connect_hearing,true)
+		join_link.name = "OpenHearingLink"
+		column.add_child(join_link)
+
+func _connect_hearing() -> void:
+	if not _interactive() or state.phase != "intro" or _connecting: return
+	_connecting = true
+	_elapsed = 0
+	_impact = false
+	_arrival_cue = -1
+	AudioManager.play_opening_cue("meeting",self)
+	_build()
 
 func _start_round() -> void:
 	if not _interactive() or state.phase not in ["intro","rebuttal"]: return
+	if state.phase == "intro" and (not _connecting or _elapsed < W.JoiningImpact.FINISH_AT): return
+	if state.phase == "rebuttal" and _elapsed < 2.2: return
 	if state.solved.size() == 4:
 		_change("final")
 		return
@@ -301,8 +372,10 @@ func _start_round() -> void:
 	_elapsed = 0
 	_held = false
 	_armed = ""
+	_reflecting = false
+	_round_intro = 2.4
 	_change("debate")
-	AudioManager.play_opening_cue("meeting",self)
+	AudioManager.play_sfx("debate_start")
 
 func _debate() -> void:
 	var column: VBoxContainer = _column()
@@ -314,16 +387,29 @@ func _debate() -> void:
 	stage.rebuttal_submitted.connect(_fire)
 	stage.evidence_requested.connect(_evidence.bind(false,false))
 	stage.hold_requested.connect(_toggle_hold)
+	stage.reflection_finished.connect(_repeat_discussion)
 	_stage = stage
 	_update_statement()
+	stage.animate(0,_round_intro)
 
 func _update_statement() -> void:
 	if not _stage is W.DebateStage: return
+	_stage.reflecting = _reflecting
+	if _reflecting:
+		_stage.show_statement("John","Something doesn't fit. I should compare that claim with the evidence.","",_armed,_held)
+		return
 	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
 	var speaker: String = "Jobert" if _voice == 3 else str(round_data.voices[_voice].who)
 	var text: String = str(round_data.claim) if _voice == 3 else str(round_data.voices[_voice].text)
 	_stage.show_statement(speaker,text,str(round_data.weak) if _voice == 3 else "",_armed,_held)
 	AudioManager.play_dialogue_reaction(speaker,"neutral",self)
+
+func _repeat_discussion() -> void:
+	if not _interactive() or state.phase != "debate" or not _reflecting or _held: return
+	_reflecting = false
+	_voice = 0
+	_elapsed = 0
+	_update_statement()
 
 func _toggle_hold() -> void:
 	if not _interactive() or state.phase != "debate": return
@@ -332,7 +418,7 @@ func _toggle_hold() -> void:
 	_update_statement()
 
 func _fire(evidence: String, weak_point: String) -> void:
-	if not _interactive() or state.phase != "debate" or _voice != 3: return
+	if not _interactive() or state.phase != "debate" or _voice != 3 or _held or _reflecting or _round_intro > 0: return
 	var index: int = int(state.round)
 	var round_data: Dictionary = Case.ROUNDS[index]
 	if weak_point != round_data.weak: return
@@ -343,7 +429,9 @@ func _fire(evidence: String, weak_point: String) -> void:
 	if evidence == round_data.correct:
 		state.solved.append(index)
 		state.credibility = mini(100,int(state.credibility)+15)
-		AudioManager.play_sfx("ui_success")
+		_counter_sound = false
+		AudioManager.play_sfx("debate_hit")
+		AudioManager.set_story_duck(self,.2)
 		_change("rebuttal")
 	else:
 		state.credibility = maxi(0,int(state.credibility)-10)
@@ -370,17 +458,23 @@ func _retry() -> void:
 	_voice = 3
 	_elapsed = 0
 	_armed = ""
+	_reflecting = false
+	_round_intro = 0
 	_save()
 	_build()
 
 func _rebuttal() -> void:
 	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
 	_story("CLAIM REFUTED / +15\n"+str(round_data.result)+"\nFLASHBACK / "+str(round_data.flash),_start_round,str(round_data.art),true)
-	if _elapsed < 1.0:
+	if _elapsed < 2.2:
+		(_body.get_child(0) as Control).hide()
 		_rebuttal_fx = W.RebuttalImpact.new()
 		_rebuttal_fx.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		_rebuttal_fx.gentle = SettingsService.reduced_motion
-		_rebuttal_fx.mouse_filter = MOUSE_FILTER_IGNORE
+		_rebuttal_fx.phrase = str(round_data.weak)
+		_rebuttal_fx.evidence = str(Case.exhibit(str(round_data.correct)).title)
+		_rebuttal_fx.elapsed = _elapsed
+		_rebuttal_fx.mouse_filter = MOUSE_FILTER_STOP
 		_body.add_child(_rebuttal_fx)
 
 func _final_blow() -> void:
@@ -743,20 +837,35 @@ func _process(delta: float) -> void:
 	if state.phase == "debate" and _held: return
 	_elapsed += delta
 	if state.phase == "intro":
-		if _stage is W.TitleImpact:
-			_stage.elapsed = _elapsed
-			_stage.queue_redraw()
-		if _elapsed > .45 and not _impact:
+		if not _connecting:
+			_elapsed = 0
+			return
+		if _stage is W.JoiningImpact:
+			_stage.advance(_elapsed,true,SettingsService.reduced_motion)
+		var arrival: int = mini(5,floori((_elapsed-1.8)/.45))
+		if arrival >= 0 and arrival > _arrival_cue and _elapsed < 5.2:
+			_arrival_cue = arrival
+			AudioManager.play_sfx("ui_notification")
+		if _elapsed >= W.JoiningImpact.REVEAL_AT and not _impact:
 			_impact = true
 			AudioManager.play_opening_cue("takeover",self)
-		if _elapsed >= (2.0 if SettingsService.reduced_motion else 4.0): _start_round()
+		if _elapsed >= W.JoiningImpact.FINISH_AT: _start_round()
 	elif state.phase == "debate":
+		if _stage is W.DebateStage: _stage.animate(delta,_round_intro)
+		if _round_intro > 0:
+			_round_intro = maxf(0,_round_intro-delta)
+			_elapsed = 0
+			return
+		if _reflecting or (_armed.is_empty() and _voice == 0):
+			_elapsed = 0
+			return
 		if int(state.credibility) == 0:
 			_retry()
 			return
 		if _elapsed >= (8.0 if _voice == 3 else 4.0):
 			_elapsed = 0
-			_voice = (_voice+1)%4
+			if _voice == 3: _reflecting = true
+			else: _voice += 1
 			_update_statement()
 	elif state.phase == "lights":
 		if _stage is W.MeetingLights:
@@ -768,9 +877,15 @@ func _process(delta: float) -> void:
 	elif state.phase == "rebuttal" and is_instance_valid(_rebuttal_fx):
 		_rebuttal_fx.elapsed = _elapsed
 		_rebuttal_fx.queue_redraw()
-		if _elapsed >= 1:
+		if _elapsed >= .55 and not _counter_sound:
+			_counter_sound = true
+			AudioManager.play_sfx("debate_counter")
+		if _elapsed >= 2.2:
 			_rebuttal_fx.queue_free()
 			_rebuttal_fx = null
+			(_body.get_child(0) as Control).show()
+			AudioManager.set_story_duck(self,1.0)
+		else: return
 	elif state.phase == "done":
 		if _stage is W.RewardDisplay:
 			_stage.elapsed = _elapsed

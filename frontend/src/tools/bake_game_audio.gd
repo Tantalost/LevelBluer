@@ -91,6 +91,14 @@ func _effect(key: String, notes: Array[int], duration: float, step: float, gain:
 	_save(buffer, "res://assets/audio/sfx/" + key + ".wav", gain)
 
 func _bake() -> void:
+	if "--debate-only" in OS.get_cmdline_user_args():
+		_bake_debate()
+		quit()
+		return
+	if "--hearing-only" in OS.get_cmdline_user_args():
+		_bake_hearing()
+		quit()
+		return
 	if "--chapter-complete-only" in OS.get_cmdline_user_args():
 		_bake_chapter_complete()
 		quit()
@@ -124,6 +132,58 @@ func _bake() -> void:
 	_save(sweep, "res://assets/audio/sfx/ui_transition.wav", 0.22)
 	quit()
 
+
+func _bake_debate() -> void:
+	# Original 112 BPM minor pulse; bounded offline synthesis with circular echoes.
+	var beat: float = 60.0/112.0
+	var buffer: PackedFloat32Array = PackedFloat32Array()
+	buffer.resize(int(RATE*beat*32))
+	var roots: Array[int] = [38,38,34,37,38,41,34,37]
+	var motif: Array[int] = [0,12,7,15,0,10,7,13]
+	for bar: int in 8:
+		var base: float = bar*beat*4
+		for interval: int in [12,15,19]:
+			_tone(buffer,base,beat*4.4,roots[bar]+interval,.045,"pad",true)
+		for step: int in 8:
+			var at: float = base+step*.5*beat
+			_tone(buffer,at,beat*.44,roots[bar],.18,"bass",true)
+			_tone(buffer,at,beat*.75,roots[bar]+24+motif[step],.08,"pluck",true)
+			_tone(buffer,at,.06,72,.035,"hat",true)
+			if step % 2 == 0: _tone(buffer,at,.24,36,.23,"kick",true)
+			if step in [2,6]:
+				_tone(buffer,at,.16,65,.085,"hat",true)
+				_tone(buffer,at,.2,50,.085,"pluck",true)
+	var dry: PackedFloat32Array = buffer.duplicate()
+	for index: int in buffer.size():
+		buffer[index] += dry[posmod(index-int(RATE*beat*.75),buffer.size())]*.17
+	_save(buffer,"res://assets/audio/bgm/hearing_debate.wav",.53)
+	_effect("debate_hit",[84,60,36],.18,.035,.5)
+	_effect("debate_counter",[50,62,69,74],.5,.045,.6)
+	_effect("debate_start",[38,50,57,62],.4,.1,.5)
+
+func _bake_hearing() -> void:
+	# Original 80 BPM minor ostinato, low drums and suspended strings; circular tails.
+	var beat: float = .75
+	var buffer: PackedFloat32Array = PackedFloat32Array()
+	buffer.resize(RATE*24)
+	var roots: Array[int] = [38,38,34,37,38,38,34,37]
+	var motif: Array[int] = [0,7,12,3,0,7,13,7]
+	for bar: int in 8:
+		var at: float = bar*4*beat
+		for interval: int in [12,19,25]:
+			_tone(buffer,at,beat*4.8,roots[bar]+interval,.065,"pad",true)
+		for pulse: int in 8:
+			var start: float = at+pulse*.5*beat
+			_tone(buffer,start,beat*.8,roots[bar]+24+motif[pulse],.09,"pluck",true)
+			if pulse % 2 == 0:
+				_tone(buffer,start,beat*.85,roots[bar],.23,"bass",true)
+			if pulse in [0,3,4,7]:
+				_tone(buffer,start,.35,36,.26,"kick",true)
+			_tone(buffer,start,.09,60,.018,"hat",true)
+	var dry: PackedFloat32Array = buffer.duplicate()
+	for index: int in buffer.size():
+		buffer[index] += dry[posmod(index-int(RATE*beat*.75),buffer.size())]*.24
+	_save(buffer,"res://assets/audio/bgm/hearing_decision.wav",.57)
 
 func _bake_chapter_complete() -> void:
 	# Original six-second major-key reward flourish, with a soft resolving tail.

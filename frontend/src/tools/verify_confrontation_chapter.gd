@@ -88,6 +88,15 @@ func seed_chapters(player: Node) -> void:
 
 func _run() -> void:
 	root.size = Vector2i(844,390)
+	var assets: Node = root.get_node("AssetManager")
+	var hearing_ids: PackedStringArray = ["hearing_debate_v1","hearing_mystery_v1","john_counter_lettered_v1"]
+	if "--sync-hearing-assets" in OS.get_cmdline_user_args():
+		for entry: Dictionary in assets._gameplay_catalog():
+			if str(entry.asset_id) in hearing_ids:
+				check(await assets._sync_entry(entry),"Cloudinary hearing asset downloads: "+str(entry.asset_id))
+		for id: String in hearing_ids:
+			assets._textures.erase(id)
+			check(assets.get_texture(id) != null,"Hearing texture reloads from disk cache: "+id)
 	var player: Node = root.get_node("PlayerManager")
 	var original: Dictionary = player.get_save_data()
 	var auth: Node = root.get_node("AuthService")
@@ -128,13 +137,61 @@ func _run() -> void:
 	await capture("briefing_844")
 	screen._ack_briefing()
 	screen._begin()
-	screen._pick_suspect("Eric")
+	for dimensions: Vector2i in [Vector2i(844,390),Vector2i(720,360)]:
+		root.size = dimensions
+		await settle()
+		await capture("suspects_"+str(dimensions.x))
+		touch_geometry(screen)
+		var confirm: Button = screen.find_child("ConfirmSuspect",true,false) as Button
+		check(confirm != null and confirm.disabled,"Suspect requires an explicit selection")
+		check(screen.get_global_rect().encloses(confirm.get_global_rect()),"Suspect confirmation stays inside mobile viewport")
+		for person: String in Case.SUSPECTS:
+			var card: Button = screen.find_child("Suspect_"+person,true,false) as Button
+			var scroller: ScrollContainer = card.get_parent().get_parent().get_parent() as ScrollContainer
+			check(scroller.get_global_rect().encloses(card.get_global_rect()),"Every suspect is visible without scrolling: "+person)
+	screen.find_child("Suspect_Eric",true,false).pressed.emit()
+	await settle()
+	check(screen.state.suspect_guesses.is_empty(),"Selecting a card does not spend a guess")
+	await capture("suspect_selected_720")
+	screen.find_child("ConfirmSuspect",true,false).pressed.emit()
+	var audio: Node = root.get_node("AudioManager")
+	check(audio._hearing_decision and audio._tracks.has("hearing_decision"),"Decision phase selects its original tension score")
+	audio._on_screen_changed(&"confrontation")
+	await settle()
+	check(audio._desired_bgm == audio._tracks["hearing_decision"],"Decision music is routed to the BGM deck")
+	screen._menu()
+	check(audio.bgm_player.stream_paused,"Decision score pauses with the menu")
+	screen._close_overlay()
+	var music_enabled: bool = settings.music_enabled
+	settings.music_enabled = false
+	settings.settings_changed.emit()
+	check(not audio.bgm_player.playing,"Decision score respects music mute")
+	settings.music_enabled = music_enabled
+	settings.settings_changed.emit()
+	root.size = Vector2i(844,390)
+	await settle()
 	screen._pick_suspect("Eric")
 	check(screen.state.suspect_guesses.size() == 1,"Repeated suspect taps do not consume guesses")
 	screen._pick_suspect("Dan")
 	screen._pick_suspect("Mika")
 	check(screen.state.theory_done and not screen.state.theory_bonus and screen.state.credibility == 20,"Three wrong theories join without bonus")
 	screen._join()
+	check(not audio._hearing_decision,"Joining restores the hearing soundtrack")
+	screen.set_process(false)
+	screen._start_round()
+	check(screen.state.phase == "intro","Cannot bypass the invitation")
+	screen._process(20)
+	check(screen._elapsed == 0,"Invitation waits for a deliberate tap")
+	await settle()
+	await capture("invitation_844")
+	touch_geometry(screen)
+	screen._connect_hearing()
+	screen._process(.8)
+	await settle()
+	await capture("connecting_844")
+	var connection_time: float = screen._elapsed
+	screen._connect_hearing()
+	check(screen._elapsed == connection_time,"Repeated join taps do not restart the cinematic")
 	screen._menu()
 	await settle()
 	await capture("pause_844")
@@ -145,11 +202,33 @@ func _run() -> void:
 	check(screen.state.phase == "intro" and screen._elapsed == elapsed,"Menu pauses title animation")
 	screen._close_overlay()
 	check(not root.get_node("AudioManager")._opening_paused,"Closing menu restores owned cinematic audio")
-	screen._process(.7)
+	screen._process(3.9)
+	await settle()
+	await capture("participants_844")
+	root.size = Vector2i(720,360)
+	await settle()
+	await capture("participants_720")
+	screen._backgrounded = true
+	var paused_connection: float = screen._elapsed
+	screen._process(10)
+	check(screen._elapsed == paused_connection,"App backgrounding pauses joining")
+	screen._backgrounded = false
+	screen._process(1.5)
 	await settle()
 	await capture("title_844")
 	screen._start_round()
+	check(screen.state.phase == "intro","Title reveal cannot be skipped by a stray tap")
+	screen._process(4)
+	check(screen.state.phase == "debate","Joining cinematic reaches the debate exactly once")
+	screen.set_process(true)
+	root.size = Vector2i(844,390)
 	await settle()
+	await capture("round_entrance_844")
+	var before_entrance: int = screen.state.credibility
+	screen._voice = 3
+	screen._fire(Case.ROUNDS[0].correct,Case.ROUNDS[0].weak)
+	check(screen.state.credibility == before_entrance,"Round entrance rejects early rebuttals")
+	screen._process(2.5)
 	screen._voice = 3
 	screen._update_statement()
 	await settle()
@@ -182,25 +261,58 @@ func _run() -> void:
 	await capture("retry_844")
 	screen._retry()
 	check(screen.state.credibility == 20 and screen.state.restarts == 1,"Zero resets round to a recoverable checkpoint")
+	screen._armed = "domain"
+	screen._process(8.1)
+	check(screen._reflecting and screen.state.credibility == 20,"Missed claim opens John's reflection without a penalty")
+	await settle()
+	await capture("reflection_844")
+	screen._process(20)
+	check(screen._reflecting,"Reflection waits for a deliberate tap")
+	screen.find_child("ReplayDiscussion",true,false).pressed.emit()
+	check(not screen._reflecting and screen._voice == 0 and screen._armed == "domain","Replay restarts discussion and preserves the selected bullet")
 	screen._toggle_hold()
 	elapsed = screen._elapsed
 	screen._process(30)
 	check(screen._elapsed == elapsed,"Hold freezes statement loop")
+	screen._voice = 3
+	screen._fire(Case.ROUNDS[0].correct,Case.ROUNDS[0].weak)
+	check(screen.state.credibility == 20,"Held discussion rejects scoring input")
 	screen._toggle_hold()
 	for index: int in 4:
 		check(screen.state.round == index,"Correct round index")
 		screen._voice = 3
 		screen._update_statement()
-		screen._fire(Case.ROUNDS[index].correct,Case.ROUNDS[index].weak)
+		screen._armed = Case.ROUNDS[index].correct
+		screen._update_statement()
+		screen.find_child("WeakPoint",true,false).pressed.emit()
 		var credibility: int = screen.state.credibility
 		screen._fire(Case.ROUNDS[index].correct,Case.ROUNDS[index].weak)
 		check(screen.state.credibility == credibility,"Duplicate rebuttal cannot score")
 		check(screen.state.solved.size() == index+1,"Correct evidence seals rebuttal")
 		await settle()
+		if index == 0:
+			screen._process(.2)
+			await capture("evidence_strike_844")
+			screen._process(.5)
+			await capture("counter_844")
+			root.size = Vector2i(720,360)
+			await settle()
+			await capture("counter_720")
+			root.size = Vector2i(844,390)
+			await settle()
+			screen._menu()
+			var counter_elapsed: float = screen._elapsed
+			screen._process(10)
+			check(screen._elapsed == counter_elapsed,"Pause freezes the counter cut-in")
+			screen._close_overlay()
+			screen._start_round()
+			check(screen.state.phase == "rebuttal","Counter cannot be skipped by a double tap")
+		screen._process(2.3)
 		if index == 0: await capture("rebuttal_844")
 		var restored: Dictionary = Case.clean(screen.state)
 		check(restored.phase == "rebuttal" and restored.round == index,"Rebuttal save preserves current explanation")
 		screen._start_round()
+		screen._process(2.5)
 	check(screen.state.phase == "final" and screen.state.credibility == 80,"Four clean rebuttals after restart reach eighty")
 	await settle()
 	await capture("final_844")
@@ -274,8 +386,16 @@ func _run() -> void:
 	check(screen.state.theory_bonus and screen.state.credibility == 35,"Correct theory grants thirty-five starting credibility")
 	check(not Perks.allowed(screen.state.perk_run,"perspective","research_test","debate",[]),"Research tests cannot use story perks")
 	check(not Perks.allowed(screen.state.perk_run,"reference","checkpoint","debate",[1,2]),"Checkpoints cannot use story perks")
+	settings.reduced_motion = false
 	screen._join()
-	screen._start_round()
+	screen.set_process(false)
+	screen._connect_hearing()
+	screen._process(2.45)
+	await settle()
+	await capture("joining_motion_844")
+	screen._process(7.55)
+	screen.set_process(true)
+	screen._process(2.5)
 	screen._voice = 3
 	screen._update_statement()
 	screen._use_perk("perspective")
@@ -284,9 +404,12 @@ func _run() -> void:
 	for index: int in 4:
 		screen._voice = 3
 		screen._fire(Case.ROUNDS[index].correct,Case.ROUNDS[index].weak)
+		screen._process(2.3)
 		screen._start_round()
+		screen._process(2.5)
 	check(screen.state.credibility == 95,"Theory bonus plus four correct rebuttals reaches ninety-five")
 	settings.text_speed = "normal"
+	screen._elapsed = 0
 	screen._build()
 	screen._match_typo()
 	check(not screen.state.final_matched,"First tap reveals a message that is still typing")
@@ -332,6 +455,14 @@ func _run() -> void:
 		await settle()
 		await capture("debate_%d" % dimensions.x)
 		touch_geometry(screen)
+		for round_number: int in 4:
+			var content_round: Dictionary = Case.ROUNDS[round_number]
+			screen._stage.show_statement("Jobert",content_round.claim,content_round.weak,"coffee",false)
+			await settle()
+			var weak_button: Button = screen.find_child("WeakPoint",true,false) as Button
+			check(weak_button.is_visible_in_tree() and screen.get_global_rect().encloses(weak_button.get_global_rect()),"Every inline weak phrase fits the phone")
+			touch_geometry(screen)
+		screen._update_statement()
 		screen._evidence(false,false)
 		await settle()
 		await capture("evidence_%d" % dimensions.x)
@@ -345,6 +476,19 @@ func _run() -> void:
 		var content: VBoxContainer = screen._overlay.get_child(0) as VBoxContainer
 		(content.get_child(content.get_child_count()-1) as Button).pressed.emit()
 		check(not is_instance_valid(screen._overlay) and screen.state.phase == "debate","Feedback action returns to the debate")
+	settings.reduced_motion = false
+	screen._build()
+	screen._voice = 0
+	screen._armed = "headers"
+	screen._update_statement()
+	screen._process(.2)
+	await settle()
+	await capture("speaker_transition_932")
+	screen._menu()
+	var transition_time: float = screen._stage.transition
+	screen._process(10)
+	check(screen._stage.transition == transition_time,"Menu freezes speaker motion")
+	screen._close_overlay()
 	screen.on_exit()
 	screen.queue_free()
 	await settle()

@@ -47,6 +47,79 @@ static func grayscale(image: TextureRect) -> void:
 	material.shader = shader
 	image.material = material
 
+class JoiningImpact extends Control:
+	# Presentation only: the screen advances this clock and owns all audio cues.
+	const REVEAL_AT: float = 5.8
+	const FINISH_AT: float = 9.8
+	var elapsed: float = 0.0
+	var connecting: bool = false
+	var gentle: bool = false
+	var reveal: TitleImpact
+	func _ready() -> void:
+		mouse_filter = MOUSE_FILTER_IGNORE
+		clip_contents = true
+		reveal = TitleImpact.new()
+		reveal.mouse_filter = MOUSE_FILTER_IGNORE
+		reveal.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		add_child(reveal)
+		advance(elapsed,connecting,gentle)
+	func advance(time: float, started: bool, reduced: bool) -> void:
+		elapsed = time
+		connecting = started
+		gentle = reduced
+		if is_instance_valid(reveal):
+			reveal.visible = connecting and elapsed >= REVEAL_AT
+			reveal.elapsed = maxf(0,elapsed-REVEAL_AT)
+			reveal.gentle = gentle
+			reveal.queue_redraw()
+		queue_redraw()
+	func line(text: String, y: float, pixels: int, color: Color) -> void:
+		var u: float = ConfrontationWidgets.unit(self)
+		draw_string(UI.FONT,Vector2(16*u,y),text,HORIZONTAL_ALIGNMENT_CENTER,size.x-32*u,ceili(pixels*u),color)
+	func _draw() -> void:
+		var u: float = ConfrontationWidgets.unit(self)
+		draw_rect(Rect2(Vector2.ZERO,size),BG)
+		if connecting and elapsed >= 5.2: return
+		var backdrop: Texture2D = AssetManager.get_texture("hearing_debate_v1")
+		if backdrop != null: draw_texture_rect(backdrop,Rect2(Vector2.ZERO,size),false,Color(1,1,1,.24))
+		for index: int in 12:
+			var x: float = size.x*index/11.0
+			draw_line(Vector2(x,0),Vector2(x-size.x*.18,size.y),Color(BORDER,.55),u)
+		if not connecting:
+			var card: Rect2 = Rect2(size*Vector2(.13,.08),size*Vector2(.74,.84))
+			draw_style_box(UI.box(PANEL,CYAN,ceili(10*u)),card)
+			line("SIR RHAM INVITED YOU",size.y*.23,18,CYAN)
+			line("THE CLUB HEARING",size.y*.43,30,CREAM)
+			line("Zoom meeting / John",size.y*.62,19,CREAM)
+			line("Your evidence is ready. So are they.",size.y*.79,17,CYAN)
+			return
+		if elapsed < 1.8:
+			var center: Vector2 = size*Vector2(.5,.42)
+			for ring: int in 3:
+				var radius: float = (25+ring*18)*u
+				var angle: float = 0 if gentle else elapsed*(1.6+ring*.4)
+				draw_arc(center,radius,angle,angle+TAU*(.65+ring*.08),64,Color(CYAN,1-ring*.25),2*u,true)
+			line("JOINING THE HEARING",size.y*.77,24,CREAM)
+			line("Connecting audio and video...",size.y*.91,16,CYAN)
+			return
+		line("CONNECTED / CLUB HEARING",size.y*.1,19,CYAN)
+		var names: PackedStringArray = ["John","Sir Rham","Eric","Dan","Mika","Jobert"]
+		var gap: float = 10*u
+		var area: Rect2 = Rect2(size.x*.12,size.y*.17,size.x*.76,size.y*.66)
+		var cell: Vector2 = (area.size-Vector2(2*gap,gap))/Vector2(3,2)
+		for index: int in names.size():
+			var arrival: float = 1.8+index*.45
+			var live: bool = elapsed >= arrival
+			var tile: Rect2 = Rect2(area.position+Vector2(index%3,index/3)*(cell+Vector2.ONE*gap),cell)
+			if live and not gentle: tile.position.y += (1-smoothstep(arrival,arrival+.3,elapsed))*12*u
+			draw_style_box(UI.box(CARD,CYAN if live else BORDER,ceili(6*u)),tile)
+			if live:
+				ConfrontationWidgets.draw_person(self,names[index],Rect2(tile.position+Vector2(4,2)*u,tile.size-Vector2(8,23)*u),0,Color.WHITE,true)
+				draw_circle(tile.position+Vector2(10,10)*u,3*u,GREEN)
+			draw_rect(Rect2(tile.position+Vector2(0,tile.size.y-23*u),Vector2(tile.size.x,23*u)),PANEL)
+			draw_string(UI.FONT,tile.position+Vector2(8*u,tile.size.y-6*u),names[index] if live else "Connecting...",HORIZONTAL_ALIGNMENT_LEFT,tile.size.x-16*u,ceili(16*u),CREAM if live else CYAN)
+		line("Everyone is here. " if elapsed >= 4.5 else "Participants are joining...",size.y*.95,18,CREAM)
+
 class TitleImpact extends Control:
 	var elapsed: float = 0.0
 	var gentle: bool = false
@@ -74,116 +147,267 @@ class TitleImpact extends Control:
 				var y: float = size.y*(index/8.0)
 				draw_line(Vector2(0,y),Vector2(size.x, y-size.y*.2),Color(CYAN,(.55-elapsed)*.3),2)
 
+static func draw_person(canvas: Control, person: String, rect: Rect2, pose: int = 0, tint: Color = Color.WHITE, close_up: bool = false) -> void:
+	var sheet: Texture2D = AssetManager.get_texture("chapter1_"+person.to_lower())
+	if sheet == null:
+		# Camera-off participants remain part of the remote hearing.
+		canvas.draw_circle(rect.position+rect.size*Vector2(.5,.28),rect.size.y*.14,Color("173058"))
+		canvas.draw_colored_polygon(PackedVector2Array([rect.position+rect.size*Vector2(.3,.48),rect.position+rect.size*Vector2(.7,.48),rect.end,rect.position+Vector2(0,rect.size.y)]),Color("173058"))
+		return
+	var split: float = float({"John":512.0,"Eric":524.0,"Jobert":546.0}.get(person,512.0))
+	var source: Rect2 = Rect2((pose%3)*512,0 if pose < 3 else split,512,split if pose < 3 else 1024-split)
+	source.position.x += 100 if close_up else 38
+	source.size.x -= 200 if close_up else 76
+	source.size.y *= .51 if close_up else .7
+	var ratio: float = minf(rect.size.x/source.size.x,rect.size.y/source.size.y)
+	var image_size: Vector2 = source.size*ratio
+	canvas.draw_texture_rect_region(sheet,Rect2(rect.position+Vector2((rect.size.x-image_size.x)*.5,0),image_size),source,tint)
+
 class RebuttalImpact extends Control:
 	var elapsed: float = 0.0
 	var gentle: bool = false
+	var phrase: String = ""
+	var evidence: String = ""
 	func _draw() -> void:
-		var alpha: float = 1.0-clampf((elapsed-.5)/.5,0,1)
-		var middle: Vector2 = size*.5
-		var progress: float = 1 if gentle else clampf(elapsed/.3,0,1)
-		draw_rect(Rect2(0,size.y*.3,size.x,size.y*.38),Color(.02,.04,.09,.96*alpha))
-		draw_line(Vector2(0,middle.y),Vector2(middle.x*progress,middle.y),Color(CYAN,alpha),3)
-		draw_arc(middle,24,0,TAU,32,Color(CYAN,alpha),3)
-		var font_size: int = maxi(22,int(size.x/22))
-		draw_string(UI.FONT,Vector2(0,middle.y+font_size*.25),"CLAIM REFUTED!",HORIZONTAL_ALIGNMENT_CENTER,size.x,font_size,Color(GREEN,alpha))
+		var u: float = ConfrontationWidgets.unit(self)
+		draw_rect(Rect2(Vector2.ZERO,size),BG)
+		if elapsed < .55:
+			var hit: Vector2 = size*Vector2(.47,.48)
+			if elapsed < .22:
+				var flight: float = 1 if gentle else smoothstep(0,.22,elapsed)
+				var bullet: Vector2 = (size*Vector2(.06,.88)).lerp(hit,flight)
+				draw_line(size*Vector2(.04,.9),bullet,CYAN,4*u)
+				draw_arc(bullet,22*u,0,TAU,32,CYAN,3*u)
+				draw_string(UI.FONT,Vector2(20*u,bullet.y-28*u),evidence,HORIZONTAL_ALIGNMENT_CENTER,size.x-40*u,ceili(23*u),CYAN)
+				return
+			var spread: float = 0 if gentle else clampf((elapsed-.22)/.33,0,1)
+			for index: int in 14:
+				var angle: float = index*TAU/14.0
+				var end: Vector2 = hit+Vector2.from_angle(angle)*(22+spread*size.x*.5)
+				draw_line(hit,end,Color(CYAN,.75-spread*.6),2*u)
+			draw_arc(hit,(16+spread*100)*u,0,TAU,48,CYAN,3*u)
+			if gentle:
+				draw_string(UI.FONT,Vector2(20*u,hit.y),phrase,HORIZONTAL_ALIGNMENT_CENTER,size.x-40*u,ceili(24*u),ORANGE)
+				return
+			var words: PackedStringArray = phrase.split(" ")
+			var word_x: float = (size.x-UI.FONT.get_string_size(phrase,HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(24*u)).x)*.5
+			for index: int in words.size():
+				var origin: Vector2 = Vector2(word_x,hit.y)
+				word_x += UI.FONT.get_string_size(words[index]+" ",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(24*u)).x
+				origin += Vector2((index-words.size()*.5)*spread*40,(-1 if index%2 else 1)*spread*80)*u
+				draw_string(UI.FONT,origin,words[index],HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(24*u),Color(ORANGE,1-spread))
+			return
+		var progress: float = clampf((elapsed-.55)/.25,0,1)
+		var counter_art: Texture2D = AssetManager.get_texture("john_counter_lettered_v1")
+		if counter_art == null:
+			draw_string(UI.FONT,Vector2(20*u,size.y*.5),"COUNTER!",HORIZONTAL_ALIGNMENT_CENTER,size.x-40*u,ceili(48*u),CYAN)
+			return
+		var texture_size: Vector2 = counter_art.get_size()
+		# Fit the complete lettered illustration so mobile ratios never crop COUNTER.
+		var zoom: float = 1.0 if gentle else .96+progress*.04
+		var scale_factor: float = minf(size.x/texture_size.x,size.y/texture_size.y)*zoom
+		var image_size: Vector2 = texture_size*scale_factor
+		draw_texture_rect(counter_art,Rect2((size-image_size)*.5,image_size),false)
+		draw_string_outline(UI.FONT,Vector2(size.x*.04,size.y*.87),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),ceili(3*u),INK)
+		draw_string(UI.FONT,Vector2(size.x*.04,size.y*.87),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),CYAN)
 
 class CastPanel extends Control:
 	var speaker: String = "Jobert"
 	var round_index: int = 0
 	var u: float = 1.0
+	var transition: float = 1.0
+	var gentle: bool = false
 	func _draw() -> void:
-		draw_style_box(UI.box(PANEL,BORDER,0),Rect2(Vector2.ZERO,size))
-		var people: Array[String] = ["John","Eric","Jobert"]
-		# Separate video tiles: dim listeners remain present without sharing a room.
-		for index: int in 3:
-			var person: String = people[index]
-			var active: bool = person == speaker
-			var tile: Rect2 = Rect2(0,size.y*.69+index*0.0, size.x*.49,size.y*.31)
-			if person == "Eric": tile.position.x = size.x*.51
-			if person == "Jobert": tile = Rect2(0,0,size.x,size.y*.66)
-			var pose: int = 4 if person == "John" else 0
-			if person == "Jobert": pose = [1,5,2,3][round_index]
-			var sheet: Texture2D = AssetManager.get_texture("chapter1_"+person.to_lower())
-			if sheet != null:
-				var split: float = {"John":512.0,"Eric":524.0,"Jobert":546.0}[person]
-				var source: Rect2 = Rect2((pose%3)*512,0 if pose < 3 else split,512,split if pose < 3 else 1024-split)
-				# Upper-body crop keeps expressions readable on a phone.
-				source.position.x += 86
-				source.size.x -= 172
-				source.size.y *= .72
-				var ratio: float = minf(tile.size.x/source.size.x,tile.size.y/source.size.y)
-				var image_size: Vector2 = source.size*ratio
-				var image_rect: Rect2 = Rect2(tile.position+Vector2((tile.size.x-image_size.x)*.5,0),image_size)
-				draw_texture_rect_region(sheet,image_rect,source,Color.WHITE if active else Color(.42,.48,.56))
-			draw_rect(tile,CYAN if active else BORDER,false,2*u)
-			draw_rect(Rect2(tile.position+Vector2(0,tile.size.y-23*u),Vector2(tile.size.x,23*u)),Color(0.02,.04,.09,.92))
-			draw_string(UI.FONT,tile.position+Vector2(8*u,tile.size.y-6*u),person.to_upper(),HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(16*u),CYAN if active else CREAM)
-		if speaker not in people:
-			var camera: Rect2 = Rect2(0,0,size.x,size.y*.66)
-			draw_rect(camera,PANEL)
-			draw_rect(camera,CYAN,false,2*u)
-			draw_string(UI.FONT,Vector2(12*u,camera.size.y*.45),speaker.to_upper(),HORIZONTAL_ALIGNMENT_CENTER,camera.size.x-24*u,ceili(23*u),CREAM)
-			draw_string(UI.FONT,Vector2(12*u,camera.size.y*.65),"CAMERA OFF / SPEAKING",HORIZONTAL_ALIGNMENT_CENTER,camera.size.x-24*u,ceili(14*u),CYAN)
+		var backdrop: Texture2D = AssetManager.get_texture("hearing_debate_v1")
+		draw_rect(Rect2(Vector2.ZERO,size),BG)
+		if backdrop != null: draw_texture_rect(backdrop,Rect2(Vector2.ZERO,size),false)
+		for index: int in 12:
+			var x: float = index*size.x/11
+			draw_line(Vector2(x,0),Vector2(x-size.x*.22,size.y),Color(BORDER,.65),u)
+		draw_colored_polygon(PackedVector2Array([Vector2(size.x*.13,0),Vector2(size.x*.78,0),Vector2(size.x*.66,size.y),Vector2(size.x*.03,size.y)]),Color(.05,.16,.15,.28))
+		var offset: float = 0 if gentle else (1-smoothstep(0,.4,transition))*40*u
+		var pose: int = [1,5,2,3][round_index] if speaker == "Jobert" else 4 if speaker == "John" else 0
+		ConfrontationWidgets.draw_person(self,speaker,Rect2(size.x*.2+offset,-18*u,size.x*.49,size.y*1.15),pose)
+		# A close-up sits in an angled broadcast frame, not a shared physical room.
+		var inset: Rect2 = Rect2(size.x*.77,0,size.x*.23,size.y*.79)
+		draw_rect(inset,Color(.06,.12,.25,.82))
+		ConfrontationWidgets.draw_person(self,speaker,inset,pose,Color.WHITE,true)
+		draw_colored_polygon(PackedVector2Array([Vector2(inset.position.x,0),Vector2(inset.position.x+25*u,0),Vector2(inset.position.x,size.y*.79)]),PANEL)
+		draw_line(Vector2(inset.position.x+25*u,0),Vector2(inset.position.x,size.y*.79),CREAM,3*u)
+		draw_string(UI.FONT,Vector2(inset.position.x+12*u,size.y*.73),speaker.to_upper(),HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(16*u),CREAM)
+		var slot: int = 0
+		for person: String in ["John","Eric","Jobert"]:
+			if person == speaker: continue
+			var tile: Rect2 = Rect2(8*u,34*u+slot*57*u,64*u,50*u)
+			draw_rect(tile,BG)
+			ConfrontationWidgets.draw_person(self,person,tile,0,Color(.4,.48,.56),true)
+			draw_rect(tile,BORDER,false,u)
+			slot += 1
+		draw_string(UI.FONT,Vector2(12*u,22*u),"LIVE / CLUB HEARING",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(14*u),CYAN)
+		if speaker not in ["John","Eric","Jobert"]:
+			draw_string(UI.FONT,Vector2(size.x*.28,size.y*.43),"CAMERA OFF / "+speaker.to_upper(),HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),CYAN)
 
-class DebateStage extends VBoxContainer:
+class DebateStage extends Control:
 	signal rebuttal_submitted(evidence: String, weak_point: String)
 	signal evidence_requested
 	signal hold_requested
+	signal reflection_finished
 	var selected: String = ""
 	var weak: String = ""
 	var portraits: CastPanel
 	var statement: Label
+	var suffix: Label
+	var name_strip: Label
 	var target: Button
+	var claim_text: RichTextLabel
 	var load_button: Button
 	var hold_button: Button
+	var reflection_button: Button
+	var claim_panel: PanelContainer
+	var claim_stack: VBoxContainer
+	var banner: Label
 	var u: float = 1.0
 	var round_index: int = 0
+	var transition: float = 1.0
+	var load_age: float = 1.0
+	var reflecting: bool = false
+	var entrance: float = 0.0
+	var gentle: bool = false
+	var _speaker: String = ""
 
 	func build(scale_unit: float) -> void:
 		u = scale_unit
-		add_theme_constant_override("separation",ceili(8*u))
-		var body: HBoxContainer = HBoxContainer.new()
-		body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		body.add_theme_constant_override("separation",ceili(12*u))
-		add_child(body)
+		gentle = SettingsService.reduced_motion
+		clip_contents = true
 		portraits = CastPanel.new()
 		portraits.u = u
 		portraits.round_index = round_index
-		portraits.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		portraits.size_flags_stretch_ratio = .36
-		body.add_child(portraits)
-		var argument: VBoxContainer = UI.column(body,ceili(8*u))
-		argument.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		argument.size_flags_stretch_ratio = .64
-		argument.add_child(ConfrontationWidgets.copy("NONSTOP DEBATE / ROUND %d" % (round_index+1),u,CYAN,16))
-		var text_scroll: VBoxContainer = UI.scroll_column(argument)
-		statement = ConfrontationWidgets.copy("",u)
-		text_scroll.add_child(statement)
+		portraits.gentle = gentle
+		portraits.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(portraits)
+		claim_panel = PanelContainer.new()
+		claim_panel.add_theme_stylebox_override("panel",UI.box(Color(.02,.04,.09,.82),Color(0,0,0,0),ceili(10*u)))
+		add_child(claim_panel)
+		claim_stack = UI.column(claim_panel,0)
+		name_strip = ConfrontationWidgets.copy("",u,INK,17)
+		name_strip.add_theme_stylebox_override("normal",UI.box(CREAM,CREAM,ceili(4*u)))
+		claim_stack.add_child(name_strip)
+		statement = ConfrontationWidgets.copy("",u,CREAM,21)
+		claim_stack.add_child(statement)
 		target = ConfrontationWidgets.button("",func() -> void: rebuttal_submitted.emit(selected,weak),u)
 		target.name = "WeakPoint"
-		target.custom_minimum_size.y = 52*u
-		target.add_theme_stylebox_override("normal",UI.box(Color("302313"),ORANGE,ceili(8*u)))
+		target.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		target.custom_minimum_size.y = 48*u
+		target.add_theme_font_size_override("font_size",ceili(23*u))
+		for skin: String in ["normal","hover","pressed","focus","disabled"]:
+			target.add_theme_stylebox_override(skin,UI.box(Color(0,0,0,0),Color(0,0,0,0),0))
 		target.add_theme_color_override("font_color",ORANGE)
-		argument.add_child(target)
-		var tools: HBoxContainer = HBoxContainer.new()
-		tools.add_theme_constant_override("separation",ceili(8*u))
-		add_child(tools)
-		load_button = ConfrontationWidgets.button("LOAD EVIDENCE",func() -> void: evidence_requested.emit(),u,true)
-		load_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tools.add_child(load_button)
+		target.add_theme_color_override("font_hover_color",CYAN)
+		target.add_theme_color_override("font_pressed_color",CYAN)
+		claim_stack.add_child(target)
+		claim_text = RichTextLabel.new()
+		claim_text.bbcode_enabled = true
+		claim_text.fit_content = true
+		claim_text.scroll_active = false
+		claim_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		claim_text.add_theme_font_override("normal_font",UI.FONT)
+		claim_text.add_theme_font_size_override("normal_font_size",ceili(22*u))
+		claim_text.add_theme_color_override("default_color",CREAM)
+		claim_text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		claim_text.offset_top = 6*u
+		claim_text.offset_bottom = -6*u
+		target.add_child(claim_text)
+		suffix = ConfrontationWidgets.copy("",u,CREAM,21)
+		claim_stack.add_child(suffix)
+		load_button = ConfrontationWidgets.button("",func() -> void: evidence_requested.emit(),u)
+		load_button.name = "TruthBullet"
+		load_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		load_button.add_theme_stylebox_override("normal",UI.box(Color("153b37"),CYAN,ceili(10*u)))
+		var bullet_skin: StyleBoxFlat = UI.box(Color("153b37"),CYAN,ceili(12*u))
+		bullet_skin.corner_radius_top_left = ceili(24*u)
+		bullet_skin.corner_radius_bottom_left = ceili(24*u)
+		bullet_skin.skew = Vector2(-.08,0)
+		load_button.add_theme_stylebox_override("normal",bullet_skin)
+		add_child(load_button)
 		hold_button = ConfrontationWidgets.button("HOLD",func() -> void: hold_requested.emit(),u)
-		tools.add_child(hold_button)
+		add_child(hold_button)
+		reflection_button = ConfrontationWidgets.button("REPLAY DISCUSSION",func() -> void: reflection_finished.emit(),u,true)
+		reflection_button.name = "ReplayDiscussion"
+		reflection_button.hide()
+		add_child(reflection_button)
+		banner = ConfrontationWidgets.copy("",u,CREAM,30)
+		banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		banner.add_theme_stylebox_override("normal",UI.box(Color("153b37"),CYAN,ceili(12*u)))
+		banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(banner)
+		resized.connect(_arrange)
+		_arrange.call_deferred()
+
+	func _arrange() -> void:
+		if not is_instance_valid(portraits): return
+		portraits.position = Vector2.ZERO
+		portraits.size = Vector2(size.x,maxf(0,size.y-58*u))
+		var width: float = size.x*.74
+		claim_panel.position.x = 8*u
+		claim_panel.size.x = width
+		if target.visible:
+			target.custom_minimum_size.y = maxf(64*u,claim_text.get_content_height()+12*u)
+		var height: float = claim_stack.get_combined_minimum_size().y+20*u
+		claim_panel.position.y = maxf(30*u,size.y-66*u-height)
+		claim_panel.size = Vector2(width,height)
+		load_button.position = Vector2(0 if gentle else -maxf(0,1-load_age/.35)*size.x*.2,size.y-50*u)
+		load_button.size = Vector2(size.x-92*u,50*u)
+		hold_button.position = Vector2(size.x-84*u,size.y-50*u)
+		hold_button.size = Vector2(84*u,50*u)
+		reflection_button.position = load_button.position
+		reflection_button.size = load_button.size
+		var banner_x: float = 0 if gentle else maxf(0,(entrance-2.0)/.4)*size.x
+		banner.position = Vector2(banner_x,portraits.size.y*.32)
+		banner.size = Vector2(size.x,74*u)
 
 	func show_statement(speaker: String, text: String, weak_point: String, armed: String, held: bool) -> void:
+		if _speaker != speaker:
+			transition = 0
+			_speaker = speaker
+		if selected != armed: load_age = 0
 		weak = weak_point
 		selected = armed
-		statement.text = speaker.to_upper()+"  /  "+text
-		target.text = "◎  "+weak_point if not weak_point.is_empty() else "LISTENING / THE CLAIM IS COMING"
-		target.disabled = weak_point.is_empty()
-		load_button.text = "EVIDENCE / "+str(Case.exhibit(armed).get("title","Select a record"))
+		name_strip.text = "  "+speaker.to_upper()+"  /  "+("THINKING" if reflecting else "ROUND %02d" % (round_index+1))
+		var match_at: int = text.to_lower().find(weak_point.to_lower()) if not weak_point.is_empty() else -1
+		statement.text = "" if match_at >= 0 else text
+		target.text = ""
+		# One large touch target contains the actual sentence, with an inline weak phrase.
+		# Tapping nearby whitespace is the mobile precision alternative to aiming at letters.
+		claim_text.text = text.substr(0,match_at)+"[color=#FFB648][u]"+text.substr(match_at,weak_point.length())+"[/u][/color]"+text.substr(match_at+weak_point.length()) if match_at >= 0 else ""
+		suffix.text = ""
+		statement.visible = not statement.text.is_empty()
+		suffix.visible = not suffix.text.is_empty()
+		target.visible = match_at >= 0
+		target.disabled = weak_point.is_empty() or entrance > 0 or reflecting
+		target.accessibility_name = "Challenge: "+weak_point
+		load_button.text = "◎  TRUTH BULLET / "+str(Case.exhibit(armed).get("title","Tap to load evidence"))
 		hold_button.text = "RESUME" if held else "HOLD"
 		portraits.speaker = speaker
+		load_button.visible = not reflecting
+		reflection_button.visible = reflecting
+		_arrange.call_deferred()
 		portraits.queue_redraw()
+
+	func animate(delta: float, remaining_entrance: float) -> void:
+		transition += delta
+		load_age += delta
+		entrance = remaining_entrance
+		portraits.transition = transition
+		portraits.queue_redraw()
+		banner.visible = entrance > 0
+		claim_panel.visible = entrance <= 0
+		banner.text = "MAKE YOUR ARGUMENT!" if entrance > .8 else "LOAD YOUR EVIDENCE"
+		target.disabled = weak.is_empty() or reflecting or entrance > 0
+		load_button.disabled = entrance > 0
+		if not gentle:
+			load_button.modulate = Color.WHITE.lerp(CYAN,maxf(0,1-load_age/.5)*.4)
+		_arrange()
 
 class EvidenceDrawer extends PanelContainer:
 	signal evidence_selected(id: String)

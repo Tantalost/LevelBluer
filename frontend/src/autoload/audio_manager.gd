@@ -3,7 +3,7 @@ extends Node
 const BGM_PATH: String = "res://assets/audio/bgm/"
 const SFX_PATH: String = "res://assets/audio/sfx/"
 const MUSIC_GAIN: float = 0.7
-const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition", "ui_notification", "ui_success", "ui_error", "loading_ready"]
+const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition", "ui_notification", "ui_success", "ui_error", "loading_ready", "debate_start", "debate_hit", "debate_counter"]
 
 @onready var bgm_player: AudioStreamPlayer = $BGMPlayer
 @onready var sfx_pool: Node = $SFXPool
@@ -38,6 +38,8 @@ var _opening_owner: WeakRef
 var _opening_morning: bool = false
 var _opening_paused: bool = false
 var _opening_score: bool = false
+var _hearing_decision: bool = false
+var _hearing_debate: bool = false
 var hub_track: AudioStream
 ## Reserved for existing combat callers; this milestone does not add battle music.
 var level_track: AudioStream
@@ -69,6 +71,16 @@ func _ready() -> void:
 			stream.loop = true
 			_tracks[key] = stream
 	hub_track = _tracks.get("hub") as AudioStream
+	var hearing: AudioStreamWAV = load(BGM_PATH + "hearing_decision.wav") as AudioStreamWAV
+	if hearing != null:
+		hearing.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		hearing.loop_end = int(hearing.get_length()*hearing.mix_rate)
+		_tracks["hearing_decision"] = hearing
+	var debate: AudioStreamWAV = load(BGM_PATH + "hearing_debate.wav") as AudioStreamWAV
+	if debate != null:
+		debate.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		debate.loop_end = int(debate.get_length()*debate.mix_rate)
+		_tracks["hearing_debate"] = debate
 	var morning: AudioStreamWAV = load(BGM_PATH + "morning.wav") as AudioStreamWAV
 	if morning != null:
 		morning.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -170,9 +182,15 @@ func _select_music() -> void:
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
 		&"opening": play_bgm(_tracks.get("morning") if _opening_morning else null)
 		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex", &"module_intro", &"survey_chapter": play_bgm(_tracks.get("study"))
-		&"confrontation": play_bgm(_tracks.get("pvp"))
+		&"confrontation": play_bgm(_tracks.get("hearing_debate" if _hearing_debate else "hearing_decision" if _hearing_decision else "pvp"))
 		&"login", &"password_change": play_bgm(hub_track)
 		_: play_bgm(_tracks.get("pvp" if _dashboard_mode == &"PVP" else "hub"))
+
+func set_hearing_decision(source: Control, active: bool, debating: bool = false) -> void:
+	if not is_instance_valid(source) or not source.is_visible_in_tree(): return
+	_hearing_decision = active
+	_hearing_debate = debating
+	if _screen_id == &"confrontation": _select_music()
 
 func play_bgm(stream: AudioStream, crossfade_time: float = 0.65) -> void:
 	if stream == _desired_bgm and (stream == null or bgm_player.playing):
