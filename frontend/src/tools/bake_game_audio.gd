@@ -91,6 +91,10 @@ func _effect(key: String, notes: Array[int], duration: float, step: float, gain:
 	_save(buffer, "res://assets/audio/sfx/" + key + ".wav", gain)
 
 func _bake() -> void:
+	if "--command-only" in OS.get_cmdline_user_args():
+		_bake_command()
+		quit()
+		return
 	if "--debate-only" in OS.get_cmdline_user_args():
 		_bake_debate()
 		quit()
@@ -132,6 +136,40 @@ func _bake() -> void:
 	_save(sweep, "res://assets/audio/sfx/ui_transition.wav", 0.22)
 	quit()
 
+
+func _bake_command() -> void:
+	# Original pixel-terminal cues, synthesized offline; no firearm samples.
+	var opening: PackedFloat32Array = PackedFloat32Array()
+	opening.resize(int(RATE*.22))
+	var sending: PackedFloat32Array = PackedFloat32Array()
+	sending.resize(int(RATE*.20))
+	for index: int in opening.size():
+		var t: float = float(index)/RATE
+		opening[index] = (sin(TAU*(240*t+1500*t*t))*.35+_rng.randf_range(-.2,.2))*sin(PI*t/.22)
+	for index: int in sending.size():
+		var t: float = float(index)/RATE
+		var wave: float = sin(TAU*(1300*t-2200*t*t))
+		sending[index] = roundf(wave*6)/6*sin(PI*t/.20)*.3
+	_save(opening,"res://assets/audio/sfx/command_open.wav",.25)
+	_save(sending,"res://assets/audio/sfx/command_send.wav",.28)
+	var snap: PackedFloat32Array = PackedFloat32Array()
+	snap.resize(int(RATE*.12))
+	_tone(snap,0,.085,83,.3,"hat")
+	_tone(snap,.015,.09,49,.15,"pluck")
+	_save(snap,"res://assets/audio/sfx/command_snap.wav",.3)
+	var typing: PackedFloat32Array = PackedFloat32Array()
+	typing.resize(int(RATE*.48))
+	for key: int in 7:
+		_tone(typing,key*.06,.035,80+key%3,.15,"hat")
+		_tone(typing,key*.06,.045,76+key%3,.06,"pluck")
+	_save(typing,"res://assets/audio/sfx/command_type.wav",.18)
+	var ready: PackedFloat32Array = PackedFloat32Array()
+	ready.resize(int(RATE*.38))
+	_tone(ready,0,.16,36,.28,"kick")
+	_tone(ready,.01,.07,86,.13,"hat")
+	_tone(ready,.07,.25,79,.14,"pluck")
+	_tone(ready,.13,.25,86,.12,"pluck")
+	_save(ready,"res://assets/audio/sfx/command_ready.wav",.34)
 
 func _bake_debate() -> void:
 	# Original 112 BPM minor pulse; bounded offline synthesis with circular echoes.

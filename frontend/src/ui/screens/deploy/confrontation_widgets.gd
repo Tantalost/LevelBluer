@@ -163,6 +163,159 @@ static func draw_person(canvas: Control, person: String, rect: Rect2, pose: int 
 	var image_size: Vector2 = source.size*ratio
 	canvas.draw_texture_rect_region(sheet,Rect2(rect.position+Vector2((rect.size.x-image_size.x)*.5,0),image_size),source,tint)
 
+class CommandAnimation extends Control:
+	## Owner-driven clock: no independent process/tween survives a paused hearing.
+	signal finished
+	signal sound_requested(id: String)
+	enum State { ANTICIPATION, ENTER, TYPE, CONFIRM, RETURN, READY, EXECUTE }
+	var step: State = State.ANTICIPATION
+	var age: float = 0.0
+	var running: bool = true
+	var firing: bool = false
+	var gentle: bool = false
+	var durations: PackedFloat32Array = [.25,.40,.80,.45,.70]
+	var curves: PackedFloat32Array = [.25,.22,1.0,.3,.25]
+	var sounds: PackedStringArray = ["command_open","command_snap","command_type","command_ready","command_send"]
+	var sound_offsets: PackedFloat32Array = [0,0,0,0,0]
+	var fire_duration: float = .32
+	var fire_curve: float = 2.0
+	var fire_sound: String = "command_send"
+	var evidence_title: String = ""
+	var target_fraction: Vector2 = Vector2(.4,.6)
+	var source_fraction: Vector2 = Vector2(.4,.9)
+	var cue_fired: bool = false
+	var veil: ColorRect
+	var terminal: PanelContainer
+	var prompt: Label
+	var command: Label
+	var status: Label
+	var u: float = 1.0
+	var command_bounds: Rect2
+
+	func _ready() -> void:
+		name = "EvidenceCommandAnimation"
+		mouse_filter = MOUSE_FILTER_STOP
+		clip_contents = true
+		u = ConfrontationWidgets.unit(self)
+		veil = ColorRect.new()
+		veil.name = "Backdrop"
+		veil.mouse_filter = MOUSE_FILTER_IGNORE
+		veil.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		add_child(veil)
+		terminal = PanelContainer.new()
+		terminal.name = "Terminal"
+		terminal.mouse_filter = MOUSE_FILTER_IGNORE
+		terminal.add_theme_stylebox_override("panel",UI.box(PANEL,CYAN,ceili(16*u)))
+		add_child(terminal)
+		var lines: VBoxContainer = UI.column(terminal,ceili(10*u))
+		lines.mouse_filter = MOUSE_FILTER_IGNORE
+		prompt = ConfrontationWidgets.copy("JOHN@HEARING  >  LOAD EVIDENCE",u,CYAN,16)
+		prompt.mouse_filter = MOUSE_FILTER_IGNORE
+		lines.add_child(prompt)
+		command = ConfrontationWidgets.copy("",u,CREAM,24)
+		command.mouse_filter = MOUSE_FILTER_IGNORE
+		command.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		lines.add_child(command)
+		status = ConfrontationWidgets.copy("",u,CYAN,16)
+		status.mouse_filter = MOUSE_FILTER_IGNORE
+		lines.add_child(status)
+		step = State.EXECUTE if firing else State.ANTICIPATION
+		paint()
+
+	func duration() -> float:
+		if firing: return maxf(.05,fire_duration)
+		return maxf(.05,durations[step])
+
+	func _cue() -> void:
+		if cue_fired or step == State.READY: return
+		var offset: float = 0 if firing else clampf(sound_offsets[step],0,duration())
+		if age < offset: return
+		cue_fired = true
+		var id: String = fire_sound if firing else sounds[step]
+		if not id.is_empty(): sound_requested.emit(id)
+
+	func advance(delta: float) -> void:
+		if not running: return
+		var remaining: float = maxf(0,delta)
+		_cue()
+		while running:
+			var consumed: float = minf(remaining,maxf(0,duration()-age))
+			age += consumed
+			remaining -= consumed
+			_cue()
+			if age < duration(): break
+			if firing or step == State.RETURN:
+				step = State.READY
+				running = false
+				paint()
+				finished.emit()
+				return
+			step = (int(step)+1) as State
+			age = 0
+			cue_fired = false
+			_cue()
+			if remaining <= 0: break
+		paint()
+
+	func paint() -> void:
+		if not is_instance_valid(terminal): return
+		u = ConfrontationWidgets.unit(self)
+		var progress: float = 1 if step == State.READY else clampf(age/duration(),0,1)
+		var curve: float = fire_curve if firing else curves[mini(int(step),4)]
+		var eased: float = ease(progress,curve)
+		var width: float = minf(size.x-32*u,640*u)
+		command.text = "> refute \""+evidence_title+"\"" if firing else "> evidence.load \""+evidence_title+"\""
+		command.visible_ratio = (progress if step == State.TYPE and not gentle else 1.0)
+		if step in [State.ANTICIPATION,State.ENTER]: command.visible_ratio = 0
+		prompt.visible = not firing
+		status.visible = not firing
+		status.text = ["OPENING SESSION_","TERMINAL CONNECTED_","LOADING RECORD_","COMMAND READY","READY / TAP THE CLAIM","COMMAND READY","EXECUTE_"][step]
+		terminal.size.x = width
+		var height: float = terminal.get_combined_minimum_size().y
+		var point: Vector2 = (size-Vector2(width,height))*.5
+		terminal.modulate = Color.WHITE
+		terminal.visible = step != State.ANTICIPATION
+		veil.color = Color(BG,.62 if not firing else .16)
+		if step == State.ENTER and not gentle:
+			var overshoot: float = eased+sin(eased*PI)*.08
+			point.x += (1-overshoot)*size.x
+		elif step == State.RETURN:
+			if not gentle: point.y = lerpf(point.y,size.y-height-4*u,eased)
+			terminal.modulate.a = 1-progress
+			veil.color.a *= 1-progress
+		elif step == State.EXECUTE:
+			var origin: Vector2 = size*source_fraction
+			var target: Vector2 = size*target_fraction
+			point = (target if gentle else origin.lerp(target,eased))-Vector2(width,height)*.5
+			veil.color.a = .12
+		# Snap movement to physical pixels; keep the complete command within the safe area.
+		point.x = clampf(point.x,8*u,maxf(8*u,size.x-width-8*u)) if step != State.ENTER or gentle else point.x
+		point.y = clampf(point.y,8*u,maxf(8*u,size.y-height-8*u))
+		terminal.position = (point/(2*u)).round()*(2*u)
+		terminal.size = Vector2(width,height)
+		command_bounds = Rect2(terminal.position,terminal.size)
+		queue_redraw()
+
+	func _draw() -> void:
+		if step == State.ANTICIPATION:
+			var p: float = clampf(age/duration(),0,1)
+			for index: int in 7:
+				var y: float = size.y*index/7.0
+				var width: float = size.x if gentle else size.x*ease(p,.25)
+				draw_rect(Rect2(0,y,width,5*u),Color(CYAN,.7*(1-p)))
+		elif step == State.EXECUTE and not gentle:
+			var p: float = clampf(age/duration(),0,1)
+			var origin: Vector2 = size*source_fraction
+			var target: Vector2 = size*target_fraction
+			for index: int in 16:
+				var trail: float = maxf(0,ease(p,fire_curve)-index*.025)
+				var point: Vector2 = origin.lerp(target,trail)+Vector2((index%3-1)*10*u,0)
+				draw_rect(Rect2((point/(3*u)).round()*(3*u),Vector2.ONE*(3+index%3)*u),Color(CYAN,(1-index/16.0)*.7))
+		elif step == State.CONFIRM:
+			var p: float = clampf(age/duration(),0,1)
+			var x: float = command_bounds.position.x+command_bounds.size.x*p
+			draw_rect(Rect2(x,command_bounds.position.y-6*u,10*u,3*u),CYAN)
+
 class RebuttalImpact extends Control:
 	var elapsed: float = 0.0
 	var gentle: bool = false
@@ -175,17 +328,14 @@ class RebuttalImpact extends Control:
 			var hit: Vector2 = size*Vector2(.47,.48)
 			if elapsed < .22:
 				var flight: float = 1 if gentle else smoothstep(0,.22,elapsed)
-				var bullet: Vector2 = (size*Vector2(.06,.88)).lerp(hit,flight)
-				draw_line(size*Vector2(.04,.9),bullet,CYAN,4*u)
-				draw_arc(bullet,22*u,0,TAU,32,CYAN,3*u)
-				draw_string(UI.FONT,Vector2(20*u,bullet.y-28*u),evidence,HORIZONTAL_ALIGNMENT_CENTER,size.x-40*u,ceili(23*u),CYAN)
+				var command_point: Vector2 = (size*Vector2(.06,.88)).lerp(hit,flight)
+				draw_string(UI.FONT,Vector2(20*u,command_point.y-28*u),"> refute \""+evidence+"\"",HORIZONTAL_ALIGNMENT_CENTER,size.x-40*u,ceili(23*u),CYAN)
 				return
 			var spread: float = 0 if gentle else clampf((elapsed-.22)/.33,0,1)
-			for index: int in 14:
-				var angle: float = index*TAU/14.0
-				var end: Vector2 = hit+Vector2.from_angle(angle)*(22+spread*size.x*.5)
-				draw_line(hit,end,Color(CYAN,.75-spread*.6),2*u)
-			draw_arc(hit,(16+spread*100)*u,0,TAU,48,CYAN,3*u)
+			for index: int in 18:
+				var direction: Vector2 = Vector2((index%6-2.5)*.4,(-1 if index%2 else 1)*.6)
+				var pixel: Vector2 = hit+direction*(20+spread*size.x*.5)
+				draw_rect(Rect2((pixel/(4*u)).round()*(4*u),Vector2.ONE*(4+index%3)*u),Color(CYAN,.8-spread*.6))
 			if gentle:
 				draw_string(UI.FONT,Vector2(20*u,hit.y),phrase,HORIZONTAL_ALIGNMENT_CENTER,size.x-40*u,ceili(24*u),ORANGE)
 				return
@@ -320,14 +470,12 @@ class DebateStage extends Control:
 		suffix = ConfrontationWidgets.copy("",u,CREAM,21)
 		claim_stack.add_child(suffix)
 		load_button = ConfrontationWidgets.button("",func() -> void: evidence_requested.emit(),u)
-		load_button.name = "TruthBullet"
+		load_button.name = "EvidenceCommand"
 		load_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		load_button.add_theme_stylebox_override("normal",UI.box(Color("153b37"),CYAN,ceili(10*u)))
-		var bullet_skin: StyleBoxFlat = UI.box(Color("153b37"),CYAN,ceili(12*u))
-		bullet_skin.corner_radius_top_left = ceili(24*u)
-		bullet_skin.corner_radius_bottom_left = ceili(24*u)
-		bullet_skin.skew = Vector2(-.08,0)
-		load_button.add_theme_stylebox_override("normal",bullet_skin)
+		var command_skin: StyleBoxFlat = UI.box(Color("153b37"),CYAN,ceili(12*u))
+		load_button.add_theme_stylebox_override("normal",command_skin)
+		load_button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		add_child(load_button)
 		hold_button = ConfrontationWidgets.button("HOLD",func() -> void: hold_requested.emit(),u)
 		add_child(hold_button)
@@ -386,7 +534,7 @@ class DebateStage extends Control:
 		target.visible = match_at >= 0
 		target.disabled = weak_point.is_empty() or entrance > 0 or reflecting
 		target.accessibility_name = "Challenge: "+weak_point
-		load_button.text = "◎  TRUTH BULLET / "+str(Case.exhibit(armed).get("title","Tap to load evidence"))
+		load_button.text = "> "+str(Case.exhibit(armed).get("title","LOAD EVIDENCE"))+ ("  _" if armed.is_empty() else " / READY")
 		hold_button.text = "RESUME" if held else "HOLD"
 		portraits.speaker = speaker
 		load_button.visible = not reflecting

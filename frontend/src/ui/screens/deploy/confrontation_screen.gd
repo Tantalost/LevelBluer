@@ -4,6 +4,16 @@ const Case: GDScript = preload("res://src/gameplay/decision/confrontation_chapte
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const W: GDScript = preload("res://src/ui/screens/deploy/confrontation_widgets.gd")
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
+@export_group("Evidence command animation")
+## Order: anticipation, terminal entrance, typing, confirmation, return.
+@export var command_durations: PackedFloat32Array = [.25,.40,.80,.45,.70]
+## Godot ease() curve per state; entrance adds a small controlled overshoot.
+@export var command_curves: PackedFloat32Array = [.25,.22,1.0,.3,.25]
+@export var command_sounds: PackedStringArray = ["command_open","command_snap","command_type","command_ready","command_send"]
+@export var command_sound_offsets: PackedFloat32Array = [0,0,0,0,0]
+@export_range(.1,.8,.01) var command_fire_duration: float = .32
+@export var command_fire_curve: float = 2.0
+@export var command_fire_sound: String = "command_send"
 var state: Dictionary = {}
 var _testing: bool = false
 var _replay: bool = false
@@ -45,6 +55,9 @@ var _reflecting: bool = false
 var _counter_sound: bool = false
 var _connecting: bool = false
 var _arrival_cue: int = -1
+var _command_fx: W.CommandAnimation
+var _pending_command: String = ""
+var _pending_weak: String = ""
 
 func _ready() -> void:
 	var background: ColorRect = ColorRect.new()
@@ -87,6 +100,7 @@ func _save() -> void:
 
 func on_exit() -> void:
 	_save()
+	_cancel_command()
 	_active = false
 	AudioManager.stop_dialogue_blips(self)
 	AudioManager.release_opening_audio(self)
@@ -106,6 +120,7 @@ func on_resume() -> void:
 
 func _session_changed(_value: bool) -> void:
 	if _owner != AuthService.participant_code() or _signed != AuthService.is_signed_in():
+		_cancel_command()
 		_active = false
 		AudioManager.release_opening_audio(self)
 		if is_instance_valid(_result_audio): _result_audio.stop()
@@ -405,20 +420,30 @@ func _update_statement() -> void:
 	AudioManager.play_dialogue_reaction(speaker,"neutral",self)
 
 func _repeat_discussion() -> void:
-	if not _interactive() or state.phase != "debate" or not _reflecting or _held: return
+	if not _interactive() or is_instance_valid(_command_fx) or state.phase != "debate" or not _reflecting or _held: return
 	_reflecting = false
 	_voice = 0
 	_elapsed = 0
 	_update_statement()
 
 func _toggle_hold() -> void:
-	if not _interactive() or state.phase != "debate": return
+	if not _interactive() or is_instance_valid(_command_fx) or state.phase != "debate": return
 	_held = not _held
 	AudioManager.pause_opening_audio(self,_held)
 	_update_statement()
 
 func _fire(evidence: String, weak_point: String) -> void:
-	if not _interactive() or state.phase != "debate" or _voice != 3 or _held or _reflecting or _round_intro > 0: return
+	if not _interactive() or is_instance_valid(_command_fx) or state.phase != "debate" or _voice != 3 or _held or _reflecting or _round_intro > 0: return
+	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
+	if weak_point != round_data.weak: return
+	if evidence.is_empty():
+		_evidence(false,false)
+		return
+	if evidence not in round_data.options or state.solved.has(int(state.round)): return
+	_launch_command(evidence,true,weak_point)
+
+func _resolve_fire(evidence: String, weak_point: String) -> void:
+	if not _interactive() or state.phase != "debate": return
 	var index: int = int(state.round)
 	var round_data: Dictionary = Case.ROUNDS[index]
 	if weak_point != round_data.weak: return
@@ -433,6 +458,9 @@ func _fire(evidence: String, weak_point: String) -> void:
 		AudioManager.play_sfx("debate_hit")
 		AudioManager.set_story_duck(self,.2)
 		_change("rebuttal")
+		# The command already flew to the claim; continue directly into its breakup.
+		_elapsed = .22
+		if is_instance_valid(_rebuttal_fx): _rebuttal_fx.elapsed = _elapsed
 	else:
 		state.credibility = maxi(0,int(state.credibility)-10)
 		state.mistakes += 1
@@ -733,7 +761,7 @@ func _mark_hint() -> void:
 		Perks.record(state.perk_run,"builtin_hint",state.phase,int(state.round))
 
 func _evidence(review: bool = false, comparison: bool = false) -> void:
-	if not _interactive(): return
+	if not _interactive() or is_instance_valid(_command_fx): return
 	var options: Array = []
 	if review:
 		for item: Dictionary in Case.EXHIBITS: options.append(item.id)
@@ -748,10 +776,65 @@ func _evidence(review: bool = false, comparison: bool = false) -> void:
 	drawer.evidence_selected.connect(_arm)
 
 func _arm(id: String) -> void:
-	if not _valid() or _backgrounded or state.phase != "debate" or id not in Case.ROUNDS[int(state.round)].options: return
-	_armed = id
+	if not _valid() or _backgrounded or is_instance_valid(_command_fx) or state.phase != "debate" or id not in Case.ROUNDS[int(state.round)].options: return
 	_close_overlay()
-	_update_statement()
+	_launch_command(id,false)
+
+func _launch_command(id: String, firing: bool, weak_point: String = "") -> void:
+	_pending_command = id
+	_pending_weak = weak_point
+	_command_fx = W.CommandAnimation.new()
+	_command_fx.evidence_title = str(Case.exhibit(id).title)
+	_command_fx.firing = firing
+	_command_fx.gentle = SettingsService.reduced_motion
+	for index: int in 5:
+		if index < command_durations.size(): _command_fx.durations[index] = command_durations[index]
+		if index < command_curves.size(): _command_fx.curves[index] = command_curves[index]
+		if index < command_sounds.size(): _command_fx.sounds[index] = command_sounds[index]
+		if index < command_sound_offsets.size(): _command_fx.sound_offsets[index] = command_sound_offsets[index]
+	_command_fx.fire_duration = command_fire_duration
+	_command_fx.fire_curve = command_fire_curve
+	_command_fx.fire_sound = command_fire_sound
+	_command_fx.finished.connect(_command_finished)
+	_command_fx.sound_requested.connect(_command_sound)
+	# Sibling of the safe-area layout: resizing/rebuilding it cannot restart the effect.
+	add_child(_command_fx)
+	_position_command()
+	AudioManager.set_story_duck(self,.55)
+	_command_fx.advance(0)
+
+func _position_command() -> void:
+	if not is_instance_valid(_command_fx): return
+	_command_fx.position = _body.global_position-global_position
+	_command_fx.size = _body.size
+	if _stage is W.DebateStage and _body.size.x > 0 and _body.size.y > 0:
+		_command_fx.source_fraction = (_stage.load_button.get_global_rect().get_center()-_body.global_position)/_body.size
+		_command_fx.target_fraction = (_stage.target.get_global_rect().get_center()-_body.global_position)/_body.size
+	_command_fx.paint()
+
+func _command_sound(id: String) -> void:
+	if _interactive(): AudioManager.play_sfx(id)
+
+func _command_finished() -> void:
+	if not is_instance_valid(_command_fx): return
+	var firing: bool = _command_fx.firing
+	var evidence: String = _pending_command
+	var weak_point: String = _pending_weak
+	_cancel_command()
+	if not _valid() or state.phase != "debate": return
+	if firing: _resolve_fire(evidence,weak_point)
+	else:
+		_armed = evidence
+		_update_statement()
+
+func _cancel_command() -> void:
+	if is_instance_valid(_command_fx):
+		_command_fx.hide()
+		_command_fx.queue_free()
+		AudioManager.set_story_duck(self,1.0)
+	_command_fx = null
+	_pending_command = ""
+	_pending_weak = ""
 
 func _modal(title: String, compact: bool = false) -> VBoxContainer:
 	_close_overlay()
@@ -826,6 +909,7 @@ func _leave() -> void:
 	if not _testing: Router.replace(&"module_stages",{"module_index":0,"chapters":true})
 
 func _change(phase: String) -> void:
+	if phase != "debate": _cancel_command()
 	state.phase = phase
 	_elapsed = 0
 	_dialogue_text = ""
@@ -834,6 +918,10 @@ func _change(phase: String) -> void:
 
 func _process(delta: float) -> void:
 	if not _interactive(): return
+	if is_instance_valid(_command_fx):
+		_position_command()
+		_command_fx.advance(delta)
+		return
 	if state.phase == "debate" and _held: return
 	_elapsed += delta
 	if state.phase == "intro":

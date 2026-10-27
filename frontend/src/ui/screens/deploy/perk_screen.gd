@@ -128,7 +128,7 @@ func _refresh() -> void:
 		slot.tooltip_text = "Locked for this attempt" if frozen else "Remove perk from next loadout"
 		_slots.add_child(slot)
 	_launch.visible = _deploy
-	_launch.text = "CONTINUE CHAPTER" if frozen else ("DEPLOY / NO PERKS" if equipped.is_empty() else "DEPLOY / %d PERKS" % equipped.size())
+	_launch.text = "CONTINUE" if frozen else ("DEPLOY / NO PERKS" if equipped.is_empty() else "DEPLOY / %d PERKS" % equipped.size())
 	_launch.disabled = not PlayerManager.story_unlocked(_chapter_id)
 	for child: Node in find_children("*", "Button", true, false):
 		var button: Button = child as Button

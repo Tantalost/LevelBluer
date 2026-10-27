@@ -35,6 +35,13 @@ func fingerprint(player: Node, auth: Node) -> String:
 		player.credits, auth._mastery, auth._points])
 
 func _run() -> void:
+	var assets: Node = root.get_node("AssetManager")
+	if "--sync-chapter-covers" in OS.get_cmdline_user_args():
+		for entry: Dictionary in assets._school_story_catalog():
+			if str(entry.asset_id) in ["story_chapter3_cover", "story_chapter4_cover"]:
+				check(await assets._sync_entry(entry), "Hosted chapter cover downloads: " + str(entry.asset_id))
+				assets._textures.erase(str(entry.asset_id))
+				check(assets.get_texture(str(entry.asset_id)) != null, "Cover reloads from disk cache")
 	var player := root.get_node("PlayerManager")
 	var auth := root.get_node("AuthService")
 	auth._signed_in = false
@@ -120,14 +127,14 @@ func _run() -> void:
 	check(chapters._chapter_preview.chapter == 2, "Pending selection updates preview")
 	player.chapter_progress = {"mod_01_ch_01": {"beat":4}}
 	chapters._select_chapter(0)
-	check(chapters._breach_button.text == "CONTINUE CHAPTER", "Started chapter has Continue action")
+	check(chapters._breach_button.text == "CONTINUE", "Started chapter has Continue action")
 	player.chapter_progress = {"mod_01_ch_01": {"completed":true}}
 	chapters.on_resume()
 	await settle()
-	check(chapters._chapter_preview.sealed and chapters._breach_button.text == "REPLAY CHAPTER", "Completed chapter has sealed preview and Replay action")
+	check(chapters._chapter_preview.sealed and chapters._breach_button.text == "REPLAY", "Completed chapter has sealed preview and Replay action")
 	check(chapters._completion.value == 1, "Completion progress counts sealed chapter")
 	chapters._select_chapter(1)
-	check(not chapters._breach_button.disabled and chapters._breach_button.text == "START CHAPTER", "Chapter 2 unlocks after sealing Chapter 1")
+	check(not chapters._breach_button.disabled and chapters._breach_button.text == "START", "Chapter 2 unlocks after sealing Chapter 1")
 	check(chapters._chapter_preview.artwork == root.get_node("AssetManager").get_texture("story_chapter2_cover"), "Chapter 2 uses its own cover")
 	chapters._chapter_preview.artwork = null
 	chapters._chapter_art_ready(true)
@@ -136,6 +143,15 @@ func _run() -> void:
 	await capture("chapter2_cover")
 	chapters._select_chapter(2)
 	check(chapters._breach_button.disabled, "Chapter 3 remains unavailable")
+	for index: int in [2,3]:
+		chapters._select_chapter(index)
+		var cover_id: String = "story_chapter%d_cover" % (index+1)
+		check(chapters._chapter_preview.artwork == assets.get_texture(cover_id), "Selected chapter uses its own cover: " + cover_id)
+		chapters._chapter_preview.artwork = null
+		chapters._chapter_art_ready(true)
+		check(chapters._chapter_preview.artwork == assets.get_texture(cover_id), "Late sync restores the selected cover: " + cover_id)
+		await settle()
+		await capture("chapter%d_cover" % (index+1))
 	chapters._select_chapter(0)
 	await capture("chapters_complete")
 	for dimensions: Vector2i in [Vector2i(1280,720), Vector2i(844,390)]:

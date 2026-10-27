@@ -309,6 +309,8 @@ func _college_story_catalog() -> Array[Dictionary]:
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
 	catalog.append(_catalog_entry("story_chapter2_cover", "Chapter 2 / The Advisor Email", "image", "%s/v1792721173/chapter2_advisor_cover_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_chapter3_cover", "Chapter 3 / The Payout", "image", "%s/v1793086637/chapter3_payout_cover_v2.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_chapter4_cover", "Chapter 4 / The Prize", "image", "%s/v1793086638/chapter4_prize_cover_v2.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_john_laugh", "John / Laughing pose", "image", "%s/v1792721629/john_laugh_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_bed_night", "Chapter 2 / John's nighttime investigation", "image", "%s/v1792721171/john_bed_night_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_desk_night", "Chapter 1 / John's nighttime desk", "image", "%s/v1792675006/john_desk_night_v1.png" % CLOUD_ROOT))

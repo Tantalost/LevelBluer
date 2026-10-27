@@ -3,7 +3,7 @@ extends Node
 const BGM_PATH: String = "res://assets/audio/bgm/"
 const SFX_PATH: String = "res://assets/audio/sfx/"
 const MUSIC_GAIN: float = 0.7
-const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition", "ui_notification", "ui_success", "ui_error", "loading_ready", "debate_start", "debate_hit", "debate_counter"]
+const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition", "ui_notification", "ui_success", "ui_error", "loading_ready", "debate_start", "debate_hit", "debate_counter", "command_open", "command_snap", "command_type", "command_ready", "command_send"]
 
 @onready var bgm_player: AudioStreamPlayer = $BGMPlayer
 @onready var sfx_pool: Node = $SFXPool

@@ -60,7 +60,7 @@ func _run() -> void:
 	settings.music_enabled = true
 	settings.music_volume = 55
 	audio._apply_buses()
-	check(audio._tracks.size() == 7 and audio._tracks.has("hearing_debate") and audio._sounds.size() == 10 and audio._opening_cues.size() == 8, "Original audio, hearing scores, morning assets and cinematic mixes load")
+	check(audio._tracks.size() == 7 and audio._tracks.has("hearing_debate") and audio._sounds.size() == 15 and audio._opening_cues.size() == 8, "Original audio, terminal commands, hearing scores, morning assets and cinematic mixes load")
 	for key: String in audio._tracks:
 		var stream: AudioStream = audio._tracks[key]
 		var looping: bool = stream.loop_mode == AudioStreamWAV.LOOP_FORWARD if stream is AudioStreamWAV else (stream as AudioStreamOggVorbis).loop

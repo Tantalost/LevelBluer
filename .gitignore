@@ -1,0 +1,2 @@
+# Generated artwork awaiting Cloudinary hosting; keep binary PNGs out of Git.
+/output/chapter-thumbnails/*.png
