@@ -426,9 +426,82 @@ func _run() -> void:
 	var hard: Dictionary = Checkpoint.select_next(pool, empty_used, {}, "hard", 3, lessons)
 	check(easy.difficulty == "easy" and hard.difficulty == "hard", "BKT band changes question difficulty while preserving lesson coverage")
 	await verify_baseline(memory_script)
+	await verify_personalized_practice()
 	account.free()
 	print("[LESSON JOURNEY] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func verify_personalized_practice() -> void:
+	var fixture: GDScript = GDScript.new()
+	fixture.source_code = "extends \"res://src/autoload/player_manager.gd\"\nvar writes: int = 0\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\twrites += 1\n"
+	check(fixture.reload() == OK,"Practice fixture uses production BKT without writing a participant save")
+	var first: Node = fixture.new()
+	var second: Node = fixture.new()
+	for account: Node in [first,second]:
+		account.lesson_progress = {"mod_01":6,"mod_02":6}
+		account.pretest_baselines = {"mod_01":{"correct":5,"total":15},"mod_02":{"correct":10,"total":15}}
+	first.mastery_matrix = {"phishing":.2,"smishing":.8,"vishing":.01}
+	second.mastery_matrix = {"phishing":.8,"smishing":.2,"vishing":.01}
+	check(Catalog.practice_recommendation(first).id == "mod_01" and Catalog.practice_recommendation(second).id == "mod_02","Two students with opposite weaknesses receive different practice topics")
+	for slot: int in 4:
+		check(Catalog.practice_recommendation(first,slot).id == "mod_01","Four slots prioritize the current weakest assessed topic")
+	check(Catalog.practice_recommendation(first,4).id == "mod_02","Fifth slot retains broader review")
+	check(Catalog.practice_recommendation(first).id != "mod_03","Locked unassessed defaults never outrank actual evidence")
+	var host: Control = load("res://src/ui/screens/intel/lesson_player_screen.tscn").instantiate()
+	host.account = first
+	root.add_child(host)
+	host.on_enter({"practice":true})
+	var quiz: Control = host._post_quiz
+	check(host.can_go_back(),"Practice Back exits cleanly instead of opening an empty lesson roadmap")
+	var progress: String = JSON.stringify([first.lesson_progress,first.lesson_post_quiz_scores,first.credits,first.chapter_progress,first.perk_attempts])
+	quiz.begin()
+	check(quiz.question.module_id == "mod_01" and quiz.question.difficulty == "easy","Actual practice loads the weaker student's appropriate question difficulty")
+	root.size = Vector2i(720,360)
+	await settle()
+	await capture("practice_720")
+	check(root.get_visible_rect().encloses(quiz._action.get_global_rect()),"Practice submit target remains on the phone screen")
+	var practice_owner: String = quiz._practice_owner
+	quiz._practice_owner = "not-this-participant"
+	answer(quiz,true)
+	check(quiz.answered == 0 and first.practice_responses.is_empty(),"Account change cannot grade a previous participant's practice")
+	quiz._practice_owner = practice_owner
+	quiz._selection.clear()
+	quiz._none_selected = false
+	for index: int in 5:
+		var prior_count: int = first.practice_responses.size()
+		answer(quiz,true)
+		quiz.submit()
+		check(first.practice_responses.size() == prior_count+1,"Each practice response grades and records once despite duplicate submit")
+		if index < 4: quiz._advance()
+	check(quiz.answered == 5,"Practice stops after five questions")
+	quiz._advance()
+	await settle()
+	await capture("practice_results_720")
+	check(JSON.stringify([first.lesson_progress,first.lesson_post_quiz_scores,first.credits,first.chapter_progress,first.perk_attempts]) == progress,"Practice never awards coins, unlocks, research scores, or assists")
+	var before: Dictionary = first.mastery_matrix.duplicate(true)
+	check(not first.record_practice_answer(quiz.question,false,{}),"Already-seen practice items remain review only")
+	check(first.mastery_matrix == before,"Replaying a practice item cannot farm or lower mastery")
+	var saved: Dictionary = first.get_save_data()
+	var restored: Node = fixture.new()
+	restored.apply_save_data(JSON.parse_string(JSON.stringify(saved)))
+	check(restored.practice_responses.size() == first.practice_responses.size(),"Practice response count survives account save reload")
+	for id: String in first.practice_responses:
+		var original: Dictionary = first.practice_responses[id]
+		var reloaded: Dictionary = restored.practice_responses.get(id,{})
+		check(reloaded.get("reason") == original.reason and reloaded.get("correct") == original.correct and is_equal_approx(float(reloaded.get("mastery_after",-1)),float(original.mastery_after)),"Practice selection reasons and BKT values survive JSON precision")
+	for record: Dictionary in restored.practice_responses.values():
+		check(record.policy == "bkt-practice-v1" and record.has("mastery_before") and record.has("mastery_after") and not record.assisted,"Audit preserves selection policy and unassisted BKT change")
+	first.mastery_matrix.phishing = .95
+	first.mastery_matrix.smishing = .3
+	check(Catalog.practice_recommendation(first).id == "mod_02","Recommendation changes when the student's relative weaknesses change")
+	restored.apply_save_data({})
+	check(restored.practice_responses.is_empty() and Catalog.practice_recommendation(restored).is_empty(),"Fresh account clears history and receives no unsupported weakness label")
+	host.queue_free()
+	await settle()
+	first.free()
+	second.free()
+	restored.free()
+	root.size = Vector2i(1280,720)
 
 func verify_timeline_checkpoints(picker: Control) -> void:
 	for i: int in picker._cards.size():

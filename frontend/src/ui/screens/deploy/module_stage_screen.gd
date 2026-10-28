@@ -40,6 +40,7 @@ var _briefing_tween: Tween
 var _chapters: bool = false
 var _chapter_preview: ChapterPreview
 var _intro_button: Button
+var _practice_button: Button
 
 class ChapterPreview extends Control:
 	var artwork: Texture2D
@@ -138,7 +139,13 @@ func _ready() -> void:
 	briefing.add_child(_breach_button)
 	_intro_button = UI.button("REPLAY INTRO", func() -> void: Router.push(&"module_intro", {"module_index":0}))
 	_intro_button.hide()
-	briefing.add_child(_intro_button)
+	var chapter_actions: HBoxContainer = HBoxContainer.new()
+	chapter_actions.add_theme_constant_override("separation",12)
+	chapter_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	briefing.add_child(chapter_actions)
+	chapter_actions.add_child(_intro_button)
+	_practice_button = UI.button("PRACTICE",func() -> void: Router.push(&"lesson_player",{"practice":true}))
+	chapter_actions.add_child(_practice_button)
 	var missions := UI.column(_body, 12)
 	missions.size_flags_horizontal = SIZE_EXPAND_FILL
 	missions.size_flags_stretch_ratio = 0.45
@@ -237,6 +244,7 @@ func _refresh_all() -> void:
 	_wallet.add_theme_font_size_override("font_size", _font - 2)
 	_title.text = "CHAPTER\nSELECT" if _chapters else "MISSION\nSELECT"
 	_intro_button.visible = _chapters
+	_practice_button.visible = _chapters and not LessonCatalog.practice_recommendation(PlayerManager).is_empty()
 	if _chapters:
 		_profile.size_flags_horizontal = SIZE_SHRINK_END
 		_profile.custom_minimum_size = Vector2(210 / scale_y, _touch)
@@ -244,9 +252,11 @@ func _refresh_all() -> void:
 		_profile_rank.add_theme_font_size_override("font_size", ceili(16 / scale_y))
 		_wallet.text = "%d CREDITS" % maxi(0, PlayerManager.credits)
 		_wallet.add_theme_color_override("font_color", UI.TEXT)
-		for button: Button in [_back, _settings, _intro_button]: UI.style_button(button)
+		for button: Button in [_back, _settings, _intro_button, _practice_button]: UI.style_button(button)
 		UI.style_button(_breach_button, true)
 		_intro_button.custom_minimum_size.y = _touch
+		_practice_button.custom_minimum_size.y = _touch
+		_practice_button.add_theme_font_size_override("font_size",ceili(16 / scale_y))
 		_intro_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_intro_button.add_theme_font_size_override("font_size", ceili(16 / scale_y))
 		_intro_button.size_flags_horizontal = SIZE_SHRINK_CENTER

@@ -1,2 +1,36 @@
+# Godot generated caches and local export credentials (source .import files stay tracked).
+.godot/
+.import/
+.nomedia
+.mono/
+~*.dll
+export.cfg
+export_credentials.cfg
+*.tmp
+*.translation
+mono_crash.*.json
+/frontend/**/data_*/
+
+# Python environments, secrets, and generated caches.
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Generated diagnostics; keep them out of the source tree when possible.
+*.log
+
 # Generated artwork awaiting Cloudinary hosting; keep binary PNGs out of Git.
 /output/chapter-thumbnails/*.png
+
+# Local developer tests and Godot verification scripts (not gameplay assessments).
+# Already-tracked tests must also be excluded through explicit staging.
+/backend/tests/
+/frontend/src/tests/
+/tests/
+/frontend/src/tools/verify_*.gd
+/frontend/src/tools/verify_*.gd.uid
+/frontend/src/tools/*_test_*.gd
+/frontend/src/tools/*_test_*.gd.uid

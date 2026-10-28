@@ -8,6 +8,39 @@ const CHECKLIST := [
 	"How urgent or emotional does it feel?",
 ]
 
+## A small, explainable policy over assessed, accessible modules. No random
+## assignment to an unassessed topic simply because its default prior is low.
+static func practice_recommendation(account: Object, slot: int = 0, excluded: Array[String] = []) -> Dictionary:
+	var eligible: Array[Dictionary] = []
+	for module: Dictionary in modules():
+		var id: String = str(module.id)
+		var skill: String = str(module.domain)
+		if id in excluded or not account.can_access_lesson_module(id): continue
+		if not account.pretest_baselines.has(id) and not account.has_graded_evidence(skill) and account.get_lesson_progress(id) == 0: continue
+		var row: Dictionary = module.duplicate()
+		row["mastery"] = account.get_mastery(skill)
+		row["practice_count"] = 0
+		for record: Dictionary in account.practice_responses.values():
+			if record.get("module_id", "") == id: row.practice_count += 1
+		eligible.append(row)
+	if eligible.is_empty(): return {}
+	var estimates: Dictionary = {}
+	for row: Dictionary in eligible: estimates[str(row.domain)] = float(row.mastery)
+	eligible.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if not is_equal_approx(float(a.mastery),float(b.mastery)): return float(a.mastery) < float(b.mastery)
+		return int(a.practice_count) < int(b.practice_count))
+	var selected: Dictionary = eligible[0]
+	var reason: String = "weakest_assessed_topic"
+	if slot % 5 == 4 and eligible.size() > 1:
+		eligible.remove_at(0)
+		eligible.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.practice_count) < int(b.practice_count))
+		selected = eligible[0]
+		reason = "broader_review"
+	selected["reason"] = reason
+	selected["policy"] = "bkt-practice-v1"
+	selected["eligible_mastery"] = estimates
+	return selected
+
 
 static func modules() -> Array[Dictionary]:
 	return [

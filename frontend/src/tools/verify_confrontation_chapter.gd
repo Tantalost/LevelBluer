@@ -7,6 +7,46 @@ const Prize: GDScript = preload("res://src/gameplay/decision/prize_chapter.gd")
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 var failures: int = 0
 var screen: Control
+var command_cues: PackedStringArray = []
+var command_completions: int = 0
+
+func command_completed() -> void:
+	command_completions += 1
+
+func verify_command_states() -> void:
+	var widgets: GDScript = load("res://src/ui/screens/deploy/confrontation_widgets.gd")
+	for gentle: bool in [false,true]:
+		command_cues.clear()
+		command_completions = 0
+		var fx: Control = widgets.CommandAnimation.new()
+		fx.size = Vector2(700,280)
+		fx.gentle = gentle
+		fx.durations = PackedFloat32Array([.1,.2,.3,.4,.5])
+		fx.sound_offsets = PackedFloat32Array([.05,.05,.05,.05,.05])
+		fx.evidence_title = "Reply-To + sender comparison"
+		fx.sound_requested.connect(record_command_cue)
+		fx.finished.connect(command_completed)
+		root.add_child(fx)
+		fx.advance(.02)
+		check(command_cues.is_empty(),"Configured sound offset delays the opening cue")
+		fx.advance(.04)
+		check(command_cues == PackedStringArray(["command_open"]),"Cue fires at its configured offset")
+		fx.advance(.4)
+		check(fx.step == 2,"Custom durations route into typing")
+		check(fx.command.visible_ratio == 1.0 if gentle else fx.command.visible_ratio < 1.0,"Reduced motion reveals text without typewriter motion")
+		fx.advance(10)
+		fx.advance(10)
+		check(command_completions == 1 and not fx.running,"Large frames finish once without duplicate callbacks")
+		check(command_cues == fx.sounds,"All configured state cues occur once in order")
+		fx.queue_free()
+	command_cues.clear()
+
+func resolve_command(evidence: String, weak: String) -> void:
+	screen._fire(evidence,weak)
+	if is_instance_valid(screen._command_fx): screen._process(screen.command_fire_duration+.01)
+
+func record_command_cue(id: String) -> void:
+	command_cues.append(id)
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -88,6 +128,7 @@ func seed_chapters(player: Node) -> void:
 
 func _run() -> void:
 	root.size = Vector2i(844,390)
+	verify_command_states()
 	var assets: Node = root.get_node("AssetManager")
 	var hearing_ids: PackedStringArray = ["hearing_debate_v1","hearing_mystery_v1","john_counter_lettered_v1"]
 	if "--sync-hearing-assets" in OS.get_cmdline_user_args():
@@ -246,15 +287,48 @@ func _run() -> void:
 	var drawer: Control = screen._overlay.get_child(1) as Control
 	var tile: Button = drawer.find_child("Evidence_domain",true,false) as Button
 	tile.pressed.emit()
+	settings.reduced_motion = false
 	drawer.select_button.pressed.emit()
-	check(screen._armed == "domain" and not is_instance_valid(screen._overlay),"Evidence buttons route selected record to the debate")
+	screen.set_process(false)
+	check(screen._armed.is_empty() and is_instance_valid(screen._command_fx) and not is_instance_valid(screen._overlay),"Selecting evidence starts a load before arming")
+	screen._command_fx.sound_requested.connect(record_command_cue)
+	screen._process(.26)
+	check(screen._command_fx.step == 1,"Load progresses from anticipation to terminal entrance")
+	screen._menu()
+	var load_age: float = screen._command_fx.age
+	screen._process(10)
+	check(screen._command_fx.age == load_age,"Menu freezes command animation")
+	screen._close_overlay()
+	screen._process(.55)
+	await settle()
+	await capture("command_load_844")
+	check(screen._command_fx.step == 2,"Terminal types the selected record")
 	screen._fire("domain",Case.ROUNDS[0].weak)
+	check(screen.state.credibility == 20,"Load blocks premature firing")
+	root.size = Vector2i(720,360)
+	await settle()
+	screen._position_command()
+	await settle()
+	await capture("command_load_720")
+	check(screen._command_fx.step == 2,"Resize preserves the active load state")
+	check(Rect2(Vector2.ZERO,screen._command_fx.size).encloses(screen._command_fx.command_bounds),"Terminal stays within the mobile safe area")
+	screen._process(.7)
+	check(screen._command_fx.step == 3,"Type completion enters confirmation")
+	await capture("command_confirm_720")
+	screen._process(2)
+	check(screen._armed == "domain" and not is_instance_valid(screen._command_fx),"Complete load arms evidence once")
+	check(screen._elapsed == elapsed,"Loading never consumes debate time")
+	check(command_cues == PackedStringArray(["command_snap","command_type","command_ready","command_send"]),"Remaining load sounds trigger once despite pause and resize")
+	root.size = Vector2i(844,390)
+	await settle()
+	screen.set_process(true)
+	resolve_command("domain",Case.ROUNDS[0].weak)
 	check(screen.state.credibility == 10 and screen.state.mistakes == 1,"Wrong record costs ten")
 	await settle()
 	feedback_geometry()
 	await capture("wrong_record_844")
 	screen._retry()
-	screen._fire("borrow",Case.ROUNDS[0].weak)
+	resolve_command("borrow",Case.ROUNDS[0].weak)
 	check(screen.state.credibility == 0 and screen.state.auto_hints.has(0),"Two mistakes mark and highlight assist")
 	await settle()
 	feedback_geometry()
@@ -269,7 +343,7 @@ func _run() -> void:
 	screen._process(20)
 	check(screen._reflecting,"Reflection waits for a deliberate tap")
 	screen.find_child("ReplayDiscussion",true,false).pressed.emit()
-	check(not screen._reflecting and screen._voice == 0 and screen._armed == "domain","Replay restarts discussion and preserves the selected bullet")
+	check(not screen._reflecting and screen._voice == 0 and screen._armed == "domain","Replay restarts discussion and preserves the selected command")
 	screen._toggle_hold()
 	elapsed = screen._elapsed
 	screen._process(30)
@@ -284,10 +358,21 @@ func _run() -> void:
 		screen._update_statement()
 		screen._armed = Case.ROUNDS[index].correct
 		screen._update_statement()
+		await settle()
 		screen.find_child("WeakPoint",true,false).pressed.emit()
 		var credibility: int = screen.state.credibility
 		screen._fire(Case.ROUNDS[index].correct,Case.ROUNDS[index].weak)
 		check(screen.state.credibility == credibility,"Duplicate rebuttal cannot score")
+		if index == 0:
+			screen.set_process(false)
+			screen._process(.16)
+			await capture("command_fire_844")
+			check(Rect2(Vector2.ZERO,screen._command_fx.size).encloses(screen._command_fx.command_bounds),"Flying command text stays in the mobile safe area")
+			check(not screen._command_fx.terminal.visible,"Firing moves pixel text without a covering panel")
+			check(screen._command_fx.target_fraction.y < screen._command_fx.source_fraction.y,"Command travels from the strip toward the actual claim")
+			screen._process(.17)
+			screen.set_process(true)
+		else: screen._process(screen.command_fire_duration+.01)
 		check(screen.state.solved.size() == index+1,"Correct evidence seals rebuttal")
 		await settle()
 		if index == 0:
@@ -403,7 +488,7 @@ func _run() -> void:
 	screen._close_overlay()
 	for index: int in 4:
 		screen._voice = 3
-		screen._fire(Case.ROUNDS[index].correct,Case.ROUNDS[index].weak)
+		resolve_command(Case.ROUNDS[index].correct,Case.ROUNDS[index].weak)
 		screen._process(2.3)
 		screen._start_round()
 		screen._process(2.5)
@@ -435,7 +520,7 @@ func _run() -> void:
 	screen._build()
 	for index: int in 5:
 		screen._voice = 3
-		screen._fire("short",Case.ROUNDS[1].weak)
+		resolve_command("short",Case.ROUNDS[1].weak)
 		screen._retry()
 	check(screen.state.solved == [0] and screen.state.credibility == 50,"Later zero retry preserves earlier rebuttals and checkpoint")
 	screen._backgrounded = true
@@ -469,7 +554,7 @@ func _run() -> void:
 		touch_geometry(screen)
 		screen._close_overlay()
 		screen._voice = 3
-		screen._fire("short",Case.ROUNDS[1].weak)
+		resolve_command("short",Case.ROUNDS[1].weak)
 		await settle()
 		feedback_geometry()
 		await capture("wrong_record_%d" % dimensions.x)
@@ -489,7 +574,16 @@ func _run() -> void:
 	screen._process(10)
 	check(screen._stage.transition == transition_time,"Menu freezes speaker motion")
 	screen._close_overlay()
+	screen._arm("headers")
+	screen.set_process(false)
+	screen._process(.8)
+	var suspended_age: float = screen._command_fx.age
+	screen._backgrounded = true
+	screen._process(40)
+	check(screen._command_fx.age == suspended_age,"App suspension freezes the command clock")
+	screen._backgrounded = false
 	screen.on_exit()
+	check(not is_instance_valid(screen._command_fx) and screen._pending_command.is_empty(),"Leaving the hearing cancels pending commands")
 	screen.queue_free()
 	await settle()
 	player.apply_save_data(original)

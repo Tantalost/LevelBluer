@@ -39,6 +39,8 @@ var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
 var lesson_post_quiz_scores: Dictionary = {}
 var lesson_quiz_responses: Dictionary = {}
+## One first-response audit per practice-bank item; bounded by the authored bank.
+var practice_responses: Dictionary = {}
 var mission_progress: Dictionary = {}
 var pretest_baselines: Dictionary = {}
 var purchased_items: Array[String] = []
@@ -365,6 +367,32 @@ func can_access_lesson_module(module_id: String) -> bool:
 	# Keep previously-started archives accessible without inventing quiz passes.
 	return index >= 0 and (index == 0 or get_lesson_progress(module_id) > 0 or has_lesson_post_quiz(ids[index - 1]))
 
+func record_practice_answer(question: Dictionary, correct: bool, selection: Dictionary) -> bool:
+	var id: String = str(question.get("id", ""))
+	var module_id: String = str(question.get("module_id", ""))
+	if Router.is_tutorial or id.is_empty() or practice_responses.has(id) or not can_access_lesson_module(module_id): return false
+	var authored: bool = false
+	for item: Dictionary in ContentDB.get_module_questions(module_id):
+		if str(item.get("id", "")) == id:
+			question = item
+			authored = true
+			break
+	if not authored: return false
+	var skill: String = str(LessonCatalog.module_by_id(module_id).get("domain", ""))
+	if skill.is_empty(): return false
+	var before: float = get_mastery(skill)
+	update_mastery(skill,correct,bkt_params_from(question),false)
+	practice_responses[id] = {"module_id":module_id, "skill":skill, "correct":correct,
+		"mastery_before":before, "mastery_after":get_mastery(skill),
+		"reason":str(selection.get("reason", "")), "policy":"bkt-practice-v1",
+		"eligible_mastery":(selection.get("eligible_mastery",{}) as Dictionary).duplicate(true),
+		"bkt_params":bkt_params_from(question).duplicate(true), "model":"bkt-capped-drop-v1",
+		"preferred_difficulty":preferred_difficulty_for_probability(before),
+		"difficulty":str(question.get("difficulty", "")), "assisted":false,
+		"occurred_at":int(Time.get_unix_time_from_system())}
+	_save_progress()
+	return true
+
 
 func record_lesson_post_quiz(module_id: String, score: int, answered: int, responses: Array[Dictionary] = []) -> bool:
 	if module_id not in LessonCatalog.module_ids() or answered != 25 or score < 0 or score > answered:
@@ -435,6 +463,7 @@ func reset_to_defaults() -> void:
 	lesson_progress.clear()
 	lesson_post_quiz_scores.clear()
 	lesson_quiz_responses.clear()
+	practice_responses.clear()
 	purchased_items.clear()
 	unlocked_skills.clear()
 	unlocked_towers = ["base"]
@@ -842,7 +871,9 @@ func get_mastery(skill_id: String = "phishing") -> float:
 
 
 func preferred_difficulty(skill_id: String = "phishing") -> String:
-	var p_learned: float = get_mastery(skill_id)
+	return preferred_difficulty_for_probability(get_mastery(skill_id))
+
+func preferred_difficulty_for_probability(p_learned: float) -> String:
 	if p_learned < AT_RISK_MASTERY:
 		return "easy"
 	if p_learned < PROFICIENT_MASTERY:
@@ -1103,6 +1134,7 @@ func get_save_data() -> Dictionary:
 		"lesson_progress": lesson_progress.duplicate(true),
 		"lesson_post_quiz_scores": lesson_post_quiz_scores.duplicate(true),
 		"lesson_quiz_responses": lesson_quiz_responses.duplicate(true),
+		"practice_responses": practice_responses.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
 		"seen_module_intros": seen_module_intros.duplicate(),
@@ -1143,6 +1175,14 @@ func apply_save_data(data: Dictionary) -> void:
 				if is_finite(float(correct)) and is_finite(float(total)) and float(total) > 0 and float(total) <= 100 and float(correct) >= 0 and float(correct) <= float(total) and float(correct) == floorf(float(correct)) and float(total) == floorf(float(total)):
 					pretest_baselines[module_id] = {"correct": int(correct), "total": int(total)}
 	_restore_learning_evidence(data.get("learning_evidence", {}))
+	var practice: Variant = data.get("practice_responses", {})
+	if practice is Dictionary:
+		for module_id: String in LessonCatalog.module_ids():
+			for question: Dictionary in ContentDB.get_module_questions(module_id):
+				var id: String = str(question.get("id", ""))
+				var record: Variant = practice.get(id)
+				if record is Dictionary and record.get("module_id", "") == module_id and record.get("correct") is bool:
+					practice_responses[id] = record.duplicate(true)
 	remediation_state = Remediation.restore(data.get("remediation_state", {}))
 	learning_events.clear()
 	var events: Variant = data.get("learning_events", [])

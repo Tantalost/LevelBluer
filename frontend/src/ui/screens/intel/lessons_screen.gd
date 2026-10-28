@@ -42,6 +42,7 @@ var _pan_tween: Tween
 var _returning: bool = false
 var _lane_width: float = 520.0
 var _journey_backdrop: Control
+var _practice: Button
 
 class JourneyBackdrop extends Control:
 	## Static edge decoration: no textures, input interception, or per-frame work.
@@ -217,6 +218,9 @@ func _ready() -> void:
 	_overview = UI.column(layout, 20)
 	_overview.size_flags_vertical = SIZE_EXPAND_FILL
 	_overview.add_child(UI.label("CHOOSE YOUR NEXT CHALLENGE", 24, CYAN))
+	_practice = UI.button("RECOMMENDED PRACTICE",func() -> void: Router.push(&"lesson_player",{"practice":true}))
+	_practice.name = "RecommendedPractice"
+	_overview.add_child(_practice)
 	var timeline_center: VBoxContainer = UI.column(_overview, 0)
 	timeline_center.size_flags_vertical = SIZE_EXPAND_FILL
 	timeline_center.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -363,6 +367,9 @@ func on_resume() -> void:
 			_on_open_pressed()
 
 func _refresh_list_ui() -> void:
+	var recommendation: Dictionary = LessonCatalog.practice_recommendation(account)
+	_practice.visible = not recommendation.is_empty() and not Router.is_tutorial
+	if not recommendation.is_empty(): _practice.text = "PRACTICE / "+str(recommendation.title).to_upper()
 	_stop_transition()
 	_modules = LessonCatalog.modules()
 	UI.clear(_track)

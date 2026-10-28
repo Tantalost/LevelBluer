@@ -132,6 +132,21 @@ func _ready() -> void:
 func on_enter(args: Dictionary) -> void:
 	_pending_entry = {}
 	_remediation_stage = 0
+	if bool(args.get("practice",false)):
+		if Router.is_tutorial: return
+		_post_active = true
+		_in_lesson = true
+		_panes.hide()
+		_start_button.hide()
+		_workspace.hide()
+		_progress_label.hide()
+		_header_title.text = "RECOMMENDED PRACTICE"
+		_post_quiz = PostQuiz.new()
+		_post_quiz.account = account
+		(_workspace.get_parent() as Control).add_child(_post_quiz)
+		_post_quiz.return_requested.connect(func() -> void: Router.request_back())
+		_post_quiz.setup_practice()
+		return
 	var module_id := str(args.get("module_id", "mod_01"))
 	if args.has("remediation_stage"):
 		_enter_remediation(module_id, int(args.remediation_stage))
@@ -261,6 +276,7 @@ func _open_step(index: int, step: int) -> void:
 	_open_lesson()
 
 func can_go_back() -> bool:
+	if is_instance_valid(_post_quiz) and _post_quiz.practice: return true
 	if _remediation_stage > 0:
 		return true
 	if _post_active:

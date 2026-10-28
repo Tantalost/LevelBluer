@@ -32,6 +32,33 @@ var _recorded: bool = false
 var _assessment_responses: Array[Dictionary] = []
 var _skill: String = ""
 var _graded_wrong: Dictionary = {}
+var practice: bool = false
+var _recommendation: Dictionary = {}
+var _practice_owner: String = ""
+var _practice_signed: bool = false
+
+func _count() -> int:
+	return 5 if practice else COUNT
+
+func setup_practice() -> void:
+	practice = true
+	_practice_owner = AuthService.participant_code()
+	_practice_signed = AuthService.is_signed_in()
+	_heading.text = "RECOMMENDED PRACTICE"
+	_recommendation = LessonCatalog.practice_recommendation(account)
+	_action.text = "START / 5 QUESTIONS"
+	_action.disabled = _recommendation.is_empty() or Router.is_tutorial
+	_body.add_child(UI.label("Practice that follows your progress",32))
+	_body.add_child(UI.label("Five questions, focused on topics that need practice, with some broader review. No timer, perks, coins, or pass requirement.",26,UI.MUTED))
+	_body.add_child(UI.label("New practice answers update your progress estimate. Repeated items are review only. Practice does not change checkpoint scores or unlocks.",24,UI.MUTED))
+	if not _recommendation.is_empty():
+		_body.add_child(UI.label("STARTING FOCUS / "+str(_recommendation.title),26,Color("#4FE0D4")))
+	else:
+		_body.add_child(UI.label("Complete a module pre-test or start its lessons first.",24,UI.MUTED))
+	_fit_touch.call_deferred()
+
+func _practice_valid() -> bool:
+	return not Router.is_tutorial and AuthService.participant_code() == _practice_owner and AuthService.is_signed_in() == _practice_signed
 
 func _ready() -> void:
 	if account == null:
@@ -62,6 +89,13 @@ func setup(id: String) -> void:
 
 func begin() -> void:
 	if _started or _action.disabled:
+		return
+	if practice:
+		if not _practice_valid(): return
+		_started = true
+		_action.pressed.disconnect(begin)
+		_action.pressed.connect(_advance)
+		_next()
 		return
 	if not account.can_access_lesson_module(module_id) or account.get_lesson_progress(module_id) < LessonCatalog.lesson_count(module_id):
 		return
@@ -110,9 +144,12 @@ static func select_next(candidates: Array[Dictionary], used: Array[String], coun
 	return best.duplicate(true)
 
 func _next() -> void:
-	question = select_next(pool, seen, type_counts, account.preferred_difficulty(_skill), answered, LessonCatalog.lessons_for(module_id))
+	if practice: _select_practice()
+	else: question = select_next(pool, seen, type_counts, account.preferred_difficulty(_skill), answered, LessonCatalog.lessons_for(module_id))
 	if question.is_empty():
-		_action.disabled = true
+		if practice:
+			_results()
+		else: _action.disabled = true
 		return
 	var id: String = Quiz._question_key(question)
 	seen.append(id)
@@ -124,7 +161,11 @@ func _next() -> void:
 	_none_button = null
 	_buttons.clear()
 	UI.clear(_body)
-	_heading.text = "POST-QUIZ / %02d OF 25 / %s" % [answered + 1, str(question.get("type_label", "")).to_upper()]
+	_heading.text = "%s / %02d OF %d / %s" % ["PRACTICE" if practice else "POST-QUIZ",answered+1,_count(),str(question.get("type_label", "")).to_upper()]
+	if practice:
+		var reason: String = "Reviewing another topic" if _recommendation.reason == "broader_review" else "More practice based on your answers"
+		_body.add_child(UI.label(str(_recommendation.title)+" / "+reason,22,Color("#8FF0E6")))
+		if account.practice_responses.has(id): _body.add_child(UI.label("REVIEW / This item will not update mastery again.",22,UI.MUTED))
 	var scenario: String = Quiz._format_scenario(question)
 	if not scenario.is_empty():
 		var evidence: PanelContainer = UI.panel(_body, Color("#102040"))
@@ -181,7 +222,8 @@ func _pick_none() -> void:
 	_action.disabled = false
 
 func submit() -> void:
-	if resolved or (_selection.is_empty() and not _none_selected) or answered >= COUNT:
+	if practice and not _practice_valid(): return
+	if resolved or (_selection.is_empty() and not _none_selected) or answered >= _count():
 		return
 	resolved = true # Guard before signals or persistence.
 	var picked: Variant = null if _selection.is_empty() else _choices[_selection[0]].value
@@ -211,10 +253,12 @@ func submit() -> void:
 	_feedback.text = ("CORRECT / " if correct else "REVIEW / ") + explanation
 	_feedback.add_theme_color_override("font_color", Color("#33D17A") if correct else Color("#FFB648"))
 	_scroll_feedback.call_deferred()
-	if not review and not Quiz.repeat_wrong_answer(_graded_wrong, question, picked, correct):
+	if practice:
+		account.record_practice_answer(question,correct,_recommendation)
+	elif not review and not Quiz.repeat_wrong_answer(_graded_wrong, question, picked, correct):
 		account.update_mastery(_skill, correct, question.get("bkt", {}))
-	_action.text = "SEE RESULTS" if answered == COUNT else "NEXT QUESTION"
-	if answered == COUNT and not _recorded:
+	_action.text = "SEE RESULTS" if answered == _count() else "NEXT QUESTION"
+	if answered == COUNT and not practice and not _recorded:
 		_recorded = true
 		if not review:
 			account.record_lesson_post_quiz(module_id, score, answered, _assessment_responses)
@@ -223,13 +267,25 @@ func submit() -> void:
 func _advance() -> void:
 	if not resolved:
 		submit()
-	elif answered == COUNT:
+	elif answered == _count():
 		_results()
 	else:
 		_next()
 
 func _results() -> void:
 	UI.clear(_body)
+	if practice:
+		_heading.text = "PRACTICE COMPLETE / %d OF %d CORRECT" % [score,answered]
+		_body.add_child(UI.label("Your next practice will use your updated mastery estimates.",26,Color("#4FE0D4")))
+		var next: Dictionary = LessonCatalog.practice_recommendation(account)
+		if not next.is_empty():
+			_body.add_child(UI.button("REVIEW / "+str(next.title).to_upper(),func() -> void: Router.push(&"lesson_player",{"module_id":str(next.id),"review":true})))
+		for note: String in _mistakes: _body.add_child(UI.label(note,24,UI.MUTED))
+		_action.text = "RETURN"
+		_action.pressed.disconnect(_advance)
+		_action.pressed.connect(func() -> void: return_requested.emit())
+		_fit_touch.call_deferred()
+		return
 	_heading.text = "CHECKPOINT %s / %d OF 25" % ["PASSED" if score >= PASS else "KEEP PRACTICING", score]
 	var success_text: String = "Final module checkpoint passed." if module_id == "mod_05" else "Your next module is ready."
 	_body.add_child(UI.label(success_text if score >= PASS else "Pass with 20 correct. Review the feedback below, then reopen the checkpoint to try again.", 28, Color("#33D17A") if score >= PASS else Color("#FFB648")))
@@ -241,6 +297,34 @@ func _results() -> void:
 	_action.pressed.disconnect(_advance)
 	_action.pressed.connect(func() -> void: return_requested.emit())
 	_fit_touch.call_deferred()
+
+func _select_practice() -> void:
+	question = {}
+	var excluded: Array[String] = []
+	for attempt: int in 5:
+		_recommendation = LessonCatalog.practice_recommendation(account,answered,excluded)
+		if _recommendation.is_empty(): return
+		module_id = str(_recommendation.id)
+		_skill = str(_recommendation.domain)
+		var available: Array[Dictionary] = []
+		var fresh: Array[Dictionary] = []
+		var lessons: Array[Dictionary] = LessonCatalog.lessons_for(module_id)
+		var taught: Array[String] = []
+		for index: int in mini(lessons.size(),maxi(1,account.get_lesson_progress(module_id))):
+			var type: String = str(ACTIVITY_TYPES.get(str(lessons[index].get("activity", "")),""))
+			if not type.is_empty(): taught.append(type)
+		for raw: Variant in ContentDB.get_module_questions(module_id):
+			if not raw is Dictionary: continue
+			var row: Dictionary = raw
+			var id: String = Quiz._question_key(row)
+			if id in seen or id.is_empty() or str(row.get("type_id", "")) not in taught or Quiz.options(row).is_empty(): continue
+			available.append(row)
+			if not account.practice_responses.has(id): fresh.append(row)
+		if not fresh.is_empty(): available = fresh
+		if not available.is_empty():
+			question = select_next(available,seen,type_counts,account.preferred_difficulty(_skill),3,[])
+			return
+		excluded.append(module_id)
 
 func _scroll_feedback() -> void:
 	if is_instance_valid(_feedback) and _body.is_ancestor_of(_feedback):

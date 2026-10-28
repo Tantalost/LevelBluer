@@ -730,7 +730,7 @@ func _results() -> void:
 	actions.add_child(perks)
 
 func _perk_menu() -> void:
-	if not _interactive(): return
+	if not _interactive() or is_instance_valid(_command_fx): return
 	var content: VBoxContainer = _modal("EQUIPPED PERKS")
 	content.add_child(W.copy("Using a perk records this attempt as assisted.",_u,W.CREAM,16))
 	var row: VBoxContainer = UI.scroll_column(content)
@@ -784,6 +784,8 @@ func _launch_command(id: String, firing: bool, weak_point: String = "") -> void:
 	_pending_command = id
 	_pending_weak = weak_point
 	_command_fx = W.CommandAnimation.new()
+	_command_fx.size = _body.size
+	_command_fx.position = _body.global_position-global_position
 	_command_fx.evidence_title = str(Case.exhibit(id).title)
 	_command_fx.firing = firing
 	_command_fx.gentle = SettingsService.reduced_motion

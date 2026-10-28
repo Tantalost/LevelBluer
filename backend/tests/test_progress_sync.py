@@ -131,6 +131,23 @@ class ProgressSyncFailureTest(unittest.TestCase):
         self.assertEqual(len(fake.bkt_rows), 2)
         self.assertEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.42)
 
+    def test_practice_audit_sync_preserves_snapshot_without_creating_posttest(self):
+        fake = FakeSupabase()
+        records = {"mod01_practice": {"module_id": "mod_01", "correct": False,
+                    "reason": "weakest_assessed_topic", "policy": "bkt-practice-v1",
+                    "mastery_before": 0.4, "mastery_after": 0.3, "assisted": False}}
+        payload = ProgressSyncRequest(mastery_matrix={"phishing": 0.3}, practice_responses=records)
+        with (
+            patch("app.services.progress_service.fetch_student_by_id",
+                  return_value={"id": "stu-1", "highest_unlocked_stage": 1}),
+            patch("app.services.progress_service.supabase", fake),
+            patch("app.services.progress_service.record_learning_events", return_value=[]) as record,
+        ):
+            sync_student_progress("stu-1", payload)
+            record.assert_called_once_with("stu-1", [])
+        self.assertEqual(fake.upserts["player_saves"][0]["payload"]["practice_responses"], records)
+        self.assertEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.3)
+
     def test_pretest_updates_mastery_previously_saved_by_gameplay(self):
         from app.services.pretest_service import _upsert_bkt_records
 

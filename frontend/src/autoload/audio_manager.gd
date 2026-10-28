@@ -215,6 +215,7 @@ func play_bgm(stream: AudioStream, crossfade_time: float = 0.65) -> void:
 		bgm_player = target
 	var duration: float = maxf(0.01, crossfade_time)
 	_bgm_tween = create_tween().set_parallel(true)
+	_bgm_tween.finished.connect(func() -> void: _bgm_tween = null)
 	_bgm_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	for deck: AudioStreamPlayer in _decks:
 		_bgm_tween.tween_property(deck, "volume_linear", MUSIC_GAIN if deck == target else 0.0, duration)

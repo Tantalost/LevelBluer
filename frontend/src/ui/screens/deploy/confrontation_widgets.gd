@@ -206,6 +206,8 @@ class CommandAnimation extends Control:
 		terminal.name = "Terminal"
 		terminal.mouse_filter = MOUSE_FILTER_IGNORE
 		terminal.add_theme_stylebox_override("panel",UI.box(PANEL,CYAN,ceili(16*u)))
+		if firing:
+			terminal.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
 		add_child(terminal)
 		var lines: VBoxContainer = UI.column(terminal,ceili(10*u))
 		lines.mouse_filter = MOUSE_FILTER_IGNORE
@@ -215,7 +217,12 @@ class CommandAnimation extends Control:
 		command = ConfrontationWidgets.copy("",u,CREAM,24)
 		command.mouse_filter = MOUSE_FILTER_IGNORE
 		command.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		lines.add_child(command)
+		if firing:
+			command.add_theme_color_override("font_color",CYAN)
+			command.add_theme_color_override("font_outline_color",BG)
+			command.add_theme_constant_override("outline_size",ceili(6*u))
+		if firing: add_child(command)
+		else: lines.add_child(command)
 		status = ConfrontationWidgets.copy("",u,CYAN,16)
 		status.mouse_filter = MOUSE_FILTER_IGNORE
 		lines.add_child(status)
@@ -263,26 +270,28 @@ class CommandAnimation extends Control:
 		var progress: float = 1 if step == State.READY else clampf(age/duration(),0,1)
 		var curve: float = fire_curve if firing else curves[mini(int(step),4)]
 		var eased: float = ease(progress,curve)
-		var width: float = minf(size.x-32*u,640*u)
 		command.text = "> refute \""+evidence_title+"\"" if firing else "> evidence.load \""+evidence_title+"\""
-		command.visible_ratio = (progress if step == State.TYPE and not gentle else 1.0)
+		var width: float = minf(size.x-32*u,640*u)
+		if firing: width = minf(width,UI.FONT.get_string_size(command.text,HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(24*u)).x+16*u)
+		command.visible_ratio = (eased if step == State.TYPE and not gentle else 1.0)
 		if step in [State.ANTICIPATION,State.ENTER]: command.visible_ratio = 0
 		prompt.visible = not firing
 		status.visible = not firing
 		status.text = ["OPENING SESSION_","TERMINAL CONNECTED_","LOADING RECORD_","COMMAND READY","READY / TAP THE CLAIM","COMMAND READY","EXECUTE_"][step]
 		terminal.size.x = width
 		var height: float = terminal.get_combined_minimum_size().y
+		if firing: height = UI.FONT.get_multiline_string_size(command.text,HORIZONTAL_ALIGNMENT_LEFT,width,ceili(24*u)).y
 		var point: Vector2 = (size-Vector2(width,height))*.5
 		terminal.modulate = Color.WHITE
-		terminal.visible = step != State.ANTICIPATION
+		terminal.visible = not firing and step != State.ANTICIPATION
 		veil.color = Color(BG,.62 if not firing else .16)
 		if step == State.ENTER and not gentle:
 			var overshoot: float = eased+sin(eased*PI)*.08
 			point.x += (1-overshoot)*size.x
 		elif step == State.RETURN:
 			if not gentle: point.y = lerpf(point.y,size.y-height-4*u,eased)
-			terminal.modulate.a = 1-progress
-			veil.color.a *= 1-progress
+			terminal.modulate.a = 1-eased
+			veil.color.a *= 1-eased
 		elif step == State.EXECUTE:
 			var origin: Vector2 = size*source_fraction
 			var target: Vector2 = size*target_fraction
@@ -293,7 +302,10 @@ class CommandAnimation extends Control:
 		point.y = clampf(point.y,8*u,maxf(8*u,size.y-height-8*u))
 		terminal.position = (point/(2*u)).round()*(2*u)
 		terminal.size = Vector2(width,height)
-		command_bounds = Rect2(terminal.position,terminal.size)
+		if firing:
+			command.position = terminal.position
+			command.size = Vector2(width,height)
+		command_bounds = Rect2(terminal.position,Vector2(width,height))
 		queue_redraw()
 
 	func _draw() -> void:
@@ -301,7 +313,7 @@ class CommandAnimation extends Control:
 			var p: float = clampf(age/duration(),0,1)
 			for index: int in 7:
 				var y: float = size.y*index/7.0
-				var width: float = size.x if gentle else size.x*ease(p,.25)
+				var width: float = size.x if gentle else size.x*ease(p,curves[0])
 				draw_rect(Rect2(0,y,width,5*u),Color(CYAN,.7*(1-p)))
 		elif step == State.EXECUTE and not gentle:
 			var p: float = clampf(age/duration(),0,1)
@@ -313,7 +325,7 @@ class CommandAnimation extends Control:
 				draw_rect(Rect2((point/(3*u)).round()*(3*u),Vector2.ONE*(3+index%3)*u),Color(CYAN,(1-index/16.0)*.7))
 		elif step == State.CONFIRM:
 			var p: float = clampf(age/duration(),0,1)
-			var x: float = command_bounds.position.x+command_bounds.size.x*p
+			var x: float = command_bounds.position.x+command_bounds.size.x*ease(p,curves[3])
 			draw_rect(Rect2(x,command_bounds.position.y-6*u,10*u,3*u),CYAN)
 
 class RebuttalImpact extends Control:
@@ -504,7 +516,7 @@ class DebateStage extends Control:
 		var height: float = claim_stack.get_combined_minimum_size().y+20*u
 		claim_panel.position.y = maxf(30*u,size.y-66*u-height)
 		claim_panel.size = Vector2(width,height)
-		load_button.position = Vector2(0 if gentle else -maxf(0,1-load_age/.35)*size.x*.2,size.y-50*u)
+		load_button.position = Vector2(0,size.y-50*u)
 		load_button.size = Vector2(size.x-92*u,50*u)
 		hold_button.position = Vector2(size.x-84*u,size.y-50*u)
 		hold_button.size = Vector2(84*u,50*u)

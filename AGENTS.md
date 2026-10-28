@@ -1,5 +1,20 @@
 Stack: Godot 4.7 GDScript. No C#. Strict typing enforced.
 
+## Product and Research Objectives
+
+LEVELBLUE is a BKT-based gamified mobile application for interactive and adaptive social engineering awareness training. Every milestone must support at least one of these objectives:
+- Interactive learning materials, simulations, and gameplay activities.
+- BKT mastery estimation that actually drives adaptive learning.
+- Learning analytics and student support.
+- Evaluation of changes in students' knowledge of social engineering threats.
+- Evaluation of functionality, engagement, and ease of use.
+
+Challenge requests that conflict with these objectives or introduce unnecessary systems. Ask when requirements or research assumptions are unclear. Reuse existing screens, question banks, account saves, and signals before adding infrastructure. Keep adaptive practice separate from research assessment scores; mastery estimates are not proof of learning gains. Perks must never affect graded checks, checkpoints, or research tests. Record assisted story activity separately. Do not describe configured BKT parameters as trained on student data unless a fitting and validation pipeline actually exists.
+
+## Commit Scope
+
+Keep developer test files, verification scripts, their UID sidecars, and generated test artifacts out of GitHub commits unless the user explicitly requests otherwise. Retain local validation files and continue running relevant checks. Stage only explicitly selected production/documentation paths; do not use blanket staging such as `git add .` or `git add -A`. Before committing, inspect `git diff --cached --name-only` and exclude test paths, including already-tracked tests that `.gitignore` cannot protect. Do not delete or untrack existing tests merely to hide their changes. In-game assessments, question banks, and research pre/post-test implementation are product code, not developer test files.
+
 ## Target Platform
 
 The entire game targets mobile only. Design gameplay, UI, and acceptance checks for touch input and mobile screen sizes/safe areas. Do not introduce separate desktop layouts or require hover, mouse aiming, or keyboard shortcuts. Editor mouse emulation is a development convenience, not a second target platform. Provide readable text, generous touch targets, and tap alternatives where precision dragging would be difficult.
