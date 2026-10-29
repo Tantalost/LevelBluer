@@ -156,12 +156,17 @@ func _run() -> void:
 		_auth._signed_in = true
 		_auth._participant_code = TEST_STUDENT_ID
 		_auth._token = ""
+		_player._session_hydrated = true
+		_player._hydrated_participant = TEST_STUDENT_ID
+		_auth._mastery["Smishing"] = 0.20
+		_player.mastery_matrix["smishing"] = 0.80
 		_player.mastery_matrix.erase("phishing")
 		var answers: Array = []
 		for question in PretestBank.public_questions("mod_01"):
 			answers.append({"id": question["id"], "answer": 0})
 		var result: int = _auth.submit_pretest("mod_01", answers)
 		check(result == _auth.Result.OK, "[C] submit_pretest() grades the local pretest successfully")
+		check(is_equal_approx(_player.mastery_matrix.smishing, 0.80), "[C] New pretest only seeds its own topic, preserving other topics' learning")
 		check(_player._has_pending_local_sync(), "[C] Submitting a pretest marks the student's local state dirty/pending (StudentDatabase.needs_cloud_sync)")
 		var diagnostic_pl: float = float(_auth._mastery.get("Phishing", -1.0))
 		check(diagnostic_pl > 0.0, "[C] AuthService computed a diagnostic P(L) from the local pretest")
@@ -256,6 +261,35 @@ func _run() -> void:
 	check(is_equal_approx(snappedf(diagnostic, 0.0001), 0.3333), "[G] Pre-test diagnostic update is uncapped and has no P(T) (0.80 -> 0.3333)")
 	check(is_equal_approx(snappedf(Pretest._update_pl_diagnostic(0.10, true), 0.0001), 0.3333), "[G] Pre-test diagnostic correct-answer update is unchanged")
 
+	print("== H. Delayed pretest acknowledgement preserves newer learning ==")
+	fresh()
+	_auth._completed_module_ids = ["mod_01", "mod_02"]
+	_auth._mastery = {"Phishing":0.65, "Smishing":0.55}
+	_player.mastery_matrix = {"phishing":0.85, "smishing":0.75}
+	var before_ack: Dictionary = _player.mastery_matrix.duplicate(true)
+	_auth._apply_remote_pretest({"mastery":{"Phishing":0.15}, "completedModuleIds":["mod_01"], "pre":7}, "mod_01")
+	check(_player.mastery_matrix == before_ack, "[H] Delayed diagnostic response cannot roll back newer BKT updates")
+	check(_auth.has_module_pretest("mod_02"), "[H] Delayed response cannot remove another locally completed pretest")
+	check(_auth._mastery == {"Phishing":0.65, "Smishing":0.55}, "[H] Cached mastery is not replaced by a stale diagnostic response")
+	check(_auth._pre_score == 7, "[H] Canonical pretest score remains acknowledged")
+	print("== I. BKT fetch rejects snapshots invalidated while awaiting network ==")
+	var fixture: GDScript = GDScript.new()
+	fixture.source_code = "extends \"res://src/autoload/auth_service.gd\"\nvar writes: int = 0\nvar response_mode: String = \"answer\"\nfunc _ready() -> void:\n\tpass\nfunc _persist(_signed: bool, _password: bool, _dirty: bool = true) -> void:\n\twrites += 1\nfunc _request_json(_path: String, _method: int, _body: Dictionary = {}, _authorized: bool = false) -> Variant:\n\tawait get_tree().process_frame\n\tif response_mode == \"answer\": PlayerManager.mastery_matrix.phishing = 0.91\n\tif response_mode == \"account\": _participant_code = \"different-account\"\n\treturn {\"mastery\":{\"Phishing\":0.12}, \"gameplay\":{\"phishing\":0.12}}\n"
+	check(fixture.reload() == OK, "[I] Controlled asynchronous network fixture compiles")
+	var remote: Node = fixture.new()
+	root.add_child(remote)
+	for mode: String in ["answer", "account", "unchanged"]:
+		remote._participant_code = "isolated-fetch-probe"
+		remote._signed_in = true
+		remote._token = "test-only"
+		remote.response_mode = mode
+		remote.writes = 0
+		_player.mastery_matrix.phishing = 0.65
+		var fetched: Dictionary = await remote.fetch_bkt_state()
+		check(fetched.is_empty() if mode != "unchanged" else not fetched.is_empty(), "[I] Fetch response validity: " + mode)
+		check(remote.writes == (1 if mode == "unchanged" else 0), "[I] Stale responses never persist or clear pending-sync state: " + mode)
+	remote.queue_free()
+	await process_frame
 	fresh()
 	_cleanup_save_files()
 	print("BKT_OFFLINE_SYNC_CHECKS failures=" + str(failures))

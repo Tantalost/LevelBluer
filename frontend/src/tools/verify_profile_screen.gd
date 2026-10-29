@@ -32,6 +32,11 @@ func fresh() -> void:
 	auth._pre_test_completed = false
 	auth._bkt_queue.clear()
 	player.cleared_stages = {}
+	player.chapter_progress = {}
+	player.lesson_post_quiz_scores = {}
+	player.practice_responses = {}
+	player.pretest_baselines = {}
+	player.learning_evidence = {}
 	player.lesson_progress = {}
 	player.completed_lessons.clear()
 	player.locked_stages = {}
@@ -65,7 +70,7 @@ func _run() -> void:
 	auth._completed_module_ids = ["mod_01"]
 	player.lesson_progress = {"mod_01": 2}
 	screen._refresh()
-	check(screen._dossier.next.title == "CONTINUE YOUR TRAINING", "Passed pretest recommends next lessons")
+	check(screen._dossier.next.title == "CONTINUE THE STORY", "First completed lesson unlocks the story recommendation")
 	check(root.get_node("Router").SCREENS.has(screen._dossier.next.route), "Suggested lesson route exists")
 	auth._points = 1250
 	auth._mastery = {"Phishing": 0.85, "Smishing": 0.35, "Vishing": 0.6}
@@ -73,6 +78,7 @@ func _run() -> void:
 	player.lesson_progress = {"mod_01": 6, "mod_02": 2}
 	player.completed_lessons.assign(["mod_01"])
 	player.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
+	player.chapter_progress = {"mod_01_ch_01":{"completed":true}, "mod_01_ch_03":{"completed":true}}
 	player.max_stage_cleared_by_module = {"mod_01": 3}
 	screen.on_resume()
 	await settle()
@@ -80,7 +86,7 @@ func _run() -> void:
 	check(screen._dossier.strongest.name == "Phishing", "Highest assessed mastery")
 	check(screen._dossier.practice.name == "Smishing", "Practice focus uses lowest assessed topic")
 	check(root.get_node("Router").SCREENS.has(screen._dossier.next.route), "Suggested deployment route exists")
-	check(screen._snapshot.stage_done == 2 and screen._snapshot.lesson_done == 8, "Exact completion totals")
+	check(screen._snapshot.chapter_done == 2 and screen._snapshot.lesson_done == 8, "Exact completion totals")
 	check(screen._dossier.milestones[0].earned and screen._dossier.milestones[1].earned, "Recorded milestones earned")
 	await capture("overview")
 	auth._signed_in = true
@@ -126,6 +132,9 @@ func _run() -> void:
 		player.lesson_progress[module.id] = module.total
 	for id in range(1, 11):
 		player.cleared_stages[player.stage_progress_key("mod_01", id)] = true
+	for id: int in range(1, 6):
+		player.chapter_progress["mod_01_ch_%02d" % id] = {"completed":true}
+		player.lesson_post_quiz_scores["mod_%02d" % id] = 20
 	screen._refresh()
 	check(screen._snapshot.max_rank, "Commander max rank state")
 	check(screen._dossier.milestones.all(func(m: Dictionary) -> bool: return m.earned), "All milestones earned on full completion")

@@ -34,16 +34,17 @@ var _skill: String = ""
 var _graded_wrong: Dictionary = {}
 var practice: bool = false
 var _recommendation: Dictionary = {}
-var _practice_owner: String = ""
-var _practice_signed: bool = false
+var _attempt_owner: String = ""
+var _attempt_signed: bool = false
+var _session_expired: bool = false
 
 func _count() -> int:
 	return 5 if practice else COUNT
 
 func setup_practice() -> void:
 	practice = true
-	_practice_owner = AuthService.participant_code()
-	_practice_signed = AuthService.is_signed_in()
+	_attempt_owner = AuthService.participant_code()
+	_attempt_signed = AuthService.is_signed_in()
 	_heading.text = "RECOMMENDED PRACTICE"
 	_recommendation = LessonCatalog.practice_recommendation(account)
 	_action.text = "START / 5 QUESTIONS"
@@ -57,10 +58,20 @@ func setup_practice() -> void:
 		_body.add_child(UI.label("Complete a module pre-test or start its lessons first.",24,UI.MUTED))
 	_fit_touch.call_deferred()
 
-func _practice_valid() -> bool:
-	return not Router.is_tutorial and AuthService.participant_code() == _practice_owner and AuthService.is_signed_in() == _practice_signed
+func _attempt_valid() -> bool:
+	return not _session_expired and not Router.is_tutorial and AuthService.participant_code() == _attempt_owner and AuthService.is_signed_in() == _attempt_signed
+
+func _session_changed(_signed_in: bool) -> void:
+	if AuthService.participant_code() == _attempt_owner and AuthService.is_signed_in() == _attempt_signed:
+		return
+	_session_expired = true
+	_action.disabled = true
+	_feedback.text = "Account changed. Reopen this activity to continue."
 
 func _ready() -> void:
+	_attempt_owner = AuthService.participant_code()
+	_attempt_signed = AuthService.is_signed_in()
+	AuthService.session_changed.connect(_session_changed)
 	if account == null:
 		account = PlayerManager
 	size_flags_horizontal = SIZE_EXPAND_FILL
@@ -88,10 +99,9 @@ func setup(id: String) -> void:
 	_fit_touch.call_deferred()
 
 func begin() -> void:
-	if _started or _action.disabled:
+	if _started or _action.disabled or not _attempt_valid():
 		return
 	if practice:
-		if not _practice_valid(): return
 		_started = true
 		_action.pressed.disconnect(begin)
 		_action.pressed.connect(_advance)
@@ -222,7 +232,7 @@ func _pick_none() -> void:
 	_action.disabled = false
 
 func submit() -> void:
-	if practice and not _practice_valid(): return
+	if not _attempt_valid(): return
 	if resolved or (_selection.is_empty() and not _none_selected) or answered >= _count():
 		return
 	resolved = true # Guard before signals or persistence.
@@ -265,6 +275,7 @@ func submit() -> void:
 		finished.emit(score >= PASS)
 
 func _advance() -> void:
+	if not _attempt_valid(): return
 	if not resolved:
 		submit()
 	elif answered == _count():

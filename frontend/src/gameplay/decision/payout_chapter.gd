@@ -12,7 +12,7 @@ const DISPLAY_URL: String = "https://pocketwallet.example/verify"
 const SHORT_URL: String = "https://short.example/payout"
 const DESTINATION: String = "http://pocket-wallet-verify.example/login"
 const TASKS: Dictionary = {
-	"reveal":{"title":"01 / Read the destination", "tip":"Hold the link, or hover/focus on desktop. Compare both addresses.", "line":"Read the destination. Not the promise.", "field":"revealed", "total":1, "next":"expand"},
+	"reveal":{"title":"01 / Read the destination", "tip":"Hold the link to reveal its destination. Compare both addresses.", "line":"Read the destination. Not the promise.", "field":"revealed", "total":1, "next":"expand"},
 	"expand":{"title":"02 / Follow the short link", "tip":"Drag the short link into Expand Link, or tap it then tap the box.", "line":"What is this little link hiding?", "field":"expanded", "total":1, "next":"flaws"},
 	"flaws":{"title":"03 / Inspect the login page", "tip":"Find three clues, then review the address and connection before saving.", "line":"I saw the logo. I didn't look at the address.", "field":"hotspots", "total":5, "next":"seal"}
 }

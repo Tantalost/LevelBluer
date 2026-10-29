@@ -415,6 +415,11 @@ func _run() -> void:
 	check(Case.clean(comic_snapshot).comic_order == Case.COMIC_ORDER,"Comic placement survives save cleaning")
 	screen.on_exit()
 	screen.queue_free()
+	audio._kill_bgm_tween()
+	audio._stop_music()
+	audio._stop_effects()
+	# Let the audio thread retire stopped playbacks before the headless process exits.
+	await create_timer(0.25).timeout
 	await settle()
 	screen = scene.instantiate() as Control
 	root.add_child(screen)

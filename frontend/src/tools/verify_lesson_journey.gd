@@ -427,9 +427,52 @@ func _run() -> void:
 	check(easy.difficulty == "easy" and hard.difficulty == "hard", "BKT band changes question difficulty while preserving lesson coverage")
 	await verify_baseline(memory_script)
 	await verify_personalized_practice()
+	await verify_activity_ownership()
 	account.free()
 	print("[LESSON JOURNEY] failures=%d" % failures)
 	quit(0 if failures == 0 else 1)
+
+func verify_activity_ownership() -> void:
+	var fixture: GDScript = GDScript.new()
+	fixture.source_code = "extends \"res://src/autoload/player_manager.gd\"\nvar writes: int = 0\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\twrites += 1\n"
+	check(fixture.reload() == OK, "Ownership fixture compiles")
+	var account: Node = fixture.new()
+	account.lesson_progress = {"mod_01":6}
+	var quiz: Control = Checkpoint.new()
+	quiz.account = account
+	root.add_child(quiz)
+	quiz.setup("mod_01")
+	quiz.begin()
+	var before: String = JSON.stringify(account.get_save_data())
+	var owner: String = quiz._attempt_owner
+	quiz._attempt_owner = "other-account"
+	answer(quiz, true)
+	check(quiz.answered == 0 and JSON.stringify(account.get_save_data()) == before, "Checkpoint cannot grade after an account switch")
+	quiz._session_changed(false)
+	quiz._attempt_owner = owner
+	answer(quiz, true)
+	check(quiz.answered == 0, "Returning to the original account cannot revive a stale checkpoint")
+	quiz.queue_free()
+	await settle()
+	var player: Control = load("res://src/ui/screens/intel/lesson_player_screen.tscn").instantiate()
+	player.account = account
+	root.add_child(player)
+	account.lesson_progress = {"mod_01":0}
+	player._load_module("mod_01")
+	player._open_lesson()
+	for page: int in 3: player._on_continue()
+	before = JSON.stringify(account.get_save_data())
+	player._activity_owner = "other-account"
+	answer_mini(player, true)
+	check(player._quiz_index == 0 and not player._quiz_resolved and JSON.stringify(account.get_save_data()) == before, "Mini quiz cannot write another account's evidence")
+	player._phase = player.Phase.COMPLETE
+	player._quiz_passed = true
+	player._simulation_passed = true
+	player._finish_lesson()
+	check(account.get_lesson_progress("mod_01") == 0, "Stale lesson completion cannot unlock another account's lesson")
+	player.queue_free()
+	await settle()
+	account.free()
 
 func verify_personalized_practice() -> void:
 	var fixture: GDScript = GDScript.new()
@@ -460,11 +503,11 @@ func verify_personalized_practice() -> void:
 	await settle()
 	await capture("practice_720")
 	check(root.get_visible_rect().encloses(quiz._action.get_global_rect()),"Practice submit target remains on the phone screen")
-	var practice_owner: String = quiz._practice_owner
-	quiz._practice_owner = "not-this-participant"
+	var practice_owner: String = quiz._attempt_owner
+	quiz._attempt_owner = "not-this-participant"
 	answer(quiz,true)
 	check(quiz.answered == 0 and first.practice_responses.is_empty(),"Account change cannot grade a previous participant's practice")
-	quiz._practice_owner = practice_owner
+	quiz._attempt_owner = practice_owner
 	quiz._selection.clear()
 	quiz._none_selected = false
 	for index: int in 5:

@@ -458,8 +458,8 @@ func submit_pretest(module_id: String, answers: Array) -> Result:
 	_pending_pretest[module_id] = answers
 	_persist(_signed_in, false, true)
 	session_changed.emit(_signed_in)
-	PlayerManager.seed_from_official_mastery()
 	var skill: String = str(PlayerManager.LEARNING_MODULES.find_key(module_id))
+	PlayerManager.seed_from_official_mastery(skill)
 	PlayerManager.record_pretest_baseline(module_id, answers)
 	PlayerManager.record_learning_event("mastery", module_id, {"mastery":PlayerManager.get_mastery(skill)})
 	flush_pending_pretests()
@@ -561,7 +561,13 @@ func enqueue_bkt_assess(skill_id: String, is_correct: bool, params: Dictionary =
 func fetch_bkt_state() -> Dictionary:
 	if _token.is_empty():
 		return {}
+	var request_owner: String = _participant_code
+	var before_fetch: Dictionary = PlayerManager.mastery_matrix.duplicate(true)
 	var parsed: Variant = await _request_json("/api/bkt/state", HTTPClient.METHOD_GET, {}, true)
+	# An answer or account switch during the request invalidates its snapshot.
+	# In particular, _persist(..., false) must not clear a newer pending save.
+	if not _signed_in or request_owner != _participant_code or StudentDatabase.has_pending_sync(request_owner) or PlayerManager.mastery_matrix != before_fetch:
+		return {}
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
 	var payload: Dictionary = parsed as Dictionary
@@ -951,16 +957,19 @@ func _apply_local_pretest(module_id: String, answers: Array) -> bool:
 
 
 func _apply_remote_pretest(parsed: Dictionary, module_id: String) -> void:
-	var mastery_data: Variant = parsed.get("mastery", {})
-	if typeof(mastery_data) == TYPE_DICTIONARY:
-		_mastery = mastery_data
+	# This response acknowledges a diagnostic already applied locally. Its
+	# snapshot may predate offline lesson answers or another module's pretest.
+	# Never seed it over live BKT; progress sync uploads the current snapshot.
+	var local_completed: Array = _completed_module_ids.duplicate()
 	_set_completed_modules(parsed.get("completedModuleIds", _completed_module_ids))
+	for completed: String in local_completed:
+		if completed not in _completed_module_ids:
+			_completed_module_ids.append(completed)
 	if not has_module_pretest(module_id):
 		_completed_module_ids.append(module_id)
 	_pre_test_completed = not _completed_module_ids.is_empty()
 	if parsed.has("pre"):
 		_pre_score = int(parsed.get("pre", _pre_score))
-	PlayerManager.seed_from_official_mastery()
 
 
 func _topic_for_module(module_id: String) -> String:

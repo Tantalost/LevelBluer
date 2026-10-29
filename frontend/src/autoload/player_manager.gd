@@ -1040,11 +1040,13 @@ func apply_official_mastery(skill_id: String, probability_known: float) -> void:
 ## here) is not "stale cached data clobbering newer gameplay"; only
 ## pull_official_bkt()'s unsolicited remote/cached refresh needs to defer to
 ## pending local state (see its own guard).
-func seed_from_official_mastery() -> void:
+func seed_from_official_mastery(only_skill: String = "") -> void:
 	var official: Dictionary = AuthService.mastery()
 	var changed := false
 	for i in _OFFICIAL_SKILLS.size():
 		var skill_id: String = _OFFICIAL_SKILLS[i]
+		if not only_skill.is_empty() and skill_id != only_skill:
+			continue
 		var titled: String = skill_id.capitalize()
 		var value: float = float(official.get(titled, official.get(skill_id, 0.0)))
 		if value <= 0.0:
@@ -1063,7 +1065,11 @@ func pull_official_bkt() -> void:
 	if not AuthService.is_signed_in():
 		seed_from_official_mastery()
 		return
+	var request_owner: String = AuthService.participant_code()
+	var before_fetch: Dictionary = mastery_matrix.duplicate(true)
 	var gameplay: Dictionary = await AuthService.fetch_bkt_state()
+	if not AuthService.is_signed_in() or request_owner != AuthService.participant_code() or _has_pending_local_sync() or mastery_matrix != before_fetch:
+		return
 	if gameplay.is_empty():
 		seed_from_official_mastery()
 		return

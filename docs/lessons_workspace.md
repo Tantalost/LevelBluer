@@ -19,4 +19,14 @@ Only the final Finish Topic action calls the existing PlayerManager completion A
 
 ## Verification
 
+### Milestone 1: learning, BKT, and account reliability
+
+Recommended practice uses current BKT estimates to prioritize the weakest eligible topic (four questions), with one question from another eligible topic. New first responses update mastery; repeated submissions and guided corrections do not add another practice update. Practice records remain separate from checkpoint scores and research assessments. The configured BKT parameters have not been fitted to student data, and mastery estimates are not evidence of learning gains.
+
+Lesson and checkpoint screens bind to the account that opened them. An account change expires the activity, including switching away and back; the learner must reopen it. Godot disconnects their session signals when the screen nodes are freed. A module pre-test seeds only its own topic. Delayed diagnostic acknowledgements preserve newer learning and locally completed pre-tests. BKT fetches reject responses if the account, mastery, or pending-save state changed while awaiting the network.
+
+Local regression coverage includes personalized question selection, duplicate submission protection, save reloads, expired activities, topic-specific pre-test updates, delayed-response protection, and compact landscape touch layouts. Backend checks cover single BKT updates, progress sync, authentication, and learning-record ownership/acknowledgement. Developer verification scripts and their artifacts are local validation material and must not be staged in release commits.
+
+The technical checks do not replace physical-device acceptance. Before closing the milestone, verify a signed-in learner completing practice on a phone, restarting offline, reconnecting to the deployed backend, and switching to another account. Confirm the first learner's progress survives and the second learner does not inherit it. The user authorized Milestone 2 on 2026-10-29; this physical-device acceptance remains outstanding.
+
 Run Godot with `--headless --path frontend --script res://src/tools/verify_lessons_workspace.gd`. This exercises all 30 topics, correct/wrong quiz responses, phase gates, unsafe/safe simulated actions, module locking and compact layout. It does not invoke the save operation. Add `-- --render` in a graphical test process to capture the picker, definition, quiz and simulation to ignored `.godot/` screenshots.

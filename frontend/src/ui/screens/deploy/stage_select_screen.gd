@@ -222,9 +222,11 @@ func _build_detail() -> void:
 		if PlayerManager.has_cleared_stage(module_id, stage_id):
 			clears += 1
 	if _selected == 0:
-		var chapter: Dictionary = PlayerManager.chapter_progress.get("mod_01_ch_01", {})
-		content.add_child(_label("CHAPTER 1 / THE SURVEY" + (" / SEALED" if bool(chapter.get("completed", false)) else " / AVAILABLE"), UI.TEXT, -1))
-		content.add_child(_label("Day: follow John's story. Night: investigate the messages. Chapters 1–2 are available; Chapters 3–5 are coming soon.", UI.MUTED, -2))
+		var completed: int = 0
+		for chapter_number: int in range(1, 6):
+			if PlayerManager.story_checkpoint("mod_01_ch_%02d" % chapter_number, false).get("completed", false): completed += 1
+		content.add_child(_label("5 CHAPTERS / %d COMPLETED" % completed, UI.TEXT, -1))
+		content.add_child(_label("Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
 	else:
 		content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
 		content.add_child(_label("L1: S1–2 / L2: S3–4 / L3: S5–6 / L4: S7–8 / L5: S9 / L6 + POST-TEST: S10", UI.MUTED, -2))

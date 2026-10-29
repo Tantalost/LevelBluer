@@ -45,6 +45,17 @@ var _story_snapshot: Dictionary = {}
 var _catalog_heading: Label
 var _catalog_hint: Label
 var _expanded: Dictionary[String, bool] = {}
+var _chapter: int = 1
+var _chapter_buttons: Array[Button] = []
+var _library_home: bool = true
+var _library_grid: GridContainer
+var _sections: HBoxContainer
+var _archive_search: LineEdit
+var _archive_query: String = ""
+var _selected_record: String = ""
+var _record_origin: String = ""
+var _library_buttons: Dictionary[StringName, Button] = {}
+var _record_buttons: Dictionary[String, Button] = {}
 
 func _ready() -> void:
 	var shell := UI.shell(self, "CODEX", _on_back_pressed)
@@ -67,14 +78,23 @@ func _ready() -> void:
 	_banner = UI.label("", 22, UI.GOLD)
 	_banner.hide()
 	layout.add_child(_banner)
-	var sections: HBoxContainer = HBoxContainer.new()
-	sections.add_theme_constant_override("separation", 8)
-	layout.add_child(sections)
+	_sections = HBoxContainer.new()
+	_sections.add_theme_constant_override("separation", 8)
+	layout.add_child(_sections)
 	for section: StringName in [&"characters", &"evidence", &"combat"]:
 		var section_button: Button = UI.button({&"characters":"Characters", &"evidence":"Evidence", &"combat":"Combat Intel"}[section], _set_section.bind(section))
 		section_button.size_flags_horizontal = SIZE_EXPAND_FILL
-		sections.add_child(section_button)
+		_sections.add_child(section_button)
 		_section_buttons[section] = section_button
+	_archive_search = LineEdit.new()
+	_archive_search.placeholder_text = "Search this collection..."
+	_archive_search.clear_button_enabled = true
+	_archive_search.add_theme_font_override("font", UI.FONT)
+	_archive_search.add_theme_color_override("font_color", Color("F3ECD6"))
+	_archive_search.add_theme_stylebox_override("normal", UI.box(Color("0A1730"), Color("173058"), 12))
+	_archive_search.add_theme_stylebox_override("focus", UI.box(Color("0A1730"), Color("4FE0D4"), 12))
+	_archive_search.text_changed.connect(_filter_archive)
+	layout.add_child(_archive_search)
 	_archive_body = UI.scroll_column(layout)
 	_archive_scroll = _archive_body.get_parent() as ScrollContainer
 	_archive_body.add_theme_constant_override("separation", 10)
@@ -126,7 +146,7 @@ func _ready() -> void:
 	resized.connect(_layout)
 	_refresh_resources()
 	_set_tab(&"units")
-	_set_section(&"characters")
+	_show_library()
 	AuthService.progress_changed.connect(_refresh_archive)
 	PlayerManager.progress_changed.connect(_refresh_archive)
 	AuthService.session_changed.connect(_archive_session_changed)
@@ -137,8 +157,7 @@ func on_enter(args: Dictionary) -> void:
 	_refresh_resources()
 	var skill_id: String = str(args.get("skill_id", ""))
 	if skill_id.is_empty():
-		_selected_character = ""
-		_set_section(&"characters")
+		_show_library()
 	else: load_topic(skill_id)
 
 func on_resume() -> void:
@@ -147,6 +166,13 @@ func on_resume() -> void:
 
 func _set_section(section: StringName) -> void:
 	if section not in [&"characters", &"evidence", &"combat"]: return
+	_library_home = false
+	_selected_record = ""
+	_record_origin = ""
+	_archive_query = ""
+	_archive_search.text = ""
+	_archive_search.hide()
+	_sections.show()
 	_expanded.clear()
 	_section = section
 	_panes.visible = section == &"combat"
@@ -162,28 +188,140 @@ func _set_section(section: StringName) -> void:
 
 func _archive_session_changed(_signed_in: bool) -> void:
 	_selected_character = ""
-	_set_section(&"characters")
+	_chapter = 1
+	_show_library()
+
+func _show_library() -> void:
+	_library_home = true
+	_selected_character = ""
+	_selected_record = ""
+	_record_origin = ""
+	_archive_query = ""
+	_archive_search.text = ""
+	_expanded.clear()
+	_sections.hide()
+	_panes.hide()
+	_banner.hide()
+	_archive_search.hide()
+	_archive_scroll.show()
+	_refresh_archive()
+	_archive_scroll.set_deferred("scroll_vertical", 0)
+
+func _filter_archive(query: String) -> void:
+	_archive_query = query.strip_edges().to_lower()
+	_refresh_archive()
+	_archive_scroll.set_deferred("scroll_vertical", 0)
+
+func _matches_archive(text: String) -> bool:
+	return _archive_query.is_empty() or text.to_lower().contains(_archive_query)
+
+func _build_library() -> void:
+	_archive_body.add_child(UI.label("YOUR FIELD LIBRARY", 30, Color("F3ECD6"), true))
+	_archive_body.add_child(UI.label("Meet the people. Revisit the clues. Understand the threats.", 22, Color("8FF0E6")))
+	_library_grid = GridContainer.new()
+	_library_grid.add_theme_constant_override("h_separation", 16)
+	_library_grid.add_theme_constant_override("v_separation", 16)
+	_archive_body.add_child(_library_grid)
+	var found: int = 0
+	var total: int = 0
+	var people: Array[String] = []
+	for number: int in range(1, Field.CHAPTERS.size() + 1):
+		var chapter: GDScript = Field.chapter_definition(number)
+		var snapshot: Dictionary = Field.story_snapshot(PlayerManager.story_checkpoint(chapter.ID, false), number)
+		var progress: Dictionary = Field.discovery_progress(snapshot)
+		found += int(progress.found)
+		total += int(progress.total)
+		if _chapter_available(number):
+			for id: String in Field.character_ids(snapshot):
+				if id not in people: people.append(id)
+	var collections: Array[Dictionary] = [
+		{"id":&"characters", "number":"01", "title":"Characters", "copy":"People, relationships and what you have learned about them.", "count":"%d character files available" % people.size(), "preview":"John / Eric / Jobert"},
+		{"id":&"evidence", "number":"02", "title":"Evidence", "copy":"Messages, suspicious details and the sources behind each observation.", "count":"%d / %d observations discovered" % [found, total], "preview":"Emails / Links / Timelines"},
+		{"id":&"combat", "number":"03", "title":"Combat Intel", "copy":"Explore defenders and threats, then read their real-world notes.", "count":"%d reference entries" % (Field.ids(&"units").size() + Field.ids(&"enemies").size()), "preview":"Defenders / Threats / Tactics"}
+	]
+	for item: Dictionary in collections:
+		var card: Button = _library_card(_library_grid, str(item.number) + " / COLLECTION", str(item.title), str(item.copy), str(item.count), _set_section.bind(item.id))
+		card.accessibility_name = "Open " + str(item.title) + ". " + str(item.count)
+		_library_buttons[item.id] = card
+		var content: VBoxContainer = card.get_child(0) as VBoxContainer
+		content.add_child(UI.label(str(item.preview), 18, Color("8FF0E6")))
+	_archive_body.add_child(UI.label("STORY ARCHIVE / MODULE 01", 18, Color("8FF0E6")))
+	_archive_body.add_child(UI.label("New records appear as you investigate. Return here whenever you want to review a discovery.", 22, UI.MUTED))
+
+func _library_card(parent: Control, eyebrow: String, title: String, copy: String, footer: String, callback: Callable) -> Button:
+	var card: Button = UI.button("", callback)
+	card.size_flags_horizontal = SIZE_EXPAND_FILL
+	var style: StyleBoxFlat = UI.journal_box(Color("102040"), Color("173058"), 18)
+	style.border_width_left = 5
+	card.add_theme_stylebox_override("normal", style)
+	card.add_theme_stylebox_override("hover", UI.journal_box(Color("153B37"), Color("4FE0D4"), 18))
+	parent.add_child(card)
+	var content: VBoxContainer = UI.column(card, 12)
+	content.mouse_filter = MOUSE_FILTER_IGNORE
+	content.add_child(UI.label(eyebrow, 18, Color("8FF0E6")))
+	content.add_child(UI.label(title, 30, Color("F3ECD6")))
+	content.add_child(UI.label(copy, 22, Color("F3ECD6")))
+	content.add_child(UI.label(footer + "  >", 18, Color("8FF0E6")))
+	# Button is not a Container: place its non-interactive contents and size it to fit.
+	content.set_anchors_and_offsets_preset(PRESET_TOP_WIDE)
+	content.offset_left = 22
+	content.offset_right = -22
+	content.offset_top = 18
+	content.resized.connect(func() -> void:
+		if is_instance_valid(card): card.custom_minimum_size.y = content.size.y + 36)
+	return card
 
 func _archive_art_ready(_success: bool) -> void:
 	_refresh_archive()
 
 func _refresh_archive() -> void:
 	if not is_instance_valid(_archive_body): return
-	_story_snapshot = Field.story_snapshot(PlayerManager.story_checkpoint(Field.Survey.ID, false))
+	var definition: GDScript = Field.chapter_definition(_chapter)
+	_story_snapshot = Field.story_snapshot(PlayerManager.story_checkpoint(definition.ID, false), _chapter)
 	var scroll_position: int = _archive_scroll.scroll_vertical
 	UI.clear(_archive_body)
 	_character_buttons.clear()
+	_chapter_buttons.clear()
+	_library_buttons.clear()
+	_record_buttons.clear()
 	_character_grid = null
+	_library_grid = null
+	_archive_search.visible = not _library_home and _section != &"combat" and _selected_character.is_empty() and _selected_record.is_empty()
+	if _library_home:
+		_build_library()
+		_layout()
+		return
 	if _section == &"combat": return
+	if not _selected_record.is_empty():
+		_build_record_page()
+		_layout()
+		return
+	if not _selected_character.is_empty():
+		_build_character_profile()
+		_layout()
+		_archive_scroll.set_deferred("scroll_vertical", scroll_position)
+		return
+	var chapter_row: HBoxContainer = HBoxContainer.new()
+	chapter_row.add_theme_constant_override("separation", 8)
+	_archive_body.add_child(chapter_row)
+	for number: int in range(1, Field.CHAPTERS.size() + 1):
+		var chapter: GDScript = Field.chapter_definition(number)
+		var button: Button = UI.button("CH %02d" % number, _select_chapter.bind(number), number == _chapter)
+		button.size_flags_horizontal = SIZE_EXPAND_FILL
+		button.disabled = not _chapter_available(number)
+		button.accessibility_name = "Chapter %d: %s. %s" % [number, chapter.TITLE, "Available" if not button.disabled else "Continue the story to unlock"]
+		chapter_row.add_child(button)
+		_chapter_buttons.append(button)
+	_archive_body.add_child(UI.label("CHAPTER %d / %s" % [_chapter, definition.TITLE], 24, Color("8FF0E6")))
 	if _section == &"characters" and _selected_character.is_empty():
-		_archive_body.add_child(UI.label("CHARACTER FILES / CHAPTER 1", 24, Color("8FF0E6")))
 		_discovery_meter(_archive_body)
 		_character_grid = GridContainer.new()
 		_character_grid.add_theme_constant_override("h_separation", 16)
 		_character_grid.add_theme_constant_override("v_separation", 16)
 		_archive_body.add_child(_character_grid)
-		for id: String in Field.CHARACTER_IDS:
+		for id: String in Field.character_ids(_story_snapshot):
 			var data: Dictionary = Field.character(id, _story_snapshot)
+			if not _matches_archive(str(data.name) + " " + str(data.role)): continue
 			var card: Button = UI.button("", _open_character.bind(id))
 			card.accessibility_name = "Open " + str(data.name) + " character file"
 			card.size_flags_horizontal = SIZE_EXPAND_FILL
@@ -203,19 +341,33 @@ func _refresh_archive() -> void:
 				var label: Label = UI.label(copy, 24 if copy == data.name else 18, Color("F3ECD6") if copy == data.name else Color("8FF0E6"))
 				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				column.add_child(label)
-	elif _section == &"characters":
-		_build_character_profile()
+		if _character_buttons.is_empty(): _empty_search()
 	else:
-		_archive_body.add_child(UI.label("EVIDENCE / CHAPTER 1", 24, Color("8FF0E6")))
 		_discovery_meter(_archive_body)
 		_archive_body.add_child(UI.label("Known = observed · Unverified = claim · Unknown = unresolved", 18, UI.MUTED))
 		var hidden: int = 0
 		for observation: Dictionary in Field.observations(_story_snapshot):
-			if observation.discovered: _observation_card(observation, _archive_body)
+			if observation.discovered:
+				if _matches_archive(str(observation.title) + " " + str(observation.text) + " " + str(observation.source)):
+					_observation_card(observation, _archive_body)
 			else: hidden += 1
+		if _record_buttons.is_empty() and not _archive_query.is_empty(): _empty_search()
 		_undiscovered(_archive_body, hidden)
 	_layout()
 	_archive_scroll.set_deferred("scroll_vertical", scroll_position)
+
+func _chapter_available(number: int) -> bool:
+	var chapter: GDScript = Field.chapter_definition(number)
+	return number == 1 or PlayerManager.story_unlocked(chapter.ID) or not PlayerManager.story_checkpoint(chapter.ID, false).is_empty()
+
+func _select_chapter(number: int) -> void:
+	if number < 1 or number > Field.CHAPTERS.size() or not _chapter_available(number): return
+	_chapter = number
+	_selected_character = ""
+	_selected_record = ""
+	_expanded.clear()
+	_refresh_archive()
+	_archive_scroll.set_deferred("scroll_vertical", 0)
 
 func _character_portrait(id: String) -> Control:
 	var frame: PanelContainer = PanelContainer.new()
@@ -227,7 +379,7 @@ func _character_portrait(id: String) -> Control:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = MOUSE_FILTER_IGNORE
 	frame.add_child(image)
-	var sheet: Texture2D = AssetManager.get_texture("chapter1_" + id)
+	var sheet: Texture2D = AssetManager.get_texture("chapter1_" + id) if id in Field.CHARACTER_IDS else null
 	if sheet != null:
 		var portrait: AtlasTexture = AtlasTexture.new()
 		portrait.atlas = sheet
@@ -237,14 +389,16 @@ func _character_portrait(id: String) -> Control:
 		portrait.filter_clip = true
 		image.texture = portrait
 	else:
-		var offline: Label = UI.label(id.capitalize() + "\nPortrait unavailable offline", 18, Color("8FF0E6"))
+		# No invented likeness for characters without an approved in-game portrait.
+		var name: String = str(Field.CHARACTERS[id].name)
+		var offline: Label = UI.label(name + ("\nPortrait unavailable offline" if id in Field.CHARACTER_IDS else "\nCharacter file"), 18, Color("8FF0E6"))
 		offline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		offline.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		frame.add_child(offline)
 	return frame
 
 func _open_character(id: String) -> void:
-	if id not in Field.CHARACTER_IDS: return
+	if id not in Field.character_ids(_story_snapshot): return
 	_expanded.clear()
 	_selected_character = id
 	_refresh_archive()
@@ -252,6 +406,7 @@ func _open_character(id: String) -> void:
 
 func _build_character_profile() -> void:
 	var data: Dictionary = Field.character(_selected_character, _story_snapshot)
+	_archive_body.add_child(UI.label("CHARACTERS / CHAPTER %02d" % _chapter, 18, Color("8FF0E6")))
 	var header: HBoxContainer = HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
 	_archive_body.add_child(header)
@@ -263,11 +418,13 @@ func _build_character_profile() -> void:
 	var summary: String = str(data.behavior if not (data.interactions as Array).is_empty() else data.background).get_slice(". ", 0)
 	identity.add_child(UI.label(summary if summary.ends_with(".") else summary + ".", 20, Color("F3ECD6")))
 	_discovery_meter(_archive_body, _selected_character)
-	var background: VBoxContainer = _foldout(_archive_body, "Background", "background")
-	background.add_child(UI.label(str(data.background), 22, Color("F3ECD6")))
-	background.add_child(UI.label("OBSERVED BEHAVIOR\n" + str(data.behavior), 22, Color("F3ECD6")))
-	var relationships: VBoxContainer = _foldout(_archive_body, "Relationships", "relationships")
-	relationships.add_child(UI.label(str(data.relationship), 22, Color("F3ECD6")))
+	var page: VBoxContainer = _reading_panel()
+	page.add_child(UI.label("BACKGROUND", 18, Color("101623")))
+	page.add_child(UI.label(str(data.background), 26, Color("101623")))
+	page.add_child(UI.label("OBSERVED BEHAVIOR", 18, Color("101623")))
+	page.add_child(UI.label(str(data.behavior), 26, Color("101623")))
+	page.add_child(UI.label("RELATIONSHIPS", 18, Color("101623")))
+	page.add_child(UI.label(str(data.relationship), 26, Color("101623")))
 	var discoveries: VBoxContainer = _foldout(_archive_body, "Discoveries / %d recorded" % data.interactions.size(), "discoveries")
 	for observation: Dictionary in data.interactions: _observation_card(observation, discoveries)
 	var progress: Dictionary = Field.discovery_progress(_story_snapshot, _selected_character)
@@ -314,24 +471,61 @@ func _foldout(parent: Control, title: String, key: String, color: Color = Color(
 func _undiscovered(parent: Control, count: int) -> void:
 	if count <= 0: return
 	var panel: PanelContainer = UI.panel(parent, Color("102040"))
-	panel.add_child(UI.label("? UNKNOWN / %d undiscovered\nContinue Chapter 1 to reveal these records." % count, 20, UI.MUTED))
+	panel.add_child(UI.label("? UNKNOWN / %d undiscovered\nContinue Chapter %d to reveal these records." % [count, _chapter], 20, UI.MUTED))
 
 func _observation_card(observation: Dictionary, parent: Control) -> void:
 	# Undiscovered records never instantiate their authored title, body or source.
 	if not observation.discovered: return
 	var status: String = str(observation.status)
 	var color: Color = Color("33D17A") if status == "Known" else (Color("FFB648") if status == "Unverified" else UI.MUTED)
-	var symbol: String = {"Known":"✓", "Unverified":"!", "Unknown":"?"}[status]
-	var key: String = "record_" + str(observation.id)
-	var body: VBoxContainer = _foldout(parent, symbol + " " + status.to_upper() + " / " + str(observation.title), key, color)
-	var toggle: Button = body.get_parent().get_child(0) as Button
-	var style: StyleBoxFlat = UI.box(Color("0A1730"), color, 10)
-	style.border_width_left = 4
-	toggle.add_theme_stylebox_override("normal", style)
-	toggle.add_theme_stylebox_override("pressed", style)
-	toggle.add_theme_color_override("font_pressed_color", color)
-	body.add_child(UI.label(str(observation.text), 22, Color("F3ECD6")))
-	body.add_child(UI.label("SOURCE / " + str(observation.source), 18, UI.MUTED))
+	var preview: String = str(observation.text).get_slice(". ", 0)
+	if preview.length() > 115: preview = preview.left(112) + "…"
+	var card: Button = _library_card(parent, status.to_upper(), str(observation.title), preview, str(observation.source), _open_record.bind(str(observation.id)))
+	card.name = "Record_" + str(observation.id)
+	card.accessibility_name = str(observation.title) + ". " + status + ". Open record."
+	(card.get_child(0).get_child(0) as Label).add_theme_color_override("font_color", color)
+	_record_buttons[str(observation.id)] = card
+
+func _empty_search() -> void:
+	_archive_body.add_child(UI.label("No matching entries", 26, Color("F3ECD6")))
+	_archive_body.add_child(UI.label("Try a name or keyword from this chapter. Search includes only discovered records.", 22, UI.MUTED))
+
+func _open_record(id: String) -> void:
+	for observation: Dictionary in Field.observations(_story_snapshot):
+		if str(observation.id) != id or not observation.discovered: continue
+		_record_origin = _selected_character
+		_selected_record = id
+		_refresh_archive()
+		_archive_scroll.set_deferred("scroll_vertical", 0)
+		return
+
+func _reading_panel() -> VBoxContainer:
+	var panel: PanelContainer = UI.panel(_archive_body, Color("F3ECD6"))
+	panel.name = "ReadingPage"
+	panel.add_theme_stylebox_override("panel", UI.journal_box(Color("F3ECD6"), Color("173058"), 24))
+	return UI.column(panel, 20)
+
+func _build_record_page() -> void:
+	for observation: Dictionary in Field.observations(_story_snapshot):
+		if str(observation.id) != _selected_record or not observation.discovered: continue
+		_archive_body.add_child(UI.label("EVIDENCE / CHAPTER %02d" % _chapter, 18, Color("8FF0E6")))
+		_archive_body.add_child(UI.label(str(observation.title), 32, Color("F3ECD6")))
+		var page: VBoxContainer = _reading_panel()
+		page.add_child(UI.label(str(observation.status).to_upper() + " / OBSERVATION", 18, Color("101623")))
+		page.add_child(UI.label(str(observation.text), 28, Color("101623")))
+		page.add_child(UI.label("SOURCE\n" + str(observation.source), 20, Color("101623")))
+		_archive_body.add_child(UI.button("BACK TO " + ("CHARACTER" if not _record_origin.is_empty() else "EVIDENCE"), _close_record))
+		return
+	# An account/progress refresh can remove a record while its page is open.
+	_archive_body.add_child(UI.label("This record is not available in the current progress.", 24, UI.MUTED))
+	_archive_body.add_child(UI.button("BACK TO COLLECTION", _close_record))
+
+func _close_record() -> void:
+	_selected_record = ""
+	_selected_character = _record_origin
+	_record_origin = ""
+	_refresh_archive()
+	_archive_scroll.set_deferred("scroll_vertical", 0)
 
 func _refresh_resources() -> void:
 	_resource_label.text = "%d CR  /  %d THREAT" % [maxi(0, PlayerManager.credits), maxi(0, AuthService.threat_points())]
@@ -614,8 +808,11 @@ func _layout() -> void:
 	_detail_panel.visible = not _compact or _mobile_details
 	_back_button.text = "< INDEX" if _compact and _mobile_details else "BACK"
 	UI.fit_touch(self)
-	if _section != &"combat":
-		_back_button.text = "< CHARACTERS" if not _selected_character.is_empty() else "BACK"
+	if _library_home:
+		_back_button.text = "BACK"
+		if is_instance_valid(_library_grid): _library_grid.columns = 3 if size.x * physical >= 600 else 1
+	elif _section != &"combat":
+		_back_button.text = "< COLLECTION" if not _selected_record.is_empty() else ("< CHARACTERS" if not _selected_character.is_empty() else "< LIBRARY")
 		if is_instance_valid(_character_grid):
 			_character_grid.columns = 3 if size.x * physical >= 600 else 1
 		for card: Button in _character_buttons.values():
@@ -635,19 +832,30 @@ func _layout() -> void:
 		button.custom_minimum_size.y = art_height + maxf(44, 34 / physical) + 16
 	_search.custom_minimum_size.y = maxf(48, 48 / physical)
 	_search.add_theme_font_size_override("font_size", maxi(22, ceili(16 / physical)))
+	_archive_search.custom_minimum_size.y = maxf(48, 48 / physical)
+	_archive_search.add_theme_font_size_override("font_size", maxi(22, ceili(16 / physical)))
+	if not _library_home and _section == &"combat" and not (_compact and _mobile_details): _back_button.text = "< LIBRARY"
 
 func can_go_back() -> bool:
+	if _library_home: return true
 	if _section != &"combat":
-		if _section == &"characters" and not _selected_character.is_empty():
-			_set_section(&"characters")
+		if not _selected_record.is_empty():
+			_close_record()
 			return false
-		return true
+		if _section == &"characters" and not _selected_character.is_empty():
+			_selected_character = ""
+			_refresh_archive()
+			_archive_scroll.set_deferred("scroll_vertical", 0)
+			return false
+		_show_library()
+		return false
 	if _compact and _mobile_details:
 		_mobile_details = false
 		_layout()
 		_search.grab_focus()
 		return false
-	return true
+	_show_library()
+	return false
 
 func _toggle_real() -> void:
 	if not is_instance_valid(_real_body):

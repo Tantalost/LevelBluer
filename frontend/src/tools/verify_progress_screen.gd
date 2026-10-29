@@ -27,12 +27,21 @@ func fresh() -> void:
 	auth._completed_module_ids = []
 	auth._bkt_queue.clear()
 	auth._signed_in = false
+	auth._token = ""
 	auth._participant_code = "progress-test"
 	auth._points = 0
 	player.mastery_matrix = {"phishing": 0.1}
 	player.cleared_stages = {}
 	player.lesson_progress = {}
 	player.completed_lessons.clear()
+	player.chapter_progress = {}
+	player.chapter_replay_progress = {}
+	player.chapter_replays = {}
+	player.lesson_post_quiz_scores = {}
+	player.pretest_baselines = {}
+	player.practice_responses = {}
+	player.learning_events.clear()
+	player.learning_evidence = {}
 	player.locked_stages = {}
 	player.max_stage_cleared_by_module = {}
 	player.credits = 123
@@ -40,32 +49,20 @@ func fresh() -> void:
 func fingerprint() -> String:
 	return JSON.stringify([auth._mastery, auth._completed_module_ids, auth._bkt_queue, auth._points,
 		player.mastery_matrix, player.cleared_stages, player.lesson_progress, player.completed_lessons,
-		player.locked_stages, player.credits, player.unlocked_towers])
+		player.locked_stages, player.credits, player.unlocked_towers, player.chapter_progress,
+		player.lesson_post_quiz_scores, player.pretest_baselines, player.practice_responses, player.learning_events])
 
 func _run() -> void:
 	auth = root.get_node("AuthService")
 	player = root.get_node("PlayerManager")
+	root.get_node("SaveService").set_process(false)
 	Data = load("res://src/ui/screens/progress/progress_data.gd")
 	fresh()
-	auth._mastery = {
-		"Phishing": 0.42,
-		"Smishing": 0.68,
-		"Vishing": 0.55,
-		"Pretexting": 0.73,
-		"Baiting": 0.31,
-	}
-	player.mastery_matrix = {"phishing": 0.1}
-	player.seed_from_official_mastery()
-	check(is_equal_approx(float(player.mastery_matrix.get("phishing", 0.0)), 0.42), "Seed phishing snapshot")
-	check(is_equal_approx(float(player.mastery_matrix.get("smishing", 0.0)), 0.68), "Seed smishing snapshot")
-	check(is_equal_approx(float(player.mastery_matrix.get("vishing", 0.0)), 0.55), "Seed vishing snapshot")
-	check(is_equal_approx(float(player.mastery_matrix.get("pretexting", 0.0)), 0.73), "Seed pretexting snapshot")
-	check(is_equal_approx(float(player.mastery_matrix.get("baiting", 0.0)), 0.31), "Seed baiting snapshot")
-	player._normalize_mastery_keys()
-	check(is_equal_approx(float(player.mastery_matrix.get("smishing", 0.0)), 0.68), "Normalize keeps non-phishing skills")
-	fresh()
 	var state: Dictionary = Data.snapshot()
-	check(state.stage_done == 0 and state.stage_total == 10, "Fresh account has 0/10 clears, not mock counter")
+	check(state.chapter_done == 0 and state.chapter_total == 5, "Fresh account has 0/5 authored chapters")
+	check(state.checkpoint_done == 0 and state.checkpoint_total == 5, "Fresh account has 0/5 passed checkpoints")
+	check(state.next.args == {"module_id":"mod_01"}, "Fresh learner is routed to a lesson/pretest, not unassessed practice")
+	check(state.sync_label == "On this device only", "Guest progress never claims cloud sync")
 	check(state.lesson_done == 0 and state.lesson_total == 30, "Lesson count is 0/30")
 	check(state.assessed == 0, "Default gameplay prior is not assessed mastery")
 	check(state.modules[0].status == "Pre-test required" and state.modules[1].status == "Locked", "Fresh lesson access states")
@@ -94,8 +91,11 @@ func _run() -> void:
 	player.cleared_stages = {"mod_01:1": true, "mod_01:3": true}
 	player.lesson_progress = {"mod_01": 6, "mod_02": 3}
 	player.completed_lessons.assign(["mod_01"])
+	player.chapter_progress = {"mod_01_ch_01":{"completed":true, "hint_used":true}, "mod_01_ch_03":{"completed":true}}
+	player.chapter_replays = {"mod_01_ch_02":{"completed":true}}
 	state = Data.snapshot()
-	check(state.stage_done == 2, "Noncontiguous clears counted exactly")
+	check(state.chapter_done == 2 and state.chapter_total == 5, "Original chapter records counted exactly; replays and old stages excluded")
+	check(state.chapters[0].assistance == "assisted" and state.chapters[2].assistance == "unknown", "Story assistance is separate and missing evidence stays unknown")
 	check(state.lesson_done == 9 and state.modules[2].status == "Locked", "Partial lessons and next module lock")
 	check(state.assessed == 5 and is_equal_approx(float(state.average), 0.63), "Average uses assessed values")
 	check(state.rank == "OPERATIVE I" and state.rank_value == 230, "Rank points and rank span")
@@ -113,13 +113,13 @@ func _run() -> void:
 	screen._radar._select_at(screen._radar._vertices[2])
 	check(screen._topic == 2, "Tap vertex selects topic")
 	await capture("mastery")
-	screen._open_journey("Stages")
+	screen._open_journey("Story")
 	await settle()
-	for i in screen._snapshot.stages.size():
+	for i in screen._snapshot.chapters.size():
 		screen._journey_buttons[i].pressed.emit()
-		check(screen._stage == i, "Stage tile selection")
-	screen._select_stage(0)
-	await capture("stages")
+		check(screen._chapter == i, "Chapter tile selection")
+	screen._select_chapter(0)
+	await capture("story")
 	screen._open_journey("Lessons")
 	await settle()
 	for i in 5:
@@ -127,6 +127,9 @@ func _run() -> void:
 		check(screen._module == i, "Lesson module selection")
 	screen._select_module(1)
 	await capture("lessons")
+	screen._open_journey("Checkpoints")
+	await settle()
+	await capture("checkpoints")
 	check(fingerprint() == before, "Browsing does not mutate progress")
 	# Pending gameplay has priority only for its current account and topic.
 	auth._signed_in = true
@@ -154,7 +157,7 @@ func _run() -> void:
 		player.cleared_stages[player.stage_progress_key("mod_01", id)] = true
 	state = Data.snapshot()
 	check(state.max_rank and state.rank_value == state.rank_span, "Maximum rank full bar")
-	check(state.stage_done == 10 and state.lesson_done == 30, "Full completion")
+	check(state.chapter_done == 2 and state.lesson_done == 30, "Legacy stages never inflate story completion")
 	auth.progress_changed.emit()
 	await settle()
 	check(screen._snapshot.max_rank, "Live progress signal refreshes screen")
@@ -162,8 +165,7 @@ func _run() -> void:
 	auth.session_changed.emit(false)
 	await settle()
 	check(screen._tab == "Overview" and screen._snapshot.assessed == 0, "Session change clears previous student display")
-	# Progress must display the authoritative lesson, clear and post-test gates.
-	var stage_manager: Node = root.get_node("StageManager")
+	# Progress must display the authoritative lesson/checkpoint and story gates.
 	player.completed_lessons.clear()
 	player.remediation_state = {}
 	player.lesson_post_quiz_scores = {}
@@ -177,15 +179,71 @@ func _run() -> void:
 			player.max_stage_cleared_by_module = {"mod_01": 10}
 			player.locked_stages = {"mod_01:3": true}
 			state = Data.snapshot()
-			for row: Dictionary in state.stages:
-				var reason: String = stage_manager.access_reason(int(row.id), "mod_01")
-				check(row.reason == reason, "Progress shows authoritative stage requirement")
-				var expected: String = "Completed" if row.done else ("Available" if reason.is_empty() else "Locked")
-				check(row.status == expected, "Progress status follows real clears and shared gates")
-	check(state.stages[9].reason.contains("post-test"), "Progress explains Stage 10 post-test requirement")
+			for row: Dictionary in state.chapters:
+				var expected: String = "Completed" if row.done else ("Available" if player.story_unlocked(str(row.id)) else "Locked")
+				check(row.status == expected, "Progress uses the same story access rules as Deploy")
+			for row: Dictionary in state.modules:
+				check(row.unlocked == player.can_access_lesson_module(str(row.id)), "Lesson access matches the playable screen")
+	check(not state.modules[1].unlocked, "Six lessons alone do not unlock module two")
 	player.lesson_post_quiz_scores = {"mod_01": 20}
 	state = Data.snapshot()
-	check(state.stages[9].status == "Available", "Progress opens final stage after qualifying post-test")
+	check(state.modules[1].unlocked and state.checkpoint_done == 1, "Passed checkpoint unlocks the next module and counts separately")
+	player.lesson_post_quiz_scores = {"mod_01": 0}
+	state = Data.snapshot()
+	check(state.checkpoint_done == 0 and state.modules[0].best == 0, "A zero score never counts as a passed checkpoint")
+	# Recommendation changes with mastery and respects the real module gates.
+	player.lesson_progress = {"mod_01":6, "mod_02":1}
+	player.lesson_post_quiz_scores = {"mod_01":20}
+	player.learning_evidence = {"topics":{"phishing":1,"smishing":1}}
+	player.mastery_matrix = {"phishing":0.8,"smishing":0.25}
+	state = Data.snapshot()
+	check(state.next.title == "Practise Smishing" and state.next.args == {"practice":true}, "Weakest topic points into existing adaptive practice")
+	player.mastery_matrix = {"phishing":0.2,"smishing":0.8}
+	player.progress_changed.emit()
+	await settle()
+	check(screen._snapshot.next.title == "Practise Phishing", "Player update refreshes the displayed recommendation")
+	player.mastery_matrix = {"phishing":0.8,"smishing":0.8}
+	state = Data.snapshot()
+	check(state.next.args == {"module_id":"mod_02"}, "Proficient learner continues unfinished lessons")
+	player.lesson_progress = {"mod_01":6}
+	player.lesson_post_quiz_scores = {}
+	state = Data.snapshot()
+	check(state.next.args == {"module_id":"mod_01","post_quiz":true}, "Completed lessons lead to an unpassed checkpoint")
+	# Exercise the CTA with a route-capture override, without opening gameplay.
+	var route_script: GDScript = GDScript.new()
+	route_script.source_code = "extends \"res://src/ui/screens/progress/progress_screen.gd\"\nvar forwarded: Dictionary = {}\nfunc _open_learning(args: Dictionary) -> void:\n\tforwarded = args.duplicate(true)\n"
+	check(route_script.reload() == OK, "Recommendation route probe compiles")
+	var route_probe: Control = route_script.new()
+	root.add_child(route_probe)
+	await settle()
+	player.mastery_matrix.phishing = 0.2
+	route_probe._open_next()
+	check(route_probe.forwarded == {"practice":true}, "CTA recalculates a stale recommendation at tap time")
+	route_probe.forwarded.clear()
+	route_probe._owner = "previous-account"
+	route_probe._open_next()
+	check(route_probe.forwarded.is_empty(), "A stale-account CTA cannot navigate")
+	route_probe.queue_free()
+	await settle()
+	auth._signed_in = true
+	player.learning_events.append({"event_id":"pending-probe"})
+	state = Data.snapshot()
+	check(state.sync_pending and state.sync_label == "Changes waiting to sync", "Unacknowledged evidence marks account pending")
+	player.learning_events.clear()
+	root.get_node("SaveService").cloud_sync_completed.emit(true)
+	await settle()
+	check(not screen._snapshot.sync_pending and screen._snapshot.sync_label == "No pending changes", "Sync acknowledgement refreshes the visible status")
+	auth._signed_in = false
+	# Local account-save round trip preserves distinct completion records.
+	var saved: Dictionary = player.get_save_data()
+	player.reset_to_defaults()
+	player.apply_save_data(saved)
+	state = Data.snapshot()
+	check(state.lesson_done == 6 and state.chapter_done == 0 and state.checkpoint_done == 0, "Account-save reload preserves independent measures")
+	fresh()
+	auth.session_changed.emit(false)
+	await settle()
+	check(screen._snapshot.lesson_done == 0 and screen._snapshot.next.args == {"module_id":"mod_01"}, "Account change clears old totals and recommendation")
 	auth._mastery = {"Phishing": 0.25, "Smishing": 0.4, "Vishing": 0.7, "Pretexting": 0.85, "Baiting": 0.95}
 	# Render real viewport scaling with phone-landscape safe-area simulation.
 	for resolution in [Vector2i(960,600), Vector2i(844,390)]:
@@ -211,6 +269,15 @@ func _run() -> void:
 				var tick_top: float = radar._center().y - radar._radius() + 10 - maxi(20, radar.font_size - 6)
 				check(radar._labels[0].get_rect().end.y <= tick_top, "Top topic and ring labels do not overlap")
 			await capture("%d_%s" % [resolution.x, tab.to_lower()])
+			if tab == "Overview":
+				(screen._body.get_parent() as ScrollContainer).scroll_vertical = 350
+				await settle()
+				await capture("%d_totals" % resolution.x)
+		for section: String in ["Lessons", "Checkpoints"]:
+			screen._open_journey(section)
+			await settle()
+			check(screen._journey_detail.get_global_rect().end.x <= root.get_visible_rect().end.x, "Journey details fit the phone safe area")
+			await capture("%d_%s" % [resolution.x, section.to_lower()])
 	before = fingerprint()
 	screen.on_exit()
 	screen.queue_free()

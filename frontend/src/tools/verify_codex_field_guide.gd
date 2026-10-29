@@ -39,11 +39,18 @@ func verify_archive(screen: Control, player: Node) -> void:
 	var original_replay: Dictionary = player.chapter_replay_progress.duplicate(true)
 	player.chapter_progress.erase(Survey.ID)
 	screen.on_enter({})
-	check(screen._section == &"characters" and screen._character_buttons.size() == 3, "Codex defaults to three Chapter 1 character files")
+	check(screen._library_home and screen._library_buttons.size() == 3, "Codex opens its library index")
+	await settle()
+	await capture("codex_library_home")
+	await tap(screen._library_buttons[&"characters"])
+	check(not screen._library_home and screen._character_buttons.size() == 3, "Library card opens character collection")
 	var fresh: Dictionary = Field.story_snapshot({})
 	check(Field.discovery_progress(fresh) == {"found":0,"total":9}, "Fresh archive starts at zero discovered observations")
 	screen._set_section(&"evidence")
-	check(screen._archive_body.find_child("Toggle_record_client_claim", true, false) == null, "Undiscovered records have no expandable spoiler content")
+	check(not screen._record_buttons.has("client_claim"), "Undiscovered records have no searchable spoiler content")
+	screen._filter_archive("client")
+	check(screen._record_buttons.is_empty(), "Search cannot reveal an undiscovered record")
+	screen._filter_archive("")
 	check((screen._archive_body.find_child("DiscoveryProgress", true, false) as ProgressBar).value == 0, "Progress UI reflects the fresh save")
 	screen._set_section(&"characters")
 	for id: String in Field.CHARACTER_IDS:
@@ -94,37 +101,37 @@ func verify_archive(screen: Control, player: Node) -> void:
 	await tap(screen._character_buttons["eric"])
 	check(screen._selected_character == "eric", "Character card opens Eric's profile")
 	check(Field.discovery_progress(complete, "eric") == {"found":3,"total":3}, "Character progress counts only related observations")
-	for section: String in ["background", "relationships", "discoveries"]:
-		var body: Control = screen._archive_body.find_child("Details_" + section, true, false) as Control
-		check(body != null and not body.visible, "Profile section starts collapsed: " + section)
+	check(screen._archive_body.find_child("ReadingPage", true, false) != null, "Character opens a readable reference page")
 	await capture("codex_eric")
-	var background_toggle: Button = screen._archive_body.find_child("Toggle_background", true, false) as Button
-	await tap(background_toggle)
-	check((screen._archive_body.find_child("Details_background", true, false) as Control).visible, "Tapping Background expands the original profile text")
 	screen._refresh_archive()
-	check((screen._archive_body.find_child("Details_background", true, false) as Control).visible, "Asset/progress refresh preserves expanded sections")
+	check(screen._selected_character == "eric", "Asset/progress refresh preserves selected profile")
 	check(not screen.can_go_back() and screen._selected_character.is_empty(), "Profile Back returns to Characters without leaving Codex")
 	await tap(screen._section_buttons[&"evidence"])
 	check(screen._section == &"evidence", "Evidence tab switches by tap")
 	check(Field.observations(screen._story_snapshot)[3].status == "Unverified", "Completing Chapter 1 never verifies Eric's claim")
 	check((screen._archive_body.find_child("DiscoveryProgress", true, false) as ProgressBar).value == 9, "Completed archive displays all nine discoveries")
-	var claim_body: Control = screen._archive_body.find_child("Details_record_client_claim", true, false) as Control
-	check(not claim_body.visible, "Evidence details and sources are collapsed initially")
-	var known_button: Button = screen._archive_body.find_child("Toggle_record_offer", true, false) as Button
-	var claim_button: Button = screen._archive_body.find_child("Toggle_record_client_claim", true, false) as Button
-	var unknown_button: Button = screen._archive_body.find_child("Toggle_record_client_identity", true, false) as Button
-	check(known_button.text.contains("KNOWN") and claim_button.text.contains("UNVERIFIED") and unknown_button.text.contains("UNKNOWN"), "Status indicators include labels, not color alone")
-	check(known_button.get_theme_color("font_color") != claim_button.get_theme_color("font_color") and claim_button.get_theme_color("font_color") != unknown_button.get_theme_color("font_color"), "Evidence statuses have distinct colors")
+	check(screen._record_buttons.size() == 9, "All discovered evidence has an entry card")
+	screen._filter_archive("client")
+	check(screen._record_buttons.has("client_claim") and not screen._record_buttons.has("offer"), "Search filters the discovered record text")
+	screen._filter_archive("no matching record")
+	check(screen._record_buttons.is_empty(), "Unmatched query has no stale cards")
+	screen._filter_archive("")
+	var claim_button: Button = screen._record_buttons["client_claim"]
+	check(claim_button.accessibility_name.contains("Unverified"), "Status is conveyed in words, not color alone")
 	await capture("codex_evidence")
 	screen._archive_scroll.ensure_control_visible(claim_button)
 	await settle()
 	await tap(claim_button)
-	check(claim_body.visible and (claim_body.get_child(1) as Label).text.begins_with("SOURCE / "), "Evidence expands its full details and original source")
+	check(screen._selected_record == "client_claim" and screen._archive_body.find_child("ReadingPage", true, false) != null, "Evidence opens a dedicated reading page")
 	await capture("codex_evidence_expanded")
-	await tap(claim_button)
-	check(not claim_body.visible, "Evidence can collapse again")
+	check(not screen.can_go_back() and screen._selected_record.is_empty(), "Evidence Back returns to the collection")
 	for dimensions: Vector2i in [Vector2i(844,390), Vector2i(720,360), Vector2i(390,844)]:
 		root.size = dimensions
+		screen._show_library()
+		await settle()
+		await capture("codex_library_%d" % dimensions.x)
+		for card: Button in screen._library_buttons.values():
+			check(card.get_global_rect().end.x <= root.get_visible_rect().end.x, "Library cards fit phone width")
 		screen._set_section(&"characters")
 		await settle()
 		check(root.get_visible_rect().encloses(screen._archive_scroll.get_global_rect()), "Archive viewport fits mobile screen")
@@ -146,7 +153,7 @@ func verify_archive(screen: Control, player: Node) -> void:
 		await settle()
 		var last_action: Control = screen._archive_body.get_child(screen._archive_body.get_child_count()-1) as Control
 		check(screen._archive_scroll.get_global_rect().encloses(last_action.get_global_rect()), "The final profile action is reachable at every mobile size")
-		check(not screen.can_go_back() and screen.can_go_back(), "Mobile Back returns to cards, then allows normal exit")
+		check(not screen.can_go_back() and not screen.can_go_back() and screen._library_home and screen.can_go_back(), "Mobile Back returns to cards, library, then permits exit")
 	check(player.get_save_data() == before, "Archive browsing does not mutate player data, progress, rewards or locks")
 	player.chapter_progress.erase(Survey.ID)
 	screen._open_character("john")
@@ -158,6 +165,113 @@ func verify_archive(screen: Control, player: Node) -> void:
 	screen._set_section(&"combat")
 	await settle()
 	check(screen._panes.visible and not screen._archive_scroll.visible, "Combat Intel retains the existing field guide")
+
+func completed_archive(number: int) -> Dictionary:
+	var chapter: GDScript = Field.chapter_definition(number)
+	var state: Dictionary = chapter.fresh()
+	state.phase = "done"
+	state.sealed = true
+	state.completed = true
+	match number:
+		2:
+			state.flags = ["domain","wording","signature"]
+			state.domains = ["fake"]
+			state.headers = ["From","Reply-To","Subject"]
+		3:
+			state.revealed = ["payout"]
+			state.expanded = ["payout"]
+			state.hotspots = ["domain","http","security"]
+			state.reviewed = true
+		4:
+			state.timeline_order = chapter.ORDER.duplicate()
+			state.timeline_checked = ["prize"]
+			state.connections = chapter.PAIRS.keys()
+			state.minutes_draft = "2"
+			state.event_draft = "survey confirmation reply"
+			state.notes = ["prize"]
+			state.claimed = true
+		5:
+			for key: String in ["briefed","theory_done","final_matched","admitted","comic_checked","animatic_done","aftermath_done","lights_done"]: state[key] = true
+			state.solved = [0,1,2,3]
+			state.admission_step = chapter.ADMISSION.size() - 1
+			state.comic_order = chapter.COMIC_ORDER.duplicate()
+			state.animatic_step = 5
+			state.aftermath_step = chapter.AFTERMATH.size() - 1
+	return Field.story_snapshot(state, number)
+
+func verify_later_archives(screen: Control, player: Node) -> void:
+	var original: Dictionary = player.chapter_progress.duplicate(true)
+	var original_replays: Dictionary = player.chapter_replays.duplicate(true)
+	player.chapter_progress = {}
+	screen._archive_session_changed(false)
+	screen._select_chapter(5)
+	check(screen._chapter == 1, "Locked chapter cannot be selected or reveal its archive")
+	for number: int in range(2, 6):
+		var chapter: GDScript = Field.chapter_definition(number)
+		var fresh: Dictionary = Field.story_snapshot({}, number)
+		check(Field.discovery_progress(fresh).found == 0, "Fresh chapter %d leaks no observations" % number)
+		for item: Dictionary in Field.observations(fresh):
+			check(item.title == "Undiscovered observation" and item.people.is_empty(), "Unknown chapter records do not reveal titles or implicated people")
+		var completed: Dictionary = completed_archive(number)
+		check(completed.completed, "Completed archive fixture satisfies chapter validation")
+		var progress: Dictionary = Field.discovery_progress(completed)
+		check(progress.found == progress.total, "Every observation is obtainable in chapter %d" % number)
+		for record: Dictionary in Field.chapter_records(fresh):
+			var probe: Dictionary = fresh.duplicate(true)
+			if record.has("after_beat"):
+				probe.beat = int(record.after_beat)
+				var current: Array[Dictionary] = Field.observations(probe)
+				for item: Dictionary in current:
+					if item.id == record.id: check(not item.discovered, "Current dialogue cannot reveal its unfinished observation")
+				probe.beat += 1
+			else:
+				if record.has("value"): probe[str(record.field)] = [record.value]
+				else: probe[str(record.field)] = true
+			for item: Dictionary in Field.observations(probe):
+				if item.id == record.id: check(item.discovered, "Exact saved discovery gate unlocks " + str(record.id))
+		player.chapter_progress[chapter.ID] = completed.duplicate(true)
+		player.chapter_replays[chapter.ID] = chapter.fresh()
+		screen._select_chapter(number)
+		screen._set_section(&"evidence")
+		check(screen._story_snapshot.completed, "A fresh replay never resets the original chapter's Codex")
+		var before: Dictionary = player.get_save_data()
+		root.size = Vector2i(844,390)
+		await settle()
+		await capture("codex_chapter%d_evidence" % number)
+		for button: Button in screen._chapter_buttons:
+			check(button.size.y * root.get_final_transform().get_scale().y >= 47.5, "Chapter selector remains touch-sized")
+			check(button.get_global_rect().end.x <= root.get_visible_rect().end.x, "Chapter selector stays within the viewport")
+		var records: Array[Dictionary] = Field.observations(completed)
+		var toggle: Button = screen._record_buttons[str(records.back().id)]
+		screen._archive_scroll.ensure_control_visible(toggle)
+		await settle()
+		await tap(toggle)
+		check(screen._selected_record == str(records.back().id), "Later evidence opens with a touch")
+		await capture("codex_chapter%d_expanded" % number)
+		screen._set_section(&"characters")
+		await settle()
+		for id: String in Field.character_ids(completed):
+			screen._open_character(id)
+			check(not Field.character(id, completed).is_empty(), "Every chapter character has a readable file")
+		check(player.get_save_data() == before, "Later archive browsing is read-only")
+	var unresolved: Dictionary = completed_archive(5)
+	unresolved.admitted = false
+	unresolved.aftermath_done = false
+	unresolved = Field.story_snapshot(unresolved, 5)
+	player.chapter_progress[Field.Hearing.ID] = unresolved
+	screen._set_section(&"evidence")
+	check(not screen._record_buttons.has("c5_admission"), "Matching the typo cannot reveal the later admission")
+	check(not screen._record_buttons.has("c5_outcome"), "Unfinished hearing cannot reveal its punishment")
+	var invalid: Dictionary = Field.story_snapshot({"admitted":true,"completed":true,"aftermath_done":true}, 5)
+	check(Field.discovery_progress(invalid).found == 0, "Malformed flags do not fabricate a resolved hearing")
+	player.chapter_progress = {}
+	screen._archive_session_changed(false)
+	check(screen._chapter == 1 and screen._selected_character.is_empty() and screen._story_snapshot.beat == 0, "Account reset removes later chapter selections and discoveries")
+	player.chapter_progress = original
+	player.chapter_replays = original_replays
+	screen._set_section(&"combat")
+	root.size = Vector2i(1280,720)
+	await settle()
 
 func _run() -> void:
 	root.size = Vector2i(1280, 720)
@@ -176,6 +290,7 @@ func _run() -> void:
 	root.add_child(screen)
 	await settle()
 	await verify_archive(screen, player)
+	await verify_later_archives(screen, player)
 	check(screen._visible_ids.size() == 3, "All three defenders indexed")
 	check(screen._current_unit_id == "base", "Basic Node is initial entry")
 	check(screen._preview != null, "Entry includes reusable artwork preview")
@@ -263,7 +378,7 @@ func _run() -> void:
 		check(root.get_visible_rect().encloses(screen._detail_panel.get_global_rect()), "Mobile details fit viewport")
 		await capture("codex_detail_%dx%d" % [dimensions.x, dimensions.y])
 		check(not screen.can_go_back() and screen._list_panel.visible, "Mobile Back returns to collection")
-		check(screen.can_go_back(), "Second Back permits exit")
+		check(not screen.can_go_back() and screen._library_home and screen.can_go_back(), "Second Back returns to library, then permits exit")
 	check(player.locked_stages == locks, "Mobile page navigation leaves stage locks unchanged")
 	check(get_nodes_in_group("enemies").is_empty() and get_nodes_in_group("towers").is_empty(), "Codex previews never instantiate combat actors")
 	check(player.lesson_progress == progress and player.credits == credits, "Browsing does not modify progression or credits")

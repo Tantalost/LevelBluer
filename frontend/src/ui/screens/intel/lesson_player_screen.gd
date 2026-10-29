@@ -14,6 +14,9 @@ var _review_question: int = 0
 var _review_choice: int = -1
 var _review_feedback: bool = false
 var account: Object
+var _activity_owner: String = ""
+var _activity_signed: bool = false
+var _session_expired: bool = false
 var _web: Control
 var _post_quiz: Control
 var _post_active: bool = false
@@ -68,6 +71,9 @@ var _reveal_button: Button
 signal lesson_celebrated
 
 func _ready() -> void:
+	_activity_owner = AuthService.participant_code()
+	_activity_signed = AuthService.is_signed_in()
+	AuthService.session_changed.connect(_session_changed)
 	if account == null:
 		account = PlayerManager
 	var shell := UI.shell(self, "LEARNING PATH", func() -> void: Router.request_back())
@@ -129,7 +135,21 @@ func _ready() -> void:
 	_answer_effect = Feedback.mount(_workspace)
 	get_viewport().size_changed.connect(_fit_readability)
 
+func _owner_valid() -> bool:
+	return not _session_expired and AuthService.participant_code() == _activity_owner and AuthService.is_signed_in() == _activity_signed
+
+func _session_changed(_signed_in: bool) -> void:
+	if _owner_valid(): return
+	_session_expired = true
+	_pending_entry.clear()
+	_submit_button.disabled = true
+	_start_button.disabled = true
+	_status_label.text = "Account changed. Reopen this lesson to continue."
+
 func on_enter(args: Dictionary) -> void:
+	if not _owner_valid():
+		Router.request_back()
+		return
 	_pending_entry = {}
 	_remediation_stage = 0
 	if bool(args.get("practice",false)):
@@ -178,6 +198,9 @@ func on_enter(args: Dictionary) -> void:
 		_web.reveal_web()
 
 func on_resume() -> void:
+	if not _owner_valid():
+		Router.request_back()
+		return
 	if not _pending_entry.is_empty():
 		var args := _pending_entry.duplicate()
 		_pending_entry = {}
@@ -554,7 +577,7 @@ func _refresh_choices() -> void:
 	_submit_button.disabled = not _quiz_resolved and _picks.is_empty()
 
 func _check_quiz() -> void:
-	if _phase != Phase.QUIZ or _quiz_resolved or _picks.is_empty() or _quiz_items.size() != Study.MINI_COUNT:
+	if not _owner_valid() or _phase != Phase.QUIZ or _quiz_resolved or _picks.is_empty() or _quiz_items.size() != Study.MINI_COUNT:
 		return
 	var item: Dictionary = _quiz_items[_quiz_index]
 	var correct: Array = item.correct
@@ -574,7 +597,7 @@ func _check_quiz() -> void:
 	_answer_effect.show_result(_quiz_passed if _quiz_finished else ok)
 
 func _on_simulation_passed() -> void:
-	if _phase != Phase.SIMULATION or not _quiz_passed:
+	if not _owner_valid() or _phase != Phase.SIMULATION or not _quiz_passed:
 		return
 	AudioManager.play_sfx("ui_success")
 	_simulation_passed = true
@@ -582,7 +605,7 @@ func _on_simulation_passed() -> void:
 	_submit_button.text = "VIEW RESULT  >"
 
 func _on_continue() -> void:
-	if _busy or _submit_button.disabled:
+	if not _owner_valid() or _busy or _submit_button.disabled:
 		return
 	if _remediation_stage > 0:
 		_continue_remediation()
@@ -715,6 +738,7 @@ func _choose_review_answer(index: int) -> void:
 	_submit_button.disabled = false
 
 func _continue_remediation() -> void:
+	if not _owner_valid(): return
 	var session: Dictionary = Remediation.latest(account, _module_id, _remediation_stage)
 	if _review_step == "done":
 		Router.retry_after_remediation(_module_id, _remediation_stage)
@@ -741,7 +765,7 @@ func _can_complete() -> bool:
 	return _remediation_stage == 0 and not _busy and _phase == Phase.COMPLETE and _quiz_passed and _simulation_passed
 
 func _finish_lesson() -> void:
-	if not _can_complete():
+	if not _owner_valid() or not _can_complete():
 		return
 	_busy = true
 	if Router.is_tutorial and Router.tutorial_beat == &"lesson":
@@ -794,6 +818,7 @@ func on_exit() -> void:
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
 func _open_post_quiz() -> void:
+	if not _owner_valid(): return
 	if _remediation_stage > 0 or Router.is_tutorial or _post_active or account.get_lesson_progress(_module_id) < _lessons.size():
 		return
 	_post_active = true

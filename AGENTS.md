@@ -11,6 +11,10 @@ LEVELBLUE is a BKT-based gamified mobile application for interactive and adaptiv
 
 Challenge requests that conflict with these objectives or introduce unnecessary systems. Ask when requirements or research assumptions are unclear. Reuse existing screens, question banks, account saves, and signals before adding infrastructure. Keep adaptive practice separate from research assessment scores; mastery estimates are not proof of learning gains. Perks must never affect graded checks, checkpoints, or research tests. Record assisted story activity separately. Do not describe configured BKT parameters as trained on student data unless a fitting and validation pipeline actually exists.
 
+## Confirmed Research Direction
+
+Compare LEVELBLUE with usual instruction covering the same social-engineering topics, using existing classes/sections. Evaluate the application as a whole; do not claim this comparison isolates the effect of BKT. Plan independent pre/post-assessments separate from adaptive gameplay. Section counts, allocation procedure, assessment instruments, and statistical analysis remain to be confirmed with the research adviser; do not assume individual random assignment or implement additional research infrastructure before its milestone is approved.
+
 ## Commit Scope
 
 Keep developer test files, verification scripts, their UID sidecars, and generated test artifacts out of GitHub commits unless the user explicitly requests otherwise. Retain local validation files and continue running relevant checks. Stage only explicitly selected production/documentation paths; do not use blanket staging such as `git add .` or `git add -A`. Before committing, inspect `git diff --cached --name-only` and exclude test paths, including already-tracked tests that `.gitignore` cannot protect. Do not delete or untrack existing tests merely to hide their changes. In-game assessments, question banks, and research pre/post-test implementation are product code, not developer test files.
