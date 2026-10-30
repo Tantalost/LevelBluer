@@ -8,6 +8,7 @@ const PHONE_PATH: String = "res://src/gameplay/decision/delivery_phone.gd"
 const BACKGROUND_ASSET: String = "story_bg_event_room_day"
 const NIGHT_BACKGROUND: String = "event_room_day"
 const MORNING: bool = true
+const DAY_LABEL: String = "LUNCHTIME"
 const FULL_WIDTH_INVESTIGATION: bool = true
 const FIRST_PHASE: String = "reveal"
 const NEXT_CHAPTER: String = ""

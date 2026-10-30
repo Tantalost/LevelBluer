@@ -480,6 +480,10 @@ func _render() -> void:
 	_heading.text = "CHAPTER %d / " % Chapter.NUMBER + ("NIGHT" if night else "DAY") + (" / REPLAY" if replay else "")
 	if Chapter.get("MORNING") == true:
 		_heading.text = "CHAPTER %d / " % Chapter.NUMBER + ("INVESTIGATION" if Chapter.TASKS.has(phase) or phase == "seal" else "MORNING") + (" / REPLAY" if replay else "")
+	if Chapter.get("DAY_LABEL") is String:
+		var chapter_module: int = int(str(Chapter.ID).get_slice("_", 1))
+		var day_label: String = str(Chapter.get("DAY_LABEL")) if phase == "day" else "INVESTIGATION"
+		_heading.text = "MODULE %d / CHAPTER %d / %s" % [chapter_module, Chapter.NUMBER, day_label] + (" / REPLAY" if replay else "")
 	if phase == "done": _heading.text = ""
 	if phase == "day":
 		var beat: Dictionary = Chapter.STORY[int(state["beat"])]
@@ -841,7 +845,8 @@ func _use_perk(id: String) -> void:
 		hints.merge({"compare":"Compare the exact domain, how the reader is addressed, and who signs the message. A matching subject prefix is not a difference.", "report":"Check the sixth character of the domain carefully. Is it a letter or a number?", "headers":"From is the displayed sender address. Reply-To controls where a reply goes. Subject is the title."})
 		hints.merge({"reveal":"Hold the link and compare the displayed wallet domain with the short-link service underneath.", "expand":"Select or drag the shortened link into the expander. Read the domain of its destination, not just its path.", "flaws":"Compare the known wallet domain with the address bar. HTTP and the security indicator describe the same connection issue; branding clues support the address findings."})
 		hints.merge({"timeline":"Compare hours, minutes and seconds. Eric is at :45, Jobert at :50, then the prize at the next minute.", "board":"Everyone could read the coffee comment. Match exact text and intervals; do not infer a sender from presence status.", "case_note":"08:12 to 08:14 gives the minute interval. Name the survey confirmation reply, not a person."})
-		_perk_body.add_child(UI.label(str(hints.get(str(state.phase), "")), 26))
+		var hint_text: String = str(Chapter.TASKS.get(str(state.phase), {}).get("tip", "Compare the request with your order.")) if Chapter.get("FULL_WIDTH_INVESTIGATION") == true else str(hints.get(str(state.phase), ""))
+		_perk_body.add_child(UI.label(hint_text, 26))
 	elif id == "reference":
 		var columns: HBoxContainer = HBoxContainer.new()
 		columns.add_theme_constant_override("separation", 18)
@@ -991,7 +996,7 @@ func _actor_texture(person: String, face: int) -> Texture2D:
 			return sprite
 		# An offline first launch still has a happy pose until art sync completes.
 		face = 1
-	var texture: Texture2D = AssetManager.get_texture("chapter1_" + person)
+	var texture: Texture2D = AssetManager.get_texture("story_amani_poses" if person == "amani" else "chapter1_" + person)
 	if person == "amani" and texture != null:
 		var amani: AtlasTexture = AtlasTexture.new()
 		amani.atlas = texture

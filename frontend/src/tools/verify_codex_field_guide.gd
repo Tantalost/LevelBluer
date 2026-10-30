@@ -137,6 +137,7 @@ func verify_archive(screen: Control, player: Node) -> void:
 	var claim_button: Button = screen._record_buttons["client_claim"]
 	check(claim_button.accessibility_name.contains("Unverified"), "Status is conveyed in words, not color alone")
 	await capture("codex_evidence")
+	await settle()
 	screen._archive_scroll.ensure_control_visible(claim_button)
 	await settle()
 	await tap(claim_button)

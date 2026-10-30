@@ -283,7 +283,7 @@ func _build_journey() -> void:
 	_journey_detail = _panel(panels, Color("101e28"))
 	(_journey_detail.get_parent() as Control).size_flags_stretch_ratio = 0.47
 	if _journey == "Story":
-		index.add_child(_label("MODULE 1 / EMAIL TRICKS", UI.TEAL))
+		index.add_child(_label("STORY / AVAILABLE CHAPTERS", UI.TEAL))
 		index.add_child(_label("%d / %d chapters completed" % [_snapshot.chapter_done, _snapshot.chapter_total]))
 		var grid: GridContainer = GridContainer.new()
 		grid.columns = 1
@@ -292,14 +292,15 @@ func _build_journey() -> void:
 		index.add_child(grid)
 		for i: int in _snapshot.chapters.size():
 			var entry: Dictionary = _snapshot.chapters[i]
-			var text: String = "%02d  %s\n%s" % [entry.number, entry.name, entry.status]
+			var text: String = "M%d / CH %02d  %s\n%s" % [entry.module, entry.number, entry.name, entry.status]
 			var button: Button = _button(text, _select_chapter.bind(i))
 			button.custom_minimum_size.y = maxf(90, _touch)
 			button.size_flags_horizontal = SIZE_EXPAND_FILL
 			grid.add_child(button)
 			_journey_buttons.append(button)
 		_select_chapter(_chapter)
-		for i: int in range(1, _snapshot.modules.size()):
+		index.add_child(_label("MODULE 2 / Chapters 2–5 in development", UI.MUTED, _font - 2))
+		for i: int in range(2, _snapshot.modules.size()):
 			index.add_child(_label("MODULE %d / %s\nStory coming soon" % [i + 1, _snapshot.modules[i].name], UI.MUTED, _font - 2))
 	else:
 		index.add_child(_label("MODULE CHECKPOINTS" if _journey == "Checkpoints" else "LESSONS / %d TOTAL" % _snapshot.lesson_total, UI.TEAL))
@@ -322,7 +323,7 @@ func _select_chapter(index: int) -> void:
 	_chapter = clampi(index, 0, _snapshot.chapters.size() - 1)
 	_highlight_journey(_chapter)
 	var entry: Dictionary = _snapshot.chapters[_chapter]
-	_journey_detail.add_child(_label("CHAPTER %02d" % entry.number, UI.TEAL))
+	_journey_detail.add_child(_label("MODULE %d / CHAPTER %02d" % [entry.module, entry.number], UI.TEAL))
 	_journey_detail.add_child(_label(str(entry.name), UI.TEXT, _font + 6))
 	_journey_detail.add_child(_label(str(entry.status).to_upper(), _status_color(str(entry.status))))
 	_journey_detail.add_child(_label("Completed in your story record." if entry.done else ("Ready to select from Deploy." if entry.status == "Available" else str(entry.reason))))

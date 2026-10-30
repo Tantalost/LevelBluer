@@ -83,6 +83,9 @@ func story_definition(id: String) -> GDScript:
 	if id == DeliveryChapter.ID: return DeliveryChapter
 	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
+func authored_story_ids() -> PackedStringArray:
+	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID]
+
 func story_unlocked(id: String) -> bool:
 	if id == DeliveryChapter.ID:
 		return is_module_deploy_unlocked("mod_02") and chapter_progress.get(ConfrontationChapter.ID, {}).get("completed", false)
