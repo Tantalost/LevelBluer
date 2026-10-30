@@ -81,6 +81,7 @@ func save_game(sync_cloud: bool = true, defer_cloud: bool = false) -> void:
 		print("[SaveService] Game saved successfully. path=", path)
 	if AuthService.is_signed_in():
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
+		PlayerManager.accept_local_progress_write()
 		# Frequent mission counters may wait for the retry timer, but a previous
 		# upload must not acknowledge a newer local snapshot as already synced.
 		if defer_cloud and _sync_in_flight:
@@ -90,46 +91,63 @@ func save_game(sync_cloud: bool = true, defer_cloud: bool = false) -> void:
 	_sync_to_cloud()
 
 
-func load_game() -> void:
+func load_game(mark_upload_ready: bool = true) -> bool:
 	var path: String = _resolve_save_path()
 	if not FileAccess.file_exists(path):
 		print("[SaveService] No save file found. Starting fresh. path=", path)
-		return
+		return false
 	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		push_error("[SaveService] Failed to open save file for reading: " + path)
-		return
+		return false
 	var json_string: String = file.get_as_text()
 	file.close()
 	var json: JSON = JSON.new()
 	var error: Error = json.parse(json_string)
 	if error != OK:
 		push_error("[SaveService] JSON Parse Error in save file: " + path)
-		return
+		return false
 	var data: Variant = json.data
 	if typeof(data) != TYPE_DICTIONARY:
 		push_error("[SaveService] Save root is not a Dictionary: " + path)
-		return
+		return false
 	var parsed: Dictionary = data as Dictionary
 	if not _looks_like_save(parsed):
 		push_error("[SaveService] Save file is not a player snapshot: " + path)
-		return
+		return false
 	PlayerManager.apply_save_data(parsed)
+	if mark_upload_ready:
+		PlayerManager.note_existing_local_save()
 	print("[SaveService] Save loaded successfully. path=", path)
+	return true
 
 
 func fetch_cloud_save() -> void:
-	if StudentDatabase.has_pending_sync(AuthService.participant_code()) or not PlayerManager.learning_events.is_empty():
-		push_pending_sync()
-		_finish_fetch(false)
-		return
-	if _fetch_in_flight:
-		return
 	if not AuthService.is_signed_in():
 		_finish_fetch(false)
 		return
+	# Guest memory and a fresh reset are not an account snapshot. Fetch only
+	# after this participant is hydrated, and POST only when that snapshot
+	# came from their own file or a later local change.
+	if not PlayerManager.has_hydrated_account():
+		_finish_fetch(false)
+		return
+	# A verified snapshot may upload. Anything else, including a legacy file,
+	# has to read cloud before a POST.
+	if PlayerManager.can_upload_progress() and not PlayerManager.needs_cloud_reconcile():
+		if StudentDatabase.has_pending_sync(AuthService.participant_code()) or not PlayerManager.learning_events.is_empty():
+			push_pending_sync()
+		_finish_fetch(false)
+		return
+	_begin_cloud_fetch()
+
+
+func _begin_cloud_fetch() -> void:
+	if _fetch_in_flight:
+		return
 	var token: String = AuthService.auth_token()
 	if token.is_empty() or _http_fetch == null:
+		PlayerManager.note_cloud_fetch_failed()
 		_finish_fetch(false)
 		return
 
@@ -144,6 +162,7 @@ func fetch_cloud_save() -> void:
 	if error != OK:
 		_http_fetch.request_completed.disconnect(_fetch_callback)
 		push_warning("[SaveService] Failed to initiate cloud fetch. error=" + str(error))
+		PlayerManager.note_cloud_fetch_failed()
 		_finish_fetch(false)
 
 
@@ -164,37 +183,37 @@ func _on_fetch_completed(
 		return
 	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
 		push_warning("[SaveService] Cloud fetch failed or offline. response_code=" + str(response_code))
+		PlayerManager.note_cloud_fetch_failed()
 		_finish_fetch(false)
 		return
 
-	if StudentDatabase.has_pending_sync(AuthService.participant_code()) or not PlayerManager.learning_events.is_empty():
-		_finish_fetch(false)
-		return
 	var json_string: String = body.get_string_from_utf8()
 	if json_string.strip_edges().is_empty() or json_string.strip_edges() == "null":
-		print("[SaveService] No cloud save exists yet. Loading local fallback.")
+		print("[SaveService] Server confirmed that no cloud save exists.")
 		load_game()
+		var upload_local: bool = PlayerManager.has_unconfirmed_local_writes() or PlayerManager.can_upload_progress()
+		PlayerManager.confirm_cloud_empty(upload_local)
+		if upload_local:
+			save_game(false)
+			push_pending_sync()
 		_finish_fetch(true)
 		return
 
 	var save_dict: Dictionary = _extract_save_dict(json_string)
 	if save_dict.is_empty():
-		print("[SaveService] Cloud returned no player snapshot. Loading local fallback.")
-		load_game()
+		push_warning("[SaveService] Cloud response was not a player snapshot.")
+		PlayerManager.note_cloud_fetch_failed()
+		_finish_fetch(false)
+		return
+	if PlayerManager.needs_cloud_reconcile():
+		PlayerManager.reconcile_cloud_snapshot(save_dict)
+		save_game()
 		_finish_fetch(true)
 		return
-
-	var path: String = _resolve_save_path()
-	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-	if file == null:
-		push_warning("[SaveService] Cloud save parsed but local write failed. Applying in memory.")
-		PlayerManager.apply_save_data(save_dict)
-		_finish_fetch(true)
-		return
-	file.store_string(JSON.stringify(save_dict))
-	file.close()
-	print("[SaveService] Cloud save downloaded and written to disk.")
-	load_game()
+	PlayerManager.apply_save_data(save_dict)
+	PlayerManager.note_downloaded_cloud_baseline()
+	save_game(false)
+	print("[SaveService] Cloud save downloaded and stored without upload.")
 	_finish_fetch(true)
 
 
@@ -227,11 +246,21 @@ func _finish_fetch(success: bool) -> void:
 
 func push_pending_sync() -> void:
 	AuthService.flush_pending_pretests()
+	# A failed read must be retried before any POST. Uploading now would
+	# replace cloud progress this device has not seen.
+	if PlayerManager.cloud_baseline_unconfirmed() or PlayerManager.needs_cloud_reconcile():
+		if PlayerManager.has_hydrated_account():
+			_begin_cloud_fetch()
+		return
 	_sync_to_cloud()
 
 
 func _sync_to_cloud() -> void:
 	if not AuthService.is_signed_in():
+		return
+	if not PlayerManager.can_upload_progress():
+		if PlayerManager.has_hydrated_account() and (PlayerManager.cloud_baseline_unconfirmed() or PlayerManager.needs_cloud_reconcile()):
+			_begin_cloud_fetch()
 		return
 	var token: String = AuthService.auth_token()
 	if token.is_empty():

@@ -3,6 +3,18 @@ import types
 import unittest
 from unittest.mock import patch
 
+if "postgrest.exceptions" not in sys.modules:
+    _postgrest = types.ModuleType("postgrest")
+    _postgrest_exceptions = types.ModuleType("postgrest.exceptions")
+
+    class _APIError(Exception):
+        pass
+
+    _postgrest_exceptions.APIError = _APIError
+    _postgrest.exceptions = _postgrest_exceptions
+    sys.modules["postgrest"] = _postgrest
+    sys.modules["postgrest.exceptions"] = _postgrest_exceptions
+
 if "app.supabase_client" not in sys.modules:
     _supabase_stub = types.ModuleType("app.supabase_client")
     _supabase_stub.supabase = object()
@@ -53,6 +65,8 @@ class FakeQuery:
             raise RuntimeError(f"supabase {self._table} failed: secret-token")
         if (self._table, n) in self._store.fail_nth:
             raise RuntimeError(f"supabase {self._table} #{n} failed: secret-token")
+        if self._table == "player_saves" and self._pending_upsert is None:
+            return _Result(data=self._store.save_rows)
         if self._table == "bkt_records" and self._pending_upsert is not None:
             rows = self._pending_upsert
             if isinstance(rows, dict):
@@ -73,6 +87,7 @@ class FakeSupabase:
         self.executes: list[str] = []
         self.updates: dict[str, list] = {}
         self.upserts: dict[str, list] = {}
+        self.save_rows = [{"payload": {}}]
 
     def table(self, name: str) -> FakeQuery:
         return FakeQuery(self, name)
@@ -168,6 +183,21 @@ class ProgressSyncFailureTest(unittest.TestCase):
         self.assertEqual(len(fake.bkt_rows), 2)
         self.assertEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.8)
 
+    def test_failed_save_read_does_not_replace_pretest_flags(self):
+        fake = FakeSupabase(fail_nth={("player_saves", 1)})
+        fake.save_rows = [{"payload": {"module_pretests": ["mod_01"]}}]
+        with self.assertRaises(HTTPException) as ctx:
+            self._run(fake)
+        self.assertEqual(ctx.exception.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertNotIn("player_saves", fake.upserts)
+
+    def test_save_read_keeps_existing_pretest_flags(self):
+        fake = FakeSupabase()
+        fake.save_rows = [{"payload": {"module_pretests": ["mod_01", "mod_02"]}}]
+        self.assertTrue(self._run(fake).ok)
+        stored = fake.upserts["player_saves"][0]["payload"]
+        self.assertEqual(stored["module_pretests"], ["mod_01", "mod_02"])
+
     def test_save_blob_write_fails_raises_non_2xx(self):
         with self.assertRaises(HTTPException) as ctx:
             self._run(FakeSupabase(fail={"player_saves"}))
@@ -180,6 +210,57 @@ class ProgressSyncFailureTest(unittest.TestCase):
             self._run(FakeSupabase(fail={"bkt_records"}))
         self.assertEqual(ctx.exception.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(ctx.exception.detail, "Database request failed")
+
+    def test_unassessed_prior_does_not_replace_cloud_mastery(self):
+        fake = FakeSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {"phishing": 0.8, "vishing": 0.66, "baiting": 0.5},
+                "module_pretests": ["mod_02"],
+            }
+        }]
+        payload = ProgressSyncRequest(mastery_matrix={"phishing": 0.10, "smishing": 0.44, "vishing": 0.10})
+        with (
+            patch("app.services.progress_service.fetch_student_by_id",
+                  return_value={"id": "stu-1", "highest_unlocked_stage": 1}),
+            patch("app.services.progress_service.supabase", fake),
+        ):
+            self.assertTrue(sync_student_progress("stu-1", payload).ok)
+        stored = fake.upserts["player_saves"][0]["payload"]
+        matrix = stored["mastery_matrix"]
+        self.assertAlmostEqual(matrix["phishing"], 0.8)
+        self.assertAlmostEqual(matrix["smishing"], 0.44)
+        self.assertAlmostEqual(matrix["vishing"], 0.66)
+        self.assertAlmostEqual(matrix["baiting"], 0.5)
+        self.assertEqual(stored["module_pretests"], ["mod_02"])
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.8)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Vishing")]["probability_known"], 0.66)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Smishing")]["probability_known"], 0.44)
+
+    def test_assessed_prior_is_stored(self):
+        fake = FakeSupabase()
+        fake.save_rows = [{"payload": {"mastery_matrix": {"phishing": 0.8, "pretexting": 0.33}}}]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10},
+            learning_evidence={"topics": {"phishing": 1}, "responses": 1},
+            pretest_baselines={"mod_02": {"correct": 1, "total": 4}},
+            lesson_quiz_responses={"mod_03": {"q1": False}},
+            practice_responses={"prac_1": {"module_id": "mod_04", "skill": "pretexting", "correct": False}},
+            lesson_post_quiz_scores={"mod_05": 3},
+        )
+        with (
+            patch("app.services.progress_service.fetch_student_by_id",
+                  return_value={"id": "stu-1", "highest_unlocked_stage": 1}),
+            patch("app.services.progress_service.supabase", fake),
+        ):
+            self.assertTrue(sync_student_progress("stu-1", payload).ok)
+        matrix = fake.upserts["player_saves"][0]["payload"]["mastery_matrix"]
+        self.assertAlmostEqual(matrix["phishing"], 0.10)
+        self.assertAlmostEqual(matrix["smishing"], 0.10)
+        self.assertAlmostEqual(matrix["vishing"], 0.10)
+        self.assertAlmostEqual(matrix["pretexting"], 0.10)
+        self.assertAlmostEqual(matrix["baiting"], 0.10)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.10)
 
     def test_student_mastery_column_update_fails_raises_non_2xx(self):
         with self.assertRaises(HTTPException) as ctx:
