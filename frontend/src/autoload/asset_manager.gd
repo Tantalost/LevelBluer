@@ -308,6 +308,8 @@ func _college_story_catalog() -> Array[Dictionary]:
 
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	catalog.append(_catalog_entry("chapter1_amani", "Module 2 / Amani expression sheet", "image", "%s/v1793339789/levelblue_mod2_amani_poses_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_event_room_day", "Module 2 / Club event preparation room", "image", "%s/v1793339808/levelblue_mod2_event_room_day_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter2_cover", "Chapter 2 / The Advisor Email", "image", "%s/v1792721173/chapter2_advisor_cover_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter3_cover", "Chapter 3 / The Payout", "image", "%s/v1793086637/chapter3_payout_cover_v2.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter4_cover", "Chapter 4 / The Prize", "image", "%s/v1793086638/chapter4_prize_cover_v2.png" % CLOUD_ROOT))

@@ -233,7 +233,7 @@ func _ready() -> void:
 	_cast_stage.mouse_filter = MOUSE_FILTER_IGNORE
 	_cast_stage.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_area.add_child(_cast_stage)
-	for person: String in ["john", "eric", "jobert"]:
+	for person: String in ["john", "eric", "jobert", "amani"]:
 		var actor: TextureRect = TextureRect.new()
 		actor.name = person.capitalize()
 		actor.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -422,6 +422,8 @@ func on_enter(args: Dictionary) -> void:
 		hide()
 		return
 	var phone_script: GDScript = {2:preload("res://src/gameplay/decision/advisor_phone.gd"), 3:preload("res://src/gameplay/decision/payout_phone.gd"), 4:preload("res://src/gameplay/decision/prize_phone.gd")}.get(Chapter.NUMBER, Phone)
+	if Chapter.get("PHONE_PATH") is String:
+		phone_script = load(str(Chapter.get("PHONE_PATH"))) as GDScript
 	if _phone.get_script() != phone_script:
 		_phone.stop()
 		_area.remove_child(_phone)
@@ -460,7 +462,7 @@ func _render() -> void:
 	_phone.hide()
 	_chat_started = false
 	_chat_cue = -1.0
-	_poses = {"john":0, "eric":0, "jobert":0}
+	_poses = {"john":0, "eric":0, "jobert":0, "amani":0}
 	if state["phase"] == "day":
 		for index: int in range(int(state["beat"]) + 1):
 			var previous: Dictionary = Chapter.STORY[index]
@@ -469,7 +471,7 @@ func _render() -> void:
 	_portrait.show()
 	_dialogue.show()
 	_sending = false
-	_speaker.text = "John · Thinking"
+	_speaker.text = _protagonist().capitalize() + " · Thinking"
 	var phase: String = str(state["phase"])
 	_app_shortcuts.visible = phase in ["notes", "capture"]
 	for index: int in _app_shortcuts.get_child_count():
@@ -564,6 +566,9 @@ func _show_results() -> void:
 	var next_button: Button = _result_actions.get_child(0) as Button
 	next_button.text = "NEXT CHAPTER"
 	next_button.tooltip_text = "Continue to " + ({1:"The Advisor Email",2:"The Payout",3:"The Prize",4:"Confrontation"}.get(Chapter.NUMBER,"Next chapter"))
+	if Chapter.get("NEXT_CHAPTER") == "":
+		next_button.text = "CHAPTER SELECT"
+		next_button.tooltip_text = "Return to Module 2. More chapters are in development."
 	_journal.hide()
 	_portrait.hide()
 	_dialogue.hide()
@@ -596,6 +601,9 @@ func _evidence_summary() -> String:
 	return "%d / %d collected" % [state[task.field].size(), int(task.total)]
 
 func _next_chapter() -> void:
+	if _can_act() and state.get("completed", false) and Chapter.get("NEXT_CHAPTER") == "":
+		Router.push(&"module_stages", {"module_index":1,"chapters":true})
+		return
 	if _can_act() and state.get("completed", false) and Chapter.NUMBER < 5:
 		var next_id: String = "mod_01_ch_%02d" % (Chapter.NUMBER + 1)
 		Router.push(&"confrontation" if Chapter.NUMBER == 4 else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
@@ -769,10 +777,10 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 
 func _thought(text: String) -> void:
 	if not _can_act(): return
-	if Chapter.NUMBER >= 2 and Chapter.TASKS.has(state.phase):
+	if (Chapter.NUMBER >= 2 or Chapter.get("FULL_WIDTH_INVESTIGATION") == true) and Chapter.TASKS.has(state.phase):
 		_phone.show_feedback(text)
 		return
-	_speaker.text = "John · Thinking"
+	_speaker.text = _protagonist().capitalize() + " · Thinking"
 	_set_line(text)
 
 func _phase_finished() -> void:
@@ -882,6 +890,9 @@ func _hint() -> void:
 		run["builtin_hints"] = int(run.get("builtin_hints", 0)) + 1
 		Perks.record(run, "builtin_hint", str(state.phase), int(state.beat))
 	_save()
+	if Chapter.get("FULL_WIDTH_INVESTIGATION") == true:
+		_thought(str(Chapter.TASKS.get(str(state.phase), {}).get("tip", "Compare the request with your own order.")))
+		return
 	if Chapter.NUMBER in [3,4]:
 		_thought(str(Chapter.TASKS.get(str(state.phase), {}).get("tip", "Keep the link and page findings together.")))
 		return
@@ -920,6 +931,9 @@ func _replay() -> void:
 	state = PlayerManager.begin_story_attempt(Chapter.ID, true, not _testing)
 	_render()
 
+func _protagonist() -> String:
+	return str(Chapter.get("PROTAGONIST")).to_lower() if Chapter.get("PROTAGONIST") is String else "john"
+
 func _load_art() -> void:
 	if state.is_empty(): return
 	var phase: String = str(state["phase"])
@@ -930,28 +944,28 @@ func _load_art() -> void:
 		background_id = str(beat.get("art",Chapter.get("BACKGROUND_ASSET"))) if phase == "day" else str(Chapter.get("BACKGROUND_ASSET"))
 	if not _story_art_override.is_empty(): background_id = _story_art_override
 	_bg.texture = AssetManager.get_texture(background_id)
-	var person: String = str(beat["who"]).to_lower() if phase == "day" else "john"
+	var person: String = str(beat["who"]).to_lower() if phase == "day" else _protagonist()
 	if _chat_started and _is_chat_beat():
 		# Chat senders are remote, not physical actors in John's room.
-		person = "john"
+		person = _protagonist()
 	else:
 		if _cast.has(person): _poses[person] = int(beat.get("face", 0)) if phase == "day" else 2
 		if phase == "day" and beat.has("sentence_faces"):
 			var faces: Array = beat.sentence_faces
 			var line_index: int = _sentence - (1 if beat.has("caption") else 0)
 			_poses[person] = int(faces[clampi(line_index, 0, faces.size() - 1)])
-	var present: Array[String] = ["john"]
+	var present: Array[String] = [_protagonist()]
 	if phase == "day" and location == "hallway_day": present = ["john", "eric"]
 	if phase == "day" and location == "clubroom": present = ["john", "eric", "jobert"]
 	if phase == "day" and beat.has("cast"): present.assign(beat.cast)
 	# Includes the lead-in and phone home, not only the open chat app.
-	if _is_chat_beat(): present = ["john"]
+	if _is_chat_beat(): present = [_protagonist()]
 	# John is already seated in the night artwork; never overlay a second John.
 	_cast_stage.visible = not _is_caption_sentence() and location not in ["john_desk_night", "john_bed_night", "intro_morning"] and phase in ["day", "seal", "sleep"]
 	for id: String in _cast:
 		_cast[id].visible = present.has(id)
 		_cast[id].texture = _actor_texture(id, _poses[id])
-	_portrait = _cast.get(person, _cast["john"])
+	_portrait = _cast.get(person, _cast[_protagonist()])
 	_cast_stage.move_child(_portrait, _cast_stage.get_child_count() - 1)
 	if _focus != null and _focus.is_valid(): _focus.kill()
 	_focus = create_tween().set_parallel(true)
@@ -978,6 +992,14 @@ func _actor_texture(person: String, face: int) -> Texture2D:
 		# An offline first launch still has a happy pose until art sync completes.
 		face = 1
 	var texture: Texture2D = AssetManager.get_texture("chapter1_" + person)
+	if person == "amani" and texture != null:
+		var amani: AtlasTexture = AtlasTexture.new()
+		amani.atlas = texture
+		var cell: Vector2 = texture.get_size() / Vector2(3, 2)
+		var pose: int = clampi(face, 0, 5)
+		amani.region = Rect2(Vector2(pose % 3, int(pose / 3)) * cell, cell)
+		amani.filter_clip = true
+		return amani
 	if texture != null and texture.get_width() == 1536 and texture.get_height() == 1024:
 		var split: int = {"john":512,"eric":524,"jobert":546}[person]
 		# Whole-body acting sheets have wider lower-row gestures. Use authored
@@ -1026,7 +1048,7 @@ func _layout() -> void:
 	_app_shortcuts.size = Vector2(w * 0.46, touch)
 	var actors: Array[TextureRect] = []
 	# Iterate canonical names, not draw order: switching focus never moves a slot.
-	for person: String in ["john", "eric", "jobert"]:
+	for person: String in ["john", "eric", "jobert", "amani"]:
 		if _cast[person].visible: actors.append(_cast[person])
 	var stage_width: float = w * (0.49 if has_phone else 1.0)
 	var actor_width: float = stage_width * (0.95 if actors.size() == 1 else (0.83 if has_phone else 0.68))
@@ -1046,7 +1068,7 @@ func _layout() -> void:
 	if investigation:
 		_journal.position = Vector2(w * 0.49, top)
 		_journal.size = Vector2(w * 0.51, task_height)
-	if investigation and Chapter.NUMBER >= 2:
+	if investigation and (Chapter.NUMBER >= 2 or Chapter.get("FULL_WIDTH_INVESTIGATION") == true):
 		_phone.position = Vector2(w * 0.02, phone_top)
 		_phone.size = Vector2(w * 0.96, h - phone_top)
 		_phone._metrics()

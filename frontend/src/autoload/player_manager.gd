@@ -76,12 +76,16 @@ const AdvisorChapter: GDScript = preload("res://src/gameplay/decision/advisor_ch
 const PayoutChapter: GDScript = preload("res://src/gameplay/decision/payout_chapter.gd")
 const PrizeChapter: GDScript = preload("res://src/gameplay/decision/prize_chapter.gd")
 const ConfrontationChapter: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.gd")
+const DeliveryChapter: GDScript = preload("res://src/gameplay/decision/delivery_chapter.gd")
 var chapter_replays: Dictionary = {}
 
 func story_definition(id: String) -> GDScript:
+	if id == DeliveryChapter.ID: return DeliveryChapter
 	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
 func story_unlocked(id: String) -> bool:
+	if id == DeliveryChapter.ID:
+		return is_module_deploy_unlocked("mod_02") and chapter_progress.get(ConfrontationChapter.ID, {}).get("completed", false)
 	if not is_module_deploy_unlocked("mod_01"): return false
 	if id == SurveyChapter.ID: return true
 	if id == AdvisorChapter.ID: return chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)
@@ -1533,6 +1537,10 @@ func apply_save_data(data: Dictionary) -> void:
 		chapter_progress[ConfrontationChapter.ID] = ConfrontationChapter.clean(saved_chapters[ConfrontationChapter.ID])
 	if replays is Dictionary and replays.get(ConfrontationChapter.ID) is Dictionary:
 		chapter_replays[ConfrontationChapter.ID] = ConfrontationChapter.clean(replays[ConfrontationChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(DeliveryChapter.ID) is Dictionary:
+		chapter_progress[DeliveryChapter.ID] = DeliveryChapter.clean(saved_chapters[DeliveryChapter.ID])
+	if replays is Dictionary and replays.get(DeliveryChapter.ID) is Dictionary:
+		chapter_replays[DeliveryChapter.ID] = DeliveryChapter.clean(replays[DeliveryChapter.ID])
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)
