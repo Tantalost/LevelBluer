@@ -183,6 +183,28 @@ var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
 var _hydrated_participant: String = ""
+## An existing local file, or a save made after hydration, may be uploaded.
+## Guest data, reset defaults, and a cloud download that only fills a missing
+## file are not local progress.
+var _local_upload_ready: bool = false
+## "" legacy local file, "unconfirmed" after a failed read, "empty" when the
+## server confirmed there is no row, "known" after a real cloud snapshot.
+var _cloud_baseline: String = ""
+## Answers played while the cloud snapshot was unknown. Replayed onto the
+## cloud prior after a later successful read so neither history is replaced.
+var _unconfirmed_bkt_log: Array[Dictionary] = []
+## True when this file recorded an explicit upload decision. A downloaded
+## snapshot stays false until the player changes it.
+var _cloud_upload_pinned: bool = false
+## Local edits that must be merged with a verified cloud read before POST.
+var _pending_cloud_merge: bool = false
+## Set only for the save that stores a merge or a confirmed-empty upload.
+var _verified_upload: bool = false
+## Wallet at the last verified cloud snapshot. Unknown for a legacy file,
+## so reconciliation cannot add that balance on top of itself.
+var _wallet_basis_known: bool = false
+var _wallet_basis_credits: int = 0
+var _wallet_basis_tokens: int = 0
 ## Durable evidence summary, separate from the acknowledged outbound event queue.
 var learning_evidence: Dictionary = {}
 const SUPPORT_GRACE_SECONDS: int = 72 * 60 * 60
@@ -311,6 +333,7 @@ func _on_session_changed(signed_in: bool) -> void:
 	if not signed_in:
 		_session_hydrated = false
 		_hydrated_participant = ""
+		_local_upload_ready = false
 		reset_to_defaults()
 		return
 	if _session_hydrated and _hydrated_participant == AuthService.participant_code():
@@ -319,11 +342,109 @@ func _on_session_changed(signed_in: bool) -> void:
 
 
 func _hydrate_signed_in_session() -> void:
+	_session_hydrated = false
+	_local_upload_ready = false
 	reset_to_defaults()
 	_hydrated_participant = AuthService.participant_code()
-	SaveService.load_game()
+	if not SaveService.load_game():
+		_cloud_baseline = "unconfirmed"
+		_local_upload_ready = false
 	_session_hydrated = true
 	SaveService.fetch_cloud_save()
+
+
+func has_hydrated_account() -> bool:
+	return AuthService.is_signed_in() and _session_hydrated and _hydrated_participant == AuthService.participant_code()
+
+
+func can_upload_progress() -> bool:
+	return has_hydrated_account() and _local_upload_ready
+
+
+func cloud_baseline() -> String:
+	return _cloud_baseline
+
+
+func cloud_baseline_unconfirmed() -> bool:
+	return _cloud_baseline == "unconfirmed"
+
+
+## Offline play that must be merged with a later cloud snapshot. A mastery
+## mirror from the official BKT pull is not local progress.
+func needs_cloud_reconcile() -> bool:
+	return has_unconfirmed_local_writes() or _pending_cloud_merge
+
+
+func has_unconfirmed_local_writes() -> bool:
+	if _cloud_baseline != "unconfirmed":
+		return false
+	if not _unconfirmed_bkt_log.is_empty() or credits != 0 or pvp_tokens != 0:
+		return true
+	if not lesson_progress.is_empty() or not completed_lessons.is_empty() or not learning_events.is_empty():
+		return true
+	if not pretest_baselines.is_empty() or not practice_responses.is_empty() or not lesson_quiz_responses.is_empty():
+		return true
+	if not lesson_post_quiz_scores.is_empty() or not cleared_stages.is_empty() or not mission_progress.is_empty():
+		return true
+	return false
+
+
+func note_cloud_fetch_failed() -> void:
+	if not has_hydrated_account():
+		return
+	# A failed read applies to legacy files too. Keep the local snapshot,
+	# but do not POST it over cloud progress this device has not seen.
+	_local_upload_ready = false
+	_verified_upload = false
+	_cloud_baseline = "unconfirmed"
+	_cloud_upload_pinned = true
+
+
+func confirm_cloud_empty(upload_local: bool) -> void:
+	_cloud_baseline = "empty"
+	_unconfirmed_bkt_log.clear()
+	_pending_cloud_merge = false
+	_cloud_upload_pinned = false
+	_verified_upload = false
+	_local_upload_ready = upload_local and has_hydrated_account()
+
+
+func note_downloaded_cloud_baseline() -> void:
+	_cloud_baseline = "known"
+	_unconfirmed_bkt_log.clear()
+	_local_upload_ready = false
+	_verified_upload = false
+	_pending_cloud_merge = false
+	_wallet_basis_known = true
+	_wallet_basis_credits = credits
+	_wallet_basis_tokens = pvp_tokens
+	_cloud_upload_pinned = true
+
+
+func note_existing_local_save() -> void:
+	if not AuthService.is_signed_in() or _hydrated_participant != AuthService.participant_code():
+		return
+	# No local file is uploadable until a cloud read in this session verifies it.
+	_local_upload_ready = false
+	if _cloud_baseline == "":
+		_cloud_baseline = "unconfirmed"
+
+
+func accept_local_progress_write() -> void:
+	if not _session_hydrated or _hydrated_participant != AuthService.participant_code():
+		return
+	if _verified_upload:
+		_verified_upload = false
+		_local_upload_ready = true
+		_pending_cloud_merge = false
+		_cloud_baseline = "known"
+		_cloud_upload_pinned = false
+		return
+	_local_upload_ready = false
+	_pending_cloud_merge = true
+	_cloud_upload_pinned = true
+	if _cloud_baseline == "known" or _cloud_baseline == "empty":
+		_cloud_baseline = "unconfirmed"
 
 
 func record_pretest_baseline(module_id: String, answers: Array) -> void:
@@ -498,6 +619,15 @@ func reset_to_defaults() -> void:
 	mastery_matrix = {
 		"phishing": DEFAULT_MASTERY,
 	}
+	_cloud_baseline = ""
+	_unconfirmed_bkt_log.clear()
+	_cloud_upload_pinned = false
+	_local_upload_ready = false
+	_pending_cloud_merge = false
+	_verified_upload = false
+	_wallet_basis_known = true
+	_wallet_basis_credits = 0
+	_wallet_basis_tokens = 0
 	progress_changed.emit()
 
 
@@ -993,6 +1123,16 @@ func bkt_params_from(question: Dictionary) -> Dictionary:
 	return stored as Dictionary
 
 
+func _apply_mastery_step(skill_id: String, is_correct: bool, p_guess: float, p_slip: float, p_transit: float) -> float:
+	var p_learned: float = _mastery_of(skill_id)
+	var p_post: float = _posterior(p_learned, is_correct, p_guess, p_slip)
+	var new_mastery: float = clampf(p_post + ((1.0 - p_post) * p_transit), MIN_MASTERY, MAX_MASTERY)
+	if not is_correct:
+		new_mastery = clampf(maxf(new_mastery, p_learned - MAX_WRONG_DROP), MIN_MASTERY, MAX_MASTERY)
+	mastery_matrix[skill_id] = new_mastery
+	return p_learned
+
+
 func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}, persist: bool = true) -> void:
 	# Practice in the onboarding sandbox is never a graded learning response.
 	if Router.is_tutorial:
@@ -1001,12 +1141,17 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {},
 	var p_guess: float = _bkt_param(params, ["p_g", "p_guess"], P_GUESS)
 	var p_slip: float = _bkt_param(params, ["p_s", "p_slip"], P_SLIP)
 	var p_transit: float = _bkt_param(params, ["p_t", "p_transit"], P_TRANSIT)
-	var p_learned: float = _mastery_of(key)
-	var p_post: float = _posterior(p_learned, is_correct, p_guess, p_slip)
-	var new_mastery: float = clampf(p_post + ((1.0 - p_post) * p_transit), MIN_MASTERY, MAX_MASTERY)
-	if not is_correct:
-		new_mastery = clampf(maxf(new_mastery, p_learned - MAX_WRONG_DROP), MIN_MASTERY, MAX_MASTERY)
-	mastery_matrix[key] = new_mastery
+	var p_learned: float = _apply_mastery_step(key, is_correct, p_guess, p_slip, p_transit)
+	if _cloud_baseline == "unconfirmed":
+		_unconfirmed_bkt_log.append({
+			"op": "update",
+			"skill": key,
+			"correct": is_correct,
+			"p_g": p_guess,
+			"p_s": p_slip,
+			"p_t": p_transit,
+		})
+	var new_mastery: float = float(mastery_matrix[key])
 	_record_graded_response(key, int(Time.get_unix_time_from_system()))
 	record_learning_event("mastery", str(LEARNING_MODULES.get(key, "")), {"mastery":new_mastery}, false)
 	print(
@@ -1047,7 +1192,7 @@ func apply_official_mastery(skill_id: String, probability_known: float) -> void:
 ## here) is not "stale cached data clobbering newer gameplay"; only
 ## pull_official_bkt()'s unsolicited remote/cached refresh needs to defer to
 ## pending local state (see its own guard).
-func seed_from_official_mastery(only_skill: String = "") -> void:
+func seed_from_official_mastery(only_skill: String = "", record_unconfirmed: bool = false) -> void:
 	var official: Dictionary = AuthService.mastery()
 	var changed := false
 	for i in _OFFICIAL_SKILLS.size():
@@ -1059,6 +1204,8 @@ func seed_from_official_mastery(only_skill: String = "") -> void:
 		if value <= 0.0:
 			continue
 		apply_official_mastery(skill_id, value)
+		if record_unconfirmed and _cloud_baseline == "unconfirmed":
+			_unconfirmed_bkt_log.append({"op": "seed", "skill": skill_id, "value": float(mastery_matrix[skill_id])})
 		changed = true
 		print("[BKT] seeded %s from official P(L)=%.3f" % [skill_id, value])
 	if changed:
@@ -1133,7 +1280,7 @@ func get_save_data() -> Dictionary:
 		# since Module 1 was the sole module with real stage content when
 		# this field was the single source of truth.
 		"mock_max_stage_cleared": max_stage_cleared("mod_01"),
-		"mastery_matrix": mastery_matrix.duplicate(true),
+		"mastery_matrix": _export_mastery_matrix(),
 		"locked_stages": locked_stages.duplicate(true),
 		"cleared_stages": cleared_stages.keys(),
 		"completed_lessons": completed_lessons.duplicate(),
@@ -1162,6 +1309,12 @@ func get_save_data() -> Dictionary:
 		"chapter_replays": chapter_replays.duplicate(true),
 		"has_intel_bonus": has_intel_bonus,
 		"intel_bonus_module": intel_bonus_module,
+		"cloud_baseline": _cloud_baseline,
+		"cloud_upload_ready": _pending_cloud_merge or _local_upload_ready,
+		"wallet_basis_known": _wallet_basis_known,
+		"wallet_basis_credits": _wallet_basis_credits,
+		"wallet_basis_tokens": _wallet_basis_tokens,
+		"unconfirmed_bkt_log": _copy_bkt_log(),
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
 		"decision_stage_state": decision_stage_state.duplicate(true),
@@ -1423,8 +1576,302 @@ func apply_save_data(data: Dictionary) -> void:
 
 	if module_1_complete:
 		cleared_stages[stage_progress_key("mod_01", 10)] = true
+	_restore_cloud_reconcile_state(data)
 	_normalize_mastery_keys()
 	progress_changed.emit()
+
+
+func _restore_cloud_reconcile_state(data: Dictionary) -> void:
+	_cloud_baseline = ""
+	_unconfirmed_bkt_log.clear()
+	_cloud_upload_pinned = false
+	_local_upload_ready = false
+	_verified_upload = false
+	_pending_cloud_merge = false
+	_wallet_basis_known = false
+	_wallet_basis_credits = 0
+	_wallet_basis_tokens = 0
+	var baseline_raw: Variant = data.get("cloud_baseline", "")
+	var baseline: String = str(baseline_raw) if baseline_raw is String else ""
+	if baseline == "unconfirmed" or baseline == "empty" or baseline == "known":
+		_cloud_baseline = baseline
+	var log_raw: Variant = data.get("unconfirmed_bkt_log", [])
+	if log_raw is Array:
+		for step: Variant in log_raw:
+			if step is Dictionary:
+				_unconfirmed_bkt_log.append((step as Dictionary).duplicate(true))
+	if data.has("cloud_upload_ready"):
+		_cloud_upload_pinned = true
+		_pending_cloud_merge = bool(data["cloud_upload_ready"])
+	if data.has("wallet_basis_known"):
+		_wallet_basis_known = bool(data["wallet_basis_known"])
+		_wallet_basis_credits = _variant_int(data.get("wallet_basis_credits", 0))
+		_wallet_basis_tokens = _variant_int(data.get("wallet_basis_tokens", 0))
+
+
+func _copy_bkt_log() -> Array:
+	var copy: Array = []
+	for step: Dictionary in _unconfirmed_bkt_log:
+		copy.append(step.duplicate(true))
+	return copy
+
+
+## Cloud history stays in place. Offline answers are applied on top of it,
+## and every other field keeps both sides when they touched different data.
+func reconcile_cloud_snapshot(cloud: Dictionary) -> void:
+	var local: Dictionary = get_save_data()
+	var log: Array[Dictionary] = []
+	for step: Dictionary in _unconfirmed_bkt_log:
+		log.append(step.duplicate(true))
+	var basis_known: bool = _wallet_basis_known
+	var basis_credits: int = _wallet_basis_credits
+	var basis_tokens: int = _wallet_basis_tokens
+	var merged: Dictionary = _merge_unconfirmed_progress(cloud, local, basis_known, basis_credits, basis_tokens)
+	apply_save_data(merged)
+	_replay_bkt_log(log, cloud.get("pretest_baselines", {}))
+	_cloud_baseline = "known"
+	_unconfirmed_bkt_log.clear()
+	_pending_cloud_merge = false
+	_wallet_basis_known = true
+	_wallet_basis_credits = credits
+	_wallet_basis_tokens = pvp_tokens
+	_verified_upload = true
+	_local_upload_ready = true
+	_cloud_upload_pinned = false
+	progress_changed.emit()
+
+
+func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_known: bool, basis_credits: int, basis_tokens: int) -> Dictionary:
+	var merged: Dictionary = cloud.duplicate(true)
+	merged["lesson_progress"] = _max_int_dict(cloud.get("lesson_progress", {}), local.get("lesson_progress", {}))
+	merged["lesson_post_quiz_scores"] = _max_int_dict(cloud.get("lesson_post_quiz_scores", {}), local.get("lesson_post_quiz_scores", {}))
+	merged["max_stage_cleared_by_module"] = _max_int_dict(cloud.get("max_stage_cleared_by_module", {}), local.get("max_stage_cleared_by_module", {}))
+	merged["mock_max_stage_cleared"] = maxi(_variant_int(cloud.get("mock_max_stage_cleared", 0)), _variant_int(local.get("mock_max_stage_cleared", 0)))
+	var merged_credits: int = _combine_wallet(_variant_int(cloud.get("credits", 0)), _variant_int(local.get("credits", 0)), basis_known, basis_credits)
+	var merged_tokens: int = _combine_wallet(_variant_int(cloud.get("pvp_tokens", 0)), _variant_int(local.get("pvp_tokens", 0)), basis_known, basis_tokens)
+	merged["credits"] = merged_credits
+	merged["pvp_tokens"] = merged_tokens
+	merged["wallet_basis_known"] = true
+	merged["wallet_basis_credits"] = merged_credits
+	merged["wallet_basis_tokens"] = merged_tokens
+	merged["completed_lessons"] = _union_strings(cloud.get("completed_lessons", []), local.get("completed_lessons", []))
+	merged["cleared_stages"] = _union_strings(cloud.get("cleared_stages", []), local.get("cleared_stages", []))
+	merged["unlocked_towers"] = _union_strings(cloud.get("unlocked_towers", []), local.get("unlocked_towers", []), ["base"])
+	merged["unlocked_skills"] = _union_strings(cloud.get("unlocked_skills", []), local.get("unlocked_skills", []))
+	merged["purchased_items"] = _union_strings(cloud.get("purchased_items", []), local.get("purchased_items", []))
+	merged["owned_perks"] = _union_strings(cloud.get("owned_perks", []), local.get("owned_perks", []), ["recap"])
+	merged["seen_module_intros"] = _union_strings(cloud.get("seen_module_intros", []), local.get("seen_module_intros", []))
+	merged["locked_stages"] = _union_dict_keys(cloud.get("locked_stages", {}), local.get("locked_stages", {}))
+	merged["pretest_baselines"] = _union_missing_keys(cloud.get("pretest_baselines", {}), local.get("pretest_baselines", {}))
+	merged["practice_responses"] = _union_missing_keys(cloud.get("practice_responses", {}), local.get("practice_responses", {}))
+	merged["lesson_quiz_responses"] = _union_quiz_responses(cloud.get("lesson_quiz_responses", {}), local.get("lesson_quiz_responses", {}))
+	merged["mission_progress"] = _union_missing_keys(cloud.get("mission_progress", {}), local.get("mission_progress", {}))
+	merged["chapter_progress"] = _union_missing_keys(cloud.get("chapter_progress", {}), local.get("chapter_progress", {}))
+	merged["learning_events"] = _union_events(cloud.get("learning_events", []), local.get("learning_events", []))
+	merged["learning_evidence"] = _merge_evidence(cloud.get("learning_evidence", {}), local.get("learning_evidence", {}))
+	merged["mastery_matrix"] = _merge_mastery(cloud.get("mastery_matrix", {}), local.get("mastery_matrix", {}), cloud.get("lesson_progress", {}), local.get("lesson_progress", {}))
+	merged["tutorial_complete"] = bool(cloud.get("tutorial_complete", false)) or bool(local.get("tutorial_complete", false))
+	merged["tutorial_skipped"] = bool(cloud.get("tutorial_skipped", false)) or bool(local.get("tutorial_skipped", false))
+	merged["module_1_complete"] = bool(cloud.get("module_1_complete", false)) or bool(local.get("module_1_complete", false))
+	merged["has_intel_bonus"] = bool(cloud.get("has_intel_bonus", false)) or bool(local.get("has_intel_bonus", false))
+	merged["cloud_baseline"] = "known"
+	merged["cloud_upload_ready"] = true
+	merged["unconfirmed_bkt_log"] = []
+	return merged
+
+
+func _combine_wallet(cloud_value: int, local_value: int, basis_known: bool, basis: int) -> int:
+	if not basis_known:
+		return maxi(cloud_value, local_value)
+	# Earnings on each side since the verified balance are applied once.
+	# A lower cloud value is an older snapshot, not a second copy of the balance.
+	var cloud_gain: int = maxi(0, cloud_value - basis)
+	return maxi(0, local_value + cloud_gain)
+
+
+func _merge_mastery(cloud_raw: Variant, local_raw: Variant, cloud_lessons_raw: Variant, local_lessons_raw: Variant) -> Dictionary:
+	var merged: Dictionary = {}
+	if cloud_raw is Dictionary:
+		merged = (cloud_raw as Dictionary).duplicate(true)
+	if not local_raw is Dictionary:
+		return merged
+	var logged: Dictionary = {}
+	for step: Dictionary in _unconfirmed_bkt_log:
+		var logged_skill: String = str(step.get("skill", "")).strip_edges()
+		if not logged_skill.is_empty():
+			logged[logged_skill] = true
+	var cloud_lessons: Dictionary = cloud_lessons_raw if cloud_lessons_raw is Dictionary else {}
+	var local_lessons: Dictionary = local_lessons_raw if local_lessons_raw is Dictionary else {}
+	var local: Dictionary = local_raw
+	for key: Variant in local.keys():
+		var skill: String = str(key)
+		if logged.has(skill):
+			continue
+		var local_value: float = float(local[key])
+		# A stored 0.10 with no answer, pretest, or checkpoint is the prior.
+		# Copying it would wipe a cloud skill the player has not assessed.
+		if _is_unassessed_prior(skill, local_value):
+			continue
+		var module_id: String = str(LEARNING_MODULES.get(skill, ""))
+		var cloud_lesson: int = _variant_int(cloud_lessons.get(module_id, 0))
+		var local_lesson: int = _variant_int(local_lessons.get(module_id, 0))
+		if not merged.has(skill) or local_lesson > cloud_lesson:
+			merged[skill] = local_value
+	return merged
+
+
+func _replay_bkt_log(log: Array[Dictionary], cloud_baselines: Variant) -> void:
+	var baselines: Dictionary = cloud_baselines if cloud_baselines is Dictionary else {}
+	for step: Dictionary in log:
+		var skill: String = str(step.get("skill", "")).strip_edges()
+		if skill.is_empty():
+			continue
+		if str(step.get("op", "")) == "seed":
+			var module_id: String = str(LEARNING_MODULES.get(skill, ""))
+			if not module_id.is_empty() and baselines.has(module_id):
+				continue
+			apply_official_mastery(skill, float(step.get("value", DEFAULT_MASTERY)))
+			continue
+		_apply_mastery_step(
+			skill,
+			bool(step.get("correct", false)),
+			float(step.get("p_g", P_GUESS)),
+			float(step.get("p_s", P_SLIP)),
+			float(step.get("p_t", P_TRANSIT)),
+		)
+
+
+func _variant_int(raw: Variant) -> int:
+	if raw is int or raw is float:
+		return int(raw)
+	return 0
+
+
+func _max_int_dict(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+	var merged: Dictionary = {}
+	if cloud_raw is Dictionary:
+		var cloud: Dictionary = cloud_raw
+		for key: Variant in cloud.keys():
+			merged[str(key)] = _variant_int(cloud[key])
+	if local_raw is Dictionary:
+		var local: Dictionary = local_raw
+		for key: Variant in local.keys():
+			var id: String = str(key)
+			merged[id] = maxi(_variant_int(merged.get(id, 0)), _variant_int(local[key]))
+	return merged
+
+
+func _union_strings(cloud_raw: Variant, local_raw: Variant, defaults: Array = []) -> Array:
+	var merged: Array = []
+	var seen: Dictionary = {}
+	var sources: Array = [cloud_raw, local_raw]
+	for source: Variant in sources:
+		if not source is Array:
+			continue
+		for entry: Variant in source:
+			var text: String = str(entry).strip_edges()
+			if text.is_empty() or seen.has(text) or defaults.has(text):
+				continue
+			seen[text] = true
+			merged.append(text)
+	return merged
+
+
+func _union_dict_keys(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+	var merged: Dictionary = {}
+	var sources: Array = [cloud_raw, local_raw]
+	for source: Variant in sources:
+		if not source is Dictionary:
+			continue
+		var data: Dictionary = source
+		for key: Variant in data.keys():
+			merged[str(key)] = true
+	return merged
+
+
+func _union_missing_keys(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+	var merged: Dictionary = {}
+	if cloud_raw is Dictionary:
+		merged = (cloud_raw as Dictionary).duplicate(true)
+	if local_raw is Dictionary:
+		var local: Dictionary = local_raw
+		for key: Variant in local.keys():
+			if not merged.has(key):
+				merged[key] = local[key]
+	return merged
+
+
+func _union_quiz_responses(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+	var merged: Dictionary = {}
+	if cloud_raw is Dictionary:
+		merged = (cloud_raw as Dictionary).duplicate(true)
+	if not local_raw is Dictionary:
+		return merged
+	var local: Dictionary = local_raw
+	for module_id: Variant in local.keys():
+		if typeof(local[module_id]) != TYPE_DICTIONARY:
+			continue
+		var local_module: Dictionary = local[module_id]
+		var combined: Dictionary = {}
+		if merged.get(module_id) is Dictionary:
+			combined = (merged[module_id] as Dictionary).duplicate(true)
+		for question_id: Variant in local_module.keys():
+			if not combined.has(question_id):
+				combined[question_id] = local_module[question_id]
+		merged[module_id] = combined
+	return merged
+
+
+func _union_events(cloud_raw: Variant, local_raw: Variant) -> Array:
+	var merged: Array = []
+	var seen: Dictionary = {}
+	var sources: Array = [cloud_raw, local_raw]
+	for source: Variant in sources:
+		if not source is Array:
+			continue
+		for entry: Variant in source:
+			if not entry is Dictionary:
+				continue
+			var event: Dictionary = entry
+			var event_id: String = str(event.get("event_id", "")).strip_edges()
+			if event_id.is_empty() or seen.has(event_id):
+				continue
+			seen[event_id] = true
+			merged.append(event.duplicate(true))
+	return merged
+
+
+func _merge_evidence(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+	var cloud: Dictionary = cloud_raw if cloud_raw is Dictionary else {}
+	var local: Dictionary = local_raw if local_raw is Dictionary else {}
+	var topics: Dictionary = {}
+	var cloud_topics: Dictionary = cloud.get("topics", {}) if cloud.get("topics", {}) is Dictionary else {}
+	var local_topics: Dictionary = local.get("topics", {}) if local.get("topics", {}) is Dictionary else {}
+	for key: Variant in cloud_topics.keys():
+		topics[str(key)] = _variant_int(cloud_topics[key])
+	for key: Variant in local_topics.keys():
+		var id: String = str(key)
+		topics[id] = _variant_int(topics.get(id, 0)) + _variant_int(local_topics[key])
+	var responses: int = _variant_int(cloud.get("responses", 0)) + _variant_int(local.get("responses", 0))
+	if responses <= 0:
+		return {}
+	var sessions: int = _variant_int(cloud.get("sessions", 0)) + _variant_int(local.get("sessions", 0))
+	var cloud_first: int = _variant_int(cloud.get("first_at", 0))
+	var local_first: int = _variant_int(local.get("first_at", 0))
+	var first_at: int = 0
+	if cloud_first > 0 and local_first > 0:
+		first_at = mini(cloud_first, local_first)
+	elif cloud_first > 0:
+		first_at = cloud_first
+	else:
+		first_at = local_first
+	return {
+		"topics": topics,
+		"responses": responses,
+		"sessions": maxi(1, sessions),
+		"first_at": first_at,
+		"last_at": maxi(_variant_int(cloud.get("last_at", 0)), _variant_int(local.get("last_at", 0))),
+	}
 
 
 ## Normalizes either representation of a stage-progress set (cleared_stages
@@ -1467,6 +1914,54 @@ func _normalize_stage_progress_key(entry: Variant) -> String:
 		var legacy_id: int = int(text)
 		return stage_progress_key("mod_01", legacy_id) if legacy_id > 0 else ""
 	return ""
+
+
+## Memory keeps the 0.10 prior so recommendations and the threat matrix
+## stay unchanged. Saves and uploads omit that prior unless an assessment
+## actually produced it.
+func _is_unassessed_prior(skill_id: String, value: float) -> bool:
+	return is_equal_approx(value, DEFAULT_MASTERY) and not _skill_has_assessment(skill_id)
+
+
+func _skill_has_assessment(skill_id: String) -> bool:
+	var skill: String = skill_id.strip_edges().to_lower()
+	if skill.is_empty():
+		return false
+	if has_graded_evidence(skill):
+		return true
+	var module_id: String = str(LEARNING_MODULES.get(skill, ""))
+	if not module_id.is_empty() and pretest_baselines.has(module_id):
+		return true
+	if not module_id.is_empty() and int(lesson_post_quiz_scores.get(module_id, 0)) > 0:
+		return true
+	if not module_id.is_empty():
+		var quizzes: Variant = lesson_quiz_responses.get(module_id, {})
+		if quizzes is Dictionary and not (quizzes as Dictionary).is_empty():
+			return true
+	for question_id: Variant in practice_responses.keys():
+		var record: Variant = practice_responses[question_id]
+		if not record is Dictionary:
+			continue
+		if str(record.get("skill", "")) == skill:
+			return true
+		if not module_id.is_empty() and str(record.get("module_id", "")) == module_id:
+			return true
+	for step: Dictionary in _unconfirmed_bkt_log:
+		if str(step.get("skill", "")).strip_edges().to_lower() == skill:
+			return true
+	return false
+
+
+func _export_mastery_matrix() -> Dictionary:
+	var exported: Dictionary = {}
+	var keys: Array = mastery_matrix.keys()
+	for i in keys.size():
+		var skill_id: String = str(keys[i])
+		var value: float = float(mastery_matrix[keys[i]])
+		if _is_unassessed_prior(skill_id, value):
+			continue
+		exported[skill_id] = value
+	return exported
 
 
 func _normalize_mastery_keys() -> void:

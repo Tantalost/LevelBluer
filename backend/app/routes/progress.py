@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 
 from app.schemas.progress import ProgressSyncRequest, ProgressSyncResponse
 from app.services.auth_service import verify_token
-from app.services.progress_service import fetch_student_progress, sync_student_progress
+from app.services.progress_service import ProgressReadError, fetch_student_progress, sync_student_progress
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
 
@@ -33,7 +33,13 @@ def sync_progress(
 
 @router.get("/sync")
 def get_progress(authorization: str | None = Header(default=None)) -> JSONResponse:
-    payload = fetch_student_progress(_student_id(authorization))
+    try:
+        payload = fetch_student_progress(_student_id(authorization))
+    except ProgressReadError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Cloud progress could not be read",
+        ) from exc
     if payload is None:
         return JSONResponse(content=None)
     return JSONResponse(content=payload)

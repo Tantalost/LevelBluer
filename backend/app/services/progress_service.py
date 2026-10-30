@@ -3,12 +3,16 @@ from datetime import UTC, datetime
 
 from app.schemas.progress import ProgressSyncRequest, ProgressSyncResponse
 from app.services.auth_service import _supabase_error, fetch_student_by_id
-from app.services.bkt_service import MASTERY_COLUMNS, clamp_pl
+from app.services.bkt_service import MASTERY_COLUMNS, P_L0, clamp_pl
 from app.supabase_client import supabase
 
 from app.services.learning_records import record_learning_events
 
 logger = logging.getLogger(__name__)
+
+
+class ProgressReadError(RuntimeError):
+    """The cloud save could not be read. This is not an empty row."""
 
 # Gameplay P(L) is calculated in Godot and stored as a snapshot on sync.
 # Pre-test still writes official P(L) through its own diagnostic (P(T)=0) path.
@@ -64,18 +68,29 @@ def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> Prog
         lambda: supabase.table("students").update(update).eq("id", student_id).execute(),
     )
 
-    _upsert_game_bkt(student_id, payload.mastery_matrix)
+    try:
+        stored_progress = fetch_student_progress(student_id) or {}
+    except ProgressReadError as exc:
+        raise _supabase_error(exc) from exc
+    if not isinstance(stored_progress, dict):
+        stored_progress = {}
+    merged_matrix = _merge_uploaded_mastery(
+        dumped.get("mastery_matrix") or {},
+        stored_progress.get("mastery_matrix") or {},
+        dumped,
+    )
+    dumped["mastery_matrix"] = merged_matrix
+    _upsert_game_bkt(student_id, merged_matrix)
     blob = {k: v for k, v in dumped.items() if k not in ("student", "learning_events")}
-    _upsert_save_blob(student_id, blob)
+    _upsert_save_blob(student_id, blob, stored_progress)
     return ProgressSyncResponse(acknowledged_events=acknowledged)
 
 
 def fetch_student_progress(student_id: str) -> dict | None:
     """Return the stored Godot save blob, or None when no cloud row exists.
 
-    Optional read: GET /api/progress/sync treats fetch failure the same as an
-    empty cloud save so the client can keep using local JSON. This is not a
-    required progress-sync write.
+    A storage failure raises ProgressReadError. Callers must not treat that
+    as confirmation that the student has no cloud progress.
     """
     try:
         response = (
@@ -85,9 +100,9 @@ def fetch_student_progress(student_id: str) -> dict | None:
             .limit(1)
             .execute()
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("progress fetch failed student_id=%s", student_id)
-        return None
+        raise ProgressReadError("Cloud progress could not be read") from exc
     rows = response.data or []
     if not rows:
         return None
@@ -146,12 +161,107 @@ def _upsert_game_bkt(student_id: str, matrix: dict[str, float]) -> None:
     )
 
 
-def _upsert_save_blob(student_id: str, payload: dict) -> None:
+SKILL_MODULES = {
+    "phishing": "mod_01",
+    "smishing": "mod_02",
+    "vishing": "mod_03",
+    "pretexting": "mod_04",
+    "baiting": "mod_05",
+}
+
+
+def _assessed_skills(payload: dict) -> set[str]:
+    """Skills with a pretest, lesson, practice, checkpoint, or graded answer."""
+    assessed: set[str] = set()
+    evidence = payload.get("learning_evidence") or {}
+    topics = evidence.get("topics") if isinstance(evidence, dict) else {}
+    if isinstance(topics, dict):
+        for skill, count in topics.items():
+            try:
+                if int(count or 0) > 0:
+                    assessed.add(str(skill).strip().lower())
+            except (TypeError, ValueError):
+                continue
+    baselines = payload.get("pretest_baselines") or {}
+    if isinstance(baselines, dict):
+        for module_id, baseline in baselines.items():
+            if isinstance(baseline, dict) and baseline:
+                assessed.update(_skills_for_module(str(module_id)))
+    scores = payload.get("lesson_post_quiz_scores") or {}
+    if isinstance(scores, dict):
+        for module_id, score in scores.items():
+            try:
+                if int(score or 0) > 0:
+                    assessed.update(_skills_for_module(str(module_id)))
+            except (TypeError, ValueError):
+                continue
+    quizzes = payload.get("lesson_quiz_responses") or {}
+    if isinstance(quizzes, dict):
+        for module_id, responses in quizzes.items():
+            if isinstance(responses, dict) and responses:
+                assessed.update(_skills_for_module(str(module_id)))
+    practice = payload.get("practice_responses") or {}
+    if isinstance(practice, dict):
+        for record in practice.values():
+            if not isinstance(record, dict):
+                continue
+            skill = str(record.get("skill", "")).strip().lower()
+            if skill:
+                assessed.add(skill)
+            assessed.update(_skills_for_module(str(record.get("module_id", ""))))
+    logged = payload.get("unconfirmed_bkt_log") or []
+    if isinstance(logged, list):
+        for step in logged:
+            if isinstance(step, dict):
+                skill = str(step.get("skill", "")).strip().lower()
+                if skill:
+                    assessed.add(skill)
+    return assessed
+
+
+def _skills_for_module(module_id: str) -> set[str]:
+    return {skill for skill, module in SKILL_MODULES.items() if module == module_id}
+
+
+def _is_unassessed_prior(skill_id: str, value: float, assessed: set[str]) -> bool:
+    return abs(value - P_L0) <= 1e-4 and skill_id not in assessed
+
+
+def _merge_uploaded_mastery(incoming: dict, existing: dict, payload: dict) -> dict[str, float]:
+    """Keep cloud skills the upload did not assess, including a real 0.10."""
+    merged: dict[str, float] = {}
+    if isinstance(existing, dict):
+        for skill, value in existing.items():
+            try:
+                merged[str(skill).strip().lower()] = clamp_pl(float(value))
+            except (TypeError, ValueError):
+                continue
+    assessed = _assessed_skills(payload if isinstance(payload, dict) else {})
+    if not isinstance(incoming, dict):
+        return merged
+    for skill, value in incoming.items():
+        try:
+            number = clamp_pl(float(value))
+        except (TypeError, ValueError):
+            continue
+        skill_id = str(skill).strip().lower()
+        if _is_unassessed_prior(skill_id, number, assessed):
+            continue
+        merged[skill_id] = number
+    return merged
+
+
+def _upsert_save_blob(student_id: str, payload: dict, existing: dict | None = None) -> None:
     blob = dict(payload)
     if "module_pretests" not in blob:
         # Optional read used only to preserve already-stored pretest flags.
-        existing = fetch_student_progress(student_id) or {}
-        if isinstance(existing.get("module_pretests"), (dict, list)):
+        if existing is None:
+            try:
+                existing = fetch_student_progress(student_id) or {}
+            except ProgressReadError as exc:
+                # Do not replace the stored blob when its pretest flags could not be read.
+                raise _supabase_error(exc) from exc
+        if isinstance(existing, dict) and isinstance(existing.get("module_pretests"), (dict, list)):
             blob["module_pretests"] = existing["module_pretests"]
     _required_write(
         student_id,
