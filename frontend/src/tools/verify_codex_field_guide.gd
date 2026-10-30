@@ -21,7 +21,13 @@ func capture(name: String) -> void:
 		root.get_texture().get_image().save_png("res://.godot/" + name + ".png")
 
 func tap(control: Control) -> void:
-	var point: Vector2 = control.get_global_rect().get_center()
+	var visible_rect: Rect2 = control.get_global_rect().intersection(root.get_visible_rect())
+	var ancestor: Node = control.get_parent()
+	while ancestor != null:
+		if ancestor is ScrollContainer: visible_rect = visible_rect.intersection((ancestor as Control).get_global_rect())
+		ancestor = ancestor.get_parent()
+	check(visible_rect.has_area(), "Tapped control has a visible touch region")
+	var point: Vector2 = visible_rect.get_center()
 	var motion: InputEventMouseMotion = InputEventMouseMotion.new()
 	motion.position = point
 	root.push_input(motion, true)
@@ -50,8 +56,10 @@ func verify_archive(screen: Control, player: Node) -> void:
 	check(not screen._record_buttons.has("client_claim"), "Undiscovered records have no searchable spoiler content")
 	screen._filter_archive("client")
 	check(screen._record_buttons.is_empty(), "Search cannot reveal an undiscovered record")
+	screen._open_record("client_claim")
+	check(screen._selected_record.is_empty(), "An undiscovered reading page cannot be opened directly")
 	screen._filter_archive("")
-	check((screen._archive_body.find_child("DiscoveryProgress", true, false) as ProgressBar).value == 0, "Progress UI reflects the fresh save")
+	check((screen._archive_body.find_child("CollectionSummary", true, false) as Label).text.contains("0 of 9"), "Collection summary reflects the fresh save")
 	screen._set_section(&"characters")
 	for id: String in Field.CHARACTER_IDS:
 		check(Field.character(id, fresh).interactions.is_empty(), "Fresh save hides undiscovered interactions for " + id)
@@ -106,10 +114,20 @@ func verify_archive(screen: Control, player: Node) -> void:
 	screen._refresh_archive()
 	check(screen._selected_character == "eric", "Asset/progress refresh preserves selected profile")
 	check(not screen.can_go_back() and screen._selected_character.is_empty(), "Profile Back returns to Characters without leaving Codex")
+	screen._archive_search.text_changed.emit("jobert")
+	check(screen._character_buttons.size() == 1 and screen._character_buttons.has("jobert"), "Typing a name filters the character collection")
+	screen._open_character("jobert")
+	# Use the saved authored record, so the reader returns to the actual source profile.
+	var jobert_records: Array = Field.character("jobert", complete).interactions
+	if not jobert_records.is_empty():
+		screen._open_record(str(jobert_records[0].id))
+		check(not screen._selected_record.is_empty(), "A character discovery opens its evidence reader")
+		check(not screen.can_go_back() and screen._selected_character == "jobert", "Reader Back returns to its character profile")
+	check(not screen.can_go_back() and screen._character_buttons.size() == 1, "Returning to collection preserves the search")
 	await tap(screen._section_buttons[&"evidence"])
 	check(screen._section == &"evidence", "Evidence tab switches by tap")
 	check(Field.observations(screen._story_snapshot)[3].status == "Unverified", "Completing Chapter 1 never verifies Eric's claim")
-	check((screen._archive_body.find_child("DiscoveryProgress", true, false) as ProgressBar).value == 9, "Completed archive displays all nine discoveries")
+	check((screen._archive_body.find_child("CollectionSummary", true, false) as Label).text.contains("9 of 9"), "Completed archive displays all nine discoveries")
 	check(screen._record_buttons.size() == 9, "All discovered evidence has an entry card")
 	screen._filter_archive("client")
 	check(screen._record_buttons.has("client_claim") and not screen._record_buttons.has("offer"), "Search filters the discovered record text")
@@ -123,6 +141,8 @@ func verify_archive(screen: Control, player: Node) -> void:
 	await settle()
 	await tap(claim_button)
 	check(screen._selected_record == "client_claim" and screen._archive_body.find_child("ReadingPage", true, false) != null, "Evidence opens a dedicated reading page")
+	var page: PanelContainer = screen._archive_body.find_child("ReadingPage", true, false) as PanelContainer
+	check((page.get_child(0).get_child(2) as Label).text.contains(str(Field.observations(complete)[3].source)), "Reading page retains the original source")
 	await capture("codex_evidence_expanded")
 	check(not screen.can_go_back() and screen._selected_record.is_empty(), "Evidence Back returns to the collection")
 	for dimensions: Vector2i in [Vector2i(844,390), Vector2i(720,360), Vector2i(390,844)]:

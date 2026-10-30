@@ -38,6 +38,7 @@ var _profile_rank: Label
 var _teaser_label: Label
 var _briefing_tween: Tween
 var _chapters: bool = false
+const MODULE_TWO_TITLES: PackedStringArray = ["The Missing Delivery", "A Code I Didn't Request", "The Familiar Name", "Last Chance", "Keep the Code"]
 var _chapter_preview: ChapterPreview
 var _intro_button: Button
 var _practice_button: Button
@@ -45,6 +46,8 @@ var _practice_button: Button
 class ChapterPreview extends Control:
 	var artwork: Texture2D
 	var chapter: int = 1
+	var module_two: bool = false
+	var chapter_title: String = ""
 	var sealed: bool = false
 	var started: bool = false
 	var unlocked: bool = true
@@ -70,12 +73,12 @@ class ChapterPreview extends Control:
 			draw_rect(Rect2(2, 2 + band * (size.y - 4) / 64.0, size.x - 4, (size.y - 4) / 64.0), Color(UI.BG, opacity))
 		var margin: float = 20 * u
 		var small: int = ceili(16 * u)
-		_text("MODULE 01   /   EMAIL TRICKS", Vector2(margin, 30 * u), small, UI.TEAL)
+		_text("MODULE 02   /   TEXT TRICKS" if module_two else "MODULE 01   /   EMAIL TRICKS", Vector2(margin, 30 * u), small, UI.TEAL)
 		var title_y: float = maxf(95 * u, size.y - (70 if sealed else 102) * u)
 		_text("CHAPTER %02d" % chapter, Vector2(margin, title_y - 34 * u), small, UI.TEAL)
-		_text("The Survey" if chapter == 1 else ("The Advisor Email" if chapter == 2 else ("The Payout" if chapter == 3 else ("The Prize" if chapter == 4 else "Confrontation"))), Vector2(margin, title_y), ceili(32 * u), UI.TEXT)
-		_text("A friendly offer. Six messages." if chapter == 1 else ("A familiar name. An unfamiliar address." if chapter == 2 else ("The reward is ready. One more step." if chapter == 3 else ("The same morning. The same button." if chapter == 4 else "Four exhibits. One confrontation."))), Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
-		_text("Something doesn't add up." if chapter == 1 else ("One character changes everything." if chapter == 2 else ("Read the destination. Not the promise." if chapter == 3 else ("Now you know what came before." if chapter == 4 else "Challenge the claim. Follow the evidence."))), Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
+		_text(chapter_title if module_two else "The Survey" if chapter == 1 else ("The Advisor Email" if chapter == 2 else ("The Payout" if chapter == 3 else ("The Prize" if chapter == 4 else "Confrontation"))), Vector2(margin, title_y), ceili(32 * u), UI.TEXT)
+		_text("A small fee. An unfamiliar request." if module_two else "A friendly offer. Six messages." if chapter == 1 else ("A familiar name. An unfamiliar address." if chapter == 2 else ("The reward is ready. One more step." if chapter == 3 else ("The same morning. The same button." if chapter == 4 else "Four exhibits. One confrontation."))), Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
+		_text("Check the request. Keep the code." if module_two else "Something doesn't add up." if chapter == 1 else ("One character changes everything." if chapter == 2 else ("Read the destination. Not the promise." if chapter == 3 else ("Now you know what came before." if chapter == 4 else "Challenge the claim. Follow the evidence."))), Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
 		if sealed: return
 		var status: String = ("COMPLETE CHAPTER %d" % (chapter - 1) if not unlocked else ("IN PROGRESS" if started else "READY TO BEGIN")) if chapter <= 5 else "COMING SOON"
 		var badge: Rect2 = Rect2(margin, size.y - 31 * u, UI.FONT.get_string_size(status, HORIZONTAL_ALIGNMENT_LEFT, -1, small).x + 20 * u, 24 * u)
@@ -137,7 +140,7 @@ func _ready() -> void:
 	_detail = UI.scroll_column(briefing)
 	_breach_button = UI.button("DEPLOY  >", _on_breach_pressed, true)
 	briefing.add_child(_breach_button)
-	_intro_button = UI.button("REPLAY INTRO", func() -> void: Router.push(&"module_intro", {"module_index":0}))
+	_intro_button = UI.button("REPLAY INTRO", func() -> void: Router.push(&"module_stages", {"module_index":1,"chapters":false}) if _module_index == 1 else Router.push(&"module_intro", {"module_index":0}))
 	_intro_button.hide()
 	var chapter_actions: HBoxContainer = HBoxContainer.new()
 	chapter_actions.add_theme_constant_override("separation",12)
@@ -170,7 +173,7 @@ func _ready() -> void:
 func on_enter(args: Dictionary) -> void:
 	_modules = LessonCatalog.modules()
 	_module_index = clampi(int(args.get("module_index", 0)), 0, maxi(0, _modules.size() - 1))
-	_chapters = _module_index == 0 and bool(args.get("chapters", false))
+	_chapters = _module_index in [0,1] and bool(args.get("chapters", false))
 	_selected = _first_playable()
 	if _chapters: _selected = 0
 	current_selected_stage = maxi(0, _launch_index(_selected))
@@ -244,6 +247,7 @@ func _refresh_all() -> void:
 	_wallet.add_theme_font_size_override("font_size", _font - 2)
 	_title.text = "CHAPTER\nSELECT" if _chapters else "MISSION\nSELECT"
 	_intro_button.visible = _chapters
+	_intro_button.text = "LEGACY MISSIONS" if _module_index == 1 else "REPLAY INTRO"
 	_practice_button.visible = _chapters and not LessonCatalog.practice_recommendation(PlayerManager).is_empty()
 	if _chapters:
 		_profile.size_flags_horizontal = SIZE_SHRINK_END
@@ -389,7 +393,7 @@ func _select_stage(index: int) -> void:
 
 func _on_breach_pressed() -> void:
 	if _chapters:
-		var chapter_id: String = "mod_01_ch_%02d" % (_selected + 1)
+		var chapter_id: String = _chapter_id(_selected + 1)
 		if _active and _selected < 5 and PlayerManager.story_unlocked(chapter_id):
 			Router.push(&"confrontation" if _selected == 4 else &"upgrades", {"deploy":true, "chapter_id":chapter_id, "replay": bool(PlayerManager.chapter_progress.get(chapter_id, {}).get("completed", false))})
 		return
@@ -404,11 +408,12 @@ func _build_chapters() -> void:
 	var focused: int = -1
 	for index: int in _rows.size():
 		if _rows[index].has_focus(): focused = index
-	var chapter_id: String = "mod_01_ch_%02d" % (_selected + 1)
+	var chapter_id: String = _chapter_id(_selected + 1)
 	var progress: Dictionary = PlayerManager.chapter_progress.get(chapter_id, {})
 	var complete: bool = bool(progress.get("completed", false))
 	var sealed_count: int = 0
-	for id: String in ["mod_01_ch_01", "mod_01_ch_02", "mod_01_ch_03", "mod_01_ch_04", "mod_01_ch_05"]:
+	for chapter_number: int in range(1, 6):
+		var id: String = _chapter_id(chapter_number)
 		if PlayerManager.chapter_progress.get(id, {}).get("completed", false): sealed_count += 1
 	_summary.text = "CHAPTERS    /    %d OF 5 SEALED" % sealed_count
 	_summary.add_theme_font_size_override("font_size", _font - 2)
@@ -418,12 +423,14 @@ func _build_chapters() -> void:
 	UI.clear(_stage_list)
 	_rows.clear()
 	for index: int in 5:
-		var id: String = "mod_01_ch_%02d" % (index + 1)
+		var id: String = _chapter_id(index + 1)
 		var completed: bool = PlayerManager.chapter_progress.get(id, {}).get("completed", false)
 		var unlocked: bool = PlayerManager.story_unlocked(id)
 		var selected: bool = index == _selected
-		var caption: String = "The Survey" if index == 0 else ("The Advisor Email" if index == 1 else ("The Payout" if index == 2 else ("The Prize" if index == 3 else "Confrontation")))
+		var caption: String = MODULE_TWO_TITLES[index] if _module_index == 1 else "The Survey" if index == 0 else ("The Advisor Email" if index == 1 else ("The Payout" if index == 2 else ("The Prize" if index == 3 else "Confrontation")))
 		var status: String = "AVAILABLE" if unlocked else "COMPLETE CHAPTER %d" % index
+		if PlayerManager.story_definition(id) == null: status = "IN DEVELOPMENT"
+		if _module_index == 1 and index == 0 and not unlocked: status = "FINISH MODULE 1 + TEXT TRICKS LESSON 1"
 		var row: Button = UI.button("", _select_chapter.bind(index))
 		row.accessibility_name = "Chapter %d. %s. %s" % [index + 1, caption, "Completed." if completed else status]
 		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
@@ -474,12 +481,15 @@ func _build_chapters() -> void:
 	UI.clear(_detail)
 	_chapter_preview = ChapterPreview.new()
 	_chapter_preview.chapter = _selected + 1
+	_chapter_preview.module_two = _module_index == 1
+	_chapter_preview.chapter_title = MODULE_TWO_TITLES[_selected] if _module_index == 1 else ""
 	_chapter_preview.sealed = complete
 	_chapter_preview.started = not progress.is_empty()
 	_chapter_preview.unlocked = PlayerManager.story_unlocked(chapter_id)
 	_chapter_preview.artwork = _selected_chapter_art()
 	_chapter_preview.mouse_filter = MOUSE_FILTER_IGNORE
 	_chapter_preview.accessibility_name = "The Survey. A friendly offer. Six messages." if _selected == 0 else ("The Advisor Email. A familiar name. An unfamiliar address." if _selected == 1 else ("The Payout. Read the destination, not the promise." if _selected == 2 else ("The Prize. Return to the morning from the intro." if _selected == 3 else "Confrontation. Challenge the claim. Follow the evidence.")))
+	if _module_index == 1: _chapter_preview.accessibility_name = MODULE_TWO_TITLES[_selected]
 	_detail.add_child(_chapter_preview)
 	_fit_chapter_preview()
 	if _selected < 5:
@@ -489,6 +499,8 @@ func _build_chapters() -> void:
 	else:
 		_breach_button.text = "COMING SOON"
 		_breach_button.disabled = true
+	if _module_index == 1 and _breach_button.disabled:
+		_breach_button.text = "IN DEVELOPMENT" if PlayerManager.story_definition(chapter_id) == null else "FINISH MODULE 1 + LESSON 1"
 	if focused >= 0 and focused < _rows.size(): _rows[focused].grab_focus()
 
 func _fit_chapter_preview() -> void:
@@ -502,7 +514,11 @@ func _chapter_art_ready(_success: bool) -> void:
 	_chapter_preview.artwork = _selected_chapter_art()
 	_chapter_preview.queue_redraw()
 
+func _chapter_id(number: int) -> String:
+	return "mod_%02d_ch_%02d" % [_module_index + 1, number]
+
 func _selected_chapter_art() -> Texture2D:
+	if _module_index == 1: return AssetManager.get_texture("story_bg_event_room_day")
 	var covers: PackedStringArray = ["story_bg_john_desk_night", "story_chapter2_cover", "story_chapter3_cover", "story_chapter4_cover", "opening_collector_meeting_v2"]
 	return AssetManager.get_texture(covers[clampi(_selected, 0, covers.size()-1)])
 

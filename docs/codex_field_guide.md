@@ -1,5 +1,15 @@
 # Codex field guide
 
+## Library navigation and reading
+
+Codex opens on a library index with three collection cards: Characters, Evidence, and Combat Intel. Cards show a preview and available-entry/discovery counts. School Content remains accessible from the header. All styling reuses the existing navy, cyan and cream palette and beveled panels; no new assets or save fields are required.
+
+Characters and Evidence have a chapter selector and collection search. Character search matches names and roles; evidence search matches only discovered titles, text and sources in the selected chapter. Empty searches explain that undiscovered records are excluded. Selecting evidence opens a dedicated cream reading page with its full observation and source. Character files present background and relationships on a cream reference panel, with related discoveries available below.
+
+Back returns from a reader to its source profile or collection, then to the library, then exits Codex. Search is retained while opening and closing a reading page. Account changes clear the selection and return to the library. Combat Intel keeps its existing roster, detail pages and remediation entry points.
+
+Collection cards stack on narrow phone viewports. They size to their wrapped text, keeping the whole card tappable; long pages scroll within the existing safe-area shell. Local validation covers native card taps, clipped visible touch regions, search, spoiler protection, reading sources, Back navigation, account reset and 844×390, 720×360 and 390×844 viewport layouts. Physical-phone acceptance is still pending.
+
 ## Module 1 story archive — Milestone 3, first gate
 
 Characters and Evidence now cover all five Module 1 chapters through the existing Codex containers. A touch-sized chapter selector opens unlocked chapters and chapters with saved original progress. The archive contains 35 observations in total. John, Eric, Jobert, Sir Rham, Dan and Mika appear as their introductions become available; the latter three use name cards where no approved Codex portrait is configured.

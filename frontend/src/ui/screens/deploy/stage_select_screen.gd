@@ -221,12 +221,12 @@ func _build_detail() -> void:
 	for stage_id: int in range(1, 11):
 		if PlayerManager.has_cleared_stage(module_id, stage_id):
 			clears += 1
-	if _selected == 0:
+	if _selected in [0,1]:
 		var completed: int = 0
 		for chapter_number: int in range(1, 6):
-			if PlayerManager.story_checkpoint("mod_01_ch_%02d" % chapter_number, false).get("completed", false): completed += 1
+			if PlayerManager.story_checkpoint("mod_%02d_ch_%02d" % [_selected + 1, chapter_number], false).get("completed", false): completed += 1
 		content.add_child(_label("5 CHAPTERS / %d COMPLETED" % completed, UI.TEXT, -1))
-		content.add_child(_label("Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
+		content.add_child(_label("Follow Amani's story. Chapter 1 is available after Module 1 and your first Text Tricks lesson; Chapters 2–5 are in development. Legacy missions remain accessible." if _selected == 1 else "Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
 	else:
 		content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
 		content.add_child(_label("L1: S1–2 / L2: S3–4 / L3: S5–6 / L4: S7–8 / L5: S9 / L6 + POST-TEST: S10", UI.MUTED, -2))
@@ -290,7 +290,7 @@ func _on_breach_pressed() -> void:
 
 func _module_route(index: int) -> Dictionary:
 	var needs_intro: bool = index == 0 and not PlayerManager.has_seen_module_intro("mod_01") and PlayerManager.chapter_progress.get("mod_01_ch_01", {}).is_empty()
-	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index == 0}}
+	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index in [0,1]}}
 
 func _open_module(index: int) -> void:
 	if not _is_unlocked(index):

@@ -6,6 +6,9 @@
 ~*.dll
 export.cfg
 export_credentials.cfg
+*.keystore
+*.jks
+/builds/
 *.tmp
 *.translation
 mono_crash.*.json
@@ -24,6 +27,7 @@ __pycache__/
 
 # Generated artwork awaiting Cloudinary hosting; keep binary PNGs out of Git.
 /output/chapter-thumbnails/*.png
+/output/module2-art/*.png
 
 # Local developer tests and Godot verification scripts (not gameplay assessments).
 # Already-tracked tests must also be excluded through explicit staging.

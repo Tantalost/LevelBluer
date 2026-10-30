@@ -193,6 +193,7 @@ func _archive_session_changed(_signed_in: bool) -> void:
 
 func _show_library() -> void:
 	_library_home = true
+	_focus_skill = ""
 	_selected_character = ""
 	_selected_record = ""
 	_record_origin = ""
@@ -235,8 +236,8 @@ func _build_library() -> void:
 			for id: String in Field.character_ids(snapshot):
 				if id not in people: people.append(id)
 	var collections: Array[Dictionary] = [
-		{"id":&"characters", "number":"01", "title":"Characters", "copy":"People, relationships and what you have learned about them.", "count":"%d character files available" % people.size(), "preview":"John / Eric / Jobert"},
-		{"id":&"evidence", "number":"02", "title":"Evidence", "copy":"Messages, suspicious details and the sources behind each observation.", "count":"%d / %d observations discovered" % [found, total], "preview":"Emails / Links / Timelines"},
+		{"id":&"characters", "number":"01", "title":"Characters", "copy":"People, relationships and what you have learned about them.", "count":"%d files available" % people.size(), "preview":"John / Eric / Jobert"},
+		{"id":&"evidence", "number":"02", "title":"Evidence", "copy":"Messages, suspicious details and the sources behind each observation.", "count":"%d / %d discovered" % [found, total], "preview":"Emails / Links / Timelines"},
 		{"id":&"combat", "number":"03", "title":"Combat Intel", "copy":"Explore defenders and threats, then read their real-world notes.", "count":"%d reference entries" % (Field.ids(&"units").size() + Field.ids(&"enemies").size()), "preview":"Defenders / Threats / Tactics"}
 	]
 	for item: Dictionary in collections:
@@ -259,7 +260,9 @@ func _library_card(parent: Control, eyebrow: String, title: String, copy: String
 	var content: VBoxContainer = UI.column(card, 12)
 	content.mouse_filter = MOUSE_FILTER_IGNORE
 	content.add_child(UI.label(eyebrow, 18, Color("8FF0E6")))
-	content.add_child(UI.label(title, 30, Color("F3ECD6")))
+	var heading: Label = UI.label(title, 30, Color("F3ECD6"))
+	heading.set_meta("library_heading", true)
+	content.add_child(heading)
 	content.add_child(UI.label(copy, 22, Color("F3ECD6")))
 	content.add_child(UI.label(footer + "  >", 18, Color("8FF0E6")))
 	# Button is not a Container: place its non-interactive contents and size it to fit.
@@ -267,8 +270,13 @@ func _library_card(parent: Control, eyebrow: String, title: String, copy: String
 	content.offset_left = 22
 	content.offset_right = -22
 	content.offset_top = 18
-	content.resized.connect(func() -> void:
-		if is_instance_valid(card): card.custom_minimum_size.y = content.size.y + 36)
+	var fit: Callable = func() -> void:
+		if not is_instance_valid(card): return
+		var height: float = content.get_combined_minimum_size().y
+		content.offset_bottom = content.offset_top + height
+		card.custom_minimum_size.y = height + 36
+	content.resized.connect(fit)
+	content.minimum_size_changed.connect(fit)
 	return card
 
 func _archive_art_ready(_success: bool) -> void:
@@ -312,9 +320,11 @@ func _refresh_archive() -> void:
 		button.accessibility_name = "Chapter %d: %s. %s" % [number, chapter.TITLE, "Available" if not button.disabled else "Continue the story to unlock"]
 		chapter_row.add_child(button)
 		_chapter_buttons.append(button)
-	_archive_body.add_child(UI.label("CHAPTER %d / %s" % [_chapter, definition.TITLE], 24, Color("8FF0E6")))
+	var discovery: Dictionary = Field.discovery_progress(_story_snapshot)
+	var collection_heading: Label = UI.label("%s / %d of %d discovered" % [definition.TITLE, discovery.found, discovery.total], 22, Color("8FF0E6"))
+	collection_heading.name = "CollectionSummary"
+	_archive_body.add_child(collection_heading)
 	if _section == &"characters" and _selected_character.is_empty():
-		_discovery_meter(_archive_body)
 		_character_grid = GridContainer.new()
 		_character_grid.add_theme_constant_override("h_separation", 16)
 		_character_grid.add_theme_constant_override("v_separation", 16)
@@ -343,8 +353,6 @@ func _refresh_archive() -> void:
 				column.add_child(label)
 		if _character_buttons.is_empty(): _empty_search()
 	else:
-		_discovery_meter(_archive_body)
-		_archive_body.add_child(UI.label("Known = observed · Unverified = claim · Unknown = unresolved", 18, UI.MUTED))
 		var hidden: int = 0
 		for observation: Dictionary in Field.observations(_story_snapshot):
 			if observation.discovered:
@@ -509,9 +517,12 @@ func _build_record_page() -> void:
 	for observation: Dictionary in Field.observations(_story_snapshot):
 		if str(observation.id) != _selected_record or not observation.discovered: continue
 		_archive_body.add_child(UI.label("EVIDENCE / CHAPTER %02d" % _chapter, 18, Color("8FF0E6")))
-		_archive_body.add_child(UI.label(str(observation.title), 32, Color("F3ECD6")))
+		var heading: Label = UI.label(str(observation.title), 32, Color("F3ECD6"))
+		heading.set_meta("library_heading", true)
+		_archive_body.add_child(heading)
 		var page: VBoxContainer = _reading_panel()
-		page.add_child(UI.label(str(observation.status).to_upper() + " / OBSERVATION", 18, Color("101623")))
+		var meaning: String = {"Known":"Observed in the story", "Unverified":"A claim that has not been verified", "Unknown":"An unresolved observation"}[str(observation.status)]
+		page.add_child(UI.label(str(observation.status).to_upper() + " / " + meaning, 18, Color("101623")))
 		page.add_child(UI.label(str(observation.text), 28, Color("101623")))
 		page.add_child(UI.label("SOURCE\n" + str(observation.source), 20, Color("101623")))
 		_archive_body.add_child(UI.button("BACK TO " + ("CHARACTER" if not _record_origin.is_empty() else "EVIDENCE"), _close_record))
@@ -808,6 +819,9 @@ func _layout() -> void:
 	_detail_panel.visible = not _compact or _mobile_details
 	_back_button.text = "< INDEX" if _compact and _mobile_details else "BACK"
 	UI.fit_touch(self)
+	for heading: Node in _archive_body.find_children("*", "Label", true, false):
+		if heading.has_meta("library_heading"):
+			(heading as Label).add_theme_font_size_override("font_size", maxi(30, ceili(22 / physical)))
 	if _library_home:
 		_back_button.text = "BACK"
 		if is_instance_valid(_library_grid): _library_grid.columns = 3 if size.x * physical >= 600 else 1
