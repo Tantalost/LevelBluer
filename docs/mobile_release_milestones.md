@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3B active for Module 2 script/integration review. On 30 October the user explicitly deferred phone testing and authorized proceeding to the next milestone. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+Status: Gate 3B active. The user approved the Module 2 script/integration boundary and requested new character/background art. Chapter 1 is implemented and locally checked; Chapters 2–5 remain to be implemented. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
 
 ## Release outcome
 
@@ -342,11 +342,11 @@ Lesson mapping: reward/curiosity bait, source and file-type checks, unexpected e
 4. Android baseline export and package inspection are complete. Finish the authenticated physical-device checks. Writable/offline sync and the backend suite pass locally; these do not replace an installed-client check.
 5. Reassess the two-day-per-module estimate after the first complete reusable chapter. A deadline-driven content reduction needs explicit approval.
 
-Gate 3A acceptance remains open. On 30 October the user deferred phone testing and explicitly requested the next milestone; Gate 3B script and integration preparation can therefore proceed. Device/deployed-account/PvP checks and staff access remain release dependencies. No Module 2 production story has yet been implemented and no later milestone is declared complete.
+Gate 3A acceptance remains open. On 30 October the user deferred phone testing and explicitly requested the next milestone; Gate 3B can therefore proceed. Device/deployed-account/PvP checks and staff access remain release dependencies. Module 2 Chapter 1 is now implemented; neither Gate 3B nor any later milestone is complete.
 
 ## Gate 3B — Module 2 script and integration review
 
-Status: draft for review, prepared 30 October after the user's sequencing instruction. The five-chapter structure is approved; the dialogue and implementation boundary below are proposed. This section is the script brief, not a claim that the chapters are playable.
+Status: approved for implementation on 30 October, including new character and background generation. This section records the five-chapter script brief; only Chapter 1 is currently playable.
 
 ### Continuity and presentation
 
@@ -354,7 +354,7 @@ Module title: **The Message That Knew**. Viewpoint: Amani. Opens after John's he
 
 The current opening explicitly says Amani has no signal while friends receive messages that appear to be hers. Chapter 3 must show that incident. The proposed explanation is a copied public identity using a different contact, established by comparing the messages. Do not silently change this into a confirmed SIM swap or successful takeover. The interrupted signal is visible context, not proof that the sender controls her phone; Wi-Fi lets her review the evidence. The later support record confirms the particular wallet attempt was blocked, not that every account is universally safe.
 
-Existing art does not provide a confirmed Amani expression sheet. Draft the phone-led scenes without substituting John's portrait for her. Her final appearance reference needs review before adding new character art; reuse available John/Dan/Sir Rham portraits only for those speakers. Keep the established navy/cyan/cream theme, touch controls and readable dialogue. No new cinematic system is required.
+The user authorized a new Amani expression sheet and event-room background. Both are generated and integrated for Chapter 1; see the asset record below. Their final visual acceptance remains open. Do not substitute John's portrait for Amani; use available John/Dan/Sir Rham portraits only for those speakers. Keep the established navy/cyan/cream theme, touch controls and readable dialogue. No new cinematic system is required.
 
 ### Chapter 1 — The Missing Delivery
 
@@ -461,7 +461,7 @@ Existing art does not provide a confirmed Amani expression sheet. Draft the phon
 
 **End actions:** Continue to the appropriate module route when its requirements/content are available; Review evidence; Practice smishing through the existing Lessons flow. Until Module 3 is authored, show its honest availability state rather than opening a placeholder story. Retain any legacy Module 3 progress without silently deleting or rewriting it.
 
-### Proposed implementation boundary — awaiting sign-off
+### Approved implementation boundary
 
 1. **Existing chapter screen and phone:** retain `SurveyChapterScreen` and its phone/dialogue/overlay hierarchy. Make protagonist, phone behavior and next-chapter routing come from the chapter definition instead of `John`, chapter number and hard-coded `mod_01` strings. Preserve phone signals (`evidence_changed`, `thought_requested`, `phase_finished`, `chat_speaker_changed`) into the current screen controller; only that controller requests persistence. Extend the current phone components for the SMS comparisons; add chapter-specific content/validation definitions rather than duplicate screen scenes. Reuse the confrontation presentation components for the compact evidence review, with Amani's content and no Jobert-specific accusation/admission flow.
 2. **Existing account and archive paths:** expand `PlayerManager.story_definition`, unlock/sanitization paths, the existing Deploy selector and Codex projections to the five Module 2 chapter IDs. Keep Module 1 IDs, completed snapshots, legacy stage saves and replay behavior intact. Continue using `SaveService` and `progress_changed`; no second save store or global story manager. Award completion once, keep replays separate and unlock only authored content through the actual module requirements.
@@ -469,6 +469,57 @@ Existing art does not provide a confirmed Amani expression sheet. Draft the phon
 
 ### Gate 3B verification and review order
 
-Approve this script/clue logic and the three integration points first. Implement Chapter 1 through its save/replay/return path as the first working slice, then check the implementation time against the remaining schedule before authoring all later chapters in code. Continue within Gate 3B after that check; it is not a new milestone or a reason to silently shrink content.
+The user approved this script/clue logic and the three integration points. Chapter 1 is the first working slice, including its save/replay/return path. Review the shared integration cost against the remaining schedule before authoring later chapters in code. Continue within Gate 3B after that check; it is not a new milestone or a reason to silently shrink content.
 
 Required local checks: unchanged Module 1 saves and routes; correct protagonist/sender names; no accidental advisor/payout phone selected merely because a Module 2 chapter has the same number; all five investigations reachable; completion/rewards once; account switch isolation; assistance/replay exclusion from mastery; first-response deduplication; partial-chapter reload; Codex discovery boundaries and totals; touch targets and readable layout; background/pause/exit cancellation. Keep developer verification files local and out of commits. Phone acceptance remains deferred by the user, not waived for release.
+
+### Chapter 1 implementation review — 30 October
+
+- Playable: nine opening beats, SMS notification, timed hold/tap inspection, local link expansion with a tap alternative, independent order comparison, persistent green findings, evidence summary and security-code epilogue.
+- Reuse: the existing chapter screen, phone shell/signals, account save/replay paths, perk activity record, Deploy selector, Codex and Progress. Chapter definitions select the protagonist, phone and background. Legacy missions remain reachable. Chapters 2–5 are visibly in development and cannot be launched.
+- Learning boundary: Chapter 1 is coached story activity. Clearing it, correcting an answer or using a hint does not update BKT. A Module 2-specific graded transfer/practice handoff is still pending; do not describe this slice as completed adaptive-learning integration.
+- Local validation passed: story progression, pause/exit timer cancellation, tap alternatives, correction feedback, corrupted-save guards, partial progress, save/reload, isolated replay, once-only rewards, unchanged mastery, discovery-gated Codex evidence, authored chapter totals, legacy-route availability and locked unauthored chapters. Render checks passed at 844×390 and 720×360, including a 48-pixel Continue target. Existing Survey, Advisor, Payout, module-selector and Codex checks passed.
+- Remaining acceptance: real phone/safe-area behavior, deployed-account synchronization/isolation for the new chapter, full Module 1 end-to-end regression, refreshed APK and asset-download/offline behavior. The earlier Android APK predates this implementation. Local checks do not close these release gates.
+- Schedule review: the first slice required shared routing, portrait cropping, archive discovery and progress-total work as well as content. Those changes can support the remaining chapters, but one chapter is not evidence that the original two-day Module 2 time box is achievable. Keep the five approved chapters; reuse this flow for Chapter 2 next and measure remaining content/verification effort before promising the subsequent module dates. No additional global manager or cinematic framework was added.
+
+### Module 2 generated asset record
+
+Generated with the built-in image-generation tool. Project copies are kept locally under `output/module2-art/` and excluded from Git. Production asset entries use Cloudinary URLs. The transparent portrait sheet uses six equal cells in three columns and two rows; existing character crops remain unchanged.
+
+| Asset | Local output | Hosted production image |
+| --- | --- | --- |
+| Amani expressions | `output/module2-art/amani_poses_v1.png` | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793339789/levelblue_mod2_amani_poses_v1.png |
+| Event room, daytime | `output/module2-art/event_room_day_v1.png` | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793339808/levelblue_mod2_event_room_day_v1.png |
+
+Final prompt set (production specification):
+
+- **Amani:** Fictional Filipino senior-high-school student, 17–18, warm brown skin, brown almond eyes, black low ponytail with loose side strands and a teal hairclip. White short-sleeve uniform blouse, dark green pocket accent, navy waist/lanyard. Six waist-up expressions in an equal 3×2 grid, 1536×1024, genuinely transparent background: neutral, laughing, worried, surprised, thinking with phone, confident with arms folded. Crisp anime visual-novel illustration, warm cel shading and subtle painted texture. Consistent face, clothing and scale; no labels, borders or background.
+- **Event room:** Wide 16:9 school club event-preparation room at lunchtime. Cream walls, teal window frames, tropical campus and sunlight to the left, tiled floor, corkboard with blank notes and event layout, kraft paper, name tags, twine, navy/teal bunting, sealed carton on the right table, shelves and a standing fan. Clear center for character overlays and quiet lower area for dialogue. Anime painted background with crisp detail and subtle pixel texture; cream/navy/teal palette and warm daylight. No people, UI or logos.
+
+### Required module introductions — user direction, 30 October
+
+Every module must have its own story introduction, consistent with Module 1's prologue presentation. An authored intro, title reveal, Skip and Replay Intro are part of module acceptance; chapter dialogue alone does not satisfy this requirement. Use the existing navy/cyan/cream design, touch controls, text-speed/reduced-motion settings and pause/exit behavior. Intro playback must not award evidence, credits, chapter completion or BKT mastery. Implement each intro within its module's milestone; do not implement Modules 3–5 ahead of their approved gates.
+
+Before implementation, `module_intro_screen.gd` supported only Module 1 and sent other modules directly to selection. Deploy first-entry routing checked only Module 1. Module 2's secondary action opened legacy missions instead of an intro.
+
+**Module 2 approved prologue — implemented 30 October:**
+
+1. Hallway, later that afternoon. Amani's phone has no cellular signal. A forwarded message is displayed as a simulated card: “It's Amani. New number for today. Club parcel is stuck.” This is a preview of Chapter 3, not new evidence awarded to the player.
+2. Amani: “My name. My photo. But I didn't send those messages.”
+3. Amani: “My phone had no signal. Everyone else was hearing from someone who looked like me.”
+4. Amani: “Before that, I was just waiting for a parcel.”
+5. Caption: “Earlier that day…” Transition to the event-preparation room.
+6. Caption: “One delivery update.”
+7. Caption: “One small fee.”
+8. Amani: “I thought the only thing missing was the tape.”
+9. Existing-style title reveal: “MODULE 2 / TEXT TRICKS”, with the story subtitle “The Message That Knew”. Continue opens Module 2 chapter selection.
+
+Keep the signal loss and copied identity as observations. Neither the narration nor the title reveal should imply a confirmed SIM swap, account takeover, or culprit identity. Chapter 1 begins at lunchtime after John's hearing; Chapter 3 revisits the hallway incident in full.
+
+**Implementation, using existing nodes and signals:**
+
+- Extend `ModuleIntroScreen`'s existing artwork, message card, narration, caption and title controls with module-specific beat/presentation data. Retain the current advance buttons, tween ownership, notification sound, pause and reduced-motion handling; no new scene manager.
+- Route Module 2's first entry through the same intro screen and use `PlayerManager.seen_module_intros` for the viewing flag. Existing chapter saves continue directly to selection and retain an explicit Replay Intro action. Continue returns to the correct module's chapter selector; Back must not mark the intro seen.
+- Keep legacy missions as a separate selector action. Verify Module 1 regression, Module 2 first-entry/skip/replay/back, saved seen flags, no learning/reward mutations, touch layout and cancellation on exit before accepting the intro.
+
+Local checks passed for Module 1's existing intro/selector and Module 2's first-entry route, existing-save bypass, serialized viewing flag, approved beats, Skip/Replay, Back without marking seen, Continue returning to Module 2, no rewards/mastery mutations from playback and tween cancellation on exit. The new intro renders at 844×390 and 720×360 with Amani, the hallway, event room, message card and title/subtitle. Replay Intro and legacy access use separate buttons, with wrapping on narrow screens. The navigation fixture preloads the seen flag to avoid writing the user's real guest save; a real-device first-time saved flag and cloud round trip remain release acceptance checks. Modules 3–5 intros remain part of their later module gates.

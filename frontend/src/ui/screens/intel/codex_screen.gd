@@ -309,15 +309,24 @@ func _refresh_archive() -> void:
 		_layout()
 		_archive_scroll.set_deferred("scroll_vertical", scroll_position)
 		return
+	var module_row: HBoxContainer = HBoxContainer.new()
+	module_row.add_theme_constant_override("separation", 12)
+	_archive_body.add_child(module_row)
+	for first_chapter: int in [1,6]:
+		var module_button: Button = UI.button("MODULE %d" % (1 if first_chapter == 1 else 2), _select_chapter.bind(first_chapter), (_chapter <= 5) == (first_chapter == 1))
+		module_button.disabled = not _chapter_available(first_chapter)
+		module_button.size_flags_horizontal = SIZE_EXPAND_FILL
+		module_row.add_child(module_button)
 	var chapter_row: HBoxContainer = HBoxContainer.new()
 	chapter_row.add_theme_constant_override("separation", 8)
 	_archive_body.add_child(chapter_row)
 	for number: int in range(1, Field.CHAPTERS.size() + 1):
+		if (number <= 5) != (_chapter <= 5): continue
 		var chapter: GDScript = Field.chapter_definition(number)
-		var button: Button = UI.button("CH %02d" % number, _select_chapter.bind(number), number == _chapter)
+		var button: Button = UI.button("CH %02d" % chapter.NUMBER, _select_chapter.bind(number), number == _chapter)
 		button.size_flags_horizontal = SIZE_EXPAND_FILL
 		button.disabled = not _chapter_available(number)
-		button.accessibility_name = "Chapter %d: %s. %s" % [number, chapter.TITLE, "Available" if not button.disabled else "Continue the story to unlock"]
+		button.accessibility_name = "%s: %s. %s" % [Field.chapter_label(number), chapter.TITLE, "Available" if not button.disabled else "Continue the story to unlock"]
 		chapter_row.add_child(button)
 		_chapter_buttons.append(button)
 	var discovery: Dictionary = Field.discovery_progress(_story_snapshot)
@@ -387,12 +396,12 @@ func _character_portrait(id: String) -> Control:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = MOUSE_FILTER_IGNORE
 	frame.add_child(image)
-	var sheet: Texture2D = AssetManager.get_texture("chapter1_" + id) if id in Field.CHARACTER_IDS else null
+	var sheet: Texture2D = AssetManager.get_texture("story_amani_poses" if id == "amani" else "chapter1_" + id) if id in Field.CHARACTER_IDS or id == "amani" else null
 	if sheet != null:
 		var portrait: AtlasTexture = AtlasTexture.new()
 		portrait.atlas = sheet
 		# Neutral first pose, using the same authored row split as Chapter 1.
-		var split: float = float({"john":512, "eric":524, "jobert":546}[id])
+		var split: float = float({"john":512, "eric":524, "jobert":546, "amani":512}[id])
 		portrait.region = Rect2(100, 0, 312, split * 0.7)
 		portrait.filter_clip = true
 		image.texture = portrait
@@ -414,7 +423,7 @@ func _open_character(id: String) -> void:
 
 func _build_character_profile() -> void:
 	var data: Dictionary = Field.character(_selected_character, _story_snapshot)
-	_archive_body.add_child(UI.label("CHARACTERS / CHAPTER %02d" % _chapter, 18, Color("8FF0E6")))
+	_archive_body.add_child(UI.label("CHARACTERS / " + Field.chapter_label(_chapter).to_upper(), 18, Color("8FF0E6")))
 	var header: HBoxContainer = HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
 	_archive_body.add_child(header)
@@ -479,7 +488,7 @@ func _foldout(parent: Control, title: String, key: String, color: Color = Color(
 func _undiscovered(parent: Control, count: int) -> void:
 	if count <= 0: return
 	var panel: PanelContainer = UI.panel(parent, Color("102040"))
-	panel.add_child(UI.label("? UNKNOWN / %d undiscovered\nContinue Chapter %d to reveal these records." % [count, _chapter], 20, UI.MUTED))
+	panel.add_child(UI.label("? UNKNOWN / %d undiscovered\nContinue %s to reveal these records." % [count, Field.chapter_label(_chapter)], 20, UI.MUTED))
 
 func _observation_card(observation: Dictionary, parent: Control) -> void:
 	# Undiscovered records never instantiate their authored title, body or source.
@@ -516,7 +525,7 @@ func _reading_panel() -> VBoxContainer:
 func _build_record_page() -> void:
 	for observation: Dictionary in Field.observations(_story_snapshot):
 		if str(observation.id) != _selected_record or not observation.discovered: continue
-		_archive_body.add_child(UI.label("EVIDENCE / CHAPTER %02d" % _chapter, 18, Color("8FF0E6")))
+		_archive_body.add_child(UI.label("EVIDENCE / " + Field.chapter_label(_chapter).to_upper(), 18, Color("8FF0E6")))
 		var heading: Label = UI.label(str(observation.title), 32, Color("F3ECD6"))
 		heading.set_meta("library_heading", true)
 		_archive_body.add_child(heading)

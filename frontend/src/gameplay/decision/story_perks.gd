@@ -50,7 +50,7 @@ static func allowed(run: Dictionary, id: String, context: String, phase: String,
 	if context != "story_chapter" or run.get("chapter") not in [CHAPTER, "mod_01_ch_02", "mod_01_ch_03", "mod_01_ch_04", "mod_01_ch_05", "mod_02_ch_01"] or run.get("completed", false): return false
 	if int(run.get("perk_version", 0)) != VERSION or id not in run.get("loadout", []): return false
 	var phases: Array = ["day", "sort", "highlight", "notes", "capture", "seal", "sleep"] if run.chapter == CHAPTER else ["day", "compare", "report", "headers", "seal", "sleep"]
-	if run.chapter == "mod_01_ch_03": phases = ["day", "reveal", "expand", "verify", "flaws", "seal", "sleep"]
+	if run.chapter == "mod_01_ch_03": phases = ["day", "reveal", "expand", "flaws", "seal", "sleep"]
 	if run.chapter == "mod_01_ch_04": phases = ["day","timeline","board","case_note","seal","sleep"]
 	if run.chapter == "mod_02_ch_01": phases = ["day","reveal","expand","verify","seal","sleep"]
 	if run.chapter == "mod_01_ch_05": phases = ["debate","final","comic"]

@@ -41,6 +41,7 @@ var _chapters: bool = false
 const MODULE_TWO_TITLES: PackedStringArray = ["The Missing Delivery", "A Code I Didn't Request", "The Familiar Name", "Last Chance", "Keep the Code"]
 var _chapter_preview: ChapterPreview
 var _intro_button: Button
+var _legacy_button: Button
 var _practice_button: Button
 
 class ChapterPreview extends Control:
@@ -81,6 +82,7 @@ class ChapterPreview extends Control:
 		_text("Check the request. Keep the code." if module_two else "Something doesn't add up." if chapter == 1 else ("One character changes everything." if chapter == 2 else ("Read the destination. Not the promise." if chapter == 3 else ("Now you know what came before." if chapter == 4 else "Challenge the claim. Follow the evidence."))), Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
 		if sealed: return
 		var status: String = ("COMPLETE CHAPTER %d" % (chapter - 1) if not unlocked else ("IN PROGRESS" if started else "READY TO BEGIN")) if chapter <= 5 else "COMING SOON"
+		if module_two and chapter == 1 and not unlocked: status = "FINISH MODULE 1 + LESSON 1"
 		var badge: Rect2 = Rect2(margin, size.y - 31 * u, UI.FONT.get_string_size(status, HORIZONTAL_ALIGNMENT_LEFT, -1, small).x + 20 * u, 24 * u)
 		var badge_style: StyleBoxFlat = UI.box(Color("203a40") if chapter == 1 else UI.PANEL, Color("48635f"), 0)
 		draw_style_box(badge_style, badge)
@@ -140,15 +142,18 @@ func _ready() -> void:
 	_detail = UI.scroll_column(briefing)
 	_breach_button = UI.button("DEPLOY  >", _on_breach_pressed, true)
 	briefing.add_child(_breach_button)
-	_intro_button = UI.button("REPLAY INTRO", func() -> void: Router.push(&"module_stages", {"module_index":1,"chapters":false}) if _module_index == 1 else Router.push(&"module_intro", {"module_index":0}))
+	_intro_button = UI.button("REPLAY INTRO", func() -> void: Router.push(&"module_intro", {"module_index":_module_index}))
 	_intro_button.hide()
-	var chapter_actions: HBoxContainer = HBoxContainer.new()
-	chapter_actions.add_theme_constant_override("separation",12)
-	chapter_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	var chapter_actions: HFlowContainer = HFlowContainer.new()
+	chapter_actions.add_theme_constant_override("h_separation",12)
+	chapter_actions.add_theme_constant_override("v_separation",8)
+	chapter_actions.alignment = FlowContainer.ALIGNMENT_CENTER
 	briefing.add_child(chapter_actions)
 	chapter_actions.add_child(_intro_button)
 	_practice_button = UI.button("PRACTICE",func() -> void: Router.push(&"lesson_player",{"practice":true}))
 	chapter_actions.add_child(_practice_button)
+	_legacy_button = UI.button("LEGACY MISSIONS", func() -> void: Router.push(&"module_stages", {"module_index":_module_index,"chapters":false}))
+	chapter_actions.add_child(_legacy_button)
 	var missions := UI.column(_body, 12)
 	missions.size_flags_horizontal = SIZE_EXPAND_FILL
 	missions.size_flags_stretch_ratio = 0.45
@@ -247,7 +252,7 @@ func _refresh_all() -> void:
 	_wallet.add_theme_font_size_override("font_size", _font - 2)
 	_title.text = "CHAPTER\nSELECT" if _chapters else "MISSION\nSELECT"
 	_intro_button.visible = _chapters
-	_intro_button.text = "LEGACY MISSIONS" if _module_index == 1 else "REPLAY INTRO"
+	_legacy_button.visible = _chapters and _module_index == 1
 	_practice_button.visible = _chapters and not LessonCatalog.practice_recommendation(PlayerManager).is_empty()
 	if _chapters:
 		_profile.size_flags_horizontal = SIZE_SHRINK_END
@@ -256,14 +261,18 @@ func _refresh_all() -> void:
 		_profile_rank.add_theme_font_size_override("font_size", ceili(16 / scale_y))
 		_wallet.text = "%d CREDITS" % maxi(0, PlayerManager.credits)
 		_wallet.add_theme_color_override("font_color", UI.TEXT)
-		for button: Button in [_back, _settings, _intro_button, _practice_button]: UI.style_button(button)
+		for button: Button in [_back, _settings, _intro_button, _practice_button, _legacy_button]: UI.style_button(button)
 		UI.style_button(_breach_button, true)
 		_intro_button.custom_minimum_size.y = _touch
 		_practice_button.custom_minimum_size.y = _touch
 		_practice_button.add_theme_font_size_override("font_size",ceili(16 / scale_y))
+		_practice_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_intro_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_intro_button.add_theme_font_size_override("font_size", ceili(16 / scale_y))
 		_intro_button.size_flags_horizontal = SIZE_SHRINK_CENTER
+		_legacy_button.custom_minimum_size.y = _touch
+		_legacy_button.add_theme_font_size_override("font_size", ceili(16 / scale_y))
+		_legacy_button.autowrap_mode = TextServer.AUTOWRAP_OFF
 		_body.add_theme_constant_override("separation", ceili(24 / scale_y))
 		_build_chapters()
 		return

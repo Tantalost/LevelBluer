@@ -18,17 +18,19 @@ static func snapshot() -> Dictionary:
 			total_mastery += float(row.value)
 	var chapters: Array[Dictionary] = []
 	var chapter_done: int = 0
-	for number: int in range(1, 6):
-		var id: String = "mod_01_ch_%02d" % number
+	for id: String in PlayerManager.authored_story_ids():
 		var definition: GDScript = PlayerManager.story_definition(id)
+		var number: int = int(definition.NUMBER)
+		var module_number: int = int(id.get_slice("_", 1))
 		var record: Dictionary = PlayerManager.story_checkpoint(id, false)
 		var done: bool = bool(record.get("completed", false))
 		var unlocked: bool = PlayerManager.story_unlocked(id)
 		var reason: String = "Complete Chapter %d first." % (number - 1)
 		if not PlayerManager.is_module_deploy_unlocked("mod_01"):
 			reason = "Complete the first Email Tricks lesson to unlock Deploy."
+		if module_number == 2: reason = "Finish Module 1 and the first Text Tricks lesson."
 		if done: chapter_done += 1
-		chapters.append({"id":id, "number":number, "name":definition.TITLE, "done":done,
+		chapters.append({"id":id, "number":number, "module":module_number, "name":definition.TITLE, "done":done,
 			"status":"Completed" if done else ("Available" if unlocked else "Locked"),
 			"reason":"" if unlocked else reason,
 			"assistance":PlayerManager.StoryPerks.status(record.get("perk_run", {}), bool(record.get("hint_used", false)))})

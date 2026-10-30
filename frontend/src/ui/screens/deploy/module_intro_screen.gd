@@ -12,10 +12,20 @@ const BEATS: Array[Dictionary] = [
 	{"visual": "resolve", "line": "I need to figure out what went wrong."},
 	{"visual": "caption", "line": "5 days before the disaster", "hold": 2.6},
 ]
+const AMANI_BEATS: Array[Dictionary] = [
+	{"visual":"sms", "line":"My name. My photo. But I didn't send those messages."},
+	{"visual":"sms", "line":"My phone had no signal. Everyone else was hearing from someone who looked like me."},
+	{"visual":"resolve", "line":"Before that, I was just waiting for a parcel."},
+	{"visual":"caption", "line":"Earlier that day…"},
+	{"visual":"caption", "line":"One delivery update."},
+	{"visual":"caption", "line":"One small fee."},
+	{"visual":"resolve", "line":"I thought the only thing missing was the tape."},
+]
 
 class IntroArtwork extends Control:
 	var room: Texture2D
 	var title_art: Texture2D
+	var portrait: Texture2D
 	var ending: bool = false
 	var reveal: float = 1.0:
 		set(value):
@@ -32,8 +42,12 @@ class IntroArtwork extends Control:
 		draw_rect(Rect2(Vector2.ZERO, size), Color("050B18"))
 		if not ending:
 			_cover(room, Rect2(Vector2.ZERO, size), Color.WHITE)
-			return
-		_cover(title_art if title_art != null else room, Rect2(Vector2.ZERO, size), Color(1, 1, 1, reveal))
+		else:
+			_cover(title_art if title_art != null else room, Rect2(Vector2.ZERO, size), Color(1, 1, 1, reveal))
+		if portrait != null:
+			var height: float = size.y * 0.80
+			var width: float = height * portrait.get_width() / portrait.get_height()
+			draw_texture_rect(portrait, Rect2(size.x * 0.72 - width * 0.5, size.y * 0.18, width, height), false, Color(1,1,1,reveal))
 
 var _module_index: int = 0
 var _index: int = 0
@@ -60,6 +74,7 @@ var _item: PanelContainer
 var _item_copy: VBoxContainer
 var _chapter_label: Label
 var _ending_title: Label
+var _subtitle: Label
 var _start_button: Button
 var _caption: Label
 var _caption_advance: Button
@@ -159,6 +174,10 @@ func _build() -> void:
 	_ending_title.add_theme_color_override("font_outline_color", Color("050B18"))
 	_ending_title.add_theme_constant_override("outline_size", 6)
 	add_child(_ending_title)
+	_subtitle = UI.label("The Message That Knew", 28, Color("F3ECD6"))
+	_subtitle.add_theme_color_override("font_outline_color", Color("050B18"))
+	_subtitle.add_theme_constant_override("outline_size", 6)
+	add_child(_subtitle)
 	_start_button = _button("CONTINUE  >", _on_start_pressed)
 	_start_button.name = "ContinueToDeployment"
 	add_child(_start_button)
@@ -191,10 +210,13 @@ func on_enter(args: Dictionary) -> void:
 	_index = 0
 	_ending = false
 	_load_art()
-	if _module_index != 0:
+	if _module_index not in [0,1]:
 		_leave_to_stages()
 		return
 	_show_beat()
+
+func _beats() -> Array[Dictionary]:
+	return AMANI_BEATS if _module_index == 1 else BEATS
 
 func _show_beat() -> void:
 	_stop_tweens()
@@ -209,18 +231,21 @@ func _show_beat() -> void:
 	_replay_button.hide()
 	_chapter_label.hide()
 	_ending_title.hide()
+	_subtitle.hide()
 	_start_button.hide()
-	var beat: Dictionary = BEATS[_index]
+	var beat: Dictionary = _beats()[_index]
 	var visual: String = str(beat["visual"])
 	_art.queue_redraw()
-	_counter.text = "BEFORE THE PRIZE"
-	_speaker.text = "John  /  Before the prize"
+	_counter.text = "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
+	_speaker.text = "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
+	_caption_advance.accessibility_name = "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
+	_load_art()
 	_dialogue_text.text = str(beat["line"])
-	_item.visible = visual == "email"
+	_item.visible = visual in ["email","sms"]
 	if visual == "caption":
 		_show_caption(beat)
 		return
-	if visual == "email":
+	if visual in ["email","sms"]:
 		_build_item()
 	_dialogue_text.visible_characters = 0
 	_advance_button.text = "..."
@@ -266,6 +291,11 @@ func _show_caption(beat: Dictionary) -> void:
 
 func _build_item() -> void:
 	UI.clear(_item_copy)
+	if _module_index == 1:
+		_item_label("LATER / NO CELLULAR SIGNAL", Color("153B37"))
+		_item_label("Forwarded to Amani", Color("101623"), true)
+		_item_label("“It's Amani. New number for today. Club parcel is stuck.”", Color("101623"))
+		return
 	_item_label("MAIL / PRIZE DESK", Color("153B37"))
 	_item_label("You won ₱1,000,000", Color("101623"), true)
 	_item_label("Claim within 10 minutes.\nConfirm your account password.", Color("101623"))
@@ -299,7 +329,7 @@ func _advance() -> void:
 func _next_beat() -> void:
 	if not _active or _leaving or _ending:
 		return
-	if _index + 1 < BEATS.size():
+	if _index + 1 < _beats().size():
 		_index += 1
 		_show_beat()
 	else:
@@ -321,6 +351,10 @@ func _show_title() -> void:
 	_replay_button.show()
 	_chapter_label.show()
 	_ending_title.show()
+	_chapter_label.text = "MODULE %d" % (_module_index + 1)
+	_ending_title.text = "Text Tricks" if _module_index == 1 else "Email Tricks"
+	_subtitle.visible = _module_index == 1
+	_load_art()
 	_start_button.show()
 	_start_button.disabled = true
 	_start_button.modulate.a = 0.0
@@ -362,16 +396,28 @@ func _leave_to_stages() -> void:
 	_leaving = true
 	_stop_tweens()
 	_start_button.disabled = true
-	if _module_index == 0:
-		PlayerManager.mark_module_intro_seen("mod_01")
-	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index == 0})
+	if _module_index in [0,1]:
+		PlayerManager.mark_module_intro_seen("mod_%02d" % (_module_index + 1))
+	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1]})
 
 func _can_interact() -> bool:
 	return _active and not _leaving and not _focus_lost and not _app_paused
 
 func _load_art() -> void:
-	_art.room = AssetManager.get_texture("opening_john_room_wake_v1")
-	_art.title_art = AssetManager.get_texture("module1_email_tricks_title_v1")
+	_art.portrait = null
+	if _module_index == 1:
+		_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
+		_art.title_art = AssetManager.get_texture("story_bg_event_room_day")
+		var sheet: Texture2D = AssetManager.get_texture("story_amani_poses")
+		if sheet != null and (_ending or str(_beats()[_index].visual) != "caption"):
+			var portrait: AtlasTexture = AtlasTexture.new()
+			portrait.atlas = sheet
+			var cell: Vector2 = sheet.get_size() / Vector2(3,2)
+			portrait.region = Rect2(Vector2(2,0) * cell, cell)
+			_art.portrait = portrait
+	else:
+		_art.room = AssetManager.get_texture("opening_john_room_wake_v1")
+		_art.title_art = AssetManager.get_texture("module1_email_tricks_title_v1")
 	_art.queue_redraw()
 
 func _on_assets_ready(_success: bool) -> void:
@@ -418,6 +464,9 @@ func _layout_page() -> void:
 	_ending_title.position = Vector2(w * 0.035, h * 0.80)
 	_ending_title.size = Vector2(w * 0.70, h * 0.13)
 	_ending_title.add_theme_font_size_override("font_size", int(w * 0.043))
+	_subtitle.position = Vector2(w * 0.035, h * 0.92)
+	_subtitle.size = Vector2(w * 0.70, h * 0.07)
+	_subtitle.add_theme_font_size_override("font_size", ceili(16 / physical))
 	_start_button.position = Vector2(w * 0.76, h - touch - inset)
 	_start_button.size = Vector2(w * 0.22, touch)
 	_start_button.add_theme_font_size_override("font_size", ceili(18 / physical))
@@ -432,7 +481,7 @@ func _layout_page() -> void:
 func _settings_changed() -> void:
 	if not _active:
 		return
-	if not _ending and str(BEATS[_index]["visual"]) == "caption":
+	if not _ending and str(_beats()[_index]["visual"]) == "caption":
 		_show_beat()
 		return
 	if SettingsService.reduced_motion or SettingsService.text_speed == "instant":
@@ -483,7 +532,7 @@ func on_resume() -> void:
 	_active = true
 	visible = true
 	if not _ending:
-		if str(BEATS[_index]["visual"]) == "caption":
+		if str(_beats()[_index]["visual"]) == "caption":
 			_show_beat()
 		else:
 			_finish_line()

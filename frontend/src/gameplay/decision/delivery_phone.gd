@@ -68,6 +68,11 @@ func _render() -> void:
 		_ink(str(Chapter.MESSAGES[0].body) + "\n\nTrack delivery:\n" + Chapter.SHORT_URL)
 		_action("KEEP MESSAGE / CONTINUE", _read_message)
 	elif mode == "reveal":
+		if not state.flags.is_empty():
+			_good("Address revealed\n" + Chapter.SHORT_URL + "\n\nThe delivery label hid the full address. Next, expand the short link.")
+			_refresh()
+			_metrics()
+			return
 		_ink("SMS says: Pay ₱18 to reschedule today.\nHold the link to inspect it without visiting it.")
 		var link: Button = _action("TRACK DELIVERY / HOLD", func() -> void: pass)
 		link.button_down.connect(_start_hold)
@@ -78,8 +83,12 @@ func _render() -> void:
 		_hold_progress.custom_minimum_size.y = 10
 		_content.add_child(_hold_progress)
 		_action("INSPECT ADDRESS / TAP", _reveal)
-		if not state.flags.is_empty(): _good("Address revealed: " + Chapter.SHORT_URL + "\nThe visible delivery label does not show the full address. Next, expand this short link.")
 	elif mode == "expand":
+		if not state.domains.is_empty():
+			_good("Destination revealed\n" + Chapter.DESTINATION + "\n\nA payment page. Verify the request using the service you already know.")
+			_refresh()
+			_metrics()
+			return
 		_ink("Expand the saved link locally. No website is opened.")
 		var chip: LinkChip = LinkChip.new()
 		chip.text = ("✓ SELECTED / " if _selected_link else "SELECT LINK / ") + Chapter.SHORT_URL
@@ -91,8 +100,12 @@ func _render() -> void:
 		_content.add_child(target)
 		target.pressed.connect(_expand_selected)
 		target.link_received.connect(_expand_drop)
-		if not state.domains.is_empty(): _good("Destination: " + Chapter.DESTINATION + "\nThe short link hid a payment destination. Verify the request using the service you already know.")
 	elif mode == "verify":
+		if not state.captures.is_empty():
+			_good("Order comparison saved\nMY ORDER: Paid · Out for delivery · No extra fee\nSMS: Pay ₱18 to reschedule\n\nThe independent order does not support this payment request.")
+			_refresh()
+			_metrics()
+			return
 		_ink("The SMS wants ₱18. Open your order through its own app, not the message.")
 		_action("OPEN MY SAVED ORDER / PARCEL APP", _open_order)
 		if _order_open or not state.captures.is_empty():
@@ -100,7 +113,6 @@ func _render() -> void:
 			if state.captures.is_empty():
 				_action("PAY / THE FEE IS ONLY ₱18", _wrong_choice)
 				_action("STOP / THE PAYMENT REQUEST CONFLICTS", _confirm_order)
-			else: _good("Order comparison saved. The independently opened order does not support this new fee. A small payment is still a payment to an unverified destination.")
 	if not _feedback_text.is_empty(): _ink(_feedback_text)
 	_refresh()
 	_metrics()
@@ -109,15 +121,32 @@ func _refresh() -> void:
 	super._refresh()
 	_title.text = "Messages / Delivery" if mode == "read" else "Delivery / Investigation"
 	_status.text = "12:15  •  LTE  ▰"
+	_status.visible = mode == "read"
 	_nav.visible = not _notice
 	_close.text = "CONTINUE →"
 	_close.disabled = _locked or not phase_ready()
 
 func _fit_shell() -> void:
 	super._fit_shell()
-	if is_instance_valid(_shell) and mode != "read":
+	if is_instance_valid(_shell):
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
 		_shell.position.x = 8
 		_shell.size.x = maxf(100, size.x - 16)
+		_shell.size.y = maxf(100, size.y - _close.custom_minimum_size.y - 22 / physical)
+		var frame: StyleBoxEmpty = _shell.get_theme_stylebox("panel") as StyleBoxEmpty
+		frame.content_margin_top = 20 / physical
+		frame.content_margin_bottom = 12 / physical
+		frame.content_margin_left = 22 / physical
+		frame.content_margin_right = 22 / physical
+		(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+
+func _metrics() -> void:
+	super._metrics()
+	if not is_instance_valid(_content): return
+	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+	for node: Node in _content.find_children("*", "Label", true, false):
+		(node as Label).add_theme_font_size_override("font_size", ceili(16 / physical))
+	_content.add_theme_constant_override("separation", ceili(10 / physical))
 
 func _open_notice() -> void:
 	if _locked: return
