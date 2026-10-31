@@ -226,7 +226,7 @@ func _build_detail() -> void:
 		for chapter_number: int in range(1, 6):
 			if PlayerManager.story_checkpoint("mod_%02d_ch_%02d" % [_selected + 1, chapter_number], false).get("completed", false): completed += 1
 		content.add_child(_label("5 CHAPTERS / %d COMPLETED" % completed, UI.TEXT, -1))
-		content.add_child(_label("Follow Amani's story. Chapter 1 is available after Module 1 and your first Text Tricks lesson; Chapters 2–5 are in development. Legacy missions remain accessible." if _selected == 1 else "Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
+		content.add_child(_label("Follow Amani's story. All five chapters are available after Module 1 and your first Text Tricks lesson; complete each chapter to unlock the next. Legacy missions remain accessible." if _selected == 1 else "Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
 	else:
 		content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
 		content.add_child(_label("L1: S1–2 / L2: S3–4 / L3: S5–6 / L4: S7–8 / L5: S9 / L6 + POST-TEST: S10", UI.MUTED, -2))

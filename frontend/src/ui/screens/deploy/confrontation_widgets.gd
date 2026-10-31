@@ -773,6 +773,7 @@ class ClosingArgument extends VBoxContainer:
 class MeetingLights extends Control:
 	var elapsed: float = 0.0
 	var gentle: bool = false
+	var inactive_connections: int = 1
 	func _draw() -> void:
 		var texture: Texture2D = AssetManager.get_texture("opening_collector_meeting_v2")
 		if texture == null: return
@@ -785,6 +786,8 @@ class MeetingLights extends Control:
 		var dim: float = clampf((elapsed-1.2)/1.8,0,.92)
 		if not gentle and elapsed > .5 and elapsed < 2.3: dim = maxf(dim,.3+sin(elapsed*14)*.2)
 		draw_rect(Rect2(bounds.position+Vector2(dimensions.x*.75,0),Vector2(dimensions.x*.25,dimensions.y)),Color(0,0,0,dim))
+		if inactive_connections >= 2:
+			draw_rect(Rect2(bounds.position+Vector2(dimensions.x*.5,0),Vector2(dimensions.x*.25,dimensions.y)),Color(0,0,0,.92))
 
 class RewardDisplay extends Control:
 	var elapsed: float = 0.0

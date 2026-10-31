@@ -28,7 +28,7 @@ static func snapshot() -> Dictionary:
 		var reason: String = "Complete Chapter %d first." % (number - 1)
 		if not PlayerManager.is_module_deploy_unlocked("mod_01"):
 			reason = "Complete the first Email Tricks lesson to unlock Deploy."
-		if module_number == 2: reason = "Finish Module 1 and the first Text Tricks lesson."
+		if module_number == 2 and (number == 1 or not PlayerManager.story_unlocked("mod_02_ch_01")): reason = "Finish Module 1 and the first Text Tricks lesson."
 		if done: chapter_done += 1
 		chapters.append({"id":id, "number":number, "module":module_number, "name":definition.TITLE, "done":done,
 			"status":"Completed" if done else ("Available" if unlocked else "Locked"),

@@ -11,7 +11,7 @@ const MORNING: bool = true
 const DAY_LABEL: String = "LUNCHTIME"
 const FULL_WIDTH_INVESTIGATION: bool = true
 const FIRST_PHASE: String = "reveal"
-const NEXT_CHAPTER: String = ""
+const NEXT_CHAPTER: String = "mod_02_ch_02"
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const TASKS: Dictionary = {
 	"reveal":{"title":"01 / Inspect the message", "tip":"Reveal the address without visiting it. The message asks for a payment, not just a delivery update.", "line":"Eighteen pesos. What exactly am I being asked to do?", "field":"flags", "total":1, "next":"expand"},

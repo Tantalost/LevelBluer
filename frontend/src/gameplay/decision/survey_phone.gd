@@ -610,6 +610,12 @@ func _metrics() -> void:
 			var full: String = str(address.get_meta("sender_address"))
 			# Wrap at the address boundary instead of splitting gmail.com into pieces.
 			address.text = full.replace("@", "\n@") if size.x * physical < 480 else full
+		if Chapter.get("FULL_WIDTH_INVESTIGATION") == true:
+			(node as Label).add_theme_font_size_override("font_size", ceili(16 / physical))
+	if Chapter.get("FULL_WIDTH_INVESTIGATION") == true:
+		_content.add_theme_constant_override("separation", ceili(10 / physical))
+		for node: Node in _content.find_children("*", "Button", true, false):
+			(node as Button).custom_minimum_size.y = maxf(54, 48 / physical)
 	for node: Node in _content.find_children("*", "RichTextLabel", true, false):
 		(node as RichTextLabel).add_theme_font_size_override("normal_font_size", maxi(26, ceili(22 / physical)))
 	if is_instance_valid(_domain):
@@ -637,6 +643,18 @@ func set_locked(value: bool) -> void:
 func _fit_shell() -> void:
 	super._fit_shell()
 	if not is_inside_tree() or not is_instance_valid(_shell): return
+	if Chapter.get("FULL_WIDTH_INVESTIGATION") == true:
+		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+		_shell.position.x = 8
+		_shell.size.x = maxf(100, size.x - 16)
+		_shell.size.y = maxf(100, size.y - (_close.custom_minimum_size.y + 22 / physical if _nav.visible else 12 / physical))
+		var frame: StyleBoxEmpty = _shell.get_theme_stylebox("panel") as StyleBoxEmpty
+		frame.content_margin_top = 20 / physical
+		frame.content_margin_bottom = 12 / physical
+		frame.content_margin_left = 22 / physical
+		frame.content_margin_right = 22 / physical
+		(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+		return
 	if _app == "mail" and mode in ["sort", "highlight", "notes", "capture"]:
 		# Open apps are a close-up of the phone, not a portrait phone shrunk
 		# again when the task bar consumes vertical space on landscape screens.
@@ -644,6 +662,33 @@ func _fit_shell() -> void:
 		_shell.size.x = maxf(100, size.x - 16)
 		if mode in ["notes", "capture"]: _shell.size.y = size.y - 10
 		_shell.queue_redraw()
+
+func _draw_frame() -> void:
+	if Chapter.get("FULL_WIDTH_INVESTIGATION") != true:
+		super._draw_frame()
+		return
+	if not is_instance_valid(_shell): return
+	var rect: Rect2 = Rect2(Vector2.ZERO, Vector2(_shell.size.x, _shell.size.x / 0.52))
+	for layer: int in 6:
+		_shell.draw_colored_polygon(_bezel(rect.grow(-layer * 4), 32 - layer * 3), PHONE_FRAME_COLORS[layer])
+	var paper: Rect2 = rect.grow(-24)
+	_wallpaper_clip = _bezel(paper, 14)
+	_wallpaper_rect(paper, PHONE_PAPER)
+	# Use actual container positions; a fixed header offset covered the first line.
+	var header_bottom: float = _title.global_position.y - _shell.global_position.y + _title.size.y + 4
+	var header_top: float = paper.position.y
+	if _status.visible:
+		header_top = _title.global_position.y - _shell.global_position.y - 4
+		_wallpaper_rect(Rect2(paper.position, Vector2(paper.size.x, maxf(0, header_top - paper.position.y))), PHONE_STATUS)
+	_wallpaper_rect(Rect2(Vector2(paper.position.x, header_top), Vector2(paper.size.x, maxf(0, header_bottom - header_top))), PHONE_HEADER)
+
+func _activity_text(text: String) -> void:
+	_content.add_child(UI.label(text, 24, INK))
+
+func _activity_success(text: String) -> void:
+	var panel: PanelContainer = UI.panel(_content, Color("dcefe2"))
+	panel.add_theme_stylebox_override("panel", UI.box(Color("dcefe2"), Color("33D17A"), 14))
+	panel.add_child(UI.label("✓ " + text, 24, INK))
 
 func _resize_camera() -> void:
 	if not is_instance_valid(_camera): return
@@ -661,3 +706,13 @@ func stop() -> void:
 	_feedback = null
 	_shell.rotation = 0
 	super.stop()
+
+func _choices(first_text: String, first_action: Callable, second_text: String, second_action: Callable) -> void:
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	_content.add_child(row)
+	var first: Button = _action(first_text, first_action)
+	var second: Button = _action(second_text, second_action)
+	for button: Button in [first, second]:
+		button.reparent(row)
+		button.size_flags_horizontal = SIZE_EXPAND_FILL

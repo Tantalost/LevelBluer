@@ -309,7 +309,12 @@ func _college_story_catalog() -> Array[Dictionary]:
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
 	catalog.append(_catalog_entry("story_amani_poses", "Module 2 / Amani expression sheet", "image", "%s/v1793339789/levelblue_mod2_amani_poses_v1.png" % CLOUD_ROOT))
-	catalog.append(_catalog_entry("story_bg_event_room_day", "Module 2 / Club event preparation room", "image", "%s/v1793339808/levelblue_mod2_event_room_day_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_event_room_day", "Module 2 / Club event preparation room", "image", "%s/v1793410992/levelblue_mod2_art_20261031_event_workroom_day_v2.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("module2_mystery_title_v1", "Module 2 / The Message That Knew", "image", "%s/v1793410815/levelblue_mod2_art_20261031_mystery_title_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_club_corridor_afternoon", "Module 2 / Club corridor", "image", "%s/v1793411000/levelblue_mod2_art_20261031_club_corridor_afternoon_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_covered_courtyard_rain", "School / Covered courtyard in rain", "image", "%s/v1793411013/levelblue_mod2_art_20261031_covered_courtyard_rain_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_library_research_corner", "School / Library research corner", "image", "%s/v1793411024/levelblue_mod2_art_20261031_library_research_corner_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_faculty_consultation", "School / Faculty consultation room", "image", "%s/v1793411033/levelblue_mod2_art_20261031_faculty_consultation_room_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter2_cover", "Chapter 2 / The Advisor Email", "image", "%s/v1792721173/chapter2_advisor_cover_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter3_cover", "Chapter 3 / The Payout", "image", "%s/v1793086637/chapter3_payout_cover_v2.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter4_cover", "Chapter 4 / The Prize", "image", "%s/v1793086638/chapter4_prize_cover_v2.png" % CLOUD_ROOT))

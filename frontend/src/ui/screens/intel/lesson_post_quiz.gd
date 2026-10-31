@@ -33,6 +33,7 @@ var _assessment_responses: Array[Dictionary] = []
 var _skill: String = ""
 var _graded_wrong: Dictionary = {}
 var practice: bool = false
+var practice_module: String = ""
 var _recommendation: Dictionary = {}
 var _attempt_owner: String = ""
 var _attempt_signed: bool = false
@@ -41,16 +42,17 @@ var _session_expired: bool = false
 func _count() -> int:
 	return 5 if practice else COUNT
 
-func setup_practice() -> void:
+func setup_practice(focus_module: String = "") -> void:
+	practice_module = focus_module if focus_module in LessonCatalog.module_ids() else ""
 	practice = true
 	_attempt_owner = AuthService.participant_code()
 	_attempt_signed = AuthService.is_signed_in()
 	_heading.text = "RECOMMENDED PRACTICE"
-	_recommendation = LessonCatalog.practice_recommendation(account)
+	_recommendation = _practice_recommendation()
 	_action.text = "START / 5 QUESTIONS"
 	_action.disabled = _recommendation.is_empty() or Router.is_tutorial
 	_body.add_child(UI.label("Practice that follows your progress",32))
-	_body.add_child(UI.label("Five questions, focused on topics that need practice, with some broader review. No timer, perks, coins, or pass requirement.",26,UI.MUTED))
+	_body.add_child(UI.label("Five questions on this story's topic, with difficulty based on your mastery. No timer, perks, coins, or pass requirement." if not practice_module.is_empty() else "Five questions, focused on topics that need practice, with some broader review. No timer, perks, coins, or pass requirement.",26,UI.MUTED))
 	_body.add_child(UI.label("New practice answers update your progress estimate. Repeated items are review only. Practice does not change checkpoint scores or unlocks.",24,UI.MUTED))
 	if not _recommendation.is_empty():
 		_body.add_child(UI.label("STARTING FOCUS / "+str(_recommendation.title),26,Color("#4FE0D4")))
@@ -313,7 +315,7 @@ func _select_practice() -> void:
 	question = {}
 	var excluded: Array[String] = []
 	for attempt: int in 5:
-		_recommendation = LessonCatalog.practice_recommendation(account,answered,excluded)
+		_recommendation = _practice_recommendation(answered,excluded)
 		if _recommendation.is_empty(): return
 		module_id = str(_recommendation.id)
 		_skill = str(_recommendation.domain)
@@ -343,3 +345,12 @@ func _scroll_feedback() -> void:
 
 func _fit_touch() -> void:
 	UI.fit_touch(self)
+
+func _practice_recommendation(slot: int = 0, excluded: Array[String] = []) -> Dictionary:
+	var filtered: Array[String] = excluded.duplicate()
+	if not practice_module.is_empty():
+		for id: String in LessonCatalog.module_ids():
+			if id != practice_module and id not in filtered: filtered.append(id)
+	var recommendation: Dictionary = LessonCatalog.practice_recommendation(account,slot,filtered)
+	if not recommendation.is_empty() and not practice_module.is_empty(): recommendation.reason = "story_topic_followup"
+	return recommendation

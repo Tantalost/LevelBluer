@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3B active. The user approved the Module 2 script/integration boundary and requested new character/background art. Chapter 1 is implemented and locally checked; Chapters 2–5 remain to be implemented. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+Status: Gate 3B active. The user approved the Module 2 script/integration boundary and requested new character/background art. Chapters 1–4 are implemented and locally checked; Chapter 5 remains to be implemented. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
 
 ## Release outcome
 
@@ -342,7 +342,7 @@ Lesson mapping: reward/curiosity bait, source and file-type checks, unexpected e
 4. Android baseline export and package inspection are complete. Finish the authenticated physical-device checks. Writable/offline sync and the backend suite pass locally; these do not replace an installed-client check.
 5. Reassess the two-day-per-module estimate after the first complete reusable chapter. A deadline-driven content reduction needs explicit approval.
 
-Gate 3A acceptance remains open. On 30 October the user deferred phone testing and explicitly requested the next milestone; Gate 3B can therefore proceed. Device/deployed-account/PvP checks and staff access remain release dependencies. Module 2 Chapter 1 is now implemented; neither Gate 3B nor any later milestone is complete.
+Gate 3A acceptance remains open. On 30 October the user deferred phone testing and explicitly requested the next milestone; Gate 3B can therefore proceed. Device/deployed-account/PvP checks and staff access remain release dependencies. Module 2 Chapters 1–4 are now implemented; neither Gate 3B nor any later milestone is complete.
 
 ## Gate 3B — Module 2 script and integration review
 
@@ -489,9 +489,9 @@ Generated with the built-in image-generation tool. Project copies are kept local
 | Asset | Local output | Hosted production image |
 | --- | --- | --- |
 | Amani expressions | `output/module2-art/amani_poses_v1.png` | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793339789/levelblue_mod2_amani_poses_v1.png |
-| Event room, daytime | `output/module2-art/event_room_day_v1.png` | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793339808/levelblue_mod2_event_room_day_v1.png |
+| Event room, daytime (revised 31 October) | `output/module2-art/event_workroom_day_v2.png` | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793410992/levelblue_mod2_art_20261031_event_workroom_day_v2.png |
 
-Final prompt set (production specification):
+Original prompt set (first artwork pass; revised environments and title prompts are recorded below):
 
 - **Amani:** Fictional Filipino senior-high-school student, 17–18, warm brown skin, brown almond eyes, black low ponytail with loose side strands and a teal hairclip. White short-sleeve uniform blouse, dark green pocket accent, navy waist/lanyard. Six waist-up expressions in an equal 3×2 grid, 1536×1024, genuinely transparent background: neutral, laughing, worried, surprised, thinking with phone, confident with arms folded. Crisp anime visual-novel illustration, warm cel shading and subtle painted texture. Consistent face, clothing and scale; no labels, borders or background.
 - **Event room:** Wide 16:9 school club event-preparation room at lunchtime. Cream walls, teal window frames, tropical campus and sunlight to the left, tiled floor, corkboard with blank notes and event layout, kraft paper, name tags, twine, navy/teal bunting, sealed carton on the right table, shelves and a standing fan. Clear center for character overlays and quiet lower area for dialogue. Anime painted background with crisp detail and subtle pixel texture; cream/navy/teal palette and warm daylight. No people, UI or logos.
@@ -523,3 +523,37 @@ Keep the signal loss and copied identity as observations. Neither the narration 
 - Keep legacy missions as a separate selector action. Verify Module 1 regression, Module 2 first-entry/skip/replay/back, saved seen flags, no learning/reward mutations, touch layout and cancellation on exit before accepting the intro.
 
 Local checks passed for Module 1's existing intro/selector and Module 2's first-entry route, existing-save bypass, serialized viewing flag, approved beats, Skip/Replay, Back without marking seen, Continue returning to Module 2, no rewards/mastery mutations from playback and tween cancellation on exit. The new intro renders at 844×390 and 720×360 with Amani, the hallway, event room, message card and title/subtitle. Replay Intro and legacy access use separate buttons, with wrapping on narrow screens. The navigation fixture preloads the seen flag to avoid writing the user's real guest save; a real-device first-time saved flag and cloud round trip remain release acceptance checks. Modules 3–5 intros remain part of their later module gates.
+
+### Artwork revision — 31 October
+
+The user requested a mysterious final intro image and at least five distinct environments. Generated and hosted six 1672×941 images: Amani mystery title, event workroom, afternoon club corridor, rainy covered courtyard, library research corner and faculty consultation room. The title replaces the room-and-sprite ending; no duplicate portrait overlays the illustration. The intro and Chapter 1 use the revised workroom, and the intro uses the new corridor. The other three environments are available assets; approved chapter locations have not been silently changed to use them.
+
+All six Cloudinary delivery URLs were downloaded, decoded and cached through AssetManager. Intro checks passed with the new artwork at 844×390 and 720×360. PNGs remain ignored, with no new animation manager or local-image dependency in production. The [asset inventory and final prompt set](../output/module2-art/README.md) records local filenames, asset IDs, hosted URLs and intended use. Real-phone acceptance remains pending.
+
+
+### Chapter 2 implementation review — 31 October
+
+- Playable: **A Code I Didn't Request**, in the same clubroom minutes after Chapter 1. A wallet alert precedes the false cancellation SMS. Amani and John compare the opposing instructions, then the player identifies the code's purpose, marks the contradiction and independently opens the simulated wallet to reject/report the device request. The code is fixed and fictional; no credential input or external submission exists.
+- Reuse: existing chapter screen, phone containers/signals, account save and replay records, perks, Codex and Progress. Two chapter-specific scripts hold the authored content and phone activity. Shared Module 2 phone spacing and green success panels now live in the existing base phone. No new manager or save format.
+- Routing: Chapter 1's next action opens Module 2 Chapter 2, not Module 1 Chapter 2. Shared evidence handlers use exact chapter IDs for Module 1's custom fields. Chapter 2 returns to Module 2 selection; Chapters 3–5 remain in development. Legacy missions and existing chapter saves remain intact.
+- Learning boundary: code-purpose and contradiction choices are coached story activity. Hints/perks remain recorded as assistance; completion/replay does not update mastery or create graded learning events. The planned Module 2 transfer/practice handoff remains pending.
+- Local checks: prerequisite gating, notification/message order, all dialogue and investigation phases, wrong-answer correction, paused input, partial save/resume, malformed-save guards, stale-account event rejection, discovered-only Codex records, once-only rewards, isolated replay, unchanged saved mastery and learning events. Mobile render checks use 844×390 and 720×360 with 48-pixel controls and persistent green success feedback. Survey, Advisor, Delivery, chapter-selector and Codex regression checks pass.
+- Remaining acceptance: real phone/safe areas, deployed-account synchronization, offline asset behavior and an updated APK. Gate 3B remains active; the next content slice is Chapter 3, **The Familiar Name**.
+
+
+### Chapter 3 implementation review — 31 October
+
+- Implemented **The Familiar Name** in the afternoon club corridor, reconnecting with Amani's intro. John shows the forwarded new-number payment request; Amani reconnects through school Wi-Fi, compares the copied details and warns classmates through the established club chat. Dan's public reminder is context, not proof of authorship. Signal loss does not establish a SIM swap or device compromise.
+- Three activities: match the photo and delivery schedule to the public post; independently inspect the established contact; distinguish observations from assumptions and send the prepared warning through the established club chat. Uses the existing portrait, Cloudinary corridor art, mobile phone controls, success feedback, chapter controller and save/replay paths. Partial matches persist; no external message is sent.
+- Chapter 2 now unlocks Chapter 3. Codex records and Progress include the new chapter; Chapter 4 remains unavailable. Shared paired-choice buttons moved into the existing base phone instead of duplicating layout code.
+- Local checks passed for full story/activity completion, paused input, partial match restoration, correction without false completion, prerequisite guards, Codex discovery and chapter selection, completion reload, isolated replay, once-only rewards and unchanged saved mastery/learning events. Rendered at 844×390 and 720×360 with 48-pixel choice targets. Chapters 1–2 regression checks passed. Developer verification files and rendered artifacts remain ignored.
+- Real-phone, deployed-account sync and updated-APK acceptance remain pending. Gate 3B remains active; next content slice: Chapter 4, **Last Chance**. The graded transfer/practice handoff is still pending; this coached story does not itself update BKT.
+
+
+### Chapter 4 implementation review — 31 October
+
+- Implemented **Last Chance**, back in the clubroom after classes. The new SMS claims a mobile-account emergency and demands the wallet authorization code through its own recovery contact. Sir Rham advises independent verification. The message's three-minute claim is static story content; reading time never expires the activity or costs rewards.
+- Activities: tap events into chronological order, choose support through existing service apps, retain both wallet and carrier responses, and attach the saved messages to simulated wallet case LB-204. The wallet request remains under review; the carrier response establishes no cause for the signal issue. No real call, code entry or external support submission occurs.
+- Reuses the existing chapter/phone architecture, paired touch choices, account saves, replay, perk assistance records, Codex, Progress and Cloudinary clubroom art. Chapter 3 unlocks Chapter 4; Chapter 5 remains unavailable. Coached choices do not create graded learning events or update BKT.
+- Local checks: full story and activity progression; paused input; wrong-order correction; partial timeline and support-response retention; both-response attachment prerequisite; malformed-save guards; Codex discovery and chapter selection; completion reload; replay separation; once-only credits; unchanged saved mastery/events. Rendered at 844×390 and 720×360 with 48-pixel controls. Chapters 1–3 regressions passed; the Chapter 3 fixture now waits for the seal's actual state rather than a fixed delay. Verification files and artifacts remain ignored.
+- Gate 3B remains active. Next: Chapter 5, **Keep the Code**, followed by the still-pending Module 2 transfer/practice handoff and acceptance review. Real-phone, deployed-account sync, offline assets and refreshed APK acceptance remain open.

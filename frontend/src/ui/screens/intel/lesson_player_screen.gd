@@ -165,7 +165,7 @@ func on_enter(args: Dictionary) -> void:
 		_post_quiz.account = account
 		(_workspace.get_parent() as Control).add_child(_post_quiz)
 		_post_quiz.return_requested.connect(func() -> void: Router.request_back())
-		_post_quiz.setup_practice()
+		_post_quiz.setup_practice(str(args.get("practice_module", "")))
 		return
 	var module_id := str(args.get("module_id", "mod_01"))
 	if args.has("remediation_stage"):

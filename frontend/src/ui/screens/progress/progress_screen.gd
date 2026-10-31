@@ -299,7 +299,7 @@ func _build_journey() -> void:
 			grid.add_child(button)
 			_journey_buttons.append(button)
 		_select_chapter(_chapter)
-		index.add_child(_label("MODULE 2 / Chapters 2–5 in development", UI.MUTED, _font - 2))
+		index.add_child(_label("MODULE 2 / All five chapters available", UI.MUTED, _font - 2))
 		for i: int in range(2, _snapshot.modules.size()):
 			index.add_child(_label("MODULE %d / %s\nStory coming soon" % [i + 1, _snapshot.modules[i].name], UI.MUTED, _font - 2))
 	else:

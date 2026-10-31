@@ -451,6 +451,7 @@ func _render() -> void:
 	_story_art_override = ""
 	_stop_tweens()
 	_results.hide()
+	UI.clear(_caption_black)
 	_caption_black.hide()
 	_caption.hide()
 	_caption_next.hide()
@@ -566,13 +567,20 @@ func _review_capture(id: String) -> void:
 	(_journal_body.get_parent() as ScrollContainer).ensure_control_visible.call_deferred(panel)
 
 func _show_results() -> void:
+	var finale: bool = Chapter.get("FINALE") == true
+	var perk_action: Button = _result_actions.get_child(1) as Button
+	perk_action.text = "PRACTICE SMISHING" if finale else "PERKS"
+	var review_action: Button = _result_secondary.get_child(1) as Button
+	review_action.text = "REVIEW EVIDENCE" if finale else "REPLAY"
+	if finale:
+		_results.accessibility_description = "Module 2 complete. Module 3 story is in development."
 	_results.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
 	var next_button: Button = _result_actions.get_child(0) as Button
 	next_button.text = "NEXT CHAPTER"
-	next_button.tooltip_text = "Continue to " + ({1:"The Advisor Email",2:"The Payout",3:"The Prize",4:"Confrontation"}.get(Chapter.NUMBER,"Next chapter"))
-	if Chapter.get("NEXT_CHAPTER") == "":
+	var next_definition: GDScript = PlayerManager.story_definition(_next_chapter_id())
+	next_button.tooltip_text = "Continue to " + str(next_definition.TITLE) if next_definition != null else "Return to chapter selection."
+	if next_definition == null:
 		next_button.text = "CHAPTER SELECT"
-		next_button.tooltip_text = "Return to Module 2. More chapters are in development."
 	_journal.hide()
 	_portrait.hide()
 	_dialogue.hide()
@@ -598,19 +606,27 @@ func _show_results() -> void:
 
 func _open_upgrades() -> void:
 	if not _can_act() or state.get("phase") != "done": return
+	if Chapter.get("FINALE") == true:
+		await Router.push(&"lesson_player", {"practice":true,"practice_module":"mod_02"})
+		return
 	await Router.push(&"upgrades")
 
 func _evidence_summary() -> String:
 	var task: Dictionary = Chapter.TASKS.get(str(state.phase), {"field":"captures","total":3})
 	return "%d / %d collected" % [state[task.field].size(), int(task.total)]
 
+func _next_chapter_id() -> String:
+	var explicit_next: Variant = Chapter.get("NEXT_CHAPTER")
+	if explicit_next is String: return explicit_next
+	return "mod_01_ch_%02d" % (Chapter.NUMBER + 1) if Chapter.NUMBER < 5 else ""
+
 func _next_chapter() -> void:
-	if _can_act() and state.get("completed", false) and Chapter.get("NEXT_CHAPTER") == "":
-		Router.push(&"module_stages", {"module_index":1,"chapters":true})
-		return
-	if _can_act() and state.get("completed", false) and Chapter.NUMBER < 5:
-		var next_id: String = "mod_01_ch_%02d" % (Chapter.NUMBER + 1)
-		Router.push(&"confrontation" if Chapter.NUMBER == 4 else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
+	if not _can_act() or not state.get("completed", false): return
+	var next_id: String = _next_chapter_id()
+	if PlayerManager.story_definition(next_id) == null:
+		Router.push(&"module_stages", {"module_index":int(Chapter.ID.get_slice("_", 1)) - 1,"chapters":true})
+	elif PlayerManager.story_unlocked(next_id):
+		Router.push(&"confrontation" if next_id == "mod_01_ch_05" else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
 
 func _set_line(text: String) -> void:
 	# Presentation pages leave authored beat IDs (and existing saves) unchanged.
@@ -643,6 +659,19 @@ func _show_sentence() -> void:
 	_heading.modulate.a = 0.0 if caption else 1.0
 	_dialogue.visible = not caption
 	if caption:
+		if state.phase == "closing" and Chapter.get("FINALE") == true:
+			var lights: Control = _caption_black.get_node_or_null("EndingLights") as Control
+			if lights == null:
+				lights = preload("res://src/ui/screens/deploy/confrontation_widgets.gd").MeetingLights.new()
+				lights.name = "EndingLights"
+				lights.mouse_filter = MOUSE_FILTER_IGNORE
+				_caption_black.add_child(lights)
+				lights.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+				lights.modulate = Color(.4,.4,.4,1)
+			lights.gentle = true
+			lights.elapsed = 3.0
+			lights.inactive_connections = 2 if _sentence >= 2 else 1
+			lights.queue_redraw()
 		_speaker.text = ""
 		_perk_button.hide()
 		_cast_stage.hide()
@@ -767,12 +796,12 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 	if not _can_act(): return
 	for field: String in ["read", "sorted", "flags", "domains", "captures", "mistakes"]:
 		state[field] = snapshot[field]
-	if Chapter.NUMBER == 2:
+	if Chapter.ID == "mod_01_ch_02":
 		state.headers = snapshot.headers
 		state.report_draft = snapshot.report_draft
-	if Chapter.NUMBER == 3:
+	if Chapter.ID == "mod_01_ch_03":
 		for field: String in ["revealed","expanded","hotspots","reviewed"]: state[field] = snapshot[field]
-	if Chapter.NUMBER == 4:
+	if Chapter.ID == "mod_01_ch_04":
 		for field: String in ["timeline_order","timeline_checked","connections","wrong_pairs","notes","minutes_draft","event_draft","claimed"]: state[field] = snapshot[field]
 	var summary: Label = _journal_body.find_child("EvidenceSummary", true, false) as Label
 	if summary != null: summary.text = _evidence_summary()
@@ -931,6 +960,9 @@ func _save() -> void:
 
 func _replay() -> void:
 	if not _can_act(): return
+	if Chapter.get("FINALE") == true and state.phase == "done":
+		Router.push(&"codex", {"chapter_id":Chapter.ID})
+		return
 	replay = true
 	_phone._previews.clear()
 	state = PlayerManager.begin_story_attempt(Chapter.ID, true, not _testing)
@@ -1180,6 +1212,7 @@ func _start_investigation_reveal() -> void:
 	_reveal.gentle = SettingsService.reduced_motion
 	_reveal.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
 	_reveal.tagline = {2:"A familiar name. An unfamiliar destination.", 3:"FOLLOW THE LINK / Read the destination. Not the promise.",4:"CONNECT THE PATTERN / Reconstruct the morning."}.get(Chapter.NUMBER, "Every message leaves a trace.")
+	if Chapter.get("INVESTIGATION_TAGLINE") is String: _reveal.tagline = Chapter.get("INVESTIGATION_TAGLINE")
 	_reveal.elapsed = 0.0
 	_reveal.show()
 	for control: Control in [_dialogue, _journal, _phone, _app_shortcuts]: control.hide()
@@ -1235,7 +1268,7 @@ func _apply_pause() -> void:
 		if _result_audio.playing: AudioManager.set_story_duck(self, 1.0 if locked else 0.22)
 	for row: HBoxContainer in [_result_actions, _result_secondary]:
 		for node: Node in row.get_children():
-			(node as Button).disabled = locked or (node.name == "NextChapter" and Chapter.NUMBER >= 5)
+			(node as Button).disabled = locked
 	if _revealing:
 		AudioManager.set_story_duck(self, 0.3 if _can_present() else 1.0)
 		if _reveal_tween != null and _reveal_tween.is_valid():

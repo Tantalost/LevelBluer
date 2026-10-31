@@ -156,6 +156,12 @@ func on_enter(args: Dictionary) -> void:
 	_mobile_details = false
 	_refresh_resources()
 	var skill_id: String = str(args.get("skill_id", ""))
+	if args.has("chapter_id"):
+		for number: int in range(1, Field.CHAPTERS.size() + 1):
+			if Field.chapter_definition(number).ID == str(args.chapter_id) and _chapter_available(number):
+				_set_section(&"evidence")
+				_select_chapter(number)
+				return
 	if skill_id.is_empty():
 		_show_library()
 	else: load_topic(skill_id)

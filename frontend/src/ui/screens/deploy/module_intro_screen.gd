@@ -406,10 +406,12 @@ func _can_interact() -> bool:
 func _load_art() -> void:
 	_art.portrait = null
 	if _module_index == 1:
-		_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
-		_art.title_art = AssetManager.get_texture("story_bg_event_room_day")
+		_art.room = AssetManager.get_texture("story_bg_club_corridor_afternoon" if _index < 3 else "story_bg_event_room_day")
+		if _art.room == null:
+			_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
+		_art.title_art = AssetManager.get_texture("module2_mystery_title_v1")
 		var sheet: Texture2D = AssetManager.get_texture("story_amani_poses")
-		if sheet != null and (_ending or str(_beats()[_index].visual) != "caption"):
+		if sheet != null and not _ending and str(_beats()[_index].visual) != "caption":
 			var portrait: AtlasTexture = AtlasTexture.new()
 			portrait.atlas = sheet
 			var cell: Vector2 = sheet.get_size() / Vector2(3,2)

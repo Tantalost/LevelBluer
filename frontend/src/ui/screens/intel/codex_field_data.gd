@@ -6,7 +6,31 @@ const Payout: GDScript = preload("res://src/gameplay/decision/payout_chapter.gd"
 const Prize: GDScript = preload("res://src/gameplay/decision/prize_chapter.gd")
 const Hearing: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.gd")
 const Delivery: GDScript = preload("res://src/gameplay/decision/delivery_chapter.gd")
-const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery]
+const WalletCode: GDScript = preload("res://src/gameplay/decision/wallet_code_chapter.gd")
+const FamiliarName: GDScript = preload("res://src/gameplay/decision/familiar_name_chapter.gd")
+const RecoveryPressure: GDScript = preload("res://src/gameplay/decision/recovery_pressure_chapter.gd")
+const KeepCode: GDScript = preload("res://src/gameplay/decision/keep_code_chapter.gd")
+const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode]
+const KEEP_CODE_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"flags","value":"case","status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
+ {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"domains","value":"case","status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
+ {"id":"m2_final_public","title":"Familiar information can be copied","people":["amani","dan"],"field":"captures","value":"case","status":"Known","source":"Module 2 / Chapter 5 / Identity rebuttal","text":"The public post explains how the photo and delivery date could be copied. It does not identify the operator or implicate Dan. Amani verified through established channels and kept the code private."}
+]
+const RECOVERY_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m2_recovery_sequence","title":"A changing pretext","people":["amani","john"],"field":"flags","value":"recovery","status":"Known","source":"Module 2 / Chapter 4 / Message sequence","text":"The parcel payment request precedes a genuine wallet code, a copied-name payment message and then a mobile recovery warning. The warning asks for the wallet authorization code to fix a different service. This does not identify its sender."},
+ {"id":"m2_recovery_route","title":"The warning supplies its own verifier","people":["amani","rham"],"field":"domains","value":"recovery","status":"Known","source":"Module 2 / Chapter 4 / Independent route","text":"The SMS tells Amani to use its supplied recovery number. She instead chooses support through her existing wallet and carrier apps. A sender-selected contact cannot independently verify the sender's own story."},
+ {"id":"m2_recovery_case","title":"Messages attached to the support case","people":["amani"],"field":"captures","value":"recovery","status":"Known","source":"Module 2 / Chapter 4 / Support responses","text":"Wallet support says to keep the device code private and retain case LB-204 in the app. Carrier help treats the signal issue separately; no technical cause has been established. Amani attaches the messages to the simulated wallet case without sharing a code."}
+]
+const FAMILIAR_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m2_public","title":"Copied public details","people":["amani","dan"],"field":"flags","value":"identity","status":"Known","source":"Module 2 / Chapter 3 / Public post","text":"Amani matches the photo and delivery-day detail to the public event post. Dan posted the reminder; knowing this public information does not identify the impersonator."},
+ {"id":"m2_contact","title":"A different contact","people":["amani","john"],"field":"domains","value":"identity","status":"Known","source":"Module 2 / Chapter 3 / Established conversation","text":"The payment request comes from a separate contact. Amani's established conversation remains accessible over school Wi-Fi. A copied name and photo do not authenticate the new sender."},
+ {"id":"m2_warning","title":"A warning through the club chat","people":["amani","john"],"field":"captures","value":"identity","status":"Known","source":"Module 2 / Chapter 3 / Club warning","text":"Amani denies the payment request in the established club chat. Her cellular signal loss is observed, but its cause remains unknown; it does not prove a SIM swap or device compromise. The sender remains unidentified."}
+]
+const WALLET_OBSERVATIONS: Array[Dictionary] = [
+	{"id":"m2_code_purpose", "title":"A code authorizes a new device", "people":["amani","john"], "field":"flags", "value":"wallet", "status":"Known", "source":"Module 2 / Chapter 2 / Wallet alert", "text":"Amani identifies the genuine alert's stated purpose: authorize a new device. She did not request it. A genuine code does not authenticate the separate sender asking for it."},
+	{"id":"m2_cancellation", "title":"An opposite instruction", "people":["amani","john"], "field":"domains", "value":"wallet", "status":"Known", "source":"Module 2 / Chapter 2 / Message comparison", "text":"The unknown delivery sender asks Amani to reply with the code to cancel an attempt. That conflicts with the wallet alert, which says the code authorizes access. The sender also discourages independent verification."},
+	{"id":"m2_rejection", "title":"Rejected through the wallet", "people":["amani"], "field":"captures", "value":"wallet", "status":"Known", "source":"Module 2 / Chapter 2 / Independent wallet app", "text":"Amani opens her installed wallet independently, rejects the unfamiliar device request and reports it there. She keeps the code private and preserves both messages. The operator behind the request remains unidentified."}
+]
 const DELIVERY_OBSERVATIONS: Array[Dictionary] = [
 	{"id":"m2_delivery", "title":"An unexpected redelivery fee", "people":["amani"], "field":"read", "value":"parcel", "status":"Known", "source":"Module 2 / Chapter 1 / SMS", "text":"Amani receives an SMS requesting an extra payment. The message supplies no matching order reference. Reading it does not verify its sender."},
 	{"id":"m2_destination", "title":"A hidden payment destination", "people":["amani"], "field":"domains", "value":"parcel", "status":"Known", "source":"Module 2 / Chapter 1 / Expanded link", "text":"The saved short link leads to parcel-redelivery.example/pay. A short address alone does not prove fraud; compare the actual request with independently obtained information."},
@@ -78,11 +102,33 @@ static func chapter_definition(number: int) -> GDScript:
 
 static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
 	if int(snapshot.get("_chapter", 1)) == 6: return DELIVERY_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 7: return WALLET_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 8: return FAMILIAR_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 9: return RECOVERY_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 10: return KEEP_CODE_OBSERVATIONS.duplicate(true)
 	var result: Array[Dictionary] = []
 	result.assign(CHAPTER_OBSERVATIONS.get(int(snapshot.get("_chapter", 1)), OBSERVATIONS))
 	return result
 
 static func character_ids(snapshot: Dictionary) -> Array[String]:
+	if int(snapshot.get("_chapter", 1)) == 10:
+		var people: Array[String] = ["amani","dan"]
+		if seen_beat(snapshot, 3): people.append("rham")
+		if seen_beat(snapshot, 4): people.append("john")
+		return people
+	if int(snapshot.get("_chapter", 1)) == 9:
+		var people: Array[String] = ["amani"]
+		if seen_beat(snapshot, 2): people.append("john")
+		if seen_beat(snapshot, 4): people.append("rham")
+		return people
+	if int(snapshot.get("_chapter", 1)) == 8:
+		var people: Array[String] = ["amani","john"]
+		if seen_beat(snapshot, 6): people.append("dan")
+		return people
+	if int(snapshot.get("_chapter", 1)) == 7:
+		var people: Array[String] = ["amani"]
+		if seen_beat(snapshot, 2): people.append("john")
+		return people
 	if int(snapshot.get("_chapter", 1)) == 6:
 		var people: Array[String] = ["amani"]
 		if seen_beat(snapshot, 1): people.append("dan")
@@ -243,4 +289,5 @@ static func matchups(tab: StringName, id: String) -> Array[Dictionary]:
 	return rows
 
 static func chapter_label(number: int) -> String:
-	return "Module %d / Chapter %d" % [2 if number == 6 else 1, chapter_definition(number).NUMBER]
+	var chapter: GDScript = chapter_definition(number)
+	return "Module %d / Chapter %d" % [int(chapter.ID.get_slice("_", 1)), chapter.NUMBER]

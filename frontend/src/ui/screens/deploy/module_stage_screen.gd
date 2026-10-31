@@ -78,7 +78,7 @@ class ChapterPreview extends Control:
 		var title_y: float = maxf(95 * u, size.y - (70 if sealed else 102) * u)
 		_text("CHAPTER %02d" % chapter, Vector2(margin, title_y - 34 * u), small, UI.TEAL)
 		_text(chapter_title if module_two else "The Survey" if chapter == 1 else ("The Advisor Email" if chapter == 2 else ("The Payout" if chapter == 3 else ("The Prize" if chapter == 4 else "Confrontation"))), Vector2(margin, title_y), ceili(32 * u), UI.TEXT)
-		_text("A small fee. An unfamiliar request." if module_two else "A friendly offer. Six messages." if chapter == 1 else ("A familiar name. An unfamiliar address." if chapter == 2 else ("The reward is ready. One more step." if chapter == 3 else ("The same morning. The same button." if chapter == 4 else "Four exhibits. One confrontation."))), Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
+		_text(("The parcel arrives. The evidence stays." if chapter == 5 else "A deadline. A borrowed authority." if chapter == 4 else "A familiar face. An unfamiliar contact." if chapter == 3 else "A genuine code. A false instruction." if chapter == 2 else "A small fee. An unfamiliar request.") if module_two else "A friendly offer. Six messages." if chapter == 1 else ("A familiar name. An unfamiliar address." if chapter == 2 else ("The reward is ready. One more step." if chapter == 3 else ("The same morning. The same button." if chapter == 4 else "Four exhibits. One confrontation."))), Vector2(margin, title_y + 28 * u), ceili(16 * u), UI.TEXT)
 		_text("Check the request. Keep the code." if module_two else "Something doesn't add up." if chapter == 1 else ("One character changes everything." if chapter == 2 else ("Read the destination. Not the promise." if chapter == 3 else ("Now you know what came before." if chapter == 4 else "Challenge the claim. Follow the evidence."))), Vector2(margin, title_y + 50 * u), ceili(16 * u), UI.TEXT)
 		if sealed: return
 		var status: String = ("COMPLETE CHAPTER %d" % (chapter - 1) if not unlocked else ("IN PROGRESS" if started else "READY TO BEGIN")) if chapter <= 5 else "COMING SOON"
@@ -404,7 +404,7 @@ func _on_breach_pressed() -> void:
 	if _chapters:
 		var chapter_id: String = _chapter_id(_selected + 1)
 		if _active and _selected < 5 and PlayerManager.story_unlocked(chapter_id):
-			Router.push(&"confrontation" if _selected == 4 else &"upgrades", {"deploy":true, "chapter_id":chapter_id, "replay": bool(PlayerManager.chapter_progress.get(chapter_id, {}).get("completed", false))})
+			Router.push(&"confrontation" if chapter_id == "mod_01_ch_05" else &"upgrades", {"deploy":true, "chapter_id":chapter_id, "replay": bool(PlayerManager.chapter_progress.get(chapter_id, {}).get("completed", false))})
 		return
 	if not _active or not _can_play(_selected):
 		return
@@ -509,7 +509,7 @@ func _build_chapters() -> void:
 		_breach_button.text = "COMING SOON"
 		_breach_button.disabled = true
 	if _module_index == 1 and _breach_button.disabled:
-		_breach_button.text = "IN DEVELOPMENT" if PlayerManager.story_definition(chapter_id) == null else "FINISH MODULE 1 + LESSON 1"
+		_breach_button.text = "IN DEVELOPMENT" if PlayerManager.story_definition(chapter_id) == null else ("COMPLETE CHAPTER %d FIRST" % _selected if _selected > 0 and PlayerManager.story_unlocked(_chapter_id(1)) else "FINISH MODULE 1 + LESSON 1")
 	if focused >= 0 and focused < _rows.size(): _rows[focused].grab_focus()
 
 func _fit_chapter_preview() -> void:
@@ -527,7 +527,7 @@ func _chapter_id(number: int) -> String:
 	return "mod_%02d_ch_%02d" % [_module_index + 1, number]
 
 func _selected_chapter_art() -> Texture2D:
-	if _module_index == 1: return AssetManager.get_texture("story_bg_event_room_day")
+	if _module_index == 1: return AssetManager.get_texture("story_bg_club_corridor_afternoon" if _selected == 2 else "story_bg_event_room_day")
 	var covers: PackedStringArray = ["story_bg_john_desk_night", "story_chapter2_cover", "story_chapter3_cover", "story_chapter4_cover", "opening_collector_meeting_v2"]
 	return AssetManager.get_texture(covers[clampi(_selected, 0, covers.size()-1)])
 
