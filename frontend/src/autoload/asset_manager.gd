@@ -15,6 +15,36 @@ const BODY_SIZE_LIMIT := 8 * 1024 * 1024
 const WALK_FPS := 8.0
 const INDUSTRIAL_ATLAS_RESOURCE := "res://assets/gameplay/isometric/industrial_atlas_texture.tres"
 const DEATH_FPS := 10.0
+const BUNDLED_ESSENTIAL_DIR := "res://assets/bundled"
+## Keep false until every ESSENTIAL_BUNDLE file is imported under BUNDLED_ESSENTIAL_DIR;
+## enabling it earlier blocks launch for students without a complete cache.
+const ESSENTIAL_GATE_ENABLED := false
+const REQUIRED_CHARACTERS: PackedStringArray = ["hacker", "ransomware", "phisherman"]
+const CHARACTER_SHEETS: PackedStringArray = ["walk_side", "walk_top", "death_side", "death_top"]
+## Art needed to reach the dashboard and play Module 1 offline, served from the APK.
+## Values are the Cloudinary versions the bundled files were exported from.
+const ESSENTIAL_BUNDLE: Dictionary[String, String] = {
+	"ui_logo": "1788336656", "ui_intro": "1788338103", "ui_intro_preview": "1788338998", "ui_background": "1788336648",
+	"ui_dashboard": "1788336649", "ui_dashboard_scenic": "1789109666", "ui_dashboard_pvp": "1791049225",
+	"ui_pfp": "1788336662", "ui_setting": "1788336659",
+	"ui_pause": "1788336657", "ui_speedup": "1788336660",
+	"ui_heart_full": "1788336650", "ui_heart_half": "1788336652", "ui_heart_empty": "1788336648",
+	"ui_avatar_byte_bot": "1791177053", "ui_avatar_cyber_cat": "1791177071", "ui_avatar_commander": "1791177054",
+	"ui_avatar_operative": "1791177072", "ui_avatar_neon_fox": "1791177084", "ui_avatar_circuit_owl": "1791177053",
+	"ui_avatar_glitch_ghost": "1791177069", "ui_avatar_pixel_bunny": "1791177053", "ui_avatar_cyber_axolotl": "1791177067",
+	"ui_avatar_masked_raccoon": "1791177068",
+	"npc_thoughtfulness": "1788689630", "npc_talk": "1788689629", "npc_smile": "1788689629", "npc_skepticism": "1788689629",
+	"npc_scream": "1788689628", "npc_sadness": "1788689627", "npc_laughter": "1788689627", "npc_fear": "1788689626",
+	"npc_eye_rolling": "1788689626", "npc_calm": "1788689625", "npc_cry": "1788689626", "npc_discomfort": "1788689626",
+	"npc_embarrassment": "1788689626", "npc_doubt": "1788689626", "npc_awkwardness": "1788689625",
+	"npc_disgust": "1788689625", "npc_aggression": "1788689625", "npc_astonishment": "1788689625",
+	"tower_basic_node_base": "1788769625", "tower_basic_node_head": "1788769626", "tower_basic_node_atlas": "1788769625",
+	"map_industrial_atlas": "1788939071", "home_base_clean": "1788938897", "home_base_cracked": "1788938898",
+	"home_base_critical": "1788938907", "enemy_spawn_broken_pc": "1788938897",
+	"map_module_1_stage_1": "1788767750", "map_module_1_stage_2": "1788938879", "map_module_1_stage_3": "1788938879",
+}
+## Catalog art no current screen references; still downloaded, never counted for offline readiness.
+const OFFLINE_EXCLUDED: PackedStringArray = ["ui_loading", "ui_module1_morning_comic", "story_portrait_alex", "story_portrait_mia", "story_portrait_ms_reyes"]
 
 const CREATE_ASSETS_SQL := """
 CREATE TABLE IF NOT EXISTS assets (
@@ -34,6 +64,10 @@ var _db_ok: bool = false
 var _http: HTTPRequest
 var _syncing: bool = false
 var _synced: bool = false
+var _last_sync_ok: bool = false
+var _invalidations: int = 0
+var _essential_gate_enabled: bool = ESSENTIAL_GATE_ENABLED
+var _catalog_index: Dictionary = {}
 var _textures: Dictionary = {}
 var _character_frames: Dictionary = {}
 var _online: bool = false
@@ -62,7 +96,7 @@ func _ready() -> void:
 	_http.timeout = DOWNLOAD_TIMEOUT_SEC
 	_http.use_threads = true
 	_http.body_size_limit = BODY_SIZE_LIMIT
-	_configure_tls(false)
+	_configure_tls()
 	add_child(_http)
 	_open_db()
 
@@ -75,10 +109,11 @@ func is_online() -> bool:
 	return _online
 
 
+## Reuses the running or last successful pass; only a failed pass is retried.
 func ensure_ready() -> void:
 	if _syncing:
 		await sync_finished
-	else:
+	elif not (_synced and _last_sync_ok):
 		await sync_catalog()
 	var playable: PackedStringArray = playable_characters()
 	for i in playable.size():
@@ -96,10 +131,13 @@ func sync_catalog() -> void:
 	_character_frames.clear()
 	_ensure_assets_dir()
 	_report_sync_progress(0, 0, "LOADING_ASSETS_CHECK")
-	_seed_from_bundle()
-	_hydrate_from_disk()
-	var all_ok: bool = true
 	var catalog: Array[Dictionary] = _gameplay_catalog()
+	_index_catalog(catalog)
+	for entry: Dictionary in catalog:
+		_recover_interrupted_replace(str(entry.get("asset_id", "")), str(entry.get("local_path", "")))
+	_seed_from_bundle()
+	var invalidations_at_start: int = _invalidations
+	var all_ok: bool = true
 	var total: int = catalog.size()
 	for i in total:
 		var entry: Dictionary = catalog[i]
@@ -108,9 +146,11 @@ func sync_catalog() -> void:
 		if not ok:
 			all_ok = false
 		_report_sync_progress(i + 1, total, str(entry.get("asset_name", "asset")))
-		# Cached entries still hash/decode; yield so the splash can paint real progress.
 		await get_tree().process_frame
 	_synced = true
+	# A file rejected on access during this pass may have been checked before it broke.
+	all_ok = all_ok and _invalidations == invalidations_at_start
+	_last_sync_ok = all_ok
 	_syncing = false
 	if all_ok:
 		print("[AssetManager] Catalog ready. online=", _online)
@@ -126,14 +166,19 @@ func get_texture(asset_id: String) -> Texture2D:
 		var cached: Variant = _textures[asset_id]
 		return cached as Texture2D
 	var local_path: String = _local_path_for(asset_id)
-	if asset_id == "map_industrial_atlas" and FileAccess.file_exists(local_path):
-		var shared: Texture2D = load(INDUSTRIAL_ATLAS_RESOURCE)
-		shared.call("refresh_from_cache")
-		_textures[asset_id] = shared
-		return shared
-	var texture: Texture2D = _load_texture_from_disk(local_path)
+	# A matching bundled copy beats an outdated download; a current download beats the bundle.
+	var entry: Dictionary = _catalog_entry_for(asset_id)
+	var prefer_bundle: bool = _essential_bundle_current(entry) and not _is_cache_current(
+		asset_id, str(entry.get("cloudinary_url", "")), str(entry.get("version", "")), local_path)
+	var texture: Texture2D = null if prefer_bundle else _load_cached_texture(asset_id, local_path)
 	if texture == null:
 		texture = _load_bundled_texture(asset_id)
+		if texture != null and asset_id == "map_industrial_atlas":
+			var shared: ImageTexture = load(INDUSTRIAL_ATLAS_RESOURCE) as ImageTexture
+			shared.set_image(texture.get_image())
+			texture = shared
+	if texture == null and prefer_bundle:
+		texture = _load_cached_texture(asset_id, local_path)
 	if texture != null:
 		_textures[asset_id] = texture
 	return texture
@@ -187,7 +232,67 @@ func pick_random_character() -> String:
 
 
 func has_required_gameplay_assets() -> bool:
+	if _essential_gate_enabled:
+		return has_essential_assets()
 	return not playable_characters().is_empty()
+
+
+func is_essential_asset(asset_id: String) -> bool:
+	return _essential_bundle().has(asset_id)
+
+
+## Strict gate: every essential image and all enemy sheets resolve from the bundle or cache.
+## Read-only: no decoding, hashing or cache changes.
+func has_essential_assets() -> bool:
+	for asset_id: String in _required_asset_ids():
+		var entry: Dictionary = _catalog_entry_for(asset_id)
+		if entry.is_empty() or _entry_state(entry) == "missing":
+			return false
+	return true
+
+
+func is_offline_ready() -> bool:
+	var status: Dictionary = get_offline_status()
+	return int(status.total) > 0 and int(status.ready) == int(status.total)
+
+
+## Read-only readiness. "ready" means bundled at the catalog version, or cached at the catalog
+## version with a hash recorded after download verification. A file damaged later is caught
+## on first access, invalidated, and then reported missing.
+func get_offline_status() -> Dictionary:
+	var ready: int = 0
+	var total: int = 0
+	var outdated: int = 0
+	var unverified: int = 0
+	var missing_ids: PackedStringArray = PackedStringArray()
+	var essential_total: int = 0
+	var essential_missing_ids: PackedStringArray = PackedStringArray()
+	var excluded: PackedStringArray = _offline_excluded()
+	for entry: Dictionary in _gameplay_catalog():
+		var asset_id: String = str(entry.get("asset_id", ""))
+		var state: String = _entry_state(entry)
+		if is_essential_asset(asset_id):
+			essential_total += 1
+			if state == "missing":
+				essential_missing_ids.append(asset_id)
+		if excluded.has(asset_id):
+			continue
+		total += 1
+		match state:
+			"bundled", "cached":
+				ready += 1
+			"outdated":
+				outdated += 1
+			"unverified":
+				unverified += 1
+			_:
+				missing_ids.append(asset_id)
+	return {
+		"ready": ready, "total": total, "outdated": outdated, "unverified": unverified, "missing_ids": missing_ids,
+		"essential_total": essential_total, "essential_usable": essential_total - essential_missing_ids.size(),
+		"essential_missing_ids": essential_missing_ids, "essential_ready": has_essential_assets(),
+		"gate_enabled": _essential_gate_enabled,
+	}
 
 
 func get_character_walk(character_id: String, side: bool) -> Texture2D:
@@ -447,11 +552,16 @@ func _sync_entry(entry: Dictionary) -> bool:
 	if asset_id.is_empty() or url.is_empty():
 		push_warning("AssetManager: invalid catalog entry.")
 		return false
+	# Cached bytes are hashed and decoded on first get_texture(), not during sync.
 	if _is_cache_current(asset_id, url, version, local_path):
-		if get_texture(asset_id) != null:
-			return true
-		push_warning("AssetManager: cached file for '%s' is not a valid image." % asset_id)
-		_textures.erase(asset_id)
+		return true
+	if _essential_bundle_current(entry):
+		# An outdated copy is superseded by the always-available bundle; removing it keeps
+		# direct readers such as the shared industrial atlas from preferring stale art.
+		if FileAccess.file_exists(local_path):
+			_remove_file(local_path)
+			_delete_meta(asset_id)
+		return true
 	if _network_blocked:
 		return _use_local_fallback(asset_id, local_path, true)
 	return await _download_and_store(entry)
@@ -465,18 +575,7 @@ func _is_cache_current(asset_id: String, url: String, version: String, local_pat
 		return false
 	if str(meta.get("cloudinary_url", "")) != url:
 		return false
-	if str(meta.get("version", "")) != version:
-		return false
-	var stored_hash: String = str(meta.get("file_hash", ""))
-	if stored_hash.is_empty():
-		return true
-	var disk_hash: String = _hash_file(local_path)
-	if disk_hash.is_empty():
-		return false
-	if disk_hash != stored_hash:
-		push_warning("AssetManager: hash mismatch for '%s'; will refresh if online." % asset_id)
-		return false
-	return true
+	return str(meta.get("version", "")) == version
 
 
 func _download_and_store(entry: Dictionary) -> bool:
@@ -486,7 +585,7 @@ func _download_and_store(entry: Dictionary) -> bool:
 	var response: Dictionary = await _http_get(url, FileAccess.file_exists(local_path))
 	if not bool(response.get("ok", false)):
 		var error_text: String = str(response.get("error", ""))
-		if error_text.begins_with("no_internet_") or error_text.begins_with("request_start_"):
+		if error_text.begins_with("no_internet_") or error_text.begins_with("request_start_") or error_text == "tls_handshake":
 			_network_blocked = true
 		push_warning(
 			"AssetManager: download failed for '%s' (%s). %s"
@@ -498,17 +597,9 @@ func _download_and_store(entry: Dictionary) -> bool:
 	if typeof(body_stored) == TYPE_PACKED_BYTE_ARRAY:
 		body = body_stored
 	var image: Image = _image_from_buffer(body)
-	if image == null or image.is_empty():
-		push_warning("AssetManager: invalid image payload for '%s'." % asset_id)
-		return _use_local_fallback(asset_id, local_path, false)
-	if asset_id == "map_industrial_atlas" and image.get_size() != Vector2i(2048, 2048):
-		push_warning("AssetManager: industrial atlas must be the packed 2048x2048 runtime texture.")
-		return _use_local_fallback(asset_id, local_path, false)
-	if asset_id.begins_with("story_portrait_") and image.get_width() != image.get_height() * 3:
-		push_warning("AssetManager: school expression sheets must contain three square cells.")
-		return _use_local_fallback(asset_id, local_path, false)
-	if asset_id.begins_with("story_dialogue_") and image.get_size() != Vector2i(1536, 1024):
-		push_warning("AssetManager: school dialogue atlases require the original 1536x1024 crop layout.")
+	var rejection: String = _image_rejection(asset_id, image)
+	if not rejection.is_empty():
+		push_warning("AssetManager: invalid image payload for '%s' (%s)." % [asset_id, rejection])
 		return _use_local_fallback(asset_id, local_path, false)
 	# Keep downloaded UI portraits lightweight rather than retaining full-resolution textures.
 	if asset_id.begins_with("ui_avatar_") and maxi(image.get_width(), image.get_height()) > 256:
@@ -517,27 +608,120 @@ func _download_and_store(entry: Dictionary) -> bool:
 	var png: PackedByteArray = image.save_png_to_buffer()
 	if png.is_empty():
 		png = body
-	if not _write_bytes(local_path, png):
-		push_warning("AssetManager: could not write '%s'." % local_path)
+	if not _replace_cached_file(entry, png):
 		return _use_local_fallback(asset_id, local_path, false)
-	var file_hash: String = _sha256(png)
-	if not _upsert_meta(entry, file_hash):
-		push_warning("AssetManager: SQLite metadata write failed for '%s'; file is still cached." % asset_id)
-	var texture: ImageTexture = ImageTexture.create_from_image(image)
-	if asset_id == "map_industrial_atlas":
-		texture = load(INDUSTRIAL_ATLAS_RESOURCE) as ImageTexture
-		texture.set_image(image)
-	_textures[asset_id] = texture
+	# Only textures already handed out are replaced; others load lazily from the new file.
+	if asset_id == "map_industrial_atlas" and ResourceLoader.has_cached(INDUSTRIAL_ATLAS_RESOURCE):
+		var shared: ImageTexture = load(INDUSTRIAL_ATLAS_RESOURCE) as ImageTexture
+		shared.set_image(image)
+		_textures[asset_id] = shared
+	elif _textures.has(asset_id):
+		_textures[asset_id] = ImageTexture.create_from_image(image)
 	_character_frames.clear()
 	_online = true
 	print("[AssetManager] Stored %s -> %s" % [asset_id, local_path])
 	return true
 
 
+func _image_rejection(asset_id: String, image: Image) -> String:
+	if image == null or image.is_empty():
+		return "undecodable image"
+	if asset_id == "map_industrial_atlas" and image.get_size() != Vector2i(2048, 2048):
+		return "industrial atlas must be the packed 2048x2048 runtime texture"
+	if asset_id.begins_with("story_portrait_") and image.get_width() != image.get_height() * 3:
+		return "school expression sheets must contain three square cells"
+	if asset_id.begins_with("story_dialogue_") and image.get_size() != Vector2i(1536, 1024):
+		return "school dialogue atlases require the original 1536x1024 crop layout"
+	return ""
+
+
+## Temp write, read-back verification, then rename into place. Renames never target an
+## existing path (the old file moves to .bak first), so Windows and Android behave alike.
+## Metadata changes only after the new file is in place; any failure restores the old pair.
+## The SHA-256 proves the stored bytes are the ones validated here, not that Cloudinary is authentic.
+func _replace_cached_file(entry: Dictionary, png: PackedByteArray) -> bool:
+	var asset_id: String = str(entry.get("asset_id", ""))
+	var local_path: String = str(entry.get("local_path", ""))
+	var temp_path: String = local_path + ".tmp"
+	var backup_path: String = local_path + ".bak"
+	_recover_interrupted_replace(asset_id, local_path)
+	var file_hash: String = _sha256(png)
+	if not _write_bytes(temp_path, png):
+		_remove_file(temp_path)
+		push_warning("AssetManager: could not write temporary file for '%s'; kept the cached copy." % asset_id)
+		return false
+	var written: PackedByteArray = FileAccess.get_file_as_bytes(temp_path)
+	var rejection: String = ""
+	if written.size() != png.size() or _sha256(written) != file_hash:
+		rejection = "temporary file bytes differ from the validated download"
+	else:
+		rejection = _image_rejection(asset_id, _image_from_buffer(written))
+	if not rejection.is_empty():
+		_remove_file(temp_path)
+		push_warning("AssetManager: temporary file for '%s' failed verification (%s); kept the cached copy." % [asset_id, rejection])
+		return false
+	var had_previous: bool = FileAccess.file_exists(local_path)
+	if had_previous and not _rename_file(local_path, backup_path):
+		_remove_file(temp_path)
+		push_warning("AssetManager: could not move the cached '%s' aside; kept it unchanged." % asset_id)
+		return false
+	if not _rename_file(temp_path, local_path):
+		_remove_file(temp_path)
+		if had_previous:
+			_restore_backup(asset_id, local_path)
+		push_warning("AssetManager: could not move the new '%s' into place; kept the cached copy." % asset_id)
+		return false
+	if not _upsert_meta(entry, file_hash):
+		if had_previous:
+			_remove_file(local_path)
+			_restore_backup(asset_id, local_path)
+			push_warning("AssetManager: metadata update failed for '%s'; restored the previous cached copy." % asset_id)
+			return false
+		# No previous copy to protect: keep the verified file for offline use, as before.
+		push_warning("AssetManager: SQLite metadata write failed for '%s'; file is still cached." % asset_id)
+	if had_previous:
+		_remove_file(backup_path)
+	return true
+
+
+## Finishes or rolls back a replacement interrupted by a crash, using metadata to tell which
+## file it describes. Only this asset's .tmp/.bak files are touched, never a valid .png.
+func _recover_interrupted_replace(asset_id: String, local_path: String) -> void:
+	var temp_path: String = local_path + ".tmp"
+	var backup_path: String = local_path + ".bak"
+	if FileAccess.file_exists(temp_path):
+		_remove_file(temp_path)
+	if not FileAccess.file_exists(backup_path):
+		return
+	if not FileAccess.file_exists(local_path):
+		_restore_backup(asset_id, local_path)
+		return
+	var stored_hash: String = str(_read_meta(asset_id).get("file_hash", ""))
+	if not stored_hash.is_empty() and _sha256(FileAccess.get_file_as_bytes(backup_path)) == stored_hash:
+		# Crashed after the swap but before metadata: the backup is the described file.
+		_remove_file(local_path)
+		_restore_backup(asset_id, local_path)
+	else:
+		_remove_file(backup_path)
+
+
+func _restore_backup(asset_id: String, local_path: String) -> void:
+	if not _rename_file(local_path + ".bak", local_path):
+		push_warning("AssetManager: could not restore the previous '%s'; it will be redownloaded when online." % asset_id)
+
+
+func _rename_file(from_path: String, to_path: String) -> bool:
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(from_path), ProjectSettings.globalize_path(to_path)) == OK
+
+
+func _remove_file(path: String) -> void:
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
+## Existing files are validated when first accessed; an invalid one is removed then.
 func _use_local_fallback(asset_id: String, local_path: String, offline: bool) -> bool:
-	var fallback: Texture2D = _load_texture_from_disk(local_path)
-	if fallback != null:
-		_textures[asset_id] = fallback
+	if FileAccess.file_exists(local_path):
 		if offline:
 			print("[AssetManager] Offline cache hit: %s" % asset_id)
 		return true
@@ -546,20 +730,10 @@ func _use_local_fallback(asset_id: String, local_path: String, offline: bool) ->
 	return false
 
 
+## Certificate verification is never relaxed; a TLS failure falls back to local files.
 func _http_get(url: String, has_local_file: bool = false) -> Dictionary:
-	var first: Dictionary = await _http_get_once(url, has_local_file, false)
-	if bool(first.get("ok", false)):
-		return first
-	if str(first.get("error", "")) == "tls_handshake" and _http.has_method("set_tls_options"):
-		push_warning("AssetManager: Cloudinary TLS verify failed; retrying with relaxed TLS.")
-		return await _http_get_once(url, has_local_file, true)
-	return first
-
-
-func _http_get_once(url: String, has_local_file: bool, relax_tls: bool) -> Dictionary:
 	_http.download_file = ""
 	_http.timeout = 5.0 if has_local_file else DOWNLOAD_TIMEOUT_SEC
-	_configure_tls(relax_tls)
 	var headers := PackedStringArray(["Accept: image/png,image/webp,image/*;q=0.8"])
 	var err: Error = _http.request(url, headers)
 	if err != OK:
@@ -589,21 +763,6 @@ func _http_get_once(url: String, has_local_file: bool, relax_tls: bool) -> Dicti
 	if body.is_empty():
 		return {"ok": false, "code": code, "body": body, "error": "empty_body"}
 	return {"ok": true, "code": code, "body": body, "error": ""}
-
-
-func _hydrate_from_disk() -> void:
-	var catalog: Array[Dictionary] = _gameplay_catalog()
-	for i in catalog.size():
-		var entry: Dictionary = catalog[i]
-		var asset_id: String = str(entry.get("asset_id", ""))
-		var local_path: String = str(entry.get("local_path", ""))
-		if asset_id.is_empty() or _textures.has(asset_id):
-			continue
-		if not FileAccess.file_exists(local_path):
-			continue
-		var texture: Texture2D = _load_texture_from_disk(local_path)
-		if texture != null:
-			_textures[asset_id] = texture
 
 
 func _open_db() -> void:
@@ -670,6 +829,13 @@ ON CONFLICT(asset_id) DO UPDATE SET
 	return true
 
 
+func _delete_meta(asset_id: String) -> void:
+	if not is_available():
+		return
+	if not _db.query_with_bindings("DELETE FROM assets WHERE asset_id = ?;", [asset_id]):
+		push_warning("AssetManager: SQLite delete failed. %s" % _db.error_message)
+
+
 func _ensure_assets_dir() -> void:
 	var abs_path: String = ProjectSettings.globalize_path(ASSETS_DIR)
 	var err: Error = DirAccess.make_dir_recursive_absolute(abs_path)
@@ -681,14 +847,41 @@ func _local_path_for(asset_id: String) -> String:
 	return "%s/%s.png" % [ASSETS_DIR, asset_id]
 
 
-func _load_texture_from_disk(local_path: String) -> Texture2D:
+## Verifies the stored hash and decodes on first access. Bad files are invalidated.
+func _load_cached_texture(asset_id: String, local_path: String) -> Texture2D:
 	if local_path.is_empty() or not FileAccess.file_exists(local_path):
 		return null
-	var image: Image = Image.load_from_file(local_path)
-	if image == null or image.is_empty():
-		push_warning("AssetManager: failed to load image at %s." % local_path)
+	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(local_path)
+	var stored_hash: String = str(_read_meta(asset_id).get("file_hash", ""))
+	if bytes.is_empty():
+		_invalidate_cache_entry(asset_id, local_path, "empty or unreadable file")
 		return null
+	if not stored_hash.is_empty() and _sha256(bytes) != stored_hash:
+		_invalidate_cache_entry(asset_id, local_path, "hash mismatch")
+		return null
+	var image: Image = _image_from_buffer(bytes)
+	if image == null or image.is_empty():
+		_invalidate_cache_entry(asset_id, local_path, "undecodable image")
+		return null
+	if asset_id == "map_industrial_atlas":
+		if image.get_size() != Vector2i(2048, 2048):
+			_invalidate_cache_entry(asset_id, local_path, "atlas is not 2048x2048")
+			return null
+		var shared: ImageTexture = load(INDUSTRIAL_ATLAS_RESOURCE) as ImageTexture
+		shared.set_image(image)
+		return shared
 	return ImageTexture.create_from_image(image)
+
+
+## Removing file and metadata makes the next pass redownload; offline, bundled art is used.
+func _invalidate_cache_entry(asset_id: String, local_path: String, reason: String) -> void:
+	push_warning("AssetManager: cached '%s' rejected (%s); it will be redownloaded when online." % [asset_id, reason])
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(local_path))
+	_delete_meta(asset_id)
+	_textures.erase(asset_id)
+	_character_frames.clear()
+	_invalidations += 1
+	_last_sync_ok = false
 
 
 func _image_from_buffer(body: PackedByteArray) -> Image:
@@ -715,13 +908,6 @@ func _write_bytes(local_path: String, body: PackedByteArray) -> bool:
 	file.store_buffer(body)
 	file.close()
 	return true
-
-
-func _hash_file(local_path: String) -> String:
-	var bytes: PackedByteArray = FileAccess.get_file_as_bytes(local_path)
-	if bytes.is_empty():
-		return ""
-	return _sha256(bytes)
 
 
 func _sha256(bytes: PackedByteArray) -> String:
@@ -751,11 +937,10 @@ func _version_from_cloudinary_url(url: String) -> String:
 	return matched.get_string(1)
 
 
-func _configure_tls(relax: bool) -> void:
+func _configure_tls() -> void:
 	if _http == null or not _http.has_method("set_tls_options"):
 		return
-	var options: TLSOptions = TLSOptions.client_unsafe() if relax else TLSOptions.client()
-	_http.call("set_tls_options", options)
+	_http.call("set_tls_options", TLSOptions.client())
 
 
 func _seed_from_bundle() -> void:
@@ -764,7 +949,8 @@ func _seed_from_bundle() -> void:
 		var entry: Dictionary = catalog[i]
 		var asset_id: String = str(entry.get("asset_id", ""))
 		var local_path: String = str(entry.get("local_path", ""))
-		if asset_id.is_empty() or FileAccess.file_exists(local_path):
+		# Essential art is served from the imported bundle in place, never copied.
+		if asset_id.is_empty() or is_essential_asset(asset_id) or FileAccess.file_exists(local_path):
 			continue
 		var bundled_path: String = _bundled_path(asset_id)
 		if bundled_path.is_empty() or not FileAccess.file_exists(bundled_path):
@@ -780,65 +966,13 @@ func _seed_from_bundle() -> void:
 
 
 func _bundled_path(asset_id: String) -> String:
-	if asset_id.begins_with("ui_avatar_"):
-		return ""
-	if asset_id.begins_with("npc_"):
-		return ""
+	if is_essential_asset(asset_id):
+		return "%s/%s.png" % [BUNDLED_ESSENTIAL_DIR, asset_id]
 	match asset_id:
-		"map_industrial_atlas":
+		"ui_module1_intro", "ui_dashboard_pvp_workspace":
 			return ""
-		"home_base_clean":
-			return "res://assets/gameplay/map_endpoints/home_base_clean_v1.png"
-		"home_base_cracked":
-			return "res://assets/gameplay/map_endpoints/home_base_cracked_v1.png"
-		"home_base_critical":
-			return "res://assets/gameplay/map_endpoints/home_base_critical_v1.png"
-		"enemy_spawn_broken_pc":
-			return "res://assets/gameplay/map_endpoints/enemy_spawn_broken_pc_v1.png"
-		"map_module_1_stage_2":
-			return "res://assets/gameplay/maps/module_1_stage_2_25d_baked.png"
-		"map_module_1_stage_3":
-			return "res://assets/gameplay/maps/module_1_stage_3_25d_baked.png"
-		"map_module_1_stage_1":
-			return "res://assets/gameplay/maps/module_1_stage_1_25d_baked.png"
-		"tower_basic_node_base":
-			return "res://assets/gameplay/towers/basic_node_base_v1.png"
-		"tower_basic_node_head":
-			return "res://assets/gameplay/towers/basic_node_head_v2.png"
-		"tower_basic_node_atlas":
-			return "res://assets/gameplay/towers/basic_node_atlas_v1.png"
-		"ui_intro":
-			return ""
-		"ui_intro_preview":
-			return ""
-		"ui_module1_intro":
-			return ""
-		"ui_dashboard_pvp":
-			return ""
-		"ui_dashboard_pvp_workspace":
-			return ""
-		"ui_dashboard":
-			return "res://assets/ui/dashboard.png"
-		"ui_background":
-			return "res://assets/ui/background.png"
-		"ui_logo":
-			return "res://assets/ui/logo.png"
 		"ui_loading":
 			return "res://assets/ui/loading.png"
-		"ui_pfp":
-			return "res://assets/ui/tempo_pfp.jpg"
-		"ui_setting":
-			return "res://assets/ui/setting.png"
-		"ui_pause":
-			return "res://assets/ui/pause.png"
-		"ui_speedup":
-			return "res://assets/ui/speedup.png"
-		"ui_heart_full":
-			return "res://assets/ui/fullheart.png"
-		"ui_heart_half":
-			return "res://assets/ui/halfheart.png"
-		"ui_heart_empty":
-			return "res://assets/ui/emptyheart.png"
 		"story_college_cast":
 			return "res://assets/story/college_cast.png"
 		"story_college_commons":
@@ -851,11 +985,70 @@ func _bundled_path(asset_id: String) -> String:
 
 
 func _load_bundled_texture(asset_id: String) -> Texture2D:
-	var path: String = _bundled_path(asset_id)
-	if path.is_empty() or not ResourceLoader.exists(path):
+	if not _bundle_has(asset_id):
 		return null
-	var loaded: Resource = ResourceLoader.load(path)
+	var loaded: Resource = ResourceLoader.load(_bundled_path(asset_id))
 	return loaded as Texture2D
+
+
+func _bundle_has(asset_id: String) -> bool:
+	var path: String = _bundled_path(asset_id)
+	return not path.is_empty() and ResourceLoader.exists(path)
+
+
+func _essential_bundle() -> Dictionary:
+	return ESSENTIAL_BUNDLE
+
+
+func _offline_excluded() -> PackedStringArray:
+	return OFFLINE_EXCLUDED
+
+
+func _required_asset_ids() -> PackedStringArray:
+	var ids: PackedStringArray = PackedStringArray(_essential_bundle().keys())
+	for character_id: String in REQUIRED_CHARACTERS:
+		for sheet: String in CHARACTER_SHEETS:
+			ids.append("%s_%s" % [character_id, sheet])
+	return ids
+
+
+func _index_catalog(catalog: Array[Dictionary]) -> void:
+	_catalog_index.clear()
+	for entry: Dictionary in catalog:
+		_catalog_index[str(entry.get("asset_id", ""))] = entry
+
+
+func _catalog_entry_for(asset_id: String) -> Dictionary:
+	if _catalog_index.is_empty():
+		_index_catalog(_gameplay_catalog())
+	return _catalog_index.get(asset_id, {})
+
+
+## True only when the APK holds this essential image at the catalog's current version.
+func _essential_bundle_current(entry: Dictionary) -> bool:
+	var asset_id: String = str(entry.get("asset_id", ""))
+	if not is_essential_asset(asset_id):
+		return false
+	return str(_essential_bundle()[asset_id]) == str(entry.get("version", "")) and _bundle_has(asset_id)
+
+
+## bundled/cached = ready offline; outdated/unverified = usable but not ready; missing.
+## Uses file existence, metadata and import presence only: no decoding or hashing.
+func _entry_state(entry: Dictionary) -> String:
+	var asset_id: String = str(entry.get("asset_id", ""))
+	var local_path: String = str(entry.get("local_path", _local_path_for(asset_id)))
+	var bundled: bool = _bundle_has(asset_id)
+	var bundled_current: bool = _essential_bundle_current(entry) if is_essential_asset(asset_id) else bundled
+	if FileAccess.file_exists(local_path):
+		var meta: Dictionary = _read_meta(asset_id)
+		if meta.is_empty() or str(meta.get("file_hash", "")).is_empty():
+			return "bundled" if bundled_current else "unverified"
+		if str(meta.get("cloudinary_url", "")) == str(entry.get("cloudinary_url", "")) and str(meta.get("version", "")) == str(entry.get("version", "")):
+			return "cached"
+		return "bundled" if bundled_current else "outdated"
+	if bundled_current:
+		return "bundled"
+	return "outdated" if bundled else "missing"
 
 
 func _add_sheet_animation(

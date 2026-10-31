@@ -29,6 +29,10 @@ __pycache__/
 /output/chapter-thumbnails/*.png
 /output/module2-art/*.png
 
+# Essential Cloudinary images bundled locally for offline play (PNG + .import sidecars).
+# Not distributed through Git; AssetManager falls back to Cloudinary downloads without them.
+/frontend/assets/bundled/
+
 # Local developer tests and Godot verification scripts (not gameplay assessments).
 # Already-tracked tests must also be excluded through explicit staging.
 /backend/tests/

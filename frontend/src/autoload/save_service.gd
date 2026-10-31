@@ -275,6 +275,10 @@ func _sync_to_cloud() -> void:
 	data["learning_events"] = PlayerManager.learning_events.slice(0, 100)
 	data["student"] = AuthService.cloud_sync_payload()
 	data["module_pretests"] = AuthService.completed_module_pretest_ids()
+	# A 200 does not prove the next GET returns this write. The local file keeps
+	# the answer log until a fetched snapshot already shows those posteriors.
+	# The stored blob itself has no replayable log.
+	data["unconfirmed_bkt_log"] = []
 	var json_string: String = JSON.stringify(data)
 	var url: String = _api_base() + SYNC_PATH
 	var headers: PackedStringArray = [
@@ -313,7 +317,7 @@ func _on_sync_completed(
 		var response: Variant = JSON.parse_string(body.get_string_from_utf8())
 		if response is Dictionary and response.get("acknowledged_events", []) is Array:
 			PlayerManager.acknowledge_learning_events(response.get("acknowledged_events", []))
-			save_game(false)
+		save_game(false)
 		# Keep retrying until every queued result is acknowledged. Old APIs cannot
 		# silently discard evidence; offline queues survive app restarts.
 		if not PlayerManager.learning_events.is_empty():
