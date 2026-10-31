@@ -233,7 +233,7 @@ func _ready() -> void:
 	_cast_stage.mouse_filter = MOUSE_FILTER_IGNORE
 	_cast_stage.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_area.add_child(_cast_stage)
-	for person: String in ["john", "eric", "jobert", "amani"]:
+	for person: String in ["john", "eric", "jobert", "amani", "liza"]:
 		var actor: TextureRect = TextureRect.new()
 		actor.name = person.capitalize()
 		actor.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -451,7 +451,6 @@ func _render() -> void:
 	_story_art_override = ""
 	_stop_tweens()
 	_results.hide()
-	UI.clear(_caption_black)
 	_caption_black.hide()
 	_caption.hide()
 	_caption_next.hide()
@@ -463,7 +462,7 @@ func _render() -> void:
 	_phone.hide()
 	_chat_started = false
 	_chat_cue = -1.0
-	_poses = {"john":0, "eric":0, "jobert":0, "amani":0}
+	_poses = {"john":0, "eric":0, "jobert":0, "amani":0, "liza":0}
 	if state["phase"] == "day":
 		for index: int in range(int(state["beat"]) + 1):
 			var previous: Dictionary = Chapter.STORY[index]
@@ -567,13 +566,6 @@ func _review_capture(id: String) -> void:
 	(_journal_body.get_parent() as ScrollContainer).ensure_control_visible.call_deferred(panel)
 
 func _show_results() -> void:
-	var finale: bool = Chapter.get("FINALE") == true
-	var perk_action: Button = _result_actions.get_child(1) as Button
-	perk_action.text = "PRACTICE SMISHING" if finale else "PERKS"
-	var review_action: Button = _result_secondary.get_child(1) as Button
-	review_action.text = "REVIEW EVIDENCE" if finale else "REPLAY"
-	if finale:
-		_results.accessibility_description = "Module 2 complete. Module 3 story is in development."
 	_results.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
 	var next_button: Button = _result_actions.get_child(0) as Button
 	next_button.text = "NEXT CHAPTER"
@@ -606,9 +598,6 @@ func _show_results() -> void:
 
 func _open_upgrades() -> void:
 	if not _can_act() or state.get("phase") != "done": return
-	if Chapter.get("FINALE") == true:
-		await Router.push(&"lesson_player", {"practice":true,"practice_module":"mod_02"})
-		return
 	await Router.push(&"upgrades")
 
 func _evidence_summary() -> String:
@@ -626,7 +615,7 @@ func _next_chapter() -> void:
 	if PlayerManager.story_definition(next_id) == null:
 		Router.push(&"module_stages", {"module_index":int(Chapter.ID.get_slice("_", 1)) - 1,"chapters":true})
 	elif PlayerManager.story_unlocked(next_id):
-		Router.push(&"confrontation" if next_id == "mod_01_ch_05" else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
+		Router.push(&"confrontation" if PlayerManager.story_definition(next_id).get("HEARING") == true else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
 
 func _set_line(text: String) -> void:
 	# Presentation pages leave authored beat IDs (and existing saves) unchanged.
@@ -659,19 +648,6 @@ func _show_sentence() -> void:
 	_heading.modulate.a = 0.0 if caption else 1.0
 	_dialogue.visible = not caption
 	if caption:
-		if state.phase == "closing" and Chapter.get("FINALE") == true:
-			var lights: Control = _caption_black.get_node_or_null("EndingLights") as Control
-			if lights == null:
-				lights = preload("res://src/ui/screens/deploy/confrontation_widgets.gd").MeetingLights.new()
-				lights.name = "EndingLights"
-				lights.mouse_filter = MOUSE_FILTER_IGNORE
-				_caption_black.add_child(lights)
-				lights.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-				lights.modulate = Color(.4,.4,.4,1)
-			lights.gentle = true
-			lights.elapsed = 3.0
-			lights.inactive_connections = 2 if _sentence >= 2 else 1
-			lights.queue_redraw()
 		_speaker.text = ""
 		_perk_button.hide()
 		_cast_stage.hide()
@@ -960,9 +936,6 @@ func _save() -> void:
 
 func _replay() -> void:
 	if not _can_act(): return
-	if Chapter.get("FINALE") == true and state.phase == "done":
-		Router.push(&"codex", {"chapter_id":Chapter.ID})
-		return
 	replay = true
 	_phone._previews.clear()
 	state = PlayerManager.begin_story_attempt(Chapter.ID, true, not _testing)
@@ -1028,8 +1001,8 @@ func _actor_texture(person: String, face: int) -> Texture2D:
 			return sprite
 		# An offline first launch still has a happy pose until art sync completes.
 		face = 1
-	var texture: Texture2D = AssetManager.get_texture("story_amani_poses" if person == "amani" else "chapter1_" + person)
-	if person == "amani" and texture != null:
+	var texture: Texture2D = AssetManager.get_texture("story_" + person + "_poses" if person in ["amani","liza"] else "chapter1_" + person)
+	if person in ["amani","liza"] and texture != null:
 		var amani: AtlasTexture = AtlasTexture.new()
 		amani.atlas = texture
 		var cell: Vector2 = texture.get_size() / Vector2(3, 2)
@@ -1085,7 +1058,7 @@ func _layout() -> void:
 	_app_shortcuts.size = Vector2(w * 0.46, touch)
 	var actors: Array[TextureRect] = []
 	# Iterate canonical names, not draw order: switching focus never moves a slot.
-	for person: String in ["john", "eric", "jobert", "amani"]:
+	for person: String in ["john", "eric", "jobert", "amani", "liza"]:
 		if _cast[person].visible: actors.append(_cast[person])
 	var stage_width: float = w * (0.49 if has_phone else 1.0)
 	var actor_width: float = stage_width * (0.95 if actors.size() == 1 else (0.83 if has_phone else 0.68))

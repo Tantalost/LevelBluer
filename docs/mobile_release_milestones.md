@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3B active. The user approved the Module 2 script/integration boundary and requested new character/background art. Chapters 1–4 are implemented and locally checked; Chapter 5 remains to be implemented. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+Status: Gate 3C active for Module 3 script and first-slice preparation, authorized by the user on 31 October. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
 
 ## Release outcome
 
@@ -280,7 +280,7 @@ Viewpoint: Amani. John is trying to help without becoming another person Amani f
 | 2. A Code I Didn't Request | A real login/recovery code arrives immediately after the suspicious message. Another text claims that returning the code will cancel an attacker. | Compare actual notification text with the claimant's instructions; annotate what the code authorizes | Recognize that a genuine code does not authenticate the person requesting it; withhold it and secure the account through a known route |
 | 3. The Familiar Name | A message appears under a familiar service label and mentions the club delivery. Amani thinks the details settle it; John asks how the sender could have learned them. | Compare request, recipient, visible context and independently obtained service information | Separate known facts from a claim of identity; do not treat a sender label or accurate detail as proof |
 | 4. Last Chance | The claimant switches from delivery help to a mobile-account problem and demands an urgent recovery action. Amani nearly follows a reply containing a fake "official" number. | Timeline/order puzzle; select the independently obtained contact channel; preserve message context | Break the attacker-controlled chain; verify the genuine account event without sharing codes or using the supplied contact |
-| 5. Keep the Code | Short evidence challenge: explain why the genuine code and accurate details did not make the workflow safe. A legitimate support response confirms the unauthorized attempt was blocked. | Existing rebuttal/evidence cards and reconstruction; new support record introduced before use | Amani keeps control of the account. The suspicious text account is reported; the text operator disconnects in an audience-only cutaway. Coordination remains a developing question, not a guess presented as fact |
+| 5. Keep the Code | Full Chapter 5 debate in the Module 1 format: challenge the fee, genuine-code, familiar-detail and recovery-route claims. A legitimate support response confirms the unauthorized attempt was blocked. | Shared preparation, cinematic entry, terminal evidence commands, credibility/hints, counter effects and closing reconstruction/animatic; new support record introduced before use | Amani keeps control of the account. The suspicious text account is reported; the text operator disconnects in an audience-only cutaway. Coordination remains a developing question, not a guess presented as fact |
 
 Lesson mapping: suspicious SMS/link inspection, code secrecy, familiar sender claims, real-event versus fraudulent instructions, independent verification. Candidate evidence: delivery/status mismatch, real code purpose, copied public detail, attacker-supplied contact, verified support outcome. Red herring: Dan knew the delivery schedule; that access does not identify its sender.
 
@@ -294,7 +294,7 @@ Viewpoint: Liza. She knows about the text incident and is determined not to be f
 | 2. They Know My Name | The caller mentions details that were genuinely available in a club post. Liza's confidence rises. | Compare caller statements with the original source; evidence selection | Distinguish knowledge of a person from permission to access their account |
 | 3. Don't Hang Up | A genuine security alert appears during the call. The caller says the code is needed to stop a pending transaction and insists Liza stay connected. | Call/message switching, request inspection, optional pause; accessible choices | Refuse secret sharing and end the caller-controlled interaction; no real call or wallet transaction occurs |
 | 4. Call Back, Safely | A second supposed supervisor offers a callback number. Liza instead finds a trusted contact through a known official channel. | Choose independent contact; compare callback transcript and caller's story | Reject confirmation supplied by the same suspicious chain; authorized support contradicts the request |
-| 5. The Voice Loses Control | Liza reconstructs the attempted takeover. Sir Rham supplies a verified incident acknowledgement before the evidence challenge. | Evidence-command rebuttal and short timeline; transcript accessible with sound off | Liza secures the account and preserves the call details. The voice operator leaves the masked meeting; the final connection remains |
+| 5. The Voice Loses Control | Liza reconstructs the attempted takeover. Sir Rham supplies a verified incident acknowledgement before the evidence challenge. | Shared Chapter 5 preparation, cinematic entry, four evidence-command rounds, credibility/hints, counter effects, final contradiction and closing reconstruction; transcript accessible with sound off | Liza secures the account and preserves the call details. The voice operator leaves the masked meeting; the final connection remains |
 
 Lesson mapping: caller-ID limitations, authority and emotional pressure, codes/secrets, ending a call, independent callback verification. Candidate evidence: asserted identity, public information source, actual security-alert purpose, fabricated callback channel, official contradiction. Red herring: Eric called Liza earlier about club expenses; proximity in a call log is not authorship.
 
@@ -342,7 +342,7 @@ Lesson mapping: reward/curiosity bait, source and file-type checks, unexpected e
 4. Android baseline export and package inspection are complete. Finish the authenticated physical-device checks. Writable/offline sync and the backend suite pass locally; these do not replace an installed-client check.
 5. Reassess the two-day-per-module estimate after the first complete reusable chapter. A deadline-driven content reduction needs explicit approval.
 
-Gate 3A acceptance remains open. On 30 October the user deferred phone testing and explicitly requested the next milestone; Gate 3B can therefore proceed. Device/deployed-account/PvP checks and staff access remain release dependencies. Module 2 Chapters 1–4 are now implemented; neither Gate 3B nor any later milestone is complete.
+Gate 3A acceptance remains open. On 30 October the user deferred phone testing and explicitly requested the next milestone; Gate 3B can therefore proceed. Device/deployed-account/PvP checks and staff access remain release dependencies. Module 2 Chapters 1–5 are now implemented and locally verified; device/deployment acceptance remains open, so Gate 3B is not fully accepted.
 
 ## Gate 3B — Module 2 script and integration review
 
@@ -451,7 +451,7 @@ The user authorized a new Amani expression sheet and event-room background. Both
 5. Claim one: "The fee was small, so paying was harmless." Rebut with the independent paid-order status and unexplained payment destination.
 6. Claim two: "The code was genuine, so the person asking for it was genuine." Rebut with its new-device purpose and the contradictory cancellation instruction.
 7. Claim three: "They knew Amani's delivery, so they must be someone she trusted." Rebut with the public post and copied identity; do not accuse Dan.
-8. Amani reconstructs the sequence using the existing evidence cards. Correct responses explain the request and verification route, not just award points.
+8. Claim four: "Their recovery number can verify their warning." Rebut with the independently opened wallet/carrier routes. Final match: the sender says cancel, the alert says authorize, and support confirms the rejected attempt did not grant access. Amani reconstructs six panels (fee → code → copied identity → recovery pressure → independent support → hearing), then narrates the closing argument. Red-herring panels cannot complete the reconstruction.
 9. Amani: "The message knew something about me. That didn't mean it was speaking for me."
 10. John: "And you checked without handing the check back to the person who sent it."
 11. Amani: "Great. Now let's investigate who ordered twenty name tags for a nineteen-person activity."
@@ -463,7 +463,7 @@ The user authorized a new Amani expression sheet and event-room background. Both
 
 ### Approved implementation boundary
 
-1. **Existing chapter screen and phone:** retain `SurveyChapterScreen` and its phone/dialogue/overlay hierarchy. Make protagonist, phone behavior and next-chapter routing come from the chapter definition instead of `John`, chapter number and hard-coded `mod_01` strings. Preserve phone signals (`evidence_changed`, `thought_requested`, `phase_finished`, `chat_speaker_changed`) into the current screen controller; only that controller requests persistence. Extend the current phone components for the SMS comparisons; add chapter-specific content/validation definitions rather than duplicate screen scenes. Reuse the confrontation presentation components for the compact evidence review, with Amani's content and no Jobert-specific accusation/admission flow.
+1. **Existing chapter screen and phone:** retain `SurveyChapterScreen` and its phone/dialogue/overlay hierarchy. Make protagonist, phone behavior and next-chapter routing come from the chapter definition instead of `John`, chapter number and hard-coded `mod_01` strings. Preserve phone signals (`evidence_changed`, `thought_requested`, `phase_finished`, `chat_speaker_changed`) into the current screen controller; only that controller requests persistence. Extend the current phone components for the SMS comparisons; add chapter-specific content/validation definitions rather than duplicate screen scenes. For Chapter 5, reuse the existing confrontation screen and widgets with per-module content, cast, final contradiction and resolution. The user confirmed on 31 October that **every module's Chapter 5 uses Module 1's full debate format**, rather than a compact phone review. Keep the same controller-owned timing, pause/input guards, evidence signals, credibility rules and save paths. Amani's case challenges requests without inventing an unsupported identity or confession.
 2. **Existing account and archive paths:** expand `PlayerManager.story_definition`, unlock/sanitization paths, the existing Deploy selector and Codex projections to the five Module 2 chapter IDs. Keep Module 1 IDs, completed snapshots, legacy stage saves and replay behavior intact. Continue using `SaveService` and `progress_changed`; no second save store or global story manager. Award completion once, keep replays separate and unlock only authored content through the actual module requirements.
 3. **Existing learning path:** narrative choices, evidence taps and coached/hinted corrections stay in the story activity/assist record. Any scored transfer checks use fresh existing smishing-bank items through the current practice/first-response contract, without story perks or hints; answer eligibility and duplicate protection must be verified before enabling a mastery update. The results lead to the existing adaptive Lessons flow. No BKT increase merely for clearing a chapter, no new knowledge-component taxonomy and no research assessment change.
 
@@ -557,3 +557,101 @@ All six Cloudinary delivery URLs were downloaded, decoded and cached through Ass
 - Reuses the existing chapter/phone architecture, paired touch choices, account saves, replay, perk assistance records, Codex, Progress and Cloudinary clubroom art. Chapter 3 unlocks Chapter 4; Chapter 5 remains unavailable. Coached choices do not create graded learning events or update BKT.
 - Local checks: full story and activity progression; paused input; wrong-order correction; partial timeline and support-response retention; both-response attachment prerequisite; malformed-save guards; Codex discovery and chapter selection; completion reload; replay separation; once-only credits; unchanged saved mastery/events. Rendered at 844×390 and 720×360 with 48-pixel controls. Chapters 1–3 regressions passed; the Chapter 3 fixture now waits for the seal's actual state rather than a fixed delay. Verification files and artifacts remain ignored.
 - Gate 3B remains active. Next: Chapter 5, **Keep the Code**, followed by the still-pending Module 2 transfer/practice handoff and acceptance review. Real-phone, deployed-account sync, offline assets and refreshed APK acceptance remain open.
+
+### Chapter 5 debate implementation review — 31 October
+
+- **Keep the Code** now runs through Module 1's hearing screen: preparation and new exhibits, a four-lead theory choice, the joining cinematic, four moving discussions with orange weak points, terminal-command evidence loading/firing, credibility penalties and hints, Amani's counter cut-in, a final contradiction and six-panel closing argument with narrated text. Optional music, reduced motion, pause and touch controls share the existing implementation.
+- The cast is Amani, John, Dan and Sir Rham. The theory asks which request hides the trap; it does not ask students to identify a culprit without attribution evidence. The final match compares cancellation with device authorization. The audience-only ending leaves Jobert and the text operator disconnected, with two connections active. It is not student-accessible evidence.
+- Chapter 4 and chapter selection route to the correct hearing definition. Original/replay account records remain separate. Earlier compact-review records are retained, labeled as an earlier review, and can be replayed through the full debate without duplicate credits. The unused compact phone implementation was removed.
+- Results offer chapter selection, the existing smishing practice flow, and the correct Codex chapter. Fresh practice responses use the existing BKT first-response policy; repeats do not update it again. Practice does not modify pre-test/checkpoint results, rewards or unlocks. Story completion, corrected attempts, hints and replays do not update mastery.
+- Local checks passed for Module 1's existing hearing and Module 2's complete hearing, including save reload, invalid completion, wrong choices, two-error hint, zero-credibility retry, command/counter timing, pause/background/exit, comic placement, rewards and replay. Focused-practice checks passed. Mobile renders checked at 720×360, 844×390 and 932×430; developer checks/screenshots remain excluded from commits.
+- Gate 3B is **not device-accepted**. Remaining acceptance: real phone/safe areas, deployed-account synchronization, offline asset behavior and refreshed APK. Modules 3–5 remain later content gates; the shared finale format is recorded, but no future module implementation is included here.
+
+## Gate 3C — Module 3 script and integration review (31 October)
+
+Status: the user authorized proceeding to Module 3. The five-chapter structure is already approved. The detailed script, new portrait brief and implementation boundary below are proposed for review before substantial code/art work. No Module 3 story is marked playable yet. Module 2's outstanding device checks remain release requirements.
+
+### Continuity and learning boundary
+
+Title: **Stay on the Line**. Viewpoint: **Liza**, after Amani's hearing. The school is preparing the same club event. Liza has heard the warning about suspicious texts; the new caller uses that warning to sound protective. The setting moves between the covered courtyard, library corner and clubroom, using the existing approved school backgrounds. John offers support without taking over Liza's decisions. Eric's earlier call about club expenses is a red herring, never attribution evidence.
+
+The caller claims to work for the fictional wallet's security team. They know Liza's name and event role from a public club post. A genuine **password-reset** code is misrepresented as a way to stop a payment. This distinguishes the call's request from Module 2's new-device authorization. No real credential, phone number, code submission, call recording, microphone access or external call is needed. Caller identity and incident knowledge are claims until independently verified. A calm voice is neither proof of legitimacy nor proof of fraud.
+
+### Module-specific intro
+
+Cold open in the covered courtyard: Liza has one hand over her phone, staring at a security alert. An unidentified caller says, "Stay on the line. If you leave, I can't stop it."
+
+Liza's narration: "I knew what a suspicious message looked like. I wasn't ready for someone who sounded like they were helping."
+
+Cut to a readable phone insert: **PASSWORD RESET REQUESTED**. Do not reveal a real or usable code. Liza: "The voice said stop a payment. The screen said reset my password."
+
+Blackout captions: "A familiar name." / "A patient voice." / "One instruction too far." Then **MODULE 03 / STAY ON THE LINE**, returning to the courtyard earlier that afternoon. This is the same location used when Chapter 3 reaches that moment. No new introductory save flag; reuse the existing per-module seen-intro record.
+
+### Chapter 1 — The Helpful Caller
+
+1. Covered courtyard, after the event briefing. Eric calls about reimbursements. "Keep the receipts. This time, 'trust me' is not an accounting method."
+2. Liza: "I have receipts. What I don't have is a stapler that believes in teamwork."
+3. After that call ends, another incoming call appears with the displayed label **Account Security**. The label is explicitly unverified.
+4. Caller: "Liza? I'm following up on the scam reported by your school. Before anything else, please don't open another message from them."
+5. Liza: "That's the first useful thing anyone's told me today. Which service are you with?"
+6. Caller claims the wallet security team and offers an incident reference. John notices her pause; he doesn't claim he can identify a caller from their voice.
+7. Liza: "They sound prepared. I still need something I can check outside this call."
+
+Investigation: review the received call excerpt; sort **claimed identity / observed fact / independently verified fact**; inspect the displayed caller label and self-supplied reference; choose an independently opened service route as the next check. Correct selections stay green and explain the distinction. Evidence: claimed security role, borrowed incident context, no independent identity confirmation. Eric's earlier call stays contextual, not scored as proof.
+
+### Chapter 2 — They Know My Name
+
+1. A caller excerpt mentions Liza's club role and the event date: "We're protecting the account used for your event expenses."
+2. Liza: "They knew the event. I didn't tell them that."
+3. John: "Who else could have seen it?"
+4. In the library corner, Liza opens the already-published club announcement: her name, role and date are all there.
+5. Liza: "So they did their homework. That doesn't make them the teacher."
+
+Investigation: match each caller detail to the public post; separate **knowledge about Liza** from **permission to access her account**; preserve the source comparison. Evidence: publicly available details, caller's unsupported authorization claim, independent source of that information. Do not infer the poster is the caller.
+
+### Chapter 3 — Don't Hang Up
+
+Return to the courtyard moment from the intro. A genuine alert says a password reset was requested. The caller says, "Read me the code and I'll stop the payment. Don't hang up—we'll lose the protection session."
+
+Liza: "You said a payment. This says password reset." Caller: "That's the security procedure. We need to act before the window closes."
+
+Investigation: switch between the saved call statement and alert; highlight **reset password** versus **stop payment**; refuse code sharing and end the call. The end-call action must remain available and must never be penalized. Ending early preserves only received material and the alert; missing explanations are supplied as clearly labeled review guidance, not invented call history. A static caller deadline creates narrative pressure; there is no reading-speed penalty or expiring decision.
+
+Liza: "If hanging up breaks their protection, I'm going to check who that protection belongs to." No code is entered or transmitted. Evidence: alert's actual purpose, contradictory instruction, pressure to prevent independent checking.
+
+### Chapter 4 — Call Back, Safely
+
+A follow-up message claims to be from the caller's supervisor and supplies a callback number. Liza almost treats the second name as a second source.
+
+John: "Where did that number come from?" Liza: "The same conversation I'm trying to verify. Right."
+
+Investigation: choose contact details from the independently opened wallet app; compare the trusted support response with the caller's claim; attach the saved call details and alert to a local simulated incident record. Trusted support states it did not request that call or ask her to share the reset code. It confirms the reset request was not completed and recommends reviewing account activity. The supervisor's name and supplied number remain unverified; no claim that two matching attacker-controlled sources are independent.
+
+### Chapter 5 — The Voice Loses Control
+
+Use the full shared Module 1/2 debate flow. Sir Rham chairs the review with Liza, John and Eric. Preparation introduces the verified incident acknowledgement from the service case, before it can be used as evidence. The opening theory identifies the unsafe request rather than inventing an unsupported real-world culprit.
+
+- Round 1: "A security label and professional voice verify the caller." Counter with the unverified identity claim and independent service response.
+- Round 2: "Only someone authorized could know Liza's role." Counter with the public club post.
+- Round 3: "The reset code was needed to stop a payment." Counter with the alert's stated purpose and the conflicting call instruction.
+- Round 4: "The supervisor's number provides an independent check." Counter with its source in the same suspicious conversation and the separately obtained service contact.
+- Final contradiction: freeze the saved phrase "Don't hang up—we'll lose the protection session." Match it against the independently obtained incident response: Liza ended the call without sharing the code, and the reset was not completed. Hanging up did not authorize that reset.
+- Closing argument: six panels—helpful call, public details, reset alert, refusal/end call, independent callback, evidence review—with red-herring frames that cannot complete the sequence. Play the reconstructed account through the existing narrated-text animatic.
+
+Credibility, hints, terminal commands, counter timing, pause, assistance records and replay follow the existing shared hearing rules. Eric's expense call is always context rather than a culprit clue. Resolution: the attempted reset was not completed; preserve/report the contact and review unfamiliar activity. Do not claim every account is safe.
+
+Audience-only cutaway: the voice operator says, "She hung up. Used the service's own contact." That connection closes. Jobert and the text operator remain disconnected; one operator remains active. The Collector: "Then give them someone they expect to trust." This leads into Module 4's false coordinator without exposing the cutaway to the student's evidence archive.
+
+Results: chapter selection, discovered evidence, and existing vishing practice. Future story content is honestly labeled unavailable until authored. Coached story responses never update BKT; fresh eligible practice responses use the existing first-response policy and stay separate from research assessments.
+
+### Proposed implementation boundary and first slice
+
+1. **Scene reuse:** extend `ModuleIntroScreen` with Liza's beats; use `SurveyChapterScreen` with module-specific definitions and the existing phone/dialogue hierarchy for Chapters 1–4. Embed the existing `DecisionCallPanel` where a live call is needed. First slice: intro plus Chapter 1, with later chapters visibly in development.
+2. **Signals and lifecycle:** the call panel emits `end_call_requested`; the current chapter/phone owner saves the received transcript and ended state through existing signals and `PlayerManager`. Only the screen owns progression and timing. Pause, backgrounding, account changes and leaving the screen stop owned cues; ended calls do not restart on rebuild. Resize reuses state rather than resetting the call. No new scene manager or save store.
+3. **Shared finale and records:** Chapter 5 supplies Liza's data to `ConfrontationScreen`; extend the existing registry, unlock chain, Codex and Progress projections per completed slice. Keep module IDs, original/replay progress and legacy missions intact. Use the existing focused practice route for `mod_03`.
+
+### Art brief and local acceptance
+
+Liza currently has a placeholder illustration, not an approved production expression sheet. Proposed design: a student with straight shoulder-length dark hair and round glasses, in the established school uniform, distinct from Amani's side-parted hair/teal clip. Match the existing illustrated game style; six readable expressions, plus a mysterious phone-call title image. Use the already approved courtyard/library/clubroom environments where their chronology fits. Final artwork needs review and Cloudinary hosting; generated source PNGs stay out of commits.
+
+First-slice checks: intro skip/replay once; legitimate unlock after Module 2 plus the existing vishing lesson requirement; readable transcript with sound off; no missed-call dead end; early end retained; back/menu/background/resume; 48-pixel touch controls and safe-area layout; partial saves and account isolation; evidence discovery; once-only credits and replay; unchanged mastery/assessment records. Subsequent slices add the code/callback comparisons and the full hearing. Physical-phone/deployed-sync acceptance remains pending until actually performed.

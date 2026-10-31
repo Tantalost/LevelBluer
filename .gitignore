@@ -28,6 +28,7 @@ __pycache__/
 # Generated artwork awaiting Cloudinary hosting; keep binary PNGs out of Git.
 /output/chapter-thumbnails/*.png
 /output/module2-art/*.png
+/output/module3-art/*.png
 
 # Essential Cloudinary images bundled locally for offline play (PNG + .import sidecars).
 # Not distributed through Git; AssetManager falls back to Cloudinary downloads without them.

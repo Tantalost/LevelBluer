@@ -1,6 +1,6 @@
 extends BaseScreen
 ## Mobile hearing controller. Widgets emit intent; only this owner mutates a run.
-const Case: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.gd")
+var Case: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.gd")
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const W: GDScript = preload("res://src/ui/screens/deploy/confrontation_widgets.gd")
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
@@ -79,6 +79,19 @@ func _ready() -> void:
 	SettingsService.settings_changed.connect(_sync_result_audio)
 
 func on_enter(args: Dictionary) -> void:
+	var definition: GDScript = PlayerManager.story_definition(str(args.get("chapter_id","mod_01_ch_05")))
+	if definition == null or definition.get("HEARING") != true:
+		_active = false
+		return
+	Case = definition
+	_suspect_selected = ""
+	_dialogue_text = ""
+	_elapsed = 0
+	_voice = 0
+	_held = false
+	_armed = ""
+	_reflecting = false
+	_connecting = false
 	_testing = args.get("test",false) == true
 	_replay = args.get("replay",false) == true
 	_owner = AuthService.participant_code()
@@ -170,7 +183,7 @@ func _build() -> void:
 	header.add_theme_constant_override("separation",ceili(10*_u))
 	_layout.add_child(header)
 	header.add_child(W.button("BACK",_menu,_u))
-	_title = W.copy("CHAPTER 05 / CONFRONTATION",_u,W.CYAN,16)
+	_title = W.copy("CHAPTER 05 / "+str(Case.TITLE).to_upper(),_u,W.CYAN,16)
 	_title.size_flags_horizontal = SIZE_EXPAND_FILL
 	header.add_child(_title)
 	var credibility: VBoxContainer = UI.column(header,2)
@@ -204,10 +217,10 @@ func _build() -> void:
 		"debate": _debate()
 		"rebuttal": _rebuttal()
 		"final": _final_blow()
-		"admission": _story(Case.ADMISSION[int(state.admission_step)],_next_admission,"story_bg_john_bed_night")
+		"admission": _story(Case.ADMISSION[int(state.admission_step)],_next_admission,_text("resolution_art","story_bg_john_bed_night"))
 		"comic": _comic()
 		"animatic": _animatic()
-		"aftermath": _story(Case.AFTERMATH[int(state.aftermath_step)],_next_aftermath,"opening_collector_meeting_v2")
+		"aftermath": _story(Case.AFTERMATH[int(state.aftermath_step)],_next_aftermath,"opening_collector_meeting_v2" if state.aftermath_step >= int(Case.PRESENTATION.get("cutaway_step",999)) else _text("aftermath_art","opening_collector_meeting_v2"))
 		"lights": _lights()
 		"done": _results()
 
@@ -280,18 +293,18 @@ func _suspects() -> void:
 	var visual: VBoxContainer = UI.column(row,ceili(8*_u))
 	visual.size_flags_horizontal = SIZE_EXPAND_FILL
 	visual.size_flags_stretch_ratio = .32
-	visual.add_child(W.copy("WHO IS BEHIND IT?",_u,W.CREAM,26))
+	visual.add_child(W.copy(_text("theory_title","WHO IS BEHIND IT?"),_u,W.CREAM,26))
 	var art: TextureRect = _hearing_art()
 	art.size_flags_vertical = SIZE_EXPAND_FILL
 	visual.add_child(art)
-	visual.add_child(W.copy("FOUR NAMES. ONE THEORY.",_u,W.CYAN,16))
+	visual.add_child(W.copy(_text("theory_caption","FOUR NAMES. ONE THEORY."),_u,W.CYAN,16))
 	var column: VBoxContainer = UI.column(row,ceili(10*_u))
 	column.size_flags_horizontal = SIZE_EXPAND_FILL
 	column.size_flags_stretch_ratio = .68
 	var scroll: VBoxContainer = UI.scroll_column(column)
 	scroll.add_theme_constant_override("separation",ceili(6*_u))
-	scroll.add_child(W.copy("CHOOSE WHO TO QUESTION",_u,W.CYAN,23))
-	scroll.add_child(W.copy("Trust your evidence. A theory is not a verdict.",_u,W.CREAM,17))
+	scroll.add_child(W.copy(_text("theory_prompt","CHOOSE WHO TO QUESTION"),_u,W.CYAN,23))
+	scroll.add_child(W.copy(_text("theory_instruction","Trust your evidence. A theory is not a verdict."),_u,W.CREAM,17))
 	var grid: GridContainer = GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation",ceili(12*_u))
@@ -316,7 +329,7 @@ func _suspects() -> void:
 		scroll.add_child(W.copy("THEORY BONUS / +15 CREDIBILITY" if state.theory_bonus else "JOINING / 20 CREDIBILITY",_u,W.GREEN if state.theory_bonus else W.CREAM))
 		column.add_child(_large_action("JOIN HEARING",_join,true))
 	else:
-		var confirm: Button = _large_action("QUESTION " + _suspect_selected.to_upper() if not _suspect_selected.is_empty() else "SELECT A SUSPECT",_pick_suspect.bind(_suspect_selected),true)
+		var confirm: Button = _large_action(_text("theory_action","QUESTION ") + _suspect_selected.to_upper() if not _suspect_selected.is_empty() else _text("theory_empty","SELECT A SUSPECT"),_pick_suspect.bind(_suspect_selected),true)
 		confirm.name = "ConfirmSuspect"
 		confirm.disabled = _suspect_selected.is_empty()
 		column.add_child(confirm)
@@ -330,7 +343,7 @@ func _select_suspect(person: String) -> void:
 func _pick_suspect(person: String) -> void:
 	if not _interactive() or state.phase != "suspect" or state.theory_done or person not in Case.SUSPECTS or state.suspect_guesses.has(person): return
 	_suspect_selected = ""
-	if person == "Jobert":
+	if person == Case.THEORY_CORRECT:
 		state.theory_done = true
 		state.theory_bonus = true
 		state.credibility = 35
@@ -354,6 +367,9 @@ func _join() -> void:
 func _intro() -> void:
 	var column: VBoxContainer = _column()
 	var title: W.JoiningImpact = W.JoiningImpact.new()
+	title.protagonist = _text("protagonist","John")
+	title.participants = _cast()
+	title.backdrop = _text("backdrop","hearing_debate_v1")
 	title.size_flags_vertical = SIZE_EXPAND_FILL
 	title.gentle = SettingsService.reduced_motion
 	title.elapsed = _elapsed
@@ -395,6 +411,7 @@ func _start_round() -> void:
 func _debate() -> void:
 	var column: VBoxContainer = _column()
 	var stage: W.DebateStage = W.DebateStage.new()
+	stage.case_data = Case
 	stage.round_index = int(state.round)
 	stage.size_flags_vertical = SIZE_EXPAND_FILL
 	column.add_child(stage)
@@ -411,10 +428,10 @@ func _update_statement() -> void:
 	if not _stage is W.DebateStage: return
 	_stage.reflecting = _reflecting
 	if _reflecting:
-		_stage.show_statement("John","Something doesn't fit. I should compare that claim with the evidence.","",_armed,_held)
+		_stage.show_statement(_text("protagonist","John"),"Something doesn't fit. I should compare that claim with the evidence.","",_armed,_held)
 		return
 	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
-	var speaker: String = "Jobert" if _voice == 3 else str(round_data.voices[_voice].who)
+	var speaker: String = str(round_data.get("speaker","Jobert")) if _voice == 3 else str(round_data.voices[_voice].who)
 	var text: String = str(round_data.claim) if _voice == 3 else str(round_data.voices[_voice].text)
 	_stage.show_statement(speaker,text,str(round_data.weak) if _voice == 3 else "",_armed,_held)
 	AudioManager.play_dialogue_reaction(speaker,"neutral",self)
@@ -473,7 +490,7 @@ func _resolve_fire(evidence: String, weak_point: String) -> void:
 		AudioManager.play_sfx("ui_error")
 		var content: VBoxContainer = _modal("CREDIBILITY −10" if state.credibility > 0 else "REGROUP / ROUND RESTART")
 		var scroll: VBoxContainer = UI.scroll_column(content)
-		scroll.add_child(W.copy("Jobert: "+str(round_data.smug),_u,W.ORANGE,21))
+		scroll.add_child(W.copy(str(round_data.get("speaker","Jobert"))+": "+str(round_data.smug),_u,W.ORANGE,21))
 		scroll.add_child(W.copy(str(Case.exhibit(evidence).detail),_u))
 		if state.auto_hints.has(index): scroll.add_child(W.copy("HINT / "+str(round_data.hint)+" The matching record is highlighted.",_u,W.CYAN))
 		content.add_child(W.button("RESTART THIS ROUND" if state.credibility == 0 else "TRY ANOTHER RECORD",_retry,_u,true))
@@ -499,17 +516,20 @@ func _rebuttal() -> void:
 		_rebuttal_fx = W.RebuttalImpact.new()
 		_rebuttal_fx.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		_rebuttal_fx.gentle = SettingsService.reduced_motion
+		_rebuttal_fx.protagonist = _text("protagonist","John")
+		_rebuttal_fx.counter_art_id = _text("counter_art","john_counter_lettered_v1")
 		_rebuttal_fx.phrase = str(round_data.weak)
 		_rebuttal_fx.evidence = str(Case.exhibit(str(round_data.correct)).title)
 		_rebuttal_fx.elapsed = _elapsed
+		_rebuttal_fx.clip_contents = true
 		_rebuttal_fx.mouse_filter = MOUSE_FILTER_STOP
 		_body.add_child(_rebuttal_fx)
 
 func _final_blow() -> void:
 	var column: VBoxContainer = _column()
-	column.add_child(W.copy("MEETING CHAT / JOBERT",_u,W.CYAN,22))
+	column.add_child(W.copy(_text("final_title","MEETING CHAT / JOBERT"),_u,W.CYAN,22))
 	var scroll: VBoxContainer = UI.scroll_column(column)
-	_chat_status = W.copy("Jobert is typing...",_u,W.CYAN,16)
+	_chat_status = W.copy(_text("final_typing","Jobert is typing..."),_u,W.CYAN,16)
 	scroll.add_child(_chat_status)
 	_chat_text = RichTextLabel.new()
 	_chat_text.bbcode_enabled = true
@@ -517,12 +537,12 @@ func _final_blow() -> void:
 	_chat_text.scroll_active = false
 	_chat_text.add_theme_font_override("normal_font",UI.FONT)
 	_chat_text.add_theme_font_size_override("normal_font_size",ceili(25*_u))
-	_chat_text.text = "I didn't [color=#FFB648]recieve[/color] anything from those messages. You can't blame me for helping."
+	_chat_text.text = _text("final_text","I didn't [color=#FFB648]recieve[/color] anything from those messages. You can't blame me for helping.")
 	scroll.add_child(_chat_text)
-	for id: String in ["typo1","typo4"]:
+	for id: String in Case.PRESENTATION.get("final_exhibits",["typo1","typo4"]):
 		var item: Dictionary = Case.exhibit(id)
 		scroll.add_child(W.copy(str(item.source)+"\n"+str(item.detail),_u,W.CYAN))
-	_chat_match = W.button("MATCH ‘RECIEVE’ / CH1 + CH4",_match_typo,_u,true)
+	_chat_match = W.button(_text("final_match","MATCH ‘RECIEVE’ / CH1 + CH4"),_match_typo,_u,true)
 	column.add_child(_chat_match)
 	_update_final_chat()
 
@@ -531,13 +551,13 @@ func _update_final_chat() -> void:
 	var letters: int = int(_elapsed*35)
 	var finished: bool = SettingsService.text_speed == "instant" or letters >= _chat_text.get_total_character_count()
 	_chat_text.visible_characters = -1 if finished else letters
-	_chat_status.text = "CONVERSATION FROZEN / That spelling appeared before." if finished else "Jobert is typing..."
-	_chat_match.text = "MATCH ‘RECIEVE’ / CH1 + CH4" if finished else "REVEAL MESSAGE"
+	_chat_status.text = _text("final_frozen","CONVERSATION FROZEN / That spelling appeared before.") if finished else _text("final_typing","Jobert is typing...")
+	_chat_match.text = _text("final_match","MATCH ‘RECIEVE’ / CH1 + CH4") if finished else "REVEAL MESSAGE"
 
 func _match_typo() -> void:
 	if not _interactive() or state.phase != "final" or state.solved.size() != 4 or state.final_matched: return
 	if is_instance_valid(_chat_text) and _chat_text.visible_characters >= 0:
-		_elapsed = 4.0
+		_elapsed = float(_chat_text.get_total_character_count())/35.0+1.0
 		_update_final_chat()
 		return
 	state.final_matched = true
@@ -606,6 +626,7 @@ func _next_admission() -> void:
 
 func _comic() -> void:
 	var comic: W.ClosingArgument = W.ClosingArgument.new()
+	comic.case_data = Case
 	comic.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_body.add_child(comic)
 	comic.build(state.comic_order,_u)
@@ -629,13 +650,13 @@ func _check_comic() -> void:
 		state.comic_checked = true
 		_save()
 		var content: VBoxContainer = _modal("RECONSTRUCTION COMPLETE")
-		content.add_child(W.copy("Six moments. One account supported by the records and admission.",_u,W.GREEN,24))
+		content.add_child(W.copy(_text("comic_success","Six moments. One account supported by the records and admission."),_u,W.GREEN,24))
 		content.add_child(W.button("PLAY CLOSING ARGUMENT",_play_animatic,_u,true))
 	else:
 		state.comic_errors += 1
 		state.mistakes += 1
 		_save()
-		_message("REVIEW THE SEQUENCE","Begin with the survey, follow John's growing trust, then the prize, the hearing and the admission. A joke or a borrowing request is not proof.")
+		_message("REVIEW THE SEQUENCE",_text("comic_hint","Begin with the survey, follow John's growing trust, then the prize, the hearing and the admission. A joke or a borrowing request is not proof."))
 
 func _play_animatic() -> void:
 	if not _valid() or _backgrounded or not state.comic_checked or state.phase != "comic": return
@@ -675,11 +696,12 @@ func _lights() -> void:
 	var column: VBoxContainer = _column()
 	var image: W.MeetingLights = W.MeetingLights.new()
 	image.gentle = SettingsService.reduced_motion
+	image.inactive_connections = int(Case.PRESENTATION.get("lights",1))
 	image.elapsed = _elapsed
 	image.size_flags_vertical = SIZE_EXPAND_FILL
 	column.add_child(image)
 	_stage = image
-	column.add_child(W.copy("Four lights. One connection closes.",_u))
+	column.add_child(W.copy(_text("lights_caption","Four lights. One connection closes."),_u))
 	var finish: Button = W.button("SEAL THE FINAL EXHIBIT",_finish,_u,true)
 	finish.name = "FinishHearing"
 	finish.disabled = _elapsed < 3.0
@@ -704,10 +726,13 @@ func _results() -> void:
 	_title.text = "CASE CLOSED"
 	var column: VBoxContainer = _column()
 	var scroll: VBoxContainer = UI.scroll_column(column)
-	scroll.add_child(W.copy("MODULE 01 / EXHIBIT SEALED",_u,W.GREEN,22))
-	var heading: Label = W.copy("CONFRONTATION COMPLETE",_u,W.CREAM,30)
+	scroll.add_child(W.copy("MODULE %02d / COMPLETE" % (_module_index()+1),_u,W.GREEN,22))
+	var heading: Label = W.copy(str(Case.TITLE).to_upper()+" COMPLETE",_u,W.CREAM,30)
 	heading.name = "CompletionHeading"
 	scroll.add_child(heading)
+	if state.has("legacy_review") and not state.lights_done:
+		heading.text = "EARLIER REVIEW COMPLETED"
+		scroll.add_child(W.copy("Your earlier progress is retained. Choose Replay from chapter selection to play the full debate.",_u,W.CYAN,18))
 	var reward: W.RewardDisplay = W.RewardDisplay.new()
 	reward.u = _u
 	reward.award = 0 if _replay else int(state.reward)
@@ -725,9 +750,14 @@ func _results() -> void:
 	var chapters: Button = W.button("CHAPTER SELECT",_leave,_u,true)
 	chapters.size_flags_horizontal = SIZE_EXPAND_FILL
 	actions.add_child(chapters)
-	var perks: Button = W.button("PERKS",func() -> void: Router.push(&"upgrades",{}),_u)
+	var perks: Button = W.button(_text("practice_label","PERKS"),_result_practice,_u)
 	perks.size_flags_horizontal = SIZE_EXPAND_FILL
 	actions.add_child(perks)
+	if not _text("practice_module", "").is_empty():
+		scroll.add_child(W.copy(_text("availability", ""),_u,W.CYAN,16))
+		var review: Button = W.button("REVIEW EVIDENCE",func() -> void: Router.push(&"codex",{"chapter_id":Case.ID}),_u)
+		review.size_flags_horizontal = SIZE_EXPAND_FILL
+		actions.add_child(review)
 
 func _perk_menu() -> void:
 	if not _interactive() or is_instance_valid(_command_fx): return
@@ -751,8 +781,8 @@ func _use_perk(id: String) -> void:
 	_save()
 	_build()
 	if id == "reference": _evidence(true,true)
-	elif id == "perspective": _message("FRESH PERSPECTIVE",str(Case.ROUNDS[int(state.round)].hint) if state.phase == "debate" else "Separate the order of events from guesses about people. The admission belongs after the hearing.")
-	else: _message("CASE RECAP","A survey offered money. A copied advisor asked for details. A wallet link hid its destination. A prize reused John's coffee comment. Group access, presence status and repeated spelling do not identify an author by themselves.")
+	elif id == "perspective": _message("FRESH PERSPECTIVE",str(Case.ROUNDS[int(state.round)].hint) if state.phase == "debate" else _text("comic_hint","Separate the order of events from guesses about people. The admission belongs after the hearing."))
+	else: _message("CASE RECAP",_text("recap","A survey offered money. A copied advisor asked for details. A wallet link hid its destination. A prize reused John's coffee comment. Group access, presence status and repeated spelling do not identify an author by themselves."))
 
 func _mark_hint() -> void:
 	state.hint_used = true
@@ -769,6 +799,7 @@ func _evidence(review: bool = false, comparison: bool = false) -> void:
 	var hint: String = str(Case.ROUNDS[int(state.round)].correct) if state.auto_hints.has(int(state.round)) and not review else ""
 	_modal("")
 	var drawer: W.EvidenceDrawer = W.EvidenceDrawer.new()
+	drawer.case_data = Case
 	drawer.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_overlay.add_child(drawer)
 	drawer.build(options,_u,hint,review,comparison)
@@ -908,7 +939,7 @@ func consume_back() -> bool:
 func _leave() -> void:
 	if not _active or _backgrounded: return
 	_save()
-	if not _testing: Router.replace(&"module_stages",{"module_index":0,"chapters":true})
+	if not _testing: Router.replace(&"module_stages",{"module_index":_module_index(),"chapters":true})
 
 func _change(phase: String) -> void:
 	if phase != "debate": _cancel_command()
@@ -991,3 +1022,18 @@ func _process(delta: float) -> void:
 			AudioManager.stop_dialogue_blips(self)
 	if state.phase == "animatic" and is_instance_valid(_cinematic_art) and not SettingsService.reduced_motion:
 		_cinematic_art.modulate.a = minf(1,.55+_elapsed*1.4)
+
+func _text(key: String, fallback: String) -> String:
+	return str(Case.PRESENTATION.get(key,fallback))
+
+func _module_index() -> int:
+	return int(Case.ID.get_slice("_",1))-1
+
+func _cast() -> PackedStringArray:
+	return PackedStringArray(Case.PRESENTATION.get("cast",["John","Sir Rham","Eric","Dan","Mika","Jobert"]))
+
+func _result_practice() -> void:
+	if not _interactive() or state.phase != "done": return
+	var module_id: String = _text("practice_module","")
+	if module_id.is_empty(): Router.push(&"upgrades",{})
+	else: Router.push(&"lesson_player",{"practice":true,"practice_module":module_id})

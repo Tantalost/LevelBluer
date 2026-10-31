@@ -404,7 +404,7 @@ func _on_breach_pressed() -> void:
 	if _chapters:
 		var chapter_id: String = _chapter_id(_selected + 1)
 		if _active and _selected < 5 and PlayerManager.story_unlocked(chapter_id):
-			Router.push(&"confrontation" if chapter_id == "mod_01_ch_05" else &"upgrades", {"deploy":true, "chapter_id":chapter_id, "replay": bool(PlayerManager.chapter_progress.get(chapter_id, {}).get("completed", false))})
+			Router.push(&"confrontation" if PlayerManager.story_definition(chapter_id).get("HEARING") == true else &"upgrades", {"deploy":true, "chapter_id":chapter_id, "replay": bool(PlayerManager.chapter_progress.get(chapter_id, {}).get("completed", false))})
 		return
 	if not _active or not _can_play(_selected):
 		return

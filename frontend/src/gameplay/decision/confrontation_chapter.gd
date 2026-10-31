@@ -2,6 +2,9 @@ extends RefCounted
 ## Authored fictional hearing. Evidence challenges claims; admission resolves identity.
 const ID: String = "mod_01_ch_05"
 const NUMBER: int = 5
+const HEARING: bool = true
+const THEORY_CORRECT: String = "Jobert"
+const PRESENTATION: Dictionary = {}
 const TITLE: String = "Confrontation"
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const SUSPECTS: Array[String] = ["Eric","Dan","Mika","Jobert"]
@@ -52,8 +55,11 @@ static func frame(id: String) -> Dictionary:
 	return {}
 
 static func fresh() -> Dictionary:
+	return fresh_hearing(EXHIBITS)
+
+static func fresh_hearing(exhibits: Array) -> Dictionary:
 	var captures: Array[String] = []
-	for item: Dictionary in EXHIBITS: captures.append(str(item.id))
+	for item: Dictionary in exhibits: captures.append(str(item.id))
 	return {"version":1,"phase":"prep","briefed":false,"theory_done":false,"theory_bonus":false,"suspect_guesses":[],"round":0,"solved":[],"credibility":20,"round_start":20,"round_errors":[0,0,0,0],"auto_hints":[],"restarts":0,"mistakes":0,"hint_used":false,"final_matched":false,"admission_step":0,"admitted":false,"comic_order":["","","","","",""],"comic_checked":false,"comic_errors":0,"animatic_step":0,"animatic_done":false,"aftermath_step":0,"aftermath_done":false,"lights_done":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"captures":captures,"perk_run":{}}
 
 static func integer(raw: Dictionary, key: String, fallback: int, ceiling: int) -> int:
@@ -61,12 +67,15 @@ static func integer(raw: Dictionary, key: String, fallback: int, ceiling: int) -
 	return clampi(int(value),0,ceiling) if (value is int or value is float) and is_finite(float(value)) else fallback
 
 static func clean(raw: Dictionary) -> Dictionary:
-	var state: Dictionary = fresh()
+	return clean_hearing(raw, {"id":ID,"suspects":SUSPECTS,"correct":THEORY_CORRECT,"exhibits":EXHIBITS,"admission":ADMISSION,"aftermath":AFTERMATH,"comic":COMIC,"order":COMIC_ORDER})
+
+static func clean_hearing(raw: Dictionary, rules: Dictionary) -> Dictionary:
+	var state: Dictionary = fresh_hearing(rules.exhibits)
 	for field: String in ["briefed","theory_done","theory_bonus","hint_used","final_matched","admitted","comic_checked","animatic_done","aftermath_done","lights_done"]: state[field] = raw.get(field,false) == true
 	var guesses: Variant = raw.get("suspect_guesses",[])
 	if guesses is Array:
 		for value: Variant in guesses:
-			if value in SUSPECTS and value != "Jobert" and not state.suspect_guesses.has(value): state.suspect_guesses.append(value)
+			if value in rules.suspects and value != rules.correct and not state.suspect_guesses.has(value): state.suspect_guesses.append(value)
 	if state.suspect_guesses.size() == 3: state.theory_bonus = false
 	state.theory_done = state.theory_done and state.briefed
 	state.theory_bonus = state.theory_bonus and state.theory_done
@@ -91,20 +100,20 @@ static func clean(raw: Dictionary) -> Dictionary:
 	if not state.auto_hints.is_empty(): state.hint_used = true
 	if not state.suspect_guesses.is_empty(): state.hint_used = true
 	state.final_matched = state.final_matched and state.solved.size() == 4
-	state.admission_step = integer(raw,"admission_step",0,ADMISSION.size()-1)
-	state.admitted = state.admitted and state.final_matched and state.admission_step == ADMISSION.size()-1
+	state.admission_step = integer(raw,"admission_step",0,rules.admission.size()-1)
+	state.admitted = state.admitted and state.final_matched and state.admission_step == rules.admission.size()-1
 	var order: Variant = raw.get("comic_order",[])
 	if order is Array and order.size() == 6:
 		for index: int in 6:
-			if order[index] is String and not frame(order[index]).is_empty() and not state.comic_order.has(order[index]): state.comic_order[index] = order[index]
-	state.comic_checked = state.comic_checked and state.admitted and state.comic_order == COMIC_ORDER
+			if order[index] is String and _frame_exists(rules.comic, order[index]) and not state.comic_order.has(order[index]): state.comic_order[index] = order[index]
+	state.comic_checked = state.comic_checked and state.admitted and state.comic_order == rules.order
 	state.animatic_step = integer(raw,"animatic_step",0,5)
 	state.animatic_done = state.animatic_done and state.comic_checked and state.animatic_step == 5
-	state.aftermath_step = integer(raw,"aftermath_step",0,AFTERMATH.size()-1)
-	state.aftermath_done = state.aftermath_done and state.animatic_done and state.aftermath_step == AFTERMATH.size()-1
+	state.aftermath_step = integer(raw,"aftermath_step",0,rules.aftermath.size()-1)
+	state.aftermath_done = state.aftermath_done and state.animatic_done and state.aftermath_step == rules.aftermath.size()-1
 	state.lights_done = state.lights_done and state.aftermath_done
 	state.perk_run = Perks.clean_run(raw.get("perk_run",{}))
-	if state.perk_run.get("chapter",ID) != ID: state.perk_run = {}
+	if state.perk_run.get("chapter",rules.id) != rules.id: state.perk_run = {}
 	var phase: String = str(raw.get("phase","prep"))
 	if phase in ["prep","suspect","intro","debate","rebuttal","final","admission","comic","animatic","aftermath","lights","done"]: state.phase = phase
 	if state.phase != "prep" and not state.briefed: state.phase = "prep"
@@ -126,3 +135,8 @@ static func clean(raw: Dictionary) -> Dictionary:
 		state.phase = "done"
 		state.reward = 100 + (25 if state.mistakes == 0 and Perks.status(state.perk_run,state.hint_used) != "assisted" else 0)
 	return state
+
+static func _frame_exists(frames: Array, id: String) -> bool:
+	for item: Dictionary in frames:
+		if item.id == id: return true
+	return false

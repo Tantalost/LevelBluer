@@ -81,9 +81,11 @@ const WalletCodeChapter: GDScript = preload("res://src/gameplay/decision/wallet_
 const FamiliarNameChapter: GDScript = preload("res://src/gameplay/decision/familiar_name_chapter.gd")
 const RecoveryPressureChapter: GDScript = preload("res://src/gameplay/decision/recovery_pressure_chapter.gd")
 const KeepCodeChapter: GDScript = preload("res://src/gameplay/decision/keep_code_chapter.gd")
+const HelpfulCallerChapter: GDScript = preload("res://src/gameplay/decision/helpful_caller_chapter.gd")
 var chapter_replays: Dictionary = {}
 
 func story_definition(id: String) -> GDScript:
+	if id == HelpfulCallerChapter.ID: return HelpfulCallerChapter
 	if id == DeliveryChapter.ID: return DeliveryChapter
 	if id == WalletCodeChapter.ID: return WalletCodeChapter
 	if id == FamiliarNameChapter.ID: return FamiliarNameChapter
@@ -92,9 +94,11 @@ func story_definition(id: String) -> GDScript:
 	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
 func authored_story_ids() -> PackedStringArray:
-	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID]
+	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID]
 
 func story_unlocked(id: String) -> bool:
+	if id == HelpfulCallerChapter.ID:
+		return is_module_deploy_unlocked("mod_03") and chapter_progress.get(KeepCodeChapter.ID, {}).get("completed", false)
 	if id == KeepCodeChapter.ID:
 		return story_unlocked(RecoveryPressureChapter.ID) and chapter_progress.get(RecoveryPressureChapter.ID, {}).get("completed", false)
 	if id == RecoveryPressureChapter.ID:
@@ -1602,6 +1606,10 @@ func apply_save_data(data: Dictionary) -> void:
 		chapter_progress[RecoveryPressureChapter.ID] = RecoveryPressureChapter.clean(saved_chapters[RecoveryPressureChapter.ID])
 	if replays is Dictionary and replays.get(RecoveryPressureChapter.ID) is Dictionary:
 		chapter_replays[RecoveryPressureChapter.ID] = RecoveryPressureChapter.clean(replays[RecoveryPressureChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(HelpfulCallerChapter.ID) is Dictionary:
+		chapter_progress[HelpfulCallerChapter.ID] = HelpfulCallerChapter.clean(saved_chapters[HelpfulCallerChapter.ID])
+	if replays is Dictionary and replays.get(HelpfulCallerChapter.ID) is Dictionary:
+		chapter_replays[HelpfulCallerChapter.ID] = HelpfulCallerChapter.clean(replays[HelpfulCallerChapter.ID])
 	if saved_chapters is Dictionary and saved_chapters.get(KeepCodeChapter.ID) is Dictionary:
 		chapter_progress[KeepCodeChapter.ID] = KeepCodeChapter.clean(saved_chapters[KeepCodeChapter.ID])
 	if replays is Dictionary and replays.get(KeepCodeChapter.ID) is Dictionary:

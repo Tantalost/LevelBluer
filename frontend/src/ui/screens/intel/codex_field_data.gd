@@ -12,9 +12,10 @@ const RecoveryPressure: GDScript = preload("res://src/gameplay/decision/recovery
 const KeepCode: GDScript = preload("res://src/gameplay/decision/keep_code_chapter.gd")
 const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode]
 const KEEP_CODE_OBSERVATIONS: Array[Dictionary] = [
- {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"flags","value":"case","status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
- {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"domains","value":"case","status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
- {"id":"m2_final_public","title":"Familiar information can be copied","people":["amani","dan"],"field":"captures","value":"case","status":"Known","source":"Module 2 / Chapter 5 / Identity rebuttal","text":"The public post explains how the photo and delivery date could be copied. It does not identify the operator or implicate Dan. Amani verified through established channels and kept the code private."}
+ {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"solved","value":0,"status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
+ {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"solved","value":1,"status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
+ {"id":"m2_final_public","title":"Familiar information can be copied","people":["amani","dan"],"field":"solved","value":2,"status":"Known","source":"Module 2 / Chapter 5 / Identity rebuttal","text":"The public post explains how the photo and delivery date could be copied. It does not identify the operator or implicate Dan. Amani verified through established channels and kept the code private."},
+ {"id":"m2_final_route","title":"Verify outside the supplied route","people":["amani","john","rham"],"field":"solved","value":3,"status":"Known","source":"Module 2 / Chapter 5 / Recovery rebuttal","text":"A sender-provided contact cannot independently verify that sender. Amani used existing service apps. The wallet response confirms one rejected request; the signal issue remains unexplained."}
 ]
 const RECOVERY_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m2_recovery_sequence","title":"A changing pretext","people":["amani","john"],"field":"flags","value":"recovery","status":"Known","source":"Module 2 / Chapter 4 / Message sequence","text":"The parcel payment request precedes a genuine wallet code, a copied-name payment message and then a mobile recovery warning. The warning asks for the wallet authorization code to fix a different service. This does not identify its sender."},
@@ -162,6 +163,9 @@ static func observations(snapshot: Dictionary) -> Array[Dictionary]:
 			discovered = (snapshot.get("read", []) as Array).has(authored.read_id)
 		else:
 			discovered = seen_beat(snapshot, int(authored.after_beat))
+		if not discovered and number == 10 and snapshot.has("legacy_review"):
+			var legacy_field: String = {0:"flags",1:"domains",2:"captures"}.get(authored.get("value",-1),"")
+			discovered = not legacy_field.is_empty() and (snapshot.legacy_review.get(legacy_field,[]) as Array).has("case")
 		if not discovered:
 			result.append({"id":authored.id, "title":"Undiscovered observation", "status":"Unknown", "source":chapter_label(number), "text":"Continue %s to discover this record." % chapter_label(number), "people":[], "discovered":false})
 			continue

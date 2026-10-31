@@ -8,7 +8,7 @@ extends HBoxContainer
 ## is the only one exposed as a signal.
 signal end_call_requested
 
-const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 
 var _caller_label: Label
 var _number_label: Label
@@ -17,22 +17,23 @@ var _duration_label: Label
 var _mute_button: Button
 var _speaker_button: Button
 var _end_button: Button
-var _muted := false
-var _speaker_on := false
-var _ended := false
-var _show_duration := true
+var _muted: bool = false
+var _speaker_on: bool = false
+var _ended: bool = false
+var _interaction_locked: bool = false
+var _show_duration: bool = true
 
 
 func _ready() -> void:
 	size_flags_horizontal = SIZE_EXPAND_FILL
 	size_flags_vertical = SIZE_SHRINK_BEGIN
-	var card := PanelContainer.new()
+	var card: PanelContainer = PanelContainer.new()
 	card.size_flags_horizontal = SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", UI.box(Color("152630"), Color("3b626a"), 8))
+	card.add_theme_stylebox_override("panel", UI.box(Color("0A1730"), Color("173058"), 8))
 	add_child(card)
-	var info := UI.column(card, 2)
+	var info: VBoxContainer = UI.column(card, 2)
 	info.size_flags_horizontal = SIZE_EXPAND_FILL
-	var title_row := HBoxContainer.new()
+	var title_row: HBoxContainer = HBoxContainer.new()
 	title_row.add_theme_constant_override("separation", 10)
 	info.add_child(title_row)
 	_caller_label = UI.label("", 20, UI.TEAL)
@@ -44,7 +45,7 @@ func _ready() -> void:
 	_duration_label = UI.label("00:00", 20, UI.GOLD)
 	_duration_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	title_row.add_child(_duration_label)
-	var detail_row := HBoxContainer.new()
+	var detail_row: HBoxContainer = HBoxContainer.new()
 	detail_row.add_theme_constant_override("separation", 10)
 	info.add_child(detail_row)
 	_number_label = UI.label("", 18, UI.MUTED)
@@ -53,7 +54,7 @@ func _ready() -> void:
 	_status_label = UI.label("", 18, UI.MUTED)
 	_status_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	detail_row.add_child(_status_label)
-	var controls := HFlowContainer.new()
+	var controls: HFlowContainer = HFlowContainer.new()
 	controls.alignment = FlowContainer.ALIGNMENT_CENTER
 	controls.add_theme_constant_override("h_separation", 10)
 	controls.add_theme_constant_override("v_separation", 6)
@@ -82,6 +83,7 @@ func _ready() -> void:
 ## duration) — every threat with an enabled call starts a brand-new one,
 ## never carrying over a previous incident's muted/ended state.
 func configure(call_data: Dictionary) -> void:
+	_interaction_locked = false
 	_muted = false
 	_speaker_on = false
 	_ended = false
@@ -97,6 +99,12 @@ func configure(call_data: Dictionary) -> void:
 	_update_speaker_button()
 	_end_button.visible = bool(call_data.get("allow_end_call", false))
 	_end_button.disabled = false
+	var unit: float = maxf(1.0,float(call_data.get("touch_unit",1.0)))
+	for button: Button in [_mute_button,_speaker_button,_end_button]:
+		button.custom_minimum_size = Vector2(110,48)*unit
+		button.add_theme_font_size_override("font_size",ceili(16*unit))
+	for label: Label in [_caller_label,_number_label,_status_label,_duration_label]:
+		label.add_theme_font_size_override("font_size",ceili(16*unit))
 
 
 ## Presentation only — a separate clock from the decision countdown (see
@@ -127,11 +135,13 @@ func is_speaker_on() -> bool:
 
 
 func _toggle_mute() -> void:
+	if _interaction_locked or _ended: return
 	_muted = not _muted
 	_update_mute_button()
 
 
 func _toggle_speaker() -> void:
+	if _interaction_locked or _ended: return
 	_speaker_on = not _speaker_on
 	_update_speaker_button()
 
@@ -145,6 +155,10 @@ func _update_speaker_button() -> void:
 
 
 func _request_end_call() -> void:
-	if _ended or _end_button.disabled:
+	if _interaction_locked or _ended or _end_button.disabled:
 		return
 	end_call_requested.emit()
+
+func set_interaction_locked(locked: bool) -> void:
+	_interaction_locked = locked
+	for button: Button in [_mute_button,_speaker_button,_end_button]: button.disabled = locked or _ended
