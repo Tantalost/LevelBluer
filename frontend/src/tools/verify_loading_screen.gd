@@ -34,8 +34,13 @@ var hold_stage: String = "assets"
 var assets_ok: bool = true
 var session_ok: bool = true
 var destinations: Array[StringName] = []
+var offline: Dictionary = {"ready": 104, "total": 104, "offline_ready": true}
+var offline_reads: int = 0
 func _refresh_asset_snapshot() -> void:
 	pass
+func _offline_status() -> Dictionary:
+	offline_reads += 1
+	return offline.duplicate()
 func _perform_boot_step(step: String) -> void:
 	var token: int = _boot_token
 	while hold_stage == step and _still(token):
@@ -92,6 +97,8 @@ func _navigate(destination: StringName) -> void:
 	screen.hold_stage = ""
 	await until_stage("ready")
 	check(screen._progress.value == 100.0 and screen.destinations.is_empty(), "Ready eyecatch precedes navigation")
+	check(screen._status.text == "Ready to Play — Ready for Offline Play", "Complete offline pack is announced: " + screen._status.text)
+	check(screen.offline_reads == 1, "Offline readiness is read once, only when ready")
 	await create_timer(0.4).timeout
 	await capture("after_844x390")
 	check(screen._ready_art.modulate.a == 1.0 and not screen._sweep.visible, "Separate ready art fully replaces loading art")
@@ -105,9 +112,12 @@ func _navigate(destination: StringName) -> void:
 	check(screen._retry.visible and not screen._retry.disabled and screen._ready_art.modulate.a == 0.0, "Missing required assets offer Retry without success art")
 	await settle()
 	check(root.get_visible_rect().encloses(screen._retry.get_global_rect()), "Retry stays reachable on mobile landscape")
+	check(screen.offline_reads == 1 and not screen._status.text.begins_with("Ready to Play"), "Failed assets never show offline readiness")
 	await capture("retry_844x390")
+	# Retry succeeds offline on bundled/cached art while the full pack is still incomplete.
 	screen.assets_ok = true
 	screen.session_ok = false
+	screen.offline = {"ready": 37, "total": 104, "offline_ready": false}
 	screen.hold_stage = "assets"
 	screen._retry.pressed.emit()
 	var retry_token: int = screen._boot_token
@@ -115,8 +125,16 @@ func _navigate(destination: StringName) -> void:
 	check(screen._boot_token == retry_token and screen._progress.value == 0.0, "One retry resets progress exactly once")
 	await until_stage("assets")
 	screen.hold_stage = ""
+	await until_stage("ready")
+	check(screen._status.text == "Ready to Play — Offline Pack 37/104 — Connect to Complete Download", "Partial pack shows actual counts: " + screen._status.text)
+	await settle()
+	check(root.get_visible_rect().encloses(screen._loading_panel.get_global_rect()), "Wrapped offline-pack message fits mobile landscape")
+	await capture("partial_844x390")
 	await until_stage("done")
 	check(screen.destinations == [&"dashboard", &"login"], "No-session boot routes to login")
+	check(screen._status.text.contains("37/104"), "Incomplete pack does not block navigation")
+	var font: Font = screen._status.get_theme_font("font")
+	check(font.has_char(0x2014), "Loading font has the em dash used in readiness text")
 	# Cancel during I/O and during ready hold; stale coroutines must never navigate.
 	screen.on_exit()
 	screen.hold_stage = "assets"

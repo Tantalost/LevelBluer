@@ -162,6 +162,12 @@ func _perform_boot_step(step: String) -> void:
 				if _still(token):
 					await PlayerManager.pull_official_bkt()
 
+## Read-only readiness seam; excluded unused art is already left out of these counts.
+func _offline_status() -> Dictionary:
+	var status: Dictionary = AssetManager.get_offline_status()
+	status["offline_ready"] = AssetManager.is_offline_ready()
+	return status
+
 func _set_activity(enabled: bool) -> void:
 	var animate: bool = enabled and not SettingsService.reduced_motion
 	_sweep.visible = animate
@@ -238,7 +244,12 @@ func _show_ready(token: int) -> void:
 	_set_activity(false)
 	_headline.text = "DEFENSES ONLINE"
 	AudioManager.play_sfx("loading_ready")
-	_status.text = "Ready to play"
+	var offline: Dictionary = _offline_status()
+	if bool(offline.get("offline_ready", false)):
+		_status.text = "Ready to Play — Ready for Offline Play"
+	else:
+		_status.text = "Ready to Play — Offline Pack %d/%d — Connect to Complete Download" % [
+			int(offline.get("ready", 0)), int(offline.get("total", 0))]
 	_detail.text = "Your next move matters. Make it a smart one."
 	_tip.text = "LET'S DO THIS, DEFENDER."
 	_transition = create_tween()

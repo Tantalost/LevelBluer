@@ -209,6 +209,7 @@ var _cloud_baseline: String = ""
 ## Answers played while the cloud snapshot was unknown. Replayed onto the
 ## cloud prior after a later successful read so neither history is replaced.
 var _unconfirmed_bkt_log: Array[Dictionary] = []
+var _bkt_step_seq: int = 0
 ## True when this file recorded an explicit upload decision. A downloaded
 ## snapshot stays false until the player changes it.
 var _cloud_upload_pinned: bool = false
@@ -221,6 +222,12 @@ var _verified_upload: bool = false
 var _wallet_basis_known: bool = false
 var _wallet_basis_credits: int = 0
 var _wallet_basis_tokens: int = 0
+## Evidence counts at the last verified cloud snapshot. Unknown for a legacy
+## file, so reconciliation cannot add that history on top of itself.
+var _evidence_basis_known: bool = false
+var _evidence_basis_responses: int = 0
+var _evidence_basis_sessions: int = 0
+var _evidence_basis_topics: Dictionary = {}
 ## Durable evidence summary, separate from the acknowledged outbound event queue.
 var learning_evidence: Dictionary = {}
 const SUPPORT_GRACE_SECONDS: int = 72 * 60 * 60
@@ -423,6 +430,7 @@ func confirm_cloud_empty(upload_local: bool) -> void:
 	_cloud_upload_pinned = false
 	_verified_upload = false
 	_local_upload_ready = upload_local and has_hydrated_account()
+	_note_evidence_basis()
 
 
 func note_downloaded_cloud_baseline() -> void:
@@ -434,6 +442,7 @@ func note_downloaded_cloud_baseline() -> void:
 	_wallet_basis_known = true
 	_wallet_basis_credits = credits
 	_wallet_basis_tokens = pvp_tokens
+	_note_evidence_basis()
 	_cloud_upload_pinned = true
 
 
@@ -644,6 +653,10 @@ func reset_to_defaults() -> void:
 	_wallet_basis_known = true
 	_wallet_basis_credits = 0
 	_wallet_basis_tokens = 0
+	_evidence_basis_known = true
+	_evidence_basis_responses = 0
+	_evidence_basis_sessions = 0
+	_evidence_basis_topics = {}
 	progress_changed.emit()
 
 
@@ -1158,14 +1171,20 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {},
 	var p_slip: float = _bkt_param(params, ["p_s", "p_slip"], P_SLIP)
 	var p_transit: float = _bkt_param(params, ["p_t", "p_transit"], P_TRANSIT)
 	var p_learned: float = _apply_mastery_step(key, is_correct, p_guess, p_slip, p_transit)
-	if _cloud_baseline == "unconfirmed":
+	# A verified upload already contains its replay. Every other answer must be
+	# logged: the baseline is still "known" until the save marks it pending,
+	# and without the log reconciliation keeps the older cloud mastery.
+	if not _verified_upload:
 		_unconfirmed_bkt_log.append({
 			"op": "update",
+			"id": _next_bkt_step_id(key),
 			"skill": key,
 			"correct": is_correct,
 			"p_g": p_guess,
 			"p_s": p_slip,
 			"p_t": p_transit,
+			"prior": p_learned,
+			"posterior": float(mastery_matrix[key]),
 		})
 	var new_mastery: float = float(mastery_matrix[key])
 	_record_graded_response(key, int(Time.get_unix_time_from_system()))
@@ -1221,7 +1240,14 @@ func seed_from_official_mastery(only_skill: String = "", record_unconfirmed: boo
 			continue
 		apply_official_mastery(skill_id, value)
 		if record_unconfirmed and _cloud_baseline == "unconfirmed":
-			_unconfirmed_bkt_log.append({"op": "seed", "skill": skill_id, "value": float(mastery_matrix[skill_id])})
+			var seeded: float = float(mastery_matrix[skill_id])
+			_unconfirmed_bkt_log.append({
+				"op": "seed",
+				"id": _next_bkt_step_id(skill_id),
+				"skill": skill_id,
+				"value": seeded,
+				"posterior": seeded,
+			})
 		changed = true
 		print("[BKT] seeded %s from official P(L)=%.3f" % [skill_id, value])
 	if changed:
@@ -1330,6 +1356,10 @@ func get_save_data() -> Dictionary:
 		"wallet_basis_known": _wallet_basis_known,
 		"wallet_basis_credits": _wallet_basis_credits,
 		"wallet_basis_tokens": _wallet_basis_tokens,
+		"evidence_basis_known": _evidence_basis_known,
+		"evidence_basis_responses": _evidence_basis_responses,
+		"evidence_basis_sessions": _evidence_basis_sessions,
+		"evidence_basis_topics": _evidence_basis_topics.duplicate(true),
 		"unconfirmed_bkt_log": _copy_bkt_log(),
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
@@ -1623,6 +1653,10 @@ func _restore_cloud_reconcile_state(data: Dictionary) -> void:
 	_wallet_basis_known = false
 	_wallet_basis_credits = 0
 	_wallet_basis_tokens = 0
+	_evidence_basis_known = false
+	_evidence_basis_responses = 0
+	_evidence_basis_sessions = 0
+	_evidence_basis_topics = {}
 	var baseline_raw: Variant = data.get("cloud_baseline", "")
 	var baseline: String = str(baseline_raw) if baseline_raw is String else ""
 	if baseline == "unconfirmed" or baseline == "empty" or baseline == "known":
@@ -1639,6 +1673,15 @@ func _restore_cloud_reconcile_state(data: Dictionary) -> void:
 		_wallet_basis_known = bool(data["wallet_basis_known"])
 		_wallet_basis_credits = _variant_int(data.get("wallet_basis_credits", 0))
 		_wallet_basis_tokens = _variant_int(data.get("wallet_basis_tokens", 0))
+	if data.has("evidence_basis_known"):
+		_evidence_basis_known = bool(data["evidence_basis_known"])
+		_evidence_basis_responses = _variant_int(data.get("evidence_basis_responses", 0))
+		_evidence_basis_sessions = _variant_int(data.get("evidence_basis_sessions", 0))
+		_evidence_basis_topics = {}
+		var basis_topics: Variant = data.get("evidence_basis_topics", {})
+		if basis_topics is Dictionary:
+			for topic_id: Variant in basis_topics.keys():
+				_evidence_basis_topics[str(topic_id)] = _variant_int(basis_topics[topic_id])
 
 
 func _copy_bkt_log() -> Array:
@@ -1658,22 +1701,32 @@ func reconcile_cloud_snapshot(cloud: Dictionary) -> void:
 	var basis_known: bool = _wallet_basis_known
 	var basis_credits: int = _wallet_basis_credits
 	var basis_tokens: int = _wallet_basis_tokens
-	var merged: Dictionary = _merge_unconfirmed_progress(cloud, local, basis_known, basis_credits, basis_tokens)
+	var evidence_basis_known: bool = _evidence_basis_known
+	var evidence_basis_responses: int = _evidence_basis_responses
+	var evidence_basis_sessions: int = _evidence_basis_sessions
+	var evidence_basis_topics: Dictionary = _evidence_basis_topics.duplicate(true)
+	var merged: Dictionary = _merge_unconfirmed_progress(cloud, local, basis_known, basis_credits, basis_tokens, evidence_basis_known, evidence_basis_responses, evidence_basis_sessions, evidence_basis_topics)
+	# Keep the log through a failed POST and through a stale GET. Replay starts
+	# from the cloud prior, and steps already visible in that snapshot are skipped.
+	var persisted_log: Array = []
+	for step: Dictionary in log:
+		persisted_log.append(step.duplicate(true))
+	merged["unconfirmed_bkt_log"] = persisted_log
 	apply_save_data(merged)
 	_replay_bkt_log(log, cloud.get("pretest_baselines", {}))
 	_cloud_baseline = "known"
-	_unconfirmed_bkt_log.clear()
 	_pending_cloud_merge = false
 	_wallet_basis_known = true
 	_wallet_basis_credits = credits
 	_wallet_basis_tokens = pvp_tokens
+	_note_evidence_basis()
 	_verified_upload = true
 	_local_upload_ready = true
 	_cloud_upload_pinned = false
 	progress_changed.emit()
 
 
-func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_known: bool, basis_credits: int, basis_tokens: int) -> Dictionary:
+func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_known: bool, basis_credits: int, basis_tokens: int, evidence_basis_known: bool, evidence_basis_responses: int, evidence_basis_sessions: int, evidence_basis_topics: Dictionary) -> Dictionary:
 	var merged: Dictionary = cloud.duplicate(true)
 	merged["lesson_progress"] = _max_int_dict(cloud.get("lesson_progress", {}), local.get("lesson_progress", {}))
 	merged["lesson_post_quiz_scores"] = _max_int_dict(cloud.get("lesson_post_quiz_scores", {}), local.get("lesson_post_quiz_scores", {}))
@@ -1700,7 +1753,17 @@ func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_kno
 	merged["mission_progress"] = _union_missing_keys(cloud.get("mission_progress", {}), local.get("mission_progress", {}))
 	merged["chapter_progress"] = _union_missing_keys(cloud.get("chapter_progress", {}), local.get("chapter_progress", {}))
 	merged["learning_events"] = _union_events(cloud.get("learning_events", []), local.get("learning_events", []))
-	merged["learning_evidence"] = _merge_evidence(cloud.get("learning_evidence", {}), local.get("learning_evidence", {}))
+	var merged_evidence: Dictionary = _merge_evidence(cloud.get("learning_evidence", {}), local.get("learning_evidence", {}), evidence_basis_known, evidence_basis_responses, evidence_basis_sessions, evidence_basis_topics)
+	merged["learning_evidence"] = merged_evidence
+	merged["evidence_basis_known"] = true
+	merged["evidence_basis_responses"] = _variant_int(merged_evidence.get("responses", 0))
+	merged["evidence_basis_sessions"] = _variant_int(merged_evidence.get("sessions", 0))
+	var merged_topics: Dictionary = {}
+	var merged_topic_raw: Variant = merged_evidence.get("topics", {})
+	if merged_topic_raw is Dictionary:
+		for topic_id: Variant in merged_topic_raw.keys():
+			merged_topics[str(topic_id)] = _variant_int(merged_topic_raw[topic_id])
+	merged["evidence_basis_topics"] = merged_topics
 	merged["mastery_matrix"] = _merge_mastery(cloud.get("mastery_matrix", {}), local.get("mastery_matrix", {}), cloud.get("lesson_progress", {}), local.get("lesson_progress", {}))
 	merged["tutorial_complete"] = bool(cloud.get("tutorial_complete", false)) or bool(local.get("tutorial_complete", false))
 	merged["tutorial_skipped"] = bool(cloud.get("tutorial_skipped", false)) or bool(local.get("tutorial_skipped", false))
@@ -1708,8 +1771,18 @@ func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_kno
 	merged["has_intel_bonus"] = bool(cloud.get("has_intel_bonus", false)) or bool(local.get("has_intel_bonus", false))
 	merged["cloud_baseline"] = "known"
 	merged["cloud_upload_ready"] = true
-	merged["unconfirmed_bkt_log"] = []
 	return merged
+
+
+func _note_evidence_basis() -> void:
+	_evidence_basis_known = true
+	_evidence_basis_responses = _variant_int(learning_evidence.get("responses", 0))
+	_evidence_basis_sessions = _variant_int(learning_evidence.get("sessions", 0))
+	_evidence_basis_topics = {}
+	var topics: Variant = learning_evidence.get("topics", {})
+	if topics is Dictionary:
+		for topic_id: Variant in topics.keys():
+			_evidence_basis_topics[str(topic_id)] = _variant_int(topics[topic_id])
 
 
 func _combine_wallet(cloud_value: int, local_value: int, basis_known: bool, basis: int) -> int:
@@ -1752,17 +1825,31 @@ func _merge_mastery(cloud_raw: Variant, local_raw: Variant, cloud_lessons_raw: V
 	return merged
 
 
+func _next_bkt_step_id(skill_id: String) -> String:
+	_bkt_step_seq += 1
+	return "%s-%d-%d" % [skill_id, _bkt_step_seq, Time.get_ticks_usec()]
+
+
 func _replay_bkt_log(log: Array[Dictionary], cloud_baselines: Variant) -> void:
 	var baselines: Dictionary = cloud_baselines if cloud_baselines is Dictionary else {}
+	var skip_counts: Dictionary = _reflected_bkt_prefix(log)
+	_drop_reflected_bkt_steps(skip_counts)
+	var seen_updates: Dictionary = {}
 	for step: Dictionary in log:
 		var skill: String = str(step.get("skill", "")).strip_edges()
 		if skill.is_empty():
 			continue
 		if str(step.get("op", "")) == "seed":
+			if int(skip_counts.get(skill, 0)) > 0:
+				continue
 			var module_id: String = str(LEARNING_MODULES.get(skill, ""))
 			if not module_id.is_empty() and baselines.has(module_id):
 				continue
 			apply_official_mastery(skill, float(step.get("value", DEFAULT_MASTERY)))
+			continue
+		var seen: int = int(seen_updates.get(skill, 0))
+		seen_updates[skill] = seen + 1
+		if seen < int(skip_counts.get(skill, 0)):
 			continue
 		_apply_mastery_step(
 			skill,
@@ -1771,6 +1858,67 @@ func _replay_bkt_log(log: Array[Dictionary], cloud_baselines: Variant) -> void:
 			float(step.get("p_s", P_SLIP)),
 			float(step.get("p_t", P_TRANSIT)),
 		)
+
+
+func _drop_reflected_bkt_steps(skip_counts: Dictionary) -> void:
+	var seen_updates: Dictionary = {}
+	var remaining: Array[Dictionary] = []
+	for step: Dictionary in _unconfirmed_bkt_log:
+		var skill: String = str(step.get("skill", "")).strip_edges()
+		var reflected: int = int(skip_counts.get(skill, 0))
+		if str(step.get("op", "")) == "seed":
+			if reflected > 0:
+				continue
+			remaining.append(step)
+			continue
+		var seen: int = int(seen_updates.get(skill, 0))
+		seen_updates[skill] = seen + 1
+		if seen < reflected:
+			continue
+		remaining.append(step)
+	_unconfirmed_bkt_log = remaining
+
+
+## How many leading answers for each skill are already present in the cloud
+## mastery this replay is about to update. A later retry then applies only the tail.
+func _reflected_bkt_prefix(log: Array[Dictionary]) -> Dictionary:
+	var grouped: Dictionary = {}
+	for step: Dictionary in log:
+		if str(step.get("op", "")) == "seed":
+			continue
+		var skill: String = str(step.get("skill", "")).strip_edges()
+		if skill.is_empty():
+			continue
+		if not grouped.has(skill):
+			grouped[skill] = []
+		var bucket: Array = grouped[skill]
+		bucket.append(step)
+		grouped[skill] = bucket
+	var skip_counts: Dictionary = {}
+	for skill_id: Variant in grouped.keys():
+		var skill: String = str(skill_id)
+		var steps: Array = grouped[skill]
+		var current: float = _mastery_of(skill)
+		var skip: int = 0
+		var previous_posterior: float = 0.0
+		var have_previous: bool = false
+		for index: int in steps.size():
+			var raw_step: Variant = steps[index]
+			if not raw_step is Dictionary:
+				break
+			var step: Dictionary = raw_step
+			if not step.has("posterior"):
+				break
+			var posterior: float = float(step["posterior"])
+			if have_previous:
+				if not step.has("prior") or not is_equal_approx(float(step["prior"]), previous_posterior):
+					break
+			if is_equal_approx(current, posterior):
+				skip = index + 1
+			previous_posterior = posterior
+			have_previous = true
+		skip_counts[skill] = skip
+	return skip_counts
 
 
 func _variant_int(raw: Variant) -> int:
@@ -1873,21 +2021,23 @@ func _union_events(cloud_raw: Variant, local_raw: Variant) -> Array:
 	return merged
 
 
-func _merge_evidence(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+func _merge_evidence(cloud_raw: Variant, local_raw: Variant, basis_known: bool, basis_responses: int, basis_sessions: int, basis_topics: Dictionary) -> Dictionary:
 	var cloud: Dictionary = cloud_raw if cloud_raw is Dictionary else {}
 	var local: Dictionary = local_raw if local_raw is Dictionary else {}
 	var topics: Dictionary = {}
 	var cloud_topics: Dictionary = cloud.get("topics", {}) if cloud.get("topics", {}) is Dictionary else {}
 	var local_topics: Dictionary = local.get("topics", {}) if local.get("topics", {}) is Dictionary else {}
-	for key: Variant in cloud_topics.keys():
-		topics[str(key)] = _variant_int(cloud_topics[key])
-	for key: Variant in local_topics.keys():
+	var topic_ids: Dictionary = {}
+	for source: Dictionary in [cloud_topics, local_topics, basis_topics]:
+		for key: Variant in source.keys():
+			topic_ids[str(key)] = true
+	for key: Variant in topic_ids.keys():
 		var id: String = str(key)
-		topics[id] = _variant_int(topics.get(id, 0)) + _variant_int(local_topics[key])
-	var responses: int = _variant_int(cloud.get("responses", 0)) + _variant_int(local.get("responses", 0))
+		topics[id] = _combine_wallet(_variant_int(cloud_topics.get(id, 0)), _variant_int(local_topics.get(id, 0)), basis_known, _variant_int(basis_topics.get(id, 0)))
+	var responses: int = _combine_wallet(_variant_int(cloud.get("responses", 0)), _variant_int(local.get("responses", 0)), basis_known, basis_responses)
 	if responses <= 0:
 		return {}
-	var sessions: int = _variant_int(cloud.get("sessions", 0)) + _variant_int(local.get("sessions", 0))
+	var sessions: int = _combine_wallet(_variant_int(cloud.get("sessions", 0)), _variant_int(local.get("sessions", 0)), basis_known, basis_sessions)
 	var cloud_first: int = _variant_int(cloud.get("first_at", 0))
 	var local_first: int = _variant_int(local.get("first_at", 0))
 	var first_at: int = 0
