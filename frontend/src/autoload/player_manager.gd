@@ -1842,6 +1842,17 @@ func _replay_bkt_log(log: Array[Dictionary], cloud_baselines: Variant) -> void:
 	var baselines: Dictionary = cloud_baselines if cloud_baselines is Dictionary else {}
 	var skip_counts: Dictionary = _reflected_bkt_prefix(log)
 	_drop_reflected_bkt_steps(skip_counts)
+	# Kept steps must describe the mastery this replay uploads. A posterior left
+	# on the pre-rebase prior never matches the stored snapshot, so a later
+	# reconcile would apply the same answer again.
+	var kept_updates: Dictionary = {}
+	for kept: Dictionary in _unconfirmed_bkt_log:
+		var kept_skill: String = str(kept.get("skill", "")).strip_edges()
+		if str(kept.get("op", "")) == "seed" or kept_skill.is_empty():
+			continue
+		if not kept_updates.has(kept_skill):
+			kept_updates[kept_skill] = []
+		(kept_updates[kept_skill] as Array).append(kept)
 	var seen_updates: Dictionary = {}
 	for step: Dictionary in log:
 		var skill: String = str(step.get("skill", "")).strip_edges()
@@ -1859,13 +1870,19 @@ func _replay_bkt_log(log: Array[Dictionary], cloud_baselines: Variant) -> void:
 		seen_updates[skill] = seen + 1
 		if seen < int(skip_counts.get(skill, 0)):
 			continue
-		_apply_mastery_step(
+		var prior: float = _apply_mastery_step(
 			skill,
 			bool(step.get("correct", false)),
 			float(step.get("p_g", P_GUESS)),
 			float(step.get("p_s", P_SLIP)),
 			float(step.get("p_t", P_TRANSIT)),
 		)
+		var kept_steps: Array = kept_updates.get(skill, [])
+		var kept_index: int = seen - int(skip_counts.get(skill, 0))
+		if kept_index < kept_steps.size():
+			var kept_step: Dictionary = kept_steps[kept_index]
+			kept_step["prior"] = prior
+			kept_step["posterior"] = float(mastery_matrix[skill])
 
 
 func _drop_reflected_bkt_steps(skip_counts: Dictionary) -> void:
