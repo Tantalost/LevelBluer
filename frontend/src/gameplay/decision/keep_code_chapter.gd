@@ -18,7 +18,7 @@ const PRESENTATION: Dictionary = {
  "comic_success":"Six moments. One sequence supported by independently checked records.", "comic_hint":"Delivery fee, device code, copied identity, recovery pressure, independent support, then the hearing. A public post does not identify the operator.",
  "recap":"A paid delivery became an account-code request. A copied identity and recovery warning added pressure. Amani rejected the device request and used independently opened support. The operator remains unidentified.",
  "cutaway_step":3, "lights":2, "lights_caption":"Audience only / Jobert remains disconnected. The text operator's connection closes. Two remain.",
- "practice_module":"mod_02", "practice_label":"PRACTICE SMISHING", "availability":"Module 3 story is still in development."
+ "practice_module":"mod_02", "practice_label":"PRACTICE SMISHING", "availability":"Module 3 intro and Chapter 1 are available after the first Phone Tricks lesson."
 }
 const BRIEFING: String = "NEXT MORNING / THE CLUBROOM\n\nDan arrives with the real parcel: ‘Your tape has completed its character development.’\nAmani: ‘Mine cost eighteen pesos less than expected.’\n\nInside the wallet support case Amani opened herself, LB-204 now says: ‘The rejected new-device request did not authorize access. We recorded your messages. Review signed-in devices and report anything unfamiliar.’\n\nSir Rham: ‘We will replay the sender's claims. Challenge each with the records. Nobody here is being identified as the operator.’\n\nThe voices in this hearing test possible explanations. Load evidence, then tap an orange claim. HOLD pauses the discussion."
 const EXHIBITS: Array[Dictionary] = [

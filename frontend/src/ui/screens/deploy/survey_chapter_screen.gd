@@ -779,6 +779,9 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 		for field: String in ["revealed","expanded","hotspots","reviewed"]: state[field] = snapshot[field]
 	if Chapter.ID == "mod_01_ch_04":
 		for field: String in ["timeline_order","timeline_checked","connections","wrong_pairs","notes","minutes_draft","event_draft","claimed"]: state[field] = snapshot[field]
+	if Chapter.ID in ["mod_03_ch_01","mod_03_ch_03"]:
+		for field: String in ["call_started","call_ended","call_received"]: state[field] = snapshot[field]
+	if Chapter.ID == "mod_03_ch_03": state.alert_read = snapshot.alert_read
 	var summary: Label = _journal_body.find_child("EvidenceSummary", true, false) as Label
 	if summary != null: summary.text = _evidence_summary()
 	_save()
@@ -800,6 +803,9 @@ func _phase_finished() -> void:
 	if state["phase"] == "day":
 		if _is_chat_beat():
 			_advance()
+			return
+		if Chapter.ID in ["mod_03_ch_01","mod_03_ch_02","mod_03_ch_03","mod_03_ch_04"]:
+			_advance() # The call Continue advances one dialogue page, preserving unread thoughts.
 			return
 		# Reading mail must not silently discard John's remaining thoughts.
 		_update_advance()

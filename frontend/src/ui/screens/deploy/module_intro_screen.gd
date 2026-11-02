@@ -425,7 +425,7 @@ func _load_art() -> void:
 		_art.room = AssetManager.get_texture("story_bg_club_corridor_afternoon" if _index < 3 else "story_bg_event_room_day")
 		if _art.room == null:
 			_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
-		if _module_index == 2: _art.room = AssetManager.get_texture("story_bg_covered_courtyard_rain")
+		if _module_index == 2: _art.room = AssetManager.get_texture("story_bg_mod3_rain_courtyard_v1" if _index < 3 else "story_bg_mod3_briefing_classroom_v1" if _index < 5 else "story_bg_mod3_covered_walkway_v1")
 		_art.title_art = AssetManager.get_texture("module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
 		var sheet: Texture2D = AssetManager.get_texture("story_liza_poses" if _module_index == 2 else "story_amani_poses")
 		if sheet != null and not _ending and str(_beats()[_index].visual) != "caption":

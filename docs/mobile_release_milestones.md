@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3C active for Module 3 script and first-slice preparation, authorized by the user on 31 October. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+Status: Gate 3C active: Module 3 detailed script/art brief and first slice approved; intro and Chapters 1–4 gameplay implemented and locally verified on 1 November; Module 3’s five dedicated environment backgrounds are generated, hosted and integrated; Chapter 5 and device acceptance remain open. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
 
 ## Release outcome
 
@@ -569,11 +569,11 @@ All six Cloudinary delivery URLs were downloaded, decoded and cached through Ass
 
 ## Gate 3C — Module 3 script and integration review (31 October)
 
-Status: the user authorized proceeding to Module 3. The five-chapter structure is already approved. The detailed script, new portrait brief and implementation boundary below are proposed for review before substantial code/art work. No Module 3 story is marked playable yet. Module 2's outstanding device checks remain release requirements.
+Status: the user approved the detailed script, Liza art brief and intro + Chapter 1 implementation slice. The first slice and the subsequently authorized Chapters 2–4 are implemented and locally checked; Chapter 5 remains visibly in development. The five dedicated Module 3 environment backgrounds are now integrated; see the environment review below. Approval of the detailed script does not automatically open later implementation slices. Module 2's outstanding device checks remain release requirements.
 
 ### Continuity and learning boundary
 
-Title: **Stay on the Line**. Viewpoint: **Liza**, after Amani's hearing. The school is preparing the same club event. Liza has heard the warning about suspicious texts; the new caller uses that warning to sound protective. The setting moves between the covered courtyard, library corner and clubroom, using the existing approved school backgrounds. John offers support without taking over Liza's decisions. Eric's earlier call about club expenses is a red herring, never attribution evidence.
+Title: **Stay on the Line**. Viewpoint: **Liza**, after Amani's hearing. The school is preparing the same club event. Liza has heard the warning about suspicious texts; the new caller uses that warning to sound protective. The setting moves from the event-briefing classroom to a covered walkway, library corner, rainy courtyard and quiet study room, using five dedicated Module 3 environments. The intro flash-forward and Chapter 3 share the same courtyard. John offers support without taking over Liza's decisions. Eric's earlier call about club expenses is a red herring, never attribution evidence.
 
 The caller claims to work for the fictional wallet's security team. They know Liza's name and event role from a public club post. A genuine **password-reset** code is misrepresented as a way to stop a payment. This distinguishes the call's request from Module 2's new-device authorization. No real credential, phone number, code submission, call recording, microphone access or external call is needed. Caller identity and incident knowledge are claims until independently verified. A calm voice is neither proof of legitimacy nor proof of fraud.
 
@@ -644,7 +644,7 @@ Audience-only cutaway: the voice operator says, "She hung up. Used the service's
 
 Results: chapter selection, discovered evidence, and existing vishing practice. Future story content is honestly labeled unavailable until authored. Coached story responses never update BKT; fresh eligible practice responses use the existing first-response policy and stay separate from research assessments.
 
-### Proposed implementation boundary and first slice
+### Approved implementation boundary and first slice
 
 1. **Scene reuse:** extend `ModuleIntroScreen` with Liza's beats; use `SurveyChapterScreen` with module-specific definitions and the existing phone/dialogue hierarchy for Chapters 1–4. Embed the existing `DecisionCallPanel` where a live call is needed. First slice: intro plus Chapter 1, with later chapters visibly in development.
 2. **Signals and lifecycle:** the call panel emits `end_call_requested`; the current chapter/phone owner saves the received transcript and ended state through existing signals and `PlayerManager`. Only the screen owns progression and timing. Pause, backgrounding, account changes and leaving the screen stop owned cues; ended calls do not restart on rebuild. Resize reuses state rather than resetting the call. No new scene manager or save store.
@@ -655,3 +655,73 @@ Results: chapter selection, discovered evidence, and existing vishing practice. 
 Liza currently has a placeholder illustration, not an approved production expression sheet. Proposed design: a student with straight shoulder-length dark hair and round glasses, in the established school uniform, distinct from Amani's side-parted hair/teal clip. Match the existing illustrated game style; six readable expressions, plus a mysterious phone-call title image. Use the already approved courtyard/library/clubroom environments where their chronology fits. Final artwork needs review and Cloudinary hosting; generated source PNGs stay out of commits.
 
 First-slice checks: intro skip/replay once; legitimate unlock after Module 2 plus the existing vishing lesson requirement; readable transcript with sound off; no missed-call dead end; early end retained; back/menu/background/resume; 48-pixel touch controls and safe-area layout; partial saves and account isolation; evidence discovery; once-only credits and replay; unchanged mastery/assessment records. Subsequent slices add the code/callback comparisons and the full hearing. Physical-phone/deployed-sync acceptance remains pending until actually performed.
+
+
+### Gate 3C first-slice review — 1 November 2026
+
+- Implemented **Stay on the Line** intro and **The Helpful Caller**, using the existing intro/chapter screens, phone shell, call panel, save/replay owner and assistance ledger. Only two new production scripts separate the chapter data from its phone interactions; no new save or scene manager.
+- Liza's six poses and the mystery title image use Cloudinary. AssetManager download/cache checks passed; local PNGs and developer verification files remain ignored. [Asset inventory and generation prompts](../output/module3-art/README.md).
+- Chapter 1: receive or decline an unexpected call, end at any received excerpt, classify claim/observation/unverified identity, and select an independently opened wallet Support route. Ending or declining is never a mistake. Saved notes contain only received statements. No microphone, external phone call or real code entry is used.
+- Call end and excerpt signals persist through the existing chapter owner. Reload, resize and asset refresh do not restart an ended call. Phone Continue advances one dialogue page without dropping unread thoughts.
+- Deploy exposes the intro and Chapter 1 after Module 2 completion plus the first Phone Tricks lesson. Chapters 2–5 cannot launch; legacy Module 3 missions remain accessible. Codex reveals three observations from earned findings; Progress counts eleven authored chapters across Modules 1–3.
+- Coached choices and hints remain outside mastery updates and independent assessments. Hint use is recorded; original completion grants credits once and replays grant none. This slice does not claim a completed Module 3 adaptive-practice handoff.
+- Local checks: Godot import; call decline, full listen and early end; pause guards; partial save/reload; account-owner rejection; evidence discovery; once-only reward and replay; unchanged mastery/events; intro skip/replay/navigation; 48-pixel touch controls; 720×360 and 844×390 render inspection. Shared call-panel and Module 1/2 hearing assertions passed. The older hearing harnesses still emit resource-in-use warnings at shutdown; those warnings are not a clean lifecycle acceptance result.
+- Physical-phone/safe-area, updated APK, hosted account-sync and offline-first installation acceptance remain open. Local viewport checks do not substitute for device testing.
+- Next proposed slice, awaiting the user's go-ahead: **Chapter 2 — They Know My Name**, matching caller details to the public club post while preserving the caller's unknown identity.
+
+
+### Gate 3C Chapter 2 review — 1 November 2026
+
+The user authorized the next slice after the Chapter 1 review. **They Know My Name** now follows the completed first chapter through the existing Next Chapter route and Deploy selector. The existing library research corner gives the comparison a different setting without another asset or manager.
+
+Continuity: the excerpt is a **new voicemail after the earlier call ended**, not retroactively added dialogue. This works whether the player declined Chapter 1's call, ended early or heard everything. Chapter 1's saved received-statement count remains unchanged. Liza independently opens the public club page she already follows; the post existed before the call.
+
+The three activities are:
+1. Tap a caller detail, then the matching public-post field (name, event expense role and 6 November date). Correct pairs stay green, are disabled against duplicate input, and survive partial save/reload. Tapping a destination before selecting a detail gives guidance without a penalty.
+2. Distinguish public knowledge from a verified security role or permission to access the wallet.
+3. Preserve the voicemail and post with the supported conclusion: the details **could** be copied from a public source. The comparison neither identifies the caller nor proves which source they used; it does not implicate the post's author.
+
+Integration reuses the current chapter/save/replay, perk-assistance, phone, Codex and Progress paths. The two new scripts contain chapter data and phone-specific presentation; no new persistence or learning infrastructure. Chapter 3 stays unavailable until implemented. Progress now counts twelve authored chapters. Guided corrections/hints/replay do not create mastery updates or research scores, and completion grants credits only once.
+
+Validation: partial-match saves, malformed prerequisites, pause, account-owner guards, no rewriting prior call notes, discovery-gated Codex records, once-only rewards and replay passed. Render checks at 844×390 and 720×360 covered 48-pixel touch choices, readable source comparison and visible green confirmation. A shared phone resize callback was found to run after removal from the scene tree; `_metrics()` now returns immediately when detached. Chapter 1, Module 3 intro/navigation and shared advisor-phone regression checks were run. Developer checks remain local/ignored, with no staging or commits performed by the agent.
+
+Physical-device, installed-APK, hosted-sync and offline-first acceptance remain outstanding. Next proposed slice, awaiting confirmation: **Chapter 3 — Don't Hang Up**, returning to the courtyard moment from the intro.
+
+
+### Gate 3C Chapter 3 review — 1 November 2026
+
+The user authorized continuation after Chapter 2. **Don't Hang Up** returns Liza to the covered courtyard from the intro. This is a new incoming call after the voicemail/public-post comparison, so earlier decline/end choices are preserved. The wallet alert explicitly describes a password reset, while the caller claims the code will stop a payment.
+
+- Existing chapter screen, phone shell and call panel are reused. Two production scripts separate chapter data from phone-specific interactions; there is no new manager, save store, timer or external calling integration.
+- The player can answer, decline, switch to the wallet alert, challenge the purpose mismatch, or end immediately. End/Decline stays in the fixed phone footer even while scrolling the alert. Safe exits carry no mistake or speed penalty. The caller's deadline is dialogue only. No actual code is displayed, entered or transmitted.
+- The live call ends before the coached review. This leaves no connected call hidden behind dialogue. Activities identify the reset purpose, highlight the conflicting actions across two sources, and choose to keep the code private and verify through the existing wallet app. Correct findings receive the shared green confirmation.
+- Save/reload retains alert reading, ended state and the exact received-statement count. Declined calls have no transcript. Missing statements appear only as explicitly labeled review guidance, including in Codex; they are never presented as received evidence. Post-call dialogue also works after a decline.
+- The existing registry, Chapter 2 Next action, Deploy labels, save/replay cleaner, assistance policy, Codex and Progress now include Chapter 3. Thirteen chapters are authored across Modules 1–3. Chapters 4–5 of Module 3 remain in development. Legacy missions and prior chapter saves remain intact.
+- Guided corrections and hints do not submit mastery observations or research scores. Assistance remains recorded, original completion awards credits once, and replay awards none. The service's independent response and reset outcome belong to Chapter 4; this chapter does not invent them.
+
+Local checks cover decline, early end, full optional exchange, pause, fixed exit during scrolling, partial save/reload, prerequisite cleaning, account-owner guards, source-aware Codex discovery, once-only credits, replay restoration and unchanged mastery/learning events. Mobile viewport checks use 844×390 and 720×360 with 48-pixel touch controls. Chapter 2 regression includes the new Chapter 3 unlock. Module 3 intro/selector assertions also pass, including keeping Chapter 4 unavailable; that older harness still reports four ObjectDB instances and two resources in use at shutdown, so it is not a clean lifecycle acceptance result. Its local harness now waits for the seal animation's completion state instead of relying on a short wall-clock delay. Developer checks and render artifacts stay local/ignored; no files were staged or committed.
+
+Physical-device safe areas, installed APK, hosted sync and offline-first acceptance remain open. Next slice, awaiting the user's go-ahead: **Chapter 4 — Call Back, Safely**, independently verifying the supplied supervisor contact and attaching the preserved alert/call details to the service case.
+
+
+### Visual completion requirement — confirmed 1 November 2026
+
+Every module needs **at least five distinct, newly created environment backgrounds tied to its story**, in the established visual style. Reused environments may support continuity but do not count toward the module's five new backgrounds. Portrait sheets, chapter thumbnails, title cards and evidence interfaces do not count as environment backgrounds. Preserve spatial/time continuity, especially the Module 3 intro's courtyard moment revisited in Chapter 3. Asset hosting/caching follows the existing Cloudinary pipeline; source PNGs and generated validation artifacts stay out of commits.
+
+Module 3 now has five dedicated environment backgrounds, separate from its portrait sheet and mystery title. All five are hosted and used in the intro/Chapters 1–4; this closes the background inventory requirement, not the unfinished Chapter 5 or physical-device acceptance. Audit the existing Module 1/2 inventories against this requirement without automatically replacing suitable authored art; carry the same requirement into Modules 4/5 when those gates open.
+
+### Gate 3C Chapter 4 gameplay review — 1 November 2026
+
+The user authorized **Call Back, Safely** after Chapter 3. A follow-up message claims to come from a supervisor and supplies its own callback contact. John asks where the contact came from; Liza recognizes that two names in the same suspicious conversation do not make two independent sources.
+
+The existing chapter screen, phone shell, saves/replays, assistance ledger, Codex and Progress are reused. Two production scripts separate the authored chapter from its phone interactions; no additional scene manager, persistence system, real calling or reporting service was introduced.
+
+1. **Independent contact:** choose the existing wallet app, navigate to Support / Contact us, then select that independently obtained contact. The supplied message number gives correction instead of triggering a real call.
+2. **Support comparison:** read the service response before interpreting it. Support says it did not request the call or ask for the reset code; this reset was not completed, and account activity should be reviewed. Neither the supervisor's identity nor the safety of every account is established.
+3. **Incident record:** review and attach the original Chapter 3 alert and received call notes. Declined calls remain transcript-free; early hang-up includes only the first received statement. Later alternate replays cannot rewrite the original incident. Partial attachments survive save/reload, turn green and remain reviewable. No code is attached or transmitted; the report stays inside the game.
+
+Chapter 3's Next action and Deploy unlock Chapter 4. Codex discoveries remain gated by completed activities, Progress counts fourteen authored chapters, and Chapter 5 remains visibly unavailable. Guided corrections/hints stay separate from BKT mastery updates and research assessment scores. Hint use is recorded; original completion awards credits once and replays award none.
+
+Validation passed: notification/story progression, independent-route prerequisites, response-reading gate, corrected interpretations, partial report recovery, account-owner rejection, pause guards, source-faithful attachments for declined/short/full calls, replay isolation, once-only credits, unchanged mastery/events and Chapter 4/5 selector availability. Godot previews at 844×390 and 720×360 verified readable text, green attachment feedback, visible Continue and 48-pixel touch controls. Chapter 3 regression passed with the new Chapter 4 unlock. Local tests/artifacts remain ignored; nothing was staged or committed.
+
+At the Chapter 4 gameplay review, backgrounds and physical-device acceptance were open. The environment pass below closes the five-background inventory requirement; physical-device safe areas, installed APK, hosted account sync and offline-first acceptance remain open. This review closes the Chapter 4 gameplay slice, not the whole Module 3 gate. The next gameplay slice is **Chapter 5 — The Voice Loses Control**, using the full shared debate format. Its briefing and final comparison must respect declined/shortened call histories: an unheard phrase cannot be presented as a saved quote. No Chapter 5 implementation has begun.

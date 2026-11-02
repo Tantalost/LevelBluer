@@ -5,14 +5,14 @@ const NUMBER: int = 1
 const TITLE: String = "The Helpful Caller"
 const PROTAGONIST: String = "Liza"
 const PHONE_PATH: String = "res://src/gameplay/decision/helpful_caller_phone.gd"
-const BACKGROUND_ASSET: String = "story_bg_covered_courtyard_rain"
-const NIGHT_BACKGROUND: String = "covered_courtyard_rain"
+const BACKGROUND_ASSET: String = "story_bg_mod3_covered_walkway_v1"
+const NIGHT_BACKGROUND: String = "mod3_covered_walkway_v1"
 const MORNING: bool = true
 const DAY_LABEL: String = "AFTERNOON"
 const FULL_WIDTH_INVESTIGATION: bool = true
 const INVESTIGATION_TAGLINE: String = "A professional voice. An unverified claim."
 const FIRST_PHASE: String = "claims"
-const NEXT_CHAPTER: String = ""
+const NEXT_CHAPTER: String = "mod_03_ch_02"
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const TASKS: Dictionary = {
  "claims":{"title":"01 / Claim or fact?","tip":"A display label makes a claim. Receiving a call is observable. Neither independently verifies the caller.","line":"What do I actually know?","field":"flags","total":1,"next":"identity"},
@@ -23,12 +23,12 @@ const CALL_LINES: Array[String] = ["Liza? I'm following up on the scam reported 
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"call","sender":"Account Security (displayed label)","address":"Unverified incoming contact","subject":"Account-security claim","body":"The phone displayed Account Security. The service has not independently verified this caller.","phrase":"A displayed name does not verify who is calling.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Liza","face":0,"bg":"covered_courtyard_rain","cast":["liza"],"caption":"After Amani's hearing. The covered courtyard, following the club event briefing.","line":"Eric just called about reimbursements. Keep the receipts, he said. Apparently 'trust me' is no longer an accounting method."},
- {"who":"Liza","face":1,"bg":"covered_courtyard_rain","cast":["liza"],"line":"I have receipts. What I don't have is a stapler that believes in teamwork."},
- {"who":"Liza","face":3,"bg":"covered_courtyard_rain","cast":["liza"],"line":"Another call. Account Security?","mail":true},
- {"who":"Liza","face":4,"bg":"covered_courtyard_rain","cast":["liza","john"],"line":"An official-looking label. That's something my phone displayed, not something I've verified."},
- {"who":"John","face":0,"bg":"covered_courtyard_rain","cast":["liza","john"],"line":"Keep what you observed separate from what the caller wants you to believe."},
- {"who":"Liza","face":5,"bg":"covered_courtyard_rain","cast":["liza"],"line":"Then let's check the claim somewhere this caller doesn't control."}
+ {"who":"Liza","face":0,"bg":"mod3_briefing_classroom_v1","cast":["liza"],"caption":"After Amani's hearing. In the classroom, just after the club event briefing.","line":"Eric just called about reimbursements. Keep the receipts, he said. Apparently 'trust me' is no longer an accounting method.","art":"story_bg_mod3_briefing_classroom_v1"},
+ {"who":"Liza","face":1,"bg":"mod3_briefing_classroom_v1","cast":["liza"],"line":"I have receipts. What I don't have is a stapler that believes in teamwork.","art":"story_bg_mod3_briefing_classroom_v1"},
+ {"who":"Liza","face":3,"bg":"mod3_covered_walkway_v1","cast":["liza"],"line":"Another call. Account Security?","mail":true,"art":"story_bg_mod3_covered_walkway_v1","caption":"Outside the briefing room. The covered walkway."},
+ {"who":"Liza","face":4,"bg":"mod3_covered_walkway_v1","cast":["liza","john"],"line":"An official-looking label. That's something my phone displayed, not something I've verified.","art":"story_bg_mod3_covered_walkway_v1"},
+ {"who":"John","face":0,"bg":"mod3_covered_walkway_v1","cast":["liza","john"],"line":"Keep what you observed separate from what the caller wants you to believe.","art":"story_bg_mod3_covered_walkway_v1"},
+ {"who":"Liza","face":5,"bg":"mod3_covered_walkway_v1","cast":["liza"],"line":"Then let's check the claim somewhere this caller doesn't control.","art":"story_bg_mod3_covered_walkway_v1"}
 ]
 const EVIDENCE: String = "01 · The displayed Account Security label is a claim, not authenticated identity.\n02 · Receiving a call is observable; any caller-supplied reference still needs independent verification.\n03 · Liza chooses the service's existing app as her verification route.\n\nOnly received statements are retained in the call notes. Eric's earlier expense call does not identify this caller."
 const SEAL_LINE: String = "A helpful-sounding claim is still a claim."

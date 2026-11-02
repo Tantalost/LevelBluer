@@ -597,6 +597,7 @@ func _refresh() -> void:
 	if is_instance_valid(_domain): _domain.editable = not _locked
 
 func _metrics() -> void:
+	if not is_inside_tree(): return
 	super._metrics()
 	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
 	for node: Node in _content.find_children("*", "Label", true, false):
