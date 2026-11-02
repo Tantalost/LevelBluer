@@ -52,6 +52,15 @@ class FakeQuery:
     def eq(self, *_args, **_kwargs):
         return self
 
+    @property
+    def not_(self):
+        self._negate = True
+        return self
+
+    def contains(self, column, value):
+        self._contains = (column, value, getattr(self, "_negate", False))
+        return self
+
     def select(self, *_args, **_kwargs):
         return self
 
@@ -267,6 +276,269 @@ class ProgressSyncFailureTest(unittest.TestCase):
             self._run(FakeSupabase(fail_nth={("students", 2)}))
         self.assertEqual(ctx.exception.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
         self.assertEqual(ctx.exception.detail, "Database request failed")
+
+
+class LegacySchemaQuery(FakeQuery):
+    """students has no module_pretests column, as in the legacy schema."""
+
+    def __init__(self, store, table):
+        super().__init__(store, table)
+        self._update = None
+
+    def update(self, payload):
+        self._update = payload
+        return super().update(payload)
+
+    def delete(self):
+        self._store.deletes.append(self._table)
+        return self
+
+    def execute(self):
+        if self._table == "students" and isinstance(self._update, dict) and "module_pretests" in self._update:
+            self._store.executes.append(self._table)
+            raise RuntimeError('column "module_pretests" of relation "students" does not exist')
+        result = super().execute()
+        if self._table == "students" and isinstance(self._update, dict):
+            self._store.student_row.update(self._update)
+        if self._table == "player_saves" and isinstance(self._pending_upsert, dict):
+            self._store.save_rows = [{"payload": self._pending_upsert["payload"]}]
+        return result
+
+
+class LegacySchemaSupabase(FakeSupabase):
+    """Stateful: later reads see every write that succeeded."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.student_row = {"id": "stu-1"}
+        self.deletes: list[str] = []
+
+    def table(self, name: str) -> FakeQuery:
+        return LegacySchemaQuery(self, name)
+
+
+class LegacyPretestFallbackTest(unittest.TestCase):
+    EXISTING = {"mastery_matrix": {"phishing": 0.8}, "lesson_progress": {"mod_01": 7}, "credits": 50}
+
+    def _submit(self, fake, stale_row: dict | None = None):
+        from app.data.pretest_questions import questions_for_module
+        from app.schemas.pretest import PretestAnswerPayload
+        from app.services.pretest_service import submit_pretest
+
+        bank = questions_for_module("mod_01")
+        # Every third answer wrong: 0.9202 once, 0.99 if re-applied. Patterns that hit the
+        # 0.01/0.99 clamp mid-sequence erase the prior and would hide a second application.
+        answers = [
+            PretestAnswerPayload(id=q["id"], answer=q["answer"] if i % 3 else (int(q["answer"]) + 1) % len(q["options"]))
+            for i, q in enumerate(bank)
+        ]
+        with (
+            patch("app.services.pretest_service.supabase", fake),
+            patch("app.services.pretest_service._fetch_student",
+                  side_effect=lambda _sid: dict(stale_row if stale_row is not None else fake.student_row)),
+        ):
+            return submit_pretest("stu-1", "mod_01", answers)
+
+    def _clean_row(self) -> dict:
+        fake = self._fake()
+        self._submit(fake)
+        return dict(fake.student_row)
+
+    def test_retry_after_failed_flag_write_applies_diagnostic_once(self):
+        expected = self._clean_row()
+        fake = self._fake(fail_nth={("player_saves", 3)})
+        with self.assertRaises(HTTPException):
+            self._submit(fake)
+        self._submit(fake)
+        self.assertEqual(fake.student_row, expected, "retry must not re-apply the diagnostic to updated mastery")
+        self.assertEqual(fake.save_rows[0]["payload"]["module_pretests"], {"mod_01": True})
+
+    def test_retry_after_failed_mastery_write_applies_diagnostic_once(self):
+        expected = self._clean_row()
+        fake = self._fake(fail_nth={("students", 2)})
+        with self.assertRaises(HTTPException):
+            self._submit(fake)
+        self.assertNotIn("module_pretests", fake.save_rows[0]["payload"], "flag is rolled back so the retry is accepted")
+        self.assertEqual(fake.save_rows[0]["payload"], self.EXISTING)
+        self._submit(fake)
+        self.assertEqual(fake.student_row, expected)
+        self.assertEqual(fake.save_rows[0]["payload"]["module_pretests"], {"mod_01": True})
+
+    def test_failed_rollback_rejects_retry_instead_of_reapplying(self):
+        fake = self._fake(fail_nth={("students", 2), ("player_saves", 4)})
+        with self.assertRaises(HTTPException):
+            self._submit(fake)
+        with self.assertRaises(HTTPException) as ctx:
+            self._submit(fake)
+        self.assertEqual(ctx.exception.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(ctx.exception.detail, "Pre-test already completed")
+        self.assertNotIn("mastery_phishing", fake.student_row)
+
+    def test_mastery_rollback_without_prior_save_removes_flag_row(self):
+        fake = self._fake(fail_nth={("students", 2)})
+        fake.save_rows = []
+        with self.assertRaises(HTTPException):
+            self._submit(fake)
+        self.assertEqual(fake.deletes, ["player_saves"])
+
+    def _fake(self, **kwargs):
+        fake = LegacySchemaSupabase(**kwargs)
+        fake.save_rows = [{"payload": dict(self.EXISTING)}]
+        return fake
+
+    def test_failed_flag_read_aborts_before_any_write(self):
+        fake = self._fake(fail={"player_saves"})
+        with self.assertRaises(HTTPException) as ctx:
+            self._submit(fake)
+        self.assertEqual(ctx.exception.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+        self.assertNotIn("students", fake.updates)
+        self.assertNotIn("player_saves", fake.upserts)
+        self.assertEqual(fake.bkt_rows, {})
+
+    def test_failed_fallback_read_leaves_mastery_and_save_untouched(self):
+        fake = self._fake(fail_nth={("player_saves", 2)})
+        with self.assertRaises(HTTPException):
+            self._submit(fake)
+        self.assertEqual(len(fake.updates["students"]), 1, "only the rejected column write was attempted")
+        self.assertNotIn("player_saves", fake.upserts)
+        self.assertEqual(fake.bkt_rows, {})
+
+    def test_failed_flag_write_is_reported(self):
+        fake = self._fake(fail_nth={("player_saves", 3)})
+        with self.assertRaises(HTTPException) as ctx:
+            self._submit(fake)
+        self.assertEqual(ctx.exception.detail, "Database request failed")
+        self.assertNotIn("secret-token", str(ctx.exception.detail))
+
+    def test_flags_are_added_to_the_existing_save(self):
+        fake = self._fake()
+        result = self._submit(fake)
+        self.assertTrue(result.preTestCompleted)
+        stored = fake.upserts["player_saves"][0]["payload"]
+        self.assertEqual(stored["module_pretests"], {"mod_01": True})
+        for key, value in self.EXISTING.items():
+            self.assertEqual(stored[key], value)
+
+
+class ColumnSchemaQuery(LegacySchemaQuery):
+    """students.module_pretests exists (migration 20261031 applied): one conditional update."""
+
+    def execute(self):
+        if self._table != "students" or not isinstance(self._update, dict):
+            return FakeQuery.execute(self)
+        self._store.executes.append(self._table)
+        if ("students", self._store.executes.count("students")) in self._store.fail_nth:
+            raise RuntimeError("supabase students failed: secret-token")
+        row = self._store.student_row
+        condition = getattr(self, "_contains", None)
+        if condition is not None:
+            column, wanted, negate = condition
+            current = row.get(column, {})
+            contained = all(current.get(key) == value for key, value in wanted.items())
+            if contained == negate:
+                return _Result(data=[])
+        row.update(self._update)
+        return _Result(data=[dict(row)])
+
+
+class ColumnSchemaSupabase(LegacySchemaSupabase):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.student_row = {"id": "stu-1", "module_pretests": {}}
+
+    def table(self, name: str) -> FakeQuery:
+        return ColumnSchemaQuery(self, name)
+
+
+class ColumnPretestTest(LegacyPretestFallbackTest):
+    """Same submission helper; the legacy-only cases are not inherited."""
+
+    def _fake(self, **kwargs):
+        fake = ColumnSchemaSupabase(**kwargs)
+        fake.save_rows = [{"payload": dict(self.EXISTING)}]
+        return fake
+
+    def _legacy_row(self) -> dict:
+        legacy = LegacySchemaSupabase()
+        legacy.save_rows = [{"payload": dict(self.EXISTING)}]
+        LegacyPretestFallbackTest._submit(self, legacy)
+        return {k: v for k, v in legacy.student_row.items()}
+
+    def test_submit_is_one_conditional_write_and_leaves_the_save_alone(self):
+        fake = self._fake()
+        self._submit(fake)
+        self.assertEqual(fake.student_row["module_pretests"], {"mod_01": True})
+        self.assertEqual(fake.executes.count("students"), 1)
+        self.assertNotIn("player_saves", fake.upserts)
+        self.assertEqual(fake.save_rows[0]["payload"], self.EXISTING)
+        expected = self._legacy_row()
+        for key in ("mastery_phishing", "pre", "status"):
+            self.assertEqual(fake.student_row[key], expected[key], "same BKT result as the legacy path")
+
+    def test_retry_after_success_is_rejected_without_reapplying(self):
+        fake = self._fake()
+        self._submit(fake)
+        first = dict(fake.student_row)
+        with self.assertRaises(HTTPException) as ctx:
+            self._submit(fake)
+        self.assertEqual(ctx.exception.detail, "Pre-test already completed")
+        self.assertEqual(fake.student_row, first)
+
+    def test_simultaneous_submissions_apply_once(self):
+        fake = self._fake()
+        before = dict(fake.student_row)
+        self._submit(fake, stale_row=before)
+        winner = dict(fake.student_row)
+        # The second request read the row before the first one committed.
+        with self.assertRaises(HTTPException) as ctx:
+            self._submit(fake, stale_row=before)
+        self.assertEqual(ctx.exception.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(ctx.exception.detail, "Pre-test already completed")
+        self.assertEqual(fake.student_row, winner)
+        self.assertEqual(len(fake.upserts.get("bkt_records", [])), 1)
+
+    def test_failed_write_leaves_row_unchanged_and_retry_applies_once(self):
+        expected_fake = self._fake()
+        self._submit(expected_fake)
+        fake = self._fake(fail_nth={("students", 1)})
+        with self.assertRaises(HTTPException):
+            self._submit(fake)
+        self.assertEqual(fake.student_row, {"id": "stu-1", "module_pretests": {}})
+        self._submit(fake)
+        self.assertEqual(fake.student_row, expected_fake.student_row)
+
+    def test_unbackfilled_legacy_flags_are_kept_in_the_column(self):
+        fake = self._fake()
+        fake.save_rows = [{"payload": dict(self.EXISTING, module_pretests=["mod_02"])}]
+        self._submit(fake)
+        self.assertEqual(fake.student_row["module_pretests"], {"mod_01": True, "mod_02": True})
+        self.assertNotIn("player_saves", fake.upserts)
+
+    def test_column_flag_blocks_resubmission_without_reading_the_save(self):
+        fake = self._fake(fail={"player_saves"})
+        fake.student_row["module_pretests"] = {"mod_01": True}
+        with self.assertRaises(HTTPException) as ctx:
+            self._submit(fake)
+        self.assertEqual(ctx.exception.detail, "Pre-test already completed")
+
+    def test_login_reads_completion_from_the_column(self):
+        from app.services import auth_service
+
+        fake = self._fake(fail={"player_saves"})
+        with patch.object(auth_service, "supabase", fake):
+            ids = auth_service._completed_module_ids({"id": "stu-1", "module_pretests": {"mod_01": True, "mod_03": True}})
+        self.assertEqual(ids, ["mod_01", "mod_03"])
+        self.assertNotIn("player_saves", fake.executes)
+
+    # Legacy-only scenarios do not apply once the column exists.
+    test_failed_flag_read_aborts_before_any_write = None
+    test_failed_fallback_read_leaves_mastery_and_save_untouched = None
+    test_failed_flag_write_is_reported = None
+    test_flags_are_added_to_the_existing_save = None
+    test_retry_after_failed_flag_write_applies_diagnostic_once = None
+    test_retry_after_failed_mastery_write_applies_diagnostic_once = None
+    test_failed_rollback_rejects_retry_instead_of_reapplying = None
+    test_mastery_rollback_without_prior_save_removes_flag_row = None
 
 
 if __name__ == "__main__":
