@@ -1,4 +1,4 @@
-# Module 3 artwork — first slice
+# Module 3 artwork
 
 Generated with the built-in image_gen tool; no API/CLI fallback. Production uses Cloudinary through AssetManager. Local PNGs are ignored by the root .gitignore.
 
@@ -23,8 +23,8 @@ Title prompt:
 
 ## Placement and validation
 
-- Intro uses the existing covered-courtyard background and Liza atlas, followed by the dedicated title artwork.
-- Chapter 1 reuses the rainy courtyard, phone shell and call panel.
+- Intro uses the dedicated Module 3 courtyard, classroom and walkway, followed by the dedicated title artwork.
+- Chapter 1 moves from the briefing classroom to the covered walkway, reusing the phone shell and call panel.
 - No culprit likeness is invented.
 - Both delivery URLs downloaded and decoded through AssetManager.
 - Intro/title and chapter phone flows rendered at 844×390 and 720×360. Device acceptance remains open.
@@ -53,3 +53,31 @@ Use case: illustration-story. Create ONE finished environment background for LEV
 
 Use case: illustration-story. Create ONE finished environment background for LEVELBLUE, a mobile school cybersecurity mystery visual novel. Wide landscape 16:9 composition. High quality hand-painted anime game environment, precise coherent perspective, detailed painterly cel shading with restrained crisp pixel texture, realistic grounded Philippine senior-high-school architecture. Cream plaster, dark teal painted frames, warm wooden furniture, tropical greenery, navy shadows and muted cyan daylight with restrained warm lamps. Intriguing atmosphere, grounded school life, not horror or fantasy. Eye-level camera, generous open middle foreground for separately overlaid character sprites. Background must fill entire canvas edge to edge. Lower 25 percent visually quiet for dialogue overlay. NO people, silhouettes, character portraits, visible phones, words, readable writing, lettering, logos, watermarks, interface, panels, borders, collage or split screen. A small quiet student study room just inside the school courtyard, late rainy afternoon. Interior view toward broad rain-streaked louvered windows with dark teal frames; the spreading courtyard tree is glimpsed outside to establish location. Warm desk lamp on a simple wooden shared worktable at right, two unoccupied chairs, neat folders and stationery, a modest low bookshelf and potted plant at left. Cream walls, muted teal noticeboard with blank paper shapes, soft amber interior light against cool rainy window light. Calm private space for independently checking wallet support on a phone held by an overlaid character; NO actual phone or character in background. Clear open middle foreground; distinct from classroom and library.
 
+
+## Dedicated environment delivery and integration
+
+Final files are saved in `output/module3-art/`; built-in image generation was used. The exact final prompt set is recorded above. Production references the versioned Cloudinary URLs below through the existing AssetManager cache.
+
+| Local PNG | Cloudinary URL | Story placement |
+| --- | --- | --- |
+| briefing_classroom_v1.png | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793518527/levelblue_mod3_bg_briefing_classroom_v1_20261101.png | Intro earlier-afternoon beat; Chapter 1 briefing; Chapter 1 preview |
+| covered_walkway_v1.png | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793518531/levelblue_mod3_bg_covered_walkway_v1_20261101.png | Intro first-call beat; Chapter 1 call/investigation; Chapter 2 opening |
+| library_research_v1.png | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793518534/levelblue_mod3_bg_library_research_v1_20261101.png | Chapter 2 public-post comparison/investigation and preview |
+| rain_courtyard_v1.png | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793518538/levelblue_mod3_bg_rain_courtyard_v1_20261101.png | Intro flash-forward; Chapter 3 story/investigation and preview; Chapter 4 opening |
+| quiet_study_room_v1.png | https://res.cloudinary.com/nfd5bhkz/image/upload/v1793518541/levelblue_mod3_bg_quiet_study_room_v1_20261101.png | Chapter 4 independent Support check/investigation and preview |
+
+Validation: all five hosted images downloaded and decoded through AssetManager; every Chapter 1–4 story beat resolved its assigned background. Intro courtyard continuity passed. Godot renders inspected at 844×390 and 720×360, including captions, character overlays and phone panels. Five backgrounds are integrated. Chapter 5 subsequently passed local gameplay checks; physical-device/installed-release acceptance remains open. Source PNGs, local verification scripts and captures remain ignored.
+
+## Liza signal counter — 3 November 2026
+
+- Mode: built-in image generation, with `liza_poses_v2.png` as the character likeness reference; no CLI fallback.
+- Final workspace file: `output/module3-art/liza_counter_signal_v1.png` (1672×941).
+- Hosted asset: https://res.cloudinary.com/nfd5bhkz/image/upload/v1793681235/levelblue_mod3_liza_counter_signal_v1_20261103.png
+- AssetManager ID: `module3_liza_counter_signal_v1`.
+- Placement: Module 3 Chapter 5 rebuttal cut-in, fitted without cropping the COUNTER! lettering.
+- Effect variation: `voice_signal` in the existing joining, title, command and rebuttal widgets. Cyan segmented audio traces, voice verification terminal, signal-shaped pixel trail and collapsing waveform. The hearing controller owns time and existing sound cues. Reduced motion holds signal/title/counter geometry static within each state.
+- Validation: hosted download and cache decoding passed; full hearing passed at mobile viewport sizes, including frame comparisons for reduced-motion title/counter and existing pause/exit guards. Physical-device performance and final visual acceptance remain open.
+
+Exact generation prompt:
+
+> Create ONE cinematic counter-argument cut-in illustration for LEVELBLUE's mobile cybersecurity visual novel, wide landscape 16:9. The attached image is a CHARACTER LIKENESS REFERENCE only: Liza, Filipino senior high school student, warm tan skin, shoulder-length straight black hair parted in center, thin round dark glasses, brown eyes, white short-sleeved school blouse with dark green stripe on breast pocket. Preserve her recognizable face, hair, glasses and uniform. Do not reproduce the six-panel sheet. Create a single dynamic close-up on the right 52%: Liza confidently rebuts a false security caller, brows focused and mouth open mid-sentence, one hand presenting her dark smartphone toward the viewer, coherent five-finger anatomy. Dynamic clean anime linework and painterly cel shading with crisp subtle pixel texture matching reference. Left 48% contains very large perfectly legible cream block pixel lettering exactly 'COUNTER!' with cyan edge glow. No other words. Deep navy #050B18 and #0A1730 background, cyan #4FE0D4 segmented audio wave streaks shattering into square pixels across the middle, a restrained orange #FFB648 broken signal trace behind them. Story motif: cutting off a manipulative voice with independently checked evidence, not a weapon or physical fight. Dramatic diagonal composition, strong negative space around COUNTER!, keep all lettering at least 8 percent inside canvas edges and upper/lower 12 percent relatively quiet for game overlays. No UI frames, no logos, no watermarks, no collage, no extra people. Opaque finished illustration.

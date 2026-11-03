@@ -13,6 +13,23 @@ const INK: Color = Color("101623")
 const GREEN: Color = Color("33d17a")
 const ORANGE: Color = Color("ffb648")
 
+## Draw-only motif. Its time comes from the hearing owner, never a second clock.
+static func draw_voice_signal(canvas: Control, area: Rect2, time: float, gentle: bool, tint: Color, strength: float = 1.0) -> void:
+	var clock: float = 0.0 if gentle else time
+	var step: float = area.size.x / 48.0
+	var trace: PackedVector2Array = []
+	for index: int in 48:
+		var fraction: float = float(index) / 47.0
+		var envelope: float = sin(fraction * PI)
+		var wave: float = sin(index * .72 - clock * 3.0) * sin(index * .19 + clock)
+		var amplitude: float = area.size.y * .42 * envelope * wave * strength
+		var point: Vector2 = area.position + Vector2(index * step, area.size.y * .5)
+		var height: float = maxf(2.0, absf(amplitude) * 2.0)
+		canvas.draw_rect(Rect2(point - Vector2(0,height * .5),Vector2(maxf(1.0,step * .55),height)),Color(tint,tint.a * .4))
+		trace.append(point + Vector2(0,amplitude))
+		trace.append(point + Vector2(step,amplitude))
+	canvas.draw_polyline(trace,tint,maxf(1.0,area.size.y / 50.0),false)
+
 static func unit(control: Control) -> float:
 	return 1.0 / maxf(0.25,control.get_viewport().get_final_transform().get_scale().y)
 
@@ -48,6 +65,7 @@ static func grayscale(image: TextureRect) -> void:
 	image.material = material
 
 class JoiningImpact extends Control:
+	var effect_style: String = ""
 	var protagonist: String = "John"
 	var participants: PackedStringArray = ["John","Sir Rham","Eric","Dan","Mika","Jobert"]
 	var backdrop: String = "hearing_debate_v1"
@@ -62,6 +80,7 @@ class JoiningImpact extends Control:
 		mouse_filter = MOUSE_FILTER_IGNORE
 		clip_contents = true
 		reveal = TitleImpact.new()
+		reveal.effect_style = effect_style
 		reveal.mouse_filter = MOUSE_FILTER_IGNORE
 		reveal.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		add_child(reveal)
@@ -98,7 +117,9 @@ class JoiningImpact extends Control:
 			return
 		if elapsed < 1.8:
 			var center: Vector2 = size*Vector2(.5,.42)
-			for ring: int in 3:
+			if effect_style == "voice_signal":
+				ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.18,.22),size * Vector2(.64,.4)),elapsed,gentle,CYAN)
+			for ring: int in (0 if effect_style == "voice_signal" else 3):
 				var radius: float = (25+ring*18)*u
 				var angle: float = 0 if gentle else elapsed*(1.6+ring*.4)
 				draw_arc(center,radius,angle,angle+TAU*(.65+ring*.08),64,Color(CYAN,1-ring*.25),2*u,true)
@@ -124,9 +145,13 @@ class JoiningImpact extends Control:
 		line("Everyone is here. " if elapsed >= 4.5 else "Participants are joining...",size.y*.95,18,CREAM)
 
 class TitleImpact extends Control:
+	var effect_style: String = ""
 	var elapsed: float = 0.0
 	var gentle: bool = false
 	func _draw() -> void:
+		if effect_style == "voice_signal":
+			_draw_voice_title()
+			return
 		draw_rect(Rect2(Vector2.ZERO,size),Color.BLACK)
 		var progress: float = clampf(elapsed/0.8,0,1)
 		var gain: float = 1.0 if gentle else (1.4-0.4*ease(progress,0.3))
@@ -150,8 +175,24 @@ class TitleImpact extends Control:
 				var y: float = size.y*(index/8.0)
 				draw_line(Vector2(0,y),Vector2(size.x, y-size.y*.2),Color(CYAN,(.55-elapsed)*.3),2)
 
+	func _draw_voice_title() -> void:
+		var u: float = ConfrontationWidgets.unit(self)
+		draw_rect(Rect2(Vector2.ZERO,size),BG)
+		var settle: float = 1.0 if gentle else smoothstep(0,.8,elapsed)
+		ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.04,.08),size * Vector2(.92,.22)),elapsed,gentle,Color(CYAN,.65),1.0 - settle * .55)
+		ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.04,.64),size * Vector2(.92,.2)),elapsed,gentle,Color(CYAN,.35))
+		var pixels: int = maxi(24,mini(ceili(44*u),int(size.x / 16.0)))
+		var shift: float = 0 if gentle else (1.0-settle)*size.x*.08
+		draw_style_box(UI.box(PANEL,CYAN,0),Rect2(size.x*.05,size.y*.30,size.x*.9,size.y*.34))
+		draw_string(UI.FONT,Vector2(shift,size.y*.43),"THE VOICE",HORIZONTAL_ALIGNMENT_CENTER,size.x,pixels,CYAN)
+		draw_string(UI.FONT,Vector2(-shift,size.y*.59),"LOSES CONTROL",HORIZONTAL_ALIGNMENT_CENTER,size.x,pixels,CREAM)
+		draw_string(UI.FONT,Vector2(16*u,size.y*.93),"CHAPTER 05 / MAKE YOUR ARGUMENT",HORIZONTAL_ALIGNMENT_CENTER,size.x-32*u,ceili(17*u),CYAN)
+
+static func portrait_asset(person: String) -> String:
+	return "story_" + person.to_lower() + "_poses" if person in ["Amani","Liza"] else "chapter1_" + person.to_lower()
+
 static func draw_person(canvas: Control, person: String, rect: Rect2, pose: int = 0, tint: Color = Color.WHITE, close_up: bool = false) -> void:
-	var sheet: Texture2D = AssetManager.get_texture("story_amani_poses" if person == "Amani" else "chapter1_"+person.to_lower())
+	var sheet: Texture2D = AssetManager.get_texture(portrait_asset(person))
 	if sheet == null:
 		# Camera-off participants remain part of the remote hearing.
 		canvas.draw_circle(rect.position+rect.size*Vector2(.5,.28),rect.size.y*.14,Color("173058"))
@@ -159,20 +200,22 @@ static func draw_person(canvas: Control, person: String, rect: Rect2, pose: int 
 		return
 	var split: float = float({"John":512.0,"Eric":524.0,"Jobert":546.0}.get(person,512.0))
 	var source: Rect2 = Rect2((pose%3)*512,0 if pose < 3 else split,512,split if pose < 3 else 1024-split)
-	if person == "Amani":
+	if person in ["Amani","Liza"]:
 		var cell: Vector2 = sheet.get_size()/Vector2(3,2)
 		source = Rect2(Vector2(pose%3,int(pose/3))*cell,cell)
 		source.position.x += cell.x*.14
 		source.size.x *= .72
 	else:
 		source.position.x += 100 if close_up else 38
-	if person != "Amani": source.size.x -= 200 if close_up else 76
+	if person not in ["Amani","Liza"]: source.size.x -= 200 if close_up else 76
 	source.size.y *= .51 if close_up else .7
 	var ratio: float = minf(rect.size.x/source.size.x,rect.size.y/source.size.y)
 	var image_size: Vector2 = source.size*ratio
 	canvas.draw_texture_rect_region(sheet,Rect2(rect.position+Vector2((rect.size.x-image_size.x)*.5,0),image_size),source,tint)
 
 class CommandAnimation extends Control:
+	var protagonist: String = "John"
+	var effect_style: String = ""
 	## Owner-driven clock: no independent process/tween survives a paused hearing.
 	signal finished
 	signal sound_requested(id: String)
@@ -220,7 +263,7 @@ class CommandAnimation extends Control:
 		add_child(terminal)
 		var lines: VBoxContainer = UI.column(terminal,ceili(10*u))
 		lines.mouse_filter = MOUSE_FILTER_IGNORE
-		prompt = ConfrontationWidgets.copy("JOHN@HEARING  >  LOAD EVIDENCE",u,CYAN,16)
+		prompt = ConfrontationWidgets.copy(protagonist.to_upper()+"@HEARING  >  "+("VERIFY SOURCE" if effect_style == "voice_signal" else "LOAD EVIDENCE"),u,CYAN,16)
 		prompt.mouse_filter = MOUSE_FILTER_IGNORE
 		lines.add_child(prompt)
 		command = ConfrontationWidgets.copy("",u,CREAM,24)
@@ -280,6 +323,7 @@ class CommandAnimation extends Control:
 		var curve: float = fire_curve if firing else curves[mini(int(step),4)]
 		var eased: float = ease(progress,curve)
 		command.text = "> refute \""+evidence_title+"\"" if firing else "> evidence.load \""+evidence_title+"\""
+		if effect_style == "voice_signal" and not firing: command.text = "> voice.verify \""+evidence_title+"\""
 		var width: float = minf(size.x-32*u,640*u)
 		if firing: width = minf(width,UI.FONT.get_string_size(command.text,HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(24*u)).x+16*u)
 		command.visible_ratio = (eased if step == State.TYPE and not gentle else 1.0)
@@ -320,6 +364,9 @@ class CommandAnimation extends Control:
 	func _draw() -> void:
 		if step == State.ANTICIPATION:
 			var p: float = clampf(age/duration(),0,1)
+			if effect_style == "voice_signal":
+				ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.06,.26),size * Vector2(.88,.46)),age,gentle,CYAN)
+				return
 			for index: int in 7:
 				var y: float = size.y*index/7.0
 				var width: float = size.x if gentle else size.x*ease(p,curves[0])
@@ -331,6 +378,7 @@ class CommandAnimation extends Control:
 			for index: int in 16:
 				var trail: float = maxf(0,ease(p,fire_curve)-index*.025)
 				var point: Vector2 = origin.lerp(target,trail)+Vector2((index%3-1)*10*u,0)
+				if effect_style == "voice_signal": point.x += sin(index*.8-p*6.0)*14*u
 				draw_rect(Rect2((point/(3*u)).round()*(3*u),Vector2.ONE*(3+index%3)*u),Color(CYAN,(1-index/16.0)*.7))
 		elif step == State.CONFIRM:
 			var p: float = clampf(age/duration(),0,1)
@@ -338,6 +386,7 @@ class CommandAnimation extends Control:
 			draw_rect(Rect2(x,command_bounds.position.y-6*u,10*u,3*u),CYAN)
 
 class RebuttalImpact extends Control:
+	var effect_style: String = ""
 	var protagonist: String = "John"
 	var counter_art_id: String = "john_counter_lettered_v1"
 	var elapsed: float = 0.0
@@ -349,6 +398,9 @@ class RebuttalImpact extends Control:
 		draw_rect(Rect2(Vector2.ZERO,size),BG)
 		if elapsed < .55:
 			var hit: Vector2 = size*Vector2(.47,.48)
+			if effect_style == "voice_signal":
+				var strength: float = 1.0 if gentle else 1.0-smoothstep(.22,.55,elapsed)
+				ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.08,.60),size * Vector2(.84,.25)),elapsed,gentle,Color(CYAN,.75),strength)
 			if elapsed < .22:
 				var flight: float = 1 if gentle else smoothstep(0,.22,elapsed)
 				var command_point: Vector2 = (size*Vector2(.06,.88)).lerp(hit,flight)
@@ -389,8 +441,9 @@ class RebuttalImpact extends Control:
 		var scale_factor: float = minf(size.x/texture_size.x,size.y/texture_size.y)*zoom
 		var image_size: Vector2 = texture_size*scale_factor
 		draw_texture_rect(counter_art,Rect2((size-image_size)*.5,image_size),false)
-		draw_string_outline(UI.FONT,Vector2(size.x*.04,size.y*.87),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),ceili(3*u),INK)
-		draw_string(UI.FONT,Vector2(size.x*.04,size.y*.87),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),CYAN)
+		var footer_y: float = size.y * (.95 if effect_style == "voice_signal" else .87)
+		draw_string_outline(UI.FONT,Vector2(size.x*.04,footer_y),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),ceili(3*u),INK)
+		draw_string(UI.FONT,Vector2(size.x*.04,footer_y),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),CYAN)
 
 class CastPanel extends Control:
 	var backdrop: String = "hearing_debate_v1"
@@ -428,7 +481,7 @@ class CastPanel extends Control:
 			draw_rect(tile,BORDER,false,u)
 			slot += 1
 		draw_string(UI.FONT,Vector2(12*u,22*u),"LIVE / CLUB HEARING",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(14*u),CYAN)
-		if AssetManager.get_texture("story_amani_poses" if speaker == "Amani" else "chapter1_"+speaker.to_lower()) == null:
+		if AssetManager.get_texture(ConfrontationWidgets.portrait_asset(speaker)) == null:
 			draw_string(UI.FONT,Vector2(size.x*.28,size.y*.43),"CAMERA OFF / "+speaker.to_upper(),HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),CYAN)
 
 class DebateStage extends Control:
@@ -597,6 +650,7 @@ class DebateStage extends Control:
 
 class EvidenceDrawer extends PanelContainer:
 	var case_data: GDScript = Case
+	var exhibit_overrides: Dictionary = {}
 	signal evidence_selected(id: String)
 	signal closed
 	var chosen: String = ""
@@ -668,7 +722,7 @@ class EvidenceDrawer extends PanelContainer:
 		if compare and not first.is_empty(): select_button.disabled = true
 
 	func _detail(id: String) -> void:
-		var item: Dictionary = case_data.exhibit(id)
+		var item: Dictionary = exhibit_overrides.get(id,case_data.exhibit(id))
 		var illustration: EvidenceIcon = EvidenceIcon.new()
 		illustration.kind = id
 		illustration.custom_minimum_size.y = 62*u

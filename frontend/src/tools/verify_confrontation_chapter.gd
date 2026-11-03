@@ -595,5 +595,10 @@ func _run() -> void:
 	auth._signed_in = signed
 	settings.text_speed = speed
 	settings.reduced_motion = gentle
+	audio._kill_bgm_tween()
+	audio._stop_music()
+	audio._stop_effects()
+	await create_timer(0.3).timeout
+	await settle()
 	print("CONFRONTATION_CHECKS failures="+str(failures))
 	quit(1 if failures else 0)

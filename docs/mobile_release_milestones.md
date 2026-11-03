@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3C active: Module 3 detailed script/art brief and first slice approved; intro and Chapters 1–4 gameplay implemented and locally verified on 1 November; Module 3’s five dedicated environment backgrounds are generated, hosted and integrated; Chapter 5 and device acceptance remain open. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+Status: Gate 3C local implementation is complete as of 3 November: Module 3 intro, all five chapters, five dedicated backgrounds, Codex/Progress records and vishing-practice handoff are implemented and locally verified. Physical-device/deployment acceptance remains open. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
 
 ## Release outcome
 
@@ -76,7 +76,7 @@ Approved outlines and chapter counts; no invented research allocation; runnable 
 4. Wire lesson prerequisites, chapter unlocks, original/replay saves, rewards and the return to the hub. Apply rewards once; preserve existing completed saves.
 5. Add discovered Codex records and progress totals. Hide future clues/resolutions and make every intended record obtainable.
 6. Map scored knowledge checks to existing BKT components and the current observation contract. Record assisted activity separately; do not convert story taps, culprit guesses or cinematic completion into knowledge evidence.
-7. Review cached/hosted assets, touch layout, sound settings and reduced motion. Final essential art must be integrated before accepting the module; reuse backgrounds/portraits where appropriate.
+7. Review cached/hosted assets, touch layout, sound settings and reduced motion. Each module requires five new story-specific environment backgrounds plus distinct imagery and visual-effect treatment across its intro, chapter previews, investigations and hearing/counter presentation. Preserve recurring character likenesses and the shared UI theme. Reuse animation components with module-specific assets/parameters; do not duplicate managers. Track visual acceptance separately from gameplay completion.
 8. Test normal play, wrong answers, hint-assisted play, replay, app background/resume and save/reload at an intermediate chapter. Verify the concluding transition and account ownership.
 
 ### Gate 3B — Module 2 / Smishing
@@ -308,7 +308,7 @@ Viewpoint: Sir Rham. The attacker changes strategy because students are checking
 | 2. A Consistent Story | The profile, email and meeting invitation all agree. The coordinator requests a student contact list for urgent protection. | Match claims across records; mark which sources are independently controlled | Recognize that several attacker-controlled sources can repeat the same false identity |
 | 3. The Exception | The coordinator claims an urgent exception authorizes roster access and tries to move the discussion to a private chat. | Permission/request comparison; choose a documented independent approval route | Protect student data and refuse an unverified exception; apparent helpfulness does not replace authorization |
 | 4. Ask the Real Office | Sir Rham contacts the actual office through an existing directory. The office confirms the claimed person was not assigned and preserves the fraudulent request. | Timeline and verified-response comparison | Identify the unsupported identity and request using evidence the player has actually seen |
-| 5. The Mask Holds | An evidence review defeats the claim that consistent branding proves authority. The operator changes tactics instead of obtaining the roster. | Existing hearing layout with a shorter claim set; revised participant dialogue | The school restricts access and shares verified guidance. The Collector's connection remains active; the plot carries into the final delivery attempt |
+| 5. The Mask Holds | An evidence review defeats the claim that consistent branding proves authority. The operator changes tactics instead of obtaining the roster. | Full shared Chapter 5 preparation, cinematic entry, four evidence-command rounds, credibility/hints, counter effects, final comparison and closing reconstruction/animatic | The school restricts access and shares verified guidance. The Collector's connection remains active; the plot carries into the final delivery attempt |
 
 Lesson mapping: pretext plausibility, independent sources, authorization, minimum necessary information, escalation. Candidate evidence: unconfirmed appointment, shared source behind matching documents, data request, missing authorization, real-office denial. Red herring: a real staff member's scheduling error; it does not establish involvement. The player is not asked to identify a real person's guilt from branding or a signature alone.
 
@@ -569,7 +569,7 @@ All six Cloudinary delivery URLs were downloaded, decoded and cached through Ass
 
 ## Gate 3C — Module 3 script and integration review (31 October)
 
-Status: the user approved the detailed script, Liza art brief and intro + Chapter 1 implementation slice. The first slice and the subsequently authorized Chapters 2–4 are implemented and locally checked; Chapter 5 remains visibly in development. The five dedicated Module 3 environment backgrounds are now integrated; see the environment review below. Approval of the detailed script does not automatically open later implementation slices. Module 2's outstanding device checks remain release requirements.
+Status: the user approved the detailed script, Liza art brief and intro + Chapter 1 implementation slice. The intro and subsequently authorized Chapters 1–5 are implemented and locally checked. The Chapter 5 implementation review below records the final slice. The five dedicated Module 3 environment backgrounds are now integrated; see the environment review below. Approval of the detailed script does not automatically open later implementation slices. Module 2's outstanding device checks remain release requirements.
 
 ### Continuity and learning boundary
 
@@ -725,3 +725,169 @@ Chapter 3's Next action and Deploy unlock Chapter 4. Codex discoveries remain ga
 Validation passed: notification/story progression, independent-route prerequisites, response-reading gate, corrected interpretations, partial report recovery, account-owner rejection, pause guards, source-faithful attachments for declined/short/full calls, replay isolation, once-only credits, unchanged mastery/events and Chapter 4/5 selector availability. Godot previews at 844×390 and 720×360 verified readable text, green attachment feedback, visible Continue and 48-pixel touch controls. Chapter 3 regression passed with the new Chapter 4 unlock. Local tests/artifacts remain ignored; nothing was staged or committed.
 
 At the Chapter 4 gameplay review, backgrounds and physical-device acceptance were open. The environment pass below closes the five-background inventory requirement; physical-device safe areas, installed APK, hosted account sync and offline-first acceptance remain open. This review closes the Chapter 4 gameplay slice, not the whole Module 3 gate. The next gameplay slice is **Chapter 5 — The Voice Loses Control**, using the full shared debate format. Its briefing and final comparison must respect declined/shortened call histories: an unheard phrase cannot be presented as a saved quote. No Chapter 5 implementation has begun.
+
+
+### Gate 3C environment integration review — 3 November 2026
+
+Five newly generated Module 3 environments are hosted and integrated: event-briefing classroom, covered walkway, library research corner, rainy courtyard and quiet study room. Scene captions establish the moves between locations. The intro flash-forward and Chapter 3 use the same courtyard; Chapter 4 starts there before moving indoors for independent Support verification. Chapter selection previews use the corresponding environments. Existing screens, phone panels and AssetManager caching are reused; no additional scene manager or save system was added.
+
+All five hosted images downloaded and decoded successfully through AssetManager. Local verification passed for every Chapter 1–4 story background assignment and the intro location sequence. Godot previews at 844×390 and 720×360 were visually inspected with character/dialogue/phone overlays. Exact generation prompts, local file names, hosted URLs and placements are recorded in `output/module3-art/README.md`. PNGs and developer checks remain excluded from commits.
+
+This closes the five-background inventory/integration requirement. Chapter 5, physical-device safe areas, installed release, hosted account sync and offline-first acceptance remain open. The next gameplay slice is Chapter 5 — The Voice Loses Control, using the shared debate format and source-faithful evidence.
+
+
+### Gate 3C Chapter 5 implementation review — 3 November 2026
+
+The user approved **The Voice Loses Control** after the environment pass. This completes Module 3's local story implementation, not physical-device/deployment acceptance.
+
+- Reuses the shared hearing scene and widgets: preparation/new exhibits, theory selection, joining cinematic, four claim/evidence-command rounds, credibility and hints, Liza counter effects, final comparison, six-panel closing reconstruction, narrated-text animatic, aftermath and four-connection cutaway. One chapter-definition script supplies the module content; no new scene manager or persistence system.
+- Sir Rham chairs with Liza, John and Eric. Claims concern caller identity, public details, reset purpose and independent contact. They are explanatory arguments, not accusations against classmates. Eric's expense call stays a red herring. The independently obtained incident acknowledgement is introduced in preparation before it can be used.
+- Original Chapter 3 call history determines transcript content. A declined call has no received statements; the final pressure phrase and payment comparison are clearly marked review examples. An early hang-up includes only the received first statement. Alternate replay histories cannot rewrite original evidence. The evidence drawer, briefing and final comparison use the same read-only context.
+- Chapter 4's Next action and Deploy unlock the hearing. Saves keep original and replay attempts separate; malformed completion is rejected; credits are awarded once. Codex exposes five findings only after their corresponding rebuttals/final match and excludes the audience-only cutaway. Progress now counts fifteen authored chapters. The result offers Chapter Select, Review Evidence and the existing vishing practice route. Module 4 remains labeled in development.
+- The voice operator disconnects in the audience-only ending. Jobert and the text operator remain disconnected, leaving one connection. This does not expose a real-world culprit identity to Liza's evidence archive.
+
+Validation passed: complete hearing, wrong theory/no bonus, correct theory bonus, wrong evidence penalties, two-error hint, zero-credibility round retry, duplicate input protection, terminal state timings, counter pause, background/exit cancellation, account-owner rejection, reconstruction save/reload, replay isolation, once-only rewards, source-faithful declined/short/full call records, and hidden/unlocked Codex findings. Mobile renders inspected at 720×360, 844×390 and 932×430; compact theory labels keep all four touch choices visible. Module 1 and Module 2 hearing regressions passed. The older Module 2 verification needed to stop/drain audio before process exit; after local harness cleanup it passed without shutdown warnings. Chapter 4-to-5 handoff and fifteen-chapter Progress checks passed.
+
+Vishing-focused practice verification passed: fresh eligible answers change BKT mastery, duplicate answers do not update it twice, and assessment scores, lesson unlocks and coins remain unchanged. Coached hearing choices, hints, perks and replay do not emit graded BKT observations. No fitting or learning-gain claim is made by these checks.
+
+Developer checks, UID sidecars and screenshots remain ignored; nothing was staged or committed. Physical phones, installed APK, hosted account synchronization and offline-first acceptance remain open. Next scope for approval: Gate 3D / Module 4 detailed script and first slice; do not begin it automatically.
+
+
+### Per-module visual variety requirement — 3 November 2026
+
+The user confirmed that each module must have new images and distinct effect treatment, not merely different dialogue over the same presentation. The UI palette, controls and shared debate mechanics remain consistent. Existing animation states and widgets should deliver story-specific visual motifs, transitions and counter treatments; no separate effects system is required.
+
+Module 3 has five dedicated backgrounds, Liza artwork and a dedicated mystery title. Its distinct signal-wave hearing treatment is implemented in the review below. Final visual acceptance and physical-device checks remain open despite completed local gameplay checks; do not silently begin Module 4 art or code. Later modules must include their imagery/effect plan in their approved implementation slices.
+
+### Gate 3C signal-wave presentation review — 3 November 2026
+
+The user approved Module 3 effects in the existing hearing widgets/controller. Liza now has a newly generated, lettered COUNTER! illustration hosted on Cloudinary, referenced through AssetManager and fitted fully inside mobile viewports. The joining sequence shows a cyan audio signal, the title reveals THE VOICE / LOSES CONTROL, the terminal identifies Liza and verifies voice evidence, and the rebuttal collapses the signal before revealing her artwork. Navy/cyan/cream colors and the touch controls remain consistent.
+
+The shared controller still owns timing, audio cues, pause/resume and teardown. Existing command duration/easing/sound parameters remain in use. No effects manager, save system or gameplay scoring changes were added. Module 1/2 use their existing presentation by default. Missing cached art retains the existing character-based counter fallback; first acquisition still requires network access.
+
+Module 3's complete hearing and hosted download/cache decode passed. Mobile renders were checked at 720×360, 844×390 and 932×430, including the terminal and uncropped counter lettering. Reduced-motion title/counter frames remained identical within their states. Command cue sequencing, pause/backgrounding, exit cancellation, once-only credit awards, original/replay evidence separation and unchanged BKT observations passed. Source PNGs, developer checks and captures remain ignored, and nothing is staged or committed.
+
+Module 1 and Module 2 hearing regressions also passed after the effects changes. Module 1's local harness now stops and drains audio before shutdown, matching the existing Module 2 cleanup; the rerun exited without resource warnings. This is local verification maintenance, not a new production audio system. That older harness is already tracked, so its edit must be explicitly excluded from any future staging; ignore rules alone cannot protect it. Nothing is staged.
+
+This closes the approved local effect implementation. Final user visual review, physical-device performance/safe areas, installed APK, account synchronization and offline-first release acceptance remain pending. Module 4 has not started. Asset paths, exact prompt and hosted URL are recorded in `output/module3-art/README.md`.
+
+### Gate 3D detailed script and first-slice proposal — 3 November 2026
+
+The user approved moving to Module 4's detailed script and first implementation slice. The following concrete dialogue/art/interaction proposal is prepared for the substantial-implementation sign-off required by AGENTS.md. No Module 4 production code or generated art has been added yet. Earlier Module 3 physical-device/release checks remain open.
+
+**Learning purpose:** identify a plausible pretext, separate claimed identity from verified authority, and verify the request through an independently chosen school contact. Use the existing `pretexting` component and practice bank. Coached story corrections and perks stay in the assistance ledger, never research assessment scores or graded BKT observations.
+
+**Continuity:** the next school day after Liza's hearing. Sir Rham is helping the club recover from the earlier incidents. The adversary offers institutional help rather than another student reward. All gameplay remains on a phone; a scene containing office furniture does not introduce a desktop computer interface. The coordinator uses the displayed role **Incident Response Coordinator**, with no invented real person's name or portrait. The final active connection belongs to the Collector only in the audience's cutaway; the school cannot infer the operator's real identity from this alone.
+
+#### Intro — The Perfect Credential
+
+Flash-forward: late afternoon in the small faculty consultation room. Sir Rham's phone shows an unfulfilled request: “Send the club contact list here. Emergency clearance is already approved.” No names, numbers or real student records are displayed.
+
+1. Sir Rham: “They said the list would keep my students safe.”
+2. Sir Rham: “The logo was familiar. The appointment looked official.”
+3. Sir Rham: “But who had actually approved this?”
+4. Caption: “Earlier that morning…”
+5. Caption: “One appointment. One helpful stranger.”
+6. Sir Rham: “I was ready to help. I still needed to know who I was helping.”
+7. Title: **FAKE STORIES / THE PERFECT CREDENTIAL**.
+
+The consultation room, late-afternoon lighting and request wording return in Chapter 3. Viewing/skipping/replaying the intro uses existing intro-seen state and grants no chapter progress.
+
+#### Chapter 1 — Here to Help: implementation script
+
+Location: faculty workroom, morning. Sir Rham has his phone beside a cold cup of coffee and club folders. John appears briefly at the doorway; he does not authenticate the coordinator or make the decision for Sir Rham.
+
+1. Sir Rham, tired smile: “I finally made coffee. Naturally, the paperwork arrived first.”
+2. John, relaxed: “At least nobody promised to pay you for drinking it.”
+3. Sir Rham, amused: “Progress. We're learning.”
+4. Phone notification: **NEW APPOINTMENT / School incident follow-up**. Reuse the notification cue; tap opens the message before the dialogue continues.
+5. Message: “Good morning, Sir Rham. I am the incident-response coordinator assigned to your club's case. Your 10:30 consultation has been approved. Please acknowledge so I can prepare the protective follow-up.” Its attached appointment card repeats the role, school branding, 10:30 time and “Appointment confirmed.”
+6. Sir Rham, interested: “They know about the club incidents. A follow-up would make sense.”
+7. John, thoughtful: “Did the office arrange it, or does the message say the office arranged it?”
+8. Sir Rham, focused: “Fair question. I'll check the schedule I already use.”
+9. Existing school schedule, opened through a separately labeled trusted school shortcut: **TODAY / 10:30 — Club event logistics / internal staff only. No external coordinator recorded.**
+10. Sir Rham, cautious: “Same time. Different purpose. This could be an update I haven't received. It still isn't confirmation.”
+11. John: “So the appointment is a claim to check.”
+12. Sir Rham, resolved: “Exactly. Helpful is a description. Authorized is something we verify.”
+
+Investigation inside the shared cream phone panel, with fixed visible Continue controls and scrollable evidence:
+
+1. **Claim or observation:** tap each card and classify it. “A coordinator contacted me” becomes “Someone claiming that role contacted me”; “The message displays school branding” is observable; “The school approved this coordinator” remains unverified. Wrong answers explain the distinction and remain retryable. No countdown or reaction penalty.
+2. **Compare the appointment:** inspect both the supplied appointment and independently opened schedule. Tap the purpose/visitor mismatch. The matching time is not a contradiction. Saving the finding requires reading both sources and identifying the actual mismatch, with green highlighting and a short explanation.
+3. **Choose the next check:** choose the office contact from the existing school directory. Distractors: use the sender's “verification” contact, or confirm from the logo alone. This chapter records the independent route; it does not invent an office response before Chapter 4.
+
+Chapter 1 evidence: displayed role/branding are unverified claims; the independently opened schedule does not confirm the proposed external appointment; the existing directory supplies a verification route. Close: “I haven't confirmed the appointment. I haven't shared a list. First, I need to understand exactly what they're asking for.” Award once through existing completion logic; replay awards none. Until Chapter 2 is implemented, return to Chapter Select with Chapter 2 visibly in development rather than a broken Next button.
+
+#### Chapter 2 — A Consistent Story: scripted evidence chain
+
+Location: bright administration reception alcove, late morning, waiting to ask the office about the schedule. The coordinator sends a profile card, email and meeting invitation; all were supplied in the same unverified conversation. The request expands to the club's student names, sections and contact numbers “to contact everyone safely.”
+
+- Sir Rham: “Three matching documents. That looks reassuring.”
+- John: “Three documents—or one person telling the same story three times?”
+- Sir Rham: “Consistency is useful. Independence is the missing part.”
+- A real office scheduling update clarifies that the original internal meeting moved to 11:00. This explains a mundane schedule change; it does not appoint the unknown coordinator or make the staff member a suspect.
+
+Interactions: compare repeated claims, group records by who supplied them, distinguish consistency from independent confirmation, preserve the actual data request. Do not imply that common branding proves forgery. Evidence: all three supplied records share an unverified source; the data request exceeds a simple appointment acknowledgement; scheduling confusion is not culprit evidence.
+
+#### Chapter 3 — The Exception: scripted evidence chain
+
+Location/time: the same faculty consultation room and late-afternoon lighting as the intro. The coordinator pressures Sir Rham to send the contact list by private message, claiming an emergency exception. The roster is represented by a sealed generic card, never real student data.
+
+- Coordinator: “Send the club contact list here. Emergency clearance is already approved.”
+- Sir Rham: “Approved by whom, and for which information?”
+- Coordinator: “Please don't delay protection with routine paperwork.”
+- Sir Rham: “An urgent reason to help isn't permission to disclose.”
+
+Interactions: compare the requested fields/channel with the fictional school's in-game authorization notice; identify the missing documented approval; choose the established office route instead of sending a partial list or switching to the supplied private contact. The notice is school-story evidence, not a claim about universal school policy or legal requirements. Evidence: roster request, unverified exception claim, missing independent authorization. No student list is sent on either a correct or corrected learning path.
+
+#### Chapter 4 — Ask the Real Office: scripted evidence chain
+
+Location: records-office consultation counter, late afternoon. Sir Rham uses the previously selected school directory route. The real office confirms: “We have not assigned an external coordinator to this club case. We did not approve this request for student contacts. Keep the original messages for review.”
+
+- Sir Rham: “Please confirm both the appointment and the request. A real role would still need the right permission.”
+- Verified response: no assignment and no approval for this request; the internal event meeting was separate.
+- Sir Rham: “Now I have an independent answer. I'll preserve what arrived and keep the list restricted.”
+
+Interactions: verify the response's independent route, match each conclusion to its supporting statement, assemble a report containing the supplied appointment/request and verified denial. Preserve provenance and original/replay separation. The office denial confirms the false assignment in this case, not a real-world culprit identity or the safety of every school system.
+
+#### Chapter 5 — The Mask Holds: full shared hearing specification
+
+Location: school briefing room at early evening, with the hearing attended on phones. Cast: Sir Rham, John, Liza and Mika. Sir Rham presents his incident; peers voice plausible explanations so the player can challenge claims without accusing them of participating in the scam.
+
+- Preparation: review already collected records, introduce the office's incident acknowledgement, equip existing permitted story perks, then choose which assumption made the request look trustworthy. Correct theory: “Matching records prove authority.” Keep the shared bonus/three-mistake rules.
+- Cinematic: existing joining states, participant arrival and title reveal with Module 4's document/verification motif. No new scene manager.
+- Round 1: “It matched the school's schedule.” Rebuttal: supplied appointment versus independent schedule and the clarified internal meeting. Same time does not confirm the external coordinator.
+- Round 2: “The profile, email and invite all agree.” Rebuttal: source map showing the same unverified supplier. Repetition is not independent corroboration.
+- Round 3: “An emergency exception authorized the list.” Rebuttal: actual private-channel request versus the school's displayed approval notice. The request has no independently confirmed authorization.
+- Round 4: “You never proved the school hadn't assigned them.” Rebuttal: the independently contacted office's explicit denial. The schedule discrepancy alone would have been insufficient.
+- Each round keeps the shared correct/incorrect credibility changes, hints, restart protection and evidence-command targeting. At least one irrelevant exhibit remains in each evidence pile, including the harmless scheduling correction where appropriate.
+- Final comparison: “Already approved” against the verified “No assignment / no approval” response. No typo or branding-only attribution shortcut.
+- Closing reconstruction: contact → claimed appointment → matching supplied documents → expanded private roster request → independent office check → preserve/report without disclosure. Include decoy frames, tap placement and the existing narrated-text animatic.
+- Outcome: the school restricts the fraudulent contact and shares verified guidance. The acknowledgement says the request was reported and no roster was disclosed; it does not promise a completed investigation.
+- Audience-only cutaway: three inactive connections and the Collector still active. “They won't give us the list. Then let them ask for the file.” Mika receives an event-asset offer leading to Module 5. No new light goes out, and this cutaway is excluded from the learner's case evidence.
+
+#### Art and effect acceptance plan
+
+Preserve Sir Rham's user-provided reference: dark cap, round glasses, dark hair extending near the nape, warm complexion, broad smile, tan textured shirt and black wristwatch. Produce a six-expression sheet with readable neutral/amused/concerned/skeptical/checking/resolved poses; expressions must match dialogue. Do not invent a face for the unverified coordinator.
+
+Five distinct new environments are required across this module:
+
+| New environment | Story use | First slice? |
+| --- | --- | --- |
+| Faculty workroom, morning | Chapter 1, earlier-morning intro beat and preview | Yes |
+| Administration reception alcove, late morning | Chapter 2 comparisons and preview | Later Chapter 2 slice |
+| Small faculty consultation room, late afternoon | Intro flash-forward and Chapter 3 private-channel pressure | Yes, for intro continuity |
+| Records-office consultation counter, late afternoon | Chapter 4 independent office verification | Later Chapter 4 slice |
+| School briefing room, early evening | Chapter 5 preparation/hearing/reconstruction | Later Chapter 5 slice |
+
+First-slice art also includes a dedicated mystery title image: a faceless, backlit figure beyond frosted office glass, an unreadable credential shape and layered paperwork; restrained cyan/navy with warm cream light. Render title lettering in the existing UI, not baked into evidence art. No real logo, personal data or legible invented credentials. Later slices include their own investigation compositions/previews and Sir Rham's counter illustration. Merely using five backgrounds does not close visual acceptance.
+
+Effect motif: document alignment, separated source layers and verified-source borders. Reuse current reveal/phone/highlight states; no flashing strobes, color-theme replacement or new effects manager. First slice uses a restrained title alignment reveal, notification cue and green evidence confirmation; reduced motion presents static frames. Full hearing effects are implemented only with Chapter 5.
+
+#### First implementation slice: nodes, signals and exit checks
+
+1. Extend existing ModuleIntroScreen and ModuleStageScreen for index 3; route to the existing SurveyChapterScreen. Add only a Chapter 1 definition and its phone activity subclass to separate authored state from interaction rendering. Preserve earlier intro routing, legacy stage access and saved progress.
+2. The phone subclass emits existing evidence_changed / thought_requested / phase_finished signals. SurveyChapterScreen owns progression, pause and saves; PlayerManager owns unlocks and original/replay records. Add Sir Rham to the existing portrait path with one consistent speaker key; do not create a separate actor manager.
+3. Reuse AssetManager/Cloudinary for new art and current Codex discovery/progress refreshes. Chapter 1 unlock requires Module 3's hearing and the existing Module 4 lesson gate. Chapter 2–5 remain unavailable until their slices are implemented. Extend the existing mobile layout only as needed for touch readability.
+
+Acceptance for the first slice: intro replay/skip/pause/exit; notification → open message → all three activities → completion; wrong-answer correction; source prerequisites; green success feedback; malformed-save repair; partial save/resume; original/replay and account-owner isolation; once-only rewards; no graded mastery events from coaching; sixteen authored chapters reflected in Progress; Codex findings revealed only after discovery; hosted asset cache decode and missing-asset fallback; visible actions at 720×360, 844×390 and 932×430. Keep developer tests/source PNGs out of commits. Physical phone and deployment checks remain separate release requirements.

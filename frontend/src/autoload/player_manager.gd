@@ -85,9 +85,11 @@ const HelpfulCallerChapter: GDScript = preload("res://src/gameplay/decision/help
 const KnownDetailsChapter: GDScript = preload("res://src/gameplay/decision/known_details_chapter.gd")
 const DontHangUpChapter: GDScript = preload("res://src/gameplay/decision/dont_hang_up_chapter.gd")
 const SafeCallbackChapter: GDScript = preload("res://src/gameplay/decision/safe_callback_chapter.gd")
+const VoiceControlChapter: GDScript = preload("res://src/gameplay/decision/voice_control_chapter.gd")
 var chapter_replays: Dictionary = {}
 
 func story_definition(id: String) -> GDScript:
+	if id == VoiceControlChapter.ID: return VoiceControlChapter
 	if id == SafeCallbackChapter.ID: return SafeCallbackChapter
 	if id == DontHangUpChapter.ID: return DontHangUpChapter
 	if id == KnownDetailsChapter.ID: return KnownDetailsChapter
@@ -100,9 +102,11 @@ func story_definition(id: String) -> GDScript:
 	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
 func authored_story_ids() -> PackedStringArray:
-	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID]
+	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID, VoiceControlChapter.ID]
 
 func story_unlocked(id: String) -> bool:
+	if id == VoiceControlChapter.ID:
+		return story_unlocked(SafeCallbackChapter.ID) and chapter_progress.get(SafeCallbackChapter.ID, {}).get("completed", false)
 	if id == SafeCallbackChapter.ID:
 		return story_unlocked(DontHangUpChapter.ID) and chapter_progress.get(DontHangUpChapter.ID, {}).get("completed", false)
 	if id == DontHangUpChapter.ID:
@@ -1620,6 +1624,10 @@ func apply_save_data(data: Dictionary) -> void:
 		chapter_replays[RecoveryPressureChapter.ID] = RecoveryPressureChapter.clean(replays[RecoveryPressureChapter.ID])
 	if saved_chapters is Dictionary and saved_chapters.get(SafeCallbackChapter.ID) is Dictionary:
 		chapter_progress[SafeCallbackChapter.ID] = SafeCallbackChapter.clean(saved_chapters[SafeCallbackChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(VoiceControlChapter.ID) is Dictionary:
+		chapter_progress[VoiceControlChapter.ID] = VoiceControlChapter.clean(saved_chapters[VoiceControlChapter.ID])
+	if replays is Dictionary and replays.get(VoiceControlChapter.ID) is Dictionary:
+		chapter_replays[VoiceControlChapter.ID] = VoiceControlChapter.clean(replays[VoiceControlChapter.ID])
 	if replays is Dictionary and replays.get(SafeCallbackChapter.ID) is Dictionary:
 		chapter_replays[SafeCallbackChapter.ID] = SafeCallbackChapter.clean(replays[SafeCallbackChapter.ID])
 	if saved_chapters is Dictionary and saved_chapters.get(DontHangUpChapter.ID) is Dictionary:

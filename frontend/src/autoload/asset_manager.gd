@@ -415,6 +415,7 @@ func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
 	catalog.append(_catalog_entry("story_liza_poses", "Module 3 / Liza expression sheet", "image", "%s/v1793475659/levelblue_mod3_liza_poses_v2_20261101.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("module3_mystery_title_v1", "Module 3 / Stay on the Line", "image", "%s/v1793475662/levelblue_mod3_mystery_title_v1_20261101.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("module3_liza_counter_signal_v1", "Module 3 / Liza signal counter", "image", "%s/v1793681235/levelblue_mod3_liza_counter_signal_v1_20261103.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod3_briefing_classroom_v1", "Module 3 / Event briefing classroom", "image", "%s/v1793518527/levelblue_mod3_bg_briefing_classroom_v1_20261101.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod3_covered_walkway_v1", "Module 3 / Covered walkway", "image", "%s/v1793518531/levelblue_mod3_bg_covered_walkway_v1_20261101.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod3_library_research_v1", "Module 3 / Library research corner", "image", "%s/v1793518534/levelblue_mod3_bg_library_research_v1_20261101.png" % CLOUD_ROOT))
