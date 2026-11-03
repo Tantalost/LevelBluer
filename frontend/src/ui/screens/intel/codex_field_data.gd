@@ -15,6 +15,12 @@ const KnownDetails: GDScript = preload("res://src/gameplay/decision/known_detail
 const DontHangUp: GDScript = preload("res://src/gameplay/decision/dont_hang_up_chapter.gd")
 const SafeCallback: GDScript = preload("res://src/gameplay/decision/safe_callback_chapter.gd")
 const VoiceControl: GDScript = preload("res://src/gameplay/decision/voice_control_chapter.gd")
+const HereToHelp: GDScript = preload("res://src/gameplay/decision/here_to_help_chapter.gd")
+const APPOINTMENT_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m4_claims","title":"Branding is observable, authority is not confirmed","people":["rham","john"],"field":"flags","value":"appointment","status":"Unverified","source":"Module 4 / Chapter 1 / Identity review","text":"The message displays school branding and claims an incident-response role and approval. These claims have not been independently confirmed."},
+ {"id":"m4_schedule","title":"The appointment is not confirmed by the schedule","people":["rham"],"field":"domains","value":"appointment","status":"Known","source":"Module 4 / Chapter 1 / Independent schedule","text":"The supplied appointment proposes an external consultation. The existing school schedule lists an internal event meeting at the same time. This discrepancy needs clarification; it does not alone prove fraud."},
+ {"id":"m4_route","title":"Choose the verifier independently","people":["rham"],"field":"captures","value":"appointment","status":"Known","source":"Module 4 / Chapter 1 / Existing school directory","text":"Sir Rham selects the established School Office contact through his existing directory. No office response has been received and no student list has been shared."}
+]
 const VOICE_CONTROL_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m3_hearing_identity","title":"A label is not verification","people":["liza","eric","rham"],"field":"solved","value":0,"status":"Known","source":"Module 3 / Hearing / Identity comparison","text":"The independently contacted wallet service contradicts the claimed security role. A displayed label and a professional voice do not authenticate the caller. Eric's expense call is not attribution evidence."},
  {"id":"m3_hearing_public","title":"Public knowledge grants no access","people":["liza","john"],"field":"solved","value":1,"status":"Known","source":"Module 3 / Hearing / Public information","text":"Liza's role and event date were already public. They could be copied; this does not identify the operator or establish where the details were actually obtained."},
@@ -42,7 +48,7 @@ const CALLER_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m3_identity","title":"Identity remains unverified","people":["liza"],"field":"domains","value":"call","status":"Unverified","source":"Module 3 / Chapter 1 / Identity check","text":"The service has not independently confirmed this caller. A professional voice or a reference supplied by the caller would still need checking."},
  {"id":"m3_route","title":"An independent verification route","people":["liza"],"field":"captures","value":"call","status":"Known","source":"Module 3 / Chapter 1 / Verification route","text":"Liza chooses Support in the wallet app she already uses. Choosing this independent route does not yet confirm the caller's identity. No account code was shared."}
 ]
-const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl]
+const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl, HereToHelp]
 const KEEP_CODE_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"solved","value":0,"status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
  {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"solved","value":1,"status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
@@ -135,6 +141,7 @@ static func chapter_definition(number: int) -> GDScript:
 	return CHAPTERS[clampi(number - 1, 0, CHAPTERS.size() - 1)]
 
 static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
+	if int(snapshot.get("_chapter", 1)) == 16: return APPOINTMENT_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 15: return VOICE_CONTROL_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 14: return CALLBACK_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 13:
@@ -155,6 +162,8 @@ static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
 	return result
 
 static func character_ids(snapshot: Dictionary) -> Array[String]:
+	if int(snapshot.get("_chapter", 1)) == 16:
+		return ["rham","john"] if seen_beat(snapshot,1) else ["rham"]
 	if int(snapshot.get("_chapter", 1)) == 15:
 		return ["liza","rham","john","eric"] if snapshot.get("briefed",false) else ["liza"]
 	if int(snapshot.get("_chapter", 1)) == 14:

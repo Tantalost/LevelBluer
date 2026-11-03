@@ -290,8 +290,8 @@ func _on_breach_pressed() -> void:
 
 func _module_route(index: int) -> Dictionary:
 	var module_id: String = "mod_%02d" % (index + 1)
-	var needs_intro: bool = index in [0,1,2] and not PlayerManager.has_seen_module_intro(module_id) and PlayerManager.chapter_progress.get(module_id + "_ch_01", {}).is_empty()
-	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index in [0,1,2]}}
+	var needs_intro: bool = index in [0,1,2,3] and not PlayerManager.has_seen_module_intro(module_id) and PlayerManager.chapter_progress.get(module_id + "_ch_01", {}).is_empty()
+	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index in [0,1,2,3]}}
 
 func _open_module(index: int) -> void:
 	if not _is_unlocked(index):

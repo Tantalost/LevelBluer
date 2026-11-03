@@ -35,13 +35,14 @@ func _render() -> void:
 		for claim: Dictionary in Chapter.CLAIMS:
 			if state.sorted.has(claim.id): _activity_success("✓ "+str(claim.text)+"\n"+str(claim.explanation))
 	elif mode == "compare":
-		_activity_text("OPEN BOTH SOURCES\nOne is supplied by the sender. One is the schedule Sir Rham already uses.")
+		if phase_ready():
+			_activity_success("MISMATCH / PURPOSE AND VISITOR\nThe school schedule records an internal meeting, not the supplied external consultation. This needs checking; a schedule discrepancy alone does not prove fraud.")
+		else:
+			_activity_text("OPEN BOTH SOURCES\nOne is supplied by the sender. One is the schedule Sir Rham already uses.")
 		_action(("✓ " if state.sorted.has("supplied") else "")+"SUPPLIED APPOINTMENT",_open_record.bind("supplied"))
 		_action(("✓ " if state.sorted.has("schedule") else "")+"EXISTING SCHOOL SHORTCUT / SCHEDULE",_open_record.bind("schedule"))
 		if not _record.is_empty(): _activity_text(Chapter.APPOINTMENT if _record == "supplied" else Chapter.SCHEDULE)
-		if phase_ready():
-			_activity_success("MISMATCH / PURPOSE AND VISITOR\nThe school schedule records an internal meeting, not the supplied external consultation. This needs checking; a schedule discrepancy alone does not prove fraud.")
-		elif state.sorted.has("supplied") and state.sorted.has("schedule"):
+		if not phase_ready() and state.sorted.has("supplied") and state.sorted.has("schedule"):
 			_activity_text("Which part differs?")
 			_choices("10:30 TIME",_wrong.bind("Both records say 10:30. A matching time does not confirm the claimed purpose or visitor."),"PURPOSE + EXTERNAL VISITOR",_confirm_mismatch)
 	elif mode == "verify":

@@ -12,6 +12,7 @@ const DAY_LABEL: String = "MORNING"
 const FULL_WIDTH_INVESTIGATION: bool = true
 const INVESTIGATION_TAGLINE: String = "A convincing appointment. An unverified role."
 const FIRST_PHASE: String = "claims"
+const NEXT_CHAPTER: String = "mod_04_ch_02"
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const TASKS: Dictionary = {
  "claims":{"title":"01 / Claim or observation?","tip":"Branding is visible. Authority needs independent confirmation.","line":"What has actually been verified?","field":"flags","total":1,"next":"compare"},
