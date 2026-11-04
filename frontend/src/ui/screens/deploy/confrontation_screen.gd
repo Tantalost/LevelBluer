@@ -15,6 +15,7 @@ const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 @export var command_fire_curve: float = 2.0
 @export var command_fire_sound: String = "command_send"
 var state: Dictionary = {}
+var _case_context: Dictionary = {}
 var _testing: bool = false
 var _replay: bool = false
 var _active: bool = false
@@ -84,6 +85,7 @@ func on_enter(args: Dictionary) -> void:
 		_active = false
 		return
 	Case = definition
+	_case_context = Case.hearing_context(PlayerManager.chapter_progress) if Case.has_method("hearing_context") else {}
 	_suspect_selected = ""
 	_dialogue_text = ""
 	_elapsed = 0
@@ -272,7 +274,7 @@ func _briefing() -> void:
 	if not _interactive(): return
 	var content: VBoxContainer = _modal("SIR RHAM / NEW EXHIBITS")
 	var scroll: VBoxContainer = UI.scroll_column(content)
-	scroll.add_child(W.copy(Case.BRIEFING,_u))
+	scroll.add_child(W.copy(str(_case_context.get("briefing",Case.BRIEFING)),_u))
 	content.add_child(W.button("ADD EXHIBITS TO CASE RECORD",_ack_briefing,_u,true))
 
 func _ack_briefing() -> void:
@@ -367,6 +369,7 @@ func _join() -> void:
 func _intro() -> void:
 	var column: VBoxContainer = _column()
 	var title: W.JoiningImpact = W.JoiningImpact.new()
+	title.effect_style = _text("effect_style","")
 	title.protagonist = _text("protagonist","John")
 	title.participants = _cast()
 	title.backdrop = _text("backdrop","hearing_debate_v1")
@@ -491,7 +494,7 @@ func _resolve_fire(evidence: String, weak_point: String) -> void:
 		var content: VBoxContainer = _modal("CREDIBILITY −10" if state.credibility > 0 else "REGROUP / ROUND RESTART")
 		var scroll: VBoxContainer = UI.scroll_column(content)
 		scroll.add_child(W.copy(str(round_data.get("speaker","Jobert"))+": "+str(round_data.smug),_u,W.ORANGE,21))
-		scroll.add_child(W.copy(str(Case.exhibit(evidence).detail),_u))
+		scroll.add_child(W.copy(str(_exhibit(evidence).detail),_u))
 		if state.auto_hints.has(index): scroll.add_child(W.copy("HINT / "+str(round_data.hint)+" The matching record is highlighted.",_u,W.CYAN))
 		content.add_child(W.button("RESTART THIS ROUND" if state.credibility == 0 else "TRY ANOTHER RECORD",_retry,_u,true))
 
@@ -514,6 +517,7 @@ func _rebuttal() -> void:
 	if _elapsed < 2.2:
 		(_body.get_child(0) as Control).hide()
 		_rebuttal_fx = W.RebuttalImpact.new()
+		_rebuttal_fx.effect_style = _text("effect_style","")
 		_rebuttal_fx.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 		_rebuttal_fx.gentle = SettingsService.reduced_motion
 		_rebuttal_fx.protagonist = _text("protagonist","John")
@@ -540,7 +544,7 @@ func _final_blow() -> void:
 	_chat_text.text = _text("final_text","I didn't [color=#FFB648]recieve[/color] anything from those messages. You can't blame me for helping.")
 	scroll.add_child(_chat_text)
 	for id: String in Case.PRESENTATION.get("final_exhibits",["typo1","typo4"]):
-		var item: Dictionary = Case.exhibit(id)
+		var item: Dictionary = _exhibit(id)
 		scroll.add_child(W.copy(str(item.source)+"\n"+str(item.detail),_u,W.CYAN))
 	_chat_match = W.button(_text("final_match","MATCH ‘RECIEVE’ / CH1 + CH4"),_match_typo,_u,true)
 	column.add_child(_chat_match)
@@ -800,6 +804,7 @@ func _evidence(review: bool = false, comparison: bool = false) -> void:
 	_modal("")
 	var drawer: W.EvidenceDrawer = W.EvidenceDrawer.new()
 	drawer.case_data = Case
+	drawer.exhibit_overrides = _case_context.get("exhibits",{})
 	drawer.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_overlay.add_child(drawer)
 	drawer.build(options,_u,hint,review,comparison)
@@ -815,6 +820,8 @@ func _launch_command(id: String, firing: bool, weak_point: String = "") -> void:
 	_pending_command = id
 	_pending_weak = weak_point
 	_command_fx = W.CommandAnimation.new()
+	_command_fx.protagonist = _text("protagonist","John")
+	_command_fx.effect_style = _text("effect_style","")
 	_command_fx.size = _body.size
 	_command_fx.position = _body.global_position-global_position
 	_command_fx.evidence_title = str(Case.exhibit(id).title)
@@ -1024,7 +1031,10 @@ func _process(delta: float) -> void:
 		_cinematic_art.modulate.a = minf(1,.55+_elapsed*1.4)
 
 func _text(key: String, fallback: String) -> String:
-	return str(Case.PRESENTATION.get(key,fallback))
+	return str(_case_context.get(key,Case.PRESENTATION.get(key,fallback)))
+
+func _exhibit(id: String) -> Dictionary:
+	return _case_context.get("exhibits",{}).get(id,Case.exhibit(id))
 
 func _module_index() -> int:
 	return int(Case.ID.get_slice("_",1))-1

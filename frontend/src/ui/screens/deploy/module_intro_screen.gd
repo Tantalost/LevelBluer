@@ -32,7 +32,17 @@ const LIZA_BEATS: Array[Dictionary] = [
  {"visual":"resolve","line":"I thought security was calling to help."},
 ]
 
+const RHAM_BEATS: Array[Dictionary] = [
+ {"visual":"email","line":"They said the list would keep my students safe."},
+ {"visual":"email","line":"The logo was familiar. The appointment looked official."},
+ {"visual":"resolve","line":"But who had actually approved this?"},
+ {"visual":"caption","line":"Earlier that morning…"},
+ {"visual":"caption","line":"One appointment. One helpful stranger."},
+ {"visual":"resolve","line":"I was ready to help. I still needed to know who I was helping."},
+]
+
 class IntroArtwork extends Control:
+	var credential_style: bool = false
 	var room: Texture2D
 	var title_art: Texture2D
 	var portrait: Texture2D
@@ -54,6 +64,12 @@ class IntroArtwork extends Control:
 			_cover(room, Rect2(Vector2.ZERO, size), Color.WHITE)
 		else:
 			_cover(title_art if title_art != null else room, Rect2(Vector2.ZERO, size), Color(1, 1, 1, reveal))
+			if credential_style:
+				# Existing reveal tween aligns source layers; reduced motion starts aligned.
+				for index: int in 3:
+					var shift: float = (1.0-reveal)*float(index+1)*size.x*.035
+					var origin: Vector2 = Vector2(size.x*.035+shift,size.y*.77-index*3)
+					draw_line(origin,origin+Vector2(size.x*.18,0),Color("4FE0D4",.55-float(index)*.12),2)
 		if portrait != null:
 			var height: float = size.y * 0.80
 			var width: float = height * portrait.get_width() / portrait.get_height()
@@ -220,13 +236,13 @@ func on_enter(args: Dictionary) -> void:
 	_index = 0
 	_ending = false
 	_load_art()
-	if _module_index not in [0,1,2]:
+	if _module_index not in [0,1,2,3]:
 		_leave_to_stages()
 		return
 	_show_beat()
 
 func _beats() -> Array[Dictionary]:
-	return LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
+	return RHAM_BEATS if _module_index == 3 else LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
 
 func _show_beat() -> void:
 	_stop_tweens()
@@ -246,9 +262,9 @@ func _show_beat() -> void:
 	var beat: Dictionary = _beats()[_index]
 	var visual: String = str(beat["visual"])
 	_art.queue_redraw()
-	_counter.text = "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
-	_speaker.text = "Liza  /  Before the code" if _module_index == 2 else "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
-	_caption_advance.accessibility_name = "Continue Liza's thought" if _module_index == 2 else "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
+	_counter.text = "THE PERFECT CREDENTIAL" if _module_index == 3 else "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
+	_speaker.text = "Sir Rham / Before the request" if _module_index == 3 else "Liza  /  Before the code" if _module_index == 2 else "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
+	_caption_advance.accessibility_name = "Continue Sir Rham's thought" if _module_index == 3 else "Continue Liza's thought" if _module_index == 2 else "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
 	_load_art()
 	_dialogue_text.text = str(beat["line"])
 	_item.visible = visual in ["email","sms","call"]
@@ -301,6 +317,11 @@ func _show_caption(beat: Dictionary) -> void:
 
 func _build_item() -> void:
 	UI.clear(_item_copy)
+	if _module_index == 3:
+		_item_label("LATER / FACULTY CONSULTATION ROOM", Color("153B37"))
+		_item_label("Emergency clearance claimed", Color("101623"), true)
+		_item_label("Send the club contact list here. Emergency clearance is already approved.", Color("101623"))
+		return
 	if _module_index == 2:
 		_item_label("WALLET ALERT / LATER THAT AFTERNOON", Color("153B37"))
 		_item_label("Password reset requested", Color("101623"), true)
@@ -367,9 +388,9 @@ func _show_title() -> void:
 	_chapter_label.show()
 	_ending_title.show()
 	_chapter_label.text = "MODULE %d" % (_module_index + 1)
-	_ending_title.text = "Phone Tricks" if _module_index == 2 else "Text Tricks" if _module_index == 1 else "Email Tricks"
-	_subtitle.visible = _module_index in [1,2]
-	_subtitle.text = "Stay on the Line" if _module_index == 2 else "The Message That Knew"
+	_ending_title.text = "Fake Stories" if _module_index == 3 else "Phone Tricks" if _module_index == 2 else "Text Tricks" if _module_index == 1 else "Email Tricks"
+	_subtitle.visible = _module_index in [1,2,3]
+	_subtitle.text = "The Perfect Credential" if _module_index == 3 else "Stay on the Line" if _module_index == 2 else "The Message That Knew"
 	_load_art()
 	_start_button.show()
 	_start_button.disabled = true
@@ -412,22 +433,24 @@ func _leave_to_stages() -> void:
 	_leaving = true
 	_stop_tweens()
 	_start_button.disabled = true
-	if _module_index in [0,1,2]:
+	if _module_index in [0,1,2,3]:
 		PlayerManager.mark_module_intro_seen("mod_%02d" % (_module_index + 1))
-	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1,2]})
+	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1,2,3]})
 
 func _can_interact() -> bool:
 	return _active and not _leaving and not _focus_lost and not _app_paused
 
 func _load_art() -> void:
 	_art.portrait = null
-	if _module_index in [1,2]:
+	_art.credential_style = _module_index == 3
+	if _module_index in [1,2,3]:
 		_art.room = AssetManager.get_texture("story_bg_club_corridor_afternoon" if _index < 3 else "story_bg_event_room_day")
 		if _art.room == null:
 			_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
-		if _module_index == 2: _art.room = AssetManager.get_texture("story_bg_covered_courtyard_rain")
-		_art.title_art = AssetManager.get_texture("module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
-		var sheet: Texture2D = AssetManager.get_texture("story_liza_poses" if _module_index == 2 else "story_amani_poses")
+		if _module_index == 2: _art.room = AssetManager.get_texture("story_bg_mod3_rain_courtyard_v1" if _index < 3 else "story_bg_mod3_briefing_classroom_v1" if _index < 5 else "story_bg_mod3_covered_walkway_v1")
+		if _module_index == 3: _art.room = AssetManager.get_texture("story_bg_mod4_consultation_room_v1" if _index < 3 else "story_bg_mod4_faculty_workroom_v1")
+		_art.title_art = AssetManager.get_texture("module4_mystery_title_v1" if _module_index == 3 else "module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
+		var sheet: Texture2D = AssetManager.get_texture("story_rham_poses" if _module_index == 3 else "story_liza_poses" if _module_index == 2 else "story_amani_poses")
 		if sheet != null and not _ending and str(_beats()[_index].visual) != "caption":
 			var portrait: AtlasTexture = AtlasTexture.new()
 			portrait.atlas = sheet

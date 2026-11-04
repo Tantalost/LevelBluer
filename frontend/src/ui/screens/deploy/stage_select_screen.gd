@@ -221,16 +221,16 @@ func _build_detail() -> void:
 	for stage_id: int in range(1, 11):
 		if PlayerManager.has_cleared_stage(module_id, stage_id):
 			clears += 1
-	if _selected in [0,1]:
+	if _selected in [0,1,2]:
 		var completed: int = 0
 		for chapter_number: int in range(1, 6):
 			if PlayerManager.story_checkpoint("mod_%02d_ch_%02d" % [_selected + 1, chapter_number], false).get("completed", false): completed += 1
 		content.add_child(_label("5 CHAPTERS / %d COMPLETED" % completed, UI.TEXT, -1))
-		content.add_child(_label("Follow Amani's story. All five chapters are available after Module 1 and your first Text Tricks lesson; complete each chapter to unlock the next. Legacy missions remain accessible." if _selected == 1 else "Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
+		content.add_child(_label("Follow Liza's story. Intro and Chapters 1–4 are available after Module 2 and the first Phone Tricks lesson. Complete each chapter to unlock the next; Chapter 5 is in development. Legacy missions remain accessible." if _selected == 2 else "Follow Amani's story. All five chapters are available after Module 1 and your first Text Tricks lesson; complete each chapter to unlock the next. Legacy missions remain accessible." if _selected == 1 else "Follow John's story, investigate the messages, then challenge the claims in the hearing. Complete each chapter to unlock the next.", UI.MUTED, -2))
 	else:
 		content.add_child(_label("10 STAGES  /  %d CLEARED" % clears, UI.TEXT, -1))
 		content.add_child(_label("L1: S1–2 / L2: S3–4 / L3: S5–6 / L4: S7–8 / L5: S9 / L6 + POST-TEST: S10", UI.MUTED, -2))
-	if available and _selected != 0:
+	if available and _selected > 2:
 		content.add_child(_label("Complete this module's lessons and clear stages in order.", UI.MUTED, -1))
 	_breach_button = _button("OPEN MODULE  >", _on_breach_pressed, true)
 	_breach_button.disabled = not available
@@ -290,8 +290,8 @@ func _on_breach_pressed() -> void:
 
 func _module_route(index: int) -> Dictionary:
 	var module_id: String = "mod_%02d" % (index + 1)
-	var needs_intro: bool = index in [0,1,2] and not PlayerManager.has_seen_module_intro(module_id) and PlayerManager.chapter_progress.get(module_id + "_ch_01", {}).is_empty()
-	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index in [0,1,2]}}
+	var needs_intro: bool = index in [0,1,2,3] and not PlayerManager.has_seen_module_intro(module_id) and PlayerManager.chapter_progress.get(module_id + "_ch_01", {}).is_empty()
+	return {"route": &"module_intro" if needs_intro else &"module_stages", "args": {"module_index": index, "chapters": index in [0,1,2,3]}}
 
 func _open_module(index: int) -> void:
 	if not _is_unlocked(index):

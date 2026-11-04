@@ -10,7 +10,45 @@ const WalletCode: GDScript = preload("res://src/gameplay/decision/wallet_code_ch
 const FamiliarName: GDScript = preload("res://src/gameplay/decision/familiar_name_chapter.gd")
 const RecoveryPressure: GDScript = preload("res://src/gameplay/decision/recovery_pressure_chapter.gd")
 const KeepCode: GDScript = preload("res://src/gameplay/decision/keep_code_chapter.gd")
-const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode]
+const HelpfulCaller: GDScript = preload("res://src/gameplay/decision/helpful_caller_chapter.gd")
+const KnownDetails: GDScript = preload("res://src/gameplay/decision/known_details_chapter.gd")
+const DontHangUp: GDScript = preload("res://src/gameplay/decision/dont_hang_up_chapter.gd")
+const SafeCallback: GDScript = preload("res://src/gameplay/decision/safe_callback_chapter.gd")
+const VoiceControl: GDScript = preload("res://src/gameplay/decision/voice_control_chapter.gd")
+const HereToHelp: GDScript = preload("res://src/gameplay/decision/here_to_help_chapter.gd")
+const APPOINTMENT_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m4_claims","title":"Branding is observable, authority is not confirmed","people":["rham","john"],"field":"flags","value":"appointment","status":"Unverified","source":"Module 4 / Chapter 1 / Identity review","text":"The message displays school branding and claims an incident-response role and approval. These claims have not been independently confirmed."},
+ {"id":"m4_schedule","title":"The appointment is not confirmed by the schedule","people":["rham"],"field":"domains","value":"appointment","status":"Known","source":"Module 4 / Chapter 1 / Independent schedule","text":"The supplied appointment proposes an external consultation. The existing school schedule lists an internal event meeting at the same time. This discrepancy needs clarification; it does not alone prove fraud."},
+ {"id":"m4_route","title":"Choose the verifier independently","people":["rham"],"field":"captures","value":"appointment","status":"Known","source":"Module 4 / Chapter 1 / Existing school directory","text":"Sir Rham selects the established School Office contact through his existing directory. No office response has been received and no student list has been shared."}
+]
+const VOICE_CONTROL_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m3_hearing_identity","title":"A label is not verification","people":["liza","eric","rham"],"field":"solved","value":0,"status":"Known","source":"Module 3 / Hearing / Identity comparison","text":"The independently contacted wallet service contradicts the claimed security role. A displayed label and a professional voice do not authenticate the caller. Eric's expense call is not attribution evidence."},
+ {"id":"m3_hearing_public","title":"Public knowledge grants no access","people":["liza","john"],"field":"solved","value":1,"status":"Known","source":"Module 3 / Hearing / Public information","text":"Liza's role and event date were already public. They could be copied; this does not identify the operator or establish where the details were actually obtained."},
+ {"id":"m3_hearing_purpose","title":"Read the code's purpose","people":["liza","eric"],"field":"solved","value":2,"status":"Known","source":"Module 3 / Hearing / Alert comparison","text":"The wallet alert describes a password reset, not payment cancellation. Received call statements remain separate from review examples when the original call was declined or ended early."},
+ {"id":"m3_hearing_route","title":"Choose an independent verifier","people":["liza","john","rham"],"field":"solved","value":3,"status":"Known","source":"Module 3 / Hearing / Contact source","text":"A supervisor number supplied by the suspicious conversation cannot independently verify it. Liza opens Support in her existing wallet app."},
+ {"id":"m3_hearing_outcome","title":"This reset was not completed","people":["liza","rham"],"field":"final_matched","status":"Known","source":"Module 3 / Hearing / Verified incident acknowledgement","text":"The independent service case confirms this reset was not completed. Liza ended the call without sharing her code. This outcome does not identify the caller or guarantee that every account is safe; unfamiliar activity still needs review."}
+]
+const CALLBACK_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m3_callback_source","title":"A contact chosen independently","people":["liza","john"],"field":"flags","value":"callback","status":"Known","source":"Module 3 / Chapter 4 / Contact source","text":"The supposed supervisor supplies a callback contact in the same suspicious conversation. Liza instead opens her existing wallet app, then Support and Contact us. A second name from the same source is not independent verification."},
+ {"id":"m3_service_reply","title":"The service contradicts the claim","people":["liza"],"field":"domains","value":"callback","status":"Known","source":"Module 3 / Chapter 4 / Independent support response","text":"Independently reached wallet Support says it did not request the call or ask Liza to share a reset code. This password reset was not completed. Support recommends reviewing account activity; it does not guarantee every account is safe or identify the caller."},
+ {"id":"m3_incident","title":"An incident record with sources","people":["liza"],"field":"captures","value":"callback","status":"Known","source":"Module 3 / Chapter 4 / Simulated incident record","text":"Liza includes the supervisor message and support response, and attaches the wallet alert and actual saved Chapter 3 call notes. A declined call has no transcript; missing statements remain review guidance. No code is attached. The supervisor name and callback contact remain unverified."}
+]
+const HANG_UP_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m3_reset","title":"The code resets a password","people":["liza"],"field":"flags","value":"call","status":"Known","source":"Module 3 / Chapter 3 / Wallet alert","text":"The wallet alert describes a password reset Liza did not request. Its code is not a payment-cancellation code. A genuine alert does not verify a separate caller."},
+ {"id":"m3_conflict","title":"Different instructions","people":["liza"],"field":"domains","value":"call","status":"Known","source":"Module 3 / Chapter 3 / Call comparison","text":"Liza compares the received request to read a code to stop a payment against the alert stating reset password. These are different actions. The caller discourages hanging up and independent verification."},
+ {"id":"m3_refusal","title":"The call ends, the code stays private","people":["liza"],"field":"captures","value":"call","status":"Known","source":"Module 3 / Chapter 3 / Saved record","text":"Liza ends or declines the call without sharing a code. Only received statements and the wallet alert are retained as evidence. Any missed statements remain review guidance. She still needs to verify the reset outcome through the wallet service."}
+]
+const KNOWN_DETAILS_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m3_public_details","title":"Three details were already public","people":["liza","john"],"field":"flags","value":"public","status":"Known","source":"Module 3 / Chapter 2 / Source comparison","text":"Liza matches her name, event expense role and 6 November event date from a new voicemail to a public club announcement published before the call. These details could be copied; this does not prove the caller actually used this post."},
+ {"id":"m3_permission","title":"Knowledge is not authorization","people":["liza"],"field":"domains","value":"public","status":"Unverified","source":"Module 3 / Chapter 2 / Permission claim","text":"The caller claims that knowing event details verifies a security role and justifies account access. Public knowledge establishes neither identity nor permission. Liza does not authorize access."},
+ {"id":"m3_comparison","title":"Sources preserved, identity unknown","people":["liza","john"],"field":"captures","value":"public","status":"Known","source":"Module 3 / Chapter 2 / Saved comparison","text":"Liza preserves the new voicemail beside the independently opened club post. This supports a possible public source, not a culprit identity. The author of a public post is not implicated merely because the same details appear in a call."}
+]
+const CALLER_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m3_claim","title":"Claim versus observation","people":["liza","john"],"field":"flags","value":"call","status":"Known","source":"Module 3 / Chapter 1 / Call review","text":"Liza distinguishes the displayed Account Security label from independently confirmed identity. Receiving a call is observable; its displayed name does not authenticate the caller."},
+ {"id":"m3_identity","title":"Identity remains unverified","people":["liza"],"field":"domains","value":"call","status":"Unverified","source":"Module 3 / Chapter 1 / Identity check","text":"The service has not independently confirmed this caller. A professional voice or a reference supplied by the caller would still need checking."},
+ {"id":"m3_route","title":"An independent verification route","people":["liza"],"field":"captures","value":"call","status":"Known","source":"Module 3 / Chapter 1 / Verification route","text":"Liza chooses Support in the wallet app she already uses. Choosing this independent route does not yet confirm the caller's identity. No account code was shared."}
+]
+const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl, HereToHelp]
 const KEEP_CODE_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"solved","value":0,"status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
  {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"solved","value":1,"status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
@@ -39,6 +77,7 @@ const DELIVERY_OBSERVATIONS: Array[Dictionary] = [
 ]
 const CHARACTER_IDS: Array[String] = ["john", "eric", "jobert"]
 const CHARACTERS: Dictionary = {
+	"liza": {"name":"Liza", "role":"Student / Club event volunteer", "background":"A student helping with the school club event.", "relationship":"You follow Liza as she checks an unexpected account-security call."},
 	"amani": {"name":"Amani", "role":"Student / Event organizer", "background":"A club member preparing materials for the school event.", "relationship":"You follow Amani as she checks an unexpected delivery message."},
 	"john": {"name":"John", "role":"Student / Protagonist", "background":"A student whose perspective you follow through the investigation.", "relationship":"You follow John's experiences and investigation."},
 	"eric": {"name":"Eric", "role":"Club member", "background":"A member of John's school club.", "relationship":"John's fellow club member."},
@@ -102,6 +141,17 @@ static func chapter_definition(number: int) -> GDScript:
 	return CHAPTERS[clampi(number - 1, 0, CHAPTERS.size() - 1)]
 
 static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
+	if int(snapshot.get("_chapter", 1)) == 16: return APPOINTMENT_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 15: return VOICE_CONTROL_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 14: return CALLBACK_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 13:
+		var records: Array[Dictionary] = HANG_UP_OBSERVATIONS.duplicate(true)
+		if int(snapshot.get("call_received", 0)) == 0:
+			records[1].source = "Module 3 / Chapter 3 / Review guidance"
+			records[1].text = "Liza declined this call; no caller statements were received. In a labeled review example, she contrasts stop payment with the actual alert purpose, reset password. The example is learning guidance, not evidence of words heard in this call."
+		return records
+	if int(snapshot.get("_chapter", 1)) == 12: return KNOWN_DETAILS_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 11: return CALLER_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 6: return DELIVERY_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 7: return WALLET_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 8: return FAMILIAR_OBSERVATIONS.duplicate(true)
@@ -112,6 +162,24 @@ static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
 	return result
 
 static func character_ids(snapshot: Dictionary) -> Array[String]:
+	if int(snapshot.get("_chapter", 1)) == 16:
+		return ["rham","john"] if seen_beat(snapshot,1) else ["rham"]
+	if int(snapshot.get("_chapter", 1)) == 15:
+		return ["liza","rham","john","eric"] if snapshot.get("briefed",false) else ["liza"]
+	if int(snapshot.get("_chapter", 1)) == 14:
+		var people: Array[String] = ["liza"]
+		if seen_beat(snapshot, 2): people.append("john")
+		return people
+	if int(snapshot.get("_chapter", 1)) == 13: return ["liza"]
+	if int(snapshot.get("_chapter", 1)) == 12:
+		var people: Array[String] = ["liza"]
+		if seen_beat(snapshot, 3): people.append("john")
+		return people
+	if int(snapshot.get("_chapter", 1)) == 11:
+		var people: Array[String] = ["liza"]
+		if seen_beat(snapshot, 0): people.append("eric")
+		if seen_beat(snapshot, 4): people.append("john")
+		return people
 	if int(snapshot.get("_chapter", 1)) == 10:
 		var people: Array[String] = ["amani","dan"]
 		if seen_beat(snapshot, 3): people.append("rham")

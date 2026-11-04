@@ -41,7 +41,7 @@ func _render() -> void:
 			{"id":"unverified","line":"The service independently confirmed the caller's identity.","answer":"NOT VERIFIED"}]
 		var pending: Dictionary = {}
 		for item: Dictionary in items:
-			if state.sorted.has(item.id): _activity_success("✓ "+str(item.answer)+" / "+str(item.line))
+			if state.sorted.has(item.id): _activity_success(str(item.answer)+" / "+str(item.line))
 			elif pending.is_empty(): pending = item
 		if not pending.is_empty():
 			_activity_text(str(pending.line))
@@ -50,13 +50,13 @@ func _render() -> void:
 	elif mode == "identity":
 		_received_notes()
 		if phase_ready():
-			_activity_success("✓ IDENTITY STILL UNVERIFIED\nNeither the label nor a self-supplied reference authenticates a caller. A professional voice does not settle it either.")
+			_activity_success("IDENTITY STILL UNVERIFIED\nNeither the label nor a self-supplied reference authenticates a caller. A professional voice does not settle it either.")
 		else:
 			_activity_text("Does the displayed label independently establish who called?")
 			_choices("YES / THE LABEL IS OFFICIAL",_wrong.bind("A label is what the phone displays. It is not independent confirmation from the service."),"NO / VERIFY THROUGH THE SERVICE",_confirm_identity)
 	elif mode == "verify":
 		if phase_ready():
-			_activity_success("✓ INDEPENDENT ROUTE SAVED\nOpen the wallet app you already use and find Support there. The route is selected; the caller's identity has not yet been confirmed.")
+			_activity_success("INDEPENDENT ROUTE SAVED\nOpen the wallet app you already use and find Support there. The route is selected; the caller's identity has not yet been confirmed.")
 		elif _service_open:
 			_activity_text("MY EXISTING WALLET APP / SUPPORT\nThis is where I can check the unexpected call. I reached it myself, outside the caller's conversation.")
 			_action("SAVE THIS VERIFICATION ROUTE",_save_route)
@@ -73,11 +73,10 @@ func _received_notes() -> void:
 	else:
 		for index: int in int(state.call_received):
 			_activity_text("Caller: “"+str(Chapter.CALL_LINES[index])+"”")
-	_activity_text("This is a local story transcript, not a microphone recording.")
 func _refresh() -> void:
 	super._refresh()
 	_title.text = "Phone / Call review"
-	_status.text = "15:20  •  School courtyard"
+	_status.text = "15:20  •  Covered walkway"
 	_status.visible = mode == "read"
 	_nav.visible = phase_ready()
 	_close.text = "CONTINUE →"

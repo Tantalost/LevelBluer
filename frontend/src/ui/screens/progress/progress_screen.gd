@@ -300,7 +300,8 @@ func _build_journey() -> void:
 			_journey_buttons.append(button)
 		_select_chapter(_chapter)
 		index.add_child(_label("MODULE 2 / All five chapters available", UI.MUTED, _font - 2))
-		for i: int in range(2, _snapshot.modules.size()):
+		index.add_child(_label("MODULE 3 / Intro and Chapters 1–4 available; Chapter 5 in development", UI.MUTED, _font - 2))
+		for i: int in range(3, _snapshot.modules.size()):
 			index.add_child(_label("MODULE %d / %s\nStory coming soon" % [i + 1, _snapshot.modules[i].name], UI.MUTED, _font - 2))
 	else:
 		index.add_child(_label("MODULE CHECKPOINTS" if _journey == "Checkpoints" else "LESSONS / %d TOTAL" % _snapshot.lesson_total, UI.TEAL))
