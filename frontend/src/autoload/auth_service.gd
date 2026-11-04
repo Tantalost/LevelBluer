@@ -195,7 +195,9 @@ func progress_mastery_snapshot() -> Array[Dictionary]:
 		# A stored default prior is not evidence, even after a tutorial save/sync.
 		var official_assessed: bool = (raw is float or raw is int) and is_finite(float(raw)) \
 			and float(raw) > 0.0 and not is_equal_approx(float(raw), PlayerManager.DEFAULT_MASTERY)
-		var local_assessed: bool = PlayerManager.has_graded_evidence(key)
+		# Same evidence as the sync service: graded answers, pre-test baselines,
+		# lesson quizzes, checkpoint scores, practice, and offline BKT steps.
+		var local_assessed: bool = PlayerManager._skill_has_assessment(key)
 		var pretested: bool = has_module_pretest("mod_%02d" % (i + 1))
 		var pending := false
 		var queued_response: bool = false

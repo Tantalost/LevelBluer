@@ -111,6 +111,50 @@ func _test_account_readiness(auth: Node, fixture: Node) -> void:
 	check(fixture.learning_evidence.is_empty() and not fixture.learning_support_eligible(first + 72 * 3600), "Legacy saves never manufacture response counts or age")
 	fixture._restore_learning_evidence({"topics": {"phishing": "bad"}, "sessions": "bad"})
 	check(fixture.learning_evidence.is_empty(), "Malformed evidence fails closed")
+	account._restore_learning_evidence({"topics": {"pretexting": 2}})
+	check(account.learning_evidence.is_empty(), "Topic counts without first_at are rejected by the loader")
+	account.apply_save_data({
+		"mastery_matrix": {"phishing": 0.10, "pretexting": 0.10},
+		"learning_evidence": {
+			"topics": {"pretexting": 2},
+			"responses": 2,
+			"sessions": 1,
+			"first_at": 1700000000,
+			"last_at": 1700000100,
+		},
+	})
+	auth._mastery = {
+		"Phishing": 0.10, "Smishing": 0.10, "Vishing": 0.10, "Pretexting": 0.10, "Baiting": 0.10,
+	}
+	check(int(account.learning_evidence.get("first_at", 0)) == 1700000000, "Loader keeps the stored first_at")
+	var data: GDScript = load("res://src/ui/screens/progress/progress_data.gd")
+	var restored: Dictionary = data.snapshot()
+	var assessed_names: Array[String] = []
+	for row: Dictionary in restored.mastery:
+		if bool(row.get("assessed", false)):
+			assessed_names.append(str(row.get("id", "")))
+	check(assessed_names == ["pretexting"], "Progress screen assesses restored Pretexting 0.10 only")
+	var consistent := {
+		"topics": {"phishing": 4, "pretexting": 2},
+		"responses": 6,
+		"sessions": 1,
+		"first_at": 1700000000,
+		"last_at": 1700000100,
+	}
+	account._restore_learning_evidence(consistent)
+	check(int(account.learning_evidence.get("responses", 0)) == 6, "Loader keeps a topic-total response count")
+	check(int(account.learning_evidence.get("first_at", 0)) == 1700000000 and int(account.learning_evidence.get("last_at", 0)) == 1700000100, "Loader keeps an ordered evidence interval")
+	account._restore_learning_evidence({
+		"topics": {"phishing": 4, "pretexting": 2},
+		"responses": 4,
+		"sessions": 1,
+		"first_at": 1700000200,
+		"last_at": 1700000100,
+	})
+	check(int(account.learning_evidence.get("responses", 0)) == 6 and int(account.learning_evidence.get("last_at", 0)) == 1700000200, "Loader would correct inconsistent responses and last_at")
+	account.reset_to_defaults()
+	auth._mastery = {"Phishing": 0.1, "Smishing": 0.1}
+	auth._completed_module_ids = []
 	auth._completed_module_ids = ["mod_01"]
 	account.reset_to_defaults()
 	check(bool(auth.progress_mastery_snapshot()[0].assessed), "A real completed pretest can legitimately assess a prior-valued estimate")

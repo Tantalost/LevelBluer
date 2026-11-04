@@ -1,3 +1,4 @@
+import copy
 import sys
 import types
 import unittest
@@ -100,6 +101,21 @@ class FakeSupabase:
 
     def table(self, name: str) -> FakeQuery:
         return FakeQuery(self, name)
+
+
+class StatefulSaveQuery(FakeQuery):
+    """A successful player_saves upsert is what the next progress read returns."""
+
+    def execute(self):
+        result = super().execute()
+        if self._table == "player_saves" and isinstance(self._pending_upsert, dict):
+            self._store.save_rows = [{"payload": copy.deepcopy(self._pending_upsert["payload"])}]
+        return result
+
+
+class StatefulSupabase(FakeSupabase):
+    def table(self, name: str) -> StatefulSaveQuery:
+        return StatefulSaveQuery(self, name)
 
 
 def _payload() -> ProgressSyncRequest:
@@ -391,6 +407,186 @@ class ProgressSyncFailureTest(unittest.TestCase):
         topics = {row["topic"] for row in fake.upserts["bkt_records"][0]}
         self.assertEqual(topics, {"Phishing", "Smishing"})
         self.assertEqual(fake.upserts["player_saves"][0]["payload"]["unconfirmed_bkt_log"][0]["skill"], "smishing")
+
+    def test_incoming_default_does_not_overwrite_assessed_cloud_mastery(self):
+        fake = StatefulSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {"phishing": 0.80},
+                "learning_evidence": {
+                    "topics": {"phishing": 2},
+                    "responses": 2,
+                    "sessions": 1,
+                    "first_at": 1700000000,
+                    "last_at": 1700000100,
+                },
+                "credits": 40,
+                "unconfirmed_bkt_log": [{
+                    "id": "already-acked", "skill": "phishing", "op": "update", "posterior": 0.80,
+                }],
+            }
+        }]
+        payload = ProgressSyncRequest(mastery_matrix={"phishing": 0.10}, credits=40)
+        self.assertTrue(self._sync(fake, payload).ok)
+        self.assertAlmostEqual(fake.save_rows[0]["payload"]["mastery_matrix"]["phishing"], 0.80)
+        self.assertTrue(self._sync(fake, payload).ok)
+        stored = fake.save_rows[0]["payload"]
+        self.assertAlmostEqual(stored["mastery_matrix"]["phishing"], 0.80)
+        self.assertEqual(stored["learning_evidence"], {
+            "topics": {"phishing": 2},
+            "responses": 2,
+            "sessions": 1,
+            "first_at": 1700000000,
+            "last_at": 1700000100,
+        })
+        self.assertEqual(stored["credits"], 40)
+        self.assertNotIn("unconfirmed_bkt_log", stored)
+        self.assertNotIn("learning_events", stored)
+        self.assertEqual(set(fake.bkt_rows), {("stu-1", "Phishing")})
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.80)
+
+    def test_repeated_sync_preserves_assessment_provenance(self):
+        fake = StatefulSupabase()
+        acknowledged = [{
+            "id": "event-1", "skill": "pretexting", "op": "update", "posterior": 0.10,
+        }]
+        first = ProgressSyncRequest(
+            mastery_matrix={"pretexting": 0.10},
+            learning_evidence={
+                "topics": {"pretexting": 2},
+                "responses": 2,
+                "sessions": 1,
+                "first_at": 1700000000,
+                "last_at": 1700000100,
+            },
+            pretest_baselines={"mod_04": {"correct": 1, "total": 4}},
+            practice_responses={"prac-1": {"module_id": "mod_04", "skill": "pretexting", "correct": False}},
+            credits=7,
+            unconfirmed_bkt_log=acknowledged,
+        )
+        self.assertTrue(self._sync(fake, first).ok)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Pretexting")]["probability_known"], 0.10)
+        second = ProgressSyncRequest(
+            mastery_matrix={"pretexting": 0.10, "phishing": 0.44},
+            credits=9,
+        )
+        self.assertTrue(self._sync(fake, second).ok)
+        third = ProgressSyncRequest(mastery_matrix={"pretexting": 0.10, "phishing": 0.44}, credits=9)
+        self.assertTrue(self._sync(fake, third).ok)
+        stored = fake.save_rows[0]["payload"]
+        self.assertAlmostEqual(stored["mastery_matrix"]["pretexting"], 0.10)
+        self.assertAlmostEqual(stored["mastery_matrix"]["phishing"], 0.44)
+        self.assertEqual(stored["learning_evidence"], {
+            "topics": {"pretexting": 2},
+            "responses": 2,
+            "sessions": 1,
+            "first_at": 1700000000,
+            "last_at": 1700000100,
+        })
+        self.assertEqual(stored["pretest_baselines"], {"mod_04": {"correct": 1, "total": 4}})
+        self.assertEqual(stored["practice_responses"], {
+            "prac-1": {"module_id": "mod_04", "skill": "pretexting", "correct": False},
+        })
+        self.assertNotIn("unconfirmed_bkt_log", stored)
+        self.assertNotIn("learning_events", stored)
+        self.assertEqual(stored["credits"], 9)
+        self.assertEqual(len(fake.bkt_rows), 2)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Pretexting")]["probability_known"], 0.10)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.44)
+
+    def test_merged_timestamps_stay_ordered(self):
+        fake = StatefulSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {"pretexting": 0.10},
+                "learning_evidence": {
+                    "topics": {"pretexting": 2},
+                    "responses": 2,
+                    "sessions": 1,
+                    "first_at": 1700000000,
+                    "last_at": 1700000100,
+                },
+            }
+        }]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"pretexting": 0.10, "phishing": 0.40},
+            learning_evidence={
+                "topics": {"phishing": 4},
+                "responses": 4,
+                "sessions": 1,
+                "first_at": 1700000200,
+            },
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        evidence = fake.save_rows[0]["payload"]["learning_evidence"]
+        self.assertEqual(evidence["first_at"], 1700000000)
+        self.assertEqual(evidence["last_at"], 1700000100)
+        self.assertLessEqual(evidence["first_at"], evidence["last_at"])
+        self.assertNotIn("unconfirmed_bkt_log", fake.save_rows[0]["payload"])
+        self.assertNotIn("learning_events", fake.save_rows[0]["payload"])
+
+    def test_merged_response_total_matches_topic_counts(self):
+        fake = StatefulSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {"pretexting": 0.10},
+                "learning_evidence": {
+                    "topics": {"pretexting": 2},
+                    "responses": 2,
+                    "sessions": 1,
+                    "first_at": 1700000000,
+                    "last_at": 1700000100,
+                },
+            }
+        }]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"pretexting": 0.10, "phishing": 0.40},
+            learning_evidence={
+                "topics": {"phishing": 4},
+                "responses": 4,
+                "sessions": 1,
+                "first_at": 1700000200,
+                "last_at": 1700000300,
+            },
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        evidence = fake.save_rows[0]["payload"]["learning_evidence"]
+        self.assertEqual(evidence["topics"], {"phishing": 4, "pretexting": 2})
+        self.assertEqual(evidence["responses"], 6)
+
+    def test_preserved_evidence_does_not_replace_newer_metadata(self):
+        fake = StatefulSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {"pretexting": 0.10, "phishing": 0.40},
+                "learning_evidence": {
+                    "topics": {"pretexting": 2, "phishing": 1},
+                    "responses": 3,
+                    "sessions": 1,
+                    "first_at": 1700000000,
+                    "last_at": 1700000100,
+                },
+            }
+        }]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"pretexting": 0.10, "phishing": 0.52},
+            learning_evidence={
+                "topics": {"phishing": 4},
+                "responses": 4,
+                "sessions": 2,
+                "first_at": 1800000000,
+                "last_at": 1800000500,
+            },
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        evidence = fake.save_rows[0]["payload"]["learning_evidence"]
+        self.assertEqual(evidence["topics"], {"phishing": 4, "pretexting": 2})
+        self.assertEqual(evidence["first_at"], 1700000000)
+        self.assertEqual(evidence["last_at"], 1800000500)
+        self.assertEqual(evidence["sessions"], 2)
+        self.assertEqual(evidence["responses"], 6)
+        self.assertAlmostEqual(fake.save_rows[0]["payload"]["mastery_matrix"]["pretexting"], 0.10)
+        self.assertAlmostEqual(fake.save_rows[0]["payload"]["mastery_matrix"]["phishing"], 0.52)
 
     def test_student_mastery_column_update_fails_raises_non_2xx(self):
         with self.assertRaises(HTTPException) as ctx:
