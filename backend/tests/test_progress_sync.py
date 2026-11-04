@@ -271,6 +271,127 @@ class ProgressSyncFailureTest(unittest.TestCase):
         self.assertAlmostEqual(matrix["baiting"], 0.10)
         self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.10)
 
+    def _sync(self, fake: FakeSupabase, payload: ProgressSyncRequest):
+        with (
+            patch("app.services.progress_service.fetch_student_by_id",
+                  return_value={"id": "stu-1", "highest_unlocked_stage": 1}),
+            patch("app.services.progress_service.supabase", fake),
+        ):
+            return sync_student_progress("stu-1", payload)
+
+    def test_new_student_without_evidence_creates_no_bkt_rows(self):
+        fake = FakeSupabase()
+        payload = ProgressSyncRequest(
+            mastery_matrix={"phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10},
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        self.assertNotIn("bkt_records", fake.upserts)
+        stored = fake.upserts["player_saves"][0]["payload"]["mastery_matrix"]
+        self.assertEqual(stored, {})
+        mastery_updates = [row for row in fake.updates.get("students", []) if any(key.startswith("mastery_") for key in row)]
+        self.assertEqual(mastery_updates, [])
+
+    def test_one_assessed_topic_does_not_record_other_priors(self):
+        fake = FakeSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {
+                    "phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10,
+                },
+            }
+        }]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"phishing": 0.61, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10},
+            learning_evidence={"topics": {"phishing": 4}, "responses": 4},
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        matrix = fake.upserts["player_saves"][0]["payload"]["mastery_matrix"]
+        self.assertEqual(set(matrix), {"phishing"})
+        self.assertAlmostEqual(matrix["phishing"], 0.61)
+        topics = {row["topic"] for row in fake.upserts["bkt_records"][0]}
+        self.assertEqual(topics, {"Phishing"})
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.61)
+        self.assertNotIn(("stu-1", "Smishing"), fake.bkt_rows)
+
+    def test_legacy_default_priors_are_not_recorded_as_evidence(self):
+        fake = FakeSupabase()
+        fake.bkt_rows[("stu-1", "Vishing")] = {
+            "student_id": "stu-1", "topic": "Vishing", "probability_known": 0.10,
+        }
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {
+                    "phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10,
+                },
+            }
+        }]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10},
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        self.assertNotIn("bkt_records", fake.upserts)
+        self.assertEqual(fake.upserts["player_saves"][0]["payload"]["mastery_matrix"], {})
+        # The historical row is intentionally left for a separate review.
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Vishing")]["probability_known"], 0.10)
+
+    def test_stored_evidence_keeps_assessed_prior(self):
+        fake = FakeSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {"phishing": 0.50, "pretexting": 0.10},
+                "learning_evidence": {"topics": {"pretexting": 2}, "responses": 2},
+            }
+        }]
+        payload = ProgressSyncRequest(mastery_matrix={"phishing": 0.55})
+        self.assertTrue(self._sync(fake, payload).ok)
+        matrix = fake.upserts["player_saves"][0]["payload"]["mastery_matrix"]
+        self.assertAlmostEqual(matrix["phishing"], 0.55)
+        self.assertAlmostEqual(matrix["pretexting"], 0.10)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Pretexting")]["probability_known"], 0.10)
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.55)
+
+    def test_repeated_sync_does_not_refresh_unassessed_priors(self):
+        fake = FakeSupabase()
+        legacy = {
+            "phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10,
+        }
+        fake.save_rows = [{"payload": {"mastery_matrix": dict(legacy)}}]
+        payload = ProgressSyncRequest(
+            mastery_matrix=dict(legacy, phishing=0.42),
+            learning_evidence={"topics": {"phishing": 3}, "responses": 3},
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        self.assertTrue(self._sync(fake, payload).ok)
+        self.assertEqual(len(fake.upserts["bkt_records"]), 2)
+        for batch in fake.upserts["bkt_records"]:
+            self.assertEqual({row["topic"] for row in batch}, {"Phishing"})
+        self.assertEqual(set(fake.bkt_rows), {("stu-1", "Phishing")})
+        self.assertAlmostEqual(fake.bkt_rows[("stu-1", "Phishing")]["probability_known"], 0.42)
+
+    def test_offline_log_keeps_reconciled_topic_and_drops_other_priors(self):
+        fake = FakeSupabase()
+        fake.save_rows = [{
+            "payload": {
+                "mastery_matrix": {
+                    "phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10,
+                },
+            }
+        }]
+        payload = ProgressSyncRequest(
+            mastery_matrix={"phishing": 0.42, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10},
+            learning_evidence={"topics": {"phishing": 1}, "responses": 1},
+            unconfirmed_bkt_log=[{
+                "skill": "smishing", "op": "update", "correct": False, "prior": 0.20, "posterior": 0.10,
+            }],
+        )
+        self.assertTrue(self._sync(fake, payload).ok)
+        matrix = fake.upserts["player_saves"][0]["payload"]["mastery_matrix"]
+        self.assertEqual(set(matrix), {"phishing", "smishing"})
+        self.assertAlmostEqual(matrix["smishing"], 0.10)
+        topics = {row["topic"] for row in fake.upserts["bkt_records"][0]}
+        self.assertEqual(topics, {"Phishing", "Smishing"})
+        self.assertEqual(fake.upserts["player_saves"][0]["payload"]["unconfirmed_bkt_log"][0]["skill"], "smishing")
+
     def test_student_mastery_column_update_fails_raises_non_2xx(self):
         with self.assertRaises(HTTPException) as ctx:
             self._run(FakeSupabase(fail_nth={("students", 2)}))

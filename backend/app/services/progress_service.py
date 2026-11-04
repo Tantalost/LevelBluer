@@ -78,6 +78,7 @@ def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> Prog
         dumped.get("mastery_matrix") or {},
         stored_progress.get("mastery_matrix") or {},
         dumped,
+        stored_progress,
     )
     dumped["mastery_matrix"] = merged_matrix
     _upsert_game_bkt(student_id, merged_matrix)
@@ -227,16 +228,35 @@ def _is_unassessed_prior(skill_id: str, value: float, assessed: set[str]) -> boo
     return abs(value - P_L0) <= 1e-4 and skill_id not in assessed
 
 
-def _merge_uploaded_mastery(incoming: dict, existing: dict, payload: dict) -> dict[str, float]:
-    """Keep cloud skills the upload did not assess, including a real 0.10."""
+def _merge_uploaded_mastery(
+    incoming: dict,
+    existing: dict,
+    payload: dict,
+    stored: dict | None = None,
+) -> dict[str, float]:
+    """Keep assessed cloud posteriors, including a real 0.10.
+
+    Evidence is a graded answer, pre-test baseline, lesson quiz, checkpoint,
+    practice response, or unconfirmed BKT step on the upload or the stored save.
+    A stored 0.10 with none of that evidence is only the initial prior. It is
+    left out of the saved matrix and is not upserted to bkt_records. This does
+    not delete a bkt_records row that was written earlier. A legacy 0.10 cannot
+    be recovered as a real posterior when neither copy shows evidence.
+    """
+    assessed = _assessed_skills(payload if isinstance(payload, dict) else {})
+    if isinstance(stored, dict):
+        assessed |= _assessed_skills(stored)
     merged: dict[str, float] = {}
     if isinstance(existing, dict):
         for skill, value in existing.items():
             try:
-                merged[str(skill).strip().lower()] = clamp_pl(float(value))
+                number = clamp_pl(float(value))
             except (TypeError, ValueError):
                 continue
-    assessed = _assessed_skills(payload if isinstance(payload, dict) else {})
+            skill_id = str(skill).strip().lower()
+            if _is_unassessed_prior(skill_id, number, assessed):
+                continue
+            merged[skill_id] = number
     if not isinstance(incoming, dict):
         return merged
     for skill, value in incoming.items():
