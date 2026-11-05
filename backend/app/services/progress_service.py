@@ -74,14 +74,22 @@ def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> Prog
         raise _supabase_error(exc) from exc
     if not isinstance(stored_progress, dict):
         stored_progress = {}
+    incoming_matrix = dumped.get("mastery_matrix") or {}
+    incoming_assessed = _assessed_skills(dumped)
     merged_matrix = _merge_uploaded_mastery(
-        dumped.get("mastery_matrix") or {},
+        incoming_matrix,
         stored_progress.get("mastery_matrix") or {},
         dumped,
+        stored_progress,
     )
     dumped["mastery_matrix"] = merged_matrix
     _upsert_game_bkt(student_id, merged_matrix)
     blob = {k: v for k, v in dumped.items() if k not in ("student", "learning_events")}
+    _preserve_assessment_provenance(
+        blob,
+        stored_progress,
+        _skills_retained_from_store(merged_matrix, incoming_matrix, incoming_assessed),
+    )
     _upsert_save_blob(student_id, blob, stored_progress)
     return ProgressSyncResponse(acknowledged_events=acknowledged)
 
@@ -227,16 +235,33 @@ def _is_unassessed_prior(skill_id: str, value: float, assessed: set[str]) -> boo
     return abs(value - P_L0) <= 1e-4 and skill_id not in assessed
 
 
-def _merge_uploaded_mastery(incoming: dict, existing: dict, payload: dict) -> dict[str, float]:
-    """Keep cloud skills the upload did not assess, including a real 0.10."""
+def _merge_uploaded_mastery(
+    incoming: dict,
+    existing: dict,
+    payload: dict,
+    stored: dict | None = None,
+) -> dict[str, float]:
+    """Keep assessed cloud posteriors, including a real 0.10.
+
+    Incoming and stored evidence are judged separately. Stored evidence can
+    keep a stored 0.10, but it cannot make an incoming 0.10 count as a new
+    assessment. A 0.10 with no evidence on its own copy is only the initial
+    prior: it is left out of the saved matrix and is not upserted. This does
+    not delete a bkt_records row written earlier.
+    """
+    incoming_assessed = _assessed_skills(payload if isinstance(payload, dict) else {})
+    stored_assessed = _assessed_skills(stored if isinstance(stored, dict) else {})
     merged: dict[str, float] = {}
     if isinstance(existing, dict):
         for skill, value in existing.items():
             try:
-                merged[str(skill).strip().lower()] = clamp_pl(float(value))
+                number = clamp_pl(float(value))
             except (TypeError, ValueError):
                 continue
-    assessed = _assessed_skills(payload if isinstance(payload, dict) else {})
+            skill_id = str(skill).strip().lower()
+            if _is_unassessed_prior(skill_id, number, stored_assessed):
+                continue
+            merged[skill_id] = number
     if not isinstance(incoming, dict):
         return merged
     for skill, value in incoming.items():
@@ -245,10 +270,217 @@ def _merge_uploaded_mastery(incoming: dict, existing: dict, payload: dict) -> di
         except (TypeError, ValueError):
             continue
         skill_id = str(skill).strip().lower()
-        if _is_unassessed_prior(skill_id, number, assessed):
+        if _is_unassessed_prior(skill_id, number, incoming_assessed):
             continue
         merged[skill_id] = number
     return merged
+
+
+def _skills_retained_from_store(
+    merged: dict[str, float],
+    incoming: dict,
+    incoming_assessed: set[str],
+) -> set[str]:
+    """Skills whose saved posterior came from the cloud, not this upload."""
+    retained: set[str] = set()
+    incoming_values = incoming if isinstance(incoming, dict) else {}
+    for skill in merged:
+        if skill not in incoming_values:
+            retained.add(skill)
+            continue
+        try:
+            number = clamp_pl(float(incoming_values[skill]))
+        except (TypeError, ValueError):
+            retained.add(skill)
+            continue
+        if _is_unassessed_prior(skill, number, incoming_assessed):
+            retained.add(skill)
+    return retained
+
+
+def _preserve_assessment_provenance(blob: dict, stored: dict | None, retained: set[str]) -> None:
+    """Copy stored evidence for cloud mastery this upload did not reassess.
+
+    Only evidence already stored is copied, and only into keys the upload
+    omitted. Acknowledged BKT steps are not copied back into the save, so a
+    later reconcile cannot apply them again.
+    """
+    if not retained or not isinstance(stored, dict):
+        return
+    _copy_topic_counts(blob, stored, retained)
+    _copy_module_evidence(blob, stored, "pretest_baselines", retained)
+    _copy_checkpoint_scores(blob, stored, retained)
+    _copy_module_evidence(blob, stored, "lesson_quiz_responses", retained)
+    _copy_practice_responses(blob, stored, retained)
+
+
+_EVIDENCE_FIELDS = ("first_at", "last_at", "sessions", "responses")
+
+
+def _finite_number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    return number
+
+
+def _valid_evidence_field(field: str, value: object) -> bool:
+    number = _finite_number(value)
+    if number is None:
+        return False
+    if field in ("first_at", "responses"):
+        return number > 0
+    return number >= 0
+
+
+def _fill_evidence_metadata(target: dict, stored_evidence: dict) -> None:
+    """Fill loader fields the upload omitted. Never replace a valid value."""
+    for field in _EVIDENCE_FIELDS:
+        if _valid_evidence_field(field, target.get(field)):
+            continue
+        if _valid_evidence_field(field, stored_evidence.get(field)):
+            target[field] = stored_evidence[field]
+
+
+def _evidence_int(value: object) -> int | None:
+    number = _finite_number(value)
+    if number is None:
+        return None
+    return int(number)
+
+
+def _normalize_merged_evidence(evidence: dict, stored_evidence: dict) -> None:
+    """Match Godot's loader: earliest start, latest end, responses summed once."""
+    first_values: list[int] = []
+    last_values: list[int] = []
+    for source in (evidence, stored_evidence):
+        if not isinstance(source, dict):
+            continue
+        first = _evidence_int(source.get("first_at"))
+        if first is not None and first > 0:
+            first_values.append(first)
+        if "last_at" in source:
+            last = _evidence_int(source.get("last_at"))
+            if last is not None and last >= 0:
+                last_values.append(last)
+    first_at = min(first_values) if first_values else None
+    if first_at is not None:
+        evidence["first_at"] = first_at
+    if last_values or first_at is not None:
+        last_at = max(last_values) if last_values else first_at
+        if first_at is not None and last_at is not None and last_at < first_at:
+            last_at = first_at
+        if last_at is not None:
+            evidence["last_at"] = last_at
+    topics = evidence.get("topics")
+    if not isinstance(topics, dict):
+        return
+    total = 0
+    for skill in SKILL_MODULES:
+        count = _evidence_int(topics.get(skill))
+        if count is not None and count > 0:
+            total += min(count, 1000000)
+    if total <= 0:
+        return
+    evidence["responses"] = total
+    sessions = _evidence_int(evidence.get("sessions"))
+    if sessions is None or sessions < 1:
+        sessions = 1
+    evidence["sessions"] = min(sessions, total)
+
+
+def _copy_topic_counts(blob: dict, stored: dict, retained: set[str]) -> None:
+    stored_evidence = stored.get("learning_evidence")
+    if not isinstance(stored_evidence, dict):
+        return
+    stored_topics = stored_evidence.get("topics")
+    if not isinstance(stored_topics, dict):
+        return
+    kept: dict[str, int] = {}
+    for skill, count in stored_topics.items():
+        skill_id = str(skill).strip().lower()
+        try:
+            number = int(count or 0)
+        except (TypeError, ValueError):
+            continue
+        if skill_id in retained and number > 0:
+            kept[skill_id] = number
+    if not kept:
+        return
+    current = blob.get("learning_evidence")
+    if not isinstance(current, dict):
+        current = {"topics": kept}
+        _fill_evidence_metadata(current, stored_evidence)
+        _normalize_merged_evidence(current, stored_evidence)
+        blob["learning_evidence"] = current
+        return
+    topics = current.get("topics")
+    if not isinstance(topics, dict):
+        topics = {}
+        current["topics"] = topics
+    for skill_id, number in kept.items():
+        topics.setdefault(skill_id, number)
+    _fill_evidence_metadata(current, stored_evidence)
+    _normalize_merged_evidence(current, stored_evidence)
+
+
+def _copy_module_evidence(blob: dict, stored: dict, field: str, retained: set[str]) -> None:
+    stored_values = stored.get(field)
+    if not isinstance(stored_values, dict):
+        return
+    current = blob.get(field)
+    if not isinstance(current, dict):
+        current = {}
+    for module_id, value in stored_values.items():
+        module = str(module_id)
+        if module in current or not isinstance(value, dict) or not value:
+            continue
+        if retained.intersection(_skills_for_module(module)):
+            current[module] = value
+    if current:
+        blob[field] = current
+
+
+def _copy_checkpoint_scores(blob: dict, stored: dict, retained: set[str]) -> None:
+    stored_scores = stored.get("lesson_post_quiz_scores")
+    if not isinstance(stored_scores, dict):
+        return
+    current = blob.get("lesson_post_quiz_scores")
+    if not isinstance(current, dict):
+        current = {}
+    for module_id, score in stored_scores.items():
+        module = str(module_id)
+        if module in current:
+            continue
+        try:
+            number = int(score or 0)
+        except (TypeError, ValueError):
+            continue
+        if number > 0 and retained.intersection(_skills_for_module(module)):
+            current[module] = number
+    if current:
+        blob["lesson_post_quiz_scores"] = current
+
+
+def _copy_practice_responses(blob: dict, stored: dict, retained: set[str]) -> None:
+    stored_practice = stored.get("practice_responses")
+    if not isinstance(stored_practice, dict):
+        return
+    current = blob.get("practice_responses")
+    if not isinstance(current, dict):
+        current = {}
+    for question_id, record in stored_practice.items():
+        key = str(question_id)
+        if key in current or not isinstance(record, dict):
+            continue
+        skill = str(record.get("skill", "")).strip().lower()
+        module_skills = _skills_for_module(str(record.get("module_id", "")))
+        if skill in retained or retained.intersection(module_skills):
+            current[key] = record
+    if current:
+        blob["practice_responses"] = current
 
 
 def _upsert_save_blob(student_id: str, payload: dict, existing: dict | None = None) -> None:

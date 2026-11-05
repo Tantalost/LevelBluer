@@ -38,13 +38,49 @@ func fresh() -> void:
 	player.chapter_replay_progress = {}
 	player.chapter_replays = {}
 	player.lesson_post_quiz_scores = {}
+	player.lesson_quiz_responses = {}
 	player.pretest_baselines = {}
 	player.practice_responses = {}
+	player._unconfirmed_bkt_log.clear()
 	player.learning_events.clear()
 	player.learning_evidence = {}
 	player.locked_stages = {}
 	player.max_stage_cleared_by_module = {}
 	player.credits = 123
+
+func mastery_row(skill: String) -> Dictionary:
+	for row: Dictionary in auth.progress_mastery_snapshot():
+		if str(row.get("id", "")) == skill:
+			return row
+	return {}
+
+func check_same_evidence_as_sync() -> void:
+	# A 0.10 posterior is assessed when practice, a lesson quiz, a pre-test
+	# baseline, a checkpoint, or an offline BKT step exists. Graded-topic
+	# counts are not the only evidence the sync service accepts.
+	fresh()
+	auth._mastery = {
+		"Phishing": 0.10, "Smishing": 0.10, "Vishing": 0.10, "Pretexting": 0.10, "Baiting": 0.10,
+	}
+	player.mastery_matrix = {
+		"phishing": 0.10, "smishing": 0.10, "vishing": 0.10, "pretexting": 0.10, "baiting": 0.10,
+	}
+	player._unconfirmed_bkt_log.append({
+		"skill": "phishing", "op": "update", "correct": false, "prior": 0.20, "posterior": 0.10,
+	})
+	player.practice_responses = {"q1": {"module_id": "mod_02", "skill": "smishing", "correct": false}}
+	player.lesson_quiz_responses = {"mod_03": {"q1": false}}
+	player.pretest_baselines = {"mod_04": {"correct": 1, "total": 4}}
+	player.lesson_post_quiz_scores = {"mod_05": 3}
+	check(bool(mastery_row("phishing").get("assessed", false)), "Offline BKT step assesses a 0.10 posterior")
+	check(bool(mastery_row("smishing").get("assessed", false)), "Practice response assesses a 0.10 posterior")
+	check(bool(mastery_row("vishing").get("assessed", false)), "Lesson quiz assesses a 0.10 posterior")
+	check(bool(mastery_row("pretexting").get("assessed", false)), "Pre-test baseline assesses a 0.10 posterior")
+	check(bool(mastery_row("baiting").get("assessed", false)), "Checkpoint score assesses a 0.10 posterior")
+	player.practice_responses = {}
+	check(not bool(mastery_row("smishing").get("assessed", false)), "Removing practice evidence returns that 0.10 to unassessed")
+	check(bool(mastery_row("vishing").get("assessed", false)), "Other evidence remains after practice is cleared")
+	fresh()
 
 func fingerprint() -> String:
 	return JSON.stringify([auth._mastery, auth._completed_module_ids, auth._bkt_queue, auth._points,
@@ -71,6 +107,7 @@ func _run() -> void:
 	check(Data.mastery_status(0.6999, true) == "Developing", "Below 70%")
 	check(Data.mastery_status(0.7, true) == "Proficient", "70% boundary")
 	check(Data.mastery_status(0, false) == "Not assessed", "Missing mastery label")
+	check_same_evidence_as_sync()
 	var before := fingerprint()
 	var screen: Control = load("res://src/ui/screens/progress/progress_screen.tscn").instantiate()
 	root.add_child(screen)
