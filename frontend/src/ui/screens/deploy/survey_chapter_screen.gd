@@ -233,7 +233,7 @@ func _ready() -> void:
 	_cast_stage.mouse_filter = MOUSE_FILTER_IGNORE
 	_cast_stage.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_area.add_child(_cast_stage)
-	for person: String in ["john", "eric", "jobert", "amani", "liza", "sir rham"]:
+	for person: String in ["john", "eric", "jobert", "amani", "liza", "sir rham", "mika"]:
 		var actor: TextureRect = TextureRect.new()
 		actor.name = person.capitalize()
 		actor.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -462,7 +462,7 @@ func _render() -> void:
 	_phone.hide()
 	_chat_started = false
 	_chat_cue = -1.0
-	_poses = {"john":0, "eric":0, "jobert":0, "amani":0, "liza":0, "sir rham":0}
+	_poses = {"john":0, "eric":0, "jobert":0, "amani":0, "liza":0, "sir rham":0, "mika":0}
 	if state["phase"] == "day":
 		for index: int in range(int(state["beat"]) + 1):
 			var previous: Dictionary = Chapter.STORY[index]
@@ -804,7 +804,7 @@ func _phase_finished() -> void:
 		if _is_chat_beat():
 			_advance()
 			return
-		if Chapter.ID in ["mod_03_ch_01","mod_03_ch_02","mod_03_ch_03","mod_03_ch_04","mod_04_ch_01"]:
+		if Chapter.ID in ["mod_03_ch_01","mod_03_ch_02","mod_03_ch_03","mod_03_ch_04","mod_04_ch_01","mod_04_ch_02","mod_04_ch_03","mod_04_ch_04","mod_05_ch_01","mod_05_ch_02","mod_05_ch_03","mod_05_ch_04"]:
 			_advance() # The call Continue advances one dialogue page, preserving unread thoughts.
 			return
 		# Reading mail must not silently discard John's remaining thoughts.
@@ -1007,8 +1007,8 @@ func _actor_texture(person: String, face: int) -> Texture2D:
 			return sprite
 		# An offline first launch still has a happy pose until art sync completes.
 		face = 1
-	var texture: Texture2D = AssetManager.get_texture("story_rham_poses" if person == "sir rham" else "story_" + person + "_poses" if person in ["amani","liza"] else "chapter1_" + person)
-	if person in ["amani","liza","sir rham"] and texture != null:
+	var texture: Texture2D = AssetManager.get_texture("story_rham_poses" if person == "sir rham" else "story_" + person + "_poses" if person in ["amani","liza","mika"] else "chapter1_" + person)
+	if person in ["amani","liza","sir rham","mika"] and texture != null:
 		var amani: AtlasTexture = AtlasTexture.new()
 		amani.atlas = texture
 		var cell: Vector2 = texture.get_size() / Vector2(3, 2)
@@ -1064,7 +1064,7 @@ func _layout() -> void:
 	_app_shortcuts.size = Vector2(w * 0.46, touch)
 	var actors: Array[TextureRect] = []
 	# Iterate canonical names, not draw order: switching focus never moves a slot.
-	for person: String in ["john", "eric", "jobert", "amani", "liza", "sir rham"]:
+	for person: String in ["john", "eric", "jobert", "amani", "liza", "sir rham", "mika"]:
 		if _cast[person].visible: actors.append(_cast[person])
 	var stage_width: float = w * (0.49 if has_phone else 1.0)
 	var actor_width: float = stage_width * (0.95 if actors.size() == 1 else (0.83 if has_phone else 0.68))

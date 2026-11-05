@@ -16,6 +16,56 @@ const DontHangUp: GDScript = preload("res://src/gameplay/decision/dont_hang_up_c
 const SafeCallback: GDScript = preload("res://src/gameplay/decision/safe_callback_chapter.gd")
 const VoiceControl: GDScript = preload("res://src/gameplay/decision/voice_control_chapter.gd")
 const HereToHelp: GDScript = preload("res://src/gameplay/decision/here_to_help_chapter.gd")
+const ConsistentStory: GDScript = preload("res://src/gameplay/decision/consistent_story_chapter.gd")
+const ExceptionChapter: GDScript = preload("res://src/gameplay/decision/exception_chapter.gd")
+const RealOffice: GDScript = preload("res://src/gameplay/decision/real_office_chapter.gd")
+const Gift: GDScript = preload("res://src/gameplay/decision/gift_for_club_chapter.gd")
+const PreviewHelper: GDScript = preload("res://src/gameplay/decision/just_open_it_chapter.gd")
+const EveryoneHasIt: GDScript = preload("res://src/gameplay/decision/everyone_has_it_chapter.gd")
+const FourConnections: GDScript = preload("res://src/gameplay/decision/four_connections_chapter.gd")
+const CONNECTION_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m5_report_source","title":"An independently reached support case","people":["mika","rham"],"field":"flags","value":"connections","status":"Known","source":"Module 5 / Existing school directory and support case","text":"Sir Rham opens the delivery review through the established School Office and support case. The suspicious sender did not supply this route."},
+ {"id":"m5_delivery_pair","title":"Two corroborated deliveries","people":["mika","rham"],"field":"domains","value":"connections","status":"Known","source":"Module 5 / Service export and preserved messages","text":"The service export supplies DL-041 for the coordinator's contact-list request and DL-052 for the event-pack offer. Their excerpts match the preserved originals. The independent review corroborates a connection between these two deliveries."},
+ {"id":"m5_attribution_limit","title":"The directing account is still withheld","people":["mika","rham"],"field":"captures","value":"connections","status":"Known","source":"Module 5 / Saved case note","text":"Mika keeps the report and both originals together while preserving the earlier case outcomes separately. The directing-account field is withheld pending verification. This report alone does not identify who directed the wider campaign. Her hearing question is: Who directed the switch?"}
+]
+const ENDORSEMENT_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m5_crop","title":"The missing banner context","people":["mika","amani"],"field":"flags","value":"endorsement","status":"Known","source":"Module 5 / Supplied crop and existing club chat","text":"Event Recovery Desk supplies Amani's words as praise for its event pack. The original club thread places Mika's banner photo and question above the reply. The crop removes this context."},
+ {"id":"m5_original_praise","title":"What Amani actually tried","people":["mika","amani"],"field":"domains","value":"endorsement","status":"Known","source":"Module 5 / Amani's club reply","text":"Amani says she followed the hand-painted banner's arrow from the gate. She did not try the download. Her praise does not endorse the package or implicate her in sending the offer."},
+ {"id":"m5_safe_warning","title":"Warning without the package","people":["mika","liza"],"field":"captures","value":"endorsement","status":"Known","source":"Module 5 / Preserved records and club warning","text":"Mika keeps the crop and original with their sources, explains the installation request and points classmates to the pinned club folder. The package remains closed and is not forwarded."}
+]
+const PREVIEW_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m5_helper_source","title":"Design desk reply","people":["mika"],"field":"flags","value":"helper","status":"Known","source":"Module 5 / Pinned contact and offer thread","text":"The Student Design Desk says its signs are in the club folder and denies sending a helper. The separate Event Recovery Desk conversation asks Mika to install one."},
+ {"id":"m5_helper_type","title":"A poster preview on an app package","people":["mika","john"],"field":"domains","value":"helper","status":"Known","source":"Module 5 / Attachment details","text":"The thumbnail depicts an event poster. EventPreview.apk is an Android app package. The sender asks Mika to allow installation from this source."},
+ {"id":"m5_helper_saved","title":"Package kept closed","people":["mika"],"field":"captures","value":"helper","status":"Known","source":"Module 5 / Preserved records","text":"Mika saved the message, file details and independent desk reply. She kept installation disabled and the package closed."}
+]
+const GIFT_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m5_offer","title":"A pack the club needs","people":["mika","john"],"field":"flags","value":"gift","status":"Known","source":"Module 5 / Event pack offer","text":"The incoming message offers finished signs and table numbers. Event Recovery Desk is its displayed name. The supplier role is a claim."},
+ {"id":"m5_sources","title":"The club's own materials plan","people":["mika"],"field":"domains","value":"gift","status":"Known","source":"Module 5 / Pinned club plan","text":"The existing chat assigns event artwork to the Student Design Desk through the club folder. The offer arrived in a separate conversation."},
+ {"id":"m5_contact","title":"Checked through the pinned contact","people":["mika"],"field":"captures","value":"gift","status":"Known","source":"Module 5 / Design desk inquiry","text":"Mika preserved the offer and contacted the design desk independently. The pack stays unopened while she awaits a reply."}
+]
+const MaskHolds: GDScript = preload("res://src/gameplay/decision/mask_holds_chapter.gd")
+const MASK_HOLDS_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m4_hearing_schedule","title":"A matching time is not an appointment","people":["rham","john","liza"],"field":"solved","value":0,"status":"Known","source":"Module 4 / Hearing / Schedule comparison","text":"The school's corrected schedule described an internal meeting, not the supplied external appointment. The ordinary time correction does not implicate its author."},
+ {"id":"m4_hearing_sources","title":"Count independent sources","people":["rham","liza","mika"],"field":"solved","value":1,"status":"Known","source":"Module 4 / Hearing / Document sources","text":"The matching profile, email and invitation repeated one unverified source. Agreement between supplied records did not independently confirm authority."},
+ {"id":"m4_hearing_exception","title":"Urgency did not establish permission","people":["rham","mika"],"field":"solved","value":2,"status":"Known","source":"Module 4 / Hearing / Request and approval notice","text":"The emergency claim did not establish the documented approval required by this fictional school's notice. The student roster stayed restricted; no partial list was sent."},
+ {"id":"m4_hearing_denial","title":"An independent answer","people":["rham","john","liza"],"field":"solved","value":3,"status":"Known","source":"Module 4 / Hearing / Established School Office","text":"The office reached through the existing school directory explicitly denied the assignment and requested authorization. This goes beyond the schedule discrepancy but does not identify the operator."},
+ {"id":"m4_hearing_outcome","title":"False authority, no disclosure","people":["rham","john","liza","mika"],"field":"final_matched","status":"Known","source":"Module 4 / Hearing / Final comparison and acknowledgement","text":"Already approved was the requester's claim. No assignment and no approval came from the independently contacted office. The school acknowledged the report, restricted the fraudulent contact and shared guidance. No roster was disclosed; the investigation remains open."}
+]
+const OFFICE_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m4_office_route","title":"An independently chosen office","people":["rham"],"field":"flags","value":"office","status":"Known","source":"Module 4 / Chapter 4 / Existing school directory","text":"Sir Rham follows his existing school directory to the established School Office entry and its response. The coordinator did not supply this route. He asks about both the external assignment and authorization for student contacts."},
+ {"id":"m4_office_denial","title":"No assignment, no approval","people":["rham"],"field":"domains","value":"office","status":"Known","source":"Module 4 / Chapter 4 / Independent office response","text":"The office explicitly denies assigning an external coordinator to this club case and approving this request for student contacts. The internal event meeting was separate. This contradicts the claims in this case; it does not identify the operator or guarantee every school system is safe."},
+ {"id":"m4_case_record","title":"Messages preserved, roster excluded","people":["rham"],"field":"captures","value":"office","status":"Known","source":"Module 4 / Chapter 4 / Saved case record","text":"The supplied appointment and private request are kept beside the independent office response, with their sources intact. No student roster or unsupported culprit accusation is included. No student contacts were disclosed."}
+]
+const EXCEPTION_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m4_roster_request","title":"Data and channel need permission","people":["rham"],"field":"flags","value":"exception","status":"Known","source":"Module 4 / Chapter 3 / Request and school notice","text":"The sender asks for student names, sections and contact numbers through a private conversation. The fictional school's displayed notice requires independently confirmed approval identifying recipient, purpose, fields and channel. No such approval for this request is in the record."},
+ {"id":"m4_exception_claim","title":"A claimed emergency exception","people":["rham"],"field":"domains","value":"exception","status":"Unverified","source":"Module 4 / Chapter 3 / Emergency claim","text":"Emergency clearance is already approved is the unverified sender's statement. Independently confirmed, documented approval is missing. The School Office has not yet answered; this finding is not an office denial or an identification of the sender."},
+ {"id":"m4_restricted_list","title":"The list stays restricted","people":["rham"],"field":"captures","value":"exception","status":"Known","source":"Module 4 / Chapter 3 / Independent route","text":"Sir Rham chooses the established School Office entry in his existing directory to ask about both the appointment and permission. No list, partial list or student contact is disclosed. The office response remains pending."}
+]
+const CONSISTENT_STORY_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m4_shared_source","title":"Three records, one supplier","people":["rham","john"],"field":"flags","value":"sources","status":"Unverified","source":"Module 4 / Chapter 2 / Source comparison","text":"The profile, email copy and invitation all came from the same unverified sender. Matching claims and school branding do not independently confirm the coordinator's role."},
+ {"id":"m4_expanded_request","title":"More than an acknowledgement","people":["rham"],"field":"domains","value":"sources","status":"Known","source":"Module 4 / Chapter 2 / Actual request","text":"The sender requests student names, sections and contact numbers for protective follow-up. A helpful purpose and matching documents do not establish authority to receive this list. No list is sent."},
+ {"id":"m4_notice_limits","title":"A correction with limited meaning","people":["rham","john"],"field":"captures","value":"sources","status":"Known","source":"Module 4 / Chapter 2 / Independent school notice","text":"The independently opened school notice corrects an internal event meeting from 10:30 to 11:00. It neither appoints the external coordinator nor authorizes disclosure. The correction does not implicate its staff author."}
+]
 const APPOINTMENT_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m4_claims","title":"Branding is observable, authority is not confirmed","people":["rham","john"],"field":"flags","value":"appointment","status":"Unverified","source":"Module 4 / Chapter 1 / Identity review","text":"The message displays school branding and claims an incident-response role and approval. These claims have not been independently confirmed."},
  {"id":"m4_schedule","title":"The appointment is not confirmed by the schedule","people":["rham"],"field":"domains","value":"appointment","status":"Known","source":"Module 4 / Chapter 1 / Independent schedule","text":"The supplied appointment proposes an external consultation. The existing school schedule lists an internal event meeting at the same time. This discrepancy needs clarification; it does not alone prove fraud."},
@@ -48,7 +98,7 @@ const CALLER_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m3_identity","title":"Identity remains unverified","people":["liza"],"field":"domains","value":"call","status":"Unverified","source":"Module 3 / Chapter 1 / Identity check","text":"The service has not independently confirmed this caller. A professional voice or a reference supplied by the caller would still need checking."},
  {"id":"m3_route","title":"An independent verification route","people":["liza"],"field":"captures","value":"call","status":"Known","source":"Module 3 / Chapter 1 / Verification route","text":"Liza chooses Support in the wallet app she already uses. Choosing this independent route does not yet confirm the caller's identity. No account code was shared."}
 ]
-const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl, HereToHelp]
+const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl, HereToHelp, ConsistentStory, ExceptionChapter, RealOffice, MaskHolds, Gift, PreviewHelper, EveryoneHasIt, FourConnections]
 const KEEP_CODE_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"solved","value":0,"status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
  {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"solved","value":1,"status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
@@ -141,6 +191,14 @@ static func chapter_definition(number: int) -> GDScript:
 	return CHAPTERS[clampi(number - 1, 0, CHAPTERS.size() - 1)]
 
 static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
+	if int(snapshot.get("_chapter", 1)) == 24: return CONNECTION_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 23: return ENDORSEMENT_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 22: return PREVIEW_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 21: return GIFT_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 20: return MASK_HOLDS_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 19: return OFFICE_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 18: return EXCEPTION_OBSERVATIONS.duplicate(true)
+	if int(snapshot.get("_chapter", 1)) == 17: return CONSISTENT_STORY_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 16: return APPOINTMENT_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 15: return VOICE_CONTROL_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 14: return CALLBACK_OBSERVATIONS.duplicate(true)
@@ -162,7 +220,21 @@ static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
 	return result
 
 static func character_ids(snapshot: Dictionary) -> Array[String]:
-	if int(snapshot.get("_chapter", 1)) == 16:
+	if int(snapshot.get("_chapter", 1)) == 24:
+		return ["mika","rham"] if seen_beat(snapshot,1) else ["mika"]
+	if int(snapshot.get("_chapter", 1)) == 23:
+		var people: Array[String] = ["mika"]
+		if seen_beat(snapshot,3): people.append("amani")
+		if seen_beat(snapshot,6): people.append("liza")
+		return people
+	if int(snapshot.get("_chapter", 1)) == 22:
+		return ["mika","john"] if seen_beat(snapshot,2) else ["mika"]
+	if int(snapshot.get("_chapter", 1)) == 21:
+		return ["mika","john"] if seen_beat(snapshot,1) else ["mika"]
+	if int(snapshot.get("_chapter", 1)) == 20:
+		return ["rham","john","liza","mika"] if snapshot.get("briefed",false) else ["rham"]
+	if int(snapshot.get("_chapter", 1)) in [18,19]: return ["rham"]
+	if int(snapshot.get("_chapter", 1)) in [16,17]:
 		return ["rham","john"] if seen_beat(snapshot,1) else ["rham"]
 	if int(snapshot.get("_chapter", 1)) == 15:
 		return ["liza","rham","john","eric"] if snapshot.get("briefed",false) else ["liza"]

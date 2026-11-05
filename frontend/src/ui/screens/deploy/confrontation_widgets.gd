@@ -30,6 +30,24 @@ static func draw_voice_signal(canvas: Control, area: Rect2, time: float, gentle:
 		trace.append(point + Vector2(step,amplitude))
 	canvas.draw_polyline(trace,tint,maxf(1.0,area.size.y / 50.0),false)
 
+## Source layers align inside the existing animation state and owner clock.
+static func draw_document_layers(canvas: Control, area: Rect2, time: float, gentle: bool, tint: Color, separate: bool = false) -> void:
+	var progress: float = 1.0 if gentle else smoothstep(0,.55,time)
+	var offset: float = (.08 + progress * .16) if separate else (.24 - progress * .16)
+	var page_size: Vector2 = area.size * Vector2(.56,.68)
+	var thickness: float = maxf(1.0,area.size.y / 90.0)
+	for index: int in 3:
+		var shift: Vector2 = Vector2(index - 1,(index - 1) * .16) * area.size * offset
+		var bounds: Rect2 = Rect2(area.get_center() - page_size * .5 + shift,page_size)
+		canvas.draw_rect(bounds,Color(PANEL,.92))
+		canvas.draw_rect(bounds,Color(tint,.35 + index * .25),false,thickness)
+		for row: int in 3:
+			var start: Vector2 = bounds.position + page_size * Vector2(.12,.27 + row * .19)
+			canvas.draw_line(start,start + Vector2(page_size.x * (.6 if row == 1 else .76),0),Color(CREAM,.3),thickness)
+		var corner: float = minf(page_size.x,page_size.y) * .16
+		canvas.draw_line(bounds.position,bounds.position + Vector2(corner,0),tint,thickness * 2)
+		canvas.draw_line(bounds.end,bounds.end - Vector2(0,corner),tint,thickness * 2)
+
 static func unit(control: Control) -> float:
 	return 1.0 / maxf(0.25,control.get_viewport().get_final_transform().get_scale().y)
 
@@ -110,7 +128,7 @@ class JoiningImpact extends Control:
 		if not connecting:
 			var card: Rect2 = Rect2(size*Vector2(.13,.08),size*Vector2(.74,.84))
 			draw_style_box(UI.box(PANEL,CYAN,ceili(10*u)),card)
-			line("SIR RHAM INVITED YOU",size.y*.23,18,CYAN)
+			line("YOUR CLUB HEARING IS READY" if protagonist == "Sir Rham" else "SIR RHAM INVITED YOU",size.y*.23,18,CYAN)
 			line("THE CLUB HEARING",size.y*.43,30,CREAM)
 			line("Zoom meeting / "+protagonist,size.y*.62,19,CREAM)
 			line("Your evidence is ready. So are they.",size.y*.79,17,CYAN)
@@ -119,7 +137,9 @@ class JoiningImpact extends Control:
 			var center: Vector2 = size*Vector2(.5,.42)
 			if effect_style == "voice_signal":
 				ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.18,.22),size * Vector2(.64,.4)),elapsed,gentle,CYAN)
-			for ring: int in (0 if effect_style == "voice_signal" else 3):
+			elif effect_style == "document_verify":
+				ConfrontationWidgets.draw_document_layers(self,Rect2(size * Vector2(.18,.12),size * Vector2(.64,.53)),elapsed,gentle,CYAN)
+			for ring: int in (0 if effect_style in ["voice_signal","document_verify"] else 3):
 				var radius: float = (25+ring*18)*u
 				var angle: float = 0 if gentle else elapsed*(1.6+ring*.4)
 				draw_arc(center,radius,angle,angle+TAU*(.65+ring*.08),64,Color(CYAN,1-ring*.25),2*u,true)
@@ -130,11 +150,12 @@ class JoiningImpact extends Control:
 		var names: PackedStringArray = participants
 		var gap: float = 10*u
 		var area: Rect2 = Rect2(size.x*.12,size.y*.17,size.x*.76,size.y*.66)
-		var cell: Vector2 = (area.size-Vector2(2*gap,gap))/Vector2(3,2)
+		var columns: int = 2 if names.size() <= 4 else 3
+		var cell: Vector2 = (area.size-Vector2((columns-1)*gap,gap))/Vector2(columns,2)
 		for index: int in names.size():
 			var arrival: float = 1.8+index*.45
 			var live: bool = elapsed >= arrival
-			var tile: Rect2 = Rect2(area.position+Vector2(index%3,index/3)*(cell+Vector2.ONE*gap),cell)
+			var tile: Rect2 = Rect2(area.position+Vector2(index%columns,index/columns)*(cell+Vector2.ONE*gap),cell)
 			if live and not gentle: tile.position.y += (1-smoothstep(arrival,arrival+.3,elapsed))*12*u
 			draw_style_box(UI.box(CARD,CYAN if live else BORDER,ceili(6*u)),tile)
 			if live:
@@ -149,6 +170,9 @@ class TitleImpact extends Control:
 	var elapsed: float = 0.0
 	var gentle: bool = false
 	func _draw() -> void:
+		if effect_style == "document_verify":
+			_draw_document_title()
+			return
 		if effect_style == "voice_signal":
 			_draw_voice_title()
 			return
@@ -188,7 +212,20 @@ class TitleImpact extends Control:
 		draw_string(UI.FONT,Vector2(-shift,size.y*.59),"LOSES CONTROL",HORIZONTAL_ALIGNMENT_CENTER,size.x,pixels,CREAM)
 		draw_string(UI.FONT,Vector2(16*u,size.y*.93),"CHAPTER 05 / MAKE YOUR ARGUMENT",HORIZONTAL_ALIGNMENT_CENTER,size.x-32*u,ceili(17*u),CYAN)
 
+	func _draw_document_title() -> void:
+		var u: float = ConfrontationWidgets.unit(self)
+		draw_rect(Rect2(Vector2.ZERO,size),BG)
+		ConfrontationWidgets.draw_document_layers(self,Rect2(size * Vector2(.07,.02),size * Vector2(.86,.87)),elapsed,gentle,Color(CYAN,.65),true)
+		var settle: float = 1.0 if gentle else smoothstep(0,.8,elapsed)
+		var shift: float = (1.0-settle)*size.x*.08
+		var pixels: int = maxi(24,mini(ceili(42*u),int(size.x / 17.0)))
+		draw_style_box(UI.box(PANEL,CYAN,0),Rect2(size.x*.05,size.y*.30,size.x*.9,size.y*.34))
+		draw_string(UI.FONT,Vector2(shift,size.y*.43),"THE MASK HOLDS",HORIZONTAL_ALIGNMENT_CENTER,size.x,pixels,CREAM)
+		draw_string(UI.FONT,Vector2(-shift,size.y*.58),"VERIFY THE SOURCE",HORIZONTAL_ALIGNMENT_CENTER,size.x,ceili(22*u),CYAN)
+		draw_string(UI.FONT,Vector2(16*u,size.y*.93),"CHAPTER 05 / MAKE YOUR ARGUMENT",HORIZONTAL_ALIGNMENT_CENTER,size.x-32*u,ceili(17*u),CYAN)
+
 static func portrait_asset(person: String) -> String:
+	if person == "Sir Rham": return "story_rham_poses"
 	return "story_" + person.to_lower() + "_poses" if person in ["Amani","Liza"] else "chapter1_" + person.to_lower()
 
 static func draw_person(canvas: Control, person: String, rect: Rect2, pose: int = 0, tint: Color = Color.WHITE, close_up: bool = false) -> void:
@@ -200,14 +237,14 @@ static func draw_person(canvas: Control, person: String, rect: Rect2, pose: int 
 		return
 	var split: float = float({"John":512.0,"Eric":524.0,"Jobert":546.0}.get(person,512.0))
 	var source: Rect2 = Rect2((pose%3)*512,0 if pose < 3 else split,512,split if pose < 3 else 1024-split)
-	if person in ["Amani","Liza"]:
+	if person in ["Amani","Liza","Sir Rham"]:
 		var cell: Vector2 = sheet.get_size()/Vector2(3,2)
 		source = Rect2(Vector2(pose%3,int(pose/3))*cell,cell)
 		source.position.x += cell.x*.14
 		source.size.x *= .72
 	else:
 		source.position.x += 100 if close_up else 38
-	if person not in ["Amani","Liza"]: source.size.x -= 200 if close_up else 76
+	if person not in ["Amani","Liza","Sir Rham"]: source.size.x -= 200 if close_up else 76
 	source.size.y *= .51 if close_up else .7
 	var ratio: float = minf(rect.size.x/source.size.x,rect.size.y/source.size.y)
 	var image_size: Vector2 = source.size*ratio
@@ -263,7 +300,7 @@ class CommandAnimation extends Control:
 		add_child(terminal)
 		var lines: VBoxContainer = UI.column(terminal,ceili(10*u))
 		lines.mouse_filter = MOUSE_FILTER_IGNORE
-		prompt = ConfrontationWidgets.copy(protagonist.to_upper()+"@HEARING  >  "+("VERIFY SOURCE" if effect_style == "voice_signal" else "LOAD EVIDENCE"),u,CYAN,16)
+		prompt = ConfrontationWidgets.copy(protagonist.to_upper()+"@HEARING  >  "+("VERIFY SOURCE" if effect_style in ["voice_signal","document_verify"] else "LOAD EVIDENCE"),u,CYAN,16)
 		prompt.mouse_filter = MOUSE_FILTER_IGNORE
 		lines.add_child(prompt)
 		command = ConfrontationWidgets.copy("",u,CREAM,24)
@@ -324,6 +361,7 @@ class CommandAnimation extends Control:
 		var eased: float = ease(progress,curve)
 		command.text = "> refute \""+evidence_title+"\"" if firing else "> evidence.load \""+evidence_title+"\""
 		if effect_style == "voice_signal" and not firing: command.text = "> voice.verify \""+evidence_title+"\""
+		if effect_style == "document_verify" and not firing: command.text = "> source.compare \""+evidence_title+"\""
 		var width: float = minf(size.x-32*u,640*u)
 		if firing: width = minf(width,UI.FONT.get_string_size(command.text,HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(24*u)).x+16*u)
 		command.visible_ratio = (eased if step == State.TYPE and not gentle else 1.0)
@@ -367,6 +405,9 @@ class CommandAnimation extends Control:
 			if effect_style == "voice_signal":
 				ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.06,.26),size * Vector2(.88,.46)),age,gentle,CYAN)
 				return
+			if effect_style == "document_verify":
+				ConfrontationWidgets.draw_document_layers(self,Rect2(size * Vector2(.08,.12),size * Vector2(.84,.76)),age,gentle,CYAN)
+				return
 			for index: int in 7:
 				var y: float = size.y*index/7.0
 				var width: float = size.x if gentle else size.x*ease(p,curves[0])
@@ -379,6 +420,8 @@ class CommandAnimation extends Control:
 				var trail: float = maxf(0,ease(p,fire_curve)-index*.025)
 				var point: Vector2 = origin.lerp(target,trail)+Vector2((index%3-1)*10*u,0)
 				if effect_style == "voice_signal": point.x += sin(index*.8-p*6.0)*14*u
+				if effect_style == "document_verify" and index % 4 == 0:
+					draw_rect(Rect2(point-Vector2(5,7)*u,Vector2(10,14)*u),Color(CYAN,(1-index/16.0)*.7),false,u)
 				draw_rect(Rect2((point/(3*u)).round()*(3*u),Vector2.ONE*(3+index%3)*u),Color(CYAN,(1-index/16.0)*.7))
 		elif step == State.CONFIRM:
 			var p: float = clampf(age/duration(),0,1)
@@ -401,6 +444,8 @@ class RebuttalImpact extends Control:
 			if effect_style == "voice_signal":
 				var strength: float = 1.0 if gentle else 1.0-smoothstep(.22,.55,elapsed)
 				ConfrontationWidgets.draw_voice_signal(self,Rect2(size * Vector2(.08,.60),size * Vector2(.84,.25)),elapsed,gentle,Color(CYAN,.75),strength)
+			elif effect_style == "document_verify":
+				ConfrontationWidgets.draw_document_layers(self,Rect2(size * Vector2(.10,.15),size * Vector2(.80,.7)),elapsed,gentle,CYAN,true)
 			if elapsed < .22:
 				var flight: float = 1 if gentle else smoothstep(0,.22,elapsed)
 				var command_point: Vector2 = (size*Vector2(.06,.88)).lerp(hit,flight)
@@ -441,7 +486,7 @@ class RebuttalImpact extends Control:
 		var scale_factor: float = minf(size.x/texture_size.x,size.y/texture_size.y)*zoom
 		var image_size: Vector2 = texture_size*scale_factor
 		draw_texture_rect(counter_art,Rect2((size-image_size)*.5,image_size),false)
-		var footer_y: float = size.y * (.95 if effect_style == "voice_signal" else .87)
+		var footer_y: float = size.y * (.95 if effect_style in ["voice_signal","document_verify"] else .87)
 		draw_string_outline(UI.FONT,Vector2(size.x*.04,footer_y),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),ceili(3*u),INK)
 		draw_string(UI.FONT,Vector2(size.x*.04,footer_y),"CLAIM REFUTED   /   +15",HORIZONTAL_ALIGNMENT_LEFT,-1,ceili(20*u),CYAN)
 
@@ -757,6 +802,13 @@ class EvidenceIcon extends Control:
 			draw_line(center,center+Vector2(h*.17,h*.08),CYAN,3)
 		elif kind == "short":
 			for offset: float in [-.2,.2]: draw_arc(center+Vector2(h*offset,0),h*.2,-.8,PI+.8,24,CYAN,4)
+		elif kind in ["appointment","sources","request","notice","denial","correction","report"]:
+			var page: Rect2 = Rect2(center-Vector2(h*.29,h*.33),Vector2(h*.58,h*.66))
+			draw_rect(page,CREAM)
+			for row: int in 3:
+				var start: Vector2 = page.position+Vector2(h*.08,h*(.16+row*.14))
+				draw_line(start,start+Vector2(h*(.28 if row == 2 else .42),0),INK,maxf(1,h*.025))
+			draw_rect(Rect2(page.end-Vector2(h*.08,h*.08),Vector2.ONE*h*.12),CYAN)
 		else:
 			draw_line(document.position,document.get_center(),CREAM,2)
 			draw_line(Vector2(document.end.x,document.position.y),document.get_center(),CREAM,2)
@@ -856,6 +908,7 @@ class MeetingLights extends Control:
 	var elapsed: float = 0.0
 	var gentle: bool = false
 	var inactive_connections: int = 1
+	var disconnect: bool = true
 	func _draw() -> void:
 		var texture: Texture2D = AssetManager.get_texture("opening_collector_meeting_v2")
 		if texture == null: return
@@ -863,10 +916,10 @@ class MeetingLights extends Control:
 		var dimensions: Vector2 = texture.get_size()*factor
 		var bounds: Rect2 = Rect2((size-dimensions)*.5,dimensions)
 		draw_texture_rect(texture,bounds,false)
-		if not gentle and elapsed > .3 and elapsed < 1.2:
+		if disconnect and not gentle and elapsed > .3 and elapsed < 1.2:
 			draw_rect(bounds,Color(0,0,0,.12+.12*sin(elapsed*14)))
-		var dim: float = clampf((elapsed-1.2)/1.8,0,.92)
-		if not gentle and elapsed > .5 and elapsed < 2.3: dim = maxf(dim,.3+sin(elapsed*14)*.2)
+		var dim: float = .92 if not disconnect or gentle else clampf((elapsed-1.2)/1.8,0,.92)
+		if disconnect and not gentle and elapsed > .5 and elapsed < 2.3: dim = maxf(dim,.3+sin(elapsed*14)*.2)
 		for connection: int in clampi(inactive_connections,1,4):
 			var opacity: float = dim if connection == inactive_connections-1 else .92
 			draw_rect(Rect2(bounds.position+Vector2(dimensions.x*(3-connection)*.25,0),Vector2(dimensions.x*.25,dimensions.y)),Color(0,0,0,opacity))

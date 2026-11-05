@@ -263,7 +263,7 @@ func _large_action(text: String, action: Callable, primary: bool = false) -> But
 	return button
 
 func _hearing_art() -> TextureRect:
-	var art: TextureRect = W.art("hearing_mystery_v1",40*_u)
+	var art: TextureRect = W.art(_text("prep_art","hearing_mystery_v1"),40*_u)
 	return art
 
 func _set_perks() -> void:
@@ -312,15 +312,19 @@ func _suspects() -> void:
 	grid.add_theme_constant_override("h_separation",ceili(12*_u))
 	grid.add_theme_constant_override("v_separation",ceili(8*_u))
 	scroll.add_child(grid)
+	var labels: Dictionary = Case.PRESENTATION.get("theory_labels",{})
 	for person: String in Case.SUSPECTS:
 		var selected: bool = _suspect_selected == person
 		var index: int = Case.SUSPECTS.find(person)+1
 		var caption: String = "SELECTED" if selected else "TAP TO SELECT"
 		if state.suspect_guesses.has(person): caption = "RECONSIDERED"
-		var choice: Button = W.button("%02d / %s\n%s" % [index,person.to_upper(),caption],_select_suspect.bind(person),_u)
+		var label: String = str(labels.get(person,person))
+		var choice_text: String = "%02d / %s" % [index,label.to_upper()]
+		if labels.is_empty() or selected or state.suspect_guesses.has(person): choice_text += "\n"+caption
+		var choice: Button = W.button(choice_text,_select_suspect.bind(person),_u)
 		choice.name = "Suspect_"+person
 		choice.custom_minimum_size.y = 64*_u
-		choice.add_theme_font_size_override("font_size",ceili(19*_u))
+		choice.add_theme_font_size_override("font_size",ceili((19 if labels.is_empty() else 17)*_u))
 		choice.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		choice.add_theme_stylebox_override("normal",UI.box(Color("153b37") if selected else W.CARD,W.CYAN if selected else W.BORDER,ceili(12*_u)))
 		choice.size_flags_horizontal = SIZE_EXPAND_FILL
@@ -331,7 +335,9 @@ func _suspects() -> void:
 		scroll.add_child(W.copy("THEORY BONUS / +15 CREDIBILITY" if state.theory_bonus else "JOINING / 20 CREDIBILITY",_u,W.GREEN if state.theory_bonus else W.CREAM))
 		column.add_child(_large_action("JOIN HEARING",_join,true))
 	else:
-		var confirm: Button = _large_action(_text("theory_action","QUESTION ") + _suspect_selected.to_upper() if not _suspect_selected.is_empty() else _text("theory_empty","SELECT A SUSPECT"),_pick_suspect.bind(_suspect_selected),true)
+		var confirm_text: String = _text("theory_empty","SELECT A SUSPECT")
+		if not _suspect_selected.is_empty(): confirm_text = "CHALLENGE SELECTED CLAIM" if not labels.is_empty() else _text("theory_action","QUESTION ")+_suspect_selected.to_upper()
+		var confirm: Button = _large_action(confirm_text,_pick_suspect.bind(_suspect_selected),true)
 		confirm.name = "ConfirmSuspect"
 		confirm.disabled = _suspect_selected.is_empty()
 		column.add_child(confirm)
@@ -571,10 +577,13 @@ func _match_typo() -> void:
 
 func _story(text: String, next: Callable, artwork: String, gray: bool = false) -> void:
 	var column: VBoxContainer = _column()
-	_cinematic_art = W.art(artwork,32*_u)
-	_cinematic_art.size_flags_vertical = SIZE_EXPAND_FILL
-	column.add_child(_cinematic_art)
-	if gray: W.grayscale(_cinematic_art)
+	if state.phase == "aftermath" and artwork == "opening_collector_meeting_v2" and not bool(Case.PRESENTATION.get("disconnect",true)):
+		column.add_child(_meeting_lights())
+	else:
+		_cinematic_art = W.art(artwork,32*_u)
+		_cinematic_art.size_flags_vertical = SIZE_EXPAND_FILL
+		column.add_child(_cinematic_art)
+		if gray: W.grayscale(_cinematic_art)
 	var scroll: VBoxContainer = UI.scroll_column(column)
 	(scroll.get_parent() as Control).size_flags_stretch_ratio = .65
 	_dialogue = W.copy("",_u,W.CREAM,21)
@@ -696,13 +705,18 @@ func _next_aftermath() -> void:
 		_change("lights")
 		AudioManager.play_opening_score("closing",self)
 
-func _lights() -> void:
-	var column: VBoxContainer = _column()
+func _meeting_lights() -> W.MeetingLights:
 	var image: W.MeetingLights = W.MeetingLights.new()
 	image.gentle = SettingsService.reduced_motion
 	image.inactive_connections = int(Case.PRESENTATION.get("lights",1))
+	image.disconnect = bool(Case.PRESENTATION.get("disconnect",true))
 	image.elapsed = _elapsed
 	image.size_flags_vertical = SIZE_EXPAND_FILL
+	return image
+
+func _lights() -> void:
+	var column: VBoxContainer = _column()
+	var image: W.MeetingLights = _meeting_lights()
 	column.add_child(image)
 	_stage = image
 	column.add_child(W.copy(_text("lights_caption","Four lights. One connection closes."),_u))

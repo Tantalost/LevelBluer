@@ -87,9 +87,25 @@ const DontHangUpChapter: GDScript = preload("res://src/gameplay/decision/dont_ha
 const SafeCallbackChapter: GDScript = preload("res://src/gameplay/decision/safe_callback_chapter.gd")
 const VoiceControlChapter: GDScript = preload("res://src/gameplay/decision/voice_control_chapter.gd")
 const HereToHelpChapter: GDScript = preload("res://src/gameplay/decision/here_to_help_chapter.gd")
+const ConsistentStoryChapter: GDScript = preload("res://src/gameplay/decision/consistent_story_chapter.gd")
+const ExceptionChapter: GDScript = preload("res://src/gameplay/decision/exception_chapter.gd")
+const RealOfficeChapter: GDScript = preload("res://src/gameplay/decision/real_office_chapter.gd")
+const MaskHoldsChapter: GDScript = preload("res://src/gameplay/decision/mask_holds_chapter.gd")
+const GiftChapter: GDScript = preload("res://src/gameplay/decision/gift_for_club_chapter.gd")
+const PreviewHelper: GDScript = preload("res://src/gameplay/decision/just_open_it_chapter.gd")
+const EveryoneHasIt: GDScript = preload("res://src/gameplay/decision/everyone_has_it_chapter.gd")
+const FourConnections: GDScript = preload("res://src/gameplay/decision/four_connections_chapter.gd")
 var chapter_replays: Dictionary = {}
 
 func story_definition(id: String) -> GDScript:
+	if id == FourConnections.ID: return FourConnections
+	if id == EveryoneHasIt.ID: return EveryoneHasIt
+	if id == PreviewHelper.ID: return PreviewHelper
+	if id == GiftChapter.ID: return GiftChapter
+	if id == MaskHoldsChapter.ID: return MaskHoldsChapter
+	if id == RealOfficeChapter.ID: return RealOfficeChapter
+	if id == ExceptionChapter.ID: return ExceptionChapter
+	if id == ConsistentStoryChapter.ID: return ConsistentStoryChapter
 	if id == HereToHelpChapter.ID: return HereToHelpChapter
 	if id == VoiceControlChapter.ID: return VoiceControlChapter
 	if id == SafeCallbackChapter.ID: return SafeCallbackChapter
@@ -104,9 +120,25 @@ func story_definition(id: String) -> GDScript:
 	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
 func authored_story_ids() -> PackedStringArray:
-	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID, VoiceControlChapter.ID, HereToHelpChapter.ID]
+	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID, VoiceControlChapter.ID, HereToHelpChapter.ID, ConsistentStoryChapter.ID, ExceptionChapter.ID, RealOfficeChapter.ID, MaskHoldsChapter.ID, GiftChapter.ID, PreviewHelper.ID, EveryoneHasIt.ID, FourConnections.ID]
 
 func story_unlocked(id: String) -> bool:
+	if id == FourConnections.ID:
+		return story_unlocked(EveryoneHasIt.ID) and chapter_progress.get(EveryoneHasIt.ID,{}).get("completed",false)
+	if id == EveryoneHasIt.ID:
+		return story_unlocked(PreviewHelper.ID) and chapter_progress.get(PreviewHelper.ID,{}).get("completed",false)
+	if id == PreviewHelper.ID:
+		return story_unlocked(GiftChapter.ID) and chapter_progress.get(GiftChapter.ID,{}).get("completed",false)
+	if id == GiftChapter.ID:
+		return is_module_deploy_unlocked("mod_05") and chapter_progress.get(MaskHoldsChapter.ID, {}).get("completed", false)
+	if id == MaskHoldsChapter.ID:
+		return story_unlocked(RealOfficeChapter.ID) and chapter_progress.get(RealOfficeChapter.ID, {}).get("completed", false)
+	if id == RealOfficeChapter.ID:
+		return story_unlocked(ExceptionChapter.ID) and chapter_progress.get(ExceptionChapter.ID, {}).get("completed", false)
+	if id == ExceptionChapter.ID:
+		return story_unlocked(ConsistentStoryChapter.ID) and chapter_progress.get(ConsistentStoryChapter.ID, {}).get("completed", false)
+	if id == ConsistentStoryChapter.ID:
+		return story_unlocked(HereToHelpChapter.ID) and chapter_progress.get(HereToHelpChapter.ID, {}).get("completed", false)
 	if id == HereToHelpChapter.ID:
 		return is_module_deploy_unlocked("mod_04") and chapter_progress.get(VoiceControlChapter.ID, {}).get("completed", false)
 	if id == VoiceControlChapter.ID:
@@ -1654,6 +1686,38 @@ func apply_save_data(data: Dictionary) -> void:
 		chapter_progress[HereToHelpChapter.ID] = HereToHelpChapter.clean(saved_chapters[HereToHelpChapter.ID])
 	if replays is Dictionary and replays.get(HereToHelpChapter.ID) is Dictionary:
 		chapter_replays[HereToHelpChapter.ID] = HereToHelpChapter.clean(replays[HereToHelpChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(ConsistentStoryChapter.ID) is Dictionary:
+		chapter_progress[ConsistentStoryChapter.ID] = ConsistentStoryChapter.clean(saved_chapters[ConsistentStoryChapter.ID])
+	if replays is Dictionary and replays.get(ConsistentStoryChapter.ID) is Dictionary:
+		chapter_replays[ConsistentStoryChapter.ID] = ConsistentStoryChapter.clean(replays[ConsistentStoryChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(ExceptionChapter.ID) is Dictionary:
+		chapter_progress[ExceptionChapter.ID] = ExceptionChapter.clean(saved_chapters[ExceptionChapter.ID])
+	if replays is Dictionary and replays.get(ExceptionChapter.ID) is Dictionary:
+		chapter_replays[ExceptionChapter.ID] = ExceptionChapter.clean(replays[ExceptionChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(RealOfficeChapter.ID) is Dictionary:
+		chapter_progress[RealOfficeChapter.ID] = RealOfficeChapter.clean(saved_chapters[RealOfficeChapter.ID])
+	if replays is Dictionary and replays.get(RealOfficeChapter.ID) is Dictionary:
+		chapter_replays[RealOfficeChapter.ID] = RealOfficeChapter.clean(replays[RealOfficeChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(MaskHoldsChapter.ID) is Dictionary:
+		chapter_progress[MaskHoldsChapter.ID] = MaskHoldsChapter.clean(saved_chapters[MaskHoldsChapter.ID])
+	if replays is Dictionary and replays.get(MaskHoldsChapter.ID) is Dictionary:
+		chapter_replays[MaskHoldsChapter.ID] = MaskHoldsChapter.clean(replays[MaskHoldsChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(GiftChapter.ID) is Dictionary:
+		chapter_progress[GiftChapter.ID] = GiftChapter.clean(saved_chapters[GiftChapter.ID])
+	if replays is Dictionary and replays.get(GiftChapter.ID) is Dictionary:
+		chapter_replays[GiftChapter.ID] = GiftChapter.clean(replays[GiftChapter.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(PreviewHelper.ID) is Dictionary:
+		chapter_progress[PreviewHelper.ID] = PreviewHelper.clean(saved_chapters[PreviewHelper.ID])
+	if replays is Dictionary and replays.get(PreviewHelper.ID) is Dictionary:
+		chapter_replays[PreviewHelper.ID] = PreviewHelper.clean(replays[PreviewHelper.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(EveryoneHasIt.ID) is Dictionary:
+		chapter_progress[EveryoneHasIt.ID] = EveryoneHasIt.clean(saved_chapters[EveryoneHasIt.ID])
+	if replays is Dictionary and replays.get(EveryoneHasIt.ID) is Dictionary:
+		chapter_replays[EveryoneHasIt.ID] = EveryoneHasIt.clean(replays[EveryoneHasIt.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(FourConnections.ID) is Dictionary:
+		chapter_progress[FourConnections.ID] = FourConnections.clean(saved_chapters[FourConnections.ID])
+	if replays is Dictionary and replays.get(FourConnections.ID) is Dictionary:
+		chapter_replays[FourConnections.ID] = FourConnections.clean(replays[FourConnections.ID])
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)

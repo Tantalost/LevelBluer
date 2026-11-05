@@ -402,14 +402,14 @@ func _character_portrait(id: String) -> Control:
 	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	image.mouse_filter = MOUSE_FILTER_IGNORE
 	frame.add_child(image)
-	var sheet: Texture2D = AssetManager.get_texture("story_" + id + "_poses" if id in ["amani","liza"] else "chapter1_" + id) if id in Field.CHARACTER_IDS or id in ["amani","liza"] else null
+	var sheet: Texture2D = AssetManager.get_texture("story_" + id + "_poses" if id in ["amani","liza","mika"] else "chapter1_" + id) if id in Field.CHARACTER_IDS or id in ["amani","liza","mika"] else null
 	if sheet != null:
 		var portrait: AtlasTexture = AtlasTexture.new()
 		portrait.atlas = sheet
 		# Neutral first pose, using the same authored row split as Chapter 1.
-		var split: float = float({"john":512, "eric":524, "jobert":546, "amani":512, "liza":512}[id])
+		var split: float = float({"john":512, "eric":524, "jobert":546, "amani":512, "liza":512,"mika":512}[id])
 		portrait.region = Rect2(100, 0, 312, split * 0.7)
-		if id == "liza": portrait.region = Rect2(Vector2.ZERO, sheet.get_size() / Vector2(3,2))
+		if id in ["liza","mika"]: portrait.region = Rect2(Vector2.ZERO, sheet.get_size() / Vector2(3,2))
 		portrait.filter_clip = true
 		image.texture = portrait
 	else:

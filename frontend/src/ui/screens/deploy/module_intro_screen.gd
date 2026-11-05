@@ -41,7 +41,16 @@ const RHAM_BEATS: Array[Dictionary] = [
  {"visual":"resolve","line":"I was ready to help. I still needed to know who I was helping."},
 ]
 
+const MIKA_BEATS: Array[Dictionary] = [
+ {"visual":"caption","line":"Auditorium wings. Early evening, as Sir Rham's hearing ends."},
+ {"visual":"resolve","face":1,"line":"John, turn the arrow the other way. Unless we're holding the event in the broom closet."},
+ {"visual":"sms","face":3,"line":"That was my phone. Someone has event materials for us?"},
+ {"visual":"sms","face":0,"line":"Posters, arrows, room signs. If this has table numbers too, I might cry."},
+ {"visual":"resolve","face":1,"line":"One second. Let me help carry this sign first."}
+]
+
 class IntroArtwork extends Control:
+	var gift_style: bool = false
 	var credential_style: bool = false
 	var room: Texture2D
 	var title_art: Texture2D
@@ -64,6 +73,9 @@ class IntroArtwork extends Control:
 			_cover(room, Rect2(Vector2.ZERO, size), Color.WHITE)
 		else:
 			_cover(title_art if title_art != null else room, Rect2(Vector2.ZERO, size), Color(1, 1, 1, reveal))
+			if gift_style:
+				var tab: Vector2 = size * Vector2(.80 + .07*reveal,.68)
+				draw_colored_polygon(PackedVector2Array([tab,tab+size*Vector2(.05,-.015),tab+size*Vector2(.012,.044)]),Color("8FF0E6",.75))
 			if credential_style:
 				# Existing reveal tween aligns source layers; reduced motion starts aligned.
 				for index: int in 3:
@@ -236,13 +248,10 @@ func on_enter(args: Dictionary) -> void:
 	_index = 0
 	_ending = false
 	_load_art()
-	if _module_index not in [0,1,2,3]:
-		_leave_to_stages()
-		return
 	_show_beat()
 
 func _beats() -> Array[Dictionary]:
-	return RHAM_BEATS if _module_index == 3 else LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
+	return MIKA_BEATS if _module_index == 4 else RHAM_BEATS if _module_index == 3 else LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
 
 func _show_beat() -> void:
 	_stop_tweens()
@@ -262,9 +271,9 @@ func _show_beat() -> void:
 	var beat: Dictionary = _beats()[_index]
 	var visual: String = str(beat["visual"])
 	_art.queue_redraw()
-	_counter.text = "THE PERFECT CREDENTIAL" if _module_index == 3 else "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
-	_speaker.text = "Sir Rham / Before the request" if _module_index == 3 else "Liza  /  Before the code" if _module_index == 2 else "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
-	_caption_advance.accessibility_name = "Continue Sir Rham's thought" if _module_index == 3 else "Continue Liza's thought" if _module_index == 2 else "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
+	_counter.text = "THE LAST GIFT" if _module_index == 4 else "THE PERFECT CREDENTIAL" if _module_index == 3 else "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
+	_speaker.text = "Mika / After the hearing" if _module_index == 4 else "Sir Rham / Before the request" if _module_index == 3 else "Liza  /  Before the code" if _module_index == 2 else "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
+	_caption_advance.accessibility_name = "Continue Mika's thought" if _module_index == 4 else "Continue Sir Rham's thought" if _module_index == 3 else "Continue Liza's thought" if _module_index == 2 else "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
 	_load_art()
 	_dialogue_text.text = str(beat["line"])
 	_item.visible = visual in ["email","sms","call"]
@@ -317,6 +326,11 @@ func _show_caption(beat: Dictionary) -> void:
 
 func _build_item() -> void:
 	UI.clear(_item_copy)
+	if _module_index == 4:
+		_item_label("UNREAD OFFER",Color("153B37"))
+		_item_label("Event Recovery Desk",Color("101623"),true)
+		_item_label("Your event materials are ready.",Color("101623"))
+		return
 	if _module_index == 3:
 		_item_label("LATER / FACULTY CONSULTATION ROOM", Color("153B37"))
 		_item_label("Emergency clearance claimed", Color("101623"), true)
@@ -388,9 +402,9 @@ func _show_title() -> void:
 	_chapter_label.show()
 	_ending_title.show()
 	_chapter_label.text = "MODULE %d" % (_module_index + 1)
-	_ending_title.text = "Fake Stories" if _module_index == 3 else "Phone Tricks" if _module_index == 2 else "Text Tricks" if _module_index == 1 else "Email Tricks"
-	_subtitle.visible = _module_index in [1,2,3]
-	_subtitle.text = "The Perfect Credential" if _module_index == 3 else "Stay on the Line" if _module_index == 2 else "The Message That Knew"
+	_ending_title.text = "Tempting Offers" if _module_index == 4 else "Fake Stories" if _module_index == 3 else "Phone Tricks" if _module_index == 2 else "Text Tricks" if _module_index == 1 else "Email Tricks"
+	_subtitle.visible = _module_index in [1,2,3,4]
+	_subtitle.text = "The Last Gift" if _module_index == 4 else "The Perfect Credential" if _module_index == 3 else "Stay on the Line" if _module_index == 2 else "The Message That Knew"
 	_load_art()
 	_start_button.show()
 	_start_button.disabled = true
@@ -433,29 +447,32 @@ func _leave_to_stages() -> void:
 	_leaving = true
 	_stop_tweens()
 	_start_button.disabled = true
-	if _module_index in [0,1,2,3]:
+	if _module_index in [0,1,2,3,4]:
 		PlayerManager.mark_module_intro_seen("mod_%02d" % (_module_index + 1))
-	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1,2,3]})
+	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1,2,3,4]})
 
 func _can_interact() -> bool:
 	return _active and not _leaving and not _focus_lost and not _app_paused
 
 func _load_art() -> void:
 	_art.portrait = null
+	_art.gift_style = _module_index == 4
 	_art.credential_style = _module_index == 3
-	if _module_index in [1,2,3]:
+	if _module_index in [1,2,3,4]:
 		_art.room = AssetManager.get_texture("story_bg_club_corridor_afternoon" if _index < 3 else "story_bg_event_room_day")
 		if _art.room == null:
 			_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
 		if _module_index == 2: _art.room = AssetManager.get_texture("story_bg_mod3_rain_courtyard_v1" if _index < 3 else "story_bg_mod3_briefing_classroom_v1" if _index < 5 else "story_bg_mod3_covered_walkway_v1")
 		if _module_index == 3: _art.room = AssetManager.get_texture("story_bg_mod4_consultation_room_v1" if _index < 3 else "story_bg_mod4_faculty_workroom_v1")
-		_art.title_art = AssetManager.get_texture("module4_mystery_title_v1" if _module_index == 3 else "module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
-		var sheet: Texture2D = AssetManager.get_texture("story_rham_poses" if _module_index == 3 else "story_liza_poses" if _module_index == 2 else "story_amani_poses")
+		if _module_index == 4: _art.room = AssetManager.get_texture("story_bg_mod5_auditorium_wings_v1")
+		_art.title_art = AssetManager.get_texture("module5_mystery_title_v1" if _module_index == 4 else "module4_mystery_title_v1" if _module_index == 3 else "module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
+		var sheet: Texture2D = AssetManager.get_texture("story_mika_poses" if _module_index == 4 else "story_rham_poses" if _module_index == 3 else "story_liza_poses" if _module_index == 2 else "story_amani_poses")
 		if sheet != null and not _ending and str(_beats()[_index].visual) != "caption":
 			var portrait: AtlasTexture = AtlasTexture.new()
 			portrait.atlas = sheet
 			var cell: Vector2 = sheet.get_size() / Vector2(3,2)
-			portrait.region = Rect2(Vector2(2,0) * cell, cell)
+			var face: int = int(_beats()[_index].get("face",2))
+			portrait.region = Rect2(Vector2(face%3,int(face/3)) * cell, cell)
 			_art.portrait = portrait
 	else:
 		_art.room = AssetManager.get_texture("opening_john_room_wake_v1")
