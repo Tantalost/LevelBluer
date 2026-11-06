@@ -419,6 +419,8 @@ func _school_story_catalog() -> Array[Dictionary]:
 	catalog.append(_catalog_entry("story_bg_mod5_sign_shelter_v1","Module 5 / Sign-painting shelter","image","%s/v1793857912/levelblue_mod5_sign_shelter_v1_20261105.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod5_incident_desk_v1","Module 5 / Student services incident desk","image","%s/v1793858817/levelblue_mod5_incident_desk_v1_20261105.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("module5_mystery_title_v1","Module 5 / The Last Gift","image","%s/v1793837008/levelblue_mod5_mystery_title_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod5_production_booth_v1","Module 5 / Event production booth","image","%s/v1793924632/levelblue_mod5_production_booth_v1_20261106.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("module5_mika_counter_paper_v1","Module 5 / Mika counter","image","%s/v1793924642/levelblue_mod5_mika_counter_paper_v1_20261106.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_rham_poses", "Module 4 / Sir Rham expression sheet", "image", "%s/v1793694622/levelblue_mod4_sir_rham_poses_v1_20261103.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod4_faculty_workroom_v1", "Module 4 / Faculty workroom", "image", "%s/v1793694625/levelblue_mod4_faculty_workroom_v1_20261103.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod4_admin_reception_v1", "Module 4 / Administration reception", "image", "%s/v1793734229/levelblue_mod4_admin_reception_v1_20261104.png" % CLOUD_ROOT))

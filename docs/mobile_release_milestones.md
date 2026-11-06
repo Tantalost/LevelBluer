@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3D is locally implemented through Chapter 4 as of 4 November: Module 4 intro, Chapters 1–4, Sir Rham portrait sheet, four environments and mystery title. Chapter 5 and whole-module/device acceptance remain open. Gate 3C local implementation is complete as of 3 November: Module 3 intro, all five chapters, five dedicated backgrounds, Codex/Progress records and vishing-practice handoff are implemented and locally verified. Physical-device/deployment acceptance remains open. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+Status as of 6 November 2026: Modules 1–4 have all five chapters locally implemented. Module 5 has its intro and Chapters 1–3 reviewed; Chapter 4 is implemented and its local flow check passes, but its review was paused by the user for a whole-system audit. Chapter 5 and campaign closure remain unimplemented. There are 24 authored chapter definitions. Module 5 has four hosted environments; the production booth and finale presentation remain open. Physical-device/deployment acceptance is still outstanding across the modules. See the whole-system audit at the end of this document for current completion estimates and validation gaps. The deadline remains a tested, deployable mobile application, not student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a guarantee regardless of scope or defects.
 
 ## Release outcome
 
@@ -20,7 +20,7 @@ The paths are connected but not forced into one rigid sequence. Retain approved 
 - Module 2 has legacy scenario material; Module 3 has an existing call interaction. These are reusable material, not four completed story campaigns. Modules 4 and 5 need their story content agreed.
 - The teacher/school-head web application is a separate dependency. This plan does not assume its authorization, analytics, deployments or source access are already verified.
 
-No percentages are used. Each item is implemented, locally verified, device verified, blocked, or deferred—with evidence attached.
+Gate acceptance uses implemented, locally verified, device verified, blocked or deferred states with evidence. At the user's request, the 6 November audit also supplies approximate planning percentages. Those estimates do not replace gate acceptance or represent measured learning gains.
 
 ## Deadline controls
 
@@ -1061,3 +1061,48 @@ The new late-morning shelter background is hosted through Cloudinary. Its banner
 Chapter 3 verification, the Chapter 2 handoff regression and the Chapter 1 opening/selector regression all passed with zero failures in Godot 4.7.2. Checks covered prerequisites, mandatory source inspection, partial save/load, corrective feedback, pause/account guards, reward-once behavior, replay preservation, Codex discovery and unchanged graded mastery/learning events. The comparison card, safe warning and selector were reviewed in rendered mobile previews at 720×360, 844×390 and 932×430. These previews do not close physical-device or installed-build acceptance. Developer checks, artifacts and source PNGs remain local and ignored, with no new files staged.
 
 Next implementation gate: **Chapter 4, Four Connections**. Use the independently reached support case and corroborated delivery references in the new afternoon incident-desk setting. Keep the directing-account field withheld until the Chapter 5 final comparison.
+
+## Whole-system completion audit — 6 November 2026
+
+The user paused feature work during Chapter 4 review and requested a whole-system completion estimate. No further gameplay implementation was performed during this audit. The assessment uses the current working tree, existing implementation reviews and fresh local checks. It does not establish the state of a deployed version or an installed phone. The separate staff web application's source and authorized roles are not available in this workspace.
+
+**Planning estimate: approximately 70% complete toward the tested, deployable whole-system target, with a ±5 percentage-point uncertainty.** This is an engineering estimate against the agreed release scope, not a count of files, a test pass percentage or a prediction of elapsed work remaining. Release integration receives substantial weight because it is mandatory. The missing finale is more work than an average chapter, so 24/25 authored definitions does not mean the story is 96% finished.
+
+| Area | Estimated completion | Weight in overall estimate | Evidence and remaining work |
+| --- | --- | --- | --- |
+| Story / Deploy | 90% | 20% | Modules 1–4 have five chapters each. Module 5 has four implemented chapters; Chapter 4's review is paused after a passing flow check. Final hearing, mastermind reveal, reconstruction, campaign closure and final environment/presentation remain. Device acceptance remains open. |
+| Lessons | 85% | 10% | Five modules and 30 topics; fresh workspace check passes all 30. Finish content/answer-key review and installed-device acceptance. |
+| BKT and adaptive practice | 80% | 15% | Actual posterior/learning updates, weaker-eligible-topic practice selection and difficulty selection exist. Fresh offline-sync checks pass. Estimates cover five broad threat topics; parameters are configured, not fitted to student data. The wrong-answer decrease cap is a deliberate modification to classic BKT. Device-to-hosted persistence and adaptive demonstrations remain open. |
+| Codex | 85% | 5% | Searchable field guide and discovery-gated chapter records cover 24 authored chapters. Final records and full-campaign presentation acceptance remain. |
+| Student Progress | 80% | 5% | Uses live mastery, lesson/checkpoint data and dynamic authored chapter totals with sync labels. Later-module locked guidance needs correction: `progress_data.gd` explicitly handles Modules 2–3 but can fall back to “Complete Chapter 0 first” for a locked first chapter in Modules 4–5. Two local assertions still assume five total chapters. |
+| PvP | 70% | 10% | Room/join, matchmaking, authoritative duel logic, reconnect handling, history and ratings are implemented. Mock session check passes. Two installed phones, hosted interruptions/results and Store-currency integration remain. Extra game types are outside the agreed minimum release. |
+| Store | 50% | 6% | Purchase/ownership checks and avatar selection exist; local Store fixtures pass. Non-avatar items explicitly say equipping is unavailable. `pvp_tokens`/Threat settlement from matches is not implemented; PvP rating is a separate value. The earn → buy → equip → Profile/PvP loop is incomplete. |
+| Profile | 75% | 4% | Shared progress snapshot and selectable owned avatars exist. Complete supported cosmetic integration and reconcile the outdated full-completion/asset assertions before final acceptance. |
+| Account/backend integration | 80% | 5% | Auth, local/cloud save ownership, progress/BKT services and configured hosted origins exist, with substantial local coverage. Installed-client login, expiry, reconnect, account switching and live database contracts need acceptance. |
+| Staff monitoring/support integration | Unverified | 5% reserved | Mobile records and feedback integration exist. An earlier live feedback receipt is documented, but teacher/head authorization, progress reconciliation and support actions cannot be counted as accepted from this mobile repository. No completion credit is assigned for this reserved dependency; this does not mean the separate web app is unimplemented. |
+| Mobile release and deployment acceptance | 30% | 15% | Android development preset and a signed development APK exist. The APK is dated 30 October and predates recent story additions. Release signing/identity, updated build, target-phone journeys, current hosted deployment and handover remain open. |
+
+The weighted value is approximately 68%, rounded to about 70% at this level of uncertainty. Features being present is distinct from their release gates passing. The amount of remaining work is not proportional to the number of remaining story chapters.
+
+### Fresh validation evidence
+
+- Python discovery ran **369 tests: 357 passed, 11 failed and 1 errored**. The failing scenario checks reference legacy titles/structures such as “The First Warning” while current content says “Before the Bell”; one expects a `threats` key. The TRACE source assertion expects a `[TRACE EXAM]` marker absent from current code. These require reconciliation with the intended legacy support boundary; they were not deleted, rewritten or declared harmless.
+- Godot Lessons workspace: **30 topics, zero failures**.
+- Godot BKT offline sync: **zero failures**, including topic-specific diagnostics, newer-learning preservation and delayed-account-response guards.
+- Godot Store fixtures: **zero failures** for implemented behavior. This does not supply missing equipping or match-earned currency.
+- Godot online PvP session fixtures: **zero failures**, using fake HTTP/WebSocket transports. No two-phone live acceptance was performed.
+- Godot Progress: **2 failed assertions**, both expecting five authored chapters despite the current 24.
+- Godot Profile: **13 failed assertions**. Ten require avatars to be remote-only; three treat Module 1 completion as whole-campaign completion/expected routing. These are validation-contract discrepancies to resolve, not proof of thirteen distinct runtime faults.
+- Immediately before the pause, Chapter 4's rendered flow verification passed with zero failures. Its small-screen pairing view and case-note scrolling still need final review; the Chapter 3 → 4 handoff regression has not yet been run in this slice.
+
+Audit logs are retained locally under `frontend/.godot/system_audit_*.log`. Developer tests and generated logs remain ignored. No production service or student record was changed, no deployment was performed, and no files were staged for this audit.
+
+### Recommended remaining order
+
+1. Resume and close Chapter 4 review, then finish Module 5's shared-format Chapter 5, campaign ending and final art.
+2. Reconcile the stale validation contracts and confirmed later-module guidance defect; demonstrate the complete Lessons → BKT → Progress → account-sync path.
+3. Finish the agreed PvP → Threat → supported Store item → Profile/PvP use flow, with two-device acceptance.
+4. Verify the separate teacher/head monitoring and support workflow. Confirm independent research assessment delivery separately from gameplay scores.
+5. Rebuild the Android app, run full journeys on target phones against the deployed services, fix blocking defects and close release handover.
+
+The existing 19 November deadline leaves about two weeks. Prioritize these integration and acceptance gates over new game modes or broad visual redesigns. Story progress alone cannot close the whole-system target.

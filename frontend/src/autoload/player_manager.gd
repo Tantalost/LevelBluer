@@ -95,9 +95,11 @@ const GiftChapter: GDScript = preload("res://src/gameplay/decision/gift_for_club
 const PreviewHelper: GDScript = preload("res://src/gameplay/decision/just_open_it_chapter.gd")
 const EveryoneHasIt: GDScript = preload("res://src/gameplay/decision/everyone_has_it_chapter.gd")
 const FourConnections: GDScript = preload("res://src/gameplay/decision/four_connections_chapter.gd")
+const CloseConnection: GDScript = preload("res://src/gameplay/decision/close_connection_chapter.gd")
 var chapter_replays: Dictionary = {}
 
 func story_definition(id: String) -> GDScript:
+	if id == CloseConnection.ID: return CloseConnection
 	if id == FourConnections.ID: return FourConnections
 	if id == EveryoneHasIt.ID: return EveryoneHasIt
 	if id == PreviewHelper.ID: return PreviewHelper
@@ -120,9 +122,11 @@ func story_definition(id: String) -> GDScript:
 	return {"mod_01_ch_01":SurveyChapter, "mod_01_ch_02":AdvisorChapter, "mod_01_ch_03":PayoutChapter, "mod_01_ch_04":PrizeChapter, "mod_01_ch_05":ConfrontationChapter}.get(id)
 
 func authored_story_ids() -> PackedStringArray:
-	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID, VoiceControlChapter.ID, HereToHelpChapter.ID, ConsistentStoryChapter.ID, ExceptionChapter.ID, RealOfficeChapter.ID, MaskHoldsChapter.ID, GiftChapter.ID, PreviewHelper.ID, EveryoneHasIt.ID, FourConnections.ID]
+	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID, VoiceControlChapter.ID, HereToHelpChapter.ID, ConsistentStoryChapter.ID, ExceptionChapter.ID, RealOfficeChapter.ID, MaskHoldsChapter.ID, GiftChapter.ID, PreviewHelper.ID, EveryoneHasIt.ID, FourConnections.ID, CloseConnection.ID]
 
 func story_unlocked(id: String) -> bool:
+	if id == CloseConnection.ID:
+		return story_unlocked(FourConnections.ID) and chapter_progress.get(FourConnections.ID,{}).get("completed",false)
 	if id == FourConnections.ID:
 		return story_unlocked(EveryoneHasIt.ID) and chapter_progress.get(EveryoneHasIt.ID,{}).get("completed",false)
 	if id == EveryoneHasIt.ID:
@@ -1718,6 +1722,10 @@ func apply_save_data(data: Dictionary) -> void:
 		chapter_progress[FourConnections.ID] = FourConnections.clean(saved_chapters[FourConnections.ID])
 	if replays is Dictionary and replays.get(FourConnections.ID) is Dictionary:
 		chapter_replays[FourConnections.ID] = FourConnections.clean(replays[FourConnections.ID])
+	if saved_chapters is Dictionary and saved_chapters.get(CloseConnection.ID) is Dictionary:
+		chapter_progress[CloseConnection.ID] = CloseConnection.clean(saved_chapters[CloseConnection.ID])
+	if replays is Dictionary and replays.get(CloseConnection.ID) is Dictionary:
+		chapter_replays[CloseConnection.ID] = CloseConnection.clean(replays[CloseConnection.ID])
 	if data.has("tutorial_complete"):
 		var tutorial_raw: Variant = data["tutorial_complete"]
 		var tutorial_type: int = typeof(tutorial_raw)

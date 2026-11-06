@@ -375,6 +375,7 @@ func _join() -> void:
 func _intro() -> void:
 	var column: VBoxContainer = _column()
 	var title: W.JoiningImpact = W.JoiningImpact.new()
+	title.invitation = _text("invitation","")
 	title.effect_style = _text("effect_style","")
 	title.protagonist = _text("protagonist","John")
 	title.participants = _cast()
@@ -549,6 +550,9 @@ func _final_blow() -> void:
 	_chat_text.add_theme_font_size_override("normal_font_size",ceili(25*_u))
 	_chat_text.text = _text("final_text","I didn't [color=#FFB648]recieve[/color] anything from those messages. You can't blame me for helping.")
 	scroll.add_child(_chat_text)
+	# Final-only records stay out of preparation and the evidence picker.
+	if not _text("final_detail","").is_empty():
+		scroll.add_child(W.copy(_text("final_detail",""),_u,W.CREAM,18))
 	for id: String in Case.PRESENTATION.get("final_exhibits",["typo1","typo4"]):
 		var item: Dictionary = _exhibit(id)
 		scroll.add_child(W.copy(str(item.source)+"\n"+str(item.detail),_u,W.CYAN))
@@ -577,8 +581,14 @@ func _match_typo() -> void:
 
 func _story(text: String, next: Callable, artwork: String, gray: bool = false) -> void:
 	var column: VBoxContainer = _column()
-	if state.phase == "aftermath" and artwork == "opening_collector_meeting_v2" and not bool(Case.PRESENTATION.get("disconnect",true)):
-		column.add_child(_meeting_lights())
+	if state.phase == "aftermath" and artwork == "opening_collector_meeting_v2" and (not bool(Case.PRESENTATION.get("disconnect",true)) or _module_index() == 4):
+		var lights: W.MeetingLights = _meeting_lights()
+		# The final cutaway starts with three inactive connections. The lights
+		# phase owns the fourth disconnect instead of replaying it on each line.
+		if _module_index() == 4:
+			lights.inactive_connections = 3
+			lights.disconnect = false
+		column.add_child(lights)
 	else:
 		_cinematic_art = W.art(artwork,32*_u)
 		_cinematic_art.size_flags_vertical = SIZE_EXPAND_FILL
@@ -720,7 +730,7 @@ func _lights() -> void:
 	column.add_child(image)
 	_stage = image
 	column.add_child(W.copy(_text("lights_caption","Four lights. One connection closes."),_u))
-	var finish: Button = W.button("SEAL THE FINAL EXHIBIT",_finish,_u,true)
+	var finish: Button = W.button(_text("finish_label","SEAL THE FINAL EXHIBIT"),_finish,_u,true)
 	finish.name = "FinishHearing"
 	finish.disabled = _elapsed < 3.0
 	column.add_child(finish)
@@ -741,10 +751,10 @@ func _finish() -> void:
 		_result_audio.play()
 
 func _results() -> void:
-	_title.text = "CASE CLOSED"
+	_title.text = _text("result_title","CASE CLOSED")
 	var column: VBoxContainer = _column()
 	var scroll: VBoxContainer = UI.scroll_column(column)
-	scroll.add_child(W.copy("MODULE %02d / COMPLETE" % (_module_index()+1),_u,W.GREEN,22))
+	scroll.add_child(W.copy(_text("result_status","MODULE %02d / COMPLETE" % (_module_index()+1)),_u,W.GREEN,22))
 	var heading: Label = W.copy(str(Case.TITLE).to_upper()+" COMPLETE",_u,W.CREAM,30)
 	heading.name = "CompletionHeading"
 	scroll.add_child(heading)

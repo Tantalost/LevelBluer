@@ -23,6 +23,15 @@ const Gift: GDScript = preload("res://src/gameplay/decision/gift_for_club_chapte
 const PreviewHelper: GDScript = preload("res://src/gameplay/decision/just_open_it_chapter.gd")
 const EveryoneHasIt: GDScript = preload("res://src/gameplay/decision/everyone_has_it_chapter.gd")
 const FourConnections: GDScript = preload("res://src/gameplay/decision/four_connections_chapter.gd")
+const CloseConnection: GDScript = preload("res://src/gameplay/decision/close_connection_chapter.gd")
+const CLOSE_CONNECTION_OBSERVATIONS: Array[Dictionary] = [
+ {"id":"m5_hearing_source","title":"Need does not verify a source","people":["mika","john","rham"],"field":"solved","value":0,"status":"Known","source":"Module 5 / Hearing / Plan and design desk","text":"The pinned materials plan and actual design desk contradicted the offer's implied school origin. Matching the club's needs made the offer tempting, not verified."},
+ {"id":"m5_hearing_action","title":"Read the requested action","people":["mika","liza","amani"],"field":"solved","value":1,"status":"Known","source":"Module 5 / Hearing / Package and prompt","text":"A poster thumbnail accompanied an Android app package and a request to allow installation. Mika kept the pack closed. Preview artwork did not change the requested action."},
+ {"id":"m5_hearing_context","title":"Restore the original context","people":["mika","amani","john"],"field":"solved","value":2,"status":"Known","source":"Module 5 / Hearing / Original banner conversation","text":"Amani's praise answered Mika's banner question. The cropped sentence did not endorse the download or implicate Amani in sending it."},
+ {"id":"m5_hearing_pair","title":"Two verified delivery references","people":["mika","rham","liza"],"field":"solved","value":3,"status":"Known","source":"Module 5 / Hearing / Independent service case","text":"DL-041 and DL-052 match the preserved coordinator request and event-pack offer. The independent report corroborates those two deliveries. Their similar branding or timing would not be enough."},
+ {"id":"m5_hearing_addendum","title":"The authenticated addendum","people":["mika","john","amani","liza","rham"],"field":"final_matched","status":"Known","source":"Module 5 / Final comparison / Existing School Support case","text":"Only after the four rebuttals, an authenticated addendum identifies Collector as the mastermind account. It corroborates the roster-to-pack instruction with both deliveries and pairs preserved instructions to the survey, text and call operators with service-verified earlier case references. It supplies no verified legal name. Jobert's earlier admission remains on record; ordinary club comments do not make other students accomplices."},
+ {"id":"m5_hearing_ending","title":"The connection closes","people":["mika","john","amani","liza","rham"],"field":"lights_done","status":"Known","source":"Module 5 / Campaign ending","text":"The delivery was removed, compromised posting access revoked and the club warned without forwarding the pack. Affected students have an established support route. The five affected people finish their event signs. The final audience cutaway closes the fourth connection; all four are inactive. Story completion is not a mastery estimate or evidence of measured learning gains."}
+]
 const CONNECTION_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m5_report_source","title":"An independently reached support case","people":["mika","rham"],"field":"flags","value":"connections","status":"Known","source":"Module 5 / Existing school directory and support case","text":"Sir Rham opens the delivery review through the established School Office and support case. The suspicious sender did not supply this route."},
  {"id":"m5_delivery_pair","title":"Two corroborated deliveries","people":["mika","rham"],"field":"domains","value":"connections","status":"Known","source":"Module 5 / Service export and preserved messages","text":"The service export supplies DL-041 for the coordinator's contact-list request and DL-052 for the event-pack offer. Their excerpts match the preserved originals. The independent review corroborates a connection between these two deliveries."},
@@ -98,7 +107,7 @@ const CALLER_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m3_identity","title":"Identity remains unverified","people":["liza"],"field":"domains","value":"call","status":"Unverified","source":"Module 3 / Chapter 1 / Identity check","text":"The service has not independently confirmed this caller. A professional voice or a reference supplied by the caller would still need checking."},
  {"id":"m3_route","title":"An independent verification route","people":["liza"],"field":"captures","value":"call","status":"Known","source":"Module 3 / Chapter 1 / Verification route","text":"Liza chooses Support in the wallet app she already uses. Choosing this independent route does not yet confirm the caller's identity. No account code was shared."}
 ]
-const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl, HereToHelp, ConsistentStory, ExceptionChapter, RealOffice, MaskHolds, Gift, PreviewHelper, EveryoneHasIt, FourConnections]
+const CHAPTERS: Array[GDScript] = [Survey, Advisor, Payout, Prize, Hearing, Delivery, WalletCode, FamiliarName, RecoveryPressure, KeepCode, HelpfulCaller, KnownDetails, DontHangUp, SafeCallback, VoiceControl, HereToHelp, ConsistentStory, ExceptionChapter, RealOffice, MaskHolds, Gift, PreviewHelper, EveryoneHasIt, FourConnections, CloseConnection]
 const KEEP_CODE_OBSERVATIONS: Array[Dictionary] = [
  {"id":"m2_final_fee","title":"A small fee does not verify a recipient","people":["amani"],"field":"solved","value":0,"status":"Known","source":"Module 2 / Chapter 5 / Fee rebuttal","text":"The paid order and unexplained payment destination contradict the harmless-fee claim. The amount does not establish whether the request is legitimate."},
  {"id":"m2_final_code","title":"A real code does not verify its requester","people":["amani","john"],"field":"solved","value":1,"status":"Known","source":"Module 2 / Chapter 5 / Code rebuttal","text":"The code authorized a new device; the sender falsely described cancellation. Support confirms this rejected request did not authorize access, not that every account is safe."},
@@ -191,6 +200,7 @@ static func chapter_definition(number: int) -> GDScript:
 	return CHAPTERS[clampi(number - 1, 0, CHAPTERS.size() - 1)]
 
 static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
+	if int(snapshot.get("_chapter", 1)) == 25: return CLOSE_CONNECTION_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 24: return CONNECTION_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 23: return ENDORSEMENT_OBSERVATIONS.duplicate(true)
 	if int(snapshot.get("_chapter", 1)) == 22: return PREVIEW_OBSERVATIONS.duplicate(true)
@@ -220,6 +230,8 @@ static func chapter_records(snapshot: Dictionary) -> Array[Dictionary]:
 	return result
 
 static func character_ids(snapshot: Dictionary) -> Array[String]:
+	if int(snapshot.get("_chapter", 1)) == 25:
+		return ["mika","john","amani","liza","rham"] if snapshot.get("briefed",false) else ["mika"]
 	if int(snapshot.get("_chapter", 1)) == 24:
 		return ["mika","rham"] if seen_beat(snapshot,1) else ["mika"]
 	if int(snapshot.get("_chapter", 1)) == 23:
