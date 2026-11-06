@@ -261,16 +261,26 @@ func _run() -> void:
 	check(is_equal_approx(snappedf(diagnostic, 0.0001), 0.3333), "[G] Pre-test diagnostic update is uncapped and has no P(T) (0.80 -> 0.3333)")
 	check(is_equal_approx(snappedf(Pretest._update_pl_diagnostic(0.10, true), 0.0001), 0.3333), "[G] Pre-test diagnostic correct-answer update is unchanged")
 
-	print("== H. Delayed pretest acknowledgement preserves newer learning ==")
+	print("== H. Delayed pretest acknowledgement keeps the server grade and later answers ==")
 	fresh()
 	_auth._completed_module_ids = ["mod_01", "mod_02"]
 	_auth._mastery = {"Phishing":0.65, "Smishing":0.55}
 	_player.mastery_matrix = {"phishing":0.85, "smishing":0.75}
-	var before_ack: Dictionary = _player.mastery_matrix.duplicate(true)
+	_player._unconfirmed_bkt_log.clear()
+	_player._unconfirmed_bkt_log.append({
+		"op": "update",
+		"skill": "phishing",
+		"correct": true,
+		"p_g": _player.P_GUESS,
+		"p_s": _player.P_SLIP,
+		"p_t": _player.P_TRANSIT,
+	})
+	var folded: float = one_bkt_step(0.15, true, _player.P_GUESS, _player.P_SLIP, _player.P_TRANSIT)
 	_auth._apply_remote_pretest({"mastery":{"Phishing":0.15}, "completedModuleIds":["mod_01"], "pre":7}, "mod_01")
-	check(_player.mastery_matrix == before_ack, "[H] Delayed diagnostic response cannot roll back newer BKT updates")
+	check(is_equal_approx(_player.mastery_matrix["phishing"], folded) and not is_equal_approx(_player.mastery_matrix["phishing"], 0.85), "[H] The graded posterior replaces the phone diagnostic and keeps the later answer")
+	check(is_equal_approx(_player.mastery_matrix["smishing"], 0.75), "[H] Another topic is not replaced by the delayed response")
 	check(_auth.has_module_pretest("mod_02"), "[H] Delayed response cannot remove another locally completed pretest")
-	check(_auth._mastery == {"Phishing":0.65, "Smishing":0.55}, "[H] Cached mastery is not replaced by a stale diagnostic response")
+	check(is_equal_approx(float(_auth._mastery["Phishing"]), 0.15) and is_equal_approx(float(_auth._mastery["Smishing"]), 0.55), "[H] The account cache keeps the graded topic and the other topic")
 	check(_auth._pre_score == 7, "[H] Canonical pretest score remains acknowledged")
 	print("== I. BKT fetch rejects snapshots invalidated while awaiting network ==")
 	var fixture: GDScript = GDScript.new()

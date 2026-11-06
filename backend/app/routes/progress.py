@@ -2,7 +2,7 @@ from fastapi import APIRouter, Header, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from app.schemas.progress import ProgressSyncRequest, ProgressSyncResponse
-from app.services.auth_service import verify_token
+from app.services.auth_service import ensure_student_access, fetch_student_by_id, verify_token
 from app.services.progress_service import ProgressReadError, fetch_student_progress, sync_student_progress
 
 router = APIRouter(prefix="/api/progress", tags=["progress"])
@@ -33,8 +33,10 @@ def sync_progress(
 
 @router.get("/sync")
 def get_progress(authorization: str | None = Header(default=None)) -> JSONResponse:
+    student_id = _student_id(authorization)
+    ensure_student_access(fetch_student_by_id(student_id))
     try:
-        payload = fetch_student_progress(_student_id(authorization))
+        payload = fetch_student_progress(student_id)
     except ProgressReadError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

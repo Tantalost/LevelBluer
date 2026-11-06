@@ -6,6 +6,7 @@ extends Node
 
 signal session_changed(signed_in: bool)
 signal progress_changed
+signal official_pretests_settled
 
 enum Result {
 	OK,
@@ -210,7 +211,9 @@ func progress_mastery_snapshot() -> Array[Dictionary]:
 		if (local_assessed or (local_sync_pending and (official_assessed or pretested))) and PlayerManager.mastery_matrix.has(key):
 			pending = local_sync_pending
 			raw = PlayerManager.mastery_matrix[key]
-		var numeric := (raw is float or raw is int) and is_finite(float(raw))
+		# Zero is not a BKT posterior (the clamp floor is 0.01). A pre-test flag
+		# or other evidence cannot turn a missing cache into assessed 0%.
+		var numeric := (raw is float or raw is int) and is_finite(float(raw)) and float(raw) > 0.0
 		var assessed: bool = numeric and (official_assessed or local_assessed or pretested or queued_response)
 		result.append({"id": key, "name": topic, "assessed": assessed,
 			"value": clampf(float(raw), 0.0, 1.0) if assessed else 0.0, "pending": pending and assessed})
@@ -317,8 +320,8 @@ func restore_session() -> bool:
 		_section = str(data.get("section", ""))
 		_email = str(data.get("email", ""))
 		_full_name = str(data.get("full_name", _display_name))
-		_status = str(data.get("status", "Needs Review"))
-		_last_active = str(data.get("last_active", ""))
+		_status = StudentDatabase.account_status(data.get("status", ""), "Needs Review")
+		_last_active = StudentDatabase.activity_timestamp(data.get("last_active", ""))
 		_sessions = int(data.get("sessions", 0))
 		_pre_score = int(data.get("pre", 0))
 		_post_score = int(data.get("post", 0))
@@ -458,6 +461,8 @@ func submit_pretest(module_id: String, answers: Array) -> Result:
 		return Result.UNKNOWN
 	PlayerManager.record_learning_event("pretest", module_id, {"answers":answers})
 	_pending_pretest[module_id] = answers
+	# Block progress sync before the local diagnostic is seeded or uploaded.
+	SaveService.hold_progress_for_official_pretest()
 	_persist(_signed_in, false, true)
 	session_changed.emit(_signed_in)
 	var skill: String = str(PlayerManager.LEARNING_MODULES.find_key(module_id))
@@ -468,12 +473,19 @@ func submit_pretest(module_id: String, answers: Array) -> Result:
 	return Result.OK
 
 
+func has_unresolved_official_pretest() -> bool:
+	return not _pending_pretest.is_empty() or _flushing_pretest
+
+
 func flush_pending_pretests() -> void:
 	if _flushing_pretest or _pending_pretest.is_empty() or _token.is_empty():
 		return
 	_flushing_pretest = true
+	var owner: String = _participant_code
 	var module_ids: Array = _pending_pretest.keys()
 	for i in module_ids.size():
+		if owner != _participant_code or not _signed_in:
+			break
 		var module_id := str(module_ids[i])
 		if not _pending_pretest.has(module_id):
 			continue
@@ -484,19 +496,30 @@ func flush_pending_pretests() -> void:
 			{"moduleId": module_id, "answers": answers},
 			true,
 		)
-		if parsed == null:
+		if owner != _participant_code or not _signed_in:
 			break
-		if typeof(parsed) != TYPE_DICTIONARY:
+		if parsed == null or typeof(parsed) != TYPE_DICTIONARY:
 			break
 		var payload: Dictionary = parsed
+		var graded: bool = true
 		if payload.has("error") or payload.has("detail"):
 			if not _is_already_completed_error(payload):
 				break
+			graded = await _adopt_authoritative_pretest(module_id, owner)
+			if not graded:
+				break
 		else:
-			_apply_remote_pretest(payload, module_id)
+			graded = _apply_remote_pretest(payload, module_id)
+			if not graded:
+				break
+		if owner != _participant_code or not _signed_in:
+			break
 		_pending_pretest.erase(module_id)
+		SaveService.save_game(false)
 		_persist(_signed_in, false, true)
 	_flushing_pretest = false
+	if owner == _participant_code and _signed_in and _pending_pretest.is_empty():
+		official_pretests_settled.emit()
 
 
 func refresh_profile() -> bool:
@@ -733,8 +756,8 @@ func _apply_user_profile(user: Dictionary, overwrite_name: bool = true) -> void:
 	_full_name = str(user.get("name", _full_name))
 	_email = str(user.get("email", _email))
 	_section = str(user.get("section", _section))
-	_status = str(user.get("status", _status if not _status.is_empty() else "Needs Review"))
-	_last_active = str(user.get("lastActive", user.get("last_active", _last_active)))
+	_status = StudentDatabase.account_status(user.get("status", ""), _status if not _status.is_empty() else "Needs Review")
+	_last_active = StudentDatabase.activity_timestamp(user.get("lastActive", user.get("last_active", _last_active)))
 	_points = int(user.get("points", _points))
 	_sessions = int(user.get("sessions", _sessions))
 	_pre_score = int(user.get("pre", _pre_score))
@@ -769,8 +792,8 @@ func _apply_student_row(row: Dictionary) -> void:
 		_display_name = _format_profile_name(_full_name)
 	_email = str(row.get("email", ""))
 	_section = str(row.get("section", ""))
-	_status = str(row.get("status", "Needs Review"))
-	_last_active = str(row.get("last_active", ""))
+	_status = StudentDatabase.account_status(row.get("status", ""), "Needs Review")
+	_last_active = StudentDatabase.activity_timestamp(row.get("last_active", ""))
 	_points = int(row.get("points", 0))
 	_sessions = int(row.get("sessions", 0))
 	_pre_score = int(row.get("pre", 0))
@@ -901,7 +924,7 @@ func _persist(signed_in: bool, pending_password_change: bool, mark_dirty: bool =
 		"post": _post_score,
 		"sessions": _sessions,
 		"points": _points,
-		"last_active": _last_active if not _last_active.is_empty() else "Just now",
+		"last_active": StudentDatabase.activity_timestamp(_last_active),
 		"technical": bool(_user.get("technical", false)),
 		"status": _status,
 		"mastery_phishing": float(_mastery.get("Phishing", 0.0)),
@@ -958,10 +981,9 @@ func _apply_local_pretest(module_id: String, answers: Array) -> bool:
 	return true
 
 
-func _apply_remote_pretest(parsed: Dictionary, module_id: String) -> void:
-	# This response acknowledges a diagnostic already applied locally. Its
-	# snapshot may predate offline lesson answers or another module's pretest.
-	# Never seed it over live BKT; progress sync uploads the current snapshot.
+func _apply_remote_pretest(parsed: Dictionary, module_id: String) -> bool:
+	# The graded posterior replaces the phone's diagnostic. Later local answers
+	# stay in the BKT log and are replayed onto that server value.
 	var local_completed: Array = _completed_module_ids.duplicate()
 	_set_completed_modules(parsed.get("completedModuleIds", _completed_module_ids))
 	for completed: String in local_completed:
@@ -972,6 +994,38 @@ func _apply_remote_pretest(parsed: Dictionary, module_id: String) -> void:
 	_pre_test_completed = not _completed_module_ids.is_empty()
 	if parsed.has("pre"):
 		_pre_score = int(parsed.get("pre", _pre_score))
+	return _adopt_reported_mastery(module_id, parsed.get("mastery", {}))
+
+
+func _adopt_authoritative_pretest(module_id: String, owner: String) -> bool:
+	var parsed: Variant = await _request_json("/api/bkt/state", HTTPClient.METHOD_GET, {}, true)
+	if owner != _participant_code or not _signed_in or typeof(parsed) != TYPE_DICTIONARY:
+		return false
+	var payload: Dictionary = parsed
+	if payload.has("error") or payload.has("detail"):
+		return false
+	if not has_module_pretest(module_id):
+		_completed_module_ids.append(module_id)
+	_pre_test_completed = true
+	return _adopt_reported_mastery(module_id, payload.get("gameplay", {}))
+
+
+func _adopt_reported_mastery(module_id: String, reported: Variant) -> bool:
+	if typeof(reported) != TYPE_DICTIONARY:
+		return false
+	var skill: String = str(PlayerManager.LEARNING_MODULES.find_key(module_id))
+	var raw: Variant = (reported as Dictionary).get(skill, (reported as Dictionary).get(_topic_for_module(module_id)))
+	if skill.is_empty() or not (raw is int or raw is float) or not is_finite(float(raw)):
+		return false
+	var official: float = float(raw)
+	var topic: String = _topic_for_module(module_id)
+	_mastery[topic] = official
+	if _user.has("mastery") and typeof(_user["mastery"]) == TYPE_DICTIONARY:
+		var user_mastery: Dictionary = _user["mastery"]
+		user_mastery[topic] = official
+		_user["mastery"] = user_mastery
+	PlayerManager.adopt_official_pretest_mastery(skill, official)
+	return true
 
 
 func _topic_for_module(module_id: String) -> String:
@@ -989,8 +1043,9 @@ func _topic_for_module(module_id: String) -> String:
 
 
 static func _is_already_completed_error(payload: Dictionary) -> bool:
-	var detail := str(payload.get("detail", payload.get("error", ""))).to_lower()
-	return detail.find("already") >= 0
+	# A validation failure also uses HTTP 400. Only the completion sentence
+	# means this module was graded and must not be submitted again.
+	return str(payload.get("detail", "")).strip_edges().to_lower() == "pre-test already completed"
 
 
 func _set_pending_pretest(value: Variant) -> void:

@@ -14,6 +14,8 @@ from app.services.pretest_grading import is_correct
 from app.supabase_client import supabase
 
 MODULES = {"mod_01": "Phishing", "mod_02": "Smishing", "mod_03": "Vishing", "mod_04": "Pretexting", "mod_05": "Baiting"}
+CHECKPOINT_ITEMS = 25
+CHECKPOINT_PASS = 20
 logger = logging.getLogger(__name__)
 
 def _log_operational_failure(exc: Exception) -> None:
@@ -85,6 +87,8 @@ class LearningEvent(BaseModel):
     stage: int | None = Field(default=None, ge=1, le=10)
     outcome: Literal["started", "cleared", "failed", "abandoned"] | None = None
     instrument: Literal["lesson-checkpoint-v1", "stage-exam-v1"] | None = None
+    assessment_role: Literal["formative"] | None = None
+    passed: StrictBool | None = None
     correct: int | None = Field(default=None, ge=0, le=100)
     answered: int | None = Field(default=None, ge=0, le=100)
     total: int | None = Field(default=None, ge=1, le=100)
@@ -108,12 +112,19 @@ class LearningEvent(BaseModel):
         if self.responses is not None and self.kind != "posttest":
             raise ValueError("Response snapshots are only accepted for post-tests; pre-tests are server graded")
         if self.kind == "posttest":
-            expected = 25 if self.instrument == "lesson-checkpoint-v1" else 15
+            expected = CHECKPOINT_ITEMS if self.instrument == "lesson-checkpoint-v1" else 15
             if self.instrument is None or self.attempt_id is None or self.total != expected or self.answered != expected or self.correct is None or self.correct > expected:
                 raise ValueError("Only fully answered assessments can record a score")
             if self.responses is not None:
                 if len(self.responses) != expected or sum(r.correct for r in self.responses) != self.correct:
                     raise ValueError("Response count and results must match the assessment score")
+            formative = self.assessment_role is not None or self.passed is not None
+            if self.instrument == "lesson-checkpoint-v1" and formative and (self.assessment_role != "formative" or self.passed != (self.correct >= CHECKPOINT_PASS)):
+                raise ValueError("Checkpoint metadata must identify a formative result and the 20 of 25 pass")
+            if self.instrument != "lesson-checkpoint-v1" and formative:
+                raise ValueError("Formative checkpoint metadata belongs only on a lesson checkpoint")
+        elif self.assessment_role is not None or self.passed is not None:
+            raise ValueError("Formative checkpoint metadata belongs only on a lesson checkpoint")
         if self.kind == "pretest":
             bank = questions_for_module(self.module_id)
             if not self.answers or len(self.answers) != len(bank) or {a.id for a in self.answers} != {q["id"] for q in bank}:
@@ -138,6 +149,8 @@ class LearningEvent(BaseModel):
         else:
             # Equal percentages alone do not make different instruments comparable.
             data.update(attempt_id=str(self.attempt_id), instrument=self.instrument, correct=self.correct, total=self.total, score=100 * self.correct / self.total, scale="percent", completed=True, comparison_key=None)
+            if self.instrument == "lesson-checkpoint-v1" and self.assessment_role == "formative":
+                data.update(assessment_role="formative", passed=self.correct >= CHECKPOINT_PASS)
             if self.responses is not None:
                 data.update(response_version=1, responses=[r.model_dump() for r in self.responses])
         return {"event_id": str(self.event_id), "kind": self.kind, "module_id": self.module_id, "occurred_at": self.occurred_at.isoformat(), "data": data}

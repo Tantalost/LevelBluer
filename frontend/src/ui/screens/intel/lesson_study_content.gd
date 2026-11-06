@@ -102,6 +102,12 @@ static func mini_quiz(module_id: String, index: int) -> Array[Dictionary]:
 		var raw: Dictionary = bank[id]
 		var choices: Array[Dictionary] = Quiz.options(raw)
 		var row: Dictionary = {"id": id, "module_id": module_id, "question": Quiz._format_prompt(raw), "quiz_scenario": Quiz._format_scenario(raw), "options": [], "correct": [], "multi": false, "feedback": Quiz.explanation(raw, true, null), "bkt": raw.get("bkt", {})}
+		var neutral: String = str(raw.get("explanation", "")).strip_edges()
+		if not neutral.is_empty():
+			row.feedback = neutral
+		else:
+			# Bank correct_feedback may open with "Correct", so wrong answers need their own text.
+			row["feedback_incorrect"] = str(raw.get("incorrect_feedback", "")).strip_edges()
 		for choice: Dictionary in choices:
 			if Quiz.grade(raw, choice.value):
 				row.correct.append(row.options.size())
@@ -110,6 +116,12 @@ static func mini_quiz(module_id: String, index: int) -> Array[Dictionary]:
 			return []
 		result.append(row)
 	return result
+
+static func quiz_feedback(item: Dictionary, is_correct: bool) -> String:
+	if not is_correct and item.has("feedback_incorrect"):
+		return str(item.feedback_incorrect)
+	return str(item.get("feedback", ""))
+
 const DOMAIN := {
 	"phishing": {"term": "Phishing", "definition": "Phishing is a deceptive message that impersonates a trusted sender to steal information or make you open an unsafe link or file.", "rule": "Check the full sender address and destination. Verify through a known site; never reply with a password or one-time code.", "app": "Mail", "inspect": "Inspect sender and request", "verify": "Open trusted contact directory", "action": "Report phishing", "unsafe": "Open link / attachment"},
 	"smishing": {"term": "Smishing", "definition": "Smishing is phishing delivered by text message. Familiar names, short links and urgent warnings can hide a request for your login or code.", "rule": "Read the request, not just the sender name. Check in the official app or use contact details you already trust.", "app": "Messages", "inspect": "Inspect message details", "verify": "Check the official app", "action": "Block and report sender", "unsafe": "Reply with the code"},

@@ -1,6 +1,47 @@
 """Bounded diagnostic metadata only; never serialize database error payloads."""
+import logging
+import threading
+import time
+
 import httpx
 from postgrest.exceptions import APIError
+
+from app.supabase_client import supabase
+
+logger = logging.getLogger(__name__)
+
+OPERATIONAL_EVENT_INTERVAL_SECONDS = 60.0
+_event_lock = threading.Lock()
+_last_event_at: dict[str, float] = {}
+
+
+def log_operational_event(category: str, message: str, code: str, route: str, http_status: int) -> None:
+    """Store at most one sanitized event per code per interval in this process.
+
+    Callers pass fixed text only: no student id, answers, tokens, or database error text.
+    """
+    now = time.monotonic()
+    with _event_lock:
+        last = _last_event_at.get(code)
+        if last is not None and now - last < OPERATIONAL_EVENT_INTERVAL_SECONDS:
+            return
+        _last_event_at[code] = now
+    try:
+        supabase.rpc("levelblue_log_operational_event", {
+            "p_category": category,
+            "p_message": message,
+            "p_code": code,
+            "p_route": route,
+            "p_status": http_status,
+        }).execute()
+    except Exception:
+        logger.warning("Operational monitoring event was not stored")
+
+
+def is_lock_timeout(exc: Exception) -> bool:
+    """PostgreSQL lock_not_available (55P03), raised when a function's lock_timeout expires."""
+    code = str(getattr(exc, "code", "") or "")
+    return code == "55P03" or "55P03" in str(exc) or "lock timeout" in str(exc).lower()
 
 
 def safe_database_error(exc: Exception) -> str:
@@ -12,6 +53,8 @@ def safe_database_error(exc: Exception) -> str:
         "42P01": "check_table_migrations",
         "42703": "check_column_migrations",
         "42883": "check_function_migrations",
+        "22023": "invalid_function_argument",
+        "55P03": "database_lock_timeout",
         "PGRST000": "database_connection_failed",
         "PGRST001": "database_connection_failed",
         "PGRST002": "schema_cache_unavailable",

@@ -15,6 +15,8 @@ var _http_request: HTTPRequest
 var _http_fetch: HTTPRequest
 var _sync_in_flight: bool = false
 var _resync_queued: bool = false
+var _sync_generation: int = 0
+var _sync_deferred_for_pretest: bool = false
 var _fetch_in_flight: bool = false
 var _last_fetch_ok: bool = false
 var _retry_left: float = 0.0
@@ -35,6 +37,7 @@ func _ready() -> void:
 	add_child(_http_fetch)
 	_learning_session = AuthService.participant_code()
 	AuthService.session_changed.connect(_learning_session_changed)
+	AuthService.official_pretests_settled.connect(_on_official_pretests_settled)
 	set_process(true)
 
 
@@ -244,8 +247,30 @@ func _finish_fetch(success: bool) -> void:
 	cloud_fetch_completed.emit(success)
 
 
+func hold_progress_for_official_pretest() -> void:
+	_defer_progress_for_official_pretest()
+
+
+func _defer_progress_for_official_pretest() -> void:
+	_sync_deferred_for_pretest = true
+	_resync_queued = false
+	if not _sync_in_flight or _http_request == null:
+		return
+	# A snapshot already on the wire can still be rejected by the server once
+	# the graded pretest commits. Cancelling stops the ones that have not left.
+	_http_request.cancel_request()
+
+
+func _on_official_pretests_settled() -> void:
+	_sync_deferred_for_pretest = false
+	push_pending_sync()
+
+
 func push_pending_sync() -> void:
-	AuthService.flush_pending_pretests()
+	if AuthService.has_unresolved_official_pretest():
+		_defer_progress_for_official_pretest()
+		AuthService.flush_pending_pretests()
+		return
 	# A failed read must be retried before any POST. Uploading now would
 	# replace cloud progress this device has not seen.
 	if PlayerManager.cloud_baseline_unconfirmed() or PlayerManager.needs_cloud_reconcile():
@@ -257,6 +282,9 @@ func push_pending_sync() -> void:
 
 func _sync_to_cloud() -> void:
 	if not AuthService.is_signed_in():
+		return
+	if AuthService.has_unresolved_official_pretest():
+		_defer_progress_for_official_pretest()
 		return
 	if not PlayerManager.can_upload_progress():
 		if PlayerManager.has_hydrated_account() and (PlayerManager.cloud_baseline_unconfirmed() or PlayerManager.needs_cloud_reconcile()):
@@ -272,6 +300,9 @@ func _sync_to_cloud() -> void:
 		return
 
 	var data: Dictionary = PlayerManager.get_save_data()
+	# This hold is local protection against a stale download. The server copy
+	# must not make another device keep an old posterior.
+	data.erase("official_mastery_hold")
 	data["learning_events"] = PlayerManager.learning_events.slice(0, 100)
 	data["student"] = AuthService.cloud_sync_payload()
 	data["module_pretests"] = AuthService.completed_module_pretest_ids()
@@ -287,6 +318,7 @@ func _sync_to_cloud() -> void:
 	]
 
 	_sync_in_flight = true
+	_sync_generation = PlayerManager.pretest_sync_generation()
 	_sync_callback = _on_sync_completed.bind(AuthService.participant_code())
 	_http_request.request_completed.connect(_sync_callback, CONNECT_ONE_SHOT)
 	var error: Error = _http_request.request(url, headers, HTTPClient.METHOD_POST, json_string)
@@ -308,6 +340,7 @@ func _on_sync_completed(
 	if not AuthService.is_signed_in() or request_owner != AuthService.participant_code():
 		return
 	_sync_in_flight = false
+	var accepted_generation: bool = _sync_generation == PlayerManager.pretest_sync_generation()
 	var ok: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
 	if result != HTTPRequest.RESULT_SUCCESS:
 		push_warning("[SaveService] Cloud sync skipped (offline or network error). result=" + str(result))
@@ -315,12 +348,12 @@ func _on_sync_completed(
 		_retry_left = RETRY_SEC
 	elif ok:
 		var response: Variant = JSON.parse_string(body.get_string_from_utf8())
-		if response is Dictionary and response.get("acknowledged_events", []) is Array:
+		if accepted_generation and response is Dictionary and response.get("acknowledged_events", []) is Array:
 			PlayerManager.acknowledge_learning_events(response.get("acknowledged_events", []))
 		save_game(false)
-		# Keep retrying until every queued result is acknowledged. Old APIs cannot
-		# silently discard evidence; offline queues survive app restarts.
-		if not PlayerManager.learning_events.is_empty():
+		# A response that started before official grading does not prove the
+		# graded posterior was uploaded. The local queue and hold stay pending.
+		if not accepted_generation or not PlayerManager.learning_events.is_empty() or PlayerManager.has_official_mastery_hold():
 			StudentDatabase.mark_needs_sync(AuthService.participant_code())
 			ok = false
 		print("[SaveService] Cloud sync successful.")
@@ -335,8 +368,9 @@ func _on_sync_completed(
 
 	if _resync_queued:
 		_resync_queued = false
-		# Let this one-shot callback disconnect before binding the next request.
-		_sync_to_cloud.call_deferred()
+		# Fetch first when the graded posterior still has to win over a stale snapshot.
+		if not AuthService.has_unresolved_official_pretest():
+			push_pending_sync.call_deferred()
 
 
 func _api_base() -> String:

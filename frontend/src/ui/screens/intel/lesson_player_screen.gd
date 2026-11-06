@@ -515,7 +515,7 @@ func _build_mini_quiz() -> void:
 			var correct_labels: PackedStringArray = []
 			for answer: int in missed.correct:
 				correct_labels.append(str(missed.options[answer]))
-			body.add_child(UI.label("Correct response: " + " / ".join(correct_labels) + "\n" + str(missed.feedback), 24, UI.MUTED))
+			body.add_child(UI.label("Correct response: " + " / ".join(correct_labels) + "\n" + Study.quiz_feedback(missed, false), 24, UI.MUTED))
 		_content.add_child(UI.label("You can revisit the lesson below. Retrying these questions does not add more BKT credit.", 22, UI.MUTED))
 		_submit_button.disabled = false
 		_submit_button.text = "START SIMULATION  >" if _quiz_passed else "RETRY MINI QUIZ"
@@ -541,7 +541,7 @@ func _build_mini_quiz() -> void:
 		var answers: PackedStringArray = []
 		for index: int in item.correct:
 			answers.append(str(item.options[index]))
-		_status_label.text = ("Correct. " if _quiz_last_correct else "Not quite. Correct response: %s. " % " / ".join(answers)) + str(item.feedback)
+		_status_label.text = ("Correct. " if _quiz_last_correct else "Not quite. Correct response: %s. " % " / ".join(answers)) + Study.quiz_feedback(item, _quiz_last_correct)
 		_status_label.add_theme_color_override("font_color", Feedback.SUCCESS if _quiz_last_correct else Feedback.ERROR)
 		_submit_button.disabled = false
 		_submit_button.text = "NEXT QUESTION  >"

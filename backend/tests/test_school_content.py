@@ -40,6 +40,11 @@ class SchoolContentTest(unittest.TestCase):
             published_content("Bearer token", None)
         self.assertEqual(error.exception.status_code, 403)
         self.db.rpc.assert_not_called()
+        self.fetch.return_value = {"status": "Suspended"}
+        with self.assertRaises(HTTPException) as error:
+            published_content("Bearer token", None)
+        self.assertEqual(error.exception.status_code, 403)
+        self.assertEqual(error.exception.detail, "Student access is inactive")
 
     def test_database_failure_is_not_an_empty_catalog_or_secret_leak(self):
         self.db.rpc.side_effect = RuntimeError("private database detail")

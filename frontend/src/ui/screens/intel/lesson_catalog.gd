@@ -16,7 +16,8 @@ static func practice_recommendation(account: Object, slot: int = 0, excluded: Ar
 		var id: String = str(module.id)
 		var skill: String = str(module.domain)
 		if id in excluded or not account.can_access_lesson_module(id): continue
-		if not account.pretest_baselines.has(id) and not account.has_graded_evidence(skill) and account.get_lesson_progress(id) == 0: continue
+		# Lesson progress alone is not assessment; legacy saves carry it with only the 0.10 prior.
+		if not account.has_assessment_evidence(skill): continue
 		var row: Dictionary = module.duplicate()
 		row["mastery"] = account.get_mastery(skill)
 		row["practice_count"] = 0
