@@ -109,22 +109,18 @@ static func _is_choice_number(value: Variant) -> bool:
 	return typeof(value) == TYPE_INT or (typeof(value) == TYPE_FLOAT and is_finite(value) and value == floor(value))
 
 
-static func review_cards(module_id: String, answers: Dictionary) -> Array[Dictionary]:
-	var cards: Array[Dictionary] = []
+static func review_by_question(module_id: String, answers: Dictionary) -> Dictionary:
+	var review: Dictionary = {}
 	for question: Dictionary in _bank_for(module_id):
-		var qid := int(question.id)
-		var answer: Variant = answers.get(qid)
-		var expected := str(question.answer)
-		var submitted := str(answer)
-		if question.type == "multiple_choice":
-			expected = str(question.options[int(question.answer)])
-			if _is_choice_number(answer) and answer >= 0 and answer < question.options.size():
-				submitted = str(question.options[int(answer)])
-		elif question.type == "true_false":
-			expected = "True" if question.answer else "False"
-			submitted = "True" if answer else "False"
-		cards.append({"id": qid, "question": question.text, "answer": expected, "submitted": submitted, "correct": _is_correct(question, answer)})
-	return cards
+		var qid: int = int(question.id)
+		var selected: Variant = answers.get(qid)
+		review[qid] = {
+			"answer": question.answer,
+			"submitted": selected,
+			"correct": _is_correct(question, selected),
+			"explanation": question.explanation,
+		}
+	return review
 
 
 static func visual_example(module_id: String, question_id: int, text: String) -> Dictionary:

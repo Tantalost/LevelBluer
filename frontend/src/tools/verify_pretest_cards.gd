@@ -29,6 +29,7 @@ func _run() -> void:
 			answers.append({"id": q.id, "answer": q.answer})
 			check(q.type == "multiple_choice", "MC type: %s/%s" % [module_id, q.id])
 			check(q.options.size() == 4, "Four options: %s/%s" % [module_id, q.id])
+			check(not str(q.explanation).strip_edges().is_empty(), "Every question has a rationale")
 			check(bank._is_correct(q, q.answer), "Canonical answer: %s/%s" % [module_id, q.id])
 			check(not bank._is_correct(q, null), "Null is not correct")
 			check(not bank._is_correct(q, -1), "Out of range is not correct")
@@ -36,7 +37,7 @@ func _run() -> void:
 		var grade: Dictionary = bank.grade(module_id, answers, 0)
 		check(grade.ok and grade.pre_score == 100, "Perfect score across multiple choice")
 		for q in bank.public_questions(module_id):
-			check(not q.has("answer") and not q.has("difficulty") and not q.has("skill"), "Public questions do not reveal answers")
+			check(not q.has("answer") and not q.has("explanation") and not q.has("difficulty") and not q.has("skill"), "Public questions do not reveal answers")
 	var screen: Control = load("res://src/ui/screens/pretest/pretest_screen.tscn").instantiate()
 	root.add_child(screen)
 	screen._module_id = "mod_01"
@@ -45,10 +46,12 @@ func _run() -> void:
 	await settle()
 	check(screen._bar.value == 0 and screen._next.disabled, "Initial progress and unanswered state")
 	check(screen._options.get_child_count() == 4, "Four-option UI")
+	check(screen._brief.is_visible_in_tree() and not screen._explanation.visible, "Instructions only before answering")
 	await capture("pretest_choice")
 	screen._select_option(screen._options.get_child(0), 0)
 	screen._on_next_pressed()
 	check(screen._bar.value == 1 and screen._index == 1, "Answer advances progress")
+	check(not screen._brief.is_visible_in_tree(), "Instructions hidden after first answer")
 	await settle()
 	await capture("pretest_second")
 	screen._select_option(screen._options.get_child(1), 1)
@@ -106,14 +109,24 @@ func _run() -> void:
 	screen._review_move(2)
 	await settle()
 	check(screen._bar.value == 15 and screen._finished, "Results show completed progress")
-	check(not screen._review[2].correct, "Review shows missed choice")
+	check(not screen._review[3].correct, "Review shows missed choice")
+	var missed: Dictionary = screen._questions[2]
+	check(screen._question.text == missed.text and not screen._brief.is_visible_in_tree(), "Review restores the played question without the introductory panel")
+	check(screen._explanation.visible and screen._explanation.text.ends_with(screen._review[3].explanation), "Explanation belongs to the reviewed question")
+	for index: int in missed.options.size():
+		var button: Button = screen._options.get_child(index)
+		check(button.disabled and button.text.ends_with(missed.options[index]), "Review preserves every original choice")
+		if index == screen._review[3].answer:
+			check(button.text.begins_with("Correct answer\n") and button.get_theme_stylebox("disabled").border_color == Color("#33D17A"), "Correct choice is labeled and green")
+		elif index == screen._answers[3]:
+			check(button.text.begins_with("Your answer\n"), "Missed choice still identifies the submitted answer")
 	await capture("pretest_review")
 	screen._review_move(6)
 	await settle()
 	evidence = screen._example.find_child("SenderEvidence", true, false)
 	check(screen._example.visible and evidence.get_meta("highlighted"), "Submitted baseline review highlights sender evidence")
-	for review_control: Control in screen._options.get_children():
-		check(review_control.size.x >= screen._options.size.x - 2.0, "Review cards fill the available width")
+	check(screen._options.columns == 2 and screen._options.get_child_count() == 4, "Email review repeats the two-column question layout")
+	check(screen._options.get_child(int(screen._answers[9])).text.begins_with("Your answer was correct\n"), "A correct response gets one combined label")
 	var navigation_rect: Rect2 = screen._review_nav.get_global_rect()
 	(screen._card.get_parent() as ScrollContainer).scroll_vertical = 10000
 	await settle()
