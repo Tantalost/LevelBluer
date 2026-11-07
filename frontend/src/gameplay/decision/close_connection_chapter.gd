@@ -11,7 +11,7 @@ const SUSPECTS: Array[String] = ["A useful gift must be safe", "Read what it ins
 const NAME_HINTS: Array[String] = ["Which assumption confuses wanting something with verifying it?", "A gift can fit the event perfectly and still ask for an unsafe action.", "Useful is a promise. Safety needs evidence."]
 const PRESENTATION: Dictionary = {
  "protagonist":"Mika", "module_index":4, "cast":["Mika","John","Amani","Liza","Sir Rham"],
- "backdrop":BACKGROUND_ASSET, "prep_art":"module5_mystery_title_v1", "counter_art":"module5_mika_counter_paper_v1", "effect_style":"paper_reveal", "resolution_art":BACKGROUND_ASSET, "aftermath_art":"story_bg_mod5_sign_shelter_v1",
+ "backdrop":BACKGROUND_ASSET, "prep_art":"module5_mystery_title_v1", "counter_art":"module5_mika_counter_paper_v1", "effect_style":"paper_reveal", "resolution_art":BACKGROUND_ASSET, "aftermath_art":"story_bg_mod5_auditorium_wings_v1",
  "invitation":"MIKA'S CLUB HEARING IS READY",
  "theory_title":"WHAT WAS THE BAIT?", "theory_caption":"THE PERFECT GIFT. THE WRONG ACTION.", "theory_prompt":"CHALLENGE AN ASSUMPTION", "theory_instruction":"Test the promise behind the offer.", "theory_action":"CHALLENGE ", "theory_empty":"SELECT AN ASSUMPTION",
  "theory_labels":{"A useful gift must be safe":"A useful gift must be safe","Read what it installs":"Read what it installs","Ask the actual design desk":"Ask the design desk","Warn the club without the file":"Warn without forwarding"},
@@ -43,8 +43,8 @@ const ROUNDS: Array[Dictionary] = [
  {"title":"Separate deliveries.","speaker":"Sir Rham","weak":"nothing connecting that request to this offer","claim":"The coordinator failed. There's nothing connecting that request to this offer.","correct":"deliveries","options":["schedule","praise","deliveries","preview"],"hint":"Use the independent service report with both preserved originals. Similarity alone is insufficient.","smug":"That similarity is not attribution. Find the service-verified delivery references.","result":"Sir Rham: These two delivery references match our originals. The contact changed its pitch. These records link the deliveries.\nLiza: The report establishes the link. It still withholds the account's identity.\nMika: Then we wait for the verified addendum. No guessing a classmate's name.","flash":"CH4 / DL-041: coordinator request. DL-052: event-pack offer. The independent service case corroborates both.","art":"story_bg_mod5_incident_desk_v1","voices":[{"who":"Sir Rham","text":"Let's test the final explanation: two unrelated deliveries."},{"who":"Liza","text":"The same style or timing would not settle it."},{"who":"Mika","text":"We have a stronger source than resemblance."}]}
 ]
 const ADMISSION: Array[String] = [
- "Mika: I can tell you which account sent both. I can show you how we know.\nSir Rham: The authenticated addendum identifies Collector as the directing account. Its preserved instructions and the service-verified case references establish the wider coordination.",
- "John: Jobert admitted his part in my case. This doesn't erase that.\nAmani: Or turn everyone whose words were copied into an accomplice.\nLiza: Five affected people. Different approaches. A corroborated connection, not a guess based on a face or a typo.",
+ "Mika: I can tell you which account sent both. I can show you how we know.\nMika lays the roster request beside the poster offer.\nMika: DL-041. They asked for the list. DL-052. They offered us the file. School Support matched both to the account that gave the order.\nMika: Collector.",
+ "John: And the survey? Jobert admitted that was him.\nSir Rham: Look at the instructions School Support recovered. Collector directed the survey, the texts and the call. Jobert still answers for what he did.\nAmani: My banner comment is in that file, too.\nMika: I know. You were talking to me about a banner. We've got the whole conversation.",
  "Mika: The gift was supposed to make us open the door ourselves.\nSir Rham: You paused, preserved the records and asked through a channel you already knew.\nMika: Let's put the ending in order."
 ]
 const COMIC: Array[Dictionary] = [
@@ -59,11 +59,11 @@ const COMIC: Array[Dictionary] = [
 ]
 const COMIC_ORDER: Array[String] = ["roster","gift","install","context","records","contain"]
 const AFTERMATH: Array[String] = [
- "BACK AT THE SIGN SHELTER / THE CLUB'S OWN SIGNS\nJohn: This arrow is slightly crooked.\nMika: Leave that one. Everyone found us.",
- "Amani: We still made the deadline.\nLiza: And none of the decorations asked for an installation permission.\nSir Rham: A very welcome design choice.",
- "Mika's phone buzzes: the containment receipt remains in the independently opened school case. The delivery is removed and compromised posting access revoked. Anyone affected can use the existing school directory for help. The receipt does not promise that every account is safe.",
- "Mika: We didn't win because we never felt tempted.\nJohn: We learned to stop and check.\nAmani: To keep the original context.\nLiza: To use a route we already trusted.\nSir Rham: And to ask for support. The event is ready. So are you.",
- "AUDIENCE ONLY / ELSEWHERE\nThree connections are already dark. The last active connection belongs to Collector. There is no new invitation. The fourth light flickers out."
+ "AUDITORIUM WINGS / THAT EVENING\nMika comes down from the booth as the doors open. John holds their hand-painted arrow against the prop trunk. A family follows it straight to the auditorium.\nJohn: Should I straighten it?\nMika: Leave that one. Everyone found us.",
+ "Amani: Somebody just asked where we got the signs.\nMika: Tell them the artist still has teal paint on her elbows.\nLiza: Both elbows. That's how you know it's an original.",
+ "Mika's phone buzzes. She opens the school's saved support case.\nMika: They've taken down the pack and revoked the posting access.\nJohn: If anyone else tapped it, where do I send them?\nSir Rham: School Support, through the directory. I'll stay here if anyone wants a hand.",
+ "Amani: Remember why we wanted that pack? We thought we'd never finish the signs.\nMika looks past the curtain. Every row has a hand-painted number.\nMika: We did finish them. Come on, they're saving us seats.",
+ "AUDIENCE ONLY / ELSEWHERE\nAcross the meeting table, three lamps are dark. Collector's is the only one still lit."
 ]
 
 static func exhibit(id: String) -> Dictionary:

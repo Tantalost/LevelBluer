@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status as of 6 November 2026: Modules 1–4 have all five chapters locally implemented. Module 5 has its intro and Chapters 1–3 reviewed; Chapter 4 is implemented and its local flow check passes, but its review was paused by the user for a whole-system audit. Chapter 5 and campaign closure remain unimplemented. There are 24 authored chapter definitions. Module 5 has four hosted environments; the production booth and finale presentation remain open. Physical-device/deployment acceptance is still outstanding across the modules. See the whole-system audit at the end of this document for current completion estimates and validation gaps. The deadline remains a tested, deployable mobile application, not student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a guarantee regardless of scope or defects.
+All five modules now have five implemented chapters (6 November 2026). Mika's final hearing closes the school campaign. Module 5 uses five hosted environments, its paper-themed debate effects and Mika's counter artwork. The earlier whole-system audit below records the state before the finale. The 19 November target is a tested, deployable mobile application. Installed-device and deployment acceptance remain open.
 
 ## Release outcome
 
@@ -140,6 +140,24 @@ A recorded device demonstration of answer → saved learning record → BKT upda
 An authorized staff user can complete the agreed monitoring/support tasks with the same records the student sees. Role boundaries and feedback persistence pass. The assessment-delivery decision is documented honestly; incomplete research instruments are not misrepresented as completed app functionality.
 
 ## Gate 6 — PvP, Store and Profile working together
+
+### Capture the Flag proposal for review · 7 November 2026
+
+The adviser's consultation changes the intended online duel from quiz damage to first capture. Proposed first playable match: a school event folder containing a simulated flag. Matchmaking, private rooms, Ready and the amber Access Granted handoff lead into the same match. The server assigns one attacker and one defender. Both see the same flag on the cyan network map. The attacker can retrieve it from the remote vault. The defender can secure it in quarantine. The first valid capture ends the match immediately.
+
+| Step | Attacker console | Defender console |
+| --- | --- | --- |
+| Open a route | Inspect the event invitation and its expanded destination. Trace the link to the simulated sender relay on the map. | Compare the invitation with the club directory. Flag the mismatched sender and route the incident to the verified gateway. |
+| Locate the flag | Inspect the relay's attachment manifest. Trace the event pack's delivery reference to the matching vault file. | Restore the original conversation behind the cropped endorsement. Pair the suspicious pack with its incident record to open quarantine. |
+| Capture | Tap the verified file and **Retrieve flag**. | Tap the implicated file and **Secure flag**. |
+
+The two routes use equivalent numbers of interactions and evidence of comparable reading length. An incorrect inspection highlights the relevant detail and leaves the current gate open for another attempt. Each role gets one optional interruption, unlocked after its first gate: inspect the opponent's active relay to delay their next transfer briefly. This is a bounded game action on the fictional map. For the first slice, implement and test the plain race first; add the interruption only after both roles can complete the baseline fairly. If time expires without a capture, record a draw. On a rematch the players should be able to try the opposite role.
+
+The playing screen retains the CRT housing and VT323 typeface. A cyan map highlights selectable nodes and the target. A green file/terminal pane shows the evidence for the selected node. On compact landscape screens a tap switches between map and file detail while keeping the flag and rival progress visible. Red **Access Denied** feedback identifies the failed check. The result identifies who retrieved or secured the flag. Commands are touch controls on fictional records.
+
+- The existing online screen hosts the map, evidence pane and result. A tap selects a node locally; a committed action sends the node, action and current state revision through the existing session socket.
+- The room service validates role, prerequisites and revision, serializes capture attempts, and broadcasts authoritative progress and one result. Rejoining restores role and progress. A duplicate or late capture cannot award a second win.
+- Acceptance: complete both roles through private room and matchmaking, test crossed captures, invalid shortcuts, retry, timeout and reconnect, then play on two phones and compare the routes for reading time and reachability. PvP measures match outcomes separately from BKT mastery and research scores. Bot parity, extra maps and additional minigames are outside this first online slice.
 
 ### Work
 
@@ -1106,3 +1124,41 @@ Audit logs are retained locally under `frontend/.godot/system_audit_*.log`. Deve
 5. Rebuild the Android app, run full journeys on target phones against the deployed services, fix blocking defects and close release handover.
 
 The existing 19 November deadline leaves about two weeks. Prioritize these integration and acceptance gates over new game modes or broad visual redesigns. Story progress alone cannot close the whole-system target.
+
+### Gate 3E · Delivery review and campaign ending · 6 November 2026
+
+In **Four Connections**, Mika and Sir Rham match the school support report to both original deliveries. Finishing the chapter opens **Close the Connection** in the shared hearing. After four rebuttals, Mika uses the authenticated addendum to identify Collector. It links the roster request and the pack offer to the directing account and corroborates the earlier operators' instructions. John's case retains Jobert's admission.
+
+The player assembles the six-panel reconstruction. The club then puts up its handmade signs in the evening auditorium wings, returning to the setting where Mika first received the offer. The final masked cutaway closes the fourth connection. Completing it saves the chapter, records the first-clear reward, and offers evidence review and baiting practice. Godot checks covered the Chapter 3–5 progression, discovery order, save and replay behavior, and isolation of story decisions from graded mastery. A full installed-phone playthrough is still required for release acceptance.
+
+### PvP Capture the Flag · approved first online slice · 7 November 2026
+
+The approved **Event Pack** race replaces quiz combat for two updated online clients. The attacker expands an invitation, traces its delivery manifest and retrieves EVENT.FLAG. The defender checks the pinned directory, restores the original endorsement thread and secures the same flag in quarantine. Each path requires inspecting the evidence before routing. Incorrect routes provide feedback. The first server-accepted capture ends the match; the two-minute deadline produces a draw if neither captures. This is a simulated social-engineering investigation, with no real file execution or network attack.
+
+The existing terminal lobby, room/session owner, matchmaking, ready and reconnect signals remain in use. Players can choose a preferred role; matching preferences are assigned randomly. The new terminal presentation provides a cyan network map and green file pane, with tap navigation between them on smaller phones. The backend retains each player's evidence step and command revision, rejects stale or premature commands and serializes simultaneous captures under the existing room lock. One final match record feeds the existing rating pipeline. Private matches are unrated. PvP does not update BKT mastery, assessment scores or the store wallet.
+
+Local verification covered both capture routes, simultaneous finishes, inspection prerequisites, wrong routes, stale retries, reconnect, role conflicts, malformed commands, matchmaking and rating eligibility. The full backend PvP suite passed **146 checks**. Godot rendered checks cover small landscape layouts, terminal navigation and online ownership; physical two-phone acceptance is still required. Developer checks and screenshots remain local and are excluded from commits.
+
+Before deployment, apply the updated `pvp_match_history.sql` and `pvp_ratings.sql`, then deploy the backend and rebuild both mobile clients. These changes have not been applied to the hosted database. Match rooms still require one backend worker. Bot practice and older clients retain the legacy quiz flow. Active interference, more maps and bot conversion are outside this first slice. Do not mark whole-system or hosted PvP acceptance complete until the installed-phone capture/reconnect/history/rating journey passes.
+
+### Capture the Flag computer workspace redesign — approved and implemented
+
+Replace the split-pane match presentation with the supplied green CRT computer reference: a substantial beige monitor bezel, inset dark glass, restrained scanlines, green pixel type, a system menu strip, bordered application windows and a small hardware power indicator. This is a simulated computer inside the mobile game, not a separate desktop platform. Keep the amber matchmaking directory unchanged in this slice.
+
+Both players enter the same **Home** workspace when the existing synchronized countdown ends. Home shows the assigned role, a short mission briefing and three large application shortcuts: **Terminal**, **Files**, and **Netmap**. Terminal shows the current operation/status; Files opens the current evidence and inspection action; Netmap opens the route targets. All three operate on the existing server-owned trail. A persistent Home control returns to the workspace without resetting progress or pausing the shared timer. Inspection and routing remain explicit touch actions. Home is an entry view, not another Ready gate.
+
+- Node structure: retain `PvpFlagTerminal` under `PvpOnlineScreen`; build the CRT shell, system strip, Home shortcuts, one application-window host, and bottom status strip inside it. Reuse its current file scroll, map controls, labels and buttons. At phone sizes, the selected app fills the usable workspace; the design does not depend on tiny overlapping windows or draggable title bars.
+- Signals: existing `command(action, target)` continues through `PvpOnlineSession` to the server; existing leave/retry signals retain their owners. Local app navigation changes only visibility and selected app. Server replies still own evidence progress, feedback, capture and result; there is no new manager or duplicate match state.
+- Acceptance: both roles initially land at Home; Files inspection → Netmap selection → confirmed route → final capture remains playable; Home/app switching cannot reset or bypass a gate; timer/reconnect/winner behavior stays intact. Review 720×360 and 844×390 renders, readable text, 44-pixel touch targets, safe areas and reduced motion. Use red window treatment only for actual denial/disconnection and green feedback for accepted progress. Do not add pretend attack tools or nonfunctional icons from the reference.
+
+The user approved this structure and supplied additional pixel-icon, window, palette and effect references. The existing `PvpFlagTerminal` now implements Home, Terminal, Files and Netmap as touch-operated app views. Pixel icons are drawn on an integer grid; green window strips, double borders, scanlines, selected controls and matching scrollbars replace the previous split-pane presentation. Actual connection/route warnings use the red treatment. There is no new asset file, effects manager or match-state owner. Backend rules, database schema, roles and match duration remain unchanged.
+
+The Godot online-screen verification passed with zero failures. Rendered previews were reviewed at 720×360 and 844×390. Checks cover initial Home for both roles, countdown inspection blocking, navigation without network actions, preserved evidence on returning Home, route selection, locked-flag protection, final capture, manual reconnect and a reduced-motion result. Small-phone touch targets retain a minimum 44-pixel height after the workspace scale. Physical-device acceptance and the previous hosted database/deployment tasks remain open.
+
+### Bot Capture the Flag practice — approved conversion · 7 November 2026
+
+The user chose **Also convert bot to CTF**, replacing the proposed visual-only update. Practice now opens the shared green CRT Home with role selection and Start Practice. It uses the same Event Pack evidence, Files inspection, Netmap routing and capture actions as online play. The local bot follows the opposite role's trail, takes 8–14 seconds per action and has a 25% chance of choosing the wrong route when more than one route exists. Wrong choices must be retried on a later turn. Its schedule is independent of player answers and progress.
+
+`PvpBattleScreen` remains the local owner and uses `PvpBattle.FlagPractice` in the existing gameplay file. The shared workspace emits the existing command and exit signals, with practice start/replay signals for the local owner. No fighter arena or quiz match is constructed on the bot route. Home does not start a hidden timer: Start Practice begins the countdown, followed by a two-minute race. The first capture wins; the deadline yields a draw if neither side captures. Scheduled bot actions are resolved before later player inputs. Exit confirmation pauses the local race for both sides, replay returns to role selection, and cleanup disconnects and retires the local model.
+
+Local verification covers both roles, inspection gates, wrong/stale commands, bot capture, timeout, replay, exit pause and cleanup. All 12 role/side/stage evidence snapshots were compared with the Python online implementation. Phone renders at 720×360 and 844×390 show Home, evidence and the final result. The bot check and shared online-screen regression passed with zero failures. Developer checks remain local and excluded from commits. Practice remains offline, unranked and separate from BKT, research assessments and the store wallet. Installed-phone acceptance remains open.

@@ -59,7 +59,7 @@
     "capture": {"title": "Keep the context", "text": "Drag the frame; its blue corner resizes. Keep the sender, subject and request together. TOOLS offers tap controls and Capture."},
     "submit": {"title": "Build the exhibit", "text": "The message, the sender's domain, and my warning signs belong together. This is the practice desk: sending here stays inside the game."},
     "sealed": {"title": "Practice exhibit sealed", "text": "I kept my password private and preserved the evidence. I know what made this request unsafe—not just which button to press."},
-    "closing": {"title": "A different morning", "text": "If only John thought of this before...."},
+    "closing": {"title": "A different morning", "text": "If only John had thought of this before…"},
     "summary": {"title": "TUTORIAL COMPLETE", "text": "You examined a request, recorded its sender, captured the context and sealed a practice exhibit. Your next story is still ahead. This tutorial awards no coins or mastery."}
   },
   "responses": [

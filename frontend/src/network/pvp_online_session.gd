@@ -116,6 +116,8 @@ var last_revision: int = 0
 var ignored_events: int = 0
 var hp: Dictionary = {}
 var current_round: Dictionary = {}
+var supports_flag: bool = false
+var flag: Dictionary = {}
 var countdown_ends_at: int = 0
 var last_result: Dictionary = {}
 var charge: Dictionary = {}
@@ -316,10 +318,19 @@ func _leave_queue() -> void:
 	_queue_exit_pending = false
 
 
-func send_ready() -> bool:
+func send_ready(role: String = "attacker") -> bool:
 	if state != State.WAITING:
 		return false
+	if supports_flag:
+		return _send({"type":"ready", "mode":"event_flag_v1", "role":role})
 	return _send({"type": "ready"})
+
+
+func send_flag_action(action: String, target: String) -> bool:
+	if state != State.ACTIVE or flag.is_empty():
+		return false
+	return _send({"type":"flag_action", "revision":int(flag.revision), "node":str(flag.node),
+		"action":action, "target":target})
 
 
 func submit_answer(option_index: int) -> bool:
@@ -495,6 +506,19 @@ func _handle_text(text: String) -> void:
 
 # ---- socket lifecycle -------------------------------------------------------------
 
+func retry_connection() -> void:
+	if room_code.is_empty() or state not in [State.DISCONNECTED, State.ERROR]:
+		return
+	if token_subject(_token()) != self_id:
+		_fail("auth_failed")
+		return
+	_close_socket()
+	_stop_reconnect()
+	last_error_code = ""
+	_set_state(State.CONNECTING)
+	_open_socket()
+
+
 func _open_socket() -> void:
 	var token: String = _token()
 	if token.is_empty():
@@ -578,6 +602,8 @@ func _begin_session() -> void:
 	ignored_events = 0
 	hp = {}
 	current_round = {}
+	flag = {}
+	supports_flag = false
 	countdown_ends_at = 0
 	last_result = {}
 	charge = {}
@@ -611,6 +637,8 @@ func _accept_room_reply(reply: Dictionary) -> bool:
 
 
 func _apply_view(view: Dictionary) -> void:
+	supports_flag = bool(view.get("supports_flag", false))
+	flag = (view.get("flag", {}) as Dictionary).duplicate(true)
 	charge = (view.get("charge", {}) as Dictionary).duplicate()
 	host_id = str(view.get("host_id", ""))
 	guest_id = "" if view.get("guest_id", null) == null else str(view.get("guest_id", ""))
@@ -633,6 +661,8 @@ func _apply_view(view: Dictionary) -> void:
 
 func _finish(source: Dictionary) -> void:
 	_stop_reconnect()
+	if source.has("flag"):
+		flag = (source.flag as Dictionary).duplicate(true)
 	_apply_hp(source.get("hp", null))
 	var already: bool = state == State.FINISHED
 	finish_result = {

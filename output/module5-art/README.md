@@ -2,7 +2,7 @@
 
 First slice · The Last Gift · Built-in imagegen · 5 November 2026
 
-Three of five planned environments are integrated: the evening auditorium wings, morning print studio and late-morning sign-painting shelter. The student services incident desk and event production booth remain for later chapter gates. The title illustration and portrait sheet are separate assets. The runtime loads the versioned Cloudinary images through AssetManager. Local PNGs are ignored by Git.
+All five environments are integrated. In addition to the auditorium wings, print studio and sign shelter documented below, Chapter 4 uses the [afternoon student services incident desk](https://res.cloudinary.com/nfd5bhkz/image/upload/v1793858817/levelblue_mod5_incident_desk_v1_20261105.png). Chapter 5 opens in the [dusk production booth](https://res.cloudinary.com/nfd5bhkz/image/upload/v1793924632/levelblue_mod5_production_booth_v1_20261106.png) and returns to the evening auditorium wings for the club's closing scene. The hearing uses [Mika's paper counter artwork](https://res.cloudinary.com/nfd5bhkz/image/upload/v1793924642/levelblue_mod5_mika_counter_paper_v1_20261106.png). AssetManager loads the versioned images. Local PNGs are ignored by Git.
 
 ## Mika’s portrait sheet
 

@@ -40,7 +40,8 @@ RANKS: tuple[tuple[str, int], ...] = (
     ("Diamond", 2100),
     ("Grandmaster", 2700),
 )
-RATED_FINISHES = frozenset({FINISH_KO, FINISH_FORFEIT_LEAVE, FINISH_FORFEIT_DISCONNECT})
+RATED_FINISHES = frozenset({FINISH_KO, FINISH_FORFEIT_LEAVE, FINISH_FORFEIT_DISCONNECT,
+                           "flag_retrieved", "flag_secured", "flag_timeout"})
 RETRY_BASE_SECONDS = 1.0
 RETRY_MAX_SECONDS = 300.0
 WAIT_SECONDS = 2.0

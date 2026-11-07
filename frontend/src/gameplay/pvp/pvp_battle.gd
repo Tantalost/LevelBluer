@@ -19,6 +19,132 @@ const BOT_DELAY_MAX_MS: int = 8000
 const BOT_NAME: String = "RIVAL NODE"
 const ROUND_MESSAGE: String = "pvp_round"
 
+## Offline counterpart of the online Event Pack trail. No socket or account writes.
+class FlagTrail extends RefCounted:
+	var step: int = 0
+	var inspected: bool = false
+	var revision: int = 0
+	var feedback: String = ""
+
+class FlagPractice extends RefCounted:
+	signal changed
+	enum State { COUNTDOWN, ACTIVE, FINISHED }
+	const DURATION_MS: int = 120000
+	const THINK_MIN_MS: int = 8000
+	const THINK_MAX_MS: int = 14000
+	var state: State = State.COUNTDOWN
+	var role: String = "attacker"
+	var winner: int = -1
+	var countdown_ends_at: int = 0
+	var ends_at: int = 0
+	var bot_next_at: int = 0
+	var _running: bool = false
+	var _trails: Array[FlagTrail] = []
+	var _rng: RandomNumberGenerator
+	var _relay: String
+	var _gateway: String
+	var _delivery: String
+	var _original: String
+
+	func start(player_role: String, now: int, random: RandomNumberGenerator) -> void:
+		role = "defender" if player_role == "defender" else "attacker"
+		_rng = random
+		_trails = [FlagTrail.new(), FlagTrail.new()]
+		_relay = "relay-a" if _rng.randi_range(0,1) == 0 else "relay-b"
+		_gateway = "desk-a" if _rng.randi_range(0,1) == 0 else "desk-b"
+		_delivery = "DL-%d" % _rng.randi_range(100,998)
+		_original = "banner.chat" if _rng.randi_range(0,1) == 0 else "poster.chat"
+		winner = -1
+		state = State.COUNTDOWN
+		countdown_ends_at = now + 3000
+		ends_at = countdown_ends_at + DURATION_MS
+		bot_next_at = countdown_ends_at + _rng.randi_range(THINK_MIN_MS,THINK_MAX_MS)
+		_running = true
+		changed.emit()
+
+	func retire() -> void:
+		_running = false
+
+	func tick(now: int) -> void:
+		if not _running or state == State.FINISHED: return
+		var updated: bool = false
+		if state == State.COUNTDOWN and now >= countdown_ends_at:
+			state = State.ACTIVE
+			updated = true
+		# Scheduled bot turns precede later taps, even after a slow frame.
+		while state == State.ACTIVE and bot_next_at <= now and bot_next_at < ends_at:
+			var station: Dictionary = _station(1)
+			if not _trails[1].inspected:
+				_apply(1,"inspect","")
+			else:
+				var target: String = str(station.correct)
+				var targets: Dictionary = station.targets
+				if targets.size() > 1 and _rng.randf() < 0.25:
+					for key: String in targets:
+						if key != target:
+							target = key
+							break
+				_apply(1,"route",target)
+			bot_next_at += _rng.randi_range(THINK_MIN_MS,THINK_MAX_MS)
+			updated = true
+		if state == State.ACTIVE and now >= ends_at:
+			state = State.FINISHED
+			updated = true
+		if updated: changed.emit()
+
+	func act(revision: int, node: String, action: String, target: String, now: int) -> void:
+		tick(now)
+		if not _running or state != State.ACTIVE: return
+		if revision != _trails[0].revision or node != str(_station(0).node): return
+		if _apply(0,action,target): changed.emit()
+
+	func _apply(side: int, action: String, target: String) -> bool:
+		var trail: FlagTrail = _trails[side]
+		var station: Dictionary = _station(side)
+		if action == "inspect" and not trail.inspected:
+			trail.inspected = true
+			trail.feedback = ""
+		elif action == "route" and trail.inspected and (station.targets as Dictionary).has(target):
+			if target != str(station.correct):
+				trail.feedback = "Access denied. Compare the host or desk with the verified route." if trail.step == 0 else "Access denied. Check the source record and delivery reference."
+			else:
+				trail.step += 1
+				trail.inspected = false
+				trail.feedback = ""
+		else:
+			return false
+		trail.revision += 1
+		if trail.step == 3:
+			state = State.FINISHED
+			winner = side
+		return true
+
+	func view() -> Dictionary:
+		var station: Dictionary = _station(0)
+		var trail: FlagTrail = _trails[0]
+		station.erase("correct")
+		station.merge({"role":role,"step":trail.step,"rival_step":_trails[1].step,"inspected":trail.inspected,"revision":trail.revision,"ends_at":ends_at,"feedback":trail.feedback})
+		if not trail.inspected:
+			station.detail = ""
+			station.targets = {}
+		return station
+
+	func _station(side: int) -> Dictionary:
+		var step: int = _trails[side].step
+		var attacking: bool = (role == "attacker") == (side == 0)
+		if step == 0 and attacking:
+			return _file("INVITATION","Expand destination","Club poster pack • View event artwork", "Displayed: design.school.example\nExpanded: %s.example/event-pack\nTrace the delivery to the host in the expanded address." % _relay, {"relay-a":"RELAY-A","relay-b":"RELAY-B"},_relay)
+		if step == 0:
+			return _file("INVITATION","Compare directory","Club poster pack • From: Student Design Desk", "Message: Design Desk <event@design-help.example>\nPinned school directory: report suspicious deliveries to %s. Route the incident through that verified desk." % _gateway.to_upper(), {"desk-a":"DESK-A","desk-b":"DESK-B"},_gateway)
+		if step == 1 and attacking:
+			return _file("RELAY MANIFEST","Read manifest","Intercepted event pack • " + _delivery, "Delivery %s requested installation. Inspect the file listing and mark the package for that delivery." % _delivery, {"poster.svg":"poster.svg / PRINT","preview.apk":"preview.apk / " + _delivery},"preview.apk")
+		if step == 1:
+			return _file("INCIDENT RECORD","Restore thread","Cropped endorsement: “Tried it. Looks great!”", "Original: Mika asked about the handmade banner. Amani praised the banner. Case %s names %s as the original thread. Attach it to the incident." % [_delivery,_original], {"banner.chat":"banner.chat","poster.chat":"poster.chat"},_original)
+		return _file("FLAG VAULT" if attacking else "QUARANTINE","Inspect flag file","Protected event folder • " + _delivery, _delivery + " / EVENT.FLAG\n" + ("Transfer the verified flag to your terminal." if attacking else "Move the verified flag into quarantine."), {"flag":"Retrieve flag" if attacking else "Secure flag"},"flag")
+
+	func _file(node: String, inspect: String, summary: String, detail: String, targets: Dictionary, correct: String) -> Dictionary:
+		return {"node":node,"inspect_label":inspect,"summary":summary,"detail":detail,"targets":targets,"correct":correct}
+
 class Answer:
 	var locked: bool = false
 	var timed_out: bool = false
