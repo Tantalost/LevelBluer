@@ -1,15 +1,18 @@
 extends BaseScreen
 ## Story-only prologue. Viewing this screen never awards chapter progress.
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
+const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
+var _voice: VoicePlayer = VoicePlayer.new()
+var _waiting_for_voice: bool = false
 const BEATS: Array[Dictionary] = [
-	{"visual": "email", "line": "A million pesos. That was the promise."},
-	{"visual": "email", "line": "Now I keep going back to that morning. The message. The deadline. My finger over the button."},
-	{"visual": "email", "line": "But was that really where it started?"},
-	{"visual": "caption", "line": "Before the morning…"},
-	{"visual": "caption", "line": "A club conversation."},
-	{"visual": "caption", "line": "A survey invitation."},
-	{"visual": "caption", "line": "An unanswered question."},
-	{"visual": "resolve", "line": "I need to figure out what went wrong."},
+	{"visual": "email", "voice": "v1794044377/M01_INTRO_01_John.mp3.mp3", "line": "A million pesos. That was the promise."},
+	{"visual": "email", "voice": "v1794044377/M01_INTRO_02_John.mp3.mp3", "line": "Now I keep going back to that morning. The message. The deadline. My finger over the button."},
+	{"visual": "email", "voice": "v1794044377/M01_INTRO_03_John.mp3.mp3", "line": "But was that really where it started?"},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_04_John.mp3.mp3", "line": "Before the morning…"},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_05_John.mp3.mp3", "line": "A club conversation."},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_06_John.mp3.mp3", "line": "A survey invitation."},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_07_John.mp3.mp3", "line": "An unanswered question."},
+	{"visual": "resolve", "voice": "v1794044376/M01_INTRO_08_John.mp3.mp3", "line": "I need to figure out what went wrong."},
 	{"visual": "caption", "line": "5 days before the disaster", "hold": 2.6},
 ]
 const AMANI_BEATS: Array[Dictionary] = [
@@ -119,6 +122,7 @@ var _caption_advance: Button
 var _dialogue_status: Label
 
 func _ready() -> void:
+	add_child(_voice)
 	_build()
 	resized.connect(_layout_page)
 	AssetManager.sync_finished.connect(_on_assets_ready)
@@ -253,7 +257,7 @@ func on_enter(args: Dictionary) -> void:
 func _beats() -> Array[Dictionary]:
 	return MIKA_BEATS if _module_index == 4 else RHAM_BEATS if _module_index == 3 else LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
 
-func _show_beat() -> void:
+func _show_beat(start_voice: bool = true) -> void:
 	_stop_tweens()
 	_seq += 1
 	_ending = false
@@ -269,6 +273,9 @@ func _show_beat() -> void:
 	_subtitle.hide()
 	_start_button.hide()
 	var beat: Dictionary = _beats()[_index]
+	_waiting_for_voice = false
+	if start_voice:
+		_voice.play_clip(str(beat.get("voice", "")))
 	var visual: String = str(beat["visual"])
 	_art.queue_redraw()
 	_counter.text = "THE LAST GIFT" if _module_index == 4 else "THE PERFECT CREDENTIAL" if _module_index == 3 else "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
@@ -318,11 +325,22 @@ func _show_caption(beat: Dictionary) -> void:
 	_motion.tween_property(_caption, "modulate:a", 1.0, fade)
 	_motion.tween_property(_caption_advance, "modulate:a", 1.0, 0.15)
 	_motion.tween_interval(float(beat.get("hold", 1.8)))
+	_motion.tween_callback(_hold_caption_for_voice)
 	_motion.tween_property(_caption_advance, "modulate:a", 0.0, 0.15)
 	_motion.tween_property(_caption, "modulate:a", 0.0, fade)
 	_motion.tween_callback(_next_beat)
 	_layout_page()
 	_apply_pause()
+
+func _hold_caption_for_voice() -> void:
+	_waiting_for_voice = _voice.pending_or_playing()
+	if _waiting_for_voice:
+		_motion.pause()
+
+func _process(_delta: float) -> void:
+	if _waiting_for_voice and not _voice.pending_or_playing():
+		_waiting_for_voice = false
+		_apply_pause()
 
 func _build_item() -> void:
 	UI.clear(_item_copy)
@@ -386,6 +404,8 @@ func _next_beat() -> void:
 		_show_title()
 
 func _show_title() -> void:
+	_voice.clear_clip()
+	_waiting_for_voice = false
 	_stop_tweens()
 	_seq += 1
 	_ending = true
@@ -541,7 +561,7 @@ func _settings_changed() -> void:
 	if not _active:
 		return
 	if not _ending and str(_beats()[_index]["visual"]) == "caption":
-		_show_beat()
+		_show_beat(false)
 		return
 	if SettingsService.reduced_motion or SettingsService.text_speed == "instant":
 		if _typing != null and _typing.is_valid():
@@ -567,9 +587,10 @@ func _notification(what: int) -> void:
 		_apply_pause()
 
 func _apply_pause() -> void:
+	_voice.suspend_clip(_focus_lost or _app_paused or not _active)
 	for tween: Tween in [_typing, _motion]:
 		if tween != null and tween.is_valid():
-			if _focus_lost or _app_paused or not _active:
+			if _focus_lost or _app_paused or not _active or (tween == _motion and _waiting_for_voice):
 				tween.pause()
 			else:
 				tween.play()
@@ -582,6 +603,8 @@ func _stop_tweens() -> void:
 	_motion = null
 
 func on_exit() -> void:
+	_voice.clear_clip()
+	_waiting_for_voice = false
 	_active = false
 	_seq += 1
 	_stop_tweens()

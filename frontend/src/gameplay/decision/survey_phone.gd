@@ -8,6 +8,7 @@ signal view_changed
 signal story_art_changed(asset_id: String)
 var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 var chat_entries: Array[Dictionary] = []
+const Survey: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
 const INK: Color = Color("101623")
 var state: Dictionary = {}
@@ -385,7 +386,7 @@ func acknowledge() -> void:
 		return
 	var entry: Dictionary = Chapter.message(selected)
 	_add("read", selected)
-	thought_requested.emit("I replied with the requested details. At the time, it felt like another step toward getting paid." if bool(entry["suspicious"]) else "This matches something I already arranged. No unexpected action is being demanded.")
+	thought_requested.emit(Survey.REPLIED if bool(entry["suspicious"]) else Survey.EXPECTED)
 	_inbox()
 
 func sort_message(id: String, suspicious: bool) -> void:
@@ -477,7 +478,7 @@ func check_domain() -> void:
 		thought_requested.emit("Copy only the part after @. Check the spelling in Mail; a similar domain is not the same address.")
 		return
 	_add("domains", selected)
-	thought_requested.emit("A free mailbox doesn't prove a scam. But who is the client? And why do they need so much information?")
+	thought_requested.emit(Survey.DOMAIN_SAVED)
 	note_app = false
 	_inbox()
 
@@ -544,7 +545,7 @@ func take_photo() -> void:
 		return
 	_add("captures", id)
 	AudioManager.play_sfx("ui_confirm")
-	thought_requested.emit("Capture saved to the exhibit: sender, subject and request together.")
+	thought_requested.emit(Survey.CAPTURE_SAVED)
 	_inbox()
 
 func _add(field: String, id: String) -> void:

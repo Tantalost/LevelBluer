@@ -450,6 +450,7 @@ func _school_story_catalog() -> Array[Dictionary]:
 	catalog.append(_catalog_entry("story_john_laugh", "John / Laughing pose", "image", "%s/v1792721629/john_laugh_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_bed_night", "Chapter 2 / John's nighttime investigation", "image", "%s/v1792721171/john_bed_night_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_desk_night", "Chapter 1 / John's nighttime desk", "image", "%s/v1792675006/john_desk_night_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("chapter1_john_rushing", "Chapter 1 / John running to school", "image", "%s/v1794048778/john_rushing_to_school_v1.webp" % CLOUD_ROOT))
 	for person: String in ["john", "eric", "jobert"]:
 		var sprite_version: String = "1792675005" if person == "eric" else "1792675007"
 		catalog.append(_catalog_entry("chapter1_" + person, "Chapter 1 / " + person, "image", "%s/v%s/%s_poses_v1.png" % [CLOUD_ROOT, sprite_version, person]))
@@ -917,6 +918,8 @@ func _image_from_buffer(body: PackedByteArray) -> Image:
 	if body.is_empty():
 		return null
 	var image := Image.new()
+	if body.size() >= 12 and body.slice(0, 4) == "RIFF".to_ascii_buffer() and body.slice(8, 12) == "WEBP".to_ascii_buffer():
+		return image if image.load_webp_from_buffer(body) == OK else null
 	var err: Error = image.load_png_from_buffer(body)
 	if err == OK and not image.is_empty():
 		return image

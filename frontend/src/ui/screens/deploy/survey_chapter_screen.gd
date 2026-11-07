@@ -1,6 +1,9 @@
 extends BaseScreen
 ## Shared story presentation. Chapter data and phone activities are injected per case.
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
+const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
+var _voice: VoicePlayer = VoicePlayer.new()
+var _line_voice: String = ""
 var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Phone: GDScript = preload("res://src/gameplay/decision/survey_phone.gd")
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
@@ -62,6 +65,7 @@ var _result_actions: HBoxContainer
 var _result_secondary: HBoxContainer
 var _result_tween: Tween
 var _result_audio: AudioStreamPlayer
+var _approach_audio: AudioStreamPlayer
 var _celebrate_pending: bool = false
 
 ## A vector-only title treatment: no downloaded artwork or extra scene manager.
@@ -205,6 +209,7 @@ class ChapterCelebration extends InvestigationReveal:
 			draw_set_transform(Vector2.ZERO)
 
 func _ready() -> void:
+	add_child(_voice)
 	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	var fallback: ColorRect = ColorRect.new()
 	fallback.color = Color("173058")
@@ -488,7 +493,7 @@ func _render() -> void:
 	if phase == "day":
 		var beat: Dictionary = Chapter.STORY[int(state["beat"])]
 		_speaker.text = str(beat["who"])
-		_set_line((str(beat["caption"]) + " " if beat.has("caption") else "") + str(beat["line"]))
+		_set_line((str(beat["caption"]) + " " if beat.has("caption") else "") + str(beat["line"]), str(beat.get("voice", "")))
 		if bool(beat.get("mail", false)) and not _is_caption_sentence():
 			_phone.configure_chapter("read", state)
 	elif Chapter.TASKS.has(phase):
@@ -510,7 +515,7 @@ func _render() -> void:
 		hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 		progress_row.add_child(hint)
 		_phone.configure_chapter(phase, state)
-		_set_line(str(Chapter.TASKS[phase].line))
+		_set_line(str(Chapter.TASKS[phase].line), str(Chapter.TASKS[phase].get("voice", "")))
 	elif phase == "seal":
 		_journal.show()
 		_journal_body.add_child(UI.label("EXHIBIT %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()], 28, Color("4FE0D4")))
@@ -520,9 +525,9 @@ func _render() -> void:
 		_seal = Practice.SealArt.new()
 		_journal_body.add_child(_seal)
 		_journal_body.add_child(_button("SEAL EXHIBIT", _seal_exhibit))
-		_set_line(Chapter.SEAL_LINE)
+		_set_line(Chapter.SEAL_LINE, str(Chapter.SEAL_VOICE) if Chapter.get("SEAL_VOICE") is String else "")
 	elif phase == "sleep":
-		_set_line(Chapter.SLEEP_LINE)
+		_set_line(Chapter.SLEEP_LINE, str(Chapter.SLEEP_VOICE) if Chapter.get("SLEEP_VOICE") is String else "")
 	elif phase == "closing":
 		_set_line(Chapter.END_CAPTION)
 	else:
@@ -617,7 +622,9 @@ func _next_chapter() -> void:
 	elif PlayerManager.story_unlocked(next_id):
 		Router.push(&"confrontation" if PlayerManager.story_definition(next_id).get("HEARING") == true else &"upgrades", {"deploy":true, "chapter_id":next_id, "replay":PlayerManager.chapter_progress.get(next_id, {}).get("completed", false)})
 
-func _set_line(text: String) -> void:
+func _set_line(text: String, voice: String = "") -> void:
+	_voice.clear_clip()
+	_line_voice = voice
 	# Presentation pages leave authored beat IDs (and existing saves) unchanged.
 	_sentences.clear()
 	_sentence = 0
@@ -658,12 +665,15 @@ func _show_sentence() -> void:
 		_typing.finished.connect(func() -> void: _typing = null)
 		_update_advance()
 		return
+	if not _line_voice.is_empty():
+		_voice.play_clip(_line_voice)
+		_line_voice = ""
 	if was_caption:
 		_perk_button.visible = not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
 		_speaker.text = str(Chapter.STORY[int(state["beat"])]["who"])
 		if state.phase == "day" and Chapter.STORY[int(state.beat)].get("mail", false): _phone.configure_chapter("read", state)
 		_load_art()
-	elif state.phase == "day" and Chapter.STORY[int(state.beat)].has("sentence_faces"):
+	elif state.phase == "day" and (Chapter.STORY[int(state.beat)].has("sentence_faces") or Chapter.STORY[int(state.beat)].has("approach_art")):
 		_load_art()
 	if SettingsService.text_speed != "instant":
 		_line.visible_characters = 0
@@ -707,7 +717,7 @@ func _update_advance() -> void:
 			_chat_cue = 0.85
 
 func _process(delta: float) -> void:
-	if _chat_cue < 0.0 or not _can_act(): return
+	if _chat_cue < 0.0 or not _can_act() or _voice.pending_or_playing(): return
 	_chat_cue -= delta
 	if _chat_cue <= 0.0:
 		_chat_cue = -1.0
@@ -793,7 +803,14 @@ func _thought(text: String) -> void:
 		_phone.show_feedback(text)
 		return
 	_speaker.text = _protagonist().capitalize() + " · Thinking"
-	_set_line(text)
+	var clip: String = ""
+	if Chapter.ID == "mod_01_ch_01":
+		clip = Chapter.FEEDBACK_VOICES.get(text, "")
+		for entry: Dictionary in Chapter.MESSAGES:
+			if entry.get("thought") == text:
+				clip = str(entry.voice)
+				break
+	_set_line(text, clip)
 
 func _phase_finished() -> void:
 	if not _can_act() or not _phone.phase_ready(): return
@@ -959,7 +976,22 @@ func _load_art() -> void:
 	if Chapter.get("BACKGROUND_ASSET") is String:
 		background_id = str(beat.get("art",Chapter.get("BACKGROUND_ASSET"))) if phase == "day" else str(Chapter.get("BACKGROUND_ASSET"))
 	if not _story_art_override.is_empty(): background_id = _story_art_override
-	_bg.texture = AssetManager.get_texture(background_id)
+	# The approach illustration covers the first spoken pages; the final page reveals the gate.
+	var show_approach: bool = phase == "day" and beat.has("approach_art") and not _is_caption_sentence() and _sentence < _sentences.size() - 1
+	var approach: Texture2D = AssetManager.get_texture(str(beat.approach_art)) if show_approach else null
+	_bg.texture = approach if approach != null else AssetManager.get_texture(background_id)
+	if _active and show_approach and beat.has("approach_sfx"):
+		if _approach_audio == null:
+			_approach_audio = AudioStreamPlayer.new()
+			_approach_audio.bus = &"SFX"
+			_approach_audio.volume_db = -12.0
+			add_child(_approach_audio)
+		if not _approach_audio.has_stream_playback():
+			_approach_audio.stream = load(beat.approach_sfx) as AudioStream
+			_approach_audio.play()
+			_approach_audio.stream_paused = not _can_act()
+	elif _approach_audio != null:
+		_approach_audio.stop()
 	var person: String = str(beat["who"]).to_lower() if phase == "day" else _protagonist()
 	if _chat_started and _is_chat_beat():
 		# Chat senders are remote, not physical actors in John's room.
@@ -977,7 +1009,7 @@ func _load_art() -> void:
 	# Includes the lead-in and phone home, not only the open chat app.
 	if _is_chat_beat(): present = [_protagonist()]
 	# John is already seated in the night artwork; never overlay a second John.
-	_cast_stage.visible = not _is_caption_sentence() and location not in ["john_desk_night", "john_bed_night", "intro_morning"] and phase in ["day", "seal", "sleep"]
+	_cast_stage.visible = approach == null and not _is_caption_sentence() and location not in ["john_desk_night", "john_bed_night", "intro_morning"] and phase in ["day", "seal", "sleep"]
 	for id: String in _cast:
 		_cast[id].visible = present.has(id)
 		_cast[id].texture = _actor_texture(id, _poses[id])
@@ -1238,6 +1270,9 @@ func _toggle_menu() -> void:
 
 func _apply_pause() -> void:
 	var locked: bool = not _can_act()
+	_voice.suspend_clip(locked)
+	if _approach_audio != null and _approach_audio.has_stream_playback():
+		_approach_audio.stream_paused = locked
 	_perk_button.disabled = locked or _sending
 	if _result_tween != null and _result_tween.is_valid():
 		if locked: _result_tween.pause()
@@ -1320,6 +1355,9 @@ func _notification(what: int) -> void:
 	if is_node_ready(): _apply_pause()
 
 func _stop_tweens() -> void:
+	_voice.clear_clip()
+	if _approach_audio != null:
+		_approach_audio.stop()
 	if _result_tween != null and _result_tween.is_valid(): _result_tween.kill()
 	_result_tween = null
 	if is_instance_valid(_result_audio): _result_audio.stop()
