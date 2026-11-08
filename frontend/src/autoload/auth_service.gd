@@ -741,7 +741,8 @@ func _request_json(
 		return parsed if typeof(parsed) == TYPE_DICTIONARY else {"error": "Unauthorized"}
 
 	if response_code < 200 or response_code >= 300:
-		push_warning("AuthService HTTP %s: %s" % [response_code, text])
+		if not _is_expected_http_reply(response_code, parsed):
+			push_warning("AuthService HTTP %s: %s" % [response_code, text])
 		if response_code >= 500:
 			return null
 		return parsed if typeof(parsed) == TYPE_DICTIONARY else {"error": "Request failed"}
@@ -1045,7 +1046,16 @@ func _topic_for_module(module_id: String) -> String:
 static func _is_already_completed_error(payload: Dictionary) -> bool:
 	# A validation failure also uses HTTP 400. Only the completion sentence
 	# means this module was graded and must not be submitted again.
-	return str(payload.get("detail", "")).strip_edges().to_lower() == "pre-test already completed"
+	# The game API sends it as "error"; "detail" is FastAPI's default shape.
+	for key: String in ["error", "detail"]:
+		if str(payload.get(key, "")).strip_edges().to_lower() == "pre-test already completed":
+			return true
+	return false
+
+
+## The completion reply to a queued pretest is resolved by the retry, so it is not logged as a fault.
+static func _is_expected_http_reply(response_code: int, parsed: Variant) -> bool:
+	return response_code == 400 and typeof(parsed) == TYPE_DICTIONARY and _is_already_completed_error(parsed)
 
 
 func _set_pending_pretest(value: Variant) -> void:
