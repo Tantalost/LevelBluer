@@ -1,15 +1,18 @@
 extends BaseScreen
 ## Story-only prologue. Viewing this screen never awards chapter progress.
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
+const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
+var _voice: VoicePlayer = VoicePlayer.new()
+var _waiting_for_voice: bool = false
 const BEATS: Array[Dictionary] = [
-	{"visual": "email", "line": "A million pesos. That was the promise."},
-	{"visual": "email", "line": "Now I keep going back to that morning. The message. The deadline. My finger over the button."},
-	{"visual": "email", "line": "But was that really where it started?"},
-	{"visual": "caption", "line": "Before the morning…"},
-	{"visual": "caption", "line": "A club conversation."},
-	{"visual": "caption", "line": "A survey invitation."},
-	{"visual": "caption", "line": "An unanswered question."},
-	{"visual": "resolve", "line": "I need to figure out what went wrong."},
+	{"visual": "email", "voice": "v1794044377/M01_INTRO_01_John.mp3.mp3", "line": "A million pesos. That was the promise."},
+	{"visual": "email", "voice": "v1794044377/M01_INTRO_02_John.mp3.mp3", "line": "Now I keep going back to that morning. The message. The deadline. My finger over the button."},
+	{"visual": "email", "voice": "v1794044377/M01_INTRO_03_John.mp3.mp3", "line": "But was that really where it started?"},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_04_John.mp3.mp3", "line": "Before the morning…"},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_05_John.mp3.mp3", "line": "A club conversation."},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_06_John.mp3.mp3", "line": "A survey invitation."},
+	{"visual": "caption", "voice": "v1794044376/M01_INTRO_07_John.mp3.mp3", "line": "An unanswered question."},
+	{"visual": "resolve", "voice": "v1794044376/M01_INTRO_08_John.mp3.mp3", "line": "I need to figure out what went wrong."},
 	{"visual": "caption", "line": "5 days before the disaster", "hold": 2.6},
 ]
 const AMANI_BEATS: Array[Dictionary] = [
@@ -41,7 +44,16 @@ const RHAM_BEATS: Array[Dictionary] = [
  {"visual":"resolve","line":"I was ready to help. I still needed to know who I was helping."},
 ]
 
+const MIKA_BEATS: Array[Dictionary] = [
+ {"visual":"caption","line":"Auditorium wings. Early evening, as Sir Rham's hearing ends."},
+ {"visual":"resolve","face":1,"line":"John, turn the arrow the other way. Unless we're holding the event in the broom closet."},
+ {"visual":"sms","face":3,"line":"That was my phone. Someone has event materials for us?"},
+ {"visual":"sms","face":0,"line":"Posters, arrows, room signs. If this has table numbers too, I might cry."},
+ {"visual":"resolve","face":1,"line":"One second. Let me help carry this sign first."}
+]
+
 class IntroArtwork extends Control:
+	var gift_style: bool = false
 	var credential_style: bool = false
 	var room: Texture2D
 	var title_art: Texture2D
@@ -64,6 +76,9 @@ class IntroArtwork extends Control:
 			_cover(room, Rect2(Vector2.ZERO, size), Color.WHITE)
 		else:
 			_cover(title_art if title_art != null else room, Rect2(Vector2.ZERO, size), Color(1, 1, 1, reveal))
+			if gift_style:
+				var tab: Vector2 = size * Vector2(.80 + .07*reveal,.68)
+				draw_colored_polygon(PackedVector2Array([tab,tab+size*Vector2(.05,-.015),tab+size*Vector2(.012,.044)]),Color("8FF0E6",.75))
 			if credential_style:
 				# Existing reveal tween aligns source layers; reduced motion starts aligned.
 				for index: int in 3:
@@ -107,6 +122,7 @@ var _caption_advance: Button
 var _dialogue_status: Label
 
 func _ready() -> void:
+	add_child(_voice)
 	_build()
 	resized.connect(_layout_page)
 	AssetManager.sync_finished.connect(_on_assets_ready)
@@ -236,15 +252,12 @@ func on_enter(args: Dictionary) -> void:
 	_index = 0
 	_ending = false
 	_load_art()
-	if _module_index not in [0,1,2,3]:
-		_leave_to_stages()
-		return
 	_show_beat()
 
 func _beats() -> Array[Dictionary]:
-	return RHAM_BEATS if _module_index == 3 else LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
+	return MIKA_BEATS if _module_index == 4 else RHAM_BEATS if _module_index == 3 else LIZA_BEATS if _module_index == 2 else AMANI_BEATS if _module_index == 1 else BEATS
 
-func _show_beat() -> void:
+func _show_beat(start_voice: bool = true) -> void:
 	_stop_tweens()
 	_seq += 1
 	_ending = false
@@ -260,11 +273,14 @@ func _show_beat() -> void:
 	_subtitle.hide()
 	_start_button.hide()
 	var beat: Dictionary = _beats()[_index]
+	_waiting_for_voice = false
+	if start_voice:
+		_voice.play_clip(str(beat.get("voice", "")))
 	var visual: String = str(beat["visual"])
 	_art.queue_redraw()
-	_counter.text = "THE PERFECT CREDENTIAL" if _module_index == 3 else "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
-	_speaker.text = "Sir Rham / Before the request" if _module_index == 3 else "Liza  /  Before the code" if _module_index == 2 else "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
-	_caption_advance.accessibility_name = "Continue Sir Rham's thought" if _module_index == 3 else "Continue Liza's thought" if _module_index == 2 else "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
+	_counter.text = "THE LAST GIFT" if _module_index == 4 else "THE PERFECT CREDENTIAL" if _module_index == 3 else "STAY ON THE LINE" if _module_index == 2 else "THE MESSAGE THAT KNEW" if _module_index == 1 else "BEFORE THE PRIZE"
+	_speaker.text = "Mika / After the hearing" if _module_index == 4 else "Sir Rham / Before the request" if _module_index == 3 else "Liza  /  Before the code" if _module_index == 2 else "Amani  /  Before the message" if _module_index == 1 else "John  /  Before the prize"
+	_caption_advance.accessibility_name = "Continue Mika's thought" if _module_index == 4 else "Continue Sir Rham's thought" if _module_index == 3 else "Continue Liza's thought" if _module_index == 2 else "Continue Amani's thought" if _module_index == 1 else "Continue John's thought"
 	_load_art()
 	_dialogue_text.text = str(beat["line"])
 	_item.visible = visual in ["email","sms","call"]
@@ -309,14 +325,30 @@ func _show_caption(beat: Dictionary) -> void:
 	_motion.tween_property(_caption, "modulate:a", 1.0, fade)
 	_motion.tween_property(_caption_advance, "modulate:a", 1.0, 0.15)
 	_motion.tween_interval(float(beat.get("hold", 1.8)))
+	_motion.tween_callback(_hold_caption_for_voice)
 	_motion.tween_property(_caption_advance, "modulate:a", 0.0, 0.15)
 	_motion.tween_property(_caption, "modulate:a", 0.0, fade)
 	_motion.tween_callback(_next_beat)
 	_layout_page()
 	_apply_pause()
 
+func _hold_caption_for_voice() -> void:
+	_waiting_for_voice = _voice.pending_or_playing()
+	if _waiting_for_voice:
+		_motion.pause()
+
+func _process(_delta: float) -> void:
+	if _waiting_for_voice and not _voice.pending_or_playing():
+		_waiting_for_voice = false
+		_apply_pause()
+
 func _build_item() -> void:
 	UI.clear(_item_copy)
+	if _module_index == 4:
+		_item_label("UNREAD OFFER",Color("153B37"))
+		_item_label("Event Recovery Desk",Color("101623"),true)
+		_item_label("Your event materials are ready.",Color("101623"))
+		return
 	if _module_index == 3:
 		_item_label("LATER / FACULTY CONSULTATION ROOM", Color("153B37"))
 		_item_label("Emergency clearance claimed", Color("101623"), true)
@@ -372,6 +404,8 @@ func _next_beat() -> void:
 		_show_title()
 
 func _show_title() -> void:
+	_voice.clear_clip()
+	_waiting_for_voice = false
 	_stop_tweens()
 	_seq += 1
 	_ending = true
@@ -388,9 +422,9 @@ func _show_title() -> void:
 	_chapter_label.show()
 	_ending_title.show()
 	_chapter_label.text = "MODULE %d" % (_module_index + 1)
-	_ending_title.text = "Fake Stories" if _module_index == 3 else "Phone Tricks" if _module_index == 2 else "Text Tricks" if _module_index == 1 else "Email Tricks"
-	_subtitle.visible = _module_index in [1,2,3]
-	_subtitle.text = "The Perfect Credential" if _module_index == 3 else "Stay on the Line" if _module_index == 2 else "The Message That Knew"
+	_ending_title.text = "Tempting Offers" if _module_index == 4 else "Fake Stories" if _module_index == 3 else "Phone Tricks" if _module_index == 2 else "Text Tricks" if _module_index == 1 else "Email Tricks"
+	_subtitle.visible = _module_index in [1,2,3,4]
+	_subtitle.text = "The Last Gift" if _module_index == 4 else "The Perfect Credential" if _module_index == 3 else "Stay on the Line" if _module_index == 2 else "The Message That Knew"
 	_load_art()
 	_start_button.show()
 	_start_button.disabled = true
@@ -433,29 +467,32 @@ func _leave_to_stages() -> void:
 	_leaving = true
 	_stop_tweens()
 	_start_button.disabled = true
-	if _module_index in [0,1,2,3]:
+	if _module_index in [0,1,2,3,4]:
 		PlayerManager.mark_module_intro_seen("mod_%02d" % (_module_index + 1))
-	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1,2,3]})
+	await Router.replace(&"module_stages", {"module_index": _module_index, "chapters": _module_index in [0,1,2,3,4]})
 
 func _can_interact() -> bool:
 	return _active and not _leaving and not _focus_lost and not _app_paused
 
 func _load_art() -> void:
 	_art.portrait = null
+	_art.gift_style = _module_index == 4
 	_art.credential_style = _module_index == 3
-	if _module_index in [1,2,3]:
+	if _module_index in [1,2,3,4]:
 		_art.room = AssetManager.get_texture("story_bg_club_corridor_afternoon" if _index < 3 else "story_bg_event_room_day")
 		if _art.room == null:
 			_art.room = AssetManager.get_texture("story_bg_hallway_day" if _index < 3 else "story_bg_event_room_day")
 		if _module_index == 2: _art.room = AssetManager.get_texture("story_bg_mod3_rain_courtyard_v1" if _index < 3 else "story_bg_mod3_briefing_classroom_v1" if _index < 5 else "story_bg_mod3_covered_walkway_v1")
 		if _module_index == 3: _art.room = AssetManager.get_texture("story_bg_mod4_consultation_room_v1" if _index < 3 else "story_bg_mod4_faculty_workroom_v1")
-		_art.title_art = AssetManager.get_texture("module4_mystery_title_v1" if _module_index == 3 else "module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
-		var sheet: Texture2D = AssetManager.get_texture("story_rham_poses" if _module_index == 3 else "story_liza_poses" if _module_index == 2 else "story_amani_poses")
+		if _module_index == 4: _art.room = AssetManager.get_texture("story_bg_mod5_auditorium_wings_v1")
+		_art.title_art = AssetManager.get_texture("module5_mystery_title_v1" if _module_index == 4 else "module4_mystery_title_v1" if _module_index == 3 else "module3_mystery_title_v1" if _module_index == 2 else "module2_mystery_title_v1")
+		var sheet: Texture2D = AssetManager.get_texture("story_mika_poses" if _module_index == 4 else "story_rham_poses" if _module_index == 3 else "story_liza_poses" if _module_index == 2 else "story_amani_poses")
 		if sheet != null and not _ending and str(_beats()[_index].visual) != "caption":
 			var portrait: AtlasTexture = AtlasTexture.new()
 			portrait.atlas = sheet
 			var cell: Vector2 = sheet.get_size() / Vector2(3,2)
-			portrait.region = Rect2(Vector2(2,0) * cell, cell)
+			var face: int = int(_beats()[_index].get("face",2))
+			portrait.region = Rect2(Vector2(face%3,int(face/3)) * cell, cell)
 			_art.portrait = portrait
 	else:
 		_art.room = AssetManager.get_texture("opening_john_room_wake_v1")
@@ -524,7 +561,7 @@ func _settings_changed() -> void:
 	if not _active:
 		return
 	if not _ending and str(_beats()[_index]["visual"]) == "caption":
-		_show_beat()
+		_show_beat(false)
 		return
 	if SettingsService.reduced_motion or SettingsService.text_speed == "instant":
 		if _typing != null and _typing.is_valid():
@@ -550,9 +587,10 @@ func _notification(what: int) -> void:
 		_apply_pause()
 
 func _apply_pause() -> void:
+	_voice.suspend_clip(_focus_lost or _app_paused or not _active)
 	for tween: Tween in [_typing, _motion]:
 		if tween != null and tween.is_valid():
-			if _focus_lost or _app_paused or not _active:
+			if _focus_lost or _app_paused or not _active or (tween == _motion and _waiting_for_voice):
 				tween.pause()
 			else:
 				tween.play()
@@ -565,6 +603,8 @@ func _stop_tweens() -> void:
 	_motion = null
 
 func on_exit() -> void:
+	_voice.clear_clip()
+	_waiting_for_voice = false
 	_active = false
 	_seq += 1
 	_stop_tweens()

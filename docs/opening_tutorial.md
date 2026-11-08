@@ -1,5 +1,28 @@
 # Opening and phone tutorial — implementation handoff
 
+## Cloudinary voice delivery
+
+The solo opening and tutorial fetch 38 playable recordings from versioned Cloudinary URLs. The meeting uses the premixed group laugh. The single-person laugh is archived in Cloudinary. Clips stay in memory for the current opening screen, including replay, and no voice files are written to phone storage. An unavailable recording is skipped so the player can continue with the captions. The following dated entries describe the original integration.
+
+
+## Group laughter — 6 November 2026
+
+The masked group scene now plays `VillainLaugh_group.wav`, a 6.1-second stereo mix derived from the user's `Intro/VillainLaugh.mp3`. Four layers use speed/pitch factors 0.84, 1.05, 0.95 and 1.16; entrances at 0, 0.36, 0.83 and 1.35 seconds; source offsets 0, 0.18, 0.58 and 0.92 seconds after trimming the leading silence; distinct stereo placement and levels; and quiet room reflections. The mix peaks at 0.70 and fades over its last 0.6 seconds. The original recording is preserved. The local bake recipe is retained in the ignored Godot cache.
+
+Playback begins with the first laughter caption at 0.9 seconds and ends at the existing seven-second scene boundary. It uses the opening's existing voice player and SFX controls, including menu/background pause, replay reset and exit cancellation; no extra runtime audio manager or timers. Reduced motion retains the same audio cue.
+
+Validation: Godot imported the mix successfully and the expanded opening voice checks passed with zero failures, including decoding, cue timing, pause/resume, no repeat after completion, replay reset and stopping on scene change. Physical-phone listening approval remains pending.
+
+## Recorded opening and tutorial voices — 6 November 2026
+
+Integrated all 37 user-supplied MP3s in `frontend/assets/audio/voiceovers`, retaining their labelled Intro/Tutorial folders and filenames. Explicit resource references in the existing opening screen include the clips in Godot exports. One screen-owned AudioStreamPlayer uses the existing SFX and Master volume/mute controls; it is independent of dialogue blips and text speed. No new manager, save field or learning event was introduced.
+
+Scene narration uses the labelled intro/tutorial IDs. Choice and transition scenes play their two recordings sequentially. The tutorial phone signals the current owner for clue, sender, domain, hint and capture feedback, replacing the previous narration rather than overlapping it. The first intro line waits for the eye-opening cue; the closing narrator starts with its caption. Menu and app suspension preserve playback position. Navigation, skip, replay and teardown cancel old playback and queued lines. Existing music ducking lowers BGM while an audible voice plays and restores it afterward.
+
+The user confirmed the revised recordings: “Alright… what else should I check?” and “If only John had thought of this before…”. Displayed captions now match. The completion overlay displays the recorded END_02 wording. Optional INTRO_06/07 and END_03 recordings were not supplied; the existing visual/sound treatment and paused-tutorial text remain.
+
+Local validation: all 37 MP3s decode non-silent samples; voice mapping, sequential playback, pause/resume, mute, interruption, replay and unchanged account/BKT state checks pass. Existing opening/tutorial regression checks pass with zero failures. Completion controls fit rendered 720×360, 844×390 and 932×430 previews. Listening on an installed phone remains a device acceptance check. Developer checks and generated artifacts are excluded from commit scope.
+
 ## Current milestone: visual-novel item showcase and choice bars (2026-10-20)
 
 Replaces the centered presentation for `choice`, `inspect_intro` and `next_issue` only:

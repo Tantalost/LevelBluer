@@ -5,41 +5,53 @@ const NUMBER: int = 1
 const TITLE: String = "The Survey"
 const NIGHT_BACKGROUND: String = "john_desk_night"
 const FIRST_PHASE: String = "sort"
+const REPLIED: String = "I replied with the requested details. At the time, it felt like another step toward getting paid."
+const EXPECTED: String = "This matches something I already arranged. No unexpected action is being demanded."
+const DOMAIN_SAVED: String = "A free mailbox doesn't prove a scam. But who is the client? And why do they need so much information?"
+const CAPTURE_SAVED: String = "Capture saved to the exhibit: sender, subject and request together."
+const FEEDBACK_VOICES: Dictionary[String, String] = {
+	REPLIED: "v1794044491/M01_CH01_18A_John.mp3",
+	EXPECTED: "v1794044489/M01_CH01_18B_John.mp3",
+	DOMAIN_SAVED: "v1794044475/M01_CH01_24_John.mp3",
+	CAPTURE_SAVED: "v1794044472/M01_CH01_26_John.mp3",
+}
 const TASKS: Dictionary = {
-	"sort":{"title":"01 / Sort the inbox", "tip":"Open a message, then drag or tap to sort.", "line":"Six messages. Which ones deserve another look?", "field":"sorted", "total":6, "next":"highlight"},
-	"highlight":{"title":"02 / Read between the lines", "tip":"Tap the request that feels wrong.", "line":"Something about these requests feels off.", "field":"flags", "total":3, "next":"notes"},
-	"notes":{"title":"03 / Trace the senders", "tip":"Check Mail → record the domain in Notepad.", "line":"Alright, what else feels wrong? Who actually sent these?", "field":"domains", "total":3, "next":"capture"},
-	"capture":{"title":"04 / Keep the context", "tip":"Frame the sender, subject and request.", "line":"I'd better keep a copy. The sender, the subject, the whole request.", "field":"captures", "total":3, "next":"seal"}
+	"sort":{"title":"01 / Sort the inbox", "voice":"v1794044485/M01_CH01_20_John.mp3", "tip":"Open a message, then drag or tap to sort.", "line":"Six messages. Which ones deserve another look?", "field":"sorted", "total":6, "next":"highlight"},
+	"highlight":{"title":"02 / Read between the lines", "voice":"v1794044484/M01_CH01_21_John.mp3", "tip":"Tap the request that feels wrong.", "line":"Something about these requests feels off.", "field":"flags", "total":3, "next":"notes"},
+	"notes":{"title":"03 / Trace the senders", "voice":"v1794044477/M01_CH01_23_John.mp3", "tip":"Check Mail → record the domain in Notepad.", "line":"Alright, what else feels wrong? Who actually sent these?", "field":"domains", "total":3, "next":"capture"},
+	"capture":{"title":"04 / Keep the context", "voice":"v1794044473/M01_CH01_25_John.mp3", "tip":"Frame the sender, subject and request.", "line":"I'd better keep a copy. The sender, the subject, the whole request.", "field":"captures", "total":3, "next":"seal"}
 }
 const EVIDENCE: String = "3 evidence bundles\n\n01 · Three message captures\n02 · Sender-domain notes\n03 · Payment, pressure and personal-data clues\n\nA typo or free mailbox alone is not proof. Keep each clue connected to its request."
 const SEAL_LINE: String = "I still don't know who the client is. But now I have something more useful than a feeling."
 const SLEEP_LINE: String = "I put my phone down. Eric said he knew the client. Tomorrow, I'll ask him again.\n\nFor now, I need some sleep."
+const SEAL_VOICE: String = "v1794044471/M01_CH01_27_John.mp3"
+const SLEEP_VOICE: String = "v1794044470/M01_CH01_28_John.mp3"
 const END_CAPTION: String = ""
 const BASE_REWARD: int = 100
 const CLEAN_BONUS: int = 25
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const MESSAGES: Array[Dictionary] = [
 	{"id":"club", "sender":"Jobert", "address":"jobert@club.school.example", "subject":"Tomorrow's club meeting", "body":"Meeting at 3 PM in our usual clubroom. The same details are on the club noticeboard. Bring your project notes.", "suspicious":false},
-	{"id":"survey", "sender":"Survey Rewards Team", "address":"survey.rewards@gmail.com", "subject":"Your first survey job", "body":"Thanks for joining!", "suspicious":true, "flag":"pay", "phrase":"Earn big rewards. We will tell you the payment amount after you finish.", "thought":"They want my time, but won't tell me what the job pays. Who is actually hiring me?"},
+	{"id":"survey", "sender":"Survey Rewards Team", "address":"survey.rewards@gmail.com", "subject":"Your first survey job", "body":"Thanks for joining!", "suspicious":true, "flag":"pay", "phrase":"Earn big rewards. We will tell you the payment amount after you finish.", "voice":"v1794044482/M01_CH01_22A_John.mp3", "thought":"They want my time, but won't tell me what the job pays. Who is actually hiring me?"},
 	{"id":"library", "sender":"School Library", "address":"library@school.example", "subject":"Book renewal confirmed", "body":"Your requested renewal is complete. Return your book by Friday. You can check the date at the library desk; no reply is needed.", "suspicious":false},
-	{"id":"urgent", "sender":"Survey Coordinator", "address":"survey.coordinator@yahoo.com", "subject":"Keep your survey slot", "body":"Your application is nearly ready.", "suspicious":true, "flag":"pressure", "phrase":"Reply with your contact number now. Do not ask the school; this offer expires in ten minutes.", "thought":"A deadline AND a reason not to check with anyone. Why would verification cost me the job?"},
+	{"id":"urgent", "sender":"Survey Coordinator", "address":"survey.coordinator@yahoo.com", "subject":"Keep your survey slot", "body":"Your application is nearly ready.", "suspicious":true, "flag":"pressure", "phrase":"Reply with your contact number now. Do not ask the school; this offer expires in ten minutes.", "voice":"v1794044480/M01_CH01_22B_John.mp3", "thought":"A deadline AND a reason not to check with anyone. Why would verification cost me the job?"},
 	{"id":"receipt", "sender":"Campus Print Desk", "address":"receipts@print.school.example", "subject":"Receipt for your print order", "body":"Your paid print order is ready for collection. This matches the order you made at the desk. No new payment or personal details are requested.", "suspicious":false},
-	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "thought":"'Recieve' could just be bad grammar. But my birth date AND my home address? They haven't even explained why they need them."}
+	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "voice":"v1794044478/M01_CH01_22C_John.mp3", "thought":"'Recieve' could just be bad grammar. But my birth date AND my home address? They haven't even explained why they need them."}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John", "face":2, "bg":"school_gate_morning", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
-	{"who":"Eric", "face":1, "bg":"hallway_day", "line":"John! You look like you ran the whole way. No coffee today?"},
-	{"who":"John", "face":2, "bg":"hallway_day", "line":"No coffee. No spare money either. Please tell me the meeting hasn't started."},
-	{"who":"Eric", "face":1, "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
-	{"who":"John", "face":0, "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
-	{"who":"Eric", "face":1, "bg":"clubroom", "line":"We're back. That survey gig I mentioned? Easy work. I know the client personally."},
-	{"who":"John", "face":4, "bg":"clubroom", "line":"Really? What's their name?"},
-	{"who":"Eric", "face":2, "bg":"clubroom", "line":"Uh… I'll send you the contact. They handle everything by email."},
-	{"who":"John", "face":0, "bg":"clubroom", "line":"Why did he look away? Maybe I'm overthinking it. I could really use that money."},
-	{"who":"Jobert", "face":2, "bg":"clubroom", "line":"Careful with random surveys, John. Ask me if you're unsure. We can check who's behind it."},
-	{"who":"John", "face":1, "bg":"clubroom", "line":"Thanks. I'll take a look first. It's just a survey… right?"},
-	{"who":"John", "face":0, "bg":"classroom_sunset", "mail":true, "line":"Six new messages already? Some from school. Some about the survey. I'd better answer before I lose the job."},
-	{"who":"John", "face":2, "bg":"john_desk_night", "time":"night", "line":"That night, I open my inbox again. Three messages keep bothering me. Maybe I should have looked closer."}
+	{"who":"John", "face":2, "voice":"v1794044509/M01_CH01_02_John.mp3", "bg":"school_gate_morning", "approach_art":"chapter1_john_rushing", "approach_sfx":"res://assets/audio/sfx/john_running_pavement.wav", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
+	{"who":"Eric", "face":1, "voice":"v1794044508/M01_CH01_03_Eric.mp3", "bg":"hallway_day", "line":"John! You look like you ran the whole way. No coffee today?"},
+	{"who":"John", "face":2, "voice":"v1794044507/M01_CH01_04_John.mp3", "bg":"hallway_day", "line":"No coffee. No spare money either. Please tell me the meeting hasn't started."},
+	{"who":"Eric", "face":1, "voice":"v1794044505/M01_CH01_05_Eric.mp3", "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
+	{"who":"John", "face":0, "voice":"v1794044504/M01_CH01_06_John.mp3", "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
+	{"who":"Eric", "face":1, "voice":"v1794044502/M01_CH01_11_Eric.mp3", "bg":"clubroom", "line":"We're back. That survey gig I mentioned? Easy work. I know the client personally."},
+	{"who":"John", "face":4, "voice":"v1794044500/M01_CH01_12_John.mp3", "bg":"clubroom", "line":"Really? What's their name?"},
+	{"who":"Eric", "face":2, "voice":"v1794044499/M01_CH01_13_Eric.mp3", "bg":"clubroom", "line":"Uh… I'll send you the contact. They handle everything by email."},
+	{"who":"John", "face":0, "voice":"v1794044497/M01_CH01_14_John.mp3", "bg":"clubroom", "line":"Why did he look away? Maybe I'm overthinking it. I could really use that money."},
+	{"who":"Jobert", "face":2, "voice":"v1794044496/M01_CH01_15_Jobert.mp3", "bg":"clubroom", "line":"Careful with random surveys, John. Ask me if you're unsure. We can check who's behind it."},
+	{"who":"John", "face":1, "voice":"v1794044495/M01_CH01_16_John.mp3", "bg":"clubroom", "line":"Thanks. I'll take a look first. It's just a survey… right?"},
+	{"who":"John", "face":0, "voice":"v1794044492/M01_CH01_17_John.mp3", "bg":"classroom_sunset", "mail":true, "line":"Six new messages already? Some from school. Some about the survey. I'd better answer before I lose the job."},
+	{"who":"John", "face":2, "voice":"v1794044487/M01_CH01_19_John.mp3", "bg":"john_desk_night", "time":"night", "line":"That night, I open my inbox again. Three messages keep bothering me. Maybe I should have looked closer."}
 ]
 const CHAT_MESSAGES: Array[Dictionary] = [
 	{"who":"John", "face":0, "text":"I miss coffee. I need a side gig before my wallet gives up."},

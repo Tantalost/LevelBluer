@@ -31,6 +31,8 @@ def _mc(
     answer: int,
     difficulty: str = "",
     skill: str = "",
+    *,
+    explanation: str,
 ) -> dict:
     row = {
         "id": qid,
@@ -39,6 +41,7 @@ def _mc(
         "text": text,
         "options": options,
         "answer": answer,
+        "explanation": explanation,
     }
     if difficulty:
         row["difficulty"] = difficulty
@@ -62,6 +65,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "easy",
             "recognition",
+            explanation="The threat of losing the account today puts you under pressure to click before you can check whether the school sent the message.",
         ),
         _mc(
             2,
@@ -76,6 +80,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "easy",
             "recognition",
+            explanation="Phishing uses a trusted identity to persuade someone to act. The attacker may want a password, a download, or a payment.",
         ),
         _mc(
             3,
@@ -90,6 +95,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "easy",
             "sender_verification",
+            explanation="Anyone can put the school's name before the @ sign. The part after it is gmail.com, which differs from the school's expected domain.",
         ),
         _mc(
             4,
@@ -104,6 +110,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "easy",
             "safe_response",
+            explanation="Opening the portal from a saved bookmark lets you check for an alert without using a link chosen by the sender.",
         ),
         _mc(
             5,
@@ -118,6 +125,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "url_analysis",
+            explanation="The site is under login-verification.net. Putting school.edu.ph at the beginning of that address makes it look familiar.",
         ),
         _mc(
             6,
@@ -132,6 +140,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "sender_verification",
+            explanation="A sender can copy the registrar's display name. Expand the address and compare its domain with the one in your school directory.",
         ),
         _mc(
             7,
@@ -146,6 +155,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "link_analysis",
+            explanation="The link opens a page under secure-account.xyz. Using your saved portal address avoids sending your login to that destination.",
         ),
         _mc(
             8,
@@ -160,6 +170,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "attachment_awareness",
+            explanation="Windows reads the last extension. In ClassSchedule.pdf.exe, opening the file can run a program even though its name suggests a PDF.",
         ),
         _mc(
             9,
@@ -174,6 +185,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "recognition",
+            explanation="Compare the sender's domain with the saved school domain. Someone can copy your instructor's name and project details into an email from another domain.",
         ),
         _mc(
             10,
@@ -188,6 +200,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "verification",
+            explanation="Calling a saved number or starting a new message to the instructor's school address lets you check with the instructor directly. Replying could reach the impersonator.",
         ),
         _mc(
             11,
@@ -202,6 +215,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "credential_protection",
+            explanation="Someone with your password could sign in as you. Use IT's published contact details to report the request and get help.",
         ),
         _mc(
             12,
@@ -216,6 +230,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "hard",
             "url_analysis",
+            explanation="The address ends in security-check.com. The words accounts.school.edu.ph are subdomains chosen by whoever controls security-check.com.",
         ),
         _mc(
             13,
@@ -230,6 +245,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "compromised_account",
+            explanation="The password may already be in someone else's hands. Changing it through the real site and alerting support gives them a chance to secure the account.",
         ),
         _mc(
             14,
@@ -244,6 +260,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "hard",
             "evidence_evaluation",
+            explanation="A logo can be copied, and a name can come from a class list. Neither shows who sent this particular email.",
         ),
         _mc(
             15,
@@ -258,6 +275,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "hard",
             "transfer",
+            explanation="Use a known school contact to confirm both the request and where the file should come from. A convincing message can still point to the wrong site.",
         ),
     ],
     "mod_02": [
@@ -274,6 +292,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "easy",
             "recognition",
+            explanation="The locked-wallet warning creates fear and supplies its own link as the solution. Open your wallet app independently to check the alert.",
         ),
         _mc(
             2,
@@ -288,6 +307,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "easy",
             "code_protection",
+            explanation="An OTP can authorize a login or payment. Giving it to the sender could approve the very action they claim they will cancel.",
         ),
         _mc(
             3,
@@ -302,6 +322,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "easy",
             "safe_response",
+            explanation="A scammer can invent a delivery problem. Checking the tracking record in the courier's official app lets you verify whether a fee is actually due.",
         ),
         _mc(
             4,
@@ -316,6 +337,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "easy",
             "recognition",
+            explanation="Smishing uses text messages. Here the threat of suspension gives you a reason to tap an unexpected link before checking the account.",
         ),
         _mc(
             5,
@@ -330,6 +352,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "link_analysis",
+            explanation="The short address shows the shortening service but hides the site it will open. The deadline gives you less time to check with the school.",
         ),
         _mc(
             6,
@@ -344,6 +367,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "sender_evaluation",
+            explanation="A sender can copy GCash's name and artwork into a text. Open the wallet app yourself to see whether it shows the same alert.",
         ),
         _mc(
             7,
@@ -358,6 +382,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "safe_response",
+            explanation="The countdown pushes you toward a site named by the sender. Your carrier can confirm the status of your SIM through contact details you already trust.",
         ),
         _mc(
             8,
@@ -372,6 +397,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "verification",
+            explanation="A reply to the new number only reaches the person asking for money. Calling a saved number lets you check whether your mother actually made the request.",
         ),
         _mc(
             9,
@@ -386,6 +412,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "urgency_detection",
+            explanation="A large possible loss and a ten-minute deadline make tapping feel urgent. Check the charge in your own banking app.",
         ),
         _mc(
             10,
@@ -400,6 +427,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "triage",
+            explanation="The sender wants an OTP in the same conversation that threatens to freeze the wallet. Reporting the request helps protect the account without giving away the code.",
         ),
         _mc(
             11,
@@ -414,6 +442,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "link_analysis",
+            explanation="Metro-ride-help.tk and metroride.ph are different domains. A similar company name in a refund link does not establish who runs the site.",
         ),
         _mc(
             12,
@@ -428,6 +457,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "hard",
             "evidence_evaluation",
+            explanation="A purchase detail can come from a leaked receipt or another source. Check the claim through the store's known contact channel.",
         ),
         _mc(
             13,
@@ -442,6 +472,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "hard",
             "domain_analysis",
+            explanation="The address ends in verify-account.net. Its owner can place westfield.edu at the start of the address to resemble the school's site.",
         ),
         _mc(
             14,
@@ -456,6 +487,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "hard",
             "verification",
+            explanation="The sender controls the number printed in the text. Dialing the number on your bank card lets you choose who receives the call.",
         ),
         _mc(
             15,
@@ -470,6 +502,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "transfer",
+            explanation="The stories differ, but each gives you a reason to trust the text and follow its instructions. Check the claim independently before acting.",
         ),
     ],
     "mod_03": [
@@ -486,6 +519,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "easy",
             "recognition",
+            explanation="The caller borrows the bank's identity and asks for a secret during a voice call. Sharing the code could give them access to the account.",
         ),
         _mc(
             2,
@@ -500,6 +534,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "easy",
             "code_protection",
+            explanation="The code may approve a transaction or login. End the call and check the transfer with the fraud team using your bank's own contact details.",
         ),
         _mc(
             3,
@@ -514,6 +549,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "easy",
             "caller_id",
+            explanation="Caller ID can show a forged school name. Use the registrar's published number to confirm who contacted you.",
         ),
         _mc(
             4,
@@ -528,6 +564,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "easy",
             "verification",
+            explanation="When you dial a number from your card or official app, you choose the destination independently of the incoming caller.",
         ),
         _mc(
             5,
@@ -542,6 +579,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "evidence_evaluation",
+            explanation="Partial card numbers can appear on receipts or in leaked records. Knowing those digits alone does not authenticate a caller.",
         ),
         _mc(
             6,
@@ -556,6 +594,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "pressure_resistance",
+            explanation="Keeping you on the line prevents an independent check. You can hang up and ask the real bank whether a transaction is pending.",
         ),
         _mc(
             7,
@@ -570,6 +609,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "consequence_awareness",
+            explanation="The code proves control of your phone to the service that issued it. A scammer can enter it into a login or payment screen while you speak.",
         ),
         _mc(
             8,
@@ -584,6 +624,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "safe_response",
+            explanation="The caller is asking for a code while keeping you on the line. Your school's IT directory gives you a separate route to check the login alert.",
         ),
         _mc(
             9,
@@ -598,6 +639,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "verification",
+            explanation="Using an independently verified number puts you in control of whom you call. A familiar voice or a caller ID label offers less assurance.",
         ),
         _mc(
             10,
@@ -612,6 +654,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "pressure_resistance",
+            explanation="The deadline cuts down your thinking time, and the demand for secrecy cuts off help. Ending the call gives you a chance to verify the story.",
         ),
         _mc(
             11,
@@ -626,6 +669,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "playbook_recognition",
+            explanation="The role and true detail build trust. Blocking a callback keeps you talking until the caller can ask for the code.",
         ),
         _mc(
             12,
@@ -640,6 +684,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "evidence_evaluation",
+            explanation="A real purchase detail makes the story convincing. The demand for a code and the attempt to block a callback are stronger reasons to stop.",
         ),
         _mc(
             13,
@@ -654,6 +699,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "hard",
             "verification",
+            explanation="The number on your screen came from the incoming call and can be spoofed. Look up the number in your banking app or on your card.",
         ),
         _mc(
             14,
@@ -668,6 +714,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "hard",
             "verification",
+            explanation="A ticket number and course name can be copied or invented. Check your enrollment through the registrar's published contact before acting.",
         ),
         _mc(
             15,
@@ -682,6 +729,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "transfer",
+            explanation="Each caller borrows a familiar role to make an unexpected request sound routine. A separate call to the real organization tests the claim.",
         ),
     ],
     "mod_04": [
@@ -698,6 +746,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "easy",
             "recognition",
+            explanation="Pretexting starts with a believable role and story that makes an unusual request sound authorized. Look for what that story asks you to do.",
         ),
         _mc(
             2,
@@ -712,6 +761,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "easy",
             "role_verification",
+            explanation="A clipboard makes an audit look official, but the school can check whether it scheduled the visit and what access it approved.",
         ),
         _mc(
             3,
@@ -726,6 +776,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "easy",
             "access_control",
+            explanation="Unlocking the closet would give the visitor unsupervised access. Ask the responsible staff member to verify the visit before opening it.",
         ),
         _mc(
             4,
@@ -740,6 +791,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "easy",
             "safe_response",
+            explanation="The dean's absence is being used to bypass payment approval. Wait for confirmation through the school's usual payment process.",
         ),
         _mc(
             5,
@@ -754,6 +806,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "story_analysis",
+            explanation="The visitor uses the professor's absence as permission to copy private records. Only an authorized person or process can grant that access.",
         ),
         _mc(
             6,
@@ -768,6 +821,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "authority_resistance",
+            explanation="Discouraging contact with the dean removes the easiest way to check the payment. The threat of delay pressures you to skip that check.",
         ),
         _mc(
             7,
@@ -782,6 +836,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "information_protection",
+            explanation="The class list contains student information. An unattended laptop and a stranger's explanation give you no authority to share it.",
         ),
         _mc(
             8,
@@ -796,6 +851,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "verification",
+            explanation="An established school process can verify both who the visitor is and what they are allowed to access. A badge alone answers neither question.",
         ),
         _mc(
             9,
@@ -810,6 +866,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "urgency_detection",
+            explanation="The threat of a failed audit makes an artificial deadline feel costly. A real inspection can still be checked with the office that arranged it.",
         ),
         _mc(
             10,
@@ -824,6 +881,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "access_control",
+            explanation="Leaving a visitor alone in a restricted room gives them access beyond your supervision. Confirm their authorization with the room's custodian first.",
         ),
         _mc(
             11,
@@ -838,6 +896,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "playbook_recognition",
+            explanation="The trusted role makes the favor sound routine. Making the approver unavailable and adding a deadline discourages you from checking it.",
         ),
         _mc(
             12,
@@ -852,6 +911,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "multi_cue_analysis",
+            explanation="The visitor combines a borrowed identity with a missing approver and a rushed payment. Verify the payment through the school's own process.",
         ),
         _mc(
             13,
@@ -866,6 +926,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "hard",
             "independent_verification",
+            explanation="A name, department and plausible task can all be rehearsed. A trusted school contact can confirm the visit and the approved access.",
         ),
         _mc(
             14,
@@ -880,6 +941,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "hard",
             "boundary_control",
+            explanation="The deadline is being used to keep you from asking the person responsible for the drawer. Keep it locked until you have independent confirmation.",
         ),
         _mc(
             15,
@@ -894,6 +956,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "transfer",
+            explanation="The audit, accreditation visit and payment request each supply a story that makes breaking an access rule seem like part of your job.",
         ),
     ],
     "mod_05": [
@@ -910,6 +973,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "easy",
             "recognition",
+            explanation="The label promises something students want to see. That curiosity is what may persuade someone to connect an unknown device.",
         ),
         _mc(
             2,
@@ -924,6 +988,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "easy",
             "unknown_media",
+            explanation="Plugging in the drive exposes the computer before you know what it contains. Staff can handle unknown media through the school's process.",
         ),
         _mc(
             3,
@@ -938,6 +1003,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "easy",
             "gift_bait",
+            explanation="An attacker can preload a giveaway drive with harmful files. The instruction to plug it in turns the free gift into a reason to take the risk.",
         ),
         _mc(
             4,
@@ -952,6 +1018,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "easy",
             "suspicious_download",
+            explanation="A modified installer can run unwanted software alongside the app you wanted. The free offer encourages you to overlook its source.",
         ),
         _mc(
             5,
@@ -966,6 +1033,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "qr_safety",
+            explanation="A QR code can conceal a destination or be pasted over a real poster. The school's own connection instructions provide a known route to its network.",
         ),
         _mc(
             6,
@@ -980,6 +1048,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "file_extension",
+            explanation="The last extension is .exe. The earlier .mp4 makes the file resemble a movie, but opening it can execute a program.",
         ),
         _mc(
             7,
@@ -994,6 +1063,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "temptation",
+            explanation="The promised phone gives you a reason to run PrizeClaim.exe. Running the file gives the program a chance to act before you can verify the prize.",
         ),
         _mc(
             8,
@@ -1008,6 +1078,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "medium",
             "safe_handling",
+            explanation="An old laptop can still hold data or connect to other devices. Testing the drive yourself exposes that computer to the same unknown contents.",
         ),
         _mc(
             9,
@@ -1022,6 +1093,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "medium",
             "source_verification",
+            explanation="The free license is the lure. The unknown site's installer would run with the permissions of the person opening it.",
         ),
         _mc(
             10,
@@ -1036,6 +1108,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "medium",
             "charging_safety",
+            explanation="Some USB connections carry data as well as power. Using your own power bank or wall charger avoids an unfamiliar data connection.",
         ),
         _mc(
             11,
@@ -1050,6 +1123,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             0,
             "medium",
             "attacker_goal",
+            explanation="Several drives create more opportunities for someone to take the bait. An attractive label supplies the motivation to plug one in.",
         ),
         _mc(
             12,
@@ -1064,6 +1138,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "hard",
             "multi_cue_analysis",
+            explanation="A school logo and a spot near the registrar make the drive look misplaced there on purpose. Hand it to staff without connecting it.",
         ),
         _mc(
             13,
@@ -1078,6 +1153,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             1,
             "hard",
             "scarcity_bait",
+            explanation="The threat that the answer key will disappear makes you rush. The unverified account still controls the file you would open.",
         ),
         _mc(
             14,
@@ -1092,6 +1168,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             2,
             "hard",
             "trusted_download",
+            explanation="Starting at a verified school or vendor site gives you a way to establish who supplied the installer before running it.",
         ),
         _mc(
             15,
@@ -1106,6 +1183,7 @@ MODULE_BANKS: dict[str, list[dict]] = {
             3,
             "hard",
             "transfer",
+            explanation="Each offer puts a tempting reward in front of a risky step, such as plugging in media, scanning a code or running a download.",
         ),
     ],
 }

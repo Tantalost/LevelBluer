@@ -54,23 +54,33 @@ Leave these on the existing Node web backend:
 not needed by this Python service. Sign out and back in on both test clients
 after changing servers; use two different student accounts.
 
-## Two-laptop acceptance
+## Two-phone acceptance
 
-1. Log in on each laptop and confirm the correct student/profile is loaded.
+1. Install the updated mobile build on both phones. Log in and confirm the correct student/profile is loaded.
 2. Host chooses Create Room and remains in the lobby.
 3. Guest chooses Join Room and enters the host's exact room code.
-4. Confirm both names are present; both select Ready.
-5. Confirm synchronized countdown/questions, answers, HP and final result.
-6. Verify match history after completion and check normal lesson/progress access.
+4. Confirm both players are connected; select opposite roles and Ready.
+5. Inspect and route through the Event Pack evidence. Verify that the first capture ends both screens with the same winner. Repeat with the defender winning, identical role preferences, timeout, reconnect and leaving mid-race.
+6. Verify private-room history, then repeat through Find a Match and verify the ranked result. Check normal lesson/progress access and unchanged BKT mastery.
 7. Test mobile feedback separately to catch a mismatched JWT secret.
 
 Do not claim live acceptance based only on local automated tests or `/health`.
 Godot native clients are the supported rehearsal path, not a browser export.
 
-## PvP presentation and Overclock update
+## Capture the Flag update — 7 November 2026
+
+This online update requires a database change: rerun `backend/migrations/pvp_match_history.sql` first, then `backend/migrations/pvp_ratings.sql` in the Supabase SQL editor. They extend the allowed finish reasons and existing rating eligibility to `flag_retrieved`, `flag_secured` and `flag_timeout`. Apply them before deploying the updated backend and rebuilding both mobile clients. Keep one backend worker for the in-memory room owner. These scripts have been prepared locally; hosted application and live SQL verification remain release tasks.
+
+Both clients send their Capture the Flag role preference through the existing Ready message. The room chooses complementary roles and starts a two-minute race. Flag actions use the player's current step revision; the client cannot declare a winner. Reconnecting restores the server's evidence state, and the first accepted capture creates only one final result. Private matches remain unrated. Ranked timeout is a draw under the existing rating rules. There are no learning-score or BKT updates from PvP.
+
+Local bot practice now uses the same Capture the Flag workspace and Event Pack evidence offline. Choose attacker or defender at Home, then Start Practice. The local bot takes 8–14 seconds per action, can make route mistakes, and competes for the first capture before the two-minute limit. Practice makes no network, rating, wallet or BKT writes; it requires only the updated mobile build. Rehearse both roles, defeat/timeout, replay and exit confirmation on a phone.
+
+Update the server and both clients for online Capture the Flag. The CRT client shows a version notice when the room cannot launch a flag race. Older clients can still use their legacy protocol. Interruption abilities and additional maps are not part of this slice.
+
+## Legacy quiz presentation and Overclock update
 
 Deploy the updated Python backend before rebuilding both Godot clients. This
-update uses the existing PvP rating ledger; no new database migration is needed
+legacy update uses the existing PvP rating ledger; no new database migration is needed
 if the current rating migrations are already installed.
 
 - Three consecutive round wins charge Overclock. The next winning hit deals

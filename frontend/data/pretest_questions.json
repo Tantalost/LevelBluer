@@ -12,6 +12,7 @@
         "It was sent in the morning"
       ],
       "answer": 2,
+      "explanation": "The threat of losing the account today puts you under pressure to click before you can check whether the school sent the message.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -27,6 +28,7 @@
         "Blocking access to a website"
       ],
       "answer": 0,
+      "explanation": "Phishing uses a trusted identity to persuade someone to act. The attacker may want a password, a download, or a payment.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -42,6 +44,7 @@
         "It uses Gmail rather than the school's expected official domain"
       ],
       "answer": 3,
+      "explanation": "Anyone can put the school's name before the @ sign. The part after it is gmail.com, which differs from the school's expected domain.",
       "difficulty": "easy",
       "skill": "sender_verification"
     },
@@ -57,6 +60,7 @@
         "Forward it to a friend first"
       ],
       "answer": 1,
+      "explanation": "Opening the portal from a saved bookmark lets you check for an alert without using a link chosen by the sender.",
       "difficulty": "easy",
       "skill": "safe_response"
     },
@@ -72,6 +76,7 @@
         "https://library.school.edu.ph"
       ],
       "answer": 0,
+      "explanation": "The site is under login-verification.net. Putting school.edu.ph at the beginning of that address makes it look familiar.",
       "difficulty": "medium",
       "skill": "url_analysis"
     },
@@ -87,6 +92,7 @@
         "Email signature"
       ],
       "answer": 2,
+      "explanation": "A sender can copy the registrar's display name. Expand the address and compare its domain with the one in your school directory.",
       "difficulty": "medium",
       "skill": "sender_verification"
     },
@@ -102,6 +108,7 @@
         "Ask a friend to test it"
       ],
       "answer": 1,
+      "explanation": "The link opens a page under secure-account.xyz. Using your saved portal address avoids sending your login to that destination.",
       "difficulty": "medium",
       "skill": "link_analysis"
     },
@@ -117,6 +124,7 @@
         ".exe indicates the file can execute a program"
       ],
       "answer": 3,
+      "explanation": "Windows reads the last extension. In ClassSchedule.pdf.exe, opening the file can run a program even though its name suggests a PDF.",
       "difficulty": "medium",
       "skill": "attachment_awareness"
     },
@@ -132,6 +140,7 @@
         "It contains the instructor's signature"
       ],
       "answer": 2,
+      "explanation": "Compare the sender's domain with the saved school domain. Someone can copy your instructor's name and project details into an email from another domain.",
       "difficulty": "medium",
       "skill": "recognition"
     },
@@ -147,6 +156,7 @@
         "Check whether the message uses the instructor's photo"
       ],
       "answer": 0,
+      "explanation": "Calling a saved number or starting a new message to the instructor's school address lets you check with the instructor directly. Replying could reach the impersonator.",
       "difficulty": "medium",
       "skill": "verification"
     },
@@ -162,6 +172,7 @@
         "Refuse and verify with IT independently"
       ],
       "answer": 3,
+      "explanation": "Someone with your password could sign in as you. Use IT's published contact details to report the request and get help.",
       "difficulty": "medium",
       "skill": "credential_protection"
     },
@@ -177,6 +188,7 @@
         "accounts"
       ],
       "answer": 1,
+      "explanation": "The address ends in security-check.com. The words accounts.school.edu.ph are subdomains chosen by whoever controls security-check.com.",
       "difficulty": "hard",
       "skill": "url_analysis"
     },
@@ -192,6 +204,7 @@
         "Wait to see whether anything happens"
       ],
       "answer": 2,
+      "explanation": "The password may already be in someone else's hands. Changing it through the real site and alerting support gives them a chance to secure the account.",
       "difficulty": "hard",
       "skill": "compromised_account"
     },
@@ -207,6 +220,7 @@
         "The request appears inside an official account portal"
       ],
       "answer": 0,
+      "explanation": "A logo can be copied, and a name can come from a class list. Neither shows who sent this particular email.",
       "difficulty": "hard",
       "skill": "evidence_evaluation"
     },
@@ -222,6 +236,7 @@
         "Whether the attachment is small"
       ],
       "answer": 1,
+      "explanation": "Use a known school contact to confirm both the request and where the file should come from. A convincing message can still point to the wrong site.",
       "difficulty": "hard",
       "skill": "transfer"
     }
@@ -239,6 +254,7 @@
         "It contains the word \"Security\""
       ],
       "answer": 1,
+      "explanation": "The locked-wallet warning creates fear and supplies its own link as the solution. Open your wallet app independently to check the alert.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -254,6 +270,7 @@
         "Do not send the OTP and verify through the bank's official channel"
       ],
       "answer": 3,
+      "explanation": "An OTP can authorize a login or payment. Giving it to the sender could approve the very action they claim they will cancel.",
       "difficulty": "easy",
       "skill": "code_protection"
     },
@@ -269,6 +286,7 @@
         "Forward the link to someone else to test it"
       ],
       "answer": 0,
+      "explanation": "A scammer can invent a delivery problem. Checking the tracking record in the courier's official app lets you verify whether a fee is actually due.",
       "difficulty": "easy",
       "skill": "safe_response"
     },
@@ -284,6 +302,7 @@
         "Your phone displays a low-battery warning"
       ],
       "answer": 2,
+      "explanation": "Smishing uses text messages. Here the threat of suspension gives you a reason to tap an unexpected link before checking the account.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -299,6 +318,7 @@
         "The shortened link hides the actual destination"
       ],
       "answer": 3,
+      "explanation": "The short address shows the shortening service but hides the site it will open. The deadline gives you less time to check with the school.",
       "difficulty": "medium",
       "skill": "link_analysis"
     },
@@ -314,6 +334,7 @@
         "Companies cannot be impersonated by text"
       ],
       "answer": 1,
+      "explanation": "A sender can copy GCash's name and artwork into a text. Open the wallet app yourself to see whether it shows the same alert.",
       "difficulty": "medium",
       "skill": "sender_evaluation"
     },
@@ -329,6 +350,7 @@
         "Ask a friend to open the link first"
       ],
       "answer": 2,
+      "explanation": "The countdown pushes you toward a site named by the sender. Your carrier can confirm the status of your SIM through contact details you already trust.",
       "difficulty": "medium",
       "skill": "safe_response"
     },
@@ -344,6 +366,7 @@
         "Ask for a photo"
       ],
       "answer": 0,
+      "explanation": "A reply to the new number only reaches the person asking for money. Calling a saved number lets you check whether your mother actually made the request.",
       "difficulty": "medium",
       "skill": "verification"
     },
@@ -359,6 +382,7 @@
         "Urgency and fear of losing money"
       ],
       "answer": 3,
+      "explanation": "A large possible loss and a ten-minute deadline make tapping feel urgent. Check the charge in your own banking app.",
       "difficulty": "medium",
       "skill": "urgency_detection"
     },
@@ -374,6 +398,7 @@
         "\"Your bookstore reservation is available for pickup at the counter.\""
       ],
       "answer": 1,
+      "explanation": "The sender wants an OTP in the same conversation that threatens to freeze the wallet. Reporting the request helps protect the account without giving away the code.",
       "difficulty": "medium",
       "skill": "triage"
     },
@@ -389,6 +414,7 @@
         "The link contains a slash"
       ],
       "answer": 2,
+      "explanation": "Metro-ride-help.tk and metroride.ph are different domains. A similar company name in a refund link does not establish who runs the site.",
       "difficulty": "medium",
       "skill": "link_analysis"
     },
@@ -404,6 +430,7 @@
         "No; personal information can be leaked, purchased, guessed, or obtained elsewhere"
       ],
       "answer": 3,
+      "explanation": "A purchase detail can come from a leaked receipt or another source. Check the claim through the store's known contact channel.",
       "difficulty": "hard",
       "skill": "evidence_evaluation"
     },
@@ -419,6 +446,7 @@
         "https://westfield.edu"
       ],
       "answer": 1,
+      "explanation": "The address ends in verify-account.net. Its owner can place westfield.edu at the start of the address to resemble the school's site.",
       "difficulty": "hard",
       "skill": "domain_analysis"
     },
@@ -434,6 +462,7 @@
         "Search the phone number inside the message"
       ],
       "answer": 0,
+      "explanation": "The sender controls the number printed in the text. Dialing the number on your bank card lets you choose who receives the call.",
       "difficulty": "hard",
       "skill": "verification"
     },
@@ -449,6 +478,7 @@
         "They always impersonate a bank"
       ],
       "answer": 2,
+      "explanation": "The stories differ, but each gives you a reason to trust the text and follow its instructions. Check the claim independently before acting.",
       "difficulty": "hard",
       "skill": "transfer"
     }
@@ -466,6 +496,7 @@
         "A stranger leaves a USB drive in a hallway"
       ],
       "answer": 0,
+      "explanation": "The caller borrows the bank's identity and asks for a secret during a voice call. Sharing the code could give them access to the account.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -481,6 +512,7 @@
         "Ask the caller to repeat your account number first"
       ],
       "answer": 2,
+      "explanation": "The code may approve a transaction or login. End the call and check the transfer with the fraud team using your bank's own contact details.",
       "difficulty": "easy",
       "skill": "code_protection"
     },
@@ -496,6 +528,7 @@
         "The call is legitimate if the caller knows your name"
       ],
       "answer": 1,
+      "explanation": "Caller ID can show a forged school name. Use the registrar's published number to confirm who contacted you.",
       "difficulty": "easy",
       "skill": "caller_id"
     },
@@ -511,6 +544,7 @@
         "Hang up and dial the bank using a number from your card or official app"
       ],
       "answer": 3,
+      "explanation": "When you dial a number from your card or official app, you choose the destination independently of the incoming caller.",
       "difficulty": "easy",
       "skill": "verification"
     },
@@ -526,6 +560,7 @@
         "Only bank employees can know partial card information"
       ],
       "answer": 1,
+      "explanation": "Partial card numbers can appear on receipts or in leaked records. Knowing those digits alone does not authenticate a caller.",
       "difficulty": "medium",
       "skill": "evidence_evaluation"
     },
@@ -541,6 +576,7 @@
         "Put the call on speaker and ask a friend"
       ],
       "answer": 0,
+      "explanation": "Keeping you on the line prevents an independent check. You can hang up and ask the real bank whether a transaction is pending.",
       "difficulty": "medium",
       "skill": "pressure_resistance"
     },
@@ -556,6 +592,7 @@
         "The code may allow them to approve a login, payment, or account change"
       ],
       "answer": 3,
+      "explanation": "The code proves control of your phone to the service that issued it. A scammer can enter it into a login or payment screen while you speak.",
       "difficulty": "medium",
       "skill": "consequence_awareness"
     },
@@ -571,6 +608,7 @@
         "Wait for another code and give them that one instead"
       ],
       "answer": 2,
+      "explanation": "The caller is asking for a code while keeping you on the line. Your school's IT directory gives you a separate route to check the login alert.",
       "difficulty": "medium",
       "skill": "safe_response"
     },
@@ -586,6 +624,7 @@
         "The caller knows information about your account"
       ],
       "answer": 1,
+      "explanation": "Using an independently verified number puts you in control of whom you call. A familiar voice or a caller ID label offers less assurance.",
       "difficulty": "medium",
       "skill": "verification"
     },
@@ -601,6 +640,7 @@
         "Urgency and isolation reduce your chance to stop and independently verify the claim"
       ],
       "answer": 3,
+      "explanation": "The deadline cuts down your thinking time, and the demand for secrecy cuts off help. Ending the call gives you a chance to verify the story.",
       "difficulty": "medium",
       "skill": "pressure_resistance"
     },
@@ -616,6 +656,7 @@
         "Create a fake website → advertise it → wait for search traffic"
       ],
       "answer": 0,
+      "explanation": "The role and true detail build trust. Blocking a callback keeps you talking until the caller can ask for the code.",
       "difficulty": "medium",
       "skill": "playbook_recognition"
     },
@@ -631,6 +672,7 @@
         "The call is legitimate if the transaction amount is correct"
       ],
       "answer": 2,
+      "explanation": "A real purchase detail makes the story convincing. The demand for a code and the attempt to block a callback are stronger reasons to stop.",
       "difficulty": "hard",
       "skill": "evidence_evaluation"
     },
@@ -646,6 +688,7 @@
         "Ignore the supplied number and use an independently known official number"
       ],
       "answer": 3,
+      "explanation": "The number on your screen came from the incoming call and can be spoofed. Look up the number in your banking app or on your card.",
       "difficulty": "hard",
       "skill": "verification"
     },
@@ -661,6 +704,7 @@
         "Stay connected while opening the school portal"
       ],
       "answer": 1,
+      "explanation": "A ticket number and course name can be copied or invented. Check your enrollment through the registrar's published contact before acting.",
       "difficulty": "hard",
       "skill": "verification"
     },
@@ -676,6 +720,7 @@
         "They always use threatening language"
       ],
       "answer": 2,
+      "explanation": "Each caller borrows a familiar role to make an unexpected request sound routine. A separate call to the real organization tests the claim.",
       "difficulty": "hard",
       "skill": "transfer"
     }
@@ -693,6 +738,7 @@
         "A stranger invents a believable work role and story to convince you to unlock a restricted room"
       ],
       "answer": 3,
+      "explanation": "Pretexting starts with a believable role and story that makes an unusual request sound authorized. Look for what that story asks you to do.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -708,6 +754,7 @@
         "Facilities workers never enter buildings"
       ],
       "answer": 1,
+      "explanation": "A clipboard makes an audit look official, but the school can check whether it scheduled the visit and what access it approved.",
       "difficulty": "easy",
       "skill": "role_verification"
     },
@@ -723,6 +770,7 @@
         "Let them enter if they know the building name"
       ],
       "answer": 0,
+      "explanation": "Unlocking the closet would give the visitor unsupervised access. Ask the responsible staff member to verify the visit before opening it.",
       "difficulty": "easy",
       "skill": "access_control"
     },
@@ -738,6 +786,7 @@
         "Ask the assistant to promise the request is legitimate"
       ],
       "answer": 2,
+      "explanation": "The dean's absence is being used to bypass payment approval. Wait for confirmation through the school's usual payment process.",
       "difficulty": "easy",
       "skill": "safe_response"
     },
@@ -753,6 +802,7 @@
         "Class lists contain student names"
       ],
       "answer": 1,
+      "explanation": "The visitor uses the professor's absence as permission to copy private records. Only an authorized person or process can grant that access.",
       "difficulty": "medium",
       "skill": "story_analysis"
     },
@@ -768,6 +818,7 @@
         "The story discourages independent verification while creating pressure to comply"
       ],
       "answer": 3,
+      "explanation": "Discouraging contact with the dean removes the easiest way to check the payment. The threat of delay pressures you to skip that check.",
       "difficulty": "medium",
       "skill": "authority_resistance"
     },
@@ -783,6 +834,7 @@
         "Ask the stranger whether the data is confidential"
       ],
       "answer": 0,
+      "explanation": "The class list contains student information. An unattended laptop and a stranger's explanation give you no authority to share it.",
       "difficulty": "medium",
       "skill": "information_protection"
     },
@@ -798,6 +850,7 @@
         "They know the name of your professor"
       ],
       "answer": 2,
+      "explanation": "An established school process can verify both who the visitor is and what they are allowed to access. A badge alone answers neither question.",
       "difficulty": "medium",
       "skill": "verification"
     },
@@ -813,6 +866,7 @@
         "It creates urgency so you are less likely to stop and verify"
       ],
       "answer": 3,
+      "explanation": "The threat of a failed audit makes an artificial deadline feel costly. A real inspection can still be checked with the office that arranged it.",
       "difficulty": "medium",
       "skill": "urgency_detection"
     },
@@ -828,6 +882,7 @@
         "A staff member asks where the copy room is"
       ],
       "answer": 1,
+      "explanation": "Leaving a visitor alone in a restricted room gives them access beyond your supervision. Confirm their authorization with the room's custodian first.",
       "difficulty": "medium",
       "skill": "access_control"
     },
@@ -843,6 +898,7 @@
         "Offer a prize → ask the victim to install software"
       ],
       "answer": 0,
+      "explanation": "The trusted role makes the favor sound routine. Making the approver unavailable and adding a deadline discourages you from checking it.",
       "difficulty": "medium",
       "skill": "playbook_recognition"
     },
@@ -858,6 +914,7 @@
         "The payment is safe if the amount is small"
       ],
       "answer": 2,
+      "explanation": "The visitor combines a borrowed identity with a missing approver and a rushed payment. Verify the payment through the school's own process.",
       "difficulty": "hard",
       "skill": "multi_cue_analysis"
     },
@@ -873,6 +930,7 @@
         "Let them proceed if their story is detailed"
       ],
       "answer": 1,
+      "explanation": "A name, department and plausible task can all be rehearsed. A trusted school contact can confirm the visit and the approved access.",
       "difficulty": "hard",
       "skill": "independent_verification"
     },
@@ -888,6 +946,7 @@
         "Refuse to open it until the adviser or another authorized person independently confirms the request"
       ],
       "answer": 3,
+      "explanation": "The deadline is being used to keep you from asking the person responsible for the drawer. Keep it locked until you have independent confirmation.",
       "difficulty": "hard",
       "skill": "boundary_control"
     },
@@ -903,6 +962,7 @@
         "They always require the real employee to leave the building"
       ],
       "answer": 2,
+      "explanation": "The audit, accreditation visit and payment request each supply a story that makes breaking an access rule seem like part of your job.",
       "difficulty": "hard",
       "skill": "transfer"
     }
@@ -920,6 +980,7 @@
         "Someone repeatedly guesses your password"
       ],
       "answer": 2,
+      "explanation": "The label promises something students want to see. That curiosity is what may persuade someone to connect an unknown device.",
       "difficulty": "easy",
       "skill": "recognition"
     },
@@ -935,6 +996,7 @@
         "Take it home and scan it first"
       ],
       "answer": 0,
+      "explanation": "Plugging in the drive exposes the computer before you know what it contains. Staff can handle unknown media through the school's process.",
       "difficulty": "easy",
       "skill": "unknown_media"
     },
@@ -950,6 +1012,7 @@
         "The free item could be bait containing malicious files or software"
       ],
       "answer": 3,
+      "explanation": "An attacker can preload a giveaway drive with harmful files. The instruction to plug it in turns the free gift into a reason to take the risk.",
       "difficulty": "easy",
       "skill": "gift_bait"
     },
@@ -965,6 +1028,7 @@
         "Schools automatically delete every free program"
       ],
       "answer": 1,
+      "explanation": "A modified installer can run unwanted software alongside the app you wanted. The free offer encourages you to overlook its source.",
       "difficulty": "easy",
       "skill": "suspicious_download"
     },
@@ -980,6 +1044,7 @@
         "Scan it only if your phone has antivirus software"
       ],
       "answer": 2,
+      "explanation": "A QR code can conceal a destination or be pasted over a real poster. The school's own connection instructions provide a known route to its network.",
       "difficulty": "medium",
       "skill": "qr_safety"
     },
@@ -995,6 +1060,7 @@
         ".mp4 files are always malicious"
       ],
       "answer": 1,
+      "explanation": "The last extension is .exe. The earlier .mp4 makes the file resemble a movie, but opening it can execute a program.",
       "difficulty": "medium",
       "skill": "file_extension"
     },
@@ -1010,6 +1076,7 @@
         "Winning a phone online is always impossible"
       ],
       "answer": 0,
+      "explanation": "The promised phone gives you a reason to run PrizeClaim.exe. Running the file gives the program a chance to act before you can verify the prize.",
       "difficulty": "medium",
       "skill": "temptation"
     },
@@ -1025,6 +1092,7 @@
         "Do not plug unknown media into any device just to discover what is inside"
       ],
       "answer": 3,
+      "explanation": "An old laptop can still hold data or connect to other devices. Testing the drive yourself exposes that computer to the same unknown contents.",
       "difficulty": "medium",
       "skill": "safe_handling"
     },
@@ -1040,6 +1108,7 @@
         "A verified store offers a normal student discount"
       ],
       "answer": 2,
+      "explanation": "The free license is the lure. The unknown site's installer would run with the permissions of the person opening it.",
       "difficulty": "medium",
       "skill": "source_verification"
     },
@@ -1055,6 +1124,7 @@
         "Unlock the phone while charging so you can monitor it"
       ],
       "answer": 1,
+      "explanation": "Some USB connections carry data as well as power. Using your own power bank or wall charger avoids an unfamiliar data connection.",
       "difficulty": "medium",
       "skill": "charging_safety"
     },
@@ -1070,6 +1140,7 @@
         "To identify students who lose property"
       ],
       "answer": 0,
+      "explanation": "Several drives create more opportunities for someone to take the bait. An attractive label supplies the motivation to plug one in.",
       "difficulty": "medium",
       "skill": "attacker_goal"
     },
@@ -1085,6 +1156,7 @@
         "The label, location, and logo may all be part of the bait; do not plug it in and report it appropriately"
       ],
       "answer": 3,
+      "explanation": "A school logo and a spot near the registrar make the drive look misplaced there on purpose. Hand it to staff without connecting it.",
       "difficulty": "hard",
       "skill": "multi_cue_analysis"
     },
@@ -1100,6 +1172,7 @@
         "Deleted files cannot contain malware"
       ],
       "answer": 1,
+      "explanation": "The threat that the answer key will disappear makes you rush. The unverified account still controls the file you would open.",
       "difficulty": "hard",
       "skill": "scarcity_bait"
     },
@@ -1115,6 +1188,7 @@
         "The installer filename matches the product name"
       ],
       "answer": 2,
+      "explanation": "Starting at a verified school or vendor site gives you a way to establish who supplied the installer before running it.",
       "difficulty": "hard",
       "skill": "trusted_download"
     },
@@ -1130,6 +1204,7 @@
         "They use something attractive, useful, or interesting to persuade the victim to perform a risky action"
       ],
       "answer": 3,
+      "explanation": "Each offer puts a tempting reward in front of a risky step, such as plugging in media, scanning a code or running a download.",
       "difficulty": "hard",
       "skill": "transfer"
     }

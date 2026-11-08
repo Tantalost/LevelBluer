@@ -40,7 +40,7 @@ ROOT = Path(__file__).resolve().parents[2]
 APP = ROOT / "backend" / "app"
 MIGRATION = ROOT / "backend" / "migrations" / "pvp_ratings.sql"
 K = 32
-RATED = ("ko", "forfeit_leave", "forfeit_disconnect")
+RATED = ("ko", "forfeit_leave", "forfeit_disconnect", "flag_retrieved", "flag_secured", "flag_timeout")
 
 
 def reference_delta(points_a: int, points_b: int, score_a: float) -> int:
@@ -224,7 +224,9 @@ class EligibilityTest(unittest.TestCase):
         self.assertFalse(is_rated_record(replace(record, finish_reason="stale")))
         self.assertFalse(is_rated_record(replace(record, finish_reason="something_new")))
         sql = MIGRATION.read_text(encoding="utf-8")
-        self.assertIn("m.finish_reason in ('ko', 'forfeit_leave', 'forfeit_disconnect')", sql)
+        self.assertIn("m.finish_reason in ('ko', 'forfeit_leave', 'forfeit_disconnect', 'flag_retrieved', 'flag_secured', 'flag_timeout')", sql)
+        for reason in ("flag_retrieved", "flag_secured", "flag_timeout"):
+            self.assertTrue(is_rated_record(replace(record, finish_reason=reason)))
         self.assertIn("m.started_at is not null", sql)
         self.assertIn("m.finished_at >= cutoff", sql)
 

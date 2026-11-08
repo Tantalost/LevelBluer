@@ -10,6 +10,64 @@ const CARD: Color = Color("102040")
 const CYAN: Color = Color("4FE0D4")
 const TEXT: Color = Color("F3ECD6")
 
+## Explicit resource dependencies keep the user's labelled recordings in exports.
+## The existing opening screen owns playback; no account state or new manager.
+const VOICE_CLIPS: Dictionary[String, String] = {
+	"GROUP_LAUGH": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978786/VillainLaugh_group.wav",
+	"INTRO_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978784/INTRO_01_Waking_up_John.mp3",
+	"INTRO_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978785/INTRO_02_Reaching_for_the_phone_John.mp3",
+	"INTRO_03": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978785/INTRO_03_The_notification_John.mp3",
+	"INTRO_04": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978785/INTRO_04_Reading_the_request_John.mp3",
+	"INTRO_05": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978785/INTRO_05_Temptation_John.mp3",
+	"INTRO_09": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978784/INTRO_09_Closing_caption_Narrator.mp3",
+	"BRANCH_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978885/BRANCH_01_Claiming_the_prize_John.mp3",
+	"BRANCH_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978886/BRANCH_02_Simulated_unsafe_outcome_John.mp3",
+	"BRANCH_03": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978886/BRANCH_03_Deleting_the_message_John.mp3",
+	"CAPTURE_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978887/CAPTURE_01_Incomplete_framing.mp3",
+	"CAPTURE_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978887/CAPTURE_02_Correct_framing.mp3",
+	"CLUE_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978889/CLUE_01_Reward.mp3",
+	"CLUE_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978891/CLUE_02_Deadline.mp3",
+	"CLUE_03": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978892/CLUE_03_Password.mp3",
+	"CLUE_04": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978892/CLUE_04_Greeting_selected.mp3",
+	"END_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978894/END_01_Freeze-frame_reflection_Narrator.mp3",
+	"END_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978895/END_02_Completion_Narrator.mp3",
+	"HINT_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978896/HINT_01_Investigation_hint.mp3",
+	"HINT_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978897/HINT_02_Domain_hint.mp3",
+	"NOTE_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978898/NOTE_01_Sender_not_opened.mp3",
+	"NOTE_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978898/NOTE_02_Incorrect_domain.mp3",
+	"NOTE_03": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978914/NOTE_03_Correct_domain.mp3",
+	"TUT_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978915/TUT_01_Waking_again_John.mp3",
+	"TUT_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978915/TUT_02_Opening_Mail_John.mp3",
+	"TUT_03": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978916/TUT_03_Considering_the_choices_John.mp3",
+	"TUT_04": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026238/TUT_04_Decision_overlay_John.mp3",
+	"TUT_05": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026240/TUT_05_Beginning_the_investigation_John.mp3",
+	"TUT_06": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026241/TUT_06_Investigation_title_John.mp3",
+	"TUT_07": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026243/TUT_07_Looking_for_clues_John.mp3",
+	"TUT_08": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026245/TUT_08_Moving_beyond_the_message_John.mp3",
+	"TUT_08.1": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026247/TUT_08.1_Moving_beyond_the_message_John.mp3",
+	"TUT_09": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026249/TUT_09_Sender_inspection_John.mp3",
+	"TUT_10": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026251/TUT_10_Full_address_revealed_John.mp3",
+	"TUT_11": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026253/TUT_11_Opening_Notepad_John.mp3",
+	"TUT_12": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026256/TUT_12_Screenshot_framing_John.mp3",
+	"TUT_13": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026258/TUT_13_Preparing_the_exhibit_John.mp3",
+	"TUT_14": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026260/TUT_14_Success_John.mp3",
+}
+const TUTORIAL_VOICES: Dictionary = {
+	"wake":["TUT_01"], "inbox":["TUT_02"], "choice":["TUT_03","TUT_04"],
+	"inspect_intro":["TUT_05","TUT_06"], "inspect":["TUT_07"],
+	"next_issue":["TUT_08","TUT_08.1"], "sender":["TUT_09"], "notes":["TUT_11"],
+	"capture":["TUT_12"], "submit":["TUT_13"], "sealed":["TUT_14"],
+	"claim":["BRANCH_01"], "failure":["BRANCH_02"], "safe":["BRANCH_03"],
+	"closing":["END_01"], "summary":["END_02"]
+}
+var _voice_cache: Dictionary[String, AudioStream] = {}
+var _voice_downloads: Dictionary[String, HTTPRequest] = {}
+var _voice_player: AudioStreamPlayer
+var _voice_queue: Array[String] = []
+var _voice_id: String = ""
+var _caption_voice_started: bool = false
+var _group_laugh_started: bool = false
+
 class Eyelids extends Control:
 	var aperture: float = 1.0:
 		set(value):
@@ -249,6 +307,11 @@ func _ready() -> void:
 	if parsed is Dictionary:
 		data = parsed as Dictionary
 	_build_shell()
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.name = "OpeningVoice"
+	_voice_player.bus = &"SFX"
+	add_child(_voice_player)
+	_voice_player.finished.connect(_next_voice)
 	resized.connect(_resize)
 	SettingsService.settings_changed.connect(_settings_changed)
 	AssetManager.sync_finished.connect(_refresh_art)
@@ -506,6 +569,9 @@ func _panel_column(weight: float) -> VBoxContainer:
 
 
 func _render() -> void:
+	_stop_voice()
+	_caption_voice_started = false
+	_group_laugh_started = false
 	_clear_practice_layer()
 	_stop_cinematic()
 	_stop_motion()
@@ -546,8 +612,113 @@ func _render() -> void:
 	(_copy.get_parent().get_parent() as Control).visible = _copy.get_child_count() > 0
 	_footer.visible = _footer.get_child_count() > 0
 	_begin_dialogue()
+	_scene_voice()
 	_resize()
 	_resize.call_deferred()
+
+
+func _scene_voice() -> void:
+	if part == "intro":
+		var id: String = str((_intro()[intro_index] as Dictionary).get("id",""))
+		var clips: Dictionary[String, String] = {"wake":"INTRO_01","search":"INTRO_02","prize":"INTRO_03","tap":"INTRO_04","claim":"INTRO_05"}
+		if clips.has(id): _play_voice([clips[id]])
+	elif step != "summary" or state.get("pending_outcome","") == "completed":
+		_play_voice(TUTORIAL_VOICES.get(step,[]))
+
+
+func _play_voice(ids: Array) -> void:
+	_stop_voice(ids)
+	if _leaving: return
+	for id: String in ids:
+		if VOICE_CLIPS.has(id): _voice_queue.append(id)
+	_next_voice()
+
+
+func _next_voice() -> void:
+	if _leaving or _voice_queue.is_empty():
+		_stop_voice()
+		return
+	_voice_id = _voice_queue.pop_front()
+	if _voice_cache.has(_voice_id):
+		_start_voice_stream(_voice_cache[_voice_id])
+	else:
+		_fetch_voice(_voice_id)
+	# A two-line exchange can fetch its second line while the first plays.
+	if not _voice_queue.is_empty():
+		_fetch_voice(_voice_queue.front())
+
+
+func _fetch_voice(id: String) -> void:
+	if _leaving or _voice_cache.has(id) or _voice_downloads.has(id):
+		return
+	var request: HTTPRequest = HTTPRequest.new()
+	request.timeout = 8.0
+	request.body_size_limit = 2 * 1024 * 1024
+	add_child(request)
+	_voice_downloads[id] = request
+	request.request_completed.connect(_voice_response.bind(id, request), CONNECT_ONE_SHOT)
+	if request.request(VOICE_CLIPS[id]) != OK:
+		_voice_response(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray(), id, request)
+
+
+func _voice_response(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray, id: String, request: HTTPRequest) -> void:
+	if _voice_downloads.get(id) != request:
+		return
+	_voice_downloads.erase(id)
+	request.queue_free()
+	var stream: AudioStream
+	if result == HTTPRequest.RESULT_SUCCESS and status == 200 and not body.is_empty():
+		if VOICE_CLIPS[id].ends_with(".wav"):
+			stream = AudioStreamWAV.load_from_buffer(body)
+		else:
+			stream = AudioStreamMP3.load_from_buffer(body)
+	if stream != null and stream.get_length() > 0.0:
+		_voice_cache[id] = stream
+		if id == _voice_id and not _leaving:
+			_start_voice_stream(stream)
+	elif id == _voice_id and not _leaving:
+		_next_voice()
+
+
+func _start_voice_stream(stream: AudioStream) -> void:
+	var offset: float = 0.0
+	if _cinematic_active and _voice_id in ["GROUP_LAUGH", "INTRO_09"]:
+		var cue_time: float = 0.9 if _voice_id == "GROUP_LAUGH" else 1.2
+		offset = maxf(0.0, _cinematic_time - cue_time)
+		if offset >= stream.get_length():
+			_next_voice()
+			return
+	_voice_player.stream = stream
+	_voice_player.play(offset)
+	_sync_voice_pause()
+
+
+func _stop_voice(keep_downloads: Array = []) -> void:
+	for id: String in _voice_downloads.keys():
+		if id in keep_downloads: continue
+		var request: HTTPRequest = _voice_downloads[id]
+		_voice_downloads.erase(id)
+		request.cancel_request()
+		request.queue_free()
+	_voice_queue.clear()
+	_voice_id = ""
+	if is_instance_valid(_voice_player):
+		_voice_player.stop()
+		_voice_player.stream_paused = false
+	AudioManager.set_story_duck(self,1.0)
+
+
+func _sync_voice_pause() -> void:
+	if not is_instance_valid(_voice_player): return
+	var paused: bool = _leaving or _menu.visible or _cinematic_focus_lost or _cinematic_app_paused or (_waking and _wake_phase == "alarm")
+	_voice_player.stream_paused = paused
+	var audible: bool = _voice_player.playing and not paused and SettingsService.sound_enabled and SettingsService.sfx_volume > 0 and SettingsService.master_volume > 0
+	AudioManager.set_story_duck(self,.28 if audible else 1.0)
+
+
+func _practice_voice(id: String, source: Control) -> void:
+	if source != _phone_view or part != "tutorial" or _menu.visible or _leaving or _cinematic_focus_lost or _cinematic_app_paused: return
+	_play_voice([id])
 
 
 func _narrate(title: String, body: String, speaker: String = "") -> void:
@@ -816,6 +987,11 @@ func _start_cinematic(beat: Dictionary) -> void:
 	var visual: String = str(beat["visual"])
 	_cinematic_mode = visual
 	_cinematic_duration = {"takeover": 6.0, "meeting": 7.0, "montage": 9.0, "closing": 6.0}[visual]
+	# Fetch ahead of the caption. Visual timing remains available offline.
+	if visual == "meeting":
+		_fetch_voice("GROUP_LAUGH")
+	elif visual == "closing":
+		_fetch_voice("INTRO_09")
 	_cinematic_time = 0.0
 	_reveal_done = false
 	_effects.mode = visual
@@ -864,6 +1040,10 @@ func _cinematic_frame(time: float) -> void:
 			if reduced:
 				_scene_art.modulate.a = clampf((time - 1.8) / 0.45, 0.0, 1.0) if time >= 1.8 else clampf((1.8 - time) / 0.45, 0.0, 1.0)
 		"meeting":
+			# Premixed four-voice recording shares narration pause/mute/exit handling.
+			if time >= 0.9 and not _group_laugh_started:
+				_group_laugh_started = true
+				_play_voice(["GROUP_LAUGH"])
 			_scene_art.pivot_offset = size * Vector2(0.5, 0.60)
 			_scene_art.scale = Vector2.ONE * (1.0 if reduced else lerpf(1.0, 1.08, clampf(time / 7.0, 0, 1)))
 			_black_fade.modulate.a = maxf(1.0 - time / 0.65, clampf((time - 6.65) / 0.35, 0, 1))
@@ -877,8 +1057,12 @@ func _cinematic_frame(time: float) -> void:
 					laugh.position.x -= (1.0 - reveal) * size.x * 0.30
 					laugh.position.y += (1.0 - reveal) * size.y * 0.10
 		"closing":
-			_black_fade.modulate.a = lerpf(0.0, 0.65, clampf(time / 1.4, 0, 1)) if time < 4.8 else lerpf(0.65, 1.0, (time - 4.8) / 1.2)
-			_closing_caption.modulate.a = clampf((time - 1.2) / 0.4, 0, 1) * (1.0 - clampf((time - 4.8) / 1.2, 0, 1))
+			if time >= 1.2 and not _caption_voice_started:
+				_caption_voice_started = true
+				_play_voice(["INTRO_09"])
+			var fade_at: float = _cinematic_duration-1.2
+			_black_fade.modulate.a = lerpf(0.0, 0.65, clampf(time / 1.4, 0, 1)) if time < fade_at else lerpf(0.65, 1.0, (time - fade_at) / 1.2)
+			_closing_caption.modulate.a = clampf((time - 1.2) / 0.4, 0, 1) * (1.0 - clampf((time - fade_at) / 1.2, 0, 1))
 			# Reveal complete words. Last word lands at 2.8s, matching score silence.
 			var words: PackedStringArray = _closing_caption.text.split(" ")
 			var count: int = mini(words.size(), maxi(0, int((time - 1.2) / (1.6 / (words.size() - 1))) + 1)) if time >= 1.2 else 0
@@ -986,6 +1170,7 @@ func _practice_phone(mode: String) -> void:
 	_phone_view.evidence_changed.connect(_practice_updated.bind(_phone_view))
 	_phone_view.photo_taken.connect(_practice_photo.bind(_phone_view))
 	_phone_view.thought_requested.connect(_practice_thought.bind(_phone_view))
+	_phone_view.voice_requested.connect(_practice_voice.bind(_phone_view))
 	_phone_view.message_read.connect(_practice_message_read.bind(_phone_view))
 	_phone_view.open_phone()
 	if mode == "notes":
@@ -1092,7 +1277,7 @@ func _render_tutorial() -> void:
 			_title_overlay("Read between the lines", "inspect")
 		"next_issue":
 			_practice_phone("inspect")
-			_title_overlay("Alright, what next could be the issue?", "sender")
+			_title_overlay("Alright… what else should I check?", "sender")
 			if not SettingsService.reduced_motion:
 				_practice_tween.parallel().tween_property(_phone_view._passage, "modulate:a", 0.0, 0.65)
 		"claim", "inspect", "sender", "notes", "capture", "submit": _practice_phone(step)
@@ -1341,6 +1526,7 @@ func _practice_thought(text: String, complete: bool, source: Control) -> void:
 func _dismiss_thought() -> void:
 	if _menu.visible or _leaving:
 		return
+	_stop_voice()
 	var next: bool = _thought_done
 	_clear_practice_layer()
 	_dialogue.show()
@@ -1356,7 +1542,7 @@ func _completion_overlay() -> void:
 	emblem.custom_minimum_size.y = 124
 	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(emblem)
-	_overlay_label(column, "You spotted the warning signs, preserved the evidence, and protected your information. Your story is just beginning.")
+	_overlay_label(column, str((data["tutorial"] as Dictionary)["summary"]["text"]))
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 14)
 	column.add_child(actions)
@@ -1459,6 +1645,7 @@ func _advance_story() -> void:
 func _start_rewind() -> void:
 	if _rewinding or _leaving:
 		return
+	_stop_voice()
 	_rewinding = true
 	_cinematic_busy = true
 	_cinematic_mode = "rewind"
@@ -1587,12 +1774,14 @@ func _open_menu() -> void:
 		button.set_meta("opening_disabled", button.disabled)
 		button.disabled = true
 	_menu.show()
+	_sync_voice_pause()
 	_update_advance_prompt()
 	(_menu.find_child("ResumeButton", true, false) as Button).grab_focus()
 
 
 func _close_menu() -> void:
 	_menu.hide()
+	_sync_voice_pause()
 	_pause_practice(_cinematic_focus_lost or _cinematic_app_paused)
 	AudioManager.pause_opening_audio(self, false)
 	for node: Node in _layout.find_children("*", "BaseButton", true, false):
@@ -1792,6 +1981,7 @@ func _morning_open() -> void:
 	if _leaving or not _waking or _menu.visible:
 		return
 	_wake_phase = "opening"
+	_sync_voice_pause()
 	AudioManager.play_opening_cue("thump", self)
 	_dialogue.show()
 	if _typing != null and _typing.is_valid():
@@ -1801,6 +1991,7 @@ func _morning_open() -> void:
 func _morning_ready() -> void:
 	_waking = false
 	_wake_phase = "ready"
+	_sync_voice_pause()
 	_dialogue.show()
 	_update_advance_prompt()
 
@@ -1865,6 +2056,7 @@ func _settings_changed() -> void:
 			if not _rewinding:
 				_cinematic_frame(_cinematic_time)
 		_finish_reveal()
+	_sync_voice_pause()
 
 
 func _notification(what: int) -> void:
@@ -1876,6 +2068,7 @@ func _notification(what: int) -> void:
 		_: return
 	if not is_node_ready():
 		return
+	_sync_voice_pause()
 	_pause_practice(_cinematic_focus_lost or _cinematic_app_paused or _menu.visible)
 	if is_instance_valid(_phone_view):
 		_phone_view.set_locked(_cinematic_focus_lost or _cinematic_app_paused or _menu.visible or is_instance_valid(_practice_layer))
@@ -1892,6 +2085,7 @@ func _notification(what: int) -> void:
 
 
 func on_exit() -> void:
+	_stop_voice()
 	_clear_practice_layer()
 	AudioManager.release_opening_audio(self)
 	_stop_cinematic()
@@ -1903,6 +2097,7 @@ func on_exit() -> void:
 
 
 func _exit_tree() -> void:
+	_stop_voice()
 	if _practice_tween != null and _practice_tween.is_valid():
 		_practice_tween.kill()
 	AudioManager.release_opening_audio(self)

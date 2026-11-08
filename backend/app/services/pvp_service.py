@@ -1,8 +1,8 @@
 """Authoritative online PvP rooms.
 
-The server owns the question, option order, grading, submission order, deadlines,
-damage, HP, and winner. Clients may only send a room code, the round number they
-are answering, and the position of the option they tapped. No BKT, rewards, or tokens.
+The server owns flag trails, inspections, capture order, deadlines and winners.
+Legacy quiz clients retain server-owned questions, grading and HP. Client actions
+never update BKT, learning scores or tokens.
 
 Rooms live in process memory: production must run ONE backend worker until room
 state and locking move to a shared store (Redis/Supabase).
@@ -24,6 +24,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any
+
+from app.services import pvp_flag
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +184,8 @@ class Room:
     started_at: int | None = None
     rounds_played: int = 0
     lock: threading.Lock = field(default_factory=threading.Lock)
+    flag_preferences: dict[str, str] = field(default_factory=dict)
+    flag: pvp_flag.FlagRace | None = None
 
     def player(self, user_id: str) -> Player | None:
         if self.host.user_id == user_id:
@@ -352,7 +356,7 @@ class PvpService:
             self._emit_states(room)
             return self._view(room, user_id)
 
-    def set_ready(self, code: str, user_id: str, ready: bool = True) -> dict[str, Any]:
+    def set_ready(self, code: str, user_id: str, ready: bool = True, *, flag_role: str | None = None) -> dict[str, Any]:
         room = self._room(code)
         with room.lock:
             self._advance(room)
@@ -360,12 +364,21 @@ class PvpService:
             if room.state != RoomState.WAITING:
                 raise PvpError("not_waiting", "Ready can only change before the match starts")
             player.ready = ready
+            if ready and flag_role in ("attacker", "defender"):
+                room.flag_preferences[user_id] = flag_role
+            else:
+                room.flag_preferences.pop(user_id, None)
             if room.guest is not None and room.host.ready and room.guest.ready:
                 room.round_number = 1
                 room.started_at = self._clock()
                 room.countdown_ends_at = room.started_at + COUNTDOWN_MS
                 room.state = RoomState.COUNTDOWN
-                self._emit(room, "countdown_started", {"round": room.round_number, "countdown_ends_at": room.countdown_ends_at})
+                if len(room.flag_preferences) == 2:
+                    room.flag = pvp_flag.FlagRace.start(room.host.user_id, room.guest.user_id, room.flag_preferences,
+                                                       room.rng, room.countdown_ends_at)
+                    self._emit_states(room)
+                else:
+                    self._emit(room, "countdown_started", {"round": room.round_number, "countdown_ends_at": room.countdown_ends_at})
             else:
                 self._emit_states(room)
             return self._view(room, user_id)
@@ -570,6 +583,29 @@ class PvpService:
 
     # ---- match history ----------------------------------------------------------
 
+    def flag_action(self, code: str, user_id: str, data: dict[str, Any]) -> None:
+        room = self._room(code)
+        with room.lock:
+            self._member(room, user_id)
+            self._advance(room)
+            if room.state != RoomState.ACTIVE or room.flag is None:
+                raise PvpError("wrong_round", "The flag race is not open")
+            revision = data.get("revision")
+            if type(revision) is not int or not all(isinstance(data.get(k), str) for k in ("node", "action", "target")):
+                raise PvpError("bad_message", "Invalid terminal command")
+            race = room.flag
+            before = race.trails[user_id].step
+            captured = race.act(user_id, revision, data["node"], data["action"], data["target"])
+            if captured:
+                room.rounds_played = 1
+                room.winner_id = user_id
+                room.state = RoomState.FINISHED
+                self._close(room, "flag_retrieved" if user_id == race.attacker else "flag_secured")
+            elif race.trails[user_id].step != before:
+                self._emit_states(room)
+            else:
+                self._emit(room, "room_state", self._view(room, user_id), to=user_id)
+
     def drain_records(self) -> list[MatchRecord]:
         """Finished-match outcomes waiting to be persisted. Each room yields at most one."""
         with self._records_lock:
@@ -639,7 +675,15 @@ class PvpService:
         now = self._clock()
         while True:
             if room.state == RoomState.COUNTDOWN and now >= room.countdown_ends_at:
-                self._open_round(room, room.countdown_ends_at)
+                if room.flag is None:
+                    self._open_round(room, room.countdown_ends_at)
+                else:
+                    room.state = RoomState.ACTIVE
+                    self._emit_states(room)
+            elif room.state == RoomState.ACTIVE and room.flag is not None and now >= room.flag.ends_at:
+                room.state = RoomState.FINISHED
+                room.rounds_played = 1
+                self._close(room, "flag_timeout")
             elif room.state == RoomState.ACTIVE and room.current is not None and now >= room.current.ends_at:
                 self._resolve(room, room.current.ends_at, winner_id=None, reason="timeout")
             elif room.state == RoomState.ROUND_RESULT and now >= room.result_ends_at:
@@ -739,7 +783,7 @@ class PvpService:
             return
         room.finish_reason = reason
         room.closed_at = self._clock()
-        self._emit(room, "match_finished", {
+        outcome = {
             "match_id": room.match_id,
             "origin": room.origin,
             "stats": {player.user_id: {"correct": player.correct, "wrong": player.wrong, "timeouts": player.timeouts} for player in room.players()},
@@ -748,7 +792,12 @@ class PvpService:
             "winner_id": room.winner_id,
             "retired_by": room.retired_by,
             "hp": self._hp(room),
-        })
+        }
+        if room.flag is None:
+            self._emit(room, "match_finished", outcome)
+        else:
+            for player in room.players():
+                self._emit(room, "match_finished", {**outcome, "flag": room.flag.view(player.user_id)}, to=player.user_id)
         if room.guest is not None:
             record = self._record(room, reason)
             with self._records_lock:
@@ -760,6 +809,8 @@ class PvpService:
             finish = FINISH_ABANDONED
         elif reason == "ko":
             finish = FINISH_KO
+        elif reason in ("flag_retrieved", "flag_secured", "flag_timeout"):
+            finish = reason
         elif reason == "retired":
             finish = FINISH_FORFEIT_LEAVE
         else:
@@ -810,6 +861,7 @@ class PvpService:
 
     def _view(self, room: Room, user_id: str) -> dict[str, Any]:
         view: dict[str, Any] = {
+            "supports_flag": True,
             "code": room.code,
             "match_id": room.match_id,
             "charge": self._charge(room),
@@ -832,6 +884,8 @@ class PvpService:
             "server_now": self._clock(),
         }
         live = room.current
+        if room.flag is not None:
+            view["flag"] = room.flag.view(user_id)
         if live is None:
             return view
         view["round"] = self.round_payload(live)

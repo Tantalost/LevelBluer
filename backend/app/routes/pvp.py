@@ -208,7 +208,15 @@ def _dispatch(hub: PvpHub, connection: Any, message: Any) -> None:
             hub.send(connection, {"type": "pong", "revision": service.revision(connection.code), "server_now": service.now()})
             return
         if kind == "ready":
-            service.set_ready(connection.code, connection.user_id, True)
+            if message.get("mode") == "event_flag_v1":
+                role = message.get("role")
+                if role not in ("attacker", "defender"):
+                    raise PvpError("bad_message", "Unknown flag role")
+                service.set_ready(connection.code, connection.user_id, True, flag_role=role)
+            else:
+                service.set_ready(connection.code, connection.user_id, True)
+        elif kind == "flag_action":
+            service.flag_action(connection.code, connection.user_id, message)
         elif kind == "answer":
             round_number = message.get("round")
             option_index = message.get("option_index")

@@ -986,7 +986,7 @@ func _check_practice(opening: Control) -> void:
 	check(opening.step == "closing", "Closing caption cannot be skipped by duplicate completion")
 	await create_timer(3.0).timeout
 	await capture_opening(opening, "practice_closing")
-	check(opening._closing_caption.text == "If only John thought of this before....", "Freeze-frame uses requested caption")
+	check(opening._closing_caption.text == "If only John had thought of this before…", "Freeze-frame uses requested caption")
 	opening.finish()
 	check(opening.step == "summary" and opening.state.pending_outcome == "completed", "Sealed exhibit leads to explicit tutorial completion")
 	check(is_instance_valid(opening._celebration), "Completed tutorial displays celebration")

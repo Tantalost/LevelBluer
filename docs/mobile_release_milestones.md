@@ -2,7 +2,7 @@
 
 Planning date: 29 October 2026. Proposed implementation window: 30 October–19 November 2026 (21 calendar days).
 
-Status: Gate 3C local implementation is complete as of 3 November: Module 3 intro, all five chapters, five dedicated backgrounds, Codex/Progress records and vishing-practice handoff are implemented and locally verified. Physical-device/deployment acceptance remains open. Gate 3B local implementation is complete; its device/deployment acceptance remains open. The user approved the Module 2 script/integration boundary and requested new character/background art. All five Module 2 chapters are implemented and locally checked. Chapter 5 uses the shared Module 1 debate format; finale, focused-practice and mobile render checks passed. On 30 October the user explicitly deferred phone testing. Gate 3A device/deployment checks remain open; this is a sequencing exception, not a passing result. Later gates still require their completion review and user approval. The deadline is a tested, deployable mobile application, not completion of student recruitment, research data collection or analysis. Dates are time boxes and a feasibility target, not a promise of completion regardless of scope or defects.
+All five modules now have five implemented chapters (6 November 2026). Mika's final hearing closes the school campaign. Module 5 uses five hosted environments, its paper-themed debate effects and Mika's counter artwork. The earlier whole-system audit below records the state before the finale. The 19 November target is a tested, deployable mobile application. Installed-device and deployment acceptance remain open.
 
 ## Release outcome
 
@@ -20,7 +20,7 @@ The paths are connected but not forced into one rigid sequence. Retain approved 
 - Module 2 has legacy scenario material; Module 3 has an existing call interaction. These are reusable material, not four completed story campaigns. Modules 4 and 5 need their story content agreed.
 - The teacher/school-head web application is a separate dependency. This plan does not assume its authorization, analytics, deployments or source access are already verified.
 
-No percentages are used. Each item is implemented, locally verified, device verified, blocked, or deferred—with evidence attached.
+Gate acceptance uses implemented, locally verified, device verified, blocked or deferred states with evidence. At the user's request, the 6 November audit also supplies approximate planning percentages. Those estimates do not replace gate acceptance or represent measured learning gains.
 
 ## Deadline controls
 
@@ -140,6 +140,24 @@ A recorded device demonstration of answer → saved learning record → BKT upda
 An authorized staff user can complete the agreed monitoring/support tasks with the same records the student sees. Role boundaries and feedback persistence pass. The assessment-delivery decision is documented honestly; incomplete research instruments are not misrepresented as completed app functionality.
 
 ## Gate 6 — PvP, Store and Profile working together
+
+### Capture the Flag proposal for review · 7 November 2026
+
+The adviser's consultation changes the intended online duel from quiz damage to first capture. Proposed first playable match: a school event folder containing a simulated flag. Matchmaking, private rooms, Ready and the amber Access Granted handoff lead into the same match. The server assigns one attacker and one defender. Both see the same flag on the cyan network map. The attacker can retrieve it from the remote vault. The defender can secure it in quarantine. The first valid capture ends the match immediately.
+
+| Step | Attacker console | Defender console |
+| --- | --- | --- |
+| Open a route | Inspect the event invitation and its expanded destination. Trace the link to the simulated sender relay on the map. | Compare the invitation with the club directory. Flag the mismatched sender and route the incident to the verified gateway. |
+| Locate the flag | Inspect the relay's attachment manifest. Trace the event pack's delivery reference to the matching vault file. | Restore the original conversation behind the cropped endorsement. Pair the suspicious pack with its incident record to open quarantine. |
+| Capture | Tap the verified file and **Retrieve flag**. | Tap the implicated file and **Secure flag**. |
+
+The two routes use equivalent numbers of interactions and evidence of comparable reading length. An incorrect inspection highlights the relevant detail and leaves the current gate open for another attempt. Each role gets one optional interruption, unlocked after its first gate: inspect the opponent's active relay to delay their next transfer briefly. This is a bounded game action on the fictional map. For the first slice, implement and test the plain race first; add the interruption only after both roles can complete the baseline fairly. If time expires without a capture, record a draw. On a rematch the players should be able to try the opposite role.
+
+The playing screen retains the CRT housing and VT323 typeface. A cyan map highlights selectable nodes and the target. A green file/terminal pane shows the evidence for the selected node. On compact landscape screens a tap switches between map and file detail while keeping the flag and rival progress visible. Red **Access Denied** feedback identifies the failed check. The result identifies who retrieved or secured the flag. Commands are touch controls on fictional records.
+
+- The existing online screen hosts the map, evidence pane and result. A tap selects a node locally; a committed action sends the node, action and current state revision through the existing session socket.
+- The room service validates role, prerequisites and revision, serializes capture attempts, and broadcasts authoritative progress and one result. Rejoining restores role and progress. A duplicate or late capture cannot award a second win.
+- Acceptance: complete both roles through private room and matchmaking, test crossed captures, invalid shortcuts, retry, timeout and reconnect, then play on two phones and compare the routes for reading time and reachability. PvP measures match outcomes separately from BKT mastery and research scores. Bot parity, extra maps and additional minigames are outside this first online slice.
 
 ### Work
 
@@ -773,7 +791,7 @@ This closes the approved local effect implementation. Final user visual review, 
 
 ### Gate 3D detailed script and first-slice proposal — 3 November 2026
 
-The user approved moving to Module 4's detailed script and first implementation slice. The following concrete dialogue/art/interaction proposal is prepared for the substantial-implementation sign-off required by AGENTS.md. No Module 4 production code or generated art has been added yet. Earlier Module 3 physical-device/release checks remain open.
+The user approved moving to Module 4's detailed script and first implementation slice, then explicitly approved the script, art brief and first slice below on 3 November 2026. The implementation review follows this specification. Earlier Module 3 physical-device/release checks remain open.
 
 **Learning purpose:** identify a plausible pretext, separate claimed identity from verified authority, and verify the request through an independently chosen school contact. Use the existing `pretexting` component and practice bank. Coached story corrections and perks stay in the assistance ledger, never research assessment scores or graded BKT observations.
 
@@ -891,3 +909,256 @@ Effect motif: document alignment, separated source layers and verified-source bo
 3. Reuse AssetManager/Cloudinary for new art and current Codex discovery/progress refreshes. Chapter 1 unlock requires Module 3's hearing and the existing Module 4 lesson gate. Chapter 2–5 remain unavailable until their slices are implemented. Extend the existing mobile layout only as needed for touch readability.
 
 Acceptance for the first slice: intro replay/skip/pause/exit; notification → open message → all three activities → completion; wrong-answer correction; source prerequisites; green success feedback; malformed-save repair; partial save/resume; original/replay and account-owner isolation; once-only rewards; no graded mastery events from coaching; sixteen authored chapters reflected in Progress; Codex findings revealed only after discovery; hosted asset cache decode and missing-asset fallback; visible actions at 720×360, 844×390 and 932×430. Keep developer tests/source PNGs out of commits. Physical phone and deployment checks remain separate release requirements.
+
+### Gate 3D first-slice implementation review — 3 November 2026
+
+**Locally implemented and verified:** Module 4's dedicated intro and Chapter 1, **Here to Help**. Chapters 2–5 remain visibly in development. The detailed five-chapter script above is approved, but this review does not authorize implementing every remaining chapter at once.
+
+- Reuses the intro/chapter/phone screens, AssetManager, PlayerManager, assistance ledger, Codex and Progress. Only the Chapter 1 definition and phone interaction subclass were added as production scripts. Sir Rham's display name and portrait key remain consistent; earlier protagonists retain their existing paths.
+- Intro flashes forward to the late-afternoon consultation room, then returns to the morning workroom. The credential-themed title uses the existing reveal tween with restrained source-line alignment. Normal-motion timing, reduced motion, pause/resume, skip and teardown use existing owners.
+- Chapter 1 begins with a notification before opening the supplied appointment. Activities distinguish claims from observations, require both source records before saving the purpose/visitor mismatch, and require opening the existing school directory before choosing its office contact. Correct findings turn green and remain reviewable. The schedule mismatch alone is not called proof of fraud; no office response or roster disclosure is invented.
+- Unlock requires the completed Module 3 hearing and the existing Module 4 lesson prerequisite. Explicit `mod_04_ch_02` routing prevents the older shared default from pointing back to Module 1. With Chapter 2 unavailable, completion offers Chapter Select. Legacy missions/saved progress remain accessible. Progress now counts sixteen authored chapters, and Codex reveals three findings as they are earned.
+- Four new images are hosted and integrated: Sir Rham's six-expression sheet based on the user's reference, faculty workroom, consultation room and mystery title. The portrait's transparency and all four hosted cache decodes passed. See `output/module4-art/README.md` for exact prompts, local paths and versioned URLs. **Only two of the five required environment backgrounds are complete.** Later investigation/preview/counter artwork and hearing effects remain tracked in the art plan.
+
+Validation passed: full story → notification → investigation → seal → epilogue → results, source-read gates, wrong-answer correction, partial source save/load, malformed-save repair, account-owner rejection, paused input, once-only original rewards and reward-free replay, unchanged BKT mastery/events, hidden/unlocked Codex findings, and Chapter 2 unavailability. Godot previews were inspected at 720×360, 844×390 and 932×430; success feedback was moved above comparison review buttons so it remains visible on the smallest tested layout. Module 4 intro normal-motion pause/resume, skip cancellation and owned-tween cleanup passed.
+
+Shared regressions passed for Module Select, Module 3 intro and Module 3's public-source comparison chapter. Two local assertions were stale: Module 3 Chapter 5 was still expected to be unimplemented, and Progress was still expected to contain fourteen chapters. Those expectations were updated to the implemented hearing/prerequisite gate and sixteen chapters. The intro test now drains audio before shutdown. These are developer checks, not product assessment changes, and remain excluded from staging.
+
+Repository note: commits were made externally during implementation, including the four generated PNGs. Only those four hosted source images were explicitly removed from the current index; local copies remain and the root `.gitignore` now covers Module 4 PNGs. Prior commit history was preserved. Do not claim historical copies were removed. No commit was created by this implementation run.
+
+Remaining acceptance: user visual review, physical phone safe areas/performance, installed build, hosted account sync and first-download/offline behavior. Missing cached artwork does not add a new dependency or save system; the existing AssetManager acquisition/fallback behavior remains a device-release check. Next implementation slice, after explicit confirmation: **Module 4 Chapter 2 — A Consistent Story**, including its new administration-reception environment and source-comparison presentation. No Module 5 implementation has been started by this slice.
+
+### Gate 3D Chapter 2 implementation review — 4 November 2026
+
+The user's continuation advances the approved script to **A Consistent Story**. Chapter 2 is locally implemented and verified; Chapters 3–5 remain in development. The preceding first-slice review is historical: Chapter 1 now offers Next Chapter, and Progress counts seventeen authored chapters.
+
+- Reuses the chapter screen, phone containers, progression owner, assistance ledger, AssetManager and Codex. Adds only the chapter definition and its phone activity subclass; no new save or effects manager.
+- Late-morning reception story follows the directory choice in Chapter 1. The new notification must be opened before the attached records can be preserved. Players open and classify each supplied profile/email/invitation, inspect the request for names/sections/contact numbers, and independently open the usual school notice before preserving its limited significance. Correct findings turn green. The notice corrects an internal meeting to 11:00; it does not authenticate the coordinator, authorize disclosure or implicate its staff author. No student contacts are transmitted and no office denial is invented ahead of Chapter 4.
+- Prerequisites, partial reads/classifications, corrected answers, completed saves, separate replay, once-only rewards and three discovery-gated Codex entries use existing state owners. Coached activities do not update BKT mastery or research assessment events. Corrected the Chapter 1 perk phase policy, which accidentally included it in the finale-only phase override; both ordinary chapters now permit their own story phases and deny assessment contexts.
+- Generated and hosted a dedicated reception environment, used for the story, investigation and chapter preview. Module 4 now has **3/5 required environments**. Exact prompt and versioned URL are recorded in `output/module4-art/README.md`. The new PNG and developer checks remain ignored; the four earlier staged PNG removals are preserved. No commit was made.
+
+Validation passed: full story → notification → source classification → request → independent notice → seal → epilogue → results; incorrect-answer correction; prerequisite gates; pause and stale-account guards; partial and completed save/load; malformed-save repair; original reward once and reward-free replay; discovery gating; unchanged mastery/events. Chapter 1's full regression, intro lifecycle checks and handoff to Chapter 2 also passed. Godot renders were inspected at 720×360, 844×390 and 932×430. On the smallest layout the source choices are reachable by scrolling, retain at least 44-pixel height, and Continue stays inside the phone. The new selector preview was inspected at 720×360.
+
+Physical-device safe areas/performance, installed-build behavior, hosted account synchronization and first-download/offline acceptance remain open. Next implementation slice, after explicit confirmation: **Chapter 3 — The Exception**, returning to the same consultation room and late-afternoon lighting shown in the intro. No later chapter was implemented in this slice.
+
+### Gate 3D Chapter 3 implementation review — 4 November 2026
+
+The user approved the next slice: **The Exception** is now locally implemented and verified. It returns to the consultation room in the intro at late afternoon and repeats the emergency-clearance wording shown there. Chapter 2 now offers Next Chapter. Chapters 4–5 remain in development; Progress counts eighteen authored chapters.
+
+- Uses the existing chapter screen, phone controls, signals, account/save ownership and replay handling. Two production scripts separate authored chapter state from its phone interaction, following the existing chapter architecture. No new manager, network contact or student-data collection form was added.
+- After the notification and preserved request, players review both the actual request and the independently opened school authorization notice. They identify student contact fields and the unconfirmed private channel, distinguish claimed clearance from independently confirmed documented approval, then select the established School Office through the existing directory. The fictional notice is explicitly scoped to this school scenario. The office response is pending; no denial or culprit identity is invented before Chapter 4.
+- The restricted roster is a generic navy/cyan UI card, with no actual student data. Choosing a partial list or the sender's alternate private contact yields correction without sending anything or opening a contact. Correct findings use existing green confirmation. The small-screen final confirmation explicitly keeps LIST RESTRICTED / NOTHING SENT visible with Continue.
+- Saves retain partial document reads, field/channel matches, claim review and directory review. The cleaner requires their ordered prerequisites; wrong answers, hint/perk status and completion rewards retain existing semantics. Three source-grounded Codex discoveries unlock from evidence. Coached story activity does not change mastery or research assessment records; perks remain denied outside story context.
+- Chapter 3's story, investigation and preview reuse the Module 4 consultation environment created for the intro, preserving its room and lighting. This is intentional continuity, not another environment counted toward the requirement. **Environment inventory remains 3/5.** Records-office and briefing-room backgrounds, later previews, counter art and full hearing effects remain open for their approved slices.
+
+Validation passed: complete story/notification/investigation/seal/epilogue flow; prerequisite unlocks; two-document and ordered comparison gates; partial read and completed save/load; malformed-save repair; corrected unsafe proposals; pause and stale-account guards; once-only reward, assisted bonus removal and reward-free replay; Codex hidden/unlocked findings; unchanged BKT mastery/events. Chapter 2's regression and new handoff also passed. Godot renders were inspected at 720×360, 844×390 and 932×430; comparison and approval choices remain reachable through scrolling with at least 44-pixel button heights, and the smallest success panel and Continue fit visibly. Tests and generated validation images remain local and ignored. No files were newly staged and no commit was made; the earlier PNG removals remain staged.
+
+Remaining acceptance: physical phone safe areas/performance, installed build, hosted account synchronization and offline/first-download behavior. Next slice, after explicit confirmation: **Chapter 4 — Ask the Real Office**, including the new records-office background and independently sourced office response. Chapter 5 remains the approved full shared debate, not a simplified quiz.
+
+### Gate 3D Chapter 4 implementation review — 4 November 2026
+
+The user approved **Ask the Real Office**. It is locally implemented and verified, with a new hosted records-office environment. Chapter 3 now offers Next Chapter; Chapter 5 remains in development. Progress counts nineteen authored chapters.
+
+- Reuses the shared chapter/phone screens, source-labelled records, progression signals, account ownership, saves and replay. The two new scripts separate the chapter definition from its interactions. No new manager or save system was added.
+- The response is reached through the existing school directory and established School Office entry. Players trace that route in order, match the assignment and authorization denials to their conclusions, and identify the limit: false claims in this case, not an operator identity or a guarantee of system-wide safety. The internal event meeting remains separate.
+- Players review and include the supplied appointment, actual private request and office response before saving their case record. Each retains its source. Roster inclusion and unsupported accusations give corrective feedback without adding either to the record. No student data is collected or transmitted. Green highlights persist on reviewed route steps, included records and correct matches; final success and Continue fit the small-screen panel.
+- Partial route, match and report progress survive cleaning/save/load. Existing perk and hint tracking, corrected-work rewards, replay isolation and three discovery-gated Codex entries apply. Coaching remains separate from BKT mastery and research assessment events.
+- Generated `records_office_v1.png`, 1672×941, using the built-in imagegen tool; integrated its versioned Cloudinary URL into the story, investigation and chapter preview. **Module 4 environment inventory is 4/5.** The school briefing room, Chapter 5 imagery/counter and document-themed hearing effects remain outstanding. Exact generation prompt and URL are in `output/module4-art/README.md`.
+
+Validation passed: hosted asset acquisition/cache decode; full story → notification → route tracing → statement matching → record assembly → seal → epilogue; prerequisite and ordered-step guards; correction feedback; partial and completed save/load; malformed-save repair; pause and stale-account protection; once-only credits, assisted bonus removal and reward-free replay; Codex discovery gating; unchanged mastery/events. Chapter 3's regression and new handoff passed. Godot renders were inspected at 720×360, 844×390 and 932×430; route choices remain reachable by scrolling with at least 44-pixel button heights, and final success and Continue remain visible. The chapter preview uses the new room.
+
+Tests, render captures and source PNG remain ignored and unstaged. Existing staged removals of the four earlier hosted source images were preserved; no commit was made. Physical-device safe areas/performance, installed build, hosted account sync and offline/first-download acceptance remain open.
+
+Next slice after explicit confirmation: **Chapter 5 — The Mask Holds**, using the approved full shared hearing format, its school briefing-room environment and Sir Rham's module-specific presentation. Do not begin Module 5 automatically.
+
+### Gate 3D Chapter 5 implementation review — 5 November 2026
+
+**All five chapters of Module 4 are playable locally.** Completing *Ask the Real Office* unlocks *The Mask Holds* through Next Chapter and Chapter Select. Progress now counts twenty authored chapters.
+
+Sir Rham, John, Liza and Mika test four explanations using the original appointment, its document sources, the private roster request and the independent office response. The supplied appointment stays at 10:30. The school's correction moves only its internal meeting to 11:00. Players compare the claimed approval with the office denial and reconstruct six events. The school acknowledges the report, and the roster stays private. The Collector remains the sole active connection throughout the audience cutaway. Mika's unopened event-file offer leads into the next module.
+
+The shared hearing handles preparation, joining, credibility, hints, pixel evidence commands, replay and reconstruction. Its existing clock drives Module 4's document layers and reduced-motion treatment. New hosted briefing-room and Sir Rham counter illustrations complete the finale art. The module now has five distinct environments. Five Codex findings unlock through the debate, and the results screen offers pretexting practice. Mika uses the existing camera-off presentation in this hearing.
+
+Local Godot checks passed for the Chapter 4 handoff, Module 3 hearing regression, and Module 4 hearing through completion and replay. Checks covered the theory bonus, wrong evidence, zero-credibility recovery, pause and resume, source comparison, case reconstruction, save restoration, once-only rewards and Codex discovery. Story assistance stays in the story ledger and the checks confirmed separation from graded BKT and assessment events. The mobile previews covered 720×360, 844×390 and 932×430. The two hosted illustrations downloaded and decoded in the local cache. Developer checks, screenshots and new PNGs remain local.
+
+**Release acceptance still open:** installed build on a physical phone, safe areas and performance, hosted account synchronization, and first-download/offline behavior. The next story milestone is review of Mika's detailed Module 5 script and art brief.
+
+### Gate 3E script and art brief for review — 5 November 2026
+
+**The Last Gift** follows Mika, who has to get a school event ready after four exhausting incidents. Her deadline is real. A free pack of finished posters, signs and editable layouts would give the club a night of work back. The player’s job is to help her finish the event while checking who supplied the offer and what accepting it would actually do. The approved five chapter titles stay in order. The proposed dialogue, identity evidence and art direction below are for review.
+
+#### Intro and Chapter 1 · A Gift for the Club
+
+Start on the same evening and the **same unread notification** that ended Sir Rham’s hearing. Mika stands in the auditorium wings. Beyond the curtain someone holds up a hand-painted arrow to ask which way it goes. Mika turns it the other way. Her phone lights up. *Event Recovery Desk · Your event materials are ready.* Mika says, “Posters, arrows, room signs. If this has table numbers too, I might cry.” She pockets the phone to help carry a sign. Title reveal over a closed, brightly tabbed asset folder. End the intro there. On replay or skip, Chapter 1 still starts that evening with the single unread offer.
+
+1. **Open the message.** Back in the wings, tap the notification. “You’ve had enough disruptions. Here’s a complete event pack, including table numbers. Our desk prepared it for your club.” John asks, “Did we order table numbers?” Mika replies, “I wished for them quite loudly. I don’t think that counts.” Inspect the promised items and the displayed sender. Record the offer as received and the supplier role as claimed.
+2. **Check the booking.** Mika opens the existing club event chat and its pinned materials plan herself. The plan assigns poster files to the student design desk through the established club folder. The offer came in a separate conversation and supplies its own contact for confirmation. Match each record to its source. A missing supplier name prompts a check and leaves the origin unresolved.
+3. **Choose the safe next step.** Save the message and ask the design desk through the pinned club contact. A reply to the offer’s own “verification desk” gives the player a chance to reconsider. The confirmation should read *Offer preserved · pack unopened*. Mika texts John, “Keep the crooked arrow. It’s the only sign whose maker I can personally identify.”
+
+The original save records the message, independent plan and chosen contact route. The reply arrives in Chapter 2. A complete Chapter 1 save can never reveal that later reply.
+
+#### Chapters 2–4 · What the player discovers
+
+| Chapter and scene | Dialogue and touch sequence | Finding the player can keep |
+| --- | --- | --- |
+| **2. Just Open It** · Next morning, school print and design studio | The design desk replies in the established chat, “Our signs are in the club folder. We didn’t send a helper.” The offer sends an image preview and a new instruction to install a “preview helper.” Mika says, “I asked to see a poster. Why am I being asked to install anything?” Inspect three labelled areas of an inert phone mock-up: the poster preview, the actual attachment type (*Android app package*), and the request to allow installation from this source. Tap **Keep closed and preserve details**. | The attractive preview describes the promise. The package type and installation step describe the requested action. The independent desk denies sending that helper. Viewing the in-game record never downloads, installs, or opens a real package. |
+| **3. Everyone Already Has It** · Late morning, campus sign-painting shelter | A cropped endorsement reads, “Tried it. Looks great! — Amani.” Amani answers in the established club chat, “That was about Mika’s hand-painted banner. Look one message up.” Compare the sender’s crop with the original reply and its banner thumbnail. Liza asks, “Can you warn us without sending us the thing?” Choose the warning that names the offer and points to the pinned club folder. | The quoted words were real. The crop changed what “it” referred to. The player preserves both messages and warns classmates without forwarding the package. Mika’s enthusiasm and Amani’s praise are distractors, not attribution evidence. |
+| **4. Four Connections** · Afternoon, student services incident desk | Sir Rham opens the school support case through its established directory entry. He reads a sanitized service report aloud. The report supplies delivery references for the coordinator request and the pack offer. Students pair each reference with its preserved original. The directing account field is withheld pending verification. Mika closes the case note with a question for the hearing: “Who directed the switch?” | This is the first student-accessible evidence connecting the two deliveries. The references link the deliveries. The directing account is revealed in Chapter 5. The person’s real-world identity remains unknown. Separate earlier case cards preserve John’s Jobert outcome, Amani’s rejected device request and Liza’s independent wallet-support check. Their similarities alone cannot establish a shared sender. |
+
+#### Chapter 5 · Close the Connection
+
+At dusk in the event production booth, Mika hosts the hearing on her phone. John, Amani, Liza and Sir Rham join. They reconstruct the Collector’s claims from preserved records. The Collector does not receive a live invitation. The opening’s five affected people have a voice, and the four masked connections retain their existing count.
+
+Preparation opens the original case record and one **new containment receipt** from the independently opened support case. It says the reported delivery was removed, compromised posting access was revoked, and affected students can contact support through the school directory. Mika kept the pack closed. Her own device has no recorded installation in this story.
+
+Theory prompt: **Which assumption made the offer persuasive?** The correct choice is *A useful gift must be safe.* Other choices are *Read what it installs*, *Ask the actual design desk*, and *Warn the club without the file*. Use the shared three hints, 35/20 starting credibility, joining cinematic, terminal command loading, orange claim targets, +15/−10 scoring and round recovery.
+
+| Round | Claim to challenge | Correct exhibit and rebuttal | Plausible wrong picks |
+| --- | --- | --- | --- |
+| 1 · The right gift | “It had exactly what the club needed, so **the school must have sent it**.” | Pinned materials plan plus design-desk reply. Mika says, “They knew we needed signs. The people making our signs say this didn’t come from them.” | Attractive preview, banner praise |
+| 2 · Only a preview | “The thumbnail was a poster. **All you had to do was view it.**” | Package details plus installation request. Liza says, “Read the action on the prompt. It asks to install an app.” | Sender display name, schedule correction |
+| 3 · Everyone trusts it | “Amani tried the pack and **endorsed this download**.” | Cropped endorsement beside original banner thread. Amani says, “That’s my sentence. Put the picture it belongs to back above it.” | Poster preview, Mika’s excitement |
+| 4 · Separate deliveries | “The coordinator failed. **There’s nothing connecting that request to this offer.**” | Independently obtained service report paired with the preserved records. Sir Rham says, “These two delivery references match our originals. The contact changed its pitch. These records link the deliveries.” | Shared branding, similar timing, the internal schedule correction |
+
+**Final comparison and mastermind reveal (approved).** Once the four rebuttals are sealed, reveal the authenticated case addendum. It identifies **the Collector** as the mastermind. The addendum pairs preserved instructions to the survey, text and call operators with service-verified case references, then records the Collector directing the pivot from the failed roster request to the pack. This evidence supports campaign coordination as well as the two deliveries. Students obtain it through the established support case. Keep the identifying addendum out of previews, preparation, hints, recap and early Codex entries. Match the recorded admission about switching from roster to pack against both corroborated delivery references. Mika’s line: “I can tell you which account sent both. I can show you how we know.” The match awards the shared final bonus, capped at 100. No student has to guess a legal name.
+
+**Closing reconstruction.** Place six frames: roster withheld → gift offered → helper requests installation → endorsement restored to its original context → support corroborates the two deliveries → delivery contained and club warned. Decoys: *Mika installs the helper* and *Amani recommends the pack*. The narrated comic uses story locations and repeats the source of the final finding. After the hearing, the club puts up its own signs. John holds the crooked arrow. Mika says, “Leave that one. Everyone found us.” The verified support receipt and help route close the learner’s case. Only then cut to the audience view: three lights are already dark and the fourth goes out. Offer **Review evidence** and **Practice baiting** through the existing Codex and lesson routes. Campaign completion comes from the final chapter’s saved completion.
+
+#### Module 5 visual direction and first-slice boundary
+
+| New environment | Art and continuity cue |
+| --- | --- |
+| Auditorium wings, evening | Painted arrows, rolled canvas and warm spill from the stage. Same framing and unread offer across intro and Chapter 1. |
+| Print and design studio, morning | Paper offcuts, drying prints, broad worktable and window light. Leave the actual file details to live phone UI. |
+| Covered sign-painting shelter, late morning | Open-sided canopy, half-painted banner and campus walkway. The banner gives Amani’s original reply a concrete referent. |
+| Student services incident desk, afternoon | Accessible visitor-side seats, frosted privacy divider and a tray for case folders. Keep names, student data and screens out of the artwork. |
+| Event production booth, dusk | View through glass toward the school event, cue sheets and finished handmade signs. Frame Mika and her phone clearly during the finale. |
+
+**Portrait proposal.** Mika wears the established school uniform, dark hair in a low ponytail with a small teal tie, and a paint-marked event lanyard. Six expressions: delighted, busy, puzzled, checking, concerned, and resolved. Her earlier off-screen line and camera-off hearing establish her role and voice. Review the proposed likeness against any preferred reference and the opening montage before generating it. Reuse the approved portraits for the returning cast.
+
+**Presentation motif.** The title starts as a beautifully wrapped folder. A paper tab peels back to expose a second label. The later counter uses two separated layers, *preview* and *requested action*, with Mika’s own lettered counter illustration. Render evidentiary words as live UI with the existing navy/cyan/cream palette. Use a stationary pair of labels in reduced motion. Budget a new mystery title, five environments with chapter-specific previews, Mika’s portrait and final counter. Track investigation and hearing presentation separately from the environment count. Host approved assets through the existing catalog and keep source PNGs and developer checks local.
+
+**Proposed first implementation slice for sign-off**
+
+- Extend the current module intro and chapter selector for Module 5. Route **A Gift for the Club** to the shared chapter screen after Module 4’s completed hearing and the existing Module 5 lesson gate. Keep legacy stages and saves accessible.
+- Supply Chapter 1 content and touch interactions through the existing chapter definition and phone-panel pattern. The phone emits the existing evidence, thought and phase signals. The chapter screen and PlayerManager retain pause, account ownership, original/replay state and rewards.
+- Produce only the first-slice artwork: Mika’s approved portrait, evening auditorium wings and mystery title. Register Chapter 1 discoveries in Codex and Progress. Check notification → source comparison → safe response → seal, resume and replay, reduced motion, mobile touch layout and isolation from graded BKT and assessment records. Later chapters and the remaining four environments have their own implementation gates.
+
+### Gate 3E first implementation review — 5 November 2026
+
+The user approved Mika's design, the first slice and the Collector evidence. **Chapter 5 is the campaign ending and reveals the mastermind.** The revised Chapter 4 script gives the students delivery references to investigate. The identifying admission and corroborated directions become available at the final comparison in Chapter 5. These later scenes are approved story direction and await implementation.
+
+Mika's dedicated intro and **Chapter 1, A Gift for the Club**, are playable after completing Module 4's hearing and the first Tempting Offers lesson. Both scenes take place in the auditorium wings on the evening of the hearing and follow the same unread message. Players inspect the promise, match the offer and pinned plan to their sources, and send a simulated inquiry through the established design-desk contact. The saved finding ends with the pack unopened and a reply pending. Three discoveries appear in Codex as earned. Progress now counts 21 authored chapters. The results screen returns to Chapter Select, where later chapters are marked in development.
+
+The first three images are hosted and integrated. Mika has six poses, the auditorium wings are the first of five planned environments, and the dedicated folder title uses the existing reveal animation with a paper-tab accent. Asset paths, hosted links and exact prompts are in `output/module5-art/README.md`.
+
+The new chapter, Module 4 hearing and Module Select checks passed in Godot 4.7.2. Coverage included lesson and story prerequisites, first visit and returning-player routes, comparison prerequisites, feedback, partial save restoration, original/replay rewards, assistance separation from mastery, intro pause/replay/skip and artwork cache decoding. Godot previews were inspected at 720×360, 844×390 and 932×430. Physical-device and installed-build acceptance remain open.
+
+Next story slice: **Chapter 2, Just Open It**, including the design-desk reply, the preview-helper inspection and the new morning print studio.
+
+### Gate 3E Chapter 2 implementation review — 5 November 2026
+
+**Just Open It** continues Mika's inquiry the next morning in the new print and design studio. The pinned design desk denies sending a helper. Players compare that reply with the separate offer, inspect its poster thumbnail, Android package details and installation request, then preserve the evidence with the package closed. The file type alone is explicitly insufficient to establish malware. All interactions use inert records within the game.
+
+The existing chapter screen, phone signals, PlayerManager saves and perk rules own the flow. Chapter 1 now hands off to Chapter 2. Progress counts 22 authored chapters, and Codex reveals the three findings as earned. Partial inspection, original/replay saves, reward protection, pause and account ownership use the existing mechanisms. Story coaching remains separate from graded mastery and learning events.
+
+The studio image is hosted through Cloudinary and used in the chapter preview, story and investigation. Module 5 now has **2 of 5 new environments**. Three later environments, finale art and module-specific hearing effects remain open. The art record and exact prompt are in `output/module5-art/README.md`.
+
+The Chapter 2 Godot verification and Chapter 1 handoff regression both passed with zero failures, including touch targets, source and inspection prerequisites, corrective feedback, save restoration, pause/account guards, reward/replay behavior and unchanged mastery records. Mobile previews were reviewed at 720×360, 844×390 and 932×430. Developer checks and source PNGs remain ignored and were not staged. Physical-device and installed-build acceptance remain open.
+
+Next implementation gate: **Chapter 3, Everyone Already Has It**, including Amani's cropped endorsement, its original banner context and the new sign-painting shelter. Chapter 3 remains unavailable in this slice. The mastermind reveal stays reserved for Chapter 5.
+
+### Gate 3E Chapter 3 implementation review — 5 November 2026
+
+**Everyone Already Has It** is playable after Chapter 2. Mika receives a cropped endorsement in the offer conversation, checks the original through the existing club chat, restores the missing banner photo and question, and reads Amani's clarification. Players identify that the praise concerns the hand-painted banner before choosing a warning that names the offer and installation request, points to the pinned club folder and excludes the package. Forwarding the package and accusing Amani receive distinct corrective feedback. The game sends no external message or attachment.
+
+The chapter uses the existing screen, phone base, evidence signals, save owner, rewards and perk rules. Three earned Codex findings preserve the sources and do not reveal later attribution. Progress counts **23 authored chapters**. Chapter 2's result offers Chapter 3, while Chapter 4 remains in development. The mastermind reveal remains reserved for Chapter 5.
+
+The new late-morning shelter background is hosted through Cloudinary. Its banner also supplies the original-message thumbnail, with a caption identifying the photo as taken before hanging. The chapter keeps the established navy/cyan/cream interfaces and green success feedback. Module 5 now has **3 of 5 new environments**. The student services incident desk, production booth and finale-specific imagery/effects remain open. The exact generation prompt and asset URL are recorded in `output/module5-art/README.md`.
+
+Chapter 3 verification, the Chapter 2 handoff regression and the Chapter 1 opening/selector regression all passed with zero failures in Godot 4.7.2. Checks covered prerequisites, mandatory source inspection, partial save/load, corrective feedback, pause/account guards, reward-once behavior, replay preservation, Codex discovery and unchanged graded mastery/learning events. The comparison card, safe warning and selector were reviewed in rendered mobile previews at 720×360, 844×390 and 932×430. These previews do not close physical-device or installed-build acceptance. Developer checks, artifacts and source PNGs remain local and ignored, with no new files staged.
+
+Next implementation gate: **Chapter 4, Four Connections**. Use the independently reached support case and corroborated delivery references in the new afternoon incident-desk setting. Keep the directing-account field withheld until the Chapter 5 final comparison.
+
+## Whole-system completion audit — 6 November 2026
+
+The user paused feature work during Chapter 4 review and requested a whole-system completion estimate. No further gameplay implementation was performed during this audit. The assessment uses the current working tree, existing implementation reviews and fresh local checks. It does not establish the state of a deployed version or an installed phone. The separate staff web application's source and authorized roles are not available in this workspace.
+
+**Planning estimate: approximately 70% complete toward the tested, deployable whole-system target, with a ±5 percentage-point uncertainty.** This is an engineering estimate against the agreed release scope, not a count of files, a test pass percentage or a prediction of elapsed work remaining. Release integration receives substantial weight because it is mandatory. The missing finale is more work than an average chapter, so 24/25 authored definitions does not mean the story is 96% finished.
+
+| Area | Estimated completion | Weight in overall estimate | Evidence and remaining work |
+| --- | --- | --- | --- |
+| Story / Deploy | 90% | 20% | Modules 1–4 have five chapters each. Module 5 has four implemented chapters; Chapter 4's review is paused after a passing flow check. Final hearing, mastermind reveal, reconstruction, campaign closure and final environment/presentation remain. Device acceptance remains open. |
+| Lessons | 85% | 10% | Five modules and 30 topics; fresh workspace check passes all 30. Finish content/answer-key review and installed-device acceptance. |
+| BKT and adaptive practice | 80% | 15% | Actual posterior/learning updates, weaker-eligible-topic practice selection and difficulty selection exist. Fresh offline-sync checks pass. Estimates cover five broad threat topics; parameters are configured, not fitted to student data. The wrong-answer decrease cap is a deliberate modification to classic BKT. Device-to-hosted persistence and adaptive demonstrations remain open. |
+| Codex | 85% | 5% | Searchable field guide and discovery-gated chapter records cover 24 authored chapters. Final records and full-campaign presentation acceptance remain. |
+| Student Progress | 80% | 5% | Uses live mastery, lesson/checkpoint data and dynamic authored chapter totals with sync labels. Later-module locked guidance needs correction: `progress_data.gd` explicitly handles Modules 2–3 but can fall back to “Complete Chapter 0 first” for a locked first chapter in Modules 4–5. Two local assertions still assume five total chapters. |
+| PvP | 70% | 10% | Room/join, matchmaking, authoritative duel logic, reconnect handling, history and ratings are implemented. Mock session check passes. Two installed phones, hosted interruptions/results and Store-currency integration remain. Extra game types are outside the agreed minimum release. |
+| Store | 50% | 6% | Purchase/ownership checks and avatar selection exist; local Store fixtures pass. Non-avatar items explicitly say equipping is unavailable. `pvp_tokens`/Threat settlement from matches is not implemented; PvP rating is a separate value. The earn → buy → equip → Profile/PvP loop is incomplete. |
+| Profile | 75% | 4% | Shared progress snapshot and selectable owned avatars exist. Complete supported cosmetic integration and reconcile the outdated full-completion/asset assertions before final acceptance. |
+| Account/backend integration | 80% | 5% | Auth, local/cloud save ownership, progress/BKT services and configured hosted origins exist, with substantial local coverage. Installed-client login, expiry, reconnect, account switching and live database contracts need acceptance. |
+| Staff monitoring/support integration | Unverified | 5% reserved | Mobile records and feedback integration exist. An earlier live feedback receipt is documented, but teacher/head authorization, progress reconciliation and support actions cannot be counted as accepted from this mobile repository. No completion credit is assigned for this reserved dependency; this does not mean the separate web app is unimplemented. |
+| Mobile release and deployment acceptance | 30% | 15% | Android development preset and a signed development APK exist. The APK is dated 30 October and predates recent story additions. Release signing/identity, updated build, target-phone journeys, current hosted deployment and handover remain open. |
+
+The weighted value is approximately 68%, rounded to about 70% at this level of uncertainty. Features being present is distinct from their release gates passing. The amount of remaining work is not proportional to the number of remaining story chapters.
+
+### Fresh validation evidence
+
+- Python discovery ran **369 tests: 357 passed, 11 failed and 1 errored**. The failing scenario checks reference legacy titles/structures such as “The First Warning” while current content says “Before the Bell”; one expects a `threats` key. The TRACE source assertion expects a `[TRACE EXAM]` marker absent from current code. These require reconciliation with the intended legacy support boundary; they were not deleted, rewritten or declared harmless.
+- Godot Lessons workspace: **30 topics, zero failures**.
+- Godot BKT offline sync: **zero failures**, including topic-specific diagnostics, newer-learning preservation and delayed-account-response guards.
+- Godot Store fixtures: **zero failures** for implemented behavior. This does not supply missing equipping or match-earned currency.
+- Godot online PvP session fixtures: **zero failures**, using fake HTTP/WebSocket transports. No two-phone live acceptance was performed.
+- Godot Progress: **2 failed assertions**, both expecting five authored chapters despite the current 24.
+- Godot Profile: **13 failed assertions**. Ten require avatars to be remote-only; three treat Module 1 completion as whole-campaign completion/expected routing. These are validation-contract discrepancies to resolve, not proof of thirteen distinct runtime faults.
+- Immediately before the pause, Chapter 4's rendered flow verification passed with zero failures. Its small-screen pairing view and case-note scrolling still need final review; the Chapter 3 → 4 handoff regression has not yet been run in this slice.
+
+Audit logs are retained locally under `frontend/.godot/system_audit_*.log`. Developer tests and generated logs remain ignored. No production service or student record was changed, no deployment was performed, and no files were staged for this audit.
+
+### Recommended remaining order
+
+1. Resume and close Chapter 4 review, then finish Module 5's shared-format Chapter 5, campaign ending and final art.
+2. Reconcile the stale validation contracts and confirmed later-module guidance defect; demonstrate the complete Lessons → BKT → Progress → account-sync path.
+3. Finish the agreed PvP → Threat → supported Store item → Profile/PvP use flow, with two-device acceptance.
+4. Verify the separate teacher/head monitoring and support workflow. Confirm independent research assessment delivery separately from gameplay scores.
+5. Rebuild the Android app, run full journeys on target phones against the deployed services, fix blocking defects and close release handover.
+
+The existing 19 November deadline leaves about two weeks. Prioritize these integration and acceptance gates over new game modes or broad visual redesigns. Story progress alone cannot close the whole-system target.
+
+### Gate 3E · Delivery review and campaign ending · 6 November 2026
+
+In **Four Connections**, Mika and Sir Rham match the school support report to both original deliveries. Finishing the chapter opens **Close the Connection** in the shared hearing. After four rebuttals, Mika uses the authenticated addendum to identify Collector. It links the roster request and the pack offer to the directing account and corroborates the earlier operators' instructions. John's case retains Jobert's admission.
+
+The player assembles the six-panel reconstruction. The club then puts up its handmade signs in the evening auditorium wings, returning to the setting where Mika first received the offer. The final masked cutaway closes the fourth connection. Completing it saves the chapter, records the first-clear reward, and offers evidence review and baiting practice. Godot checks covered the Chapter 3–5 progression, discovery order, save and replay behavior, and isolation of story decisions from graded mastery. A full installed-phone playthrough is still required for release acceptance.
+
+### PvP Capture the Flag · approved first online slice · 7 November 2026
+
+The approved **Event Pack** race replaces quiz combat for two updated online clients. The attacker expands an invitation, traces its delivery manifest and retrieves EVENT.FLAG. The defender checks the pinned directory, restores the original endorsement thread and secures the same flag in quarantine. Each path requires inspecting the evidence before routing. Incorrect routes provide feedback. The first server-accepted capture ends the match; the two-minute deadline produces a draw if neither captures. This is a simulated social-engineering investigation, with no real file execution or network attack.
+
+The existing terminal lobby, room/session owner, matchmaking, ready and reconnect signals remain in use. Players can choose a preferred role; matching preferences are assigned randomly. The new terminal presentation provides a cyan network map and green file pane, with tap navigation between them on smaller phones. The backend retains each player's evidence step and command revision, rejects stale or premature commands and serializes simultaneous captures under the existing room lock. One final match record feeds the existing rating pipeline. Private matches are unrated. PvP does not update BKT mastery, assessment scores or the store wallet.
+
+Local verification covered both capture routes, simultaneous finishes, inspection prerequisites, wrong routes, stale retries, reconnect, role conflicts, malformed commands, matchmaking and rating eligibility. The full backend PvP suite passed **146 checks**. Godot rendered checks cover small landscape layouts, terminal navigation and online ownership; physical two-phone acceptance is still required. Developer checks and screenshots remain local and are excluded from commits.
+
+Before deployment, apply the updated `pvp_match_history.sql` and `pvp_ratings.sql`, then deploy the backend and rebuild both mobile clients. These changes have not been applied to the hosted database. Match rooms still require one backend worker. Bot practice and older clients retain the legacy quiz flow. Active interference, more maps and bot conversion are outside this first slice. Do not mark whole-system or hosted PvP acceptance complete until the installed-phone capture/reconnect/history/rating journey passes.
+
+### Capture the Flag computer workspace redesign — approved and implemented
+
+Replace the split-pane match presentation with the supplied green CRT computer reference: a substantial beige monitor bezel, inset dark glass, restrained scanlines, green pixel type, a system menu strip, bordered application windows and a small hardware power indicator. This is a simulated computer inside the mobile game, not a separate desktop platform. Keep the amber matchmaking directory unchanged in this slice.
+
+Both players enter the same **Home** workspace when the existing synchronized countdown ends. Home shows the assigned role, a short mission briefing and three large application shortcuts: **Terminal**, **Files**, and **Netmap**. Terminal shows the current operation/status; Files opens the current evidence and inspection action; Netmap opens the route targets. All three operate on the existing server-owned trail. A persistent Home control returns to the workspace without resetting progress or pausing the shared timer. Inspection and routing remain explicit touch actions. Home is an entry view, not another Ready gate.
+
+- Node structure: retain `PvpFlagTerminal` under `PvpOnlineScreen`; build the CRT shell, system strip, Home shortcuts, one application-window host, and bottom status strip inside it. Reuse its current file scroll, map controls, labels and buttons. At phone sizes, the selected app fills the usable workspace; the design does not depend on tiny overlapping windows or draggable title bars.
+- Signals: existing `command(action, target)` continues through `PvpOnlineSession` to the server; existing leave/retry signals retain their owners. Local app navigation changes only visibility and selected app. Server replies still own evidence progress, feedback, capture and result; there is no new manager or duplicate match state.
+- Acceptance: both roles initially land at Home; Files inspection → Netmap selection → confirmed route → final capture remains playable; Home/app switching cannot reset or bypass a gate; timer/reconnect/winner behavior stays intact. Review 720×360 and 844×390 renders, readable text, 44-pixel touch targets, safe areas and reduced motion. Use red window treatment only for actual denial/disconnection and green feedback for accepted progress. Do not add pretend attack tools or nonfunctional icons from the reference.
+
+The user approved this structure and supplied additional pixel-icon, window, palette and effect references. The existing `PvpFlagTerminal` now implements Home, Terminal, Files and Netmap as touch-operated app views. Pixel icons are drawn on an integer grid; green window strips, double borders, scanlines, selected controls and matching scrollbars replace the previous split-pane presentation. Actual connection/route warnings use the red treatment. There is no new asset file, effects manager or match-state owner. Backend rules, database schema, roles and match duration remain unchanged.
+
+The Godot online-screen verification passed with zero failures. Rendered previews were reviewed at 720×360 and 844×390. Checks cover initial Home for both roles, countdown inspection blocking, navigation without network actions, preserved evidence on returning Home, route selection, locked-flag protection, final capture, manual reconnect and a reduced-motion result. Small-phone touch targets retain a minimum 44-pixel height after the workspace scale. Physical-device acceptance and the previous hosted database/deployment tasks remain open.
+
+### Bot Capture the Flag practice — approved conversion · 7 November 2026
+
+The user chose **Also convert bot to CTF**, replacing the proposed visual-only update. Practice now opens the shared green CRT Home with role selection and Start Practice. It uses the same Event Pack evidence, Files inspection, Netmap routing and capture actions as online play. The local bot follows the opposite role's trail, takes 8–14 seconds per action and has a 25% chance of choosing the wrong route when more than one route exists. Wrong choices must be retried on a later turn. Its schedule is independent of player answers and progress.
+
+`PvpBattleScreen` remains the local owner and uses `PvpBattle.FlagPractice` in the existing gameplay file. The shared workspace emits the existing command and exit signals, with practice start/replay signals for the local owner. No fighter arena or quiz match is constructed on the bot route. Home does not start a hidden timer: Start Practice begins the countdown, followed by a two-minute race. The first capture wins; the deadline yields a draw if neither side captures. Scheduled bot actions are resolved before later player inputs. Exit confirmation pauses the local race for both sides, replay returns to role selection, and cleanup disconnects and retires the local model.
+
+Local verification covers both roles, inspection gates, wrong/stale commands, bot capture, timeout, replay, exit pause and cleanup. All 12 role/side/stage evidence snapshots were compared with the Python online implementation. Phone renders at 720×360 and 844×390 show Home, evidence and the final result. The bot check and shared online-screen regression passed with zero failures. Developer checks remain local and excluded from commits. Practice remains offline, unranked and separate from BKT, research assessments and the store wallet. Installed-phone acceptance remains open.

@@ -110,10 +110,10 @@ func _verify_modes(screen: Control) -> void:
 	_check(completed == [&"PVP"], "Switch completes exactly once")
 	_check(screen._pvp_hub.visible and not screen.get_node("SafeAreaContainer").visible, "PvP has its own workspace")
 	_check(not screen._pvp_hub._queue.disabled, "Local bot duel can be started")
-	_check(screen._pvp_hub._queue.text == "CHALLENGE BOT", "Hub starts a local bot duel")
+	_check(screen._pvp_hub._queue.text == "PRACTICE VS BOT", "Hub starts a local bot duel")
 	_check(screen._pvp_hub.battle_requested.get_connections().size() == 1, "Battle request is routed once")
 	_check(screen._pvp_hub.create_room_requested.get_connections().size() == 1 and screen._pvp_hub.join_room_requested.get_connections().size() == 1 and screen._pvp_hub.find_opponent_requested.get_connections().size() == 1, "Online room and matchmaking requests are routed once")
-	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(720, 360), Vector2i(844, 390)]:
 		root.size = dimensions
 		await _settle()
 		_check(root.get_visible_rect().encloses(screen._pvp_hub._switch.get_global_rect()), "PvP return switch fits")
@@ -121,6 +121,20 @@ func _verify_modes(screen: Control) -> void:
 			_check(root.get_visible_rect().encloses(action.get_global_rect()), "%s fits %s" % [action.text, dimensions])
 		_check(not screen._pvp_hub._status.get_global_rect().intersects(screen._pvp_hub._switch.get_global_rect()), "PvP copy clears return control")
 		await _capture("pvp_workspace_%dx%d" % [dimensions.x, dimensions.y])
+		if dimensions == Vector2i(844, 390) and "--motion-preview" in OS.get_cmdline_user_args():
+			var hub: Control = screen._pvp_hub
+			settings.reduced_motion = false
+			settings.settings_changed.emit()
+			for frame: int in 12:
+				await _capture("pvp_motion_%02d" % frame)
+				await create_timer(0.4).timeout
+			settings.reduced_motion = true
+			settings.settings_changed.emit()
+			var stopped: int = hub._tick
+			await create_timer(0.85).timeout
+			_check(hub._tick == stopped, "Reduced motion freezes both terminal effects")
+			settings.reduced_motion = false
+			settings.settings_changed.emit()
 	screen._pvp_hub._switch.pressed.emit()
 	_check(modal.visible and modal.get_mode_name() == &"PVP", "PvP switch opens selector with current mode")
 	modal._bands[0].pressed.emit()
@@ -145,52 +159,24 @@ func _verify_modes(screen: Control) -> void:
 
 func _verify_remote_pvp_art(screen: Control) -> void:
 	var assets: Node = root.get_node("AssetManager")
-	var entry_found: bool = false
-	var workspace_found: bool = false
-	for entry: Dictionary in assets._ui_catalog():
-		if str(entry.asset_id) == "ui_dashboard_pvp_workspace":
-			workspace_found = str(entry.cloudinary_url) == "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791168774/pvp_workspace_muted_v1.png"
-		if str(entry.asset_id) == "ui_dashboard_pvp":
-			entry_found = str(entry.cloudinary_url) == "https://res.cloudinary.com/nfd5bhkz/image/upload/v1791049225/pvp_command_v1.png"
-	_check(entry_found, "PvP catalog uses the supplied Cloudinary URL")
-	_check(workspace_found, "Muted workspace uses its separate supplied Cloudinary URL")
-	_check(assets._bundled_path("ui_dashboard_pvp").is_empty(), "PvP no longer depends on a bundled image")
 	var original: Texture2D = assets.get_texture("ui_dashboard_pvp")
-	var original_workspace: Texture2D = assets.get_texture("ui_dashboard_pvp_workspace")
-	_check(assets._bundled_path("ui_dashboard_pvp_workspace").is_empty(), "Workspace is remote-only")
-	var workspace_image: Image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
-	workspace_image.fill(Color("301018"))
-	var workspace: Texture2D = ImageTexture.create_from_image(workspace_image)
-	assets._textures["ui_dashboard_pvp_workspace"] = workspace
 	assets._textures["ui_dashboard_pvp"] = null
 	screen._mode_modal._refresh_art()
-	screen._pvp_hub._refresh_art()
 	_check(screen._mode_modal._bands[1].art == null, "Missing selector cache leaves usable color fallback")
-	_check(screen._pvp_hub._backdrop.texture == workspace, "Missing selector art does not affect workspace")
 	var image: Image = Image.create(4, 4, false, Image.FORMAT_RGBA8)
 	image.fill(Color("#FF5C5C"))
 	var downloaded: Texture2D = ImageTexture.create_from_image(image)
 	assets._textures["ui_dashboard_pvp"] = downloaded
-	# Even a partially successful catalog sync must refresh available artwork.
 	assets.sync_finished.emit(false)
 	_check(screen._mode_modal._bands[1].art == downloaded, "Selector refreshes after a late download")
-	_check(screen._pvp_hub._backdrop.texture == workspace, "Selector downloads cannot replace calm workspace art")
-	assets._textures["ui_dashboard_pvp_workspace"] = null
-	screen._pvp_hub._refresh_art()
-	_check(screen._pvp_hub._backdrop.texture == null, "Workspace supports native fallback when art is missing")
-	assets._textures["ui_dashboard_pvp_workspace"] = workspace
-	assets.sync_finished.emit(false)
-	_check(screen._pvp_hub._backdrop.texture == workspace, "Workspace refreshes independently after asset sync")
 	if original != null:
 		assets._textures["ui_dashboard_pvp"] = original
 	else:
 		assets._textures.erase("ui_dashboard_pvp")
-	if original_workspace != null:
-		assets._textures["ui_dashboard_pvp_workspace"] = original_workspace
-	else:
-		assets._textures.erase("ui_dashboard_pvp_workspace")
 	screen._mode_modal._refresh_art()
-	screen._pvp_hub._refresh_art()
+	var hub: Control = screen._pvp_hub
+	_check(hub._status.get_children() == [hub._create, hub._find, hub._join], "Center contains exactly the three online commands in order")
+	_check(hub._find.text == "FIND A MATCH" and hub._join.text == "JOIN A ROOM" and hub._create.text == "CREATE ROOM","Requested terminal commands")
 
 func _verify_greeting(screen: Control, handler: Control) -> void:
 	var player: Node = root.get_node("PlayerManager")

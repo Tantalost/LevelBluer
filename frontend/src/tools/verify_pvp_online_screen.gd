@@ -4,7 +4,7 @@ extends SceneTree
 const Session = preload("res://src/network/pvp_online_session.gd")
 const MODE_BOT: int = 0
 const MODE_ONLINE: int = 1
-const SECTIONS: int = 11
+const SECTIONS: int = 6
 const ONLINE_SCENE: String = "res://src/ui/screens/pvp/pvp_online_screen.tscn"
 const BOT_SCENE: String = "res://src/ui/screens/pvp/pvp_battle_screen.tscn"
 const HOST_ID: String = "stu-host"
@@ -140,6 +140,7 @@ func view(server_state: String, revision: int, extra: Dictionary = {}) -> Dictio
 	var out: Dictionary = {
 		"code": "ABC234",
 		"state": server_state,
+		"supports_flag": true,
 		"host_id": HOST_ID,
 		"guest_id": GUEST_ID,
 		"ready": {HOST_ID: false, GUEST_ID: false},
@@ -257,11 +258,7 @@ func _run() -> void:
 	await _check_bot_mode_unchanged()
 	await _check_create_flow()
 	await _check_join_flow()
-	await _check_answer_flow()
-	await _check_correct_and_timeout()
-	await _check_reconnect_restores()
-	await _check_opponent_disconnect()
-	await _check_match_finished()
+	await _check_flag_screen()
 	await _check_rating_presentation()
 	await _check_leave_cleanup()
 	await _check_leave_while_router_busy()
@@ -284,8 +281,8 @@ func _check_hub_and_routes() -> void:
 	var hub: Control = (load("res://src/ui/screens/dashboard/dashboard_pvp_hub.gd") as GDScript).new() as Control
 	root.add_child(hub)
 	await settle()
-	check(str(hub.get("_queue").text) == "CHALLENGE BOT", "the hub keeps CHALLENGE BOT")
-	check(str(hub.get("_create").text) == "CREATE ROOM" and str(hub.get("_join").text) == "JOIN ROOM", "the hub offers CREATE ROOM and JOIN ROOM")
+	check(str(hub.get("_queue").text) == "PRACTICE VS BOT", "the hub offers bot practice")
+	check(str(hub.get("_create").text) == "CREATE ROOM" and str(hub.get("_join").text) == "JOIN A ROOM", "the hub offers create and join commands")
 	var fired: Array[String] = []
 	hub.connect("battle_requested", func() -> void: fired.append("bot"))
 	hub.connect("create_room_requested", func() -> void: fired.append("create"))
@@ -310,7 +307,7 @@ func _check_bot_mode_unchanged() -> void:
 	root.add_child(bot)
 	await settle()
 	check(int(bot.call("battle_mode")) == MODE_BOT, "the bot screen runs in BOT mode")
-	check(bot.get("_battle") != null, "BOT mode still runs the local PvpBattle")
+	check(bot.get("_practice_panel") != null and bot.get("_practice") == null, "BOT mode opens local CTF Home before starting")
 	check(bot.find_child("OnlineSession", true, false) == null, "BOT mode never creates an online session")
 	bot.on_exit()
 	bot.queue_free()
@@ -329,7 +326,7 @@ func _check_create_flow() -> void:
 	check(http_calls.size() == 1 and str(http_calls[0]["path"]) == "/api/pvp/rooms", "Create Room posts once to /api/pvp/rooms")
 	check(screen._lobby_host.visible and screen._room_box.visible and not screen._entry.visible, "Create Room shows the lobby, not the code entry")
 	check(screen._code_label.text == "ABC234" and screen._share_label.text.contains("ABC234"), "the lobby shows a share-friendly room code")
-	check(not screen._hud.visible and not screen._arena.visible, "the battle stays hidden in the lobby")
+	check(screen._flag_screen == null, "the battle stays hidden in the lobby")
 	var socket: FakeSocket = sockets[0]
 	socket.push(view("waiting", 1, {"type": "room_state", "guest_id": null, "hp": {HOST_ID: 100}}))
 	pump(screen)
@@ -338,13 +335,12 @@ func _check_create_flow() -> void:
 	pump(screen)
 	check(screen._rival_name.text == "CONNECTED" and screen._opponent_label.text == "NOT READY", "the lobby shows the opponent connection and ready state")
 	await capture("pvp_lobby_1280x720")
-	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(844, 390)]:
+	for dimensions: Vector2i in [Vector2i(1280, 720), Vector2i(720, 360), Vector2i(844, 390)]:
 		root.size = dimensions
 		await settle()
 		var lobby: Rect2 = screen._lobby_host.get_global_rect()
 		for control: Control in [screen._code_label, screen._copy_button, screen._ready_button, screen._you_card, screen._rival_card]:
-			if dimensions.y >= 500:
-				check(lobby.grow(1.0).encloses(control.get_global_rect()), "%s fits the lobby without scrolling at %s" % [control.name, dimensions])
+			check(lobby.grow(1.0).encloses(control.get_global_rect()), "%s fits the lobby without scrolling at %s" % [control.name, dimensions])
 			check(root.get_visible_rect().size.x >= control.get_global_rect().end.x, "%s stays on screen horizontally at %s" % [control.name, dimensions])
 		check(screen._copy_button.autowrap_mode == TextServer.AUTOWRAP_OFF and screen._ready_button.autowrap_mode == TextServer.AUTOWRAP_OFF, "lobby buttons never wrap")
 	await capture("pvp_lobby_844x390")
@@ -352,21 +348,15 @@ func _check_create_flow() -> void:
 	await settle()
 	screen._ready_button.pressed.emit()
 	screen._ready_button.pressed.emit()
-	check(socket.sent_of("ready").size() == 1 and same_ints(socket.sent_of("ready")[0], {"type": "ready"}), "READY sends one ready message")
+	check(socket.sent_of("ready").size() == 1 and socket.sent_of("ready")[0].get("mode") == "event_flag_v1", "READY sends one ready message")
 	check(screen._ready_button.disabled, "READY locks after sending")
 	socket.push(view("waiting", 3, {"type": "room_state", "ready": {HOST_ID: true, GUEST_ID: true}}))
 	pump(screen)
 	check(screen._lobby_host.visible and screen._ready_label.text == "READY" and screen._opponent_label.text == "READY", "both ready flags come from the server")
-	check(session.state == Session.State.WAITING and not screen._countdown.visible, "the battle does not start until the server countdown")
-	socket.push(event("countdown_started", 4, {"round": 1, "countdown_ends_at": 63000}))
+	check(session.state == Session.State.WAITING and screen._flag_screen == null, "Ready waits for countdown")
+	socket.push(view("abandoned",4,{"type":"room_state","retired_by":GUEST_ID,"finish_reason":"retired"}))
 	pump(screen)
-	check(not screen._lobby_host.visible and screen._countdown.visible and screen._hud.visible, "the server countdown opens the battle")
-	check(screen._status.text == "GET READY" and screen._round_label.text == "ROUND 1", "the countdown shows the server round")
-	check(screen._countdown_value.text == "3", "the countdown digit uses the server deadline")
-	socket.push(round_event(5, 1))
-	pump(screen)
-	check(screen._session == session and screen._sessions_created == 1 and factory_calls == 1, "the same session survives lobby -> countdown -> round")
-	check(screen.get("_battle") == null, "ONLINE mode never creates a local PvpBattle")
+	check(screen._flag_screen._files_caption.text.contains("ROOM CLOSED"), "Room closed before play gets neutral CRT report")
 	await close_screen(screen)
 	sections_done += 1
 
@@ -375,9 +365,12 @@ func _check_join_flow() -> void:
 	reset_fakes()
 	var screen: Control = await open_screen(GUEST_ID, "join")
 	check(screen._entry.visible and not screen._room_box.visible and http_calls.is_empty(), "Join Room asks for a code before any request")
+	root.size = Vector2i(720,360)
+	await settle()
+	await capture("pvp_terminal_join_720")
 	screen._code_input.text = "   "
 	screen._join_button.pressed.emit()
-	check(http_calls.is_empty() and screen._lobby_error.text.begins_with("Enter the room code"), "an empty code is rejected locally")
+	check(http_calls.is_empty() and screen._lobby_error.is_visible_in_tree() and screen._lobby_error.text.begins_with("Enter the room code"), "an empty code gets visible local feedback")
 	http_replies.append({"ok": false, "status": 404, "data": {"error": "Room not found", "code": "room_not_found"}})
 	screen._code_input.text = "  zz9 99 "
 	screen._join_button.pressed.emit()
@@ -397,145 +390,23 @@ func _check_join_flow() -> void:
 	sections_done += 1
 
 
-func _check_answer_flow() -> void:
-	var screen: Control = await active_screen()
-	var socket: FakeSocket = sockets.back()
-	check(screen._quiz.visible and screen._status.text == "CHOOSE AN ANSWER", "round_started opens the question")
-	var prompt: Label = screen._body.get_child(0) as Label
-	check(prompt != null and prompt.text == "What is phishing?", "the question text comes from round_started")
-	check(button_texts(screen) == OPTIONS, "options come from the server in server order")
-	check(not all_disabled(screen), "answers unlock when the round starts")
-	check(screen._timer.text == "10.0s", "the timer shows the server deadline")
-	screen._answer_buttons[2].pressed.emit()
-	screen._answer_buttons[1].pressed.emit()
-	var answers: Array[Dictionary] = socket.sent_of("answer")
-	check(answers.size() == 1, "a second click after the local lock sends nothing")
-	check(answers.size() == 1 and same_ints(answers[0], {"type": "answer", "round": 1, "option_index": 2}), "an answer sends only type, round, and option_index")
-	check(all_disabled(screen), "answer buttons lock after one submission")
-	check(screen._session.my_hp() == 100 and screen._player_hp.text == "100" and screen._bot_hp.text == "100", "submitting never changes HP locally")
-	socket.push(event("answer_locked", 4, {"round": 1, "option_index": 2, "correct": false}))
-	pump(screen)
-	check(screen._status.text == "INCORRECT — WAITING FOR RIVAL", "a wrong answer shows the waiting state")
-	check(screen._session.state == Session.State.ACTIVE and screen._quiz.visible and not screen._result_host.visible, "a wrong answer does not end the round")
-	check(all_disabled(screen), "a wrong answer keeps only the local buttons locked")
-	socket.push(event("round_result", 5, {"round": 1, "winner_id": GUEST_ID, "reason": "correct", "damage": {HOST_ID: 25}, "hp": {HOST_ID: 75, GUEST_ID: 100}, "correct_option": 0, "result_ends_at": 64000}))
-	pump(screen)
-	check(screen._result_host.visible and screen._result_title.text == "RIVAL ANSWERED FIRST", "the round result comes from the server")
-	check(screen._result_note.text == "Answer: A trick", "the revealed answer comes from the server result")
-	check(screen._player_hp.text == "75" and screen._player_bar.value == 75 and screen._bot_hp.text == "100", "HP changes only from the server result")
-	await close_screen(screen)
-	sections_done += 1
-
-
-func _check_correct_and_timeout() -> void:
-	var screen: Control = await active_screen()
-	var socket: FakeSocket = sockets.back()
-	screen._answer_buttons[0].pressed.emit()
-	socket.push(event("answer_locked", 4, {"round": 1, "option_index": 0, "correct": true}))
-	pump(screen)
-	check(screen._bot_hp.text == "100", "a correct lock alone deals no damage")
-	socket.push(event("round_result", 5, {"round": 1, "winner_id": HOST_ID, "reason": "correct", "damage": {GUEST_ID: 25}, "hp": {HOST_ID: 100, GUEST_ID: 75}, "correct_option": 0}))
-	pump(screen)
-	check(screen._result_title.text == "CORRECT — ATTACK!" and screen._bot_hp.text == "75", "the server decides who answered first and the damage")
-	check(screen._fx_round == 1, "the result animation plays once for the resolved round")
-	socket.push(event("countdown_started", 6, {"round": 2, "countdown_ends_at": 66500}))
-	socket.push(round_event(7, 2, "Which link is safe?"))
-	pump(screen)
-	check((screen._body.get_child(0) as Label).text == "Which link is safe?" and not all_disabled(screen), "the next round renders fresh, unlocked answers")
-	check(screen._round_label.text == "ROUND 2", "the round label follows the server")
-	socket.push(event("round_result", 8, {"round": 2, "winner_id": null, "reason": "timeout", "damage": {}, "hp": {HOST_ID: 100, GUEST_ID: 75}, "correct_option": 1}))
-	pump(screen)
-	check(screen._result_title.text == "TIME UP — NO DAMAGE" and screen._player_hp.text == "100" and screen._bot_hp.text == "75", "a timeout shows no damage")
-	check(screen._session.state == Session.State.ROUND_RESULT and not screen._end_host.visible, "a timeout does not end the match")
-	await close_screen(screen)
-	sections_done += 1
-
-
-func _check_reconnect_restores() -> void:
-	var screen: Control = await active_screen()
-	var socket: FakeSocket = sockets.back()
-	screen._answer_buttons[1].pressed.emit()
-	socket.drop(1006)
-	pump(screen)
-	check(screen._session.state == Session.State.RECONNECTING, "a dropped socket starts reconnecting")
-	check(screen._banner.visible and screen._banner.text.contains("RECONNECTING"), "the screen shows the reconnecting status")
-	check(screen._quiz.visible and not screen._lobby_host.visible, "the player stays on the online battle while reconnecting")
-	clock_ms += 600
-	pump(screen)
-	check(sockets.size() == 2 and sockets[1].url == socket.url, "reconnect reuses the same room")
-	check(sockets[1].headers == socket.headers, "reconnect reuses the same JWT")
-	var fx_before: int = screen._fx_round
-	sockets[1].push(view("active", 12, {"type": "room_state", "round_number": 2, "round": round_payload(2, "Restored question?"), "you_answered": true, "hp": {HOST_ID: 50, GUEST_ID: 75}}))
-	pump(screen)
-	check(screen._session.state == Session.State.ACTIVE and not screen._banner.visible, "recovered room_state clears the reconnect status")
-	check((screen._body.get_child(0) as Label).text == "Restored question?" and button_texts(screen) == OPTIONS, "the recovered round comes from the server")
-	check(all_disabled(screen) and screen._status.text == "ANSWER LOCKED — WAITING", "a recovered answered round stays locked")
-	check(screen._player_hp.text == "50" and screen._bot_hp.text == "75" and screen._round_label.text == "ROUND 2", "HP and round are restored from the server")
-	check(screen._fx_round == fx_before and not screen._result_host.visible, "recovery does not replay result animations")
-	check(screen._sessions_created == 1 and factory_calls == 1, "reconnecting keeps the same session")
-	await close_screen(screen)
-	sections_done += 1
-
-
-func _check_opponent_disconnect() -> void:
-	var screen: Control = await active_screen()
-	var socket: FakeSocket = sockets.back()
-	socket.push(event("opponent_disconnected", 4, {"user_id": GUEST_ID, "grace_ends_at": 75000}))
-	pump(screen)
-	check(screen._banner.visible and screen._banner.text.begins_with("RIVAL DISCONNECTED"), "an opponent drop shows the grace status")
-	check(screen._banner.text.contains("15s"), "the grace countdown uses the server deadline")
-	check(screen._session.state == Session.State.ACTIVE and screen._quiz.visible and not screen._end_host.visible, "an opponent drop does not end the match locally")
-	socket.push(event("opponent_connected", 5, {"user_id": GUEST_ID}))
-	pump(screen)
-	check(not screen._banner.visible, "the opponent returning clears the warning")
-	await close_screen(screen)
-	sections_done += 1
-
-
-func _check_match_finished() -> void:
-	var screen: Control = await active_screen()
-	var socket: FakeSocket = sockets.back()
-	socket.push(event("match_finished", 4, {"state": "abandoned", "reason": "forfeit", "winner_id": HOST_ID, "retired_by": GUEST_ID, "hp": {HOST_ID: 100, GUEST_ID: 100}}))
-	pump(screen)
-	check(screen._end_host.visible and not screen._quiz.visible, "match_finished ends the battle UI")
-	check(screen._end_title.text == "VICTORY" and screen._end_rounds.text == "RIVAL FORFEITED — CONNECTION LOST", "the forfeit result comes from the server")
-	var rematch: Control = screen._footer.get_node("RematchButton") as Control
-	var leave: Control = screen._footer.get_node("LeaveButton") as Control
-	check(not rematch.visible and leave.visible, "the online result offers leave, not a local rematch")
-	socket.drop(1000)
-	clock_ms += 5000
-	pump(screen)
-	check(sockets.size() == 1 and screen._session.state == Session.State.FINISHED and not screen._banner.visible, "a finished match never reconnects")
-	await close_screen(screen)
-	screen = await active_screen()
-	socket = sockets.back()
-	socket.push(event("round_result", 4, {"round": 1, "winner_id": GUEST_ID, "reason": "correct", "damage": {HOST_ID: 25}, "hp": {HOST_ID: 0, GUEST_ID: 100}, "correct_option": 0}))
-	socket.push(event("match_finished", 5, {"state": "finished", "reason": "ko", "winner_id": GUEST_ID, "retired_by": null, "hp": {HOST_ID: 0, GUEST_ID: 100}}))
-	pump(screen)
-	check(screen._end_title.text == "DEFEAT" and screen._end_rounds.text == "KNOCKOUT" and screen._end_you_hp.text == "YOU  0", "a knockout defeat is shown from server HP")
-	await close_screen(screen)
-	sections_done += 1
-
-
 func _check_rating_presentation() -> void:
 	var screen: Control = await active_screen()
 	var socket: FakeSocket = sockets.back()
 	socket.push(event("round_result", 4, {"round": 1, "winner_id": HOST_ID, "damage": {GUEST_ID: 20}, "hp": {HOST_ID: 100, GUEST_ID: 80}, "charge": {HOST_ID: 3, GUEST_ID: 0}}))
 	pump(screen)
-	check(screen._player_charge_label.text.contains("OVERCLOCK +5"), "server charge drives the HUD")
 	socket.push(event("match_finished", 5, {"winner_id": HOST_ID, "origin": "private", "match_id": "fixture", "reason": "ko", "stats": {HOST_ID: {"correct": 5}, GUEST_ID: {"correct": 2}}}))
 	pump(screen)
-	check(screen._end_reward.text.contains("NO RATING CHANGE") and screen._rating_http == null, "private matches never fetch or invent rewards")
-	check(screen._end_you_correct.text == "CORRECT  5", "server result statistics are displayed")
+	check(screen._rating_line.contains("NO RATING CHANGE") and screen._rating_http == null, "private matches never fetch or invent rewards")
 	var auth: Node = root.get_node("AuthService")
 	var original: String = str(auth.get("_token"))
 	auth.set("_token", jwt(HOST_ID))
 	screen._rating_match = "fixture"
 	screen._rating_owner = HOST_ID
 	screen._rating_attempts = 5
-	screen._end_reward.text = "RATING UPDATE PENDING"
+	screen._rating_line = "RATING UPDATE PENDING"
 	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 503, PackedStringArray(), "{}".to_utf8_buffer())
-	check(not screen._rating_applied and screen._end_reward.text == "RATING UPDATE PENDING", "outage does not invent a points change")
+	check(not screen._rating_applied and screen._rating_line == "RATING UPDATE PENDING", "outage does not invent a points change")
 	var record: Dictionary = {"status": "applied", "match_id": "fixture", "points_before": 1190, "points_after": 1206, "points_delta": 16, "rank_before": "Silver", "rank_after": "Gold", "current_threshold": 1200, "next_threshold": 1600}
 	var malformed: Dictionary = record.duplicate()
 	malformed["points_delta"] = 99
@@ -548,12 +419,12 @@ func _check_rating_presentation() -> void:
 	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), JSON.stringify(record).to_utf8_buffer())
 	check(screen._reward_tween == animation, "duplicate confirmation does not restart reward animation")
 	await create_timer(1.4).timeout
-	check(screen._end_reward.text == "1206 PVP POINTS" and screen._end_rank.text.begins_with("RANK UP"), "animation settles at confirmed rating and rank")
+	check(screen._rating_line == "1206 PVP POINTS" and screen._rating_detail.begins_with("RANK UP"), "animation settles at confirmed rating and rank")
 	auth.set("_token", jwt(GUEST_ID))
 	record["points_after"] = 1220
 	record["points_delta"] = 30
 	screen._rating_received(HTTPRequest.RESULT_SUCCESS, 200, PackedStringArray(), JSON.stringify(record).to_utf8_buffer())
-	check(screen._end_reward.text == "1206 PVP POINTS", "account-switched response is ignored")
+	check(screen._rating_line == "1206 PVP POINTS", "account-switched response is ignored")
 	auth.set("_token", original)
 	settings.set("reduced_motion", prior)
 	await close_screen(screen)
@@ -655,4 +526,121 @@ func _check_source_guards() -> void:
 	var source: String = FileAccess.get_file_as_string("res://src/ui/screens/pvp/pvp_online_screen.gd")
 	for banned: String in ["Quiz.", "grade(", "answer_index", "update_mastery", "pvp_tokens", "_battle", "Battle.", "submit_player", "damage_to", "_bank"]:
 		check(not source.contains(banned), "ONLINE mode source never uses %s" % banned)
-	check(source.contains("submit_answer(index)"), "ONLINE answers go only through PvpOnlineSession.submit_answer")
+	check(source.contains("_session.send_flag_action(action,target)"), "Online capture commands go through the authoritative session")
+
+func _check_flag_screen() -> void:
+	reset_fakes()
+	http_replies.append({"ok":true,"status":201,"data":view("waiting",0,{"supports_flag":true})})
+	var screen: Control = await open_screen(HOST_ID,"create")
+	check(screen._role_button.visible,"CTF role choice available in the room")
+	var socket: FakeSocket = sockets[0]
+	socket.push(view("waiting",1,{"type":"room_state","supports_flag":true}))
+	pump(screen)
+	root.size = Vector2i(720,360)
+	await settle()
+	await capture("flag_lobby_720")
+	screen._ready_button.pressed.emit()
+	check(socket.sent_of("ready")[0].get("mode") == "event_flag_v1","Ready requests the flag race")
+	var data: Dictionary = {"role":"attacker","step":0,"rival_step":0,"inspected":false,"revision":0,
+		"ends_at":180000,"node":"INVITATION","inspect_label":"Expand destination","summary":"Club poster pack / View event artwork","detail":"","targets":{},"feedback":""}
+	socket.push(view("active",3,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	root.size = Vector2i(844,390)
+	await settle()
+	var terminal: Control = screen._flag_screen
+	check(terminal.visible and not screen._terminal.visible,"Flag terminal replaces duel")
+	check(terminal._home.visible and not terminal._files.visible and not terminal._map.visible,"Attacker begins at computer Home")
+	await capture("flag_home_844")
+	terminal._shortcuts[0].pressed.emit()
+	check(terminal._shell.visible,"Terminal shortcut opens the command log")
+	await capture("flag_terminal_844")
+	terminal._shell_action.pressed.emit()
+	check(terminal._files.visible and socket.sent_of("flag_action").is_empty(),"Opening Files sends no gameplay command")
+	terminal._action.pressed.emit()
+	var actions: Array[Dictionary] = socket.sent_of("flag_action")
+	check(actions.size() == 1 and actions[0].get("action") == "inspect","Evidence inspection goes to server")
+	data.merge({"inspected":true,"revision":1,"targets":{"relay-a":"RELAY-A","relay-b":"RELAY-B"},"detail":"Displayed: design.school.example\nExpanded: relay-b.example/event-pack\nTrace the delivery to the host in the expanded address."},true)
+	socket.push(view("active",4,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	await settle()
+	await capture("flag_attacker_844")
+	terminal._rail[0].pressed.emit()
+	check(terminal._home.visible and int(terminal._data.revision)==1,"Home preserves inspected evidence")
+	terminal._shortcuts[2].pressed.emit()
+	check(terminal._map.visible,"Netmap opens through the Home shortcut")
+	await capture("flag_netmap_844")
+	check(not terminal._nodes[1].get_global_rect().intersects(terminal._nodes[2].get_global_rect()),"Map route targets do not overlap after deferred layout")
+	terminal._nodes[2].pressed.emit()
+	terminal._action.pressed.emit()
+	actions = socket.sent_of("flag_action")
+	check(actions.size() == 2 and actions[1].target == "relay-b" and int(actions[1].revision)==1,"Route uses selected host and personal revision")
+	root.size = Vector2i(720,360)
+	data.merge({"role":"defender","step":1,"revision":5,"node":"INCIDENT RECORD","targets":{"banner.chat":"banner.chat","poster.chat":"poster.chat"},"detail":"Original: Mika asked about the handmade banner. Amani praised the banner. Case DL-817 names banner.chat as the original thread. Attach it to the incident.","feedback":"Access denied. Check the source record and delivery reference."},true)
+	socket.push(view("active",5,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	terminal._nodes[1].pressed.emit()
+	await settle()
+	check(terminal._files.visible and not terminal._map.visible,"Small phone shows one readable application window")
+	check(root.get_visible_rect().encloses(terminal._action.get_global_rect()),"Flag action fits compact screen")
+	await capture("flag_defender_720")
+	screen._session._give_up()
+	check(terminal._mode=="lost" and not terminal._action.disabled,"Exhausted reconnect exposes a touch retry")
+	terminal._action.pressed.emit()
+	check(screen._session.room_code=="ABC234" and not screen._session.flag.is_empty(),"Manual retry retains room identity and evidence")
+	socket=sockets.back()
+	socket.push(view("active",6,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	check(terminal._mode=="active","Manual retry restores the flag interface")
+	socket.push(event("match_finished",7,{"winner_id":GUEST_ID,"reason":"flag_retrieved","flag":data}))
+	pump(screen)
+	check(terminal._mode=="done" and "DEFEAT" in terminal._files_caption.text,"Confirmed winner reaches the flag result")
+	await settle()
+	await capture("flag_result_720")
+	check(terminal.visible and screen._session.state==Session.State.FINISHED,"Deferred legacy recovery cannot replace a confirmed flag result")
+	await close_screen(screen)
+	# A newly connected defender also starts at Home after the synchronized countdown.
+	reset_fakes()
+	http_replies.append({"ok":true,"status":201,"data":view("waiting",0,{"supports_flag":true})})
+	screen = await open_screen(HOST_ID,"create")
+	root.size = Vector2i(720,360)
+	socket = sockets[0]
+	data.merge({"role":"defender","step":0,"inspected":false,"revision":0,"node":"INVITATION","targets":{},"detail":"","feedback":""},true)
+	socket.push(view("countdown",1,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	terminal = screen._flag_screen
+	terminal._shortcuts[1].pressed.emit()
+	terminal._action.pressed.emit()
+	check(socket.sent_of("flag_action").is_empty(),"Countdown prevents early inspection")
+	socket.push(view("active",2,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	await settle()
+	check(terminal._home.visible,"Defender enters Home when countdown finishes")
+	for button: Button in terminal._shortcuts:
+		check(button.get_global_rect().size.y >= 44,"Home shortcuts have touch-sized targets")
+	await capture("flag_home_defender_720")
+	var settings: Node = root.get_node("SettingsService")
+	var reduced_before: bool = bool(settings.get("reduced_motion"))
+	settings.set("reduced_motion",true)
+	terminal._rail[3].pressed.emit()
+	terminal._nodes[3].pressed.emit()
+	check(terminal._map.visible and socket.sent_of("flag_action").is_empty(),"Locked flag cannot skip evidence from Netmap")
+	data.merge({"step":2,"revision":4,"node":"QUARANTINE","inspect_label":"Inspect flag file","summary":"Protected event folder / DL-817"},true)
+	socket.push(view("active",3,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	terminal._action.pressed.emit()
+	data.merge({"inspected":true,"revision":5,"detail":"DL-817 / EVENT.FLAG\nMove the verified flag into quarantine.","targets":{"flag":"Secure flag"}},true)
+	socket.push(view("active",4,{"type":"room_state","supports_flag":true,"flag":data}))
+	pump(screen)
+	terminal._action.pressed.emit()
+	terminal._nodes[3].pressed.emit()
+	terminal._action.pressed.emit()
+	actions = socket.sent_of("flag_action")
+	check(actions.back().action=="route" and actions.back().target=="flag","Files and Netmap finish with a server capture command")
+	data.merge({"step":3,"revision":6,"inspected":false,"targets":{}},true)
+	socket.push(event("match_finished",5,{"winner_id":HOST_ID,"reason":"flag_secured","flag":data}))
+	pump(screen)
+	await settle()
+	check(terminal._files.visible and terminal._mode=="done","Reduced motion preserves the result window")
+	await capture("flag_victory_720")
+	settings.set("reduced_motion",reduced_before)
+	await close_screen(screen)

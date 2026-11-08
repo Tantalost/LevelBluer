@@ -4,6 +4,7 @@ signal practice_action(action: String)
 signal evidence_changed(snapshot: Dictionary)
 signal photo_taken(preview: Texture2D)
 signal thought_requested(text: String, flags_complete: bool)
+signal voice_requested(id: String)
 
 const INK: Color = Color("101623")
 var mode: String = "read"
@@ -404,6 +405,7 @@ func mark_flag(id: String) -> void:
 	}
 	if not explanations.has(id):
 		thought_requested.emit("A friendly greeting is not evidence by itself. What is this message asking me to do?", false)
+		voice_requested.emit("CLUE_04")
 		return
 	var flags: Array = evidence.get("flags", [])
 	if not flags.has(id):
@@ -412,6 +414,7 @@ func mark_flag(id: String) -> void:
 	_refresh_passage()
 	_changed()
 	thought_requested.emit(explanations[id], flags_complete())
+	voice_requested.emit({"reward":"CLUE_01","pressure":"CLUE_02","password":"CLUE_03"}[id])
 	AudioManager.play_sfx("ui_confirm")
 
 func _show_practice_sender() -> void:
@@ -421,6 +424,7 @@ func _show_practice_sender() -> void:
 	_changed()
 	_render()
 	thought_requested.emit("Prize Desk is only a display name. I need the full address. The domain is the part after @; I'll record it in Notepad.", false)
+	voice_requested.emit("TUT_10")
 
 func check_domain() -> void:
 	if _locked or mode != "notes" or not _notepad_open or not is_instance_valid(_domain_input):
@@ -428,12 +432,15 @@ func check_domain() -> void:
 	var answer: String = _domain_input.text.strip_edges().to_lower()
 	if not bool(evidence.get("sender_opened", false)):
 		thought_requested.emit("I need to open FROM in Mail first.", false)
+		voice_requested.emit("NOTE_01")
 	elif answer != "prize-claim.example":
 		thought_requested.emit("That doesn't match the sender's domain. I can return to Mail and check the part after @.", false)
+		voice_requested.emit("NOTE_02")
 	else:
 		evidence["domain"] = answer
 		_changed()
 		thought_requested.emit("Domain saved. An address is a clue—not proof of who sent the offer. Next, I'll keep a screenshot with its context.", false)
+		voice_requested.emit("NOTE_03")
 		AudioManager.play_sfx("ui_confirm")
 
 func _hint() -> void:
@@ -441,6 +448,7 @@ func _hint() -> void:
 		evidence["hint_used"] = true
 		_changed()
 		thought_requested.emit("The domain is the part after @. Close Notepad and reopen Mail if you need another look." if mode == "notes" else "Look for an unexpected reward, a rushed deadline, and a request for a secret.", false)
+		voice_requested.emit("HINT_02" if mode == "notes" else "HINT_01")
 
 func ready_for_capture() -> bool:
 	var flags: Array = evidence.get("flags", [])
@@ -513,12 +521,14 @@ func _frame_hint() -> void:
 	_camera.frame = Rect2(0.02, 0.02, 0.96, 0.96)
 	_camera._commit()
 	_note.text = "Sender, subject and request are inside the frame. Capture when ready."
+	voice_requested.emit("CAPTURE_02")
 
 func take_photo() -> void:
 	if _locked or _taking or mode != "capture" or not ready_for_capture() or not is_instance_valid(_camera):
 		return
 	if not _camera.complete():
 		_note.text = "Some context is outside the frame. Include the sender at the top and the password request below."
+		voice_requested.emit("CAPTURE_01")
 		(_content.get_parent() as ScrollContainer).ensure_control_visible(_note)
 		AudioManager.play_sfx("ui_error")
 		return

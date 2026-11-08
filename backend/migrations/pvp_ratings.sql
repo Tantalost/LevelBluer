@@ -80,7 +80,7 @@ create or replace function public.levelblue_pvp_is_rated(m public.pvp_matches, c
 language sql stable set search_path = public, pg_temp as $$
     select m.origin = 'matchmaking'
        and m.started_at is not null
-       and m.finish_reason in ('ko', 'forfeit_leave', 'forfeit_disconnect')
+       and m.finish_reason in ('ko', 'forfeit_leave', 'forfeit_disconnect', 'flag_retrieved', 'flag_secured', 'flag_timeout')
        and m.finished_at >= cutoff
 $$;
 

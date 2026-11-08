@@ -3,6 +3,7 @@ extends BaseScreen
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 var _topic: Label
 var _progress: Label
+var _explanation: Label
 var _question: Label
 var _options: GridContainer
 var _next: Button
@@ -19,10 +20,11 @@ var _selected: Variant = null
 var _loading := false
 var _module_id := ""
 var _finished := false
-var _review: Array[Dictionary] = []
+var _review: Dictionary = {}
 var _review_index := 0
 var _side: PanelContainer
 var _brief: VBoxContainer
+var _review_prompt: VBoxContainer
 var _right: PanelContainer
 var _example: VBoxContainer
 var _visual: Dictionary = {}
@@ -37,7 +39,7 @@ func _ready() -> void:
 	_back = shell.back
 	var layout: VBoxContainer = shell.layout
 	_layout = layout
-	_progress = UI.label("Preparing your cards...", 24, UI.TEAL)
+	_progress = UI.label("Loading questions...", 24, UI.TEAL)
 	layout.add_child(_progress)
 	_bar = ProgressBar.new()
 	_bar.custom_minimum_size.y = 10
@@ -60,9 +62,11 @@ func _ready() -> void:
 	brief.add_child(_topic)
 	brief.add_child(UI.label("A quick starting-point check, not a pass/fail barrier.", 25))
 	brief.add_child(HSeparator.new())
-	_guide = UI.label("Choose an answer, decide true or false, or recall a short term. No timer. Take your time.", 24, UI.MUTED)
+	_guide = UI.label("Choose the answer you believe is correct. Take your time.", 24, UI.MUTED)
 	brief.add_child(_guide)
 	brief.add_child(UI.label("Your first responses set your baseline. Review the answers after you finish, then start the lessons.", 22, UI.GOLD))
+	_review_prompt = UI.scroll_column(side)
+	_review_prompt.get_parent().hide()
 	var right := UI.panel(panes, Color("101e28"))
 	_right = right
 	_example = UI.column(side, 12)
@@ -82,21 +86,31 @@ func _ready() -> void:
 	_options.add_theme_constant_override("h_separation", 12)
 	_options.add_theme_constant_override("v_separation", 12)
 	_card.add_child(_options)
+	_explanation = UI.label("", 24, UI.TEXT)
+	_card.add_child(_explanation)
+	_explanation.hide()
 	_error = UI.label("", 22, UI.GOLD)
 	_error.hide()
 	column.add_child(_error)
 	_review_nav = HBoxContainer.new()
 	_review_nav.add_theme_constant_override("separation", 16)
-	column.add_child(_review_nav)
+	var actions: HBoxContainer = HBoxContainer.new()
+	actions.add_theme_constant_override("separation", 16)
+	column.add_child(actions)
+	_review_nav.size_flags_horizontal = SIZE_EXPAND_FILL
+	_review_nav.size_flags_stretch_ratio = 2
+	actions.add_child(_review_nav)
 	_review_nav.hide()
 	_next = UI.button("SAVE ANSWER  >", _on_next_pressed, true)
 	_next.disabled = true
-	column.add_child(_next)
+	_next.size_flags_horizontal = SIZE_EXPAND_FILL
+	actions.add_child(_next)
 	resized.connect(_fit_example)
 
 func on_enter(args: Dictionary) -> void:
 	_module_id = str(args.get("module_id", "mod_01")).strip_edges()
 	_finished = false
+	_explanation.hide()
 	_review_nav.hide()
 	_index = 0
 	_answers.clear()
@@ -141,39 +155,59 @@ func _show_question() -> void:
 	var question: Dictionary = _questions[_index]
 	var module := LessonCatalog.module_by_id(_module_id)
 	_topic.text = str(module.get("title", question.get("topic", "")))
-	_progress.text = "CARD %02d OF %02d    /    %d ANSWERED" % [_index + 1, _questions.size(), _answers.size()]
+	_progress.text = "QUESTION %02d OF %02d    /    %d ANSWERED" % [_index + 1, _questions.size(), _answers.size()]
 	_bar.max_value = _questions.size()
 	_bar.value = _answers.size()
 	_question.text = str(question.get("text", ""))
 	_update_example(int(question.get("id", -1)), _question.text, false)
 	_next.text = "FINISH PRE-TEST  >" if _index == _questions.size() - 1 else "SAVE ANSWER  >"
 	_next.disabled = true
-	UI.clear(_options)
 	(_card.get_parent() as ScrollContainer).scroll_vertical = 0
 	var kind := str(question.get("type", "multiple_choice"))
 	match kind:
 		"true_false":
 			_format.text = "TRUE OR FALSE  /  DECIDE"
 			_guide.text = "Decide whether the statement is true or false. Choose the answer you believe now."
-			_add_option("True", true)
-			_add_option("False", false)
+
 		"multiple_choice":
 			_format.text = "CHOOSE ONE" if not _visual.is_empty() else "MULTIPLE CHOICE  /  RECOGNIZE"
 			_guide.text = "Read every option, then choose the single best answer. Your choice is saved when you continue."
-			var options: Array = question.get("options", [])
-			for i in options.size():
-				_add_option(str(options[i]), i)
 		_:
-			_show_error("This card format is not supported. Please update the game.")
+			_show_error("This question format is not supported. Please update the game.")
+			return
+	_show_choices(question)
 	_fit_example.call_deferred()
 
-func _add_option(text: String, value: Variant) -> void:
-	var button := UI.button(text, Callable())
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.size_flags_horizontal = SIZE_EXPAND_FILL
-	button.size_flags_vertical = SIZE_EXPAND_FILL
-	button.pressed.connect(_select_option.bind(button, value))
-	_options.add_child(button)
+func _show_choices(question: Dictionary, review: Dictionary = {}) -> void:
+	UI.clear(_options)
+	var binary: bool = question.type == "true_false"
+	var choices: Array = ["True", "False"] if binary else question.options
+	for index: int in choices.size():
+		var value: Variant = index
+		if binary:
+			value = index == 0
+		var button: Button = UI.button(str(choices[index]), Callable())
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.size_flags_horizontal = SIZE_EXPAND_FILL
+		button.size_flags_vertical = SIZE_EXPAND_FILL
+		_options.add_child(button)
+		if review.is_empty():
+			button.pressed.connect(_select_option.bind(button, value))
+			continue
+		button.disabled = true
+		button.focus_mode = Control.FOCUS_NONE
+		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var correct: bool = value == review.answer
+		var chosen: bool = value == review.submitted
+		if correct:
+			var label: String = "Your answer was correct" if chosen else "Correct answer"
+			button.text = "%s\n%s" % [label, choices[index]]
+			button.add_theme_stylebox_override("disabled", UI.box(Color("#153B37"), Color("#33D17A"), 10))
+			button.add_theme_color_override("font_disabled_color", UI.TEXT)
+		elif chosen:
+			button.text = "Your answer\n%s" % choices[index]
+			button.add_theme_stylebox_override("disabled", UI.box(UI.PANEL, UI.GOLD, 10))
+			button.add_theme_color_override("font_disabled_color", UI.TEXT)
 
 func _select_option(button: Button, value: Variant) -> void:
 	if _loading or _finished or is_instance_valid(_preview):
@@ -229,15 +263,14 @@ func _submit() -> void:
 
 func _show_results() -> void:
 	_finished = true
-	_review = PretestBank.review_cards(_module_id, _answers)
+	_review = PretestBank.review_by_question(_module_id, _answers)
 	_review_index = 0
 	_bar.value = _questions.size()
 	var correct := 0
-	for card in _review:
-		if card.correct:
+	for item: Dictionary in _review.values():
+		if item.correct:
 			correct += 1
 	_progress.text = "CHECK-IN COMPLETE    /    %d OF %d CORRECT    /    100%% ANSWERED" % [correct, _review.size()]
-	_guide.text = "Review your answers like flashcards. Corrections are for learning; they do not change your recorded baseline."
 	_next.text = "START LESSONS  >"
 	_next.disabled = false
 	_show_review_card()
@@ -245,26 +278,14 @@ func _show_results() -> void:
 func _show_review_card() -> void:
 	if _review.is_empty():
 		return
-	var card: Dictionary = _review[_review_index]
-	_format.text = "REVIEW CARD %02d / %02d" % [_review_index + 1, _review.size()]
-	_question.text = str(card.question)
-	_update_example(int(card.get("id", -1)), _question.text, true)
-	UI.clear(_options)
-	_options.add_theme_constant_override("v_separation", 22)
-	_card.add_theme_constant_override("separation", 24)
-	var verdict: Label = UI.label("CORRECT / Well spotted" if card.correct else "REVISIT / A clue to practice", 25, UI.TEAL if card.correct else UI.GOLD)
-	verdict.size_flags_horizontal = SIZE_EXPAND_FILL
-	_options.add_child(verdict)
-	var submitted_panel: PanelContainer = UI.panel(_options, Color("#102040"))
-	submitted_panel.size_flags_horizontal = SIZE_EXPAND_FILL
-	var submitted: VBoxContainer = UI.column(submitted_panel, 12)
-	submitted.add_child(UI.label("YOUR ANSWER", 22, UI.MUTED))
-	submitted.add_child(UI.label(str(card.submitted), 28))
-	var answer_panel: PanelContainer = UI.panel(_options, Color("#0E2A28"))
-	answer_panel.size_flags_horizontal = SIZE_EXPAND_FILL
-	var answer: VBoxContainer = UI.column(answer_panel, 12)
-	answer.add_child(UI.label("TAKE THIS WITH YOU", 22, UI.TEAL))
-	answer.add_child(UI.label(str(card.answer), 28))
+	var question: Dictionary = _questions[_review_index]
+	var card: Dictionary = _review[int(question.id)]
+	_format.text = "ANSWER REVIEW  /  QUESTION %02d OF %02d" % [_review_index + 1, _review.size()]
+	_question.text = str(question.text)
+	_update_example(int(question.id), _question.text, true)
+	_show_choices(question, card)
+	_explanation.text = "Why this answer is correct\n" + str(card.explanation)
+	_explanation.show()
 	UI.clear(_review_nav)
 	_review_nav.show()
 	var row: HBoxContainer = _review_nav
@@ -272,7 +293,7 @@ func _show_review_card() -> void:
 	previous.size_flags_horizontal = SIZE_EXPAND_FILL
 	previous.disabled = _review_index == 0
 	row.add_child(previous)
-	var next := UI.button("Next card >", _review_move.bind(1))
+	var next := UI.button("Next question >", _review_move.bind(1))
 	next.size_flags_horizontal = SIZE_EXPAND_FILL
 	next.disabled = _review_index == _review.size() - 1
 	row.add_child(next)
@@ -314,11 +335,22 @@ func _update_example(question_id: int, text: String, review: bool) -> void:
 	_visual = PretestBank.visual_example(_module_id, question_id, text)
 	_visual_review = review and _finished
 	var active: bool = str(_visual.get("kind", "")) == "email"
-	(_brief.get_parent() as ScrollContainer).visible = not active
+	var show_brief: bool = not review and not active and _index == 0
+	var separate_prompt: bool = review and not active
+	var prompt_parent: VBoxContainer = _review_prompt if separate_prompt else _card
+	if _question.get_parent() != prompt_parent:
+		_question.reparent(prompt_parent, false)
+		prompt_parent.move_child(_question, 0)
+		_explanation.reparent(prompt_parent, false)
+	var prompt_scroll: ScrollContainer = _review_prompt.get_parent() as ScrollContainer
+	prompt_scroll.visible = separate_prompt
+	prompt_scroll.scroll_vertical = 0
+	(_brief.get_parent() as ScrollContainer).visible = show_brief
+	_side.visible = show_brief or active or separate_prompt
 	_example.visible = active
-	_side.size_flags_stretch_ratio = 0.44 if active else 0.28
-	_right.size_flags_stretch_ratio = 0.56 if active else 0.72
-	_options.columns = 2 if active and not review else 1
+	_side.size_flags_stretch_ratio = 0.44 if active or separate_prompt else 0.28
+	_right.size_flags_stretch_ratio = 1.0 - _side.size_flags_stretch_ratio
+	_options.columns = 2 if active or separate_prompt else 1
 	_layout.add_theme_constant_override("separation", 8 if active else 20)
 	(_card.get_parent().get_parent() as VBoxContainer).add_theme_constant_override("separation", 8 if active else 16)
 	if active:

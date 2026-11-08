@@ -387,6 +387,12 @@ func _check_screen_search_flow() -> void:
 	var session: Session = screen._session
 	check(calls_to(JOIN_PATH) == 1 and factory_calls == 1, "FIND OPPONENT joins the queue with one session")
 	check(screen._search_box.visible and screen._search_title.text.begins_with("SEARCHING FOR OPPONENT") and screen._cancel_search_button.visible, "the search panel shows SEARCHING FOR OPPONENT and CANCEL")
+	check(not is_instance_valid(screen._match_notice), "Queueing alone cannot grant access")
+	if "--render" in OS.get_cmdline_user_args():
+		root.size = Vector2i(844,390)
+		await settle()
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/pvp_terminal_search_844.png")
 	check(not screen._room_box.visible and not screen._entry.visible and not screen._leave_room_button.visible and not screen._hud.visible, "searching shows only the search panel")
 	clock_ms += 7400
 	queued()
@@ -401,6 +407,14 @@ func _check_screen_search_flow() -> void:
 	check(screen._session == session and session.room_code == "MATCH1" and factory_calls == 1 and online_sessions(screen) == 1, "the match is entered with the same single session")
 	check(not screen._search_box.visible and screen._room_box.visible and screen._lobby_title.text == "MATCH FOUND", "the match opens the normal room lobby")
 	check(not screen._code_panel.visible and not screen._share_label.visible, "a matched room does not ask to share a code")
+	check(is_instance_valid(screen._match_notice) and screen._match_notice.match_confirmed, "Server pairing shows the terminal confirmation")
+	if "--render" in OS.get_cmdline_user_args():
+		root.size = Vector2i(844,390)
+		await settle()
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://.godot/pvp_access_granted_844.png")
+	await create_timer(2.1).timeout
+	check(not is_instance_valid(screen._match_notice), "Confirmation clears automatically for Ready")
 	sockets[0].push(room_view("MATCH1", 3).merged({"type": "room_state", "connected": {RIVAL: true, ME: true}}, true))
 	await settle()
 	check(screen._rival_name.text == "CONNECTED" and not screen._ready_button.disabled, "the existing READY step is available")
@@ -502,7 +516,7 @@ func _check_hub_private_and_bot() -> void:
 	var hub: Control = (load("res://src/ui/screens/dashboard/dashboard_pvp_hub.gd") as GDScript).new() as Control
 	root.add_child(hub)
 	await settle()
-	check(str(hub.get("_find").text) == "FIND OPPONENT", "the hub offers FIND OPPONENT")
+	check(str(hub.get("_find").text) == "FIND A MATCH", "the hub offers Find a Match")
 	var fired: Array[String] = []
 	hub.connect("find_opponent_requested", func() -> void: fired.append("find"))
 	hub.connect("battle_requested", func() -> void: fired.append("bot"))

@@ -34,6 +34,13 @@ create table if not exists public.pvp_matches (
     constraint pvp_matches_abandoned_has_no_winner check (finish_reason <> 'abandoned_before_start' or winner_id is null)
 );
 
+-- Upgrade the original inline check on existing installations in one statement.
+alter table public.pvp_matches
+    drop constraint if exists pvp_matches_finish_reason_check,
+    add constraint pvp_matches_finish_reason_check check (finish_reason in
+        ('ko', 'forfeit_disconnect', 'forfeit_leave', 'abandoned_before_start',
+         'flag_retrieved', 'flag_secured', 'flag_timeout'));
+
 create index if not exists pvp_matches_player1_recent on public.pvp_matches (player1_id, finished_at desc);
 create index if not exists pvp_matches_player2_recent on public.pvp_matches (player2_id, finished_at desc);
 

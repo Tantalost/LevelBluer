@@ -413,8 +413,20 @@ func _college_story_catalog() -> Array[Dictionary]:
 
 func _school_story_catalog() -> Array[Dictionary]:
 	var catalog: Array[Dictionary] = []
+	catalog.append(_catalog_entry("story_mika_poses","Module 5 / Mika","image","%s/v1793836991/levelblue_mod5_mika_poses_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod5_auditorium_wings_v1","Module 5 / Auditorium wings","image","%s/v1793836998/levelblue_mod5_auditorium_wings_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod5_print_studio_v1","Module 5 / Print and design studio","image","%s/v1793839334/levelblue_mod5_print_studio_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod5_sign_shelter_v1","Module 5 / Sign-painting shelter","image","%s/v1793857912/levelblue_mod5_sign_shelter_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod5_incident_desk_v1","Module 5 / Student services incident desk","image","%s/v1793858817/levelblue_mod5_incident_desk_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("module5_mystery_title_v1","Module 5 / The Last Gift","image","%s/v1793837008/levelblue_mod5_mystery_title_v1_20261105.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod5_production_booth_v1","Module 5 / Event production booth","image","%s/v1793924632/levelblue_mod5_production_booth_v1_20261106.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("module5_mika_counter_paper_v1","Module 5 / Mika counter","image","%s/v1793924642/levelblue_mod5_mika_counter_paper_v1_20261106.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_rham_poses", "Module 4 / Sir Rham expression sheet", "image", "%s/v1793694622/levelblue_mod4_sir_rham_poses_v1_20261103.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod4_faculty_workroom_v1", "Module 4 / Faculty workroom", "image", "%s/v1793694625/levelblue_mod4_faculty_workroom_v1_20261103.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod4_admin_reception_v1", "Module 4 / Administration reception", "image", "%s/v1793734229/levelblue_mod4_admin_reception_v1_20261104.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod4_records_office_v1", "Module 4 / Records office", "image", "%s/v1793735846/levelblue_mod4_records_office_v1_20261104.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("story_bg_mod4_briefing_room_v1", "Module 4 / School briefing room", "image", "%s/v1793765299/levelblue_mod4_briefing_room_v1_20261104.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("module4_rham_counter_documents_v1", "Module 4 / Sir Rham document counter", "image", "%s/v1793765303/levelblue_mod4_rham_counter_documents_v1_20261104.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_mod4_consultation_room_v1", "Module 4 / Consultation room", "image", "%s/v1793694634/levelblue_mod4_consultation_room_v1_20261103.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("module4_mystery_title_v1", "Module 4 / The Perfect Credential", "image", "%s/v1793694637/levelblue_mod4_mystery_title_v1_20261103.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_liza_poses", "Module 3 / Liza expression sheet", "image", "%s/v1793475659/levelblue_mod3_liza_poses_v2_20261101.png" % CLOUD_ROOT))
@@ -438,6 +450,7 @@ func _school_story_catalog() -> Array[Dictionary]:
 	catalog.append(_catalog_entry("story_john_laugh", "John / Laughing pose", "image", "%s/v1792721629/john_laugh_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_bed_night", "Chapter 2 / John's nighttime investigation", "image", "%s/v1792721171/john_bed_night_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_john_desk_night", "Chapter 1 / John's nighttime desk", "image", "%s/v1792675006/john_desk_night_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("chapter1_john_rushing", "Chapter 1 / John running to school", "image", "%s/v1794048778/john_rushing_to_school_v1.webp" % CLOUD_ROOT))
 	for person: String in ["john", "eric", "jobert"]:
 		var sprite_version: String = "1792675005" if person == "eric" else "1792675007"
 		catalog.append(_catalog_entry("chapter1_" + person, "Chapter 1 / " + person, "image", "%s/v%s/%s_poses_v1.png" % [CLOUD_ROOT, sprite_version, person]))
@@ -905,6 +918,8 @@ func _image_from_buffer(body: PackedByteArray) -> Image:
 	if body.is_empty():
 		return null
 	var image := Image.new()
+	if body.size() >= 12 and body.slice(0, 4) == "RIFF".to_ascii_buffer() and body.slice(8, 12) == "WEBP".to_ascii_buffer():
+		return image if image.load_webp_from_buffer(body) == OK else null
 	var err: Error = image.load_png_from_buffer(body)
 	if err == OK and not image.is_empty():
 		return image
