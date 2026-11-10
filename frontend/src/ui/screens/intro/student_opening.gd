@@ -4,6 +4,7 @@ const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 const DATA_PATH: String = "res://data/student_opening.json"
 const STORY_PHONE: GDScript = preload("res://src/gameplay/decision/opening_phone.gd")
 const PRACTICE_PHONE: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
+const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
 const BG: Color = Color("050B18")
 const PANEL: Color = Color("0A1730")
 const CARD: Color = Color("102040")
@@ -651,33 +652,38 @@ func _next_voice() -> void:
 func _fetch_voice(id: String) -> void:
 	if _leaving or _voice_cache.has(id) or _voice_downloads.has(id):
 		return
-	var request: HTTPRequest = HTTPRequest.new()
-	request.timeout = 8.0
-	request.body_size_limit = 2 * 1024 * 1024
-	add_child(request)
+	var stored: AudioStream = VoicePlayer.cached_stream(_voice_path(id))
+	if stored != null:
+		_voice_cache[id] = stored
+		if id == _voice_id:
+			_start_voice_stream(stored)
+		return
+	var request: HTTPRequest = VoicePlayer.download(_voice_path(id), 8.0)
 	_voice_downloads[id] = request
 	request.request_completed.connect(_voice_response.bind(id, request), CONNECT_ONE_SHOT)
-	if request.request(VOICE_CLIPS[id]) != OK:
-		_voice_response(HTTPRequest.RESULT_CANT_CONNECT, 0, PackedStringArray(), PackedByteArray(), id, request)
 
 
 func _voice_response(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray, id: String, request: HTTPRequest) -> void:
 	if _voice_downloads.get(id) != request:
 		return
 	_voice_downloads.erase(id)
-	request.queue_free()
 	var stream: AudioStream
-	if result == HTTPRequest.RESULT_SUCCESS and status == 200 and not body.is_empty():
-		if VOICE_CLIPS[id].ends_with(".wav"):
-			stream = AudioStreamWAV.load_from_buffer(body)
-		else:
-			stream = AudioStreamMP3.load_from_buffer(body)
-	if stream != null and stream.get_length() > 0.0:
+	if result == HTTPRequest.RESULT_SUCCESS and status == 200:
+		# The shared request has already stored a valid body; storage can be unwritable, so fall back to the body.
+		stream = VoicePlayer.cached_stream(_voice_path(id))
+		if stream == null:
+			stream = VoicePlayer.decode(_voice_path(id), body)
+	if stream != null:
 		_voice_cache[id] = stream
 		if id == _voice_id and not _leaving:
 			_start_voice_stream(stream)
 	elif id == _voice_id and not _leaving:
 		_next_voice()
+
+
+## Cache identity is the versioned asset path, shared with the story voice player.
+func _voice_path(id: String) -> String:
+	return VOICE_CLIPS[id].trim_prefix(VoicePlayer.BASE_URL)
 
 
 func _start_voice_stream(stream: AudioStream) -> void:
@@ -698,8 +704,10 @@ func _stop_voice(keep_downloads: Array = []) -> void:
 		if id in keep_downloads: continue
 		var request: HTTPRequest = _voice_downloads[id]
 		_voice_downloads.erase(id)
-		request.cancel_request()
-		request.queue_free()
+		# Detach only: the shared download still completes and caches for the next request.
+		var response: Callable = _voice_response.bind(id, request)
+		if is_instance_valid(request) and request.request_completed.is_connected(response):
+			request.request_completed.disconnect(response)
 	_voice_queue.clear()
 	_voice_id = ""
 	if is_instance_valid(_voice_player):
