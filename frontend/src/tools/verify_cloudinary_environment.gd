@@ -30,7 +30,7 @@ func _run() -> void:
 				return
 	for entry in entries:
 		if "--download" in OS.get_cmdline_user_args():
-			var success: bool = await assets._download_and_store(entry)
+			var success: bool = (await assets._download_and_store(entry)) in ["downloaded", "local"]
 			_check(success and assets._is_cache_current(entry.asset_id, entry.cloudinary_url, entry.version, entry.local_path), "Remote download stored and versioned: " + entry.asset_id)
 		var texture: Texture2D = assets.get_texture(entry.asset_id)
 		_check(texture != null and FileAccess.file_exists(entry.local_path), "Cached texture available: " + entry.asset_id)
@@ -73,7 +73,7 @@ func _verify_school_story(assets: Node) -> void:
 	for entry: Dictionary in entries:
 		var id: String = str(entry.asset_id)
 		if "--download" in OS.get_cmdline_user_args():
-			var success: bool = await assets._download_and_store(entry)
+			var success: bool = (await assets._download_and_store(entry)) in ["downloaded", "local"]
 			_check(success and assets._is_cache_current(id, entry.cloudinary_url, entry.version, entry.local_path), "Remote story asset cached and versioned: " + id)
 		# Force the same disk-only load used on the next offline launch.
 		assets._textures.erase(id)

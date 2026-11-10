@@ -320,7 +320,7 @@ func _check_opening() -> void:
 			continue
 		if "--download-opening-art" in OS.get_cmdline_user_args():
 			assets._ensure_assets_dir()
-			check(await assets._sync_entry(entry), "Cloudinary opening asset downloads: " + asset_id)
+			check((await assets._sync_entry(entry)) not in ["missing", "deferred", "failed"], "Cloudinary opening asset downloads: " + asset_id)
 			check(assets.get_texture(asset_id) != null, "Downloaded opening texture decodes: " + asset_id)
 		elif assets.get_texture(asset_id) == null:
 			# Deterministic offline fixture; no bundled art or network dependency.

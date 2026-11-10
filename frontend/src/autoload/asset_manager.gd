@@ -15,6 +15,13 @@ const BODY_SIZE_LIMIT := 8 * 1024 * 1024
 const WALK_FPS := 8.0
 const INDUSTRIAL_ATLAS_RESOURCE := "res://assets/gameplay/isometric/industrial_atlas_texture.tres"
 const DEATH_FPS := 10.0
+## Backoff for URLs the CDN answered with a permanent 4xx; keyed by asset and exact URL,
+## so a new catalog URL or version is requested immediately.
+const RETRY_STATE_PATH := "user://asset_retry.cfg"
+const MISSING_RETRY_BASE_SEC := 6 * 3600
+const MISSING_RETRY_MAX_SEC := 7 * 86400
+## Cache checks share frames up to this budget instead of costing one frame each.
+const CHECK_FRAME_BUDGET_USEC := 8000
 const BUNDLED_ESSENTIAL_DIR := "res://assets/bundled"
 ## Keep false until every ESSENTIAL_BUNDLE file is imported under BUNDLED_ESSENTIAL_DIR;
 ## enabling it earlier blocks launch for students without a complete cache.
@@ -76,11 +83,13 @@ var _sync_done: int = 0
 var _sync_total: int = 0
 var _sync_label: String = ""
 var _transfer_active: bool = false
+var _sync_downloads: int = 0
+var _retry_state: ConfigFile
 
 ## A loading screen can attach after title-art synchronization has already begun.
 func get_sync_progress() -> Dictionary:
 	return {"active": _syncing, "done": _sync_done, "total": _sync_total,
-		"label": _sync_label, "downloading": _transfer_active,
+		"label": _sync_label, "downloading": _transfer_active, "downloads": _sync_downloads,
 		"received": _http.get_downloaded_bytes() if _transfer_active else 0,
 		"bytes_total": _http.get_body_size() if _transfer_active else 0}
 
@@ -130,33 +139,66 @@ func sync_catalog() -> void:
 	_online = false
 	_character_frames.clear()
 	_ensure_assets_dir()
+	_sync_downloads = 0
+	_retry_state = null
 	_report_sync_progress(0, 0, "LOADING_ASSETS_CHECK")
-	var catalog: Array[Dictionary] = _gameplay_catalog()
+	var catalog: Array[Dictionary] = _critical_first(_gameplay_catalog())
 	_index_catalog(catalog)
 	for entry: Dictionary in catalog:
 		_recover_interrupted_replace(str(entry.get("asset_id", "")), str(entry.get("local_path", "")))
 	_seed_from_bundle()
 	var invalidations_at_start: int = _invalidations
-	var all_ok: bool = true
+	var critical: PackedStringArray = _required_asset_ids()
+	var outcomes: Dictionary = {}
+	var critical_failed: bool = false
+	var transient_failed: bool = false
+	var deferred: PackedStringArray = PackedStringArray()
 	var total: int = catalog.size()
+	var frame_start: int = Time.get_ticks_usec()
 	for i in total:
 		var entry: Dictionary = catalog[i]
+		var asset_id: String = str(entry.get("asset_id", ""))
 		_report_sync_progress(i, total, str(entry.get("asset_name", "asset")))
-		var ok: bool = await _sync_entry(entry)
-		if not ok:
-			all_ok = false
+		var outcome: String = await _sync_entry(entry)
+		outcomes[outcome] = int(outcomes.get(outcome, 0)) + 1
+		var failed: bool = outcome in ["missing", "deferred", "failed"]
+		critical_failed = critical_failed or (failed and critical.has(asset_id))
+		transient_failed = transient_failed or outcome == "failed"
+		if outcome == "deferred":
+			deferred.append(asset_id)
 		_report_sync_progress(i + 1, total, str(entry.get("asset_name", "asset")))
-		await get_tree().process_frame
+		if (outcome != "cached" and outcome != "bundled") or Time.get_ticks_usec() - frame_start > CHECK_FRAME_BUDGET_USEC:
+			await get_tree().process_frame
+			frame_start = Time.get_ticks_usec()
 	_synced = true
+	# Optional art confirmed missing on the CDN is backed off rather than failing the pass;
+	# missing critical art, an unreachable network or a transient fault still allow Retry.
 	# A file rejected on access during this pass may have been checked before it broke.
-	all_ok = all_ok and _invalidations == invalidations_at_start
+	var all_ok: bool = not critical_failed and not transient_failed and _invalidations == invalidations_at_start
 	_last_sync_ok = all_ok
 	_syncing = false
-	if all_ok:
-		print("[AssetManager] Catalog ready. online=", _online)
-	else:
-		push_warning("AssetManager: catalog finished with missing or failed assets. online=%s" % _online)
+	print("[AssetManager] Catalog pass: checked=%d cached=%d bundled=%d downloaded=%d local_fallback=%d missing=%d deferred=%d failed=%d online=%s" % [
+		total, int(outcomes.get("cached", 0)), int(outcomes.get("bundled", 0)), int(outcomes.get("downloaded", 0)),
+		int(outcomes.get("local", 0)), int(outcomes.get("missing", 0)), int(outcomes.get("deferred", 0)),
+		int(outcomes.get("failed", 0)), _online])
+	if not deferred.is_empty():
+		push_warning("AssetManager: %d assets are missing on the CDN and wait for their retry window: %s" % [deferred.size(), ", ".join(deferred)])
+	if not all_ok:
+		push_warning("AssetManager: catalog finished with missing or failed required assets. online=%s" % _online)
 	sync_finished.emit(all_ok)
+
+
+func _critical_first(catalog: Array[Dictionary]) -> Array[Dictionary]:
+	var critical: PackedStringArray = _required_asset_ids()
+	var ordered: Array[Dictionary] = []
+	var optional: Array[Dictionary] = []
+	for entry: Dictionary in catalog:
+		if critical.has(str(entry.get("asset_id", ""))):
+			ordered.append(entry)
+		else:
+			optional.append(entry)
+	ordered.append_array(optional)
+	return ordered
 
 
 func get_texture(asset_id: String) -> Texture2D:
@@ -574,26 +616,34 @@ func _catalog_entry(asset_id: String, asset_name: String, asset_type: String, so
 	}
 
 
-func _sync_entry(entry: Dictionary) -> bool:
+## Outcomes: cached, bundled, downloaded, local (older or unconfirmed file kept),
+## missing (CDN answered 4xx now), deferred (inside that URL's retry window), failed (transient).
+func _sync_entry(entry: Dictionary) -> String:
 	var asset_id: String = str(entry.get("asset_id", ""))
 	var url: String = str(entry.get("cloudinary_url", ""))
 	var version: String = str(entry.get("version", ""))
 	var local_path: String = str(entry.get("local_path", _local_path_for(asset_id)))
 	if asset_id.is_empty() or url.is_empty():
 		push_warning("AssetManager: invalid catalog entry.")
-		return false
+		return "failed"
 	# Cached bytes are hashed and decoded on first get_texture(), not during sync.
 	if _is_cache_current(asset_id, url, version, local_path):
-		return true
+		return "cached"
 	if _essential_bundle_current(entry):
 		# An outdated copy is superseded by the always-available bundle; removing it keeps
 		# direct readers such as the shared industrial atlas from preferring stale art.
 		if FileAccess.file_exists(local_path):
 			_remove_file(local_path)
 			_delete_meta(asset_id)
-		return true
+		return "bundled"
+	# Unversioned entries have no remote revision newer than the copy shipped in the package.
+	# Exported builds hold imported textures only, so the bundle cannot be copied into the cache.
+	if version == CATALOG_REV and not is_essential_asset(asset_id) and _bundle_has(asset_id):
+		return "bundled"
 	if _network_blocked:
-		return _use_local_fallback(asset_id, local_path, true)
+		return "local" if _use_local_fallback(asset_id, local_path, true) else "failed"
+	if _missing_retry_at(asset_id, url) > int(Time.get_unix_time_from_system()):
+		return "local" if FileAccess.file_exists(local_path) else "deferred"
 	return await _download_and_store(entry)
 
 
@@ -608,20 +658,28 @@ func _is_cache_current(asset_id: String, url: String, version: String, local_pat
 	return str(meta.get("version", "")) == version
 
 
-func _download_and_store(entry: Dictionary) -> bool:
+func _download_and_store(entry: Dictionary) -> String:
 	var asset_id: String = str(entry.get("asset_id", ""))
 	var url: String = str(entry.get("cloudinary_url", ""))
 	var local_path: String = str(entry.get("local_path", ""))
+	print("[AssetManager] Downloading %s" % asset_id)
+	_sync_downloads += 1
 	var response: Dictionary = await _http_get(url, FileAccess.file_exists(local_path))
 	if not bool(response.get("ok", false)):
 		var error_text: String = str(response.get("error", ""))
+		var code: int = int(response.get("code", 0))
 		if error_text.begins_with("no_internet_") or error_text.begins_with("request_start_") or error_text == "tls_handshake":
 			_network_blocked = true
+		if error_text == "http_status" and _is_permanent_status(code):
+			var retry_at: int = _record_missing(asset_id, url, code)
+			push_warning("AssetManager: '%s' is missing on the CDN (HTTP %d); next request after %s. %s" % [
+				asset_id, code, Time.get_datetime_string_from_unix_time(retry_at, true), url])
+			return "local" if FileAccess.file_exists(local_path) else "missing"
 		push_warning(
 			"AssetManager: download failed for '%s' (%s). %s"
-			% [asset_id, str(response.get("code", 0)), error_text]
+			% [asset_id, str(code), error_text]
 		)
-		return _use_local_fallback(asset_id, local_path, _network_blocked)
+		return "local" if _use_local_fallback(asset_id, local_path, _network_blocked) else "failed"
 	var body: PackedByteArray = PackedByteArray()
 	var body_stored: Variant = response.get("body", PackedByteArray())
 	if typeof(body_stored) == TYPE_PACKED_BYTE_ARRAY:
@@ -630,7 +688,7 @@ func _download_and_store(entry: Dictionary) -> bool:
 	var rejection: String = _image_rejection(asset_id, image)
 	if not rejection.is_empty():
 		push_warning("AssetManager: invalid image payload for '%s' (%s)." % [asset_id, rejection])
-		return _use_local_fallback(asset_id, local_path, false)
+		return "local" if _use_local_fallback(asset_id, local_path, false) else "failed"
 	# Keep downloaded UI portraits lightweight rather than retaining full-resolution textures.
 	if asset_id.begins_with("ui_avatar_") and maxi(image.get_width(), image.get_height()) > 256:
 		var scale_ratio: float = 256.0 / float(maxi(image.get_width(), image.get_height()))
@@ -639,7 +697,8 @@ func _download_and_store(entry: Dictionary) -> bool:
 	if png.is_empty():
 		png = body
 	if not _replace_cached_file(entry, png):
-		return _use_local_fallback(asset_id, local_path, false)
+		return "local" if _use_local_fallback(asset_id, local_path, false) else "failed"
+	_clear_missing(asset_id)
 	# Only textures already handed out are replaced; others load lazily from the new file.
 	if asset_id == "map_industrial_atlas" and ResourceLoader.has_cached(INDUSTRIAL_ATLAS_RESOURCE):
 		var shared: ImageTexture = load(INDUSTRIAL_ATLAS_RESOURCE) as ImageTexture
@@ -650,7 +709,58 @@ func _download_and_store(entry: Dictionary) -> bool:
 	_character_frames.clear()
 	_online = true
 	print("[AssetManager] Stored %s -> %s" % [asset_id, local_path])
-	return true
+	return "downloaded"
+
+
+## 408 and 429 are temporary by definition; other 4xx answers mean this URL serves nothing.
+func _is_permanent_status(code: int) -> bool:
+	return code >= 400 and code < 500 and code != 408 and code != 429
+
+
+func _retry_state_path() -> String:
+	return RETRY_STATE_PATH
+
+
+func _retry() -> ConfigFile:
+	if _retry_state == null:
+		_retry_state = ConfigFile.new()
+		if FileAccess.file_exists(_retry_state_path()) and _retry_state.load(_retry_state_path()) != OK:
+			_retry_state = ConfigFile.new()
+	return _retry_state
+
+
+## Zero when the URL changed, was never missing, or the stored time is implausible after a clock change.
+func _missing_retry_at(asset_id: String, url: String) -> int:
+	var state: ConfigFile = _retry()
+	if str(state.get_value(asset_id, "url", "")) != url:
+		return 0
+	var retry_at: int = int(state.get_value(asset_id, "retry_at", 0))
+	if retry_at - int(Time.get_unix_time_from_system()) > MISSING_RETRY_MAX_SEC:
+		return 0
+	return retry_at
+
+
+func _record_missing(asset_id: String, url: String, code: int) -> int:
+	var state: ConfigFile = _retry()
+	var misses: int = 1
+	if str(state.get_value(asset_id, "url", "")) == url:
+		misses = int(state.get_value(asset_id, "misses", 0)) + 1
+	var delay: int = mini(MISSING_RETRY_BASE_SEC * (1 << mini(misses - 1, 8)), MISSING_RETRY_MAX_SEC)
+	var retry_at: int = int(Time.get_unix_time_from_system()) + delay
+	state.set_value(asset_id, "url", url)
+	state.set_value(asset_id, "misses", misses)
+	state.set_value(asset_id, "status", code)
+	state.set_value(asset_id, "retry_at", retry_at)
+	if state.save(_retry_state_path()) != OK:
+		push_warning("AssetManager: could not persist the retry window for '%s'; it applies to this session only." % asset_id)
+	return retry_at
+
+
+func _clear_missing(asset_id: String) -> void:
+	var state: ConfigFile = _retry()
+	if state.has_section(asset_id):
+		state.erase_section(asset_id)
+		state.save(_retry_state_path())
 
 
 func _image_rejection(asset_id: String, image: Image) -> String:
