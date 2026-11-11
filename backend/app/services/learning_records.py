@@ -80,7 +80,7 @@ def pretest_response(question: dict, answer: bool | int | str) -> dict:
 class LearningEvent(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     event_id: UUID
-    kind: Literal["pretest", "posttest", "stage", "mastery"]
+    kind: Literal["pretest", "posttest", "stage", "mastery", "chapter"]
     module_id: Literal["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]
     occurred_at: datetime
     attempt_id: UUID | None = None
@@ -96,6 +96,9 @@ class LearningEvent(BaseModel):
     answers: list[PretestAnswerPayload] | None = Field(default=None, max_length=100)
     responses: list[AssessmentResponse] | None = Field(default=None, max_length=100)
     details: StageDetails | None = None
+    chapter: int | None = Field(default=None, ge=1, le=5)
+    chapter_id: str | None = Field(default=None, max_length=16)
+    assist_status: Literal["assisted", "unassisted", "unknown"] | None = None
 
     @model_validator(mode="after")
     def validate_evidence(self):
@@ -103,6 +106,15 @@ class LearningEvent(BaseModel):
             raise ValueError("A timezone-aware event time, not in the future, is required")
         if self.occurred_at.year < 2020:
             raise ValueError("Invalid event time")
+        chapter_fields = (self.chapter, self.chapter_id, self.assist_status)
+        if self.kind == "chapter":
+            # First completion of a story chapter; must match the web chapter-evidence constraint.
+            if None in chapter_fields or self.chapter_id != f"{self.module_id}_ch_0{self.chapter}":
+                raise ValueError("Chapter events need a matching chapter, chapter id, and assist status")
+            if any(value is not None for value in (self.stage, self.outcome, self.instrument, self.mastery, self.answers, self.correct, self.answered, self.total)):
+                raise ValueError("Chapter events carry no scores or stage results")
+        elif any(value is not None for value in chapter_fields):
+            raise ValueError("Chapter fields belong only on chapter events")
         if self.kind == "stage" and (self.attempt_id is None or self.stage is None or self.outcome is None):
             raise ValueError("Stage events need an attempt, stage, and outcome")
         if self.details is not None and (self.kind != "stage" or self.outcome == "started"):
@@ -135,6 +147,10 @@ class LearningEvent(BaseModel):
         data = {"topic": MODULES[self.module_id], "source": "mobile-reported"}
         if self.kind == "mastery":
             data["mastery"] = self.mastery
+        elif self.kind == "chapter":
+            data.update(chapter=self.chapter, chapter_id=self.chapter_id, assist_status=self.assist_status)
+            if self.attempt_id is not None:
+                data["attempt_id"] = str(self.attempt_id)
         elif self.kind == "stage":
             data.update(attempt_id=str(self.attempt_id), stage=self.stage, outcome=self.outcome)
             if self.details is not None:

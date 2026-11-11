@@ -208,6 +208,72 @@ class CheckpointClassificationTests(unittest.TestCase):
         self.assertEqual(response.json()["acknowledged_events"], [payload["event_id"]])
 
 
+def chapter_event(module="mod_01", chapter=1, **overrides):
+    payload = dict(event_id=str(uuid4()), kind="chapter", module_id=module, occurred_at=datetime.now(UTC).isoformat(),
+                   chapter=chapter, chapter_id=f"{module}_ch_0{chapter}", assist_status="unassisted")
+    payload.update(overrides)
+    return payload
+
+
+class ChapterEvidenceTests(unittest.TestCase):
+    def test_all_25_chapter_identities_match_the_web_contract(self):
+        for module in ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]:
+            for chapter in range(1, 6):
+                with self.subTest(module=module, chapter=chapter):
+                    row = LearningEvent(**chapter_event(module, chapter)).record()
+                    self.assertEqual(row["kind"], "chapter")
+                    self.assertEqual(row["module_id"], module)
+                    self.assertEqual(row["data"]["chapter"], chapter)
+                    self.assertEqual(row["data"]["chapter_id"], f"{module}_ch_0{chapter}")
+                    self.assertEqual(row["data"]["assist_status"], "unassisted")
+                    self.assertNotIn("attempt_id", row["data"])
+
+    def test_assisted_and_unknown_status_and_attempt_link_are_stored(self):
+        attempt = str(uuid4())
+        row = LearningEvent(**chapter_event("mod_03", 4, assist_status="assisted", attempt_id=attempt)).record()
+        self.assertEqual(row["data"]["assist_status"], "assisted")
+        self.assertEqual(row["data"]["attempt_id"], attempt)
+        self.assertEqual(LearningEvent(**chapter_event(assist_status="unknown")).record()["data"]["assist_status"], "unknown")
+
+    def test_malformed_or_forged_chapter_events_are_rejected(self):
+        invalid = [chapter_event(chapter=6, chapter_id="mod_01_ch_06"), chapter_event(chapter=0), chapter_event(chapter_id="mod_02_ch_01"),
+                   chapter_event(assist_status="cheated"), chapter_event(assist_status=None), chapter_event(chapter=None), chapter_event(chapter_id=None),
+                   chapter_event(attempt_id="legacy-run"), chapter_event(stage=1), chapter_event(outcome="cleared"), chapter_event(mastery=0.9),
+                   chapter_event(correct=5, answered=5, total=5), chapter_event(completed=True), chapter_event(module_id="mod_06", chapter_id="mod_06_ch_01"),
+                   dict(event(), chapter=1), dict(event(), assist_status="assisted"), dict(event(), kind="stage", attempt_id=str(uuid4()), stage=1, outcome="cleared", chapter_id="mod_01_ch_01")]
+        for payload in invalid:
+            with self.subTest(payload=payload), self.assertRaises(ValidationError):
+                LearningEvent(**payload)
+
+    def test_chapter_events_flow_through_authenticated_sync_and_ack_after_save(self):
+        app = FastAPI(); app.include_router(router); client = TestClient(app)
+        store = Mock(); store.rpc.return_value.execute.return_value = types.SimpleNamespace(error=None)
+        payload = chapter_event("mod_05", 5, assist_status="assisted")
+        with patch("app.routes.progress.verify_token", return_value={"id": "owner", "role": "student"}), patch("app.services.progress_service.fetch_student_by_id", return_value={"id": "owner"}), patch("app.services.progress_service.supabase", FakeSupabase()), patch("app.services.learning_records.supabase", store):
+            response = client.post("/api/progress/sync?student_id=another", headers={"Authorization": "Bearer test"}, json={"learning_events": [payload]})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["acknowledged_events"], [payload["event_id"]])
+        args = store.rpc.call_args.args
+        self.assertEqual(args[0], "levelblue_record_learning")
+        self.assertEqual(args[1]["p_student"], "owner")
+        self.assertEqual(args[1]["p_events"][0]["data"]["chapter_id"], "mod_05_ch_05")
+
+    def test_storage_failure_never_acknowledges_chapter_events(self):
+        store = Mock(); store.rpc.return_value.execute.side_effect = RuntimeError('new row violates check constraint "learning_records_kind_check"')
+        with patch("app.services.learning_records.supabase", store), self.assertRaises(HTTPException) as caught:
+            record_learning_events("learner", [LearningEvent(**chapter_event())])
+        self.assertEqual(caught.exception.status_code, 503)
+        store.rpc.return_value.execute.side_effect = None
+        store.rpc.return_value.execute.return_value = types.SimpleNamespace(error={"message": "failed"})
+        with patch("app.services.learning_records.supabase", store), self.assertRaises(HTTPException):
+            record_learning_events("learner", [LearningEvent(**chapter_event())])
+
+    def test_retried_chapter_event_keeps_its_identity(self):
+        payload = chapter_event("mod_02", 3)
+        first, retry = LearningEvent(**payload).record(), LearningEvent(**payload).record()
+        self.assertEqual(first, retry)
+
+
 class StageEvidenceTests(unittest.TestCase):
     def test_stage_details_bounded_and_optional_for_legacy_clients(self):
         payload = dict(event(), kind="stage", attempt_id=str(uuid4()), stage=1, outcome="failed")

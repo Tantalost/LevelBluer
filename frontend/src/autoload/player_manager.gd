@@ -255,8 +255,20 @@ func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true
 	chapter_progress[chapter_id] = valid
 	if bool(valid["completed"]):
 		credits += int(valid["reward"])
+		_record_chapter_completion(chapter_id, valid)
 	if persist:
 		SaveService.save_game(true, not bool(valid["completed"]))
+
+## Promotion evidence: one event per first completion. Legacy completions are never backfilled.
+func _record_chapter_completion(chapter_id: String, state: Dictionary) -> void:
+	if RegEx.create_from_string("^mod_0[1-5]_ch_0[1-5]$").search(chapter_id) == null: return
+	var run: Dictionary = state.get("perk_run", {})
+	var fields: Dictionary = {"chapter":int(chapter_id.substr(10)), "chapter_id":chapter_id, "assist_status":StoryPerks.status(run, bool(state.get("hint_used", false)))}
+	var attempt: String = str(run.get("id", ""))
+	# The server rejects the whole batch on a malformed id, so only well-formed run ids are linked.
+	if RegEx.create_from_string("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").search(attempt) != null:
+		fields["attempt_id"] = attempt
+	record_learning_event("chapter", chapter_id.left(6), fields, false)
 var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
