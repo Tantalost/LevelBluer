@@ -1,10 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://dlfiwm5qp15wh"]
+[gd_scene load_steps=7 format=3 uid="uid://dlfiwm5qp15wh"]
 
 [ext_resource type="Script" uid="uid://b3gr4m5mws5nj" path="res://src/ui/screens/intro/splash_screen.gd" id="1_63qxy"]
 [ext_resource type="Script" uid="uid://c6dwlje13r6yi" path="res://src/ui/components/safe_area_container.gd" id="2_p78g7"]
 [ext_resource type="Theme" uid="uid://c5e3xncvpeghx" path="res://assets/ui/level_blue_theme.tres" id="3_theme"]
-[ext_resource type="Texture2D" path="res://assets/ui/loading_before_v1.webp" id="4_before"]
-[ext_resource type="Texture2D" path="res://assets/ui/loading_after_v1.webp" id="5_after"]
 [ext_resource type="FontFile" path="res://assets/fonts/DigitalDisco.ttf" id="6_font"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar_bg"]
@@ -36,21 +34,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 expand_mode = 1
-texture = ExtResource("4_before")
-stretch_mode = 6
-mouse_filter = 2
-
-[node name="ReadyArt" type="TextureRect" parent="."]
-unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0)
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-expand_mode = 1
-texture = ExtResource("5_after")
 stretch_mode = 6
 mouse_filter = 2
 

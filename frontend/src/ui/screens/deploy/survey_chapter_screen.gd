@@ -11,6 +11,7 @@ const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 var _perk_panel: PanelContainer
 var _perk_body: VBoxContainer
 var _perk_button: Button
+var _star_result_scroll: ScrollContainer
 var state: Dictionary = {}
 var replay: bool = false
 var _active: bool = false
@@ -140,6 +141,7 @@ class InvestigationReveal extends Control:
 			draw_polyline(PackedVector2Array([p + Vector2(direction.x * length, 0), p, p + Vector2(0, direction.y * length)]), color, weight, true)
 
 class ChapterCelebration extends InvestigationReveal:
+	var star_mode: bool = false
 	var assist_status: String = "unknown"
 	var award: int = 0
 	var balance: int = 0
@@ -163,6 +165,10 @@ class ChapterCelebration extends InvestigationReveal:
 		ink.shadow_color = Color("050B18", 0.65)
 		ink.shadow_size = 18
 		draw_style_box(ink, Rect2(Vector2.ZERO, size))
+		if star_mode:
+			shown_award = award
+			shown_balance = balance
+			return
 		var alpha: float = smoothstep(0.0, 0.55, elapsed)
 		var lift: float = 0.0 if gentle else (1.0 - smoothstep(0.0, 0.65, elapsed)) * 18 * unit
 		_text(case_title + " / " + assist_status.to_upper(), center + Vector2(0, 36 * unit), _readable(20 * unit, 12), Color("8FF0E6", alpha))
@@ -571,6 +577,11 @@ func _review_capture(id: String) -> void:
 	(_journal_body.get_parent() as ScrollContainer).ensure_control_visible.call_deferred(panel)
 
 func _show_results() -> void:
+	_results.star_mode = Chapter.ID == "mod_01_ch_01"
+	if is_instance_valid(_star_result_scroll):
+		_results.remove_child(_star_result_scroll)
+		_star_result_scroll.queue_free()
+		_star_result_scroll = null
 	_results.case_title = "CASE %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()]
 	var next_button: Button = _result_actions.get_child(0) as Button
 	next_button.text = "NEXT CHAPTER"
@@ -583,6 +594,11 @@ func _show_results() -> void:
 	_dialogue.hide()
 	_heading.text = ""
 	_results.award = 0 if replay else int(state["reward"])
+	if _results.star_mode:
+		_results.award += int(state.get("star_bonus_awarded", 0))
+		_build_star_results()
+		next_button.add_theme_stylebox_override("normal", UI.box(Color("2E6BFF"), UI.TEAL, 12))
+		(_result_actions.get_child(1) as Button).add_theme_stylebox_override("normal", UI.box(Color("0A1730"), UI.TEAL, 12))
 	_results.balance = PlayerManager.credits
 	_results.replaying = replay
 	_results.assist_status = Perks.status(state.get("perk_run", {}), state.get("hint_used", false))
@@ -600,6 +616,42 @@ func _show_results() -> void:
 			_result_audio.volume_linear = SettingsService.music_volume / 100.0 * 0.65
 			AudioManager.set_story_duck(self, 0.22)
 			_result_audio.play()
+
+class ObjectiveStar extends Control:
+	var earned: bool = false
+	func _draw() -> void:
+		var points: PackedVector2Array = []
+		var radius: float = minf(size.x, size.y) * 0.46
+		for index: int in 10:
+			points.append(size * 0.5 + Vector2.from_angle(-PI / 2 + index * PI / 5) * radius * (1.0 if index % 2 == 0 else 0.44))
+		draw_colored_polygon(points, Color("FFB648") if earned else Color("173058"))
+		points.append(points[0])
+		draw_polyline(points, Color("F3ECD6") if earned else Color("4FE0D4"), 2)
+
+func _build_star_results() -> void:
+	_star_result_scroll = ScrollContainer.new()
+	_star_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_results.add_child(_star_result_scroll)
+	var body: VBoxContainer = UI.column(_star_result_scroll, 6)
+	body.size_flags_horizontal = SIZE_EXPAND_FILL
+	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
+	body.add_child(UI.label("CHAPTER COMPLETE / YOUR OBJECTIVES", ceili(20 / physical), UI.TEAL))
+	var base: int = 0 if replay else int(state.reward)
+	body.add_child(UI.label("+%d credits  /  %d completion + %d star bonus" % [_results.award, base, int(state.get("star_bonus_awarded", 0))], ceili(17 / physical), UI.GOLD))
+	var earned: Array[String] = PlayerManager.story_stars(Chapter.ID)
+	for id: String in Chapter.STAR_IDS:
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		body.add_child(row)
+		var star: ObjectiveStar = ObjectiveStar.new()
+		star.earned = id in earned
+		star.custom_minimum_size = Vector2(32,32) / physical
+		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(star)
+		var status: String = "EARNED" if id in earned else ("RETRY OBJECTIVE" if state.get("star_tracking", false) else "REPLAY TO ATTEMPT")
+		var line: Label = UI.label(str(Chapter.STAR_GOALS[id]).get_slice(" / ", 0) + " — " + status, ceili(16 / physical), UI.TEXT if id in earned else UI.MUTED)
+		line.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.add_child(line)
 
 func _open_upgrades() -> void:
 	if not _can_act() or state.get("phase") != "done": return
@@ -782,6 +834,8 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 	if not _can_act(): return
 	for field: String in ["read", "sorted", "flags", "domains", "captures", "mistakes"]:
 		state[field] = snapshot[field]
+	if Chapter.ID == "mod_01_ch_01":
+		for id: String in snapshot.get("star_blocked", []): Chapter.block_star(state, id)
 	if Chapter.ID == "mod_01_ch_02":
 		state.headers = snapshot.headers
 		state.report_draft = snapshot.report_draft
@@ -838,7 +892,7 @@ func _open_perks() -> void:
 	_perk_panel.show()
 	UI.clear(_perk_body)
 	_perk_body.add_child(UI.label("CHAPTER LOADOUT / OPTIONAL ASSISTS", 28, UI.TEAL))
-	_perk_body.add_child(UI.label("Using a perk removes the clean-work bonus, not the base chapter reward.", 24))
+	_perk_body.add_child(UI.label("General guidance and reviewing your evidence do not cost stars. Answer-revealing hints warn you first." if Chapter.ID == "mod_01_ch_01" else "Using a perk removes the clean-work bonus, not the base chapter reward.", 24))
 	var run: Dictionary = state.get("perk_run", {})
 	for id: String in Perks.ids(run.get("loadout", []), 2):
 		var available: bool = Perks.allowed(run, id, "story_chapter", str(state.phase), state.captures)
@@ -915,8 +969,24 @@ func _recap_text() -> String:
 		lines.append(str(beat.who) + ": " + spoken)
 	return "RECENTLY ENCOUNTERED\n\n" + "\n\n".join(lines)
 
-func _hint() -> void:
+func _hint(confirmed: bool = false) -> void:
 	if not _can_act(): return
+	if Chapter.ID == "mod_01_ch_01" and str(state.phase) in Chapter.STAR_IDS:
+		if not confirmed:
+			_paused = true
+			_menu_backdrop.show()
+			_perk_panel.show()
+			UI.clear(_perk_body)
+			_perk_body.add_child(UI.label("REVEAL A HINT?", 28, UI.GOLD))
+			_perk_body.add_child(UI.label("This reveals part of the solution. The current objective cannot earn a star on this run. Previously earned stars and other objectives stay unchanged. The hint is free.", 26))
+			_perk_body.add_child(_button("REVEAL HINT", func() -> void:
+				_close_perks()
+				_hint(true)))
+			_perk_body.add_child(_button("KEEP TRYING", _close_perks))
+			_layout()
+			_apply_pause()
+			return
+		Chapter.block_star(state, str(state.phase))
 	state["hint_used"] = true
 	var run: Dictionary = state.get("perk_run", {})
 	if not run.is_empty():
@@ -956,6 +1026,8 @@ func _seal_exhibit() -> void:
 func _save() -> void:
 	if _owner == AuthService.participant_code() and _signed_owner == AuthService.is_signed_in():
 		PlayerManager.save_story_attempt(state, replay, not _testing, Chapter.ID)
+		if Chapter.ID == "mod_01_ch_01":
+			state.star_bonus_awarded = int(PlayerManager.story_checkpoint(Chapter.ID, replay).get("star_bonus_awarded", 0))
 
 func _replay() -> void:
 	if not _can_act(): return
@@ -1187,10 +1259,13 @@ func _layout_results(w: float, h: float, top: float, physical: float) -> void:
 	var card_width: float = minf(w * 0.88, 1100 / physical)
 	_results.position = Vector2((w - card_width) * 0.5, top + 8)
 	_results.size = Vector2(card_width, h - top - 24 / physical)
-	var primary_height: float = 64.0 / physical
+	var primary_height: float = (48.0 if _results.star_mode else 64.0) / physical
 	var secondary_height: float = 48.0 / physical
-	var gap: float = 12.0 / physical
+	var gap: float = (8.0 if _results.star_mode else 12.0) / physical
 	_results.action_space = primary_height + secondary_height + gap * 3
+	if is_instance_valid(_star_result_scroll):
+		_star_result_scroll.position = Vector2(16, 12) / physical
+		_star_result_scroll.size = Vector2(_results.size.x - 32 / physical, maxf(40, _results.size.y - _results.action_space - 24 / physical))
 	var margin: float = 28.0 / physical
 	var action_width: float = minf(_results.size.x - margin * 2, 760 / physical)
 	_result_actions.position = Vector2((_results.size.x - action_width) * 0.5, _results.size.y - _results.action_space + gap)

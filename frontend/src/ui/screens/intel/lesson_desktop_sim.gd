@@ -5,18 +5,19 @@ signal content_changed
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Feedback = preload("res://src/ui/screens/intel/study_feedback.gd")
 const PC = preload("res://src/ui/screens/intel/lesson_pc_shell.gd")
+const Study: GDScript = preload("res://src/ui/screens/intel/lesson_study_content.gd")
 var _data: Dictionary
 var _opened: bool = false
 var _inspected: bool = false
 var _verified: bool = false
 var _passed: bool = false
 var _window: VBoxContainer
-var _feedback: Label
+var _finding: String = ""
 var _task: Label
 var _answer_effect: Control
 const SENDER: String = "admin@northbridge-edu.example"
 const OFFICIAL_DOMAIN: String = "northbridge.edu.example"
-const CYAN: Color = Color("4FE0D4")
+const CYAN: Color = Color("#4FE0D4")
 const SUCCESS: Color = Color("33D17A")
 var _investigation: bool = false
 var _directory_found: bool = false
@@ -31,6 +32,7 @@ var _search: LineEdit
 var _pc_mode: bool = false
 var _pc: PanelContainer
 var _message_open: bool = false
+var _file_selected: bool = false
 var _started: bool = false
 var _briefing: PanelContainer
 var _start_button: Button
@@ -45,27 +47,18 @@ func setup(data: Dictionary) -> void:
 		else:
 			_start_simulation()
 		return
-	add_theme_constant_override("separation", 14)
-	add_child(UI.label("TRAINING DESKTOP  /  OFFLINE SANDBOX", 14, UI.TEAL, true))
-	_task = UI.label("Open the pending request. Inspect it, verify its source, then handle it safely.", 24)
-	add_child(_task)
-	var desktop := UI.panel(self, Color("183e46"))
-	var desk := UI.column(desktop)
-	var apps := HBoxContainer.new()
-	apps.add_theme_constant_override("separation", 12)
-	desk.add_child(apps)
-	var app_button := UI.button("[+] " + str(data.domain.app), _act.bind("open"), true)
-	app_button.custom_minimum_size.x = 240
-	apps.add_child(app_button)
-	apps.add_child(UI.button("[?] Task", func() -> void: _feedback.text = "Inspect the request and use an independent, trusted channel before reporting it."))
-	var window_panel := UI.panel(desk, Color("d6dfd8"))
-	_window = UI.column(window_panel)
-	_show_window()
-	var taskbar := UI.label("START   |   %s   |   TRAINING SESSION" % str(data.domain.app).to_upper(), 18, UI.TEAL)
-	desk.add_child(taskbar)
-	_feedback = UI.label("Nothing here opens a real link, file or application.", 22, UI.MUTED)
-	add_child(_feedback)
-	_answer_effect = Feedback.mount(desktop)
+	_started = true
+	size_flags_vertical = SIZE_EXPAND_FILL
+	_pc = PC.new()
+	_pc.case_app = str(data.domain.app)
+	_pc.case_title = str(data.title)
+	_pc.case_kind = ({"Messages": IntelPixelIcon.Kind.CHAT, "Calls": IntelPixelIcon.Kind.PHONE, "Service Desk": IntelPixelIcon.Kind.BADGE, "Device Security": IntelPixelIcon.Kind.LOCK}.get(_pc.case_app, IntelPixelIcon.Kind.TERMINAL)) as IntelPixelIcon.Kind
+	add_child(_pc)
+	_task = _pc.status
+	_window = _pc.body
+	_pc.app_requested.connect(func(_app: String) -> void: _act("open"))
+	_answer_effect = Feedback.mount(_pc)
+	_readability_changed.call_deferred()
 
 func _show_briefing() -> void:
 	size_flags_vertical = SIZE_EXPAND_FILL
@@ -119,28 +112,11 @@ func _start_simulation() -> void:
 
 func _show_window() -> void:
 	UI.clear(_window)
-	if not _opened:
-		_window.add_child(UI.label("1 PENDING REQUEST", 24, UI.BG))
-		_window.add_child(UI.label("Use the application above to open the training case.", 24, UI.BG))
-		return
-	var title_panel := UI.panel(_window, Color("254658"))
-	title_panel.add_theme_stylebox_override("panel", UI.box(Color("254658"), Color("254658"), 8))
-	var titlebar := HBoxContainer.new()
-	title_panel.add_child(titlebar)
-	var title := UI.label(str(_data.domain.app).to_upper() + "  /  REQUEST REVIEW", 15, UI.TEAL, true)
-	title.size_flags_horizontal = SIZE_EXPAND_FILL
-	titlebar.add_child(title)
-	var minimize := UI.button("_", func() -> void:
-		_opened = false
-		_show_window()
-	)
-	minimize.custom_minimum_size = Vector2(40, 36)
-	titlebar.add_child(minimize)
-	_window.add_child(UI.label(str(_data.scenario), 24, UI.BG))
+	_window.add_child(PC.label(str(_data.scenario), 27))
 	if _inspected:
-		_window.add_child(UI.label("DETAILS  /  " + str(_data.rule), 23, Color("364e52")))
+		_window.add_child(PC.label(_finding, 25, PC.GREEN))
 	if _verified:
-		_window.add_child(UI.label("TRUSTED CHANNEL: This unusual request is not authorized. No secret, file, payment or device access is required.", 23, Color("215c4d")))
+		_window.add_child(PC.label("TRUSTED CHANNEL  /  The office did not authorize this request.", 25, PC.GREEN))
 	var inspect := UI.button(str(_data.domain.inspect), _act.bind("inspect"))
 	inspect.disabled = _passed
 	_window.add_child(inspect)
@@ -158,9 +134,10 @@ func _show_window() -> void:
 	safe.size_flags_horizontal = SIZE_EXPAND_FILL
 	safe.disabled = _passed
 	actions.add_child(safe)
+	_readability_changed()
 
 func _act(action: String) -> void:
-	if _passed or (_pc_mode and not _started):
+	if _passed and action != "open" or (_pc_mode and not _started):
 		return
 	if _pc_mode and action == "open":
 		_open_app("Inbox")
@@ -175,37 +152,38 @@ func _act(action: String) -> void:
 	match action:
 		"open":
 			_opened = true
+			_pc.show_app(str(_data.domain.app))
+			_pc.unread = false
+			_pc.refresh_badges()
 		"inspect":
 			if not _opened:
 				return
 			_inspected = true
-			_feedback.text = "Details inspected. Now verify using a source outside this request."
-			_feedback.add_theme_color_override("font_color", UI.MUTED)
-			_answer_effect.reset()
+			if _active_app == "File Sandbox":
+				_finding = "FINE_NOTICE.PDF.exe  /  Executable program. The final extension is .exe."
+			else:
+				var clues: Array[Dictionary] = Study.context_clues(str(_data.module_id), int(_data.lesson_index))
+				_finding = str(clues[0].quote) + "\n" + str(clues[0].note) if not clues.is_empty() else str(_data.rule)
+			_notice(_finding)
 		"verify":
 			if not _opened or not _inspected:
 				return
 			_verified = true
-			_feedback.text = "The trusted channel does not authorize this request. Choose a safe response."
-			_feedback.add_theme_color_override("font_color", UI.MUTED)
-			_answer_effect.reset()
+			_notice("Trusted channel replied: the request is unauthorized.")
 		"unsafe":
-			_feedback.text = "Unsafe action blocked by the sandbox. It would expose data or access. Review the details and try again."
-			_feedback.add_theme_color_override("font_color", Feedback.ERROR)
-			_answer_effect.show_result(false)
+			if _active_app == "File Sandbox":
+				_notice("FINE_NOTICE.PDF.exe was blocked. Opening it would run a program, even though its name contains PDF. Verify the attachment with the school before opening it.", true)
+			else:
+				_notice("Blocked: %s. %s" % [str(_data.domain.unsafe), str(_data.rule)], true)
 			return
 		"report":
 			if not _opened or not _inspected or not _verified:
-				_feedback.text = "Do not guess. Inspect the request and verify independently before you report it."
-				_feedback.add_theme_color_override("font_color", Feedback.ERROR)
-				_answer_effect.show_result(false)
+				_notice("Inspect the request and verify with the trusted source before reporting.", true)
 				return
 			_passed = true
-			_task.text = "SIMULATION PASSED  /  Request inspected, verified and reported."
-			_feedback.text = "Safe response confirmed. You can now complete this topic."
-			_feedback.add_theme_color_override("font_color", Feedback.SUCCESS)
-			_task.add_theme_color_override("font_color", Feedback.SUCCESS)
-			_answer_effect.show_result(true)
+			_task.text = "SYS://SCHOOL-01   /   CASE CLOSED"
+			_pc.result("Request verified and reported. The case is closed.", false)
+			_answer_effect.show_result(true, not SettingsService.reduced_motion)
 			passed.emit()
 	if _pc_mode:
 		_open_app(_active_app)
@@ -215,14 +193,17 @@ func _act(action: String) -> void:
 func _setup_pc() -> void:
 	add_theme_constant_override("separation", 8)
 	size_flags_vertical = SIZE_EXPAND_FILL
-	_task = UI.label("SCHOOL PC  /  LOCAL TRAINING SESSION", 20, CYAN)
-	add_child(_task)
 	_pc = PC.new()
+	_pc.case_title = str(_data.title)
 	add_child(_pc)
+	_task = _pc.status
 	_pc.app_requested.connect(_open_app)
 	_pc.back_requested.connect(func() -> void:
-		_message_open = false
-		_open_app("Inbox")
+		if _active_app == "File Sandbox":
+			_file_selected = false
+		else:
+			_message_open = false
+		_open_app(_active_app)
 	)
 	_app_content = _pc.body
 	_evidence = VBoxContainer.new()
@@ -239,8 +220,6 @@ func _setup_pc() -> void:
 	_quarantine.set_drag_forwarding(Callable(), _can_quarantine_drop, _drop_quarantine)
 	_pc.actions.add_child(_quarantine)
 	_pc.actions.hide()
-	_feedback = UI.label("Open Mail to start. Evidence keeps your investigation checklist. All apps are offline.", 22, UI.MUTED)
-	add_child(_feedback)
 	_answer_effect = Feedback.mount(_pc)
 	if _investigation:
 		_refresh_evidence()
@@ -255,7 +234,7 @@ func _open_pc_app(app: String) -> void:
 	UI.clear(_app_content)
 	(_app_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	_pc.show_app(app)
-	_pc.back_button.visible = app == "Inbox" and _message_open and not _passed
+	_pc.back_button.visible = (app == "Inbox" and _message_open and not _passed) or (app == "File Sandbox" and _file_selected)
 	_pc.actions.visible = _investigation and app == "Inbox" and _message_open and _verified and not _passed
 	match app:
 		"Inbox": _pc_mail()
@@ -277,10 +256,11 @@ func _open_pc_app(app: String) -> void:
 	_readability_changed.call_deferred()
 
 func _pc_card(title: String, body: String) -> VBoxContainer:
-	var panel: PanelContainer = UI.panel(_app_content, Color("#102040"))
+	var panel: PanelContainer = UI.panel(_app_content)
+	panel.add_theme_stylebox_override("panel", PC.frame_style(PC.INK, PC.EDGE, 10))
 	var content: VBoxContainer = UI.column(panel, 12)
 	content.add_child(UI.label(title, 22, CYAN))
-	content.add_child(UI.label(body, 24, Color("#F3ECD6")))
+	content.add_child(PC.label(body, 26))
 	return content
 
 func _pc_mail() -> void:
@@ -302,7 +282,7 @@ func _pc_mail() -> void:
 	details.disabled = _inspected
 	_app_content.add_child(details)
 	if _inspected:
-		_pc_card("MESSAGE DETAILS", "Actual sender: " + SENDER + "\nDisplay name: University IT" if _investigation else str(_data.rule))
+		_pc_card("MESSAGE DETAILS", "Actual sender: " + SENDER + "\nDisplay name: University IT" if _investigation else _finding)
 	_app_content.add_child(UI.button("Preview link destination", _open_app.bind("Browser")))
 	if int(_data.get("lesson_index", 0)) == 3:
 		_app_content.add_child(UI.button("Attachment / FINE_NOTICE.PDF.exe", _open_app.bind("File Sandbox")))
@@ -375,6 +355,16 @@ func _pc_files() -> void:
 	if int(_data.get("lesson_index", 0)) != 3:
 		_pc_card("FOLDER EMPTY", "This case has no attachment. No files have been downloaded.")
 		return
+	if not _file_selected:
+		var file: Button = UI.button("FINE_NOTICE.PDF.exe", func() -> void:
+			_file_selected = true
+			_pc.log_action("stat FINE_NOTICE.PDF.exe\nType: executable (.exe)")
+			_open_app("File Sandbox")
+		)
+		file.name = "InspectAttachmentFile"
+		file.accessibility_name = "Inspect the properties of FINE_NOTICE.PDF.exe"
+		_app_content.add_child(file)
+		return
 	_pc_card("FINE_NOTICE.PDF.exe", "TYPE: Executable program (.exe)\nSOURCE: Email attachment\nSTATUS: Not executed\n\nThe final extension determines the file type, not the PDF text in its name.")
 	var inspect: Button = UI.button("Record file properties", _act.bind("inspect"))
 	inspect.disabled = not _opened or _passed
@@ -389,7 +379,7 @@ func _pc_evidence() -> void:
 	for item: Array in [[_opened, "Read the request"], [_inspected, "Inspect its details"], [_verified, "Verify independently"], [_passed, "Report safely"]]:
 		_app_content.add_child(UI.label(("[DONE] " if item[0] else "[ ] ") + str(item[1]), 24, SUCCESS if item[0] else UI.MUTED))
 	if _inspected:
-		_pc_card("RECORDED DETAILS", str(_data.rule))
+		_pc_card("RECORDED DETAILS", _finding)
 	if _verified:
 		_pc_card("TRUSTED RESPONSE", "The request was not authorized. It is ready to report.")
 	_app_content.add_child(UI.button("Back to Mail", _open_app.bind("Inbox")))
@@ -399,13 +389,27 @@ func _open_app(app: String) -> void:
 		_open_pc_app(app)
 
 func _readability_changed() -> void:
+	if is_instance_valid(_pc):
+		_pc.set_case_state(_inspected, _verified, _passed)
+		for parent: Container in [_pc.body, _pc.actions]:
+			for control: Node in parent.find_children("*", "Control", true, false):
+				if control is Button:
+					PC.style_button(control as Button)
+				elif control is Label:
+					(control as Label).add_theme_font_override("font", PC.FONT)
+				elif control is LineEdit:
+					var field: LineEdit = control as LineEdit
+					field.add_theme_font_override("font", PC.FONT)
+					field.add_theme_stylebox_override("normal", PC.frame_style(PC.INK, PC.EDGE, 8))
+					field.add_theme_stylebox_override("read_only", PC.frame_style(PC.INK, PC.EDGE, 8))
+					field.add_theme_color_override("font_color", PC.PAPER)
 	content_changed.emit()
 
 func _inspect_sender() -> void:
 	if _passed or not _opened or _active_app != "Inbox":
 		return
 	_inspected = true
-	_notice("Raw sender recorded. Look up University IT in the trusted Directory.")
+	_notice("Mail header: " + SENDER + ". Check University IT in Directory.")
 	_open_app("Inbox")
 	_refresh_evidence()
 
@@ -418,7 +422,7 @@ func _search_directory(query: String) -> void:
 		_notice("No matching department. Search for University IT, the sender's display name.", true)
 		return
 	_directory_found = true
-	_notice("Official domain recorded. Compare it with the email's actual sender domain.")
+	_notice("Directory: @" + OFFICIAL_DOMAIN + ". Compare both domains in Evidence.")
 	_open_app("Directory")
 	_refresh_evidence()
 
@@ -494,11 +498,10 @@ func _complete_investigation() -> void:
 	if _passed:
 		return
 	_passed = true
-	_task.text = "CASE CLOSED / SENDER MISMATCH PROVEN"
+	_task.text = "SYS://SCHOOL-01   /   CASE CLOSED"
 	_task.add_theme_color_override("font_color", SUCCESS)
-	_notice("Email quarantined. You verified a lookalike sender instead of trusting its name. All school names and .example addresses in this case are fictional.")
-	_feedback.add_theme_color_override("font_color", SUCCESS)
-	_answer_effect.show_result(true)
+	_pc.result("Message quarantined. The sender used a hyphen where the school domain has a dot. Your evidence is saved in this case.", false)
+	_answer_effect.show_result(true, not SettingsService.reduced_motion)
 	# Leave native drag handling's source/target alive until the drop has finished.
 	_refresh_evidence.call_deferred()
 	_open_app.call_deferred("Inbox")
@@ -508,9 +511,9 @@ func _unsafe_link() -> void:
 	_notice("Link blocked by the training sandbox. Verify the sender independently before opening an unexpected policy link.", true)
 
 func _notice(message: String, error: bool = false) -> void:
-	_feedback.text = message
-	_feedback.add_theme_color_override("font_color", Color("FF5C5C") if error else UI.MUTED)
 	if error:
-		_answer_effect.show_result(false)
+		_pc.result(message, true)
+		_answer_effect.show_result(false, not SettingsService.reduced_motion)
 	else:
+		_pc.log_action(message)
 		_answer_effect.reset()

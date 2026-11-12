@@ -161,6 +161,9 @@ func on_resume() -> void:
 
 
 func on_exit() -> void:
+	var handler_picker: Control = get_node_or_null("HandlerPicker") as Control
+	if is_instance_valid(handler_picker):
+		handler_picker.close()
 	_consume_greeting()
 	_close_access()
 	_mode_modal.dismiss()
@@ -179,6 +182,11 @@ func _consume_greeting() -> void:
 
 
 func _process(delta: float) -> void:
+	if not Engine.is_editor_hint() and is_visible_in_tree() and PlayerManager.handler_choice_pending and not PlayerManager.needs_tutorial() and not Router.is_tutorial:
+		if not _mode_transitioning and not _mode_modal.visible and not is_instance_valid(get_node_or_null("HandlerPicker")):
+			%Companion.close_dialogue()
+			preload("res://src/ui/components/handler_picker.gd").open(self, true)
+		return
 	if Engine.is_editor_hint() or not _greeting_pending or not is_visible_in_tree():
 		return
 	var blocked: bool = PlayerManager.needs_tutorial() or Router.is_tutorial or _selected_mode != &"SOLO" or _mode_transitioning or _mode_modal.visible
@@ -354,6 +362,8 @@ func _close_access() -> void:
 		_access_modal.close()
 
 func can_go_back() -> bool:
+	if is_instance_valid(get_node_or_null("HandlerPicker")):
+		return false
 	if is_instance_valid(_access_modal) and _access_modal.visible:
 		_access_modal.back()
 		return false

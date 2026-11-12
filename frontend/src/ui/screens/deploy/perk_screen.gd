@@ -102,6 +102,10 @@ func _refresh() -> void:
 	UI.clear(_cards)
 	UI.clear(_network)
 	UI.clear(_slots)
+	_slots.show()
+	if _deploy and _chapter_id == "mod_01_ch_01":
+		_build_star_objectives(frozen, physical)
+		return
 	for id: String in Perks.IDS:
 		var data: Dictionary = Perks.DATA[id]
 		var owned: bool = id in PlayerManager.owned_perks
@@ -136,6 +140,29 @@ func _refresh() -> void:
 		button.custom_minimum_size.y = maxf(64, 48 / physical)
 		button.add_theme_font_size_override("font_size", font)
 	_notice.add_theme_font_size_override("font_size", font)
+
+func _build_star_objectives(frozen: bool, physical: float) -> void:
+	var chapter: GDScript = PlayerManager.story_definition(_chapter_id)
+	var earned: Array[String] = PlayerManager.story_stars(_chapter_id)
+	_title.text = "THE SURVEY / STAR OBJECTIVES"
+	_notice.text = "%d/3 STARS / Earn missing stars on any completed replay. Each pays 25 credits once." % earned.size()
+	_notice.add_theme_font_size_override("font_size", ceili(16 / physical))
+	_cards.show()
+	_network.hide()
+	_slots.hide()
+	var column: VBoxContainer = UI.scroll_column(_cards)
+	column.size_flags_horizontal = SIZE_EXPAND_FILL
+	for id: String in chapter.STAR_IDS:
+		var card: PanelContainer = UI.panel(column, Color("153B37") if id in earned else UI.PANEL)
+		var body: VBoxContainer = UI.column(card, 8)
+		body.add_child(UI.label("EARNED" if id in earned else "OBJECTIVE / +25 CREDITS", ceili(16 / physical), UI.GOLD))
+		body.add_child(UI.label(str(chapter.STAR_GOALS[id]), ceili(19 / physical)))
+	column.add_child(UI.label("Finish to continue, even with no stars. Mistakes affect only that objective. Revealing a solution hint forfeits its objective for this run; general instructions and reviewing evidence do not.", ceili(17 / physical), UI.MUTED))
+	_launch.show()
+	_launch.text = "CONTINUE" if frozen else "REPLAY" if _replay else "START"
+	_launch.disabled = not PlayerManager.story_unlocked(_chapter_id)
+	_launch.custom_minimum_size.y = 48 / physical
+	_launch.add_theme_font_size_override("font_size", ceili(18 / physical))
 
 func _orbit(id: String, equipped: Array[String], physical: float) -> Button:
 	var node: Button = Orbit.new()

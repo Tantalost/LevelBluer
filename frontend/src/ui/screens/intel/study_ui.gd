@@ -66,6 +66,11 @@ static func button(text: String, callback: Callable, primary: bool = false) -> B
 	b.add_theme_font_override("font", FONT)
 	b.add_theme_font_size_override("font_size", 24)
 	style_button(b, primary)
+	if text.to_lower() in ["back", "previous", "resources", "review lesson"]:
+		b.add_theme_color_override("font_color", Color("#BDD6FF"))
+		b.add_theme_stylebox_override("normal", box(Color("#102040"), Color("#516F9D"), 10))
+		b.add_theme_stylebox_override("hover", box(Color("#BDD6FF"), Color("#4F8CFF"), 10))
+		b.add_theme_stylebox_override("pressed", box(Color("#94B9EA"), Color("#4F8CFF"), 10))
 	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if callback.is_valid():

@@ -4,6 +4,7 @@ signal finished(passed: bool)
 signal return_requested
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Quiz = preload("res://src/gameplay/quiz_content.gd")
+const Study: GDScript = preload("res://src/ui/screens/intel/lesson_study_content.gd")
 const COUNT: int = 25
 const PASS: int = 20
 const ACTIVITY_TYPES: Dictionary = {"guided": "sender_audit", "trust": "trust_verdict", "spot": "spot_the_tell", "tap": "tap_trap_lines", "triage": "inbox_triage", "consequence": "consequence_choice", "branch": "consequence_choice", "reverse": "tap_trap_lines", "timeline": "spot_the_tell"}
@@ -23,6 +24,8 @@ var _none_button: Button
 var _choices: Array[Dictionary] = []
 var _buttons: Array[Button] = []
 var _mistakes: Array[String] = []
+var _review_lessons: Array[int] = []
+var _broad_review: bool = false
 var _heading: Label
 var _body: VBoxContainer
 var _feedback: Label
@@ -91,13 +94,13 @@ func _ready() -> void:
 func setup(id: String) -> void:
 	module_id = id
 	_skill = str(LessonCatalog.module_by_id(id).get("domain", ""))
-	review = account.has_lesson_post_quiz(id)
+	review = account.module_academically_cleared(id)
 	_body.add_child(UI.label("Put your learning to the test", 32))
 	_body.add_child(UI.label("25 questions / Pass with 20 correct.\nDifferent situations and question formats from this module. Difficulty adapts to your mastery; every lesson's skills are included.", 26, UI.MUTED))
 	_body.add_child(UI.label("No timer. Read each result before continuing. Leaving restarts this attempt; submitted mastery updates are kept.", 24, UI.MUTED))
 	if review:
-		_body.add_child(UI.label("REVIEW / You already passed. This practice will not change mastery or your unlock.", 24, Color("#33D17A")))
-	_action.disabled = account.get_lesson_progress(id) < LessonCatalog.lesson_count(id) or _skill.is_empty()
+		_body.add_child(UI.label("OPTIONAL REVIEW / This module is already cleared. This attempt will not change mastery, checkpoint records or access.", 24, Color("#33D17A")))
+	_action.disabled = not account.can_take_checkpoint(id) or _skill.is_empty()
 	_fit_touch.call_deferred()
 
 func begin() -> void:
@@ -109,7 +112,7 @@ func begin() -> void:
 		_action.pressed.connect(_advance)
 		_next()
 		return
-	if not account.can_access_lesson_module(module_id) or account.get_lesson_progress(module_id) < LessonCatalog.lesson_count(module_id):
+	if not account.can_take_checkpoint(module_id):
 		return
 	pool.clear()
 	var unique: Dictionary = {}
@@ -258,6 +261,14 @@ func submit() -> void:
 		explanation = " ".join(details)
 	if not correct:
 		_mistakes.append("%s: %s" % [str(question.get("type_label", "")), explanation])
+		if not practice:
+			var mapped: bool = false
+			for index: int in LessonCatalog.lesson_count(module_id):
+				for item: Dictionary in Study.mini_pool(module_id, index):
+					if str(item.id) == Quiz._question_key(question):
+						mapped = true
+						if index not in _review_lessons: _review_lessons.append(index)
+			if not mapped: _broad_review = true
 	for button: Button in _buttons:
 		button.disabled = true
 	if is_instance_valid(_none_button):
@@ -302,6 +313,16 @@ func _results() -> void:
 	_heading.text = "CHECKPOINT %s / %d OF 25" % ["PASSED" if score >= PASS else "KEEP PRACTICING", score]
 	var success_text: String = "Final module checkpoint passed." if module_id == "mod_05" else "Your next module is ready."
 	_body.add_child(UI.label(success_text if score >= PASS else "Pass with 20 correct. Review the feedback below, then reopen the checkpoint to try again.", 28, Color("#33D17A") if score >= PASS else Color("#FFB648")))
+	if score < PASS:
+		_body.add_child(UI.label("RECOMMENDED LESSON REVIEW", 26, Color("#4FE0D4")))
+		if _broad_review:
+			_body.add_child(UI.label("Some missed questions cover broader module skills. Review the module alongside these explanations before retrying.", 24, UI.MUTED))
+			for index: int in LessonCatalog.lesson_count(module_id):
+				if index not in _review_lessons: _review_lessons.append(index)
+		_review_lessons.sort()
+		var lessons: Array[Dictionary] = LessonCatalog.lessons_for(module_id)
+		for index: int in _review_lessons:
+			_body.add_child(UI.button("LESSON %d / %s" % [index + 1, str(lessons[index].title)], func() -> void: Router.push(&"lesson_player", {"module_id":module_id, "lesson_index":index})))
 	for note: String in _mistakes:
 		_body.add_child(UI.label(note, 24, UI.MUTED))
 	if _mistakes.is_empty():

@@ -1,9 +1,13 @@
 extends BaseScreen
-## Paired local eyecatches. Percentages represent completed boot work, not a timer.
+## Story illustrations load independently of measured boot progress.
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 const READY_HOLD_SECONDS: float = 1.1
 const ASSET_START: float = 10.0
 const ASSET_END: float = 85.0
+const ART_COUNT: int = 10
+const ART_URL: String = "https://res.cloudinary.com/nfd5bhkz/image/upload/w_1280,q_82,f_webp/levelblue_loading_story_%02d_v1.webp"
+const ART_CACHE: String = "user://levelblue_loading_story_%02d_v1.webp"
+const ART_HISTORY: String = "user://loading_story_last.cfg"
 const TIP_KEYS: Array[String] = ["TIP_UPGRADE_DEFENSES", "TIP_CHECK_SENDER", "TIP_HOVER_LINK", "TIP_URGENCY_IS_A_TELL", "TIP_NEVER_SHARE_OTP"]
 
 @onready var _progress: ProgressBar = %ProgressBar
@@ -13,7 +17,7 @@ const TIP_KEYS: Array[String] = ["TIP_UPGRADE_DEFENSES", "TIP_CHECK_SENDER", "TI
 @onready var _headline: Label = %Headline
 @onready var _percent: Label = %Percent
 @onready var _detail: Label = %AssetDetail
-@onready var _ready_art: TextureRect = %ReadyArt
+@onready var _background: TextureRect = $Background
 @onready var _loading_panel: Control = $SafeAreaContainer/Layout/LoadingGroup/Panel
 var _sweep: ActivitySweep
 var _transition: Tween
@@ -24,6 +28,7 @@ var _target: float = 0.0
 var _has_session: bool = false
 var _assets_ready: bool = false
 var _poll: float = 0.0
+var _art_request: HTTPRequest
 
 class ActivitySweep extends Control:
 	var travel: float = 0.0
@@ -51,10 +56,63 @@ func on_enter(_args: Dictionary) -> void:
 	if not get_viewport().size_changed.is_connected(_scale_loading_ui):
 		get_viewport().size_changed.connect(_scale_loading_ui)
 	_scale_loading_ui()
+	_load_story_art()
 	_boot()
+
+func _load_story_art() -> void:
+	var history: ConfigFile = ConfigFile.new()
+	var previous: int = 0
+	if history.load(ART_HISTORY) == OK:
+		previous = clampi(int(history.get_value("art", "last", 0)), 0, ART_COUNT)
+	var next: int = previous % ART_COUNT + 1
+	var image: Image = Image.new()
+	if FileAccess.file_exists(ART_CACHE % next) and image.load(ART_CACHE % next) == OK:
+		_show_story_art(image, next)
+		return
+	if previous > 0 and FileAccess.file_exists(ART_CACHE % previous) and image.load(ART_CACHE % previous) == OK:
+		_background.texture = ImageTexture.create_from_image(image)
+	else:
+		_background.texture = AssetManager.get_texture("story_bg_school_gate_morning")
+		if _background.texture == null:
+			_background.texture = AssetManager.get_texture("story_college_commons")
+	var request: HTTPRequest = HTTPRequest.new()
+	_art_request = request
+	request.timeout = 12.0
+	request.body_size_limit = 2 * 1024 * 1024
+	add_child(request)
+	request.request_completed.connect(_story_art_received.bind(request, next), CONNECT_ONE_SHOT)
+	if request.request(ART_URL % next) != OK:
+		request.queue_free()
+		_art_request = null
+
+func _story_art_received(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray, request: HTTPRequest, index: int) -> void:
+	request.queue_free()
+	if request != _art_request:
+		return
+	_art_request = null
+	if not _active or result != HTTPRequest.RESULT_SUCCESS or status != 200:
+		return
+	var image: Image = Image.new()
+	if image.load_webp_from_buffer(body) != OK:
+		return
+	var cache: FileAccess = FileAccess.open(ART_CACHE % index, FileAccess.WRITE)
+	if cache != null:
+		cache.store_buffer(body)
+		cache.close()
+	_show_story_art(image, index)
+
+func _show_story_art(image: Image, index: int) -> void:
+	_background.texture = ImageTexture.create_from_image(image)
+	var history: ConfigFile = ConfigFile.new()
+	history.set_value("art", "last", index)
+	history.save(ART_HISTORY)
 
 func on_exit() -> void:
 	_active = false
+	if is_instance_valid(_art_request):
+		_art_request.cancel_request()
+		_art_request.queue_free()
+		_art_request = null
 	_boot_token += 1
 	_disconnect_progress()
 	if _transition != null and _transition.is_valid():
@@ -100,7 +158,6 @@ func _boot() -> void:
 	_target = 0.0
 	_progress.value = 0.0
 	_percent.text = "0%"
-	_ready_art.modulate.a = 0.0
 	_headline.text = "POWERING UP"
 	_headline.add_theme_color_override("font_color", Color("#4FE0D4"))
 	_retry.hide()
@@ -252,11 +309,6 @@ func _show_ready(token: int) -> void:
 			int(offline.get("ready", 0)), int(offline.get("total", 0))]
 	_detail.text = "Your next move matters. Make it a smart one."
 	_tip.text = "LET'S DO THIS, DEFENDER."
-	_transition = create_tween()
-	_transition.tween_property(_ready_art, "modulate:a", 1.0, 0.3)
-	await _transition.finished
-	if not _still(token):
-		return
 	await get_tree().create_timer(READY_HOLD_SECONDS).timeout
 	if not _still(token):
 		return

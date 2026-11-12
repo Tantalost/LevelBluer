@@ -8,6 +8,65 @@ const P_L0 := 0.10
 const P_G := 0.20
 const P_S := 0.10
 
+## Zero-based lesson objectives, keyed by the stable diagnostic item IDs 1–15.
+## Multi-objective misses require every associated lesson, not a guessed topic.
+const ROUTE_VERSION: int = 1
+const LESSON_MAP: Dictionary = {
+	"mod_01": [[0,4],[0],[1],[5],[2],[1],[2,5],[3],[1,3],[1,4],[1,5],[2],[5],[0,1],[3,4]],
+	"mod_02": [[0],[2],[1,3],[0],[1],[1],[3],[2],[4],[3],[0],[1],[1],[5],[4,5]],
+	"mod_03": [[0],[0,3],[1],[2],[1],[2],[3],[0,3],[2],[5],[4],[1,3],[2],[2,5],[4,5]],
+	"mod_04": [[0],[0,4],[4],[2],[1],[2],[1],[4],[3],[1],[3],[2,3],[1,4],[5],[3,5]],
+	"mod_05": [[0],[0,2],[1,5],[1],[4],[4],[1,3],[2,5],[4],[4],[0,5],[2],[1],[2,4],[3,5]],
+}
+
+
+static func has_route_coverage(module_id: String) -> bool:
+	var mapping: Array = LESSON_MAP.get(module_id, [])
+	var bank: Array = _bank_for(module_id)
+	if bank.size() != 15 or mapping.size() != 15:
+		return false
+	var covered: Dictionary = {}
+	var ids: Dictionary = {}
+	for question: Dictionary in bank:
+		var id: int = int(question.get("id", 0))
+		if id < 1 or id > 15 or ids.has(id):
+			return false
+		ids[id] = true
+		for index: int in mapping[id - 1]:
+			if index < 0 or index >= 6:
+				return false
+			covered[index] = true
+	return covered.size() == 6
+
+
+static func route_baseline(module_id: String, baseline: Dictionary) -> Dictionary:
+	var result: Dictionary = baseline.duplicate(true)
+	result["route"] = "full"
+	result["required_lessons"] = [0,1,2,3,4,5]
+	if int(result.get("total", 0)) != 15 or not has_route_coverage(module_id):
+		return result
+	var correct: int = int(result.get("correct", 0))
+	# A historical perfect 15-item result has no missing concepts to reconstruct.
+	if correct == 15:
+		result.merge({"route":"cleared", "required_lessons":[], "missed_ids":[], "route_version":ROUTE_VERSION}, true)
+	elif correct >= 12 and int(result.get("route_version", 0)) == ROUTE_VERSION:
+		var raw: Variant = result.get("missed_ids", [])
+		if not raw is Array or raw.size() != 15 - correct:
+			return result
+		var missed: Array[int] = []
+		var required: Array[int] = []
+		for value: Variant in raw:
+			if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)) or int(value) < 1 or int(value) > 15 or int(value) in missed:
+				return result
+			missed.append(int(value))
+			for index: int in LESSON_MAP[module_id][int(value) - 1]:
+				if index not in required:
+					required.append(index)
+		required.sort()
+		result["route"] = "targeted"
+		result["required_lessons"] = required
+	return result
+
 static var _banks: Dictionary = {}
 static var _loaded: bool = false
 
@@ -52,12 +111,15 @@ static func grade(module_id: String, answers: Array, current_pl: float) -> Dicti
 	var topic := str((bank[0] as Dictionary).get("topic", "Phishing"))
 	var p_l: float = _initial_pl(current_pl)
 	var correct_count: int = 0
+	var missed_ids: Array[int] = []
 	for i in bank.size():
 		var question: Dictionary = bank[i]
 		var qid: int = int(question.get("id", 0))
 		var is_correct: bool = _is_correct(question, submitted.get(qid))
 		if is_correct:
 			correct_count += 1
+		else:
+			missed_ids.append(qid)
 		p_l = snappedf(_update_pl_diagnostic(p_l, is_correct), 0.0001)
 	var total: int = bank.size()
 	var pre_score: int = int(round((float(correct_count) / float(total)) * 100.0)) if total > 0 else 0
@@ -68,6 +130,7 @@ static func grade(module_id: String, answers: Array, current_pl: float) -> Dicti
 		"total": total,
 		"pre_score": pre_score,
 		"p_l": snappedf(p_l, 0.0001),
+		"missed_ids": missed_ids,
 	}
 
 

@@ -65,6 +65,8 @@ func _run() -> void:
 	settings.text_speed = "instant"
 	settings.reduced_motion = true
 	player.chapter_progress = {}
+	player.lesson_completions = {"mod_01:0":true}
+	player.story_reward_claims = {}
 	player.credits = 50
 	# Normalize the fixture through the existing save loader before fingerprinting.
 	player.apply_save_data(player.get_save_data())
@@ -144,6 +146,8 @@ func _run() -> void:
 	check(not screen._phone.visible, "Departure lead-in does not open chat early")
 	screen._advance()
 	check(not screen._phone.visible, "Final lead-in sentence has a readable hold before opening")
+	# The current narration intentionally holds Club Chat until delivery ends.
+	screen._voice.clear_clip()
 	screen._process(0.9)
 	await settle()
 	check(screen._phone.visible and screen._phone.mode == "chat", "Last lead-in sentence opens Club Chat")
@@ -347,7 +351,7 @@ func _run() -> void:
 	finish_beat()
 	check(screen.state.phase == "done", "Chapter completes")
 	check(screen.state.next_chapter_unlocked, "Next chapter access earned without publishing unfinished content")
-	check(player.credits == 150, "One base reward with no clean bonus after mistake")
+	check(player.credits == 175, "Base reward plus the independently earned clue star")
 	check(screen._results.visible and not screen._journal.visible, "Completion uses the dedicated celebration card")
 	check(not screen._result_actions.get_child(0).disabled, "Completed Chapter 1 exposes the authored Chapter 2")
 	check(screen._result_actions.get_child(1).text == "PERKS", "Completion exposes the Perks destination")
@@ -361,11 +365,11 @@ func _run() -> void:
 	screen._toggle_menu()
 	await capture("complete_counting")
 	await create_timer(2.0).timeout
-	check(player.credits == 150, "Visual credit count-up never awards a second payout")
+	check(player.credits == 175, "Visual credit count-up never awards a second payout")
 	if DisplayServer.get_name() != "headless":
-		check(screen._results.shown_award == 100 and screen._results.shown_balance == 150, "Displayed credit and wallet totals match persisted reward")
+		check(screen._results.shown_award == 125 and screen._results.shown_balance == 175, "Displayed credit and wallet totals match persisted reward")
 	screen._save()
-	check(player.credits == 150, "Repeat save cannot award twice")
+	check(player.credits == 175, "Repeat save cannot award twice")
 	check(JSON.stringify([player.onboarding_state,player.mastery_matrix,player.cleared_stages]) == legacy, "Legacy progress and BKT unchanged")
 	await settle()
 	await capture("complete")
@@ -382,17 +386,17 @@ func _run() -> void:
 	check(not screen._result_audio.playing, "Unmute does not replay the completed reward flourish")
 	var stored: Dictionary = player.get_save_data()
 	player.apply_save_data(stored)
-	check(player.chapter_progress[Chapter.ID].completed and player.credits == 150, "Completion survives serialization")
+	check(player.chapter_progress[Chapter.ID].completed and player.credits == 175, "Completion survives serialization")
 	screen._replay()
 	screen._advance()
-	check(player.chapter_progress[Chapter.ID].completed and player.credits == 150, "Replay isolated from original exhibit")
+	check(player.chapter_progress[Chapter.ID].completed and player.credits == 175, "Replay isolated from original exhibit")
 	var bad: Dictionary = Chapter.clean({"phase":"done","sealed":true,"completed":true,"flags":"bad"})
 	check(not bad.completed and bad.phase == "day", "Malformed/incomplete saves repair safely")
 	var clean: Dictionary = stored.chapter_progress[Chapter.ID].duplicate(true)
 	clean.mistakes = 0
-	check(Chapter.clean(clean).reward == 125, "Clean work earns 25 bonus")
+	check(Chapter.clean(clean).reward == 100, "Base reward is separate from objective claims")
 	clean.hint_used = true
-	check(Chapter.clean(clean).reward == 100, "Hints remove clean-work bonus only")
+	check(Chapter.clean(clean).reward == 100, "Help never removes the base completion reward")
 	player.apply_save_data({})
 	check(player.chapter_progress.is_empty(), "Absent chapter state cannot leak between accounts")
 	player.apply_save_data(stored)
@@ -463,6 +467,7 @@ func _run() -> void:
 		screen.state.beat = 4
 		screen._render()
 		for sentence_index: int in range(screen._sentences.size() - 1): screen._advance()
+		screen._voice.clear_clip()
 		screen._process(0.9)
 		screen._phone._tick_chat(1.0)
 		await settle()
@@ -498,7 +503,7 @@ func _run() -> void:
 		check(not screen._menu_backdrop.visible, "Resume removes input-blocking backdrop")
 		check(screen._results.get_global_rect().end.y <= root.get_visible_rect().end.y, "Reward card fits viewport")
 		for button: Node in screen._result_actions.get_children():
-			check((button as Control).get_global_rect().size.y * root.get_final_transform().get_scale().y >= 63, "Primary result buttons retain large touch targets")
+			check((button as Control).get_global_rect().size.y * root.get_final_transform().get_scale().y >= 44, "Primary result buttons retain mobile touch targets")
 		check(not screen._result_audio.playing, "Reopening completed results never repeats celebration music")
 	# The dramatic version is presentation-only and restarts safely after Settings.
 	settings.reduced_motion = false

@@ -25,7 +25,6 @@ var _selection_revision: int = 0
 var _overview: VBoxContainer
 var _detail: PanelContainer
 var _heading: Label
-var _back: Button
 var _showing_detail: bool = false
 var _selection_origin: Vector2
 var _info: VBoxContainer
@@ -43,6 +42,8 @@ var _returning: bool = false
 var _lane_width: float = 520.0
 var _journey_backdrop: Control
 var _practice: Button
+var _practice_topic: Label
+var _detail_resources: Button
 
 class JourneyBackdrop extends Control:
 	## Static edge decoration: no textures, input interception, or per-frame work.
@@ -210,35 +211,41 @@ func _ready() -> void:
 	_journey_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	move_child(_journey_backdrop, 1) # Above the base fill, below all interactive UI.
 	var layout: VBoxContainer = shell.layout
-	var school_button: Button = UI.button("School Content", func() -> void: Router.push(&"school_content"))
-	school_button.custom_minimum_size.x = 200
-	shell.title.get_parent().add_child(school_button)
 	_heading = shell.title
-	_back = shell.back
+	_detail_resources = UI.button("School Content", _open_school_content)
+	_heading.get_parent().add_child(_detail_resources)
+	_detail_resources.hide()
 	_overview = UI.column(layout, 20)
 	_overview.size_flags_vertical = SIZE_EXPAND_FILL
-	_overview.add_child(UI.label("CHOOSE YOUR NEXT CHALLENGE", 24, CYAN))
-	_practice = UI.button("RECOMMENDED PRACTICE",func() -> void: Router.push(&"lesson_player",{"practice":true}))
+	var shortcuts: HBoxContainer = HBoxContainer.new()
+	shortcuts.name = "LearningShortcuts"
+	shortcuts.add_theme_constant_override("separation", 16)
+	_overview.add_child(shortcuts)
+	var school: Button = UI.button("", _open_school_content)
+	school.name = "SchoolContent"
+	shortcuts.add_child(school)
+	_style_shortcut(school, "School Content", "Teacher resources", IntelPixelIcon.Kind.BOOKS, Color("#102040"), Color("#8FB5EE"))
+	_practice = UI.button("", func() -> void: Router.push(&"lesson_player", {"practice": true}))
 	_practice.name = "RecommendedPractice"
-	_overview.add_child(_practice)
+	shortcuts.add_child(_practice)
+	_practice_topic = _style_shortcut(_practice, "Practice", "Recommended topic", IntelPixelIcon.Kind.TERMINAL, Color("#0E2A28"), CYAN)
 	var timeline_center: VBoxContainer = UI.column(_overview, 0)
 	timeline_center.size_flags_vertical = SIZE_EXPAND_FILL
 	timeline_center.alignment = BoxContainer.ALIGNMENT_CENTER
 	_scroll = ScrollContainer.new()
 	_scroll.name = "ModuleTimeline"
-	_scroll.custom_minimum_size.y = 380
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.get_h_scroll_bar().value_changed.connect(_update_navigation.unbind(1))
 	_scroll.scroll_ended.connect(_snap_timeline)
 	timeline_center.add_child(_scroll)
 	_track = Control.new()
-	_track.custom_minimum_size = Vector2(1800, 372)
+	_track.custom_minimum_size = Vector2(1800, 306)
 	_scroll.add_child(_track)
 	var navigation: HBoxContainer = HBoxContainer.new()
 	navigation.add_theme_constant_override("separation", 24)
 	_overview.add_child(navigation)
-	_previous = UI.button("<", _pan.bind(-1))
+	_previous = UI.button("Previous", _pan.bind(-1))
 	_previous.tooltip_text = "Previous modules"
 	navigation.add_child(_previous)
 	_page_label = UI.label("", 22, UI.MUTED)
@@ -246,7 +253,7 @@ func _ready() -> void:
 	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	navigation.add_child(_page_label)
-	_next = UI.button(">", _pan.bind(1))
+	_next = UI.button("Next", _pan.bind(1))
 	_next.tooltip_text = "Next modules"
 	navigation.add_child(_next)
 	_detail = UI.panel(layout, Color("#050B18"))
@@ -331,6 +338,40 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_fit_touch)
 	_refresh_list_ui()
 
+func _open_school_content() -> void:
+	Router.push(&"school_content")
+
+func _style_shortcut(button: Button, title: String, subtitle: String, kind: IntelPixelIcon.Kind, fill: Color, accent: Color) -> Label:
+	button.size_flags_horizontal = SIZE_EXPAND_FILL
+	button.custom_minimum_size.y = 92
+	button.accessibility_name = title + ". " + subtitle
+	for state: String in ["normal", "hover", "pressed", "hover_pressed"]:
+		var surface: StyleBoxFlat = UI.box(fill if state == "normal" else fill.lightened(0.10), accent.darkened(0.38), 12)
+		surface.border_width_left = 5
+		button.add_theme_stylebox_override(state, surface)
+	var row: HBoxContainer = HBoxContainer.new()
+	button.add_child(row)
+	row.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	row.offset_left = 24
+	row.offset_right = -16
+	row.add_theme_constant_override("separation", 18)
+	row.mouse_filter = MOUSE_FILTER_IGNORE
+	var icon: IntelPixelIcon = IntelPixelIcon.new()
+	icon.kind = kind
+	icon.ink_override = accent
+	icon.custom_minimum_size = Vector2(46, 46)
+	icon.size_flags_vertical = SIZE_SHRINK_CENTER
+	icon.mouse_filter = MOUSE_FILTER_IGNORE
+	row.add_child(icon)
+	var copy: VBoxContainer = UI.column(row, 2)
+	copy.mouse_filter = MOUSE_FILTER_IGNORE
+	copy.size_flags_horizontal = SIZE_EXPAND_FILL
+	copy.alignment = BoxContainer.ALIGNMENT_CENTER
+	copy.add_child(UI.label(title, 30, UI.TEXT))
+	var detail: Label = UI.label(subtitle, 21, accent)
+	copy.add_child(detail)
+	return detail
+
 func on_enter(_args: Dictionary) -> void:
 	_set_detail_visible(false)
 	_refresh_list_ui()
@@ -356,8 +397,8 @@ func _set_detail_visible(value: bool) -> void:
 	_journey_backdrop.visible = not value
 	_overview.visible = not value
 	_detail.visible = value
+	_detail_resources.visible = value
 	_heading.text = "MODULE OVERVIEW" if value else "LEARNING JOURNEY"
-	_back.text = "< MAP" if value else "BACK"
 
 func on_resume() -> void:
 	_refresh_list_ui()
@@ -368,8 +409,10 @@ func on_resume() -> void:
 
 func _refresh_list_ui() -> void:
 	var recommendation: Dictionary = LessonCatalog.practice_recommendation(account)
-	_practice.visible = not recommendation.is_empty() and not Router.is_tutorial
-	if not recommendation.is_empty(): _practice.text = "PRACTICE / "+str(recommendation.title).to_upper()
+	_practice.visible = not Router.is_tutorial
+	_practice.disabled = recommendation.is_empty()
+	_practice_topic.text = "Complete a module pretest" if _practice.disabled else str(recommendation.title)
+	_practice.accessibility_name = "Practice. " + _practice_topic.text
 	_stop_transition()
 	_modules = LessonCatalog.modules()
 	UI.clear(_track)
@@ -382,7 +425,7 @@ func _refresh_list_ui() -> void:
 		var x: float = 98.0
 		var id: String = _module_id(i)
 		var passed: bool = account.has_lesson_post_quiz(id)
-		var ready_for_test: bool = _is_complete(i) and _is_unlocked(i)
+		var ready_for_test: bool = account.can_take_checkpoint(id)
 		var line: CheckpointLink = CheckpointLink.new()
 		line.name = "Connector"
 		line.ready_for_test = ready_for_test
@@ -402,7 +445,7 @@ func _refresh_list_ui() -> void:
 		orb.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 		orb.add_theme_stylebox_override("disabled", StyleBoxEmpty.new())
 		orb.pressed.connect(_select.bind(i))
-		orb.tooltip_text = str(_modules[i].title) if not orb.disabled else "Pass the previous module's post-quiz."
+		orb.tooltip_text = str(_modules[i].title) if not orb.disabled else "Clear the previous learning module."
 		group.add_child(orb)
 		var icon: IntelPixelIcon = IntelPixelIcon.new()
 		icon.name = "ModuleStatusIcon"
@@ -426,7 +469,7 @@ func _refresh_list_ui() -> void:
 		var flag: Button = UI.button("", _open_checkpoint.bind(i))
 		flag.name = "Checkpoint%d" % (i + 1)
 		flag.size = Vector2(104, 84)
-		flag.accessibility_name = "Module %d post-quiz: %s" % [i + 1, "passed" if passed else ("ready" if ready_for_test else "locked")]
+		flag.accessibility_name = "Module %d checkpoint: %s" % [i + 1, "passed" if passed else ("ready" if ready_for_test else "locked")]
 		flag.add_theme_font_size_override("font_size", 20)
 		flag.add_theme_stylebox_override("disabled", UI.box(Color("#0A1730"), Color("#173058"), 10))
 		flag.add_theme_stylebox_override("normal", UI.box(Color("#0E2A28"), Color("#4FE0D4"), 10))
@@ -439,11 +482,11 @@ func _refresh_list_ui() -> void:
 		mark.mouse_filter = MOUSE_FILTER_IGNORE
 		flag.add_child(mark)
 		flag.disabled = not ready_for_test
-		flag.tooltip_text = "25 questions / 20 correct to pass" if not flag.disabled else "Finish all six lessons, quizzes and simulations first."
+		flag.tooltip_text = "25 questions / 20 correct to pass" if not flag.disabled else "Finish required lessons, quizzes and simulations first."
 		if account.has_lesson_post_quiz(id):
 			flag.add_theme_stylebox_override("normal", UI.box(Color("#153B37"), GREEN, 8))
 		group.add_child(flag)
-		var checkpoint_caption: Label = UI.label("POST-QUIZ %02d\n%s" % [i + 1, "PASSED" if passed else ("READY" if ready_for_test else "LOCKED")], 22, GREEN if passed else (CYAN if ready_for_test else UI.MUTED))
+		var checkpoint_caption: Label = UI.label("CHECKPOINT %02d\n%s" % [i + 1, "PASSED" if passed else ("READY" if ready_for_test else "LOCKED")], 22, GREEN if passed else (CYAN if ready_for_test else UI.MUTED))
 		checkpoint_caption.name = "CheckpointCaption"
 		checkpoint_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		checkpoint_caption.size = Vector2(180, 68)
@@ -481,7 +524,7 @@ func _update_navigation() -> void:
 	var bar: HScrollBar = _scroll.get_h_scroll_bar()
 	_previous.disabled = bar.value <= 1
 	_next.disabled = bar.value >= bar.max_value - bar.page - 1
-	_page_label.text = "SWIPE OR USE ARROWS  /  5 MODULES" if bar.max_value > bar.page + 1 else "5 MODULES  /  PASS EACH CHECKPOINT TO ADVANCE"
+	_page_label.text = "5 MODULES" if bar.max_value > bar.page + 1 else "5 MODULES  /  PASS EACH CHECKPOINT TO ADVANCE"
 
 func _pan(direction: int) -> void:
 	if _pan_tween != null:
@@ -521,11 +564,12 @@ func _select(index: int, animate: bool = true, open_detail: bool = true) -> void
 	elif AuthService.has_module_pretest(id):
 		_baseline.text = "STARTING KNOWLEDGE / Starting result unavailable.\nYour completed pre-test and learning progress are unchanged."
 	_description.text = str(_modules[index].desc) + "."
+	_description.text += "\n" + account.learning_route_summary(id)
 	_progress_text.text = "%d%% COMPLETE  /  %d OF 6 LESSONS" % [roundi(ratio * 100), done]
-	_checkpoint_status.text = "CHECKPOINT PASSED\nNext module unlocked" if checkpoint else ("CHECKPOINT READY\n20 / 25 correct to pass" if done == 6 else "CHECKPOINT LOCKED\nFinish all 6 lessons first")
+	_checkpoint_status.text = "CLEARED BY PRETEST\nCheckpoint optional" if account.diagnostic_route(id).route == "cleared" else ("CHECKPOINT PASSED\nNext module unlocked" if checkpoint else ("CHECKPOINT READY\n20 / 25 correct to pass" if account.can_take_checkpoint(id) else "CHECKPOINT LOCKED\nFinish required lessons first"))
 	if checkpoint and index == _modules.size() - 1:
 		_checkpoint_status.text = "CHECKPOINT PASSED\nLearning journey complete"
-	_checkpoint.disabled = done < 6
+	_checkpoint.disabled = not account.can_take_checkpoint(id)
 	_status.text = "Select the glowing emblem to continue your lessons."
 	if _needs_pretest(index):
 		_status.text = "Start with a short pretest to personalize your learning."
@@ -644,7 +688,7 @@ func _needs_pretest(index: int) -> bool:
 	return _is_unlocked(index) and not _is_complete(index) and not AuthService.has_module_pretest(_module_id(index))
 
 func _open_checkpoint(index: int) -> void:
-	if _is_unlocked(index) and _is_complete(index):
+	if _is_unlocked(index) and account.can_take_checkpoint(_module_id(index)):
 		Router.push(&"lesson_player", {"module_id": _module_id(index), "review": true, "post_quiz": true})
 
 func _on_open_pressed() -> void:

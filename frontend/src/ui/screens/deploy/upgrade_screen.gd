@@ -216,7 +216,6 @@ func _open_tower(tower_id: String) -> void:
 	_selection_screen.visible = false
 	_tree_screen.visible = true
 	_title_label.text = TowerBase.display_name_for(tower_id).to_upper() + " / UPGRADES"
-	_back_button.text = "< NODES"
 	_refresh_coins_label()
 	_build_switcher()
 	await get_tree().process_frame

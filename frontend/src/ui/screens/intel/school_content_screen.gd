@@ -56,7 +56,7 @@ func _ready() -> void:
 	release_row.add_child(_status)
 	_reader_header = HBoxContainer.new()
 	layout.add_child(_reader_header)
-	_reader_header.add_child(UI.button("< RESOURCES", _open.bind("")))
+	_reader_header.add_child(UI.button("Resources", _open.bind("")))
 	var practice_note: Label = UI.label("SCHOOL PRACTICE / No campaign scores", 22, Color("#8FF0E6"))
 	practice_note.size_flags_horizontal = SIZE_EXPAND_FILL
 	practice_note.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

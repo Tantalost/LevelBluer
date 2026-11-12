@@ -38,6 +38,7 @@ var _quiz_resolved: bool = false
 var _quiz_finished: bool = false
 var _quiz_last_correct: bool = false
 var _quiz_answers: Array[bool] = []
+var _mini_session: Dictionary = {}
 var _simulation_passed := false
 var _picks: Array[int] = []
 var _data: Dictionary = {}
@@ -68,6 +69,19 @@ var _reading_cursor: float = 0.0
 var _reading_pause: float = 0.0
 var _revealing: bool = false
 var _reveal_button: Button
+var _walkthrough: VideoStreamPlayer
+const WALKTHROUGH_URL: String = "https://res.cloudinary.com/nfd5bhkz/raw/upload/v1794226798/M01_L01_Fake_School_Email.ogv"
+const WALKTHROUGH_CACHE: String = "user://M01_L01_Fake_School_Email_v1794226798.ogv"
+const WALKTHROUGH_SHA256: String = "a6f593e348a5465ab970f8418ef25bc8ed7801bbaad9804dbee9a09b579c1650"
+var _video_autoplay_pending: bool = false
+var _video_toggle: Button
+var _video_replay: Button
+var _video_caption: Label
+var _video_badge: Label
+var _badge_tween: Tween
+var _seek: HSlider
+var _clock: Label
+var _scrubbing: bool = false
 signal lesson_celebrated
 
 func _ready() -> void:
@@ -106,7 +120,7 @@ func _ready() -> void:
 	_reading_progress.custom_minimum_size.y = 6
 	_reading_progress.show_percentage = false
 	_reading_progress.max_value = 3
-	_reading_progress.add_theme_stylebox_override("background", UI.box(UI.BG, UI.BG, 0))
+	_reading_progress.add_theme_stylebox_override("background", UI.box(Color("#173058"), Color("#44617A"), 0))
 	_reading_progress.add_theme_stylebox_override("fill", UI.box(UI.TEAL, UI.TEAL, 0))
 	right_column.add_child(_reading_progress)
 	_content = UI.scroll_column(right_column)
@@ -122,13 +136,21 @@ func _ready() -> void:
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 16)
 	right_column.add_child(actions)
-	_page_back = UI.button("< PREVIOUS", _previous_page)
+	_page_back = UI.button("PREVIOUS", _previous_page)
 	_page_back.custom_minimum_size.x = 190
 	actions.add_child(_page_back)
 	_reveal_button = UI.button("SHOW ALL", _finish_reading_reveal)
 	_reveal_button.tooltip_text = "Reveal the text immediately. Text speed can also be set to Instant in Settings."
 	actions.add_child(_reveal_button)
 	_reveal_button.hide()
+	_video_toggle = UI.button("Play", _toggle_walkthrough)
+	_video_toggle.autowrap_mode = TextServer.AUTOWRAP_OFF
+	actions.add_child(_video_toggle)
+	_video_toggle.hide()
+	_video_replay = UI.button("Replay", _play_walkthrough)
+	_video_replay.autowrap_mode = TextServer.AUTOWRAP_OFF
+	actions.add_child(_video_replay)
+	_video_replay.hide()
 	_submit_button = UI.button("START MINI QUIZ  >", _on_continue, true)
 	_submit_button.size_flags_horizontal = SIZE_EXPAND_FILL
 	actions.add_child(_submit_button)
@@ -141,6 +163,7 @@ func _owner_valid() -> bool:
 func _session_changed(_signed_in: bool) -> void:
 	if _owner_valid(): return
 	_session_expired = true
+	_pause_walkthrough()
 	_pending_entry.clear()
 	_submit_button.disabled = true
 	_start_button.disabled = true
@@ -190,6 +213,8 @@ func on_enter(args: Dictionary) -> void:
 			Router.push(&"pretest", {"module_id": module_id})
 			return
 	_load_module(module_id, bool(args.get("review", false)) and completed, tutorial)
+	if not tutorial and args.has("lesson_index") and account.can_access_lesson(module_id, int(args.lesson_index)):
+		_select_topic(int(args.lesson_index))
 	if tutorial:
 		_begin_tutorial_coach()
 	elif bool(args.get("post_quiz", false)):
@@ -217,7 +242,7 @@ func _load_module(module_id: String, review: bool = false, tutorial: bool = fals
 		_status_label.text = "No lessons are available for this module."
 		_submit_button.disabled = true
 		return
-	_lesson_index = 0 if review or tutorial else clampi(account.get_lesson_progress(module_id), 0, _lessons.size() - 1)
+	_lesson_index = 0 if review or tutorial else account.next_lesson_index(module_id)
 	_close_button.visible = not tutorial
 	_start_lesson()
 
@@ -245,8 +270,8 @@ func _refresh_topic_info() -> void:
 func _refresh_roadmap() -> void:
 	var progress: int = account.get_lesson_progress(_module_id)
 	var checks: Array[bool] = [_read_passed, _quiz_passed, _simulation_passed]
-	_web.configure(_module_id, _lessons, progress, _lesson_index, checks, Router.is_tutorial, account.has_lesson_post_quiz(_module_id))
-	_start_button.text = "CONTINUE LESSON" if _read_passed or _reading_page > 0 else ("REVIEW LESSON" if _lesson_index < progress else "START LESSON")
+	_web.configure(_module_id, _lessons, progress, _lesson_index, checks, Router.is_tutorial, account.has_lesson_post_quiz(_module_id), account)
+	_start_button.text = "CONTINUE LESSON" if _read_passed or _reading_page > 0 else ("REVIEW LESSON" if account.lesson_completed(_module_id, _lesson_index) else "START LESSON")
 	_fit_readability.call_deferred()
 
 func _show_roadmap() -> void:
@@ -271,7 +296,7 @@ func _open_lesson() -> void:
 	_panes.hide()
 	_workspace.show()
 	_header_title.text = str(_data.title).to_upper()
-	_close_button.text = "< PATH"
+	_close_button.text = "BACK"
 	if _phase == Phase.DEFINITION:
 		_start_reading_reveal()
 	_fit_readability.call_deferred()
@@ -281,13 +306,13 @@ func _open_step(index: int, step: int) -> void:
 		return
 	if index < 0 or index >= _lessons.size() or step < 0 or step > 2:
 		return
-	if index > account.get_lesson_progress(_module_id) or (Router.is_tutorial and index != 0):
+	if (not Router.is_tutorial and not account.can_access_lesson(_module_id, index)) or (Router.is_tutorial and index != 0):
 		return
 	if index != _lesson_index:
 		_select_topic(index)
 	if index != _lesson_index:
 		return
-	var completed: bool = index < account.get_lesson_progress(_module_id)
+	var completed: bool = account.lesson_completed(_module_id, index)
 	if completed:
 		_read_passed = true
 		_quiz_passed = step == 2
@@ -322,12 +347,14 @@ func _fit_readability() -> void:
 		return
 	# A desktop has independently scrolling windows and pinned transfer controls;
 	# do not nest those windows inside the ordinary scrolling reading page.
-	var desktop_active: bool = _in_lesson and _phase == Phase.SIMULATION and _module_id == "mod_01"
-	_progress_label.visible = _in_lesson and not desktop_active
-	_phase_label.visible = not desktop_active
+	var desktop_active: bool = _in_lesson and _phase == Phase.SIMULATION
+	var video_active: bool = _in_lesson and is_instance_valid(_walkthrough)
+	var fill_content: bool = desktop_active or video_active
+	_progress_label.visible = _in_lesson and not fill_content and _phase != Phase.QUIZ
+	_phase_label.visible = not fill_content
 	_submit_button.visible = not desktop_active or _simulation_passed
-	_content.size_flags_vertical = SIZE_EXPAND_FILL if desktop_active else SIZE_FILL
-	(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if desktop_active else ScrollContainer.SCROLL_MODE_AUTO
+	_content.size_flags_vertical = SIZE_EXPAND_FILL if fill_content else SIZE_FILL
+	(_content.get_parent() as ScrollContainer).vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED if fill_content else ScrollContainer.SCROLL_MODE_AUTO
 	if desktop_active and is_instance_valid(_simulation):
 		_simulation.size_flags_vertical = SIZE_EXPAND_FILL
 	# Godot stretches the logical canvas on phones. Keep text and taps usable
@@ -360,7 +387,7 @@ func _select_topic(index: int) -> void:
 		return
 	if index == _lesson_index:
 		return
-	if index > account.get_lesson_progress(_module_id):
+	if not Router.is_tutorial and not account.can_access_lesson(_module_id, index):
 		return
 	if Router.is_tutorial and index != 0:
 		return
@@ -378,6 +405,7 @@ func _set_phase(phase: Phase) -> void:
 	_finish_reading_reveal()
 	_reading_blocks.clear()
 	_answer_effect.reset()
+	_clear_walkthrough()
 	UI.clear(_content)
 	_quiz_buttons.clear()
 	_simulation = null
@@ -389,8 +417,10 @@ func _set_phase(phase: Phase) -> void:
 	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	_phase_label.text = ["LEARN / %d OF 3" % (_reading_page + 1), "CHECK YOUR UNDERSTANDING", "PUT IT INTO PRACTICE", "TOPIC COMPLETE"][_phase]
 	_page_back.visible = _phase == Phase.DEFINITION and _reading_page > 0
-	_reading_progress.visible = _phase == Phase.DEFINITION
+	_reading_progress.visible = _phase in [Phase.DEFINITION, Phase.QUIZ]
+	_reading_progress.max_value = 3
 	_reading_progress.value = _reading_page + 1
+	_reading_progress.accessibility_name = "Lesson reading progress"
 	match _phase:
 		Phase.DEFINITION:
 			_build_reading_page()
@@ -411,7 +441,7 @@ func _set_phase(phase: Phase) -> void:
 			_content.add_child(UI.label("You identified the threat and handled the request in a safe training environment.", 26, UI.MUTED))
 			_submit_button.text = "FINISH TOPIC  >"
 	if _phase == Phase.QUIZ:
-		_content.add_child(UI.button("< Review lesson", func() -> void:
+		_content.add_child(UI.button("Review lesson", func() -> void:
 			_reading_page = 0
 			_set_phase(Phase.DEFINITION)
 		))
@@ -459,6 +489,9 @@ func _build_reading_page() -> void:
 			for index: int in clues.size():
 				_reading_text(_content, "[%d] %s" % [index + 1, clues[index].note], 26)
 		2:
+			if _module_id == "mod_01" and _lesson_index == 0:
+				_build_walkthrough()
+				return
 			_content.add_child(UI.label("Connect the clues", 30))
 			_reading_text(_content, str(_data.takeaway), 28)
 			var card := UI.panel(_content, Color("18333a"))
@@ -467,8 +500,245 @@ func _build_reading_page() -> void:
 			_reading_text(body, str(_data.rule), 28)
 			_content.add_child(UI.label("Ready for five quick checks? Finish all five and score at least 3/5 to unlock your simulation. Read each explanation before moving on.", 26, UI.MUTED))
 
-func _reset_mini_quiz() -> void:
-	_quiz_items = Study.mini_quiz(_module_id, _lesson_index)
+func _build_walkthrough() -> void:
+	var frame: AspectRatioContainer = AspectRatioContainer.new()
+	frame.ratio = 960.0 / 448.0
+	frame.size_flags_vertical = SIZE_EXPAND_FILL
+	_content.add_child(frame)
+	_walkthrough = VideoStreamPlayer.new()
+	_walkthrough.bus = &"SFX"
+	_walkthrough.expand = true
+	_walkthrough.accessibility_name = "Phishing email walkthrough. Compare the sender with the school directory, leave the sign-in link alone, and report the message through the school portal."
+	frame.add_child(_walkthrough)
+	_video_caption = UI.label("Inspect a school email  /  38 seconds", 32, UI.TEAL)
+	_video_caption.add_theme_stylebox_override("normal", UI.box(UI.BG, UI.PANEL))
+	_video_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_video_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_walkthrough.add_child(_video_caption)
+	_video_caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var center: CenterContainer = CenterContainer.new()
+	center.mouse_filter = MOUSE_FILTER_IGNORE
+	_walkthrough.add_child(center)
+	center.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_video_badge = UI.label("", 28)
+	_video_badge.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_video_badge.add_theme_stylebox_override("normal", UI.journal_box(UI.PANEL, UI.TEAL, 12))
+	center.add_child(_video_badge)
+	_video_badge.hide()
+	var timeline: HBoxContainer = HBoxContainer.new()
+	timeline.add_theme_constant_override("separation", 16)
+	timeline.size_flags_horizontal = SIZE_EXPAND_FILL
+	timeline.size_flags_stretch_ratio = 2.5
+	var actions: Node = _submit_button.get_parent()
+	actions.add_child(timeline)
+	actions.move_child(timeline, _submit_button.get_index())
+	_seek = HSlider.new()
+	_seek.accessibility_name = "Video playback position"
+	_seek.size_flags_horizontal = SIZE_EXPAND_FILL
+	_seek.custom_minimum_size.y = ceilf(44.0 / maxf(0.25, get_viewport().get_final_transform().get_scale().y))
+	_seek.step = 0.1
+	_seek.editable = false
+	_seek.scrollable = false
+	var rail: StyleBoxFlat = UI.box(Color("#173058"), Color("#44617A"), 3)
+	rail.shadow_size = 0
+	_seek.add_theme_stylebox_override("slider", rail)
+	var fill: StyleBoxFlat = UI.box(UI.TEAL, UI.TEAL, 3)
+	fill.shadow_size = 0
+	_seek.add_theme_stylebox_override("grabber_area", fill)
+	_seek.add_theme_stylebox_override("grabber_area_highlight", fill)
+	var handle: GradientTexture2D = GradientTexture2D.new()
+	handle.width = 20
+	handle.height = 26
+	handle.gradient = Gradient.new()
+	handle.gradient.colors = PackedColorArray([UI.TEXT, UI.TEAL])
+	_seek.add_theme_icon_override("grabber", handle)
+	_seek.add_theme_icon_override("grabber_highlight", handle)
+	timeline.add_child(_seek)
+	_clock = UI.label("0:00 / –:––", 24, UI.TEXT)
+	_clock.autowrap_mode = TextServer.AUTOWRAP_OFF
+	timeline.add_child(_clock)
+	_seek.drag_started.connect(func() -> void: _scrubbing = true)
+	_seek.value_changed.connect(_update_video_clock)
+	_seek.drag_ended.connect(_finish_seek)
+	_walkthrough.finished.connect(_walkthrough_finished)
+	_walkthrough.visibility_changed.connect(_walkthrough_visibility_changed)
+	_reading_progress.hide()
+	_video_toggle.text = "Play"
+	_video_toggle.show()
+	_video_replay.show()
+	_video_autoplay_pending = _in_lesson and not SettingsService.reduced_motion
+	_load_walkthrough()
+
+func _load_walkthrough() -> void:
+	if FileAccess.file_exists(WALKTHROUGH_CACHE) and FileAccess.get_sha256(WALKTHROUGH_CACHE) == WALKTHROUGH_SHA256:
+		_walkthrough_ready()
+		return
+	_video_toggle.disabled = true
+	_video_replay.disabled = true
+	_video_caption.text = "Loading walkthrough…"
+	var request: HTTPRequest = HTTPRequest.new()
+	request.timeout = 30.0
+	request.body_size_limit = 4 * 1024 * 1024
+	_walkthrough.add_child(request)
+	request.request_completed.connect(_walkthrough_received.bind(request), CONNECT_ONE_SHOT)
+	if request.request(WALKTHROUGH_URL) != OK:
+		request.queue_free()
+		_walkthrough_unavailable()
+
+func _walkthrough_received(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray, request: HTTPRequest) -> void:
+	request.queue_free()
+	if request.get_parent() != _walkthrough or not _owner_valid():
+		return
+	var cached: bool = false
+	if result == HTTPRequest.RESULT_SUCCESS and status == 200:
+		var temp_path: String = WALKTHROUGH_CACHE + ".%d.part" % request.get_instance_id()
+		var file: FileAccess = FileAccess.open(temp_path, FileAccess.WRITE)
+		if file != null:
+			file.store_buffer(body)
+			file.close()
+			if FileAccess.get_sha256(temp_path) == WALKTHROUGH_SHA256:
+				cached = DirAccess.rename_absolute(temp_path, WALKTHROUGH_CACHE) == OK
+			if FileAccess.file_exists(temp_path):
+				DirAccess.remove_absolute(temp_path)
+	if cached:
+		_walkthrough_ready()
+	else:
+		_walkthrough_unavailable()
+
+func _walkthrough_ready() -> void:
+	var stream: VideoStreamTheora = VideoStreamTheora.new()
+	stream.file = WALKTHROUGH_CACHE
+	_walkthrough.stream = stream
+	_seek.max_value = _walkthrough.get_stream_length()
+	_seek.editable = _seek.max_value > 0.0
+	_update_video_clock(0.0)
+	_video_toggle.disabled = false
+	_video_replay.disabled = false
+	_video_toggle.text = "Play"
+	_video_caption.text = "Inspect a school email  /  38 seconds"
+	if _video_autoplay_pending and _walkthrough.is_visible_in_tree():
+		_play_walkthrough()
+	_video_autoplay_pending = false
+
+func _walkthrough_unavailable() -> void:
+	_video_caption.text = "Couldn’t load the walkthrough. Try again or start the quiz."
+	_video_toggle.text = "Retry"
+	_video_toggle.disabled = false
+	_video_replay.disabled = true
+
+func _play_walkthrough() -> void:
+	if not is_instance_valid(_walkthrough) or not _owner_valid():
+		return
+	_walkthrough.stop()
+	_walkthrough.paused = false
+	_walkthrough.play()
+	AudioManager.set_story_duck(_walkthrough, 0.25)
+	_video_caption.hide()
+	_show_video_badge("Playing", true)
+	_video_toggle.text = "Pause"
+
+func _toggle_walkthrough() -> void:
+	if not is_instance_valid(_walkthrough) or not _owner_valid():
+		return
+	if _walkthrough.stream == null:
+		_video_autoplay_pending = true
+		_load_walkthrough()
+	elif _walkthrough.paused:
+		_walkthrough.paused = false
+		AudioManager.set_story_duck(_walkthrough, 0.25)
+		_video_toggle.text = "Pause"
+		_show_video_badge("Resumed", true)
+	elif _walkthrough.is_playing():
+		_pause_walkthrough()
+	else:
+		_play_walkthrough()
+
+func _pause_walkthrough() -> void:
+	_video_autoplay_pending = false
+	_scrubbing = false
+	if is_instance_valid(_walkthrough) and _walkthrough.is_playing():
+		_walkthrough.paused = true
+		AudioManager.set_story_duck(_walkthrough, 1.0)
+		_video_toggle.text = "Play"
+		_show_video_badge("Paused", false)
+
+func _show_video_badge(message: String, temporary: bool) -> void:
+	if _badge_tween != null:
+		_badge_tween.kill()
+	_video_badge.text = message
+	_video_badge.modulate.a = 1.0
+	_video_badge.show()
+	if temporary:
+		_badge_tween = _video_badge.create_tween()
+		_badge_tween.tween_interval(0.7)
+		if not SettingsService.reduced_motion:
+			_badge_tween.tween_property(_video_badge, "modulate:a", 0.0, 0.2)
+		_badge_tween.tween_callback(_video_badge.hide)
+
+func _update_video_clock(position: float) -> void:
+	var elapsed: int = floori(position)
+	var total: int = floori(_seek.max_value)
+	_clock.text = "%d:%02d / %d:%02d" % [floori(elapsed / 60.0), elapsed % 60, floori(total / 60.0), total % 60]
+
+func _finish_seek(_changed: bool) -> void:
+	if not _scrubbing or not is_instance_valid(_walkthrough) or not _walkthrough.is_visible_in_tree():
+		return
+	_scrubbing = false
+	var target: float = _seek.value
+	if target >= _seek.max_value - 0.05:
+		_walkthrough.stop()
+		_walkthrough.paused = false
+		_walkthrough_finished()
+		return
+	if not _walkthrough.is_playing():
+		_walkthrough.play()
+		_pause_walkthrough()
+	_video_caption.hide()
+	_walkthrough.stream_position = target
+	_update_video_clock(target)
+
+func _walkthrough_visibility_changed() -> void:
+	if is_instance_valid(_walkthrough) and not _walkthrough.is_visible_in_tree():
+		_pause_walkthrough()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_pause_walkthrough()
+
+func _walkthrough_finished() -> void:
+	_video_badge.hide()
+	_seek.set_value_no_signal(_seek.max_value)
+	_update_video_clock(_seek.max_value)
+	AudioManager.set_story_duck(_walkthrough, 1.0)
+	_video_toggle.text = "Play"
+	_video_caption.text = "Walkthrough complete"
+	_video_caption.show()
+
+func _clear_walkthrough() -> void:
+	_scrubbing = false
+	if _badge_tween != null:
+		_badge_tween.kill()
+		_badge_tween = null
+	if is_instance_valid(_walkthrough):
+		var timeline: Node = _seek.get_parent()
+		timeline.get_parent().remove_child(timeline)
+		timeline.queue_free()
+		AudioManager.set_story_duck(_walkthrough, 1.0)
+		_walkthrough.stop()
+		_walkthrough = null
+		_video_caption = null
+	_video_toggle.hide()
+	_video_replay.hide()
+
+func _reset_mini_quiz(retry: bool = false) -> void:
+	var pool: Array[Dictionary] = Study.mini_pool(_module_id,_lesson_index)
+	var key: String = "%s:%d" % [_module_id,_lesson_index]
+	var saved: Dictionary = {} if Router.is_tutorial else (account.lesson_quiz_sessions.get(key,{}) as Dictionary).duplicate(true)
+	_quiz_items = Study.restore_mini_items(pool,saved)
+	if retry or saved.get("closed",false) or _quiz_items.size() != Study.MINI_COUNT:
+		saved = Study.new_mini_session(pool,saved,account.preferred_difficulty(str(LessonCatalog.module_by_id(_module_id).domain)))
+		_quiz_items = Study.restore_mini_items(pool,saved)
+	_mini_session = saved
 	_quiz_index = 0
 	_quiz_score = 0
 	_quiz_resolved = false
@@ -476,23 +746,40 @@ func _reset_mini_quiz() -> void:
 	_quiz_passed = false
 	_picks.clear()
 	_quiz_answers.clear()
-	# Keep question identities stable for first-response BKT; vary answer positions
-	# on a retry so the player must read rather than memorize button positions.
-	for item: Dictionary in _quiz_items:
-		var order: Array[int] = []
-		for index: int in item.options.size():
-			order.append(index)
-		order.shuffle()
-		var options: Array[String] = []
-		var correct: Array[int] = []
-		for index: int in order:
-			if index in item.correct:
-				correct.append(options.size())
-			options.append(str(item.options[index]))
-		item.options = options
-		item.correct = correct
+	var responses: Variant = saved.get("responses",[])
+	if responses is Array and responses.size() <= Study.MINI_COUNT:
+		for raw: Variant in responses:
+			if not raw is Array or _quiz_answers.size() >= _quiz_items.size(): break
+			var item: Dictionary = _quiz_items[_quiz_answers.size()]
+			if raw.size() != 1: break
+			var value: Variant = raw[0]
+			if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)): break
+			if int(value) < 0 or int(value) >= item.options.size(): break
+			var ok: bool = raw.size() == item.correct.size()
+			for choice: int in item.correct: ok = ok and choice in raw
+			_quiz_answers.append(ok)
+			if ok: _quiz_score += 1
+	_mini_session["responses"] = (responses as Array).slice(0,_quiz_answers.size()) if responses is Array else []
+	_read_passed = _read_passed or saved.get("read_passed",false) == true
+	_quiz_finished = _quiz_answers.size() == Study.MINI_COUNT
+	_quiz_passed = _quiz_finished and _quiz_score >= Study.MINI_PASS
+	_quiz_resolved = not _quiz_answers.is_empty() and (saved.get("reviewing_answer",false) or _quiz_finished)
+	_quiz_index = maxi(0,_quiz_answers.size() - 1) if _quiz_resolved else _quiz_answers.size()
+	if _quiz_resolved:
+		for value: Variant in _mini_session.responses[-1]: _picks.append(int(value))
+		_quiz_last_correct = _quiz_answers[-1]
+	_save_mini_session()
+
+func _save_mini_session() -> void:
+	if Router.is_tutorial or _remediation_stage > 0 or not _owner_valid() or _mini_session.is_empty(): return
+	_mini_session["read_passed"] = _read_passed
+	_mini_session["reviewing_answer"] = _quiz_resolved
+	account.save_mini_session(_module_id,_lesson_index,_mini_session)
 
 func _build_mini_quiz() -> void:
+	_reading_progress.max_value = Study.MINI_COUNT
+	_reading_progress.value = _quiz_answers.size()
+	_reading_progress.accessibility_name = "%d of %d questions answered" % [_quiz_answers.size(), Study.MINI_COUNT]
 	if _quiz_items.size() != Study.MINI_COUNT:
 		_content.add_child(UI.label("This lesson's five-question quiz is unavailable. Return to the path and try again. No pass has been awarded.", 26, UI.GOLD))
 		_submit_button.disabled = true
@@ -501,7 +788,8 @@ func _build_mini_quiz() -> void:
 	if _quiz_finished:
 		_phase_label.text = "QUIZ COMPLETE / SCORE %d/5 / %s" % [_quiz_score, "PASSED" if _quiz_passed else "KEEP PRACTICING"]
 		_content.add_child(UI.label("Simulation unlocked!" if _quiz_passed else "Almost there. Review and retry!", 30, UI.TEAL if _quiz_passed else UI.GOLD))
-		_content.add_child(UI.label("You answered all five questions. You need at least 3/5 to proceed. Your completed lessons are safe.", 24, UI.MUTED))
+		if not _quiz_passed:
+			_content.add_child(UI.label("Answer 3 of 5 correctly to unlock the simulation.", 24, UI.MUTED))
 		for index: int in _quiz_answers.size():
 			if _quiz_answers[index]:
 				continue
@@ -516,23 +804,32 @@ func _build_mini_quiz() -> void:
 			for answer: int in missed.correct:
 				correct_labels.append(str(missed.options[answer]))
 			body.add_child(UI.label("Correct response: " + " / ".join(correct_labels) + "\n" + str(missed.feedback), 24, UI.MUTED))
-		_content.add_child(UI.label("You can revisit the lesson below. Retrying these questions does not add more BKT credit.", 22, UI.MUTED))
 		_submit_button.disabled = false
 		_submit_button.text = "START SIMULATION  >" if _quiz_passed else "RETRY MINI QUIZ"
 		return
 	var item: Dictionary = _quiz_items[_quiz_index]
-	_phase_label.text = "MINI QUIZ / %d OF 5 / %d CORRECT" % [_quiz_index + 1, _quiz_score]
-	_content.add_child(UI.label("Finish all 5 / Pass with 3 correct / No timer", 22, UI.TEAL))
-	_content.add_child(UI.label(str(item.question), 28))
+	_phase_label.text = "Mini quiz   /   Question %d of %d" % [_quiz_index + 1, _quiz_items.size()]
 	if not str(item.quiz_scenario).is_empty():
-		var evidence: PanelContainer = UI.panel(_content, UI.PANEL)
-		evidence.add_child(UI.label(str(item.quiz_scenario), 24, UI.MUTED))
+		var evidence: PanelContainer = UI.panel(_content)
+		var paper: StyleBoxFlat = UI.box(Color("#F3ECD6"), UI.TEAL, 16)
+		paper.border_width_left = 6
+		evidence.add_theme_stylebox_override("panel", paper)
+		evidence.add_child(UI.label(str(item.quiz_scenario), 25, Color("#101623")))
+	_content.add_child(UI.label(str(item.question), 30))
 	if bool(item.multi):
-		_content.add_child(UI.label("Select every correct detail. Each question is worth one point; no partial credit.", 22, UI.GOLD))
+		_content.add_child(UI.label("Select all that apply.", 22, UI.GOLD))
+	var choices: GridContainer = GridContainer.new()
+	choices.columns = 2
+	choices.add_theme_constant_override("h_separation", 14)
+	choices.add_theme_constant_override("v_separation", 12)
+	_content.add_child(choices)
 	for index: int in item.options.size():
 		var button: Button = UI.button(str(item.options[index]), _pick.bind(index))
+		button.size_flags_horizontal = SIZE_EXPAND_FILL
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.toggle_mode = true
 		_quiz_buttons.append(button)
-		_content.add_child(button)
+		choices.add_child(button)
 	_refresh_choices()
 	_submit_button.text = "CHECK ANSWER"
 	_submit_button.disabled = _picks.is_empty()
@@ -545,7 +842,6 @@ func _build_mini_quiz() -> void:
 		_status_label.add_theme_color_override("font_color", Feedback.SUCCESS if _quiz_last_correct else Feedback.ERROR)
 		_submit_button.disabled = false
 		_submit_button.text = "NEXT QUESTION  >"
-	_content.add_child(UI.label("Tutorial practice: no mastery changes." if Router.is_tutorial else "Only your first response to each new mini-quiz question updates mastery. Retrying is practice, not extra mastery credit.", 22, UI.MUTED))
 
 func _pick(index: int) -> void:
 	if _phase != Phase.QUIZ or _quiz_resolved or _quiz_items.size() != Study.MINI_COUNT:
@@ -568,12 +864,20 @@ func _refresh_choices() -> void:
 	var item: Dictionary = _quiz_items[_quiz_index]
 	for i in _quiz_buttons.size():
 		var button := _quiz_buttons[i]
-		button.text = ("[X]  " if i in _picks else "[ ]  ") + str(item.options[i])
+		button.set_pressed_no_signal(i in _picks)
+		var selected: StyleBoxFlat = UI.box(Color("#153B37"), Color("#4FE0D4"), 14)
+		selected.border_width_left = 6
+		button.add_theme_stylebox_override("pressed", selected)
+		button.add_theme_stylebox_override("hover_pressed", selected)
+		button.add_theme_color_override("font_pressed_color", UI.TEXT)
+		button.add_theme_color_override("font_hover_pressed_color", UI.TEXT)
 		button.disabled = _quiz_resolved
-		button.add_theme_stylebox_override("normal", UI.box(Color("29464e") if i in _picks else UI.PANEL, UI.TEAL if i in _picks else Color("3b626a"), 10))
 		if _quiz_resolved and i in item.correct:
 			button.add_theme_stylebox_override("disabled", UI.box(Color("193a2a"), Feedback.SUCCESS, 10))
 			button.add_theme_color_override("font_disabled_color", Feedback.SUCCESS)
+		elif _quiz_resolved and i in _picks:
+			button.add_theme_stylebox_override("disabled", UI.box(Color("#361E28"), Feedback.ERROR, 14))
+			button.add_theme_color_override("font_disabled_color", UI.TEXT)
 	_submit_button.disabled = not _quiz_resolved and _picks.is_empty()
 
 func _check_quiz() -> void:
@@ -587,11 +891,13 @@ func _check_quiz() -> void:
 	_quiz_resolved = true # Lock before recording or emitting feedback.
 	_quiz_last_correct = ok
 	_quiz_answers.append(ok)
+	_mini_session.responses.append(_picks.duplicate())
 	_quiz_score += 1 if ok else 0
 	_quiz_finished = _quiz_index == Study.MINI_COUNT - 1
 	_quiz_passed = _quiz_finished and _quiz_score >= Study.MINI_PASS
-	if not Router.is_tutorial and not _review_mode and _lesson_index == account.get_lesson_progress(_module_id):
+	if not Router.is_tutorial and not _review_mode and not account.lesson_completed(_module_id, _lesson_index):
 		account.record_lesson_quiz_answer(_module_id, _lesson_index, str(item.id), ok, item.bkt)
+	_save_mini_session()
 	AudioManager.play_sfx("ui_success" if ok else "ui_error")
 	_set_phase(Phase.QUIZ)
 	_answer_effect.show_result(_quiz_passed if _quiz_finished else ok)
@@ -620,17 +926,19 @@ func _on_continue() -> void:
 				_set_phase(Phase.DEFINITION)
 			else:
 				_read_passed = true
+				_save_mini_session()
 				_set_phase(Phase.QUIZ)
 		Phase.QUIZ:
 			if _quiz_passed:
 				_set_phase(Phase.SIMULATION)
 			elif _quiz_finished:
-				_reset_mini_quiz()
+				_reset_mini_quiz(true)
 				_set_phase(Phase.QUIZ)
 			elif _quiz_resolved:
 				_quiz_index += 1
 				_quiz_resolved = false
 				_picks.clear()
+				_save_mini_session()
 				_set_phase(Phase.QUIZ)
 			else:
 				_check_quiz()
@@ -656,7 +964,7 @@ func _enter_remediation(module_id: String, stage: int) -> void:
 	_start_button.hide()
 	_workspace.show()
 	_close_button.show()
-	_close_button.text = "< SAVE & EXIT"
+	_close_button.text = "SAVE & EXIT"
 	_header_title.text = "TARGETED REVIEW"
 	_progress_label.text = "MODULE %s / STAGE %d / LESSON %d" % [module_id.trim_prefix("mod_"), stage, _lesson_index + 1]
 	_review_step = "done" if session.status == "ready" else "read"
@@ -668,6 +976,7 @@ func _enter_remediation(module_id: String, stage: int) -> void:
 func _render_remediation() -> void:
 	var session: Dictionary = Remediation.latest(account, _module_id, _remediation_stage)
 	var topic: Dictionary = Remediation.TOPICS[session.topic]
+	_clear_walkthrough()
 	UI.clear(_content)
 	_quiz_buttons.clear()
 	_status_scroll.hide()
@@ -773,15 +1082,16 @@ func _finish_lesson() -> void:
 			PlayerManager.grant_intel_bonus(_module_id)
 		_show_tutorial_lesson_done()
 		return
+	_mini_session["closed"] = true
+	_save_mini_session()
 	var completed_index: int = _lesson_index
-	var progress: int = account.get_lesson_progress(_module_id)
+	var was_completed: bool = account.lesson_completed(_module_id, _lesson_index)
 	# Replaying a completed topic must not increment the next topic's progress.
-	if not _review_mode and _lesson_index == progress:
-		account.complete_lesson_unit(_module_id, _lessons.size(), LessonCatalog.module_ids())
-	if _lesson_index + 1 < _lessons.size():
-		_lesson_index += 1
+	if not _review_mode and not was_completed:
+		account.complete_lesson_unit(_module_id, _lessons.size(), LessonCatalog.module_ids(), _lesson_index)
+	_lesson_index = account.next_lesson_index(_module_id)
 	_start_lesson()
-	if completed_index == progress and not _review_mode:
+	if not was_completed and not _review_mode:
 		_web.celebrate(completed_index)
 		AudioManager.play_sfx("ui_success")
 		lesson_celebrated.emit()
@@ -813,13 +1123,14 @@ func _show_tutorial_lesson_done() -> void:
 		_tutorial_overlay.show_lesson_done()
 
 func on_exit() -> void:
+	_pause_walkthrough()
 	_finish_reading_reveal()
 	_answer_effect.reset()
 	if is_instance_valid(_tutorial_overlay):
 		_tutorial_overlay.hide()
 func _open_post_quiz() -> void:
 	if not _owner_valid(): return
-	if _remediation_stage > 0 or Router.is_tutorial or _post_active or account.get_lesson_progress(_module_id) < _lessons.size():
+	if _remediation_stage > 0 or Router.is_tutorial or _post_active or not account.can_take_checkpoint(_module_id):
 		return
 	_post_active = true
 	_in_lesson = true
@@ -828,7 +1139,7 @@ func _open_post_quiz() -> void:
 	_workspace.hide()
 	_progress_label.hide()
 	_header_title.text = "MODULE CHECKPOINT"
-	_close_button.text = "< PATH"
+	_close_button.text = "BACK"
 	_post_quiz = PostQuiz.new()
 	_post_quiz.account = account
 	(_workspace.get_parent() as Control).add_child(_post_quiz)
@@ -879,6 +1190,10 @@ func _finish_reading_reveal() -> void:
 		_reveal_button.hide()
 
 func _process(delta: float) -> void:
+	if is_instance_valid(_walkthrough) and _walkthrough.is_playing() and not _scrubbing and _walkthrough.is_visible_in_tree():
+		var position: float = _walkthrough.stream_position
+		_seek.set_value_no_signal(position)
+		_update_video_clock(position)
 	if not _revealing or not _in_lesson or not is_visible_in_tree():
 		return
 	if SettingsService.text_speed == "instant" or SettingsService.reduced_motion:

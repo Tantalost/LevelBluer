@@ -14,7 +14,7 @@ var _role_choice: Button
 var _replay: Button
 var _surface: Control
 
-const Terminal: GDScript = preload("res://src/ui/screens/dashboard/dashboard_pvp_hub.gd")
+const Terminal: GDScript = preload("res://src/ui/components/terminal_workspace.gd")
 const GREEN: Color = Color("#32ef69")
 const EDGE: Color = Color("#227a3d")
 const RED: Color = Color("#ff4958")
@@ -74,6 +74,7 @@ func _ready() -> void:
 	_art = Control.new()
 	_art.mouse_filter = MOUSE_FILTER_IGNORE
 	_desk.add_child(_art)
+	_art.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_art.draw.connect(_draw_computer)
 	_head = _label(_desk, GREEN, 20)
 	_clock = _label(_desk, GREEN, 20)
@@ -90,8 +91,8 @@ func _ready() -> void:
 	_mission.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for index: int in 3:
 		var shortcut: Button = _button(_home)
-		shortcut.add_theme_stylebox_override("hover", Terminal._box(Color("#10371e"), GREEN, 1))
-		shortcut.add_theme_stylebox_override("pressed", Terminal._box(EDGE, GREEN, 1))
+		shortcut.add_theme_stylebox_override("hover", Terminal.box(Color("#10371e"), GREEN, 1))
+		shortcut.add_theme_stylebox_override("pressed", Terminal.box(EDGE, GREEN, 1))
 		shortcut.pressed.connect(_open_app.bind((index+1) as App))
 		shortcut.accessibility_name = ["Terminal", "Files", "Netmap"][index]
 		var icon: Control = Control.new()
@@ -152,7 +153,8 @@ func _ready() -> void:
 	_texture = Control.new()
 	_texture.mouse_filter = MOUSE_FILTER_IGNORE
 	_desk.add_child(_texture)
-	_texture.draw.connect(_draw_scanlines)
+	_texture.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_texture.draw.connect(Terminal.draw_scanlines.bind(_texture))
 	surface.resized.connect(_layout.bind(surface))
 	_layout.call_deferred(surface)
 	_show_apps()
@@ -168,20 +170,20 @@ func _label(parent: Control, ink: Color, font_size: int) -> Label:
 
 func _window(caption: String) -> Panel:
 	var pane: Panel = Panel.new()
-	pane.add_theme_stylebox_override("panel", Terminal._box(BLACK, EDGE, 2))
+	pane.add_theme_stylebox_override("panel", Terminal.box(BLACK, EDGE, 2))
 	_desk.add_child(pane)
 	var title: Label = _label(pane, GREEN, 19)
 	title.text = caption
 	title.clip_text = true
-	title.add_theme_stylebox_override("normal", Terminal._box(Color("#145b29"), EDGE, 1))
+	title.add_theme_stylebox_override("normal", Terminal.box(Color("#145b29"), EDGE, 1))
 	_captions.append(title)
 	var grip: Label = _label(pane, GREEN, 18)
 	grip.text = "||||||"
 	_grips.append(grip)
 	var close: Button = _button(pane)
-	close.add_theme_stylebox_override("normal", Terminal._box(Color.TRANSPARENT, Color.TRANSPARENT, 0))
-	close.add_theme_stylebox_override("hover", Terminal._box(Color("#10371e"), GREEN, 1))
-	close.add_theme_stylebox_override("pressed", Terminal._box(EDGE, GREEN, 1))
+	close.add_theme_stylebox_override("normal", Terminal.box(Color.TRANSPARENT, Color.TRANSPARENT, 0))
+	close.add_theme_stylebox_override("hover", Terminal.box(Color("#10371e"), GREEN, 1))
+	close.add_theme_stylebox_override("pressed", Terminal.box(EDGE, GREEN, 1))
 	var glyph: Label = _label(close, GREEN, 21)
 	glyph.text = "×"
 	glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -195,9 +197,9 @@ func _window(caption: String) -> Panel:
 func _style_scroll(scroll: ScrollContainer) -> void:
 	var bar: VScrollBar = scroll.get_v_scroll_bar()
 	bar.custom_minimum_size.x = 12
-	bar.add_theme_stylebox_override("scroll", Terminal._box(Color("#07160c"), EDGE, 1))
+	bar.add_theme_stylebox_override("scroll", Terminal.box(Color("#07160c"), EDGE, 1))
 	for state: String in ["grabber", "grabber_highlight", "grabber_pressed"]:
-		var thumb: StyleBoxFlat = Terminal._box(EDGE if state == "grabber" else GREEN, GREEN, 1)
+		var thumb: StyleBoxFlat = Terminal.box(EDGE if state == "grabber" else GREEN, GREEN, 1)
 		thumb.content_margin_top = 12
 		thumb.content_margin_bottom = 12
 		bar.add_theme_stylebox_override(state, thumb)
@@ -208,7 +210,7 @@ func _button(parent: Control) -> Button:
 	button.add_theme_font_size_override("font_size", 21)
 	for style: String in ["normal", "disabled", "pressed", "hover", "focus"]:
 		var fill: Color = BLACK if style in ["normal", "disabled", "focus"] else GREEN
-		var box: StyleBoxFlat = Terminal._box(fill, EDGE if style in ["normal", "disabled"] else GREEN, 1)
+		var box: StyleBoxFlat = Terminal.box(fill, EDGE if style in ["normal", "disabled"] else GREEN, 1)
 		box.draw_center = style != "focus"
 		button.add_theme_stylebox_override(style, box)
 	button.add_theme_color_override("font_color", GREEN)
@@ -310,24 +312,12 @@ func _layout(surface: Control) -> void:
 func _draw_computer() -> void:
 	var w: float = _desk.size.x
 	var h: float = _desk.size.y
-	_art.draw_style_box(Terminal._box(Color("#a99e87"), Color("#e2d8bd"), 2, 12), Rect2(1,1,w-2,h-2))
-	_art.draw_style_box(Terminal._box(Color("#393528"), Color("#786e56"), 2, 8), Rect2(16,11,w-32,h-39))
-	_art.draw_style_box(Terminal._box(BLACK, Color("#191e12"), 2, 6), Rect2(22,15,w-44,h-47))
+	Terminal.draw_monitor(_art)
 	_art.draw_rect(Rect2(25,18,w-50,24), Color("#10371e"))
 	_art.draw_rect(Rect2(105,46,w-124,h-106), EDGE, false, 1)
 	for x: int in range(28, int(w)-26, 13):
 		for y: int in range(47, int(h)-35, 13):
 			_art.draw_rect(Rect2(x,y,1,1), Color("#0c2515"))
-	_art.draw_style_box(Terminal._box(Color("#847b65"), Color("#514c3b"), 1, 2), Rect2(27,h-22,58,10))
-	for index: int in 14:
-		_art.draw_line(Vector2(w-148+index*5,h-23), Vector2(w-148+index*5,h-12), Color("#514c3b"), 2)
-	_art.draw_rect(Rect2(w-64,h-18,5,3), GREEN)
-	_art.draw_style_box(Terminal._box(Color("#beb49c"), Color("#514c3b")), Rect2(w-49,h-24,22,13))
-	_art.draw_rect(Rect2(w-43,h-20,9,4), Color("#827862"))
-
-func _draw_scanlines() -> void:
-	for y: int in range(20, int(_desk.size.y)-34, 3):
-		_texture.draw_line(Vector2(26,y), Vector2(_desk.size.x-26,y), Color(0,0,0,.13), 1)
 
 func _draw_icon(layer: Control, kind: int, compact: bool = false) -> void:
 	# Integer-grid icons stay sharp at native size, without image imports or atlas filtering.
@@ -476,8 +466,8 @@ func _refresh() -> void:
 	_action.disabled = _pending or _mode != "active"
 	_action.text = str(_data.inspect_label).to_upper()
 	var warning: bool = not str(_data.feedback).is_empty() or _mode in ["lost", "offline"] or (_mode == "done" and _note.begins_with("DEFEAT"))
-	_files.add_theme_stylebox_override("panel", Terminal._box(BLACK, RED if warning else EDGE, 2))
-	_files_caption.add_theme_stylebox_override("normal", Terminal._box(Color("#37100e") if warning else Color("#145b29"), RED if warning else EDGE, 1))
+	_files.add_theme_stylebox_override("panel", Terminal.box(BLACK, RED if warning else EDGE, 2))
+	_files_caption.add_theme_stylebox_override("normal", Terminal.box(Color("#37100e") if warning else Color("#145b29"), RED if warning else EDGE, 1))
 	_files_caption.add_theme_color_override("font_color", RED if warning else GREEN)
 	if _mode == "ready":
 		_action.disabled = true
@@ -507,7 +497,7 @@ func _refresh() -> void:
 
 func _draw_outcome() -> void:
 	var title: String = _note.get_slice("\n",0)
-	var ink: Color = GREEN if title == "VICTORY" else (RED if title == "DEFEAT" else Terminal.AMBER)
+	var ink: Color = GREEN if title == "VICTORY" else (RED if title == "DEFEAT" else Color("#FFC642"))
 	var rect: Rect2 = Rect2(0,0,_outcome.size.x,56)
 	_outcome.draw_rect(rect,ink.darkened(.88))
 	_outcome.draw_rect(rect,ink,false,2)

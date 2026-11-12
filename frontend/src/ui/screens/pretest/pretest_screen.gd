@@ -271,7 +271,7 @@ func _show_results() -> void:
 		if item.correct:
 			correct += 1
 	_progress.text = "CHECK-IN COMPLETE    /    %d OF %d CORRECT    /    100%% ANSWERED" % [correct, _review.size()]
-	_next.text = "START LESSONS  >"
+	_next.text = "CONTINUE TO NEXT MODULE" if PlayerManager.diagnostic_route(_module_id).route == "cleared" and _module_id != "mod_05" else "OPEN LEARNING PATH"
 	_next.disabled = false
 	_show_review_card()
 
@@ -289,7 +289,7 @@ func _show_review_card() -> void:
 	UI.clear(_review_nav)
 	_review_nav.show()
 	var row: HBoxContainer = _review_nav
-	var previous := UI.button("< Previous", _review_move.bind(-1))
+	var previous := UI.button("Previous", _review_move.bind(-1))
 	previous.size_flags_horizontal = SIZE_EXPAND_FILL
 	previous.disabled = _review_index == 0
 	row.add_child(previous)
@@ -297,6 +297,9 @@ func _show_review_card() -> void:
 	next.size_flags_horizontal = SIZE_EXPAND_FILL
 	next.disabled = _review_index == _review.size() - 1
 	row.add_child(next)
+	if PlayerManager.diagnostic_route(_module_id).route == "cleared":
+		row.add_child(UI.button("Study this module", _go_to_current_module))
+	_explanation.text += "\n\n" + PlayerManager.learning_route_summary(_module_id)
 	(_card.get_parent() as ScrollContainer).scroll_vertical = 0
 
 func _review_move(delta: int) -> void:
@@ -304,6 +307,14 @@ func _review_move(delta: int) -> void:
 	_show_review_card()
 
 func _go_to_lesson() -> void:
+	var ids: Array[String] = LessonCatalog.module_ids()
+	var index: int = ids.find(_module_id)
+	if PlayerManager.diagnostic_route(_module_id).route == "cleared" and index >= 0 and index + 1 < ids.size():
+		Router.replace(&"lesson_player", {"module_id":ids[index + 1]})
+		return
+	_go_to_current_module()
+
+func _go_to_current_module() -> void:
 	Router.replace(&"lesson_player", {"module_id": _module_id, "review": false})
 
 func _set_busy(busy: bool) -> void:

@@ -38,78 +38,150 @@ static func context_clues(module_id: String, index: int) -> Array[Dictionary]:
 			note = str(source.beat1_guided_example.observations[0].plain_language_note)
 		clues.append({"quote": scenario.split("\n")[0], "note": note})
 	return clues
-# Four curated transfer checks supplement each lesson's original question.
-# Suffixes refer to the existing module bank, not random module-wide samples.
-const MINI_CHECKS: Dictionary = {
+## Eight clue checks, eight verification checks and four decisions per lesson.
+## These are authored curriculum assignments, never a module-wide random fallback.
+const MINI_POOLS: Dictionary = {
 	"mod_01": [
-		["sa_08", "tv_04", "sa_01", "tf_01"], # Sender and safe school notices.
-		["sa_05", "tv_09", "tf_02", "st_03"], # Display name versus the real request.
-		["us_01", "us_06", "tf_06", "st_09"], # Lookalike and compound domains.
-		["tv_03", "st_02", "tf_03", "sa_03"], # Disguised file and library source.
-		["it_01", "it_05", "it_06", "tf_04"], # Mixed inbox and pressure.
-		["us_05", "tv_10", "tf_05", "tf_08"], # Safe navigation and reporting.
+		["tv_01 tv_02 tv_04 st_01 st_03 tf_01 tf_04 tf_10", "sa_01 sa_02 sa_07 sa_08 sa_10 us_01 us_04 us_07", "cc_01 cc_04 cc_05 cc_10"],
+		["tv_05 tv_08 tv_09 st_03 st_07 st_08 tf_02 tf_09", "sa_01 sa_03 sa_04 sa_05 sa_08 sa_09 sa_10 us_08", "cc_03 cc_04 cc_05 cc_08"],
+		["tv_02 tv_10 st_01 st_05 st_06 st_09 st_10 tf_06", "us_01 us_02 us_04 us_05 us_06 us_07 us_09 us_10", "cc_01 cc_05 cc_06 cc_10"],
+		["tv_03 tv_04 tv_06 st_02 st_03 tf_01 tf_03 tf_04", "sa_01 sa_03 sa_08 sa_10 us_02 us_04 us_05 us_09", "cc_02 cc_04 cc_05 cc_09"],
+		["tv_01 tv_04 tv_07 tv_08 tv_09 st_04 tf_04 tf_10", "sa_04 sa_05 sa_08 sa_09 us_03 us_05 us_08 us_09", "cc_03 cc_06 cc_07 cc_08"],
+		["tv_02 tv_07 tv_09 tv_10 st_03 st_06 tf_05 tf_08", "sa_01 sa_05 sa_06 sa_07 us_01 us_04 us_05 us_10", "cc_01 cc_04 cc_05 cc_10"],
 	],
 	"mod_02": [
-		["sa_01", "tv_03", "st_01", "tf_07"],
-		["sa_03", "tv_05", "us_02", "tf_04"],
-		["sa_05", "tv_02", "tf_01", "st_08"],
-		["tv_01", "tv_04", "st_06", "tf_09"],
-		["st_07", "tv_07", "tf_02", "tf_10"],
-		["st_04", "us_03", "tf_05", "tf_06"],
+		["tv_01 tv_04 tv_06 st_03 st_04 st_06 tf_05 tf_07", "sa_01 sa_02 sa_04 sa_06 us_01 us_03 us_07 us_08", "cc_01 cc_03 cc_05 cc_07"],
+		["tv_03 tv_05 tv_07 tv_10 st_02 st_05 st_10 tf_04", "sa_03 sa_04 sa_08 sa_09 us_02 us_04 us_09 us_10", "cc_02 cc_04 cc_06 cc_09"],
+		["tv_02 tv_08 st_01 st_08 tf_01 tf_02 tf_03 tf_06", "sa_02 sa_05 sa_06 sa_07 sa_08 sa_10 us_03 us_07", "cc_01 cc_03 cc_07 cc_08"],
+		["tv_01 tv_03 tv_04 tv_06 tv_09 st_06 tf_07 tf_09", "sa_01 sa_03 sa_06 sa_10 us_01 us_03 us_05 us_07", "cc_01 cc_04 cc_05 cc_10"],
+		["tv_04 tv_05 tv_07 tv_08 st_02 st_07 tf_05 tf_10", "sa_01 sa_04 sa_05 sa_09 us_02 us_04 us_06 us_10", "cc_02 cc_06 cc_08 cc_09"],
+		["tv_04 tv_05 tv_08 tv_10 st_04 st_10 tf_06 tf_10", "sa_02 sa_06 sa_07 sa_09 us_01 us_03 us_07 us_08", "cc_01 cc_07 cc_09 cc_10"],
 	],
 	"mod_03": [
-		["sa_01", "st_01", "us_01", "tf_01"],
-		["sa_03", "st_03", "us_08", "tf_02"],
-		["st_05", "us_06", "tf_03", "sa_10"],
-		["st_07", "us_07", "tf_10", "sa_09"],
-		["sa_04", "st_02", "tf_07", "us_04"],
-		["sa_08", "st_08", "tf_04", "tf_09"],
+		["tv_01 tv_02 tv_04 st_01 st_03 tf_01 tf_03 tf_10", "sa_01 sa_05 sa_07 sa_09 us_01 us_02 us_06 us_07", "cc_01 cc_02 cc_05 cc_07"],
+		["tv_03 tv_07 tv_08 st_03 st_04 st_05 tf_02 tf_04", "sa_01 sa_02 sa_03 sa_06 sa_07 sa_08 us_03 us_08", "cc_02 cc_03 cc_06 cc_09"],
+		["tv_04 tv_05 tv_06 tv_10 st_02 st_10 tf_03 tf_08", "sa_05 sa_07 sa_09 sa_10 us_01 us_02 us_06 us_09", "cc_01 cc_02 cc_04 cc_10"],
+		["tv_02 tv_05 tv_09 st_01 st_06 st_09 tf_01 tf_10", "sa_02 sa_04 sa_05 sa_09 us_01 us_05 us_07 us_08", "cc_01 cc_05 cc_07 cc_08"],
+		["tv_02 tv_07 tv_09 st_02 st_04 st_07 tf_04 tf_07", "sa_02 sa_04 sa_05 sa_08 us_01 us_04 us_05 us_09", "cc_03 cc_04 cc_08 cc_10"],
+		["tv_05 tv_07 tv_09 st_04 st_08 st_09 tf_07 tf_09", "sa_04 sa_06 sa_08 sa_10 us_04 us_05 us_09 us_10", "cc_03 cc_06 cc_09 cc_10"],
 	],
 	"mod_04": [
-		["sa_01", "st_01", "us_01", "tf_01"],
-		["sa_03", "st_02", "us_02", "tf_04"],
-		["sa_02", "st_03", "us_03", "tf_06"],
-		["sa_04", "st_04", "us_07", "tf_03"],
-		["sa_05", "st_05", "us_06", "tf_07"],
-		["sa_07", "st_10", "us_10", "tf_09"],
+		["tv_01 tv_02 tv_07 st_01 st_05 st_08 tf_01 tf_07", "sa_01 sa_05 sa_06 sa_10 us_01 us_04 us_06 us_08", "cc_01 cc_05 cc_06 cc_10"],
+		["tv_03 tv_06 tv_08 st_02 st_07 st_09 tf_02 tf_04", "sa_03 sa_04 sa_06 sa_09 us_02 us_07 us_08 us_09", "cc_02 cc_04 cc_07 cc_09"],
+		["tv_04 tv_05 tv_08 st_03 st_09 tf_05 tf_06 tf_10", "sa_02 sa_06 sa_07 sa_08 us_03 us_05 us_07 us_09", "cc_03 cc_04 cc_08 cc_10"],
+		["tv_03 tv_06 tv_09 st_02 st_04 st_10 tf_03 tf_09", "sa_03 sa_04 sa_07 sa_09 us_02 us_05 us_07 us_10", "cc_02 cc_04 cc_07 cc_09"],
+		["tv_01 tv_02 tv_07 tv_10 st_01 st_05 st_08 tf_07", "sa_01 sa_05 sa_06 sa_10 us_01 us_04 us_06 us_08", "cc_01 cc_05 cc_06 cc_10"],
+		["tv_06 tv_08 tv_09 st_04 st_06 st_10 tf_08 tf_09", "sa_04 sa_06 sa_07 sa_09 us_05 us_07 us_08 us_10", "cc_02 cc_04 cc_08 cc_09"],
 	],
 	"mod_05": [
-		["sa_01", "tv_02", "us_01", "tf_01"],
-		["sa_03", "tv_05", "st_02", "tf_03"],
-		["sa_02", "tv_01", "st_03", "tf_02"],
-		["sa_10", "tv_03", "st_09", "tf_04"],
-		["it_03", "it_04", "it_05", "it_07"],
-		["st_07", "tv_08", "us_06", "tf_07"],
+		["tv_01 tv_02 tv_08 st_01 st_07 tf_01 tf_06 tf_07", "sa_01 sa_02 sa_07 sa_09 us_01 us_06 us_08 us_09", "cc_01 cc_03 cc_07 cc_09"],
+		["tv_03 tv_04 tv_05 tv_07 st_02 st_06 tf_03 tf_08", "sa_03 sa_04 sa_05 sa_10 us_02 us_03 us_04 us_10", "cc_02 cc_04 cc_06 cc_10"],
+		["tv_01 tv_02 tv_07 tv_10 st_01 st_03 st_10 tf_02", "sa_01 sa_02 sa_07 sa_09 us_01 us_05 us_06 us_09", "cc_01 cc_03 cc_05 cc_07"],
+		["tv_03 tv_04 tv_05 tv_06 st_02 st_04 st_09 tf_04", "sa_03 sa_04 sa_05 sa_10 us_02 us_03 us_04 us_10", "cc_02 cc_04 cc_06 cc_10"],
+		["tv_04 tv_06 tv_07 tv_09 st_05 st_08 tf_05 tf_10", "sa_03 sa_04 sa_06 sa_08 us_02 us_04 us_05 us_07", "cc_02 cc_04 cc_05 cc_08"],
+		["tv_01 tv_08 tv_09 st_01 st_07 tf_06 tf_07 tf_10", "sa_01 sa_02 sa_07 sa_08 us_01 us_05 us_06 us_08", "cc_01 cc_03 cc_07 cc_09"],
 	],
 }
 
-static func mini_quiz(module_id: String, index: int) -> Array[Dictionary]:
-	var sets: Array = MINI_CHECKS.get(module_id, [])
-	if index < 0 or index >= sets.size():
-		return []
-	var original: Dictionary = build(module_id, index)
-	original["id"] = "%s_l%d_mini_v1" % [module_id, index + 1]
-	original["quiz_scenario"] = original.get("quiz_scenario", original.scenario)
-	original["bkt"] = {"p_g": 0.2 if original.multi else 1.0 / original.options.size()}
-	var result: Array[Dictionary] = [original]
+static func mini_pool(module_id: String, index: int) -> Array[Dictionary]:
+	var assignments: Array = MINI_POOLS.get(module_id, [])
+	if index < 0 or index >= assignments.size(): return []
 	var bank: Dictionary = {}
-	for raw: Dictionary in ContentDB.get_module_questions(module_id):
-		bank[str(raw.get("id", ""))] = raw
-	for suffix: String in sets[index]:
-		var id: String = module_id.replace("_", "") + "_" + suffix
-		if not bank.has(id):
-			return [] # Fail closed: never shorten the assessment silently.
-		var raw: Dictionary = bank[id]
-		var choices: Array[Dictionary] = Quiz.options(raw)
-		var row: Dictionary = {"id": id, "module_id": module_id, "question": Quiz._format_prompt(raw), "quiz_scenario": Quiz._format_scenario(raw), "options": [], "correct": [], "multi": false, "feedback": Quiz.explanation(raw, true, null), "bkt": raw.get("bkt", {})}
-		for choice: Dictionary in choices:
-			if Quiz.grade(raw, choice.value):
-				row.correct.append(row.options.size())
-			row.options.append("Suspicious / attack" if choice.text == "Phishing" else str(choice.text))
-		if row.correct.size() != 1 or row.options.size() < 2 or str(row.question).is_empty():
-			return []
-		result.append(row)
+	for raw: Dictionary in ContentDB.get_module_questions(module_id): bank[str(raw.id)] = raw
+	var result: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for category: int in 3:
+		for suffix: String in str(assignments[index][category]).split(" ", false):
+			var id: String = module_id.replace("_", "") + "_" + suffix
+			if not bank.has(id) or seen.has(id): return []
+			seen[id] = true
+			var raw: Dictionary = bank[id]
+			var row: Dictionary = {"id":id, "module_id":module_id, "category":category, "difficulty":raw.get("difficulty","medium"), "question":Quiz._format_prompt(raw), "quiz_scenario":Quiz._format_scenario(raw), "options":[], "correct":[], "multi":false, "feedback":Quiz.explanation(raw,true,null), "bkt":raw.get("bkt",{})}
+			if row.question == "Phishing or legitimate?":
+				row.question = "Is this request suspicious or legitimate?"
+			if not str(raw.get("explanation", "")).strip_edges().is_empty():
+				row.feedback = str(raw.explanation)
+			if raw.get("type_id","") == "consequence_choice":
+				row.feedback = str(raw.get("ignore_debrief", ""))
+			for choice: Dictionary in Quiz.options(raw):
+				if Quiz.grade(raw,choice.value): row.correct.append(row.options.size())
+				row.options.append("Suspicious / attack" if choice.text == "Phishing" else str(choice.text))
+			if row.correct.size() != 1 or row.options.size() < 2 or str(row.question).is_empty() or str(row.feedback).is_empty(): return []
+			result.append(row)
+	return result if result.size() >= 20 else []
+
+static func select_mini(pool: Array[Dictionary], seen: Array, previous: Array, preferred: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for category: int in 3:
+		var candidates: Array[Dictionary] = []
+		for row: Dictionary in pool:
+			if int(row.category) == category: candidates.append(row)
+		candidates.shuffle()
+		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var ac: int = (100 if a.id in seen else 0) + (10 if a.id in previous else 0) + (0 if a.difficulty == preferred else 1)
+			var bc: int = (100 if b.id in seen else 0) + (10 if b.id in previous else 0) + (0 if b.difficulty == preferred else 1)
+			return ac < bc)
+		var count: int = 1 if category == 2 else 2
+		if candidates.size() < count: return []
+		for i: int in count: result.append(candidates[i].duplicate(true))
+	result.shuffle()
 	return result
+
+static func mini_quiz(module_id: String, index: int) -> Array[Dictionary]:
+	return select_mini(mini_pool(module_id,index), [], [], "medium")
+
+static func new_mini_session(pool: Array[Dictionary], previous: Dictionary, preferred: String) -> Dictionary:
+	if pool.size() < 20: return {}
+	var seen: Array[String] = []
+	var last: Array[String] = []
+	var previous_seen: Array = previous.get("seen",[]) if previous.get("seen",[]) is Array else []
+	var previous_ids: Array = previous.get("ids",[]) if previous.get("ids",[]) is Array else []
+	for row: Dictionary in pool:
+		if row.id in previous_seen: seen.append(str(row.id))
+		if row.id in previous_ids: last.append(str(row.id))
+	if seen.size() == pool.size(): seen.clear()
+	var selected: Array[Dictionary] = select_mini(pool,seen,last,preferred)
+	if selected.size() != MINI_COUNT: return {}
+	var result: Dictionary = {"version":1, "attempt_id":Crypto.new().generate_random_bytes(16).hex_encode(), "ids":[], "orders":[], "responses":[], "seen":seen, "read_passed":false, "reviewing_answer":false, "closed":false}
+	for row: Dictionary in selected:
+		result.ids.append(str(row.id))
+		if row.id not in seen: seen.append(str(row.id))
+		var order: Array[int] = []
+		for i: int in row.options.size(): order.append(i)
+		order.shuffle()
+		result.orders.append(order)
+	return result
+
+static func restore_mini_items(pool: Array[Dictionary], session: Dictionary) -> Array[Dictionary]:
+	if session.get("version",0) != 1 or not session.get("ids") is Array or not session.get("orders") is Array: return []
+	if session.ids.size() != MINI_COUNT or session.orders.size() != MINI_COUNT: return []
+	var result: Array[Dictionary] = []
+	var used: Array[String] = []
+	var categories: Array[int] = [0,0,0]
+	for i: int in MINI_COUNT:
+		var found: Dictionary = {}
+		for row: Dictionary in pool:
+			if row.id == session.ids[i]: found = row.duplicate(true)
+		if found.is_empty() or str(found.id) in used: return []
+		used.append(str(found.id))
+		var order: Variant = session.orders[i]
+		if not order is Array or order.size() != found.options.size(): return []
+		var options: Array[String] = []
+		var correct: Array[int] = []
+		var indices: Array[int] = []
+		for value: Variant in order:
+			if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)): return []
+			var index: int = int(value)
+			if index < 0 or index >= found.options.size() or index in indices: return []
+			indices.append(index)
+			if index in found.correct: correct.append(options.size())
+			options.append(str(found.options[index]))
+		found.options = options
+		found.correct = correct
+		categories[int(found.category)] += 1
+		result.append(found)
+	return result if categories == [2,2,1] else []
+
 const DOMAIN := {
 	"phishing": {"term": "Phishing", "definition": "Phishing is a deceptive message that impersonates a trusted sender to steal information or make you open an unsafe link or file.", "rule": "Check the full sender address and destination. Verify through a known site; never reply with a password or one-time code.", "app": "Mail", "inspect": "Inspect sender and request", "verify": "Open trusted contact directory", "action": "Report phishing", "unsafe": "Open link / attachment"},
 	"smishing": {"term": "Smishing", "definition": "Smishing is phishing delivered by text message. Familiar names, short links and urgent warnings can hide a request for your login or code.", "rule": "Read the request, not just the sender name. Check in the official app or use contact details you already trust.", "app": "Messages", "inspect": "Inspect message details", "verify": "Check the official app", "action": "Block and report sender", "unsafe": "Reply with the code"},

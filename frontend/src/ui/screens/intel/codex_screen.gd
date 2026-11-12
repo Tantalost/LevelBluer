@@ -729,7 +729,7 @@ func _show_unit(id: String) -> void:
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 12)
 	_detail.add_child(nav)
-	var previous := UI.button("< PREVIOUS", _step.bind(-1))
+	var previous := UI.button("PREVIOUS", _step.bind(-1))
 	var next := UI.button("NEXT ENTRY >", _step.bind(1))
 	previous.disabled = _visible_ids.find(id) <= 0
 	next.disabled = _visible_ids.find(id) >= _visible_ids.size() - 1
@@ -833,16 +833,13 @@ func _layout() -> void:
 	_compact = size.x * physical < 1000.0
 	_list_panel.visible = not _compact or not _mobile_details
 	_detail_panel.visible = not _compact or _mobile_details
-	_back_button.text = "< INDEX" if _compact and _mobile_details else "BACK"
 	UI.fit_touch(self)
 	for heading: Node in _archive_body.find_children("*", "Label", true, false):
 		if heading.has_meta("library_heading"):
 			(heading as Label).add_theme_font_size_override("font_size", maxi(30, ceili(22 / physical)))
 	if _library_home:
-		_back_button.text = "BACK"
 		if is_instance_valid(_library_grid): _library_grid.columns = 3 if size.x * physical >= 600 else 1
 	elif _section != &"combat":
-		_back_button.text = "< COLLECTION" if not _selected_record.is_empty() else ("< CHARACTERS" if not _selected_character.is_empty() else "< LIBRARY")
 		if is_instance_valid(_character_grid):
 			_character_grid.columns = 3 if size.x * physical >= 600 else 1
 		for card: Button in _character_buttons.values():
@@ -864,7 +861,6 @@ func _layout() -> void:
 	_search.add_theme_font_size_override("font_size", maxi(22, ceili(16 / physical)))
 	_archive_search.custom_minimum_size.y = maxf(48, 48 / physical)
 	_archive_search.add_theme_font_size_override("font_size", maxi(22, ceili(16 / physical)))
-	if not _library_home and _section == &"combat" and not (_compact and _mobile_details): _back_button.text = "< LIBRARY"
 
 func can_go_back() -> bool:
 	if _library_home: return true

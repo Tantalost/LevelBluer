@@ -25,6 +25,11 @@ Every module's Chapter 5 uses Module 1's shared debate format: preparation, cine
 
 Each module also needs newly created story-specific imagery and a distinct treatment of visual effects so it does not feel like the previous module with renamed dialogue. Review intro/title art, chapter previews, investigation imagery and debate/counter presentation as part of its visual acceptance. The five environment backgrounds alone do not close this broader presentation requirement. Preserve recurring character likenesses, story continuity and the shared navy/cyan/cream UI design. Reuse existing animation states, timing, signals and rendering components with module-specific assets and effect parameters; do not build another effects manager or duplicate gameplay systems. Effects must support the story, remain readable on touch screens and respect reduced motion. Track missing artwork/effect variation explicitly and implement it within the active, approved module scope.
 
+## Media and Voiceovers
+
+- Upload each final generated image, video, or audio asset to the project's Cloudinary account and use its delivery URL in the mobile app. Reuse a supplied Cloudinary URL when the asset is already hosted. Verify that the image displays or the recording plays in Godot before removing any bundled copy. Keep media working files out of Git and the mobile export.
+- When the user supplies a voiceover file, upload the original recording to Cloudinary. If the user supplies a Cloudinary link, verify and reuse it. Replace the corresponding placeholder narration with their recording. Match captions to the words actually spoken and time scene actions, cuts, and pauses to the speaker's delivery. Preserve the recording's natural pace. If it is part of a video, upload the finished cut to Cloudinary and update the lesson or scene to use it.
+
 ## Commit Scope
 
 Keep developer test files, verification scripts, their UID sidecars, and generated test artifacts out of GitHub commits unless the user explicitly requests otherwise. Retain local validation files and continue running relevant checks. Stage only explicitly selected production/documentation paths; do not use blanket staging such as `git add .` or `git add -A`. Before committing, inspect `git diff --cached --name-only` and exclude test paths, including already-tracked tests that `.gitignore` cannot protect. Do not delete or untrack existing tests merely to hide their changes. In-game assessments, question banks, and research pre/post-test implementation are product code, not developer test files.
@@ -62,6 +67,8 @@ Provide exact GDScript diffs with clear indications of what to add, replace, or 
 Before writing a large block of code or creating a complex new system (like the Stage Select manager), outline your proposed Node structure and Signal routing in 2-3 bullet points to get my sign-off first.
 
 ## UI Design System
+
+For simulated computers in lessons and PvP, reuse `frontend/src/ui/components/terminal_workspace.gd`. Register the activity's apps and connect their actions to its controller. Activities with a custom layout can reuse the monitor drawing, scanlines and terminal styles. Keep evidence rules, grading and match state in the activity controller.
 
 | Role | Color Name | Hex Code |
 | :--- | :--- | :--- |

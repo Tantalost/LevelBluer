@@ -300,6 +300,7 @@ class ThoughtTail extends Control:
 		draw_circle(Vector2(24, 18), 7, Color("F3ECD6"))
 		draw_circle(Vector2(42, 30), 4, Color("F3ECD6"))
 var _evidence_preview: Texture2D
+var _handler_portrait: TextureRect
 
 
 func _ready() -> void:
@@ -315,6 +316,7 @@ func _ready() -> void:
 	resized.connect(_resize)
 	SettingsService.settings_changed.connect(_settings_changed)
 	AssetManager.sync_finished.connect(_refresh_art)
+	PlayerManager.handler_appearance_changed.connect(_refresh_handler)
 
 
 func on_enter(args: Dictionary) -> void:
@@ -742,6 +744,7 @@ func _set_art(asset_id: String) -> void:
 
 
 func _refresh_art(_success: bool) -> void:
+	_refresh_handler()
 	# One receiver-owned connection. Late sync refreshes only the CURRENT beat.
 	if _leaving or _art_id.is_empty():
 		return
@@ -1299,6 +1302,7 @@ func _render_tutorial() -> void:
 
 
 func _clear_practice_layer() -> void:
+	_handler_portrait = null
 	if _practice_tween != null and _practice_tween.is_valid():
 		_practice_tween.kill()
 	_practice_tween = null
@@ -1537,11 +1541,16 @@ func _dismiss_thought() -> void:
 func _completion_overlay() -> void:
 	var column: VBoxContainer = _overlay_column()
 	_overlay_label(column, "TUTORIAL COMPLETE", true)
-	var emblem: CelebrationArt = CelebrationArt.new()
-	emblem.emblem_only = true
-	emblem.custom_minimum_size.y = 124
-	emblem.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(emblem)
+	_handler_portrait = TextureRect.new()
+	_handler_portrait.name = "HandlerPortrait"
+	_handler_portrait.custom_minimum_size.y = 124
+	_handler_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_handler_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_handler_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_handler_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_handler_portrait.accessibility_name = "The Handler"
+	column.add_child(_handler_portrait)
+	_refresh_handler()
 	_overlay_label(column, str((data["tutorial"] as Dictionary)["summary"]["text"]))
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 14)
@@ -1560,6 +1569,14 @@ func _completion_overlay() -> void:
 	_practice_tween = create_tween()
 	_practice_tween.tween_property(_celebration, "time", 3.1, 3.1)
 	AudioManager.play_sfx("ui_success")
+
+
+func _refresh_handler() -> void:
+	if is_instance_valid(_handler_portrait):
+		# John's story and recordings stay unchanged; the companion greets the
+		# learner on the existing completion screen, with no additional step.
+		var appearance: String = PlayerManager.handler_appearance if replay else "original"
+		_handler_portrait.texture = AssetManager.get_handler_texture("npc_smile", appearance)
 
 
 func _pause_practice(paused: bool) -> void:

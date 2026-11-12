@@ -1162,3 +1162,101 @@ The user chose **Also convert bot to CTF**, replacing the proposed visual-only u
 `PvpBattleScreen` remains the local owner and uses `PvpBattle.FlagPractice` in the existing gameplay file. The shared workspace emits the existing command and exit signals, with practice start/replay signals for the local owner. No fighter arena or quiz match is constructed on the bot route. Home does not start a hidden timer: Start Practice begins the countdown, followed by a two-minute race. The first capture wins; the deadline yields a draw if neither side captures. Scheduled bot actions are resolved before later player inputs. Exit confirmation pauses the local race for both sides, replay returns to role selection, and cleanup disconnects and retires the local model.
 
 Local verification covers both roles, inspection gates, wrong/stale commands, bot capture, timeout, replay, exit pause and cleanup. All 12 role/side/stage evidence snapshots were compared with the Python online implementation. Phone renders at 720×360 and 844×390 show Home, evidence and the final result. The bot check and shared online-screen regression passed with zero failures. Developer checks remain local and excluded from commits. Practice remains offline, unranked and separate from BKT, research assessments and the store wallet. Installed-phone acceptance remains open.
+# Adviser update gates — diagnostic learning routes (11 November 2026)
+
+Approved sequence: (1) diagnostic routes and chapter access, (2) twenty-question lesson pools and retry rotation, (3) Handler appearance and expression artwork, (4) engagement and rewards. Each gate is verified before the next begins. Gates 1–3 are locally implemented. On 12 November the user requested revising Gate 4 around story completion, chapter objectives and three-star achievements; the detailed proposal below awaits sign-off. Installed-phone and live synchronization acceptance remain open.
+
+## Gate 1 implementation and acceptance
+
+- First 15-item module diagnostic: 15/15 clears academic prerequisites; 12–14/15 requires lessons mapped to missed items; 0–11/15 requires all six lessons. Targeted and full routes still need the 20/25 checkpoint. Perfect-score clearance awards neither lesson completion nor a fabricated checkpoint score, mastery value or currency.
+- `PretestBank.LESSON_MAP` maps all 75 diagnostic items to zero-based lesson objectives; coverage validation requires all six objectives in each module. Multi-objective misses require all associated lessons. This is an authored curriculum mapping, not an empirically validated assessment instrument.
+- Saved baselines now retain `missed_ids`, `route_version`, `route` and `required_lessons`. Access is recomputed from validated diagnostic evidence. First results are immutable. Legacy partial aggregates without item-level evidence keep their full route; a valid historical 15/15 can clear the module. Malformed/incomplete mappings fail closed.
+- `lesson_completions` records individual actual completions as `module_id:index` keys. Legacy `lesson_progress` remains a contiguous prefix; the displayed completion count is the union of both. Existing module-complete markers remain recognized. Account restore clears previous-account state; offline/cloud reconciliation unions completion records without manufacturing intermediate completions.
+- Chapter prerequisites: Lessons 1–4 for Chapters 1–4; Lessons 5–6 plus academic module clearance for Chapter 5. Diagnostic-cleared lessons satisfy academic prerequisites, but earlier story chapters and the previous module ending still matter. Started/saved chapters remain resumable.
+- Lesson map, journey, Progress and chapter selection share access predicates. Perfect diagnostic results offer the next learning module or optional study. Failed checkpoints offer mapped lesson review; items without a curated lesson association explicitly recommend broader module review rather than claiming precise diagnosis.
+- Existing analytics transport remains compatible: adaptive checkpoints retain the `posttest` transport kind and `lesson-checkpoint-v1` instrument with no research comparison key. They are presented as checkpoints, not independent research post-assessments. No server/schema migration is required; the existing progress payload retains additional save fields.
+
+Validation: Godot 4.7.2 script import passed; isolated route suite passed 314 checks covering all five modules, 15/14/12/11 results, immutable baseline, noncontiguous completion, JSON restore, cloud merge, legacy progress, chapter order and optional checkpoint review. Existing lesson workspace suite passed all 30 topics. Rendered the lesson map at 1280×720 and 844×390; confirmed readable status labels and native scrolling. Physical-phone acceptance and live two-device synchronization remain release checks. Developer checks and rendered artifacts are local/ignored and must not be staged.
+
+## Gate 2 implementation and acceptance — 12 November 2026
+
+- All 30 lessons now have explicit twenty-item assignments: eight cue-recognition checks, eight verification checks and four safe-response decisions. These are 600 lesson-question placements using 294 existing canonical questions (59/58/58/60/59 by module), not 600 newly authored questions. Related lessons reuse transfer questions about the same threat and verification decisions. No duplicate question bank or additional quiz manager was created.
+- Each attempt draws two recognition, two verification and one safe-response question. Unseen items take priority, followed by avoiding the previous attempt and matching the current BKT difficulty preference. Each complete rotation uses all twenty items before restarting; the next cycle avoids the immediately previous five. Choices shuffle with their answer mapping. Passing remains 3/5.
+- The existing account save now retains one current attempt per lesson: canonical IDs, choice permutations, submitted choices, reading completion, review position and rotation history. Reopening resumes the attempt instead of rerolling it. Restore recomputes correctness from content. Missing content and invalid option permutations cannot produce a pass. Account switching clears the prior account's attempts.
+- Cloud merge selects a whole attempt rather than mixing question orders; within the same attempt, a stale draft cannot replace more submitted answers. Draft-only offline activity is included in reconciliation. This local conflict policy does not promise simultaneous multi-device quiz play; live two-device acceptance is still required.
+- Mini quizzes and adaptive practice share canonical-ID deduplication. An already-observed question cannot add mastery again through either mode; completed-lesson review also remains ineligible. Rotation can include previously observed questions for practice without generating new BKT credit. Diagnostic/checkpoint scores and the BKT model remain separate and unchanged.
+- Explanations accompany correct answers. Corrected two misleading existing domain explanations in Module 1 and made the binary suspicious/legitimate wording usable across all five threat types. Checkpoint lesson recommendations consult the full assigned pool, not a random five-question sample.
+
+Validation: 2,337 local pool/rotation/resume/sync/deduplication checks passed; the 844×390 rendered run adds a visible-submit check (2,338 total). The 314 diagnostic-route checks and all thirty lesson/quiz/simulation flows pass. Reviewed rendered quiz layouts at 1280×720 and 844×390. Physical-device suspension, safe-area behavior and live account synchronization remain release acceptance items. No developer test files, screenshots or working media were staged or committed. Handler artwork/selection and rewards were not started.
+
+## Gate 3 implementation and acceptance — 12 November 2026
+
+The user approved both male and female base designs before expression production. This gate supports engagement and ease of use; appearance does not change learning routes, mastery, scores, voice recordings, currency or owned cosmetics.
+
+- A shared `handler_picker.gd` opens on the dashboard after the first completed or skipped tutorial, and from Settings → Handler appearance. Male, Female and Prefer not to say are companion appearance choices; the latter retains the original. Returning accounts without the new fields remain original and receive no forced prompt. Keeping the original records a completed choice.
+- The existing PlayerManager save includes `handler_appearance`, its update timestamp, and a pending onboarding choice. Existing local/cloud reconciliation chooses the more recent appearance independently of purchased cosmetics. Account changes clear the previous preference; the picker closes on session change. Restore emits the appearance signal only after the complete snapshot is applied, avoiding a transient reset in visible portraits.
+- Dashboard portraits and the existing tutorial coach use the shared AssetManager resolver. The current John phone tutorial has no Handler dialogue; its existing completion emblem is replaced with a companion portrait without adding another step or replacing John. Initial completion uses the original; tutorial replays use the chosen appearance. Dashboard Handler guidance now discusses evidence, school stories, verification and lesson simulations instead of the former tower-defense instructions.
+- Each new appearance has all eighteen expression states. Six transparent 1536×1024 sheets contain six 512×512 cells each. Godot uses AtlasTexture regions through the current catalog/cache, preserving existing portrait nodes and animation timing. A missing or invalid variant sheet falls back to the matching original expression. The next successful asset synchronization refreshes visible portraits.
+- No new voice files, effects manager, save service or gender field were introduced. The only new reusable UI script is the picker shared by onboarding and Settings. Cards scroll vertically on narrow phones; selection and confirmation remain tap-operated, with 48-pixel action targets at tested sizes.
+
+Expression sheet mapping, left-to-right then top-to-bottom:
+
+| Sheet | Expressions | Male Cloudinary asset | Female Cloudinary asset |
+| --- | --- | --- | --- |
+| A | calm, smile, talk, thoughtfulness, skepticism, doubt | [Male A](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447957/levelblue/handler/handler_male_a_v1.png) | [Female A](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447962/levelblue/handler/handler_female_a_v1.png) |
+| B | fear, astonishment, discomfort, sadness, cry, embarrassment | [Male B](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447967/levelblue/handler/handler_male_b_v1.png) | [Female B](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447971/levelblue/handler/handler_female_b_v1.png) |
+| C | awkwardness, laughter, disgust, eye rolling, aggression, scream | [Male C](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447976/levelblue/handler/handler_male_c_v1.png) | [Female C](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447980/levelblue/handler/handler_female_c_v1.png) |
+
+Art production used image generation with the approved base references: retain the pale-blue pixel silhouette, facial language, proportions, hairstyle and framing; vary facial expression only; transparent background; no text; consistent six-cell grids. Final sheets were uploaded to Cloudinary and all six downloaded successfully through Godot's existing asset loader. Working PNGs and upload receipts remain local under ignored `.godot/handler_designs`; temporary signing credentials were removed. No new media is bundled in the export or staged for Git.
+
+Validation: Godot import passed; **149 Handler checks passed**, including 36 expression regions, unavailable art, first completion/skip, pending-choice restart, legacy accounts, selection of the original, JSON restoration, cloud merge, account switching, visible companion refresh, shared Settings controls, tutorial replay and mobile touch targets. Rendered picker views were inspected at 1280×720, 844×390 and 390×844; the tutorial completion portrait was reviewed at 844×390. Existing dashboard and current tutorial-practice replay suites passed; diagnostic routing passed 314 checks and mini-quiz rotation passed 2,337 checks. These are local checks, not a claim of installed-phone or live two-device acceptance. No student progress was written during these checks. Gate 4 rewards and timed replay have not begun.
+
+## Gate 4 revised proposal — story achievements and learning support
+
+**Status: proposed, not implemented.** The user rejected the earlier control-strip/timed-replay layout and asked for incentives to finish the story, careful decisions, help after mistakes, and three stars with chapter-specific objectives. This proposal prioritizes the existing 25 chapters. Timed replay is deferred. The earlier lesson-credit and academic-badge proposals are not silently implemented or discarded; reconsider them after this story-focused gate rather than mixing both reward systems in one change.
+
+### Player experience
+
+1. Before a chapter, show three short, spoiler-free objectives inside the existing preparation screen. One star is for completing the chapter; a second is for a named investigation challenge; a third is for completing the chapter without an incorrect evaluated decision. Goals must describe what the player controls, never scripted mistakes made by John or other characters.
+2. During play, retain the existing evidence, terminal, phone and hearing interactions. A mistaken submission explains the relevant clue and consequence, offers a free contextual hint, and allows another attempt. Browsing, opening evidence, replaying dialogue, taking time and asking for help are not mistakes. Do not award stars for speed.
+3. At completion, the existing result screen reveals earned stars, names the achieved objectives, explains any unfinished objective, and shows first-clear credits separately from newly earned star bonuses. Give Continue the primary action; Replay to improve is secondary. Reduced motion displays the same results immediately.
+4. Chapter selection shows the best star result and the next improvement target. Finishing a chapter is sufficient for its chronological requirement, subject to existing academic prerequisites. Three stars must never become a gate to the next chapter or ending.
+5. Completing all five chapters earns a story-completion cosmetic badge for that module regardless of star total. Use existing badge ownership and Equip/Remove controls. This signifies story completion, not measured knowledge or BKT mastery.
+
+### Proposed star rules and examples
+
+| Star | Rule | Purpose |
+| --- | --- | --- |
+| 1 — Case closed | Finish the chapter's existing investigation/resolution | Recognize persistence and progress even after mistakes |
+| 2 — Chapter challenge | Meet one chapter-specific quality objective shown before play | Encourage attention to the particular social-engineering skill |
+| 3 — Careful decisions | Complete the chapter with no incorrect evaluated submissions in that run | Reward careful reading and checking rather than guessing |
+
+Examples for review, not finalized content mappings:
+
+- Module 1, Chapter 1: classify all six messages correctly on their first submissions for the chapter challenge. Capturing evidence and finishing still earns completion even if sorting needed correction.
+- Module 1, Chapter 2: identify the deceptive sender-domain difference on the first submitted comparison. Do not reveal the actual differing character in the pre-chapter objective.
+- Chapter 5 hearings: complete the closing reconstruction correctly on its first check for the chapter challenge. Evidence-command errors and reconstruction errors count toward the careful-decisions star; scripted dialogue and cinematics do not. Existing credibility recovery and hints stay available.
+
+Author and verify the objective for every chapter against its actual interaction before enabling stars there. A required action that all finishers necessarily complete is not a meaningful additional challenge. Record objective-specific events where current aggregate mistake counters cannot establish first-submission accuracy. Never infer missing attempt history from a finished save.
+
+### Help, recovery and rewards
+
+- Free contextual hints, recaps and reference material remain available throughout story learning. Using them does not remove stars or credits. Preserve assisted/unassisted activity records independently. The existing story clean-work reward currently excludes assisted attempts; replace that rule as part of this gate and update its explanatory copy. Existing paid support ownership must be preserved when making support free.
+- Keep each chapter's existing base first-clear reward. Proposed additional reward: 25 Solo credits for first earning the second star, and another 25 for first earning the third. This replaces the old clean-work bonus; it must not stack with it. Final values require sign-off.
+- A later replay may improve the saved best result and grant only a newly earned bonus. A worse replay never removes previous stars. Save the best completed run, not a synthetic three-star result assembled from unrelated attempts. Replays never rewrite the original evidence or first-attempt research/activity records.
+- Resume preserves mistakes and objective attempts. Closing the app must not reset a failed challenge. Completed legacy chapters keep completion and existing credits; detailed stars require sufficient recorded evidence or a fresh replay. Account restoration and reconciliation must merge reward claims without paying twice or subtracting legitimately spent credits.
+- No currency loss, paid retry, energy limit, or forced restart after learning mistakes. Do not award BKT credit for chapter stars, repeated story play, hints, or cosmetic achievements. Graded quizzes, checkpoints and independent research assessments keep their own rules.
+
+### Reused nodes and signal ownership
+
+- Extend the current chapter preparation/result containers and chapter selection rows with objective and star displays. Chapter controllers report evaluated actions through their existing save path; shared hearing mechanics remain unchanged.
+- PlayerManager's existing story attempts, chapter saves and wallet own best results and one-time reward claims. Extend the current cosmetic catalog and portrait badge display for earned module badges; do not introduce another rewards manager or save service.
+- Reuse existing success sounds and reveal animations, with reduced-motion treatment. Keep support controls within the current story interface, with large touch targets and readable objective text.
+
+### Implementation order and acceptance
+
+1. Confirm star/reward/help policy and map objectives for all 25 chapters. Audit paid-support migration and old reward records first.
+2. Implement save rules and a complete Module 1 Chapter 1 flow as the first visual/behavioral check: preparation → mistake/help/retry → results → replay improvement → chapter selection.
+3. Extend the shared chapter interactions and all five hearings using chapter-specific objectives. Verify that progress, original evidence and story continuity survive.
+4. Add module-completion badges and final result polish through existing cosmetic controls.
+5. Verify clean runs, mistakes, assisted runs, partial/resumed attempts, replay improvement, legacy saves, account switching, duplicate/stale synchronization, reward spending, badge equipping, reduced motion and phone layouts. Keep developer checks local and out of commits. Physical-device and live synchronization acceptance remain explicit release gates.

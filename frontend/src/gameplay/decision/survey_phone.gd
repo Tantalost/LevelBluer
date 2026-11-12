@@ -315,7 +315,11 @@ func _build_message() -> void:
 	body_panel.name = "MessageBody"
 	body_panel.add_theme_stylebox_override("panel", UI.box(Color("fffaf2"), Color("e5dacb"), 14))
 	var body: VBoxContainer = UI.column(body_panel, 14)
-	body.add_child(UI.label(str(entry["body"]), 24, INK))
+	if mode == "highlight":
+		body.add_child(UI.label("Select the passage that makes this request suspicious.", 24, INK))
+		body.add_child(UI.button(str(entry["body"]), mark_flag.bind("body")))
+	else:
+		body.add_child(UI.label(str(entry["body"]), 24, INK))
 	if entry.has("phrase"):
 		if mode == "highlight":
 			var passage: RichTextLabel = RichTextLabel.new()
@@ -331,7 +335,6 @@ func _build_message() -> void:
 			passage.text = "[url=flag]" + phrase + "[/url]"
 			passage.meta_clicked.connect(func(_meta: Variant) -> void: mark_flag())
 			body.add_child(passage)
-			_action("MARK THIS REQUEST", mark_flag)
 		else:
 			body.add_child(UI.label(str(entry["phrase"]), 24, INK))
 	match mode:
@@ -394,6 +397,7 @@ func sort_message(id: String, suspicious: bool) -> void:
 		return
 	if bool(Chapter.message(id)["suspicious"]) != suspicious:
 		state["mistakes"] = int(state["mistakes"]) + 1
+		Survey.block_star(state, "sort")
 		evidence_changed.emit(state.duplicate(true))
 		thought_requested.emit("Look at the request and its context—not just whether the sender name sounds familiar.")
 		AudioManager.play_sfx("ui_error")
@@ -409,8 +413,15 @@ func sort_message(id: String, suspicious: bool) -> void:
 	AudioManager.play_sfx("ui_confirm")
 	_inbox()
 
-func mark_flag() -> void:
-	if _locked or mode != "highlight" or selected not in Chapter.suspicious_ids():
+func mark_flag(candidate: String = "request") -> void:
+	if _locked or mode != "highlight" or Chapter.message(selected).is_empty() or selected in state.flags:
+		return
+	if candidate != "request" or selected not in Chapter.suspicious_ids():
+		Survey.block_star(state, "highlight")
+		state.mistakes += 1
+		evidence_changed.emit(state.duplicate(true))
+		thought_requested.emit("That passage does not establish a suspicious demand. Check what you are being asked to do, what is promised, and whether you can verify it. This objective can be retried on your next run.")
+		AudioManager.play_sfx("ui_error")
 		return
 	_add("flags", selected)
 	thought_requested.emit(str(Chapter.message(selected)["thought"]))
@@ -511,6 +522,9 @@ func take_photo() -> void:
 	if _locked or _taking or mode != "capture" or not is_instance_valid(_camera):
 		return
 	if not _camera.complete():
+		Survey.block_star(state, "capture")
+		state.mistakes += 1
+		evidence_changed.emit(state.duplicate(true))
 		thought_requested.emit("Keep the sender, subject and complete request inside the frame. Drag the blue corner to resize, or use the buttons below.")
 		return
 	_taking = true

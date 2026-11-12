@@ -51,6 +51,7 @@ class WebCanvas extends Control:
 			reveal = value
 			queue_redraw()
 	var progress: int = 0
+	var completed_indices: Array[int] = []
 	var pulse: float = -1.0:
 		set(value):
 			pulse = value
@@ -89,7 +90,7 @@ class WebCanvas extends Control:
 			else:
 				draw_line(HUB, target, Color("#173058"), 1)
 			if i < 5:
-				var color: Color = Color("#33D17A") if i < progress else Color("#335074")
+				var color: Color = Color("#33D17A") if i in completed_indices else Color("#335074")
 				var route: PackedVector2Array = []
 				for n: int in 25:
 					route.append(sequence_point(i, float(n) / 24.0 * reveal))
@@ -98,11 +99,11 @@ class WebCanvas extends Control:
 				var direction: Vector2 = (sequence_point(i, 0.52) - sequence_point(i, 0.48)).normalized()
 				draw_polyline(PackedVector2Array([arrow - direction.rotated(-0.6) * 12, arrow, arrow - direction.rotated(0.6) * 12]), color, 3)
 			for step: int in [1, 2]:
-				draw_line(target, target + SATELLITES[i] * Vector2(-1 if step == 1 else 1, 1) * reveal, Color("#33D17A") if i < progress else Color("#335074"), 2)
+				draw_line(target, target + SATELLITES[i] * Vector2(-1 if step == 1 else 1, 1) * reveal, Color("#33D17A") if i in completed_indices else Color("#335074"), 2)
 		draw_arc(HUB, 132, 0, TAU, 48, Color(hub_ink, 0.25) if ready_for_test else Color("#173058"), 2)
 		for i: int in 6:
 			var indicator: Vector2 = HUB + Vector2.from_angle(TAU * float(i) / 6 - PI / 2) * 142
-			draw_circle(indicator, 5, hub_ink if i < progress else Color("#173058"))
+			draw_circle(indicator, 5, hub_ink if i in completed_indices else Color("#173058"))
 		if reveal < 1:
 			for i: int in 16:
 				var p: Vector2 = HUB + Vector2.from_angle(TAU * float(i) / 16) * (40 + reveal * 210)
@@ -159,7 +160,8 @@ func _ready() -> void:
 	)
 	_fit_zoom.call_deferred()
 
-func configure(module_id: String, lessons: Array[Dictionary], progress: int, selected: int, checks: Array[bool], tutorial: bool, passed: bool) -> void:
+func configure(module_id: String, lessons: Array[Dictionary], progress: int, selected: int, checks: Array[bool], tutorial: bool, passed: bool, account: Object = null) -> void:
+	if account == null: account = PlayerManager
 	if _reveal != null:
 		_reveal.kill()
 	if _celebration != null:
@@ -167,13 +169,17 @@ func configure(module_id: String, lessons: Array[Dictionary], progress: int, sel
 	UI.clear(_canvas)
 	nodes.clear()
 	_canvas.progress = progress
-	_canvas.ready_for_test = progress >= lessons.size() and not tutorial
+	_canvas.completed_indices.clear()
+	for index: int in lessons.size():
+		if account.lesson_completed(module_id, index): _canvas.completed_indices.append(index)
+	_canvas.ready_for_test = account.can_take_checkpoint(module_id) and not tutorial
 	_canvas.passed = passed
 	_canvas.clock = 0
 	_canvas.pulse = -1
 	_canvas.reveal = 1.0
 	_focus = selected
-	_hint.text = "POST-TEST PASSED  /  MODULE COMPLETE" if passed else ("6 / 6 COMPLETE  /  POST-TEST READY" if _canvas.ready_for_test else "%d / 6 COMPLETE  /  FOLLOW THE LIT PATH" % progress)
+	var cleared: bool = account.diagnostic_route(module_id).route == "cleared"
+	_hint.text = "CLEARED BY PRETEST / OPTIONAL LESSONS" if cleared else ("CHECKPOINT PASSED" if passed else ("REQUIRED LESSONS COMPLETE / CHECKPOINT READY" if _canvas.ready_for_test else "%d / 6 COMPLETED / SELECT A LESSON" % progress))
 	_checkpoint = CheckpointNode.new()
 	(_checkpoint as CheckpointNode).ready_for_test = _canvas.ready_for_test
 	(_checkpoint as CheckpointNode).passed = passed
@@ -181,13 +187,13 @@ func configure(module_id: String, lessons: Array[Dictionary], progress: int, sel
 	_checkpoint.name = "ModuleCheckpoint"
 	_checkpoint.position = HUB - Vector2(120, 120)
 	_checkpoint.size = Vector2(240, 240)
-	_checkpoint.disabled = progress < lessons.size() or tutorial
-	_checkpoint.tooltip_text = "25 questions / 20 correct to pass" if _canvas.ready_for_test else "Finish every lesson, quiz and simulation to unlock the post-test."
+	_checkpoint.disabled = not _canvas.ready_for_test
+	_checkpoint.tooltip_text = "25 questions / 20 correct to pass" if _canvas.ready_for_test else "Complete required lessons, quizzes and simulations to unlock the checkpoint."
 	_checkpoint.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
 		_checkpoint.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 	_canvas.add_child(_checkpoint)
-	var hub_label: Label = UI.label("MODULE %s\nPOST-TEST\n\n%s" % [module_id.right(2), "PASSED" if passed else ("READY / ENTER" if _canvas.ready_for_test else "%d / 6 COMPLETE" % progress)], 24, Color("#F3ECD6") if _canvas.ready_for_test else UI.MUTED)
+	var hub_label: Label = UI.label("MODULE %s\nCHECKPOINT\n\n%s" % [module_id.right(2), "OPTIONAL" if cleared else ("PASSED" if passed else ("READY / ENTER" if _canvas.ready_for_test else "FINISH REQUIRED\nLESSONS"))], 24, Color("#F3ECD6") if _canvas.ready_for_test else UI.MUTED)
 	_checkpoint.add_child(hub_label)
 	hub_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	hub_label.offset_left = 18
@@ -195,9 +201,10 @@ func configure(module_id: String, lessons: Array[Dictionary], progress: int, sel
 	hub_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hub_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	for i: int in lessons.size():
-		var finished: bool = i < progress
-		var locked: bool = i > progress or (tutorial and i != 0)
-		var learn: Button = UI.button("%02d / %s" % [i + 1, str(lessons[i].title)], _select_step.bind(i, 0))
+		var finished: bool = account.lesson_completed(module_id, i)
+		var locked: bool = (not account.can_access_lesson(module_id, i) and not tutorial) or (tutorial and i != 0)
+		var status: String = account.lesson_status(module_id, i)
+		var learn: Button = UI.button("%02d / %s\n%s" % [i + 1, str(lessons[i].title), status], _select_step.bind(i, 0))
 		learn.name = "Lesson%d" % (i + 1)
 		learn.size = Vector2(270, 96)
 		learn.position = POINTS[i] - learn.size * 0.5
@@ -213,7 +220,7 @@ func configure(module_id: String, lessons: Array[Dictionary], progress: int, sel
 		locked_style.set_corner_radius_all(8)
 		locked_style.border_width_left = 5
 		learn.add_theme_stylebox_override("disabled", locked_style)
-		learn.tooltip_text = "Complete lesson %d first" % i if locked else "Read definitions and examples"
+		learn.tooltip_text = "Complete the preceding required lesson first" if locked else status + ". Read definitions and examples."
 		_canvas.add_child(learn)
 		nodes.append(learn)
 		for step: int in [1, 2]:

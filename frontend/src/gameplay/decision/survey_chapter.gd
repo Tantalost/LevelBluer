@@ -29,6 +29,24 @@ const SLEEP_VOICE: String = "v1794044470/M01_CH01_28_John.mp3"
 const END_CAPTION: String = ""
 const BASE_REWARD: int = 100
 const CLEAN_BONUS: int = 25
+const STAR_CREDITS: int = 25
+const STAR_IDS: Array[String] = ["sort", "highlight", "capture"]
+const STAR_GOALS: Dictionary = {
+	"sort":"Accurate sorting / Sort all six messages without an incorrect submission.",
+	"highlight":"Spot the manipulation / Mark all three requests without an incorrect selection.",
+	"capture":"Preserve the evidence / Capture each exhibit correctly on its first submission."
+}
+
+static func block_star(state: Dictionary, objective: String) -> void:
+	if state.has("star_blocked") and objective in STAR_IDS and objective not in state.get("star_blocked", []):
+		state["star_blocked"].append(objective)
+
+static func earned_stars(state: Dictionary) -> Array[String]:
+	var result: Array[String] = []
+	if not state.get("star_tracking", false) or not state.get("completed", false): return result
+	for id: String in STAR_IDS:
+		if id not in state.get("star_blocked", []): result.append(id)
+	return result
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const MESSAGES: Array[Dictionary] = [
 	{"id":"club", "sender":"Jobert", "address":"jobert@club.school.example", "subject":"Tomorrow's club meeting", "body":"Meeting at 3 PM in our usual clubroom. The same details are on the club noticeboard. Bring your project notes.", "suspicious":false},
@@ -61,7 +79,7 @@ const CHAT_MESSAGES: Array[Dictionary] = [
 ]
 
 static func fresh() -> Dictionary:
-	return {"version":1, "beat":0, "phase":"day", "read":[], "sorted":[], "flags":[], "domains":[], "captures":[], "mistakes":0, "hint_used":false, "sealed":false, "completed":false, "next_chapter_unlocked":false, "reward":0}
+	return {"version":1, "beat":0, "phase":"day", "read":[], "sorted":[], "flags":[], "domains":[], "captures":[], "mistakes":0, "hint_used":false, "sealed":false, "completed":false, "next_chapter_unlocked":false, "reward":0, "star_tracking":true, "star_blocked":[], "star_bonus_awarded":0}
 
 static func suspicious_ids() -> Array[String]:
 	return ["survey", "urgent", "profile"]
@@ -81,6 +99,15 @@ static func complete_evidence(state: Dictionary) -> bool:
 
 static func clean(raw: Dictionary) -> Dictionary:
 	var state: Dictionary = fresh()
+	# An older partial/completed save cannot prove first-submission accuracy.
+	state.star_tracking = raw.is_empty() or raw.get("star_tracking", false) == true
+	var blocked: Variant = raw.get("star_blocked", [])
+	if blocked is Array:
+		for id: String in STAR_IDS:
+			if id in blocked: state.star_blocked.append(id)
+	var paid: Variant = raw.get("star_bonus_awarded", 0)
+	if (paid is int or paid is float) and is_finite(float(paid)):
+		state.star_bonus_awarded = clampi(int(paid), 0, STAR_CREDITS * 3)
 	for field: String in ["read", "sorted", "flags", "domains", "captures"]:
 		var values: Variant = raw.get(field, [])
 		if values is Array:
@@ -115,7 +142,7 @@ static func clean(raw: Dictionary) -> Dictionary:
 	if state["completed"]:
 		state["next_chapter_unlocked"] = true
 		state["phase"] = "done"
-		state["reward"] = BASE_REWARD + (CLEAN_BONUS if Perks.status(state["perk_run"], state["hint_used"]) != "assisted" and int(state["mistakes"]) == 0 else 0)
+		state["reward"] = BASE_REWARD if state.star_tracking else BASE_REWARD + (CLEAN_BONUS if Perks.status(state["perk_run"], state["hint_used"]) != "assisted" and int(state["mistakes"]) == 0 else 0)
 	elif state["phase"] == "done":
 		state["phase"] = "seal"
 	return state
@@ -124,3 +151,27 @@ static func domain_matches(answer: String, id: String) -> bool:
 	# Tolerate formatting, never a different/lookalike domain.
 	var domain: String = str(message(id).get("address", "")).get_slice("@", 1)
 	return not domain.is_empty() and answer.strip_edges().to_lower().trim_suffix(".") == domain
+
+static func merge_attempt(cloud: Dictionary, local: Dictionary) -> Dictionary:
+	if cloud.is_empty(): return clean(local) if not local.is_empty() else {}
+	if local.is_empty(): return clean(cloud)
+	var first: Dictionary = clean(cloud)
+	var second: Dictionary = clean(local)
+	var first_id: String = str(first.perk_run.get("id", ""))
+	var second_id: String = str(second.perk_run.get("id", ""))
+	if first_id.is_empty() or first_id != second_id:
+		return second if float(second.perk_run.get("started_at", 0)) > float(first.perk_run.get("started_at", 0)) else first
+	var result: Dictionary = second.duplicate(true)
+	for field: String in ["read", "sorted", "flags", "domains", "captures", "star_blocked"]:
+		for value: Variant in first[field]:
+			if value not in result[field]: result[field].append(value)
+	result.mistakes = maxi(int(first.mistakes), int(second.mistakes))
+	result.star_tracking = first.star_tracking and second.star_tracking
+	result.hint_used = first.hint_used or second.hint_used
+	result.sealed = first.sealed or second.sealed
+	result.completed = first.completed or second.completed
+	result.star_bonus_awarded = maxi(int(first.star_bonus_awarded), int(second.star_bonus_awarded))
+	result.beat = maxi(int(first.beat),int(second.beat))
+	var phases: Array[String] = ["day","sort","highlight","notes","capture","seal","sleep","done"]
+	result.phase = phases[maxi(phases.find(first.phase), phases.find(second.phase))]
+	return clean(result)

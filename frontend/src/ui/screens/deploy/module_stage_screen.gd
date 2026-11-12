@@ -449,12 +449,7 @@ func _build_chapters() -> void:
 		var unlocked: bool = PlayerManager.story_unlocked(id)
 		var selected: bool = index == _selected
 		var caption: String = MODULE_FIVE_TITLES[index] if _module_index == 4 else MODULE_FOUR_TITLES[index] if _module_index == 3 else MODULE_THREE_TITLES[index] if _module_index == 2 else MODULE_TWO_TITLES[index] if _module_index == 1 else "The Survey" if index == 0 else ("The Advisor Email" if index == 1 else ("The Payout" if index == 2 else ("The Prize" if index == 3 else "Confrontation")))
-		var status: String = "AVAILABLE" if unlocked else "COMPLETE CHAPTER %d" % index
-		if PlayerManager.story_definition(id) == null: status = "IN DEVELOPMENT"
-		if _module_index == 1 and index == 0 and not unlocked: status = "FINISH MODULE 1 + TEXT TRICKS LESSON 1"
-		if _module_index == 4 and index == 0 and not unlocked: status = "FINISH MODULE 4 + TEMPTING OFFERS LESSON 1"
-		if _module_index == 3 and index == 0 and not unlocked: status = "FINISH MODULE 3 + FAKE STORIES LESSON 1"
-		if _module_index == 2 and index == 0 and not unlocked: status = "FINISH MODULE 2 + PHONE TRICKS LESSON 1"
+		var status: String = "AVAILABLE" if unlocked else PlayerManager.story_access_reason(id)
 		var row: Button = UI.button("", _select_chapter.bind(index))
 		row.accessibility_name = "Chapter %d. %s. %s" % [index + 1, caption, "Completed." if completed else status]
 		var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
@@ -485,6 +480,15 @@ func _build_chapters() -> void:
 		copy.size_flags_vertical = SIZE_SHRINK_CENTER
 		copy.size_flags_horizontal = SIZE_EXPAND_FILL
 		copy.add_child(UI.label(caption, maxi(_font, ceili(21 / physical)), UI.TEXT))
+		if id == "mod_01_ch_01":
+			var earned: Array[String] = PlayerManager.story_stars(id)
+			var focus: String = "ALL OBJECTIVES EARNED"
+			var definition: GDScript = PlayerManager.story_definition(id)
+			for objective: String in definition.STAR_IDS:
+				if objective not in earned:
+					focus = str(definition.STAR_GOALS[objective]).get_slice(" / ", 0)
+					break
+			copy.add_child(UI.label("%d/3 STARS / %s" % [earned.size(), focus], ceili(14 / physical), UI.GOLD))
 		if not completed:
 			copy.add_child(UI.label(status, maxi(_font - 3, ceili(14 / physical)), ACCENTS[0] if index == 0 else UI.MUTED))
 		if completed:
@@ -523,12 +527,10 @@ func _build_chapters() -> void:
 	if _selected < 5:
 		_breach_button.text = "REPLAY" if complete else ("CONTINUE" if not progress.is_empty() else "START")
 		_breach_button.disabled = not PlayerManager.story_unlocked(chapter_id)
-		if _breach_button.disabled: _breach_button.text = "COMPLETE CHAPTER %d FIRST" % _selected if _selected > 0 else "COMPLETE LESSON FIRST"
+		if _breach_button.disabled: _breach_button.text = PlayerManager.story_access_reason(chapter_id)
 	else:
 		_breach_button.text = "COMING SOON"
 		_breach_button.disabled = true
-	if _module_index in [1,2,3,4] and _breach_button.disabled:
-		_breach_button.text = "IN DEVELOPMENT" if PlayerManager.story_definition(chapter_id) == null else ("COMPLETE CHAPTER %d FIRST" % _selected if _selected > 0 and PlayerManager.story_unlocked(_chapter_id(1)) else "FINISH MODULE %d + LESSON 1" % _module_index)
 	if focused >= 0 and focused < _rows.size(): _rows[focused].grab_focus()
 
 func _fit_chapter_preview() -> void:

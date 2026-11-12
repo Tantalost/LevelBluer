@@ -10,6 +10,11 @@ const ASSETS_DIR := "user://assets"
 const BUNDLED_DIR := "res://assets/enemies"
 const CLOUD_ROOT := "https://res.cloudinary.com/nfd5bhkz/image/upload"
 const CATALOG_REV := "npc-expr-1"
+const HANDLER_EXPRESSIONS: Array[String] = [
+	"calm", "smile", "talk", "thoughtfulness", "skepticism", "doubt",
+	"fear", "astonishment", "discomfort", "sadness", "cry", "embarrassment",
+	"awkwardness", "laughter", "disgust", "eye_rolling", "aggression", "scream",
+]
 const DOWNLOAD_TIMEOUT_SEC := 15.0
 const BODY_SIZE_LIMIT := 8 * 1024 * 1024
 const WALK_FPS := 8.0
@@ -157,6 +162,22 @@ func sync_catalog() -> void:
 	else:
 		push_warning("AssetManager: catalog finished with missing or failed assets. online=%s" % _online)
 	sync_finished.emit(all_ok)
+
+
+func get_handler_texture(expression: String, appearance: String = "original") -> Texture2D:
+	var index: int = HANDLER_EXPRESSIONS.find(expression.trim_prefix("npc_"))
+	if index >= 0 and appearance in ["male", "female"]:
+		var sheet_id: String = "handler_%s_%s" % [appearance, ["a", "b", "c"][index / 6]]
+		var sheet: Texture2D = get_texture(sheet_id)
+		if sheet != null and sheet.get_width() == 1536 and sheet.get_height() == 1024:
+			var frame: int = index % 6
+			var portrait: AtlasTexture = AtlasTexture.new()
+			portrait.atlas = sheet
+			portrait.region = Rect2((frame % 3) * 512, (frame / 3) * 512, 512, 512)
+			portrait.filter_clip = true
+			return portrait
+	# Preserve the requested original expression if a variant is unavailable.
+	return get_texture(expression if index >= 0 else "npc_calm")
 
 
 func get_texture(asset_id: String) -> Texture2D:
@@ -530,6 +551,12 @@ func _ui_catalog() -> Array[Dictionary]:
 		_catalog_entry("npc_disgust", "NPC disgust", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Disgust.png"),
 		_catalog_entry("npc_aggression", "NPC aggression", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Aggression.png"),
 		_catalog_entry("npc_astonishment", "NPC astonishment", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1788689625/Astonishment.png"),
+		_catalog_entry("handler_male_a", "Male Handler / speaking", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447957/levelblue/handler/handler_male_a_v1.png"),
+		_catalog_entry("handler_female_a", "Female Handler / speaking", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447962/levelblue/handler/handler_female_a_v1.png"),
+		_catalog_entry("handler_male_b", "Male Handler / emotions", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447967/levelblue/handler/handler_male_b_v1.png"),
+		_catalog_entry("handler_female_b", "Female Handler / emotions", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447971/levelblue/handler/handler_female_b_v1.png"),
+		_catalog_entry("handler_male_c", "Male Handler / reactions", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447976/levelblue/handler/handler_male_c_v1.png"),
+		_catalog_entry("handler_female_c", "Female Handler / reactions", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794447980/levelblue/handler/handler_female_c_v1.png"),
 		_catalog_entry("hearing_debate_v1", "Hearing / debate stage", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792930826/hearing_debate_v1.png"),
 		_catalog_entry("hearing_mystery_v1", "Hearing / mystery", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792930833/hearing_mystery_v1.png"),
 		_catalog_entry("john_counter_lettered_v1", "John / counter", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792930834/john_counter_lettered_v1.png"),

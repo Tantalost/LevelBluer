@@ -155,7 +155,7 @@ func _run() -> void:
 	player.purchased_items.append("b1")
 	screen.on_resume()
 	await settle()
-	check(screen._buy.disabled and screen._buy.text == "OWNED", "Owned item cannot repurchase")
+	check(not screen._buy.disabled and screen._buy.text == "EQUIP", "Owned item can equip without a second purchase")
 	player.pvp_tokens = 0
 	for dimensions: Vector2i in [Vector2i(844, 390), Vector2i(960, 540)]:
 		root.size = dimensions

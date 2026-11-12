@@ -630,7 +630,7 @@
 								"There is no red flag"
 							],
 							"answer_index": 1.0,
-							"explanation": "The actual domain is whatever comes right before the final slash-free part — here that's form-reply.com, not westfield.edu.",
+							"explanation": "The registered domain in this hostname is form-reply.com. The westfield.edu text before it is only a subdomain; it does not make this a school-owned address.",
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -901,7 +901,7 @@
 								"https://grades.westfield.edu"
 							],
 							"answer_index": 1.0,
-							"explanation": "westfield.edu-gradecheck.info is a lookalike — the real domain is 'gradecheck.info', with 'westfield.edu' used as a decoy prefix.",
+							"explanation": "The registered domain is edu-gradecheck.info; westfield is its subdomain. This address is not part of westfield.edu, even though its opening characters resemble the school address.",
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,

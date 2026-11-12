@@ -46,6 +46,12 @@ func _ready() -> void:
 	_build_music_volume()
 	_build_dialogue_toggle()
 	_build_accessibility_controls()
+	var settings_content: VBoxContainer = $SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox
+	var handler_button: Button = UI.button("HANDLER APPEARANCE", func() -> void:
+		preload("res://src/ui/components/handler_picker.gd").open(self))
+	handler_button.name = "HandlerAppearanceButton"
+	settings_content.add_child(handler_button)
+	settings_content.move_child(handler_button, 0)
 	_feedback_button = UI.button("SEND FEEDBACK", func() -> void:
 		preload("res://src/ui/screens/settings/student_feedback.gd").open(self)
 	)
@@ -388,8 +394,19 @@ func _style_workspace() -> void:
 	_logout_button.add_theme_stylebox_override("normal", UI.box(Color("#0A1730"), Color("#FF5C5C"), 12))
 
 func on_exit() -> void:
+	var handler_picker: Control = get_node_or_null("HandlerPicker") as Control
+	if is_instance_valid(handler_picker):
+		handler_picker.close()
 	_timer_assist_select.get_popup().hide()
 	_text_speed_select.get_popup().hide()
+
+
+func consume_back() -> bool:
+	var handler_picker: Control = get_node_or_null("HandlerPicker") as Control
+	if not is_instance_valid(handler_picker):
+		return false
+	handler_picker.close()
+	return true
 
 
 func _apply_pixel_font(label: Label, font_size: int) -> void:

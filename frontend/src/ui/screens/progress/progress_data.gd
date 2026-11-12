@@ -25,11 +25,7 @@ static func snapshot() -> Dictionary:
 		var record: Dictionary = PlayerManager.story_checkpoint(id, false)
 		var done: bool = bool(record.get("completed", false))
 		var unlocked: bool = PlayerManager.story_unlocked(id)
-		var reason: String = "Complete Chapter %d first." % (number - 1)
-		if not PlayerManager.is_module_deploy_unlocked("mod_01"):
-			reason = "Complete the first Email Tricks lesson to unlock Deploy."
-		if module_number == 2 and (number == 1 or not PlayerManager.story_unlocked("mod_02_ch_01")): reason = "Finish Module 1 and the first Text Tricks lesson."
-		if module_number == 3 and (number == 1 or not PlayerManager.story_unlocked("mod_03_ch_01")): reason = "Finish Module 2 and the first Phone Tricks lesson."
+		var reason: String = PlayerManager.story_access_reason(id)
 		if done: chapter_done += 1
 		chapters.append({"id":id, "number":number, "module":module_number, "name":definition.TITLE, "done":done,
 			"status":"Completed" if done else ("Available" if unlocked else "Locked"),
@@ -46,8 +42,8 @@ static func snapshot() -> Dictionary:
 		var unlocked: bool = PlayerManager.can_access_lesson_module(id)
 		var pretest: bool = AuthService.has_module_pretest(id)
 		var passed: bool = PlayerManager.has_lesson_post_quiz(id)
-		var state: String = "Completed" if done == lessons.size() else ("Locked" if not unlocked else ("Available" if pretest else "Pre-test required"))
-		var checkpoint: String = "Passed" if passed else ("Ready" if unlocked and done == lessons.size() else "Locked")
+		var state: String = "Cleared by pretest" if PlayerManager.diagnostic_route(id).route == "cleared" else "Completed" if done == lessons.size() else ("Locked" if not unlocked else ("Available" if pretest else "Pre-test required"))
+		var checkpoint: String = "Passed" if passed else ("Optional" if PlayerManager.diagnostic_route(id).route == "cleared" else "Ready" if PlayerManager.can_take_checkpoint(id) else "Locked")
 		if passed: checkpoint_done += 1
 		modules.append({"id":id, "name":str(module.title), "done":done, "total":lessons.size(),
 			"lessons":lessons, "status":state, "pretest":pretest, "unlocked":unlocked,
@@ -73,10 +69,10 @@ static func next_step(modules: Array[Dictionary]) -> Dictionary:
 	if not practice.is_empty() and float(practice.mastery) < PlayerManager.PROFICIENT_MASTERY:
 		return practice_step(practice)
 	for module: Dictionary in modules:
-		if not module.unlocked: continue
-		if int(module.done) < int(module.total):
+		if not module.unlocked or PlayerManager.module_academically_cleared(str(module.id)): continue
+		if not PlayerManager.can_take_checkpoint(str(module.id)):
 			return {"title":("Continue " if module.pretest else "Start ") + str(module.name),
-				"reason":"Lesson %d of %d is next." % [int(module.done) + 1, int(module.total)] if module.pretest else "Take this topic's pre-test to establish your starting estimate.",
+				"reason":"Lesson %d of %d is next." % [PlayerManager.next_lesson_index(str(module.id)) + 1, int(module.total)] if module.pretest else "Take this topic's pre-test to establish your starting estimate.",
 				"button":"OPEN LESSON", "args":{"module_id":module.id}}
 		if not module.passed:
 			return {"title":str(module.name) + " checkpoint", "reason":"Your lessons are complete. The module checkpoint is your next step.",

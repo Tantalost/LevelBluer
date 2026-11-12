@@ -75,10 +75,10 @@ func _style_practice_dialog(node: Node) -> void:
 		var control: Control = node as Control
 		control.add_theme_font_override("font", PracticeWorkspace.Terminal.FONT)
 		control.add_theme_color_override("font_color", PracticeWorkspace.GREEN)
-		if node is PanelContainer: control.add_theme_stylebox_override("panel", PracticeWorkspace.Terminal._box(PracticeWorkspace.BLACK, PracticeWorkspace.GREEN, 2))
+		if node is PanelContainer: control.add_theme_stylebox_override("panel", PracticeWorkspace.Terminal.box(PracticeWorkspace.BLACK, PracticeWorkspace.GREEN, 2))
 		if node is Button:
 			for style: String in ["normal","hover","pressed","focus"]:
-				control.add_theme_stylebox_override(style, PracticeWorkspace.Terminal._box(PracticeWorkspace.BLACK, PracticeWorkspace.GREEN, 1))
+				control.add_theme_stylebox_override(style, PracticeWorkspace.Terminal.box(PracticeWorkspace.BLACK, PracticeWorkspace.GREEN, 1))
 	for child: Node in node.get_children(): _style_practice_dialog(child)
 
 

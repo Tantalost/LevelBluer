@@ -1,10 +1,18 @@
 extends Node
 signal avatar_changed
+signal handler_appearance_changed
 signal progress_changed
 const Avatars = preload("res://src/ui/screens/profile/avatar_portrait.gd")
 const Remediation: GDScript = preload("res://src/gameplay/decision/stage_remediation.gd")
 var remediation_state: Dictionary = {"sessions": []}
 var selected_avatar_id: String = "byte_bot"
+var selected_frame_id: String = ""
+var selected_badge_id: String = ""
+var appearance_updated_at_ms: int = 0
+## Companion appearance, never the student's gender or a learning record.
+var handler_appearance: String = "original"
+var handler_appearance_updated_at_ms: int = 0
+var handler_choice_pending: bool = false
 ## Autoload singleton, registered as "PlayerManager".
 ## Lesson progress is persisted per signed-in participant.
 
@@ -37,8 +45,12 @@ var locked_stages: Dictionary = {}
 var cleared_stages: Dictionary = {}
 var completed_lessons: Array[String] = []
 var lesson_progress: Dictionary = {}
+## Explicit completed lesson keys; legacy lesson_progress retains its contiguous prefix.
+var lesson_completions: Dictionary = {}
 var lesson_post_quiz_scores: Dictionary = {}
 var lesson_quiz_responses: Dictionary = {}
+## One resumable mini attempt and bounded rotation history per lesson.
+var lesson_quiz_sessions: Dictionary = {}
 ## One first-response audit per practice-bank item; bounded by the authored bank.
 var practice_responses: Dictionary = {}
 var mission_progress: Dictionary = {}
@@ -57,11 +69,11 @@ var credits: int = 0
 var pvp_tokens: int = 0
 
 const STORE_ITEMS: Array[Dictionary] = [
-	{"id": "t1", "name": "Assault Frame", "price": 500, "category": "FEATURED", "art": "frame", "color": "4FE0D4", "description": "An angular cyan frame for your collection."},
-	{"id": "t2", "name": "Recon Drone", "price": 350, "category": "FEATURED", "art": "drone", "color": "4F8CFF", "description": "A compact surveillance-drone collectible."},
-	{"id": "t3", "name": "Ghost Cloak", "price": 1200, "category": "FEATURED", "art": "cloak", "color": "B09AFF", "description": "A shadow operative emblem with violet accents."},
-	{"id": "b1", "name": "Gold Frame", "price": 300, "category": "BORDERS", "art": "frame", "color": "FFB648", "description": "A gold border with pixel-cut corners."},
-	{"id": "b2", "name": "Shadow Border", "price": 600, "category": "BORDERS", "art": "frame", "color": "B09AFF", "description": "A dark border edged with violet light."},
+	{"id": "t1", "name": "Assault Frame", "price": 500, "category": "FEATURED", "slot": "frame", "art": "frame", "color": "4FE0D4", "description": "An angular cyan frame around your profile picture."},
+	{"id": "t2", "name": "Recon Drone", "price": 350, "category": "FEATURED", "slot": "badge", "art": "drone", "color": "4F8CFF", "description": "A recon drone badge worn on your profile picture."},
+	{"id": "t3", "name": "Ghost Cloak", "price": 1200, "category": "FEATURED", "slot": "badge", "art": "cloak", "color": "B09AFF", "description": "A hooded operative badge worn on your profile picture."},
+	{"id": "b1", "name": "Gold Frame", "price": 300, "category": "BORDERS", "slot": "frame", "art": "frame", "color": "FFB648", "description": "A gold profile frame with pixel-cut corners."},
+	{"id": "b2", "name": "Shadow Border", "price": 600, "category": "BORDERS", "slot": "frame", "art": "frame", "color": "B09AFF", "description": "A dark profile frame edged with violet light."},
 ]
 var module_1_complete: bool = false
 var seen_module_intros: Array[String] = []
@@ -125,53 +137,26 @@ func authored_story_ids() -> PackedStringArray:
 	return [SurveyChapter.ID, AdvisorChapter.ID, PayoutChapter.ID, PrizeChapter.ID, ConfrontationChapter.ID, DeliveryChapter.ID, WalletCodeChapter.ID, FamiliarNameChapter.ID, RecoveryPressureChapter.ID, KeepCodeChapter.ID, HelpfulCallerChapter.ID, KnownDetailsChapter.ID, DontHangUpChapter.ID, SafeCallbackChapter.ID, VoiceControlChapter.ID, HereToHelpChapter.ID, ConsistentStoryChapter.ID, ExceptionChapter.ID, RealOfficeChapter.ID, MaskHoldsChapter.ID, GiftChapter.ID, PreviewHelper.ID, EveryoneHasIt.ID, FourConnections.ID, CloseConnection.ID]
 
 func story_unlocked(id: String) -> bool:
-	if id == CloseConnection.ID:
-		return story_unlocked(FourConnections.ID) and chapter_progress.get(FourConnections.ID,{}).get("completed",false)
-	if id == FourConnections.ID:
-		return story_unlocked(EveryoneHasIt.ID) and chapter_progress.get(EveryoneHasIt.ID,{}).get("completed",false)
-	if id == EveryoneHasIt.ID:
-		return story_unlocked(PreviewHelper.ID) and chapter_progress.get(PreviewHelper.ID,{}).get("completed",false)
-	if id == PreviewHelper.ID:
-		return story_unlocked(GiftChapter.ID) and chapter_progress.get(GiftChapter.ID,{}).get("completed",false)
-	if id == GiftChapter.ID:
-		return is_module_deploy_unlocked("mod_05") and chapter_progress.get(MaskHoldsChapter.ID, {}).get("completed", false)
-	if id == MaskHoldsChapter.ID:
-		return story_unlocked(RealOfficeChapter.ID) and chapter_progress.get(RealOfficeChapter.ID, {}).get("completed", false)
-	if id == RealOfficeChapter.ID:
-		return story_unlocked(ExceptionChapter.ID) and chapter_progress.get(ExceptionChapter.ID, {}).get("completed", false)
-	if id == ExceptionChapter.ID:
-		return story_unlocked(ConsistentStoryChapter.ID) and chapter_progress.get(ConsistentStoryChapter.ID, {}).get("completed", false)
-	if id == ConsistentStoryChapter.ID:
-		return story_unlocked(HereToHelpChapter.ID) and chapter_progress.get(HereToHelpChapter.ID, {}).get("completed", false)
-	if id == HereToHelpChapter.ID:
-		return is_module_deploy_unlocked("mod_04") and chapter_progress.get(VoiceControlChapter.ID, {}).get("completed", false)
-	if id == VoiceControlChapter.ID:
-		return story_unlocked(SafeCallbackChapter.ID) and chapter_progress.get(SafeCallbackChapter.ID, {}).get("completed", false)
-	if id == SafeCallbackChapter.ID:
-		return story_unlocked(DontHangUpChapter.ID) and chapter_progress.get(DontHangUpChapter.ID, {}).get("completed", false)
-	if id == DontHangUpChapter.ID:
-		return story_unlocked(KnownDetailsChapter.ID) and chapter_progress.get(KnownDetailsChapter.ID, {}).get("completed", false)
-	if id == KnownDetailsChapter.ID:
-		return story_unlocked(HelpfulCallerChapter.ID) and chapter_progress.get(HelpfulCallerChapter.ID, {}).get("completed", false)
-	if id == HelpfulCallerChapter.ID:
-		return is_module_deploy_unlocked("mod_03") and chapter_progress.get(KeepCodeChapter.ID, {}).get("completed", false)
-	if id == KeepCodeChapter.ID:
-		return story_unlocked(RecoveryPressureChapter.ID) and chapter_progress.get(RecoveryPressureChapter.ID, {}).get("completed", false)
-	if id == RecoveryPressureChapter.ID:
-		return story_unlocked(FamiliarNameChapter.ID) and chapter_progress.get(FamiliarNameChapter.ID, {}).get("completed", false)
-	if id == FamiliarNameChapter.ID:
-		return story_unlocked(WalletCodeChapter.ID) and chapter_progress.get(WalletCodeChapter.ID, {}).get("completed", false)
-	if id == WalletCodeChapter.ID:
-		return story_unlocked(DeliveryChapter.ID) and chapter_progress.get(DeliveryChapter.ID, {}).get("completed", false)
-	if id == DeliveryChapter.ID:
-		return is_module_deploy_unlocked("mod_02") and chapter_progress.get(ConfrontationChapter.ID, {}).get("completed", false)
-	if not is_module_deploy_unlocked("mod_01"): return false
-	if id == SurveyChapter.ID: return true
-	if id == AdvisorChapter.ID: return chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)
-	if id == PayoutChapter.ID: return chapter_progress.get(AdvisorChapter.ID, {}).get("completed", false) and chapter_progress.get(SurveyChapter.ID, {}).get("completed", false)
-	if id == PrizeChapter.ID: return story_unlocked(PayoutChapter.ID) and chapter_progress.get(PayoutChapter.ID, {}).get("completed", false)
-	if id == ConfrontationChapter.ID: return story_unlocked(PrizeChapter.ID) and chapter_progress.get(PrizeChapter.ID, {}).get("completed", false)
-	return false
+	if id not in authored_story_ids(): return false
+	# Existing started chapters remain resumable after the prerequisite update.
+	if not (chapter_progress.get(id, {}) as Dictionary).is_empty(): return true
+	if not story_access_reason(id).is_empty(): return false
+	return true
+
+func story_access_reason(id: String) -> String:
+	var ids: PackedStringArray = authored_story_ids()
+	var position: int = ids.find(id)
+	if position < 0: return "IN DEVELOPMENT"
+	if not (chapter_progress.get(id, {}) as Dictionary).is_empty(): return ""
+	if position > 0 and not bool(chapter_progress.get(ids[position - 1], {}).get("completed", false)):
+		return "FINISH PREVIOUS STORY CHAPTER"
+	var module_id: String = "mod_%02d" % (position / 5 + 1)
+	var chapter: int = position % 5
+	if not can_access_lesson_module(module_id): return "CLEAR PREVIOUS LEARNING MODULE"
+	if chapter < 4:
+		return "" if lesson_cleared(module_id, chapter) else "COMPLETE LESSON %d" % (chapter + 1)
+	if not lesson_cleared(module_id, 4) or not lesson_cleared(module_id, 5): return "COMPLETE LESSONS 5 AND 6"
+	return "" if module_academically_cleared(module_id) else "PASS MODULE CHECKPOINT"
 
 func story_checkpoint(id: String, is_replay: bool) -> Dictionary:
 	return (chapter_replay_progress if id == SurveyChapter.ID else chapter_replays.get(id, {})) if is_replay else chapter_progress.get(id, {})
@@ -180,6 +165,47 @@ var owned_perks: Array[String] = ["recap"]
 var perk_loadout: Array[String] = []
 var perk_attempts: Array[Dictionary] = []
 var chapter_replay_progress: Dictionary = {}
+## Fixed, one-time story awards. Objective claims also represent earned stars.
+var story_reward_claims: Dictionary = {}
+var _story_reward_basis: Dictionary = {}
+var _story_reward_cloud_receipt: String = ""
+
+func story_stars(chapter_id: String) -> Array[String]:
+	var result: Array[String] = []
+	if chapter_id == SurveyChapter.ID:
+		for id: String in SurveyChapter.STAR_IDS:
+			if story_reward_claims.has(chapter_id + ":" + id): result.append(id)
+	return result
+
+func _clean_story_claims(raw: Variant) -> Dictionary:
+	var result: Dictionary = {}
+	if raw is Dictionary:
+		for id: String in ["clear", "sort", "highlight", "capture"]:
+			var key: String = SurveyChapter.ID + ":" + id
+			if raw.get(key, false) == true: result[key] = true
+	return result
+
+func _story_claim_value(claims: Dictionary) -> int:
+	var total: int = 0
+	for key: String in claims:
+		total += SurveyChapter.BASE_REWARD if key.ends_with(":clear") else SurveyChapter.STAR_CREDITS
+	return total
+
+func _settle_survey_stars(valid: Dictionary, replaying: bool, previous: Dictionary) -> void:
+	if not valid.completed or not valid.star_tracking: return
+	var earned: Array[String] = SurveyChapter.earned_stars(valid)
+	var new_bonus: int = 0
+	for id: String in earned:
+		var key: String = SurveyChapter.ID + ":" + id
+		if not story_reward_claims.has(key):
+			story_reward_claims[key] = true
+			new_bonus += SurveyChapter.STAR_CREDITS
+	credits += new_bonus
+	valid.star_bonus_awarded = int(previous.get("star_bonus_awarded", 0)) if previous.get("completed", false) else new_bonus
+	var clear_key: String = SurveyChapter.ID + ":clear"
+	if not replaying and not previous.get("completed", false) and not story_reward_claims.has(clear_key):
+		story_reward_claims[clear_key] = true
+		credits += SurveyChapter.BASE_REWARD
 
 func purchase_perk(id: String, persist: bool = true) -> bool:
 	if id not in StoryPerks.IDS or id in owned_perks: return false
@@ -203,7 +229,7 @@ func begin_survey_attempt(is_replay: bool, persist: bool = true) -> Dictionary:
 
 func begin_story_attempt(chapter_id: String, is_replay: bool, persist: bool = true) -> Dictionary:
 	var definition: GDScript = story_definition(chapter_id)
-	if definition == null or (chapter_id != SurveyChapter.ID and not story_unlocked(chapter_id)): return {}
+	if definition == null or not story_unlocked(chapter_id): return {}
 	var raw: Dictionary = story_checkpoint(chapter_id, is_replay)
 	if is_replay and raw.get("completed", false): raw = {}
 	var snapshot: Dictionary = definition.clean(raw)
@@ -216,8 +242,18 @@ func begin_story_attempt(chapter_id: String, is_replay: bool, persist: bool = tr
 
 func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = true, chapter_id: String = "mod_01_ch_01") -> void:
 	var definition: GDScript = story_definition(chapter_id)
-	if definition == null or (chapter_id != SurveyChapter.ID and not story_unlocked(chapter_id)): return
+	if definition == null or not story_unlocked(chapter_id): return
 	var valid: Dictionary = definition.clean(snapshot)
+	if chapter_id == SurveyChapter.ID:
+		var previous: Dictionary = story_checkpoint(chapter_id, is_replay)
+		# A resumed attempt cannot clear its own failed objectives.
+		if previous.get("perk_run", {}).get("id", "") == valid.get("perk_run", {}).get("id", ""):
+			for id: String in previous.get("star_blocked", []): SurveyChapter.block_star(valid, id)
+		if is_replay:
+			_settle_survey_stars(valid, true, previous)
+		else:
+			save_chapter(valid, chapter_id, false)
+			valid = (chapter_progress.get(chapter_id, valid) as Dictionary).duplicate(true)
 	var run: Dictionary = valid.get("perk_run", {})
 	if not run.is_empty():
 		# Preserve pre-perk hint evidence across migration and ledger reloads.
@@ -226,7 +262,7 @@ func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = t
 		if run.completed and float(run.finished_at) == 0.0: run.finished_at = Time.get_unix_time_from_system()
 		run["assist_status"] = StoryPerks.status(run, valid.hint_used)
 		run["mistakes"] = valid.mistakes
-		run["coins_awarded"] = int(valid.reward) if valid.completed and not is_replay else 0
+		run["coins_awarded"] = (int(valid.reward) if valid.completed and not is_replay else 0) + int(valid.get("star_bonus_awarded", 0))
 		var found: bool = false
 		for index: int in perk_attempts.size():
 			if perk_attempts[index].id == run.id:
@@ -238,6 +274,8 @@ func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = t
 		if chapter_id == SurveyChapter.ID: chapter_replay_progress = valid
 		else: chapter_replays[chapter_id] = valid
 		if persist: SaveService.save_game()
+	elif chapter_id == SurveyChapter.ID:
+		if persist: SaveService.save_game(true, not bool(valid.completed))
 	else: save_chapter(valid, chapter_id, persist)
 
 func save_survey_chapter(snapshot: Dictionary, persist: bool = true) -> void:
@@ -245,13 +283,14 @@ func save_survey_chapter(snapshot: Dictionary, persist: bool = true) -> void:
 
 func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true) -> void:
 	var definition: GDScript = story_definition(chapter_id)
-	if definition == null or (chapter_id != SurveyChapter.ID and not story_unlocked(chapter_id)): return
+	if definition == null or not story_unlocked(chapter_id): return
 	var previous: Dictionary = chapter_progress.get(chapter_id, {})
 	if bool(previous.get("completed", false)):
 		return # Replays never replace the original exhibit or award twice.
 	var valid: Dictionary = definition.clean(snapshot)
+	if chapter_id == SurveyChapter.ID: _settle_survey_stars(valid, false, previous)
 	chapter_progress[chapter_id] = valid
-	if bool(valid["completed"]):
+	if bool(valid["completed"]) and not (chapter_id == SurveyChapter.ID and valid.get("star_tracking", false)):
 		credits += int(valid["reward"])
 	if persist:
 		SaveService.save_game(true, not bool(valid["completed"]))
@@ -461,11 +500,13 @@ func needs_cloud_reconcile() -> bool:
 func has_unconfirmed_local_writes() -> bool:
 	if _cloud_baseline != "unconfirmed":
 		return false
-	if not _unconfirmed_bkt_log.is_empty() or credits != 0 or pvp_tokens != 0:
+	if handler_appearance_updated_at_ms > 0 or handler_choice_pending:
 		return true
-	if not lesson_progress.is_empty() or not completed_lessons.is_empty() or not learning_events.is_empty():
+	if not _unconfirmed_bkt_log.is_empty() or credits != 0 or pvp_tokens != 0 or appearance_updated_at_ms > 0 or not purchased_items.is_empty():
 		return true
-	if not pretest_baselines.is_empty() or not practice_responses.is_empty() or not lesson_quiz_responses.is_empty():
+	if not lesson_progress.is_empty() or not lesson_completions.is_empty() or not completed_lessons.is_empty() or not learning_events.is_empty():
+		return true
+	if not pretest_baselines.is_empty() or not practice_responses.is_empty() or not lesson_quiz_responses.is_empty() or not lesson_quiz_sessions.is_empty():
 		return true
 	if not lesson_post_quiz_scores.is_empty() or not cleared_stages.is_empty() or not mission_progress.is_empty():
 		return true
@@ -502,6 +543,7 @@ func note_downloaded_cloud_baseline() -> void:
 	_wallet_basis_known = true
 	_wallet_basis_credits = credits
 	_wallet_basis_tokens = pvp_tokens
+	_story_reward_basis = story_reward_claims.duplicate()
 	_note_evidence_basis()
 	_cloud_upload_pinned = true
 
@@ -538,7 +580,7 @@ func record_pretest_baseline(module_id: String, answers: Array) -> void:
 	var grade: Dictionary = PretestBank.grade(module_id, answers, 0.0)
 	if not bool(grade.get("ok", false)):
 		return
-	pretest_baselines[module_id] = {"correct": int(grade.correct_count), "total": int(grade.total)}
+	pretest_baselines[module_id] = PretestBank.route_baseline(module_id, {"correct": int(grade.correct_count), "total": int(grade.total), "missed_ids":grade.missed_ids, "route_version":PretestBank.ROUTE_VERSION})
 	_save_progress()
 
 
@@ -547,9 +589,55 @@ func pretest_baseline(module_id: String) -> Dictionary:
 
 
 func get_lesson_progress(module_id: String) -> int:
-	if module_id.is_empty() or not lesson_progress.has(module_id):
-		return 0
-	return int(lesson_progress[module_id])
+	var count: int = 0
+	for index: int in LessonCatalog.lesson_count(module_id):
+		if lesson_completed(module_id, index): count += 1
+	return count
+
+func lesson_completed(module_id: String, index: int) -> bool:
+	return index >= 0 and index < LessonCatalog.lesson_count(module_id) and (module_id in completed_lessons or index < int(lesson_progress.get(module_id, 0)) or lesson_completions.get("%s:%d" % [module_id,index], false) == true)
+
+func diagnostic_route(module_id: String) -> Dictionary:
+	return PretestBank.route_baseline(module_id, pretest_baseline(module_id))
+
+func module_academically_cleared(module_id: String) -> bool:
+	return diagnostic_route(module_id).route == "cleared" or has_lesson_post_quiz(module_id)
+
+func lesson_cleared(module_id: String, index: int) -> bool:
+	return lesson_completed(module_id, index) or (index >= 0 and index < LessonCatalog.lesson_count(module_id) and index not in diagnostic_route(module_id).required_lessons)
+
+func lesson_status(module_id: String, index: int) -> String:
+	if lesson_completed(module_id, index): return "Completed"
+	if diagnostic_route(module_id).route == "cleared": return "Cleared by pretest"
+	return "Required" if index in diagnostic_route(module_id).required_lessons else "Optional"
+
+func next_lesson_index(module_id: String) -> int:
+	for index: int in diagnostic_route(module_id).required_lessons:
+		if not lesson_completed(module_id, index): return index
+	for index: int in LessonCatalog.lesson_count(module_id):
+		if not lesson_completed(module_id, index): return index
+	return 0
+
+func can_access_lesson(module_id: String, index: int) -> bool:
+	if index < 0 or index >= LessonCatalog.lesson_count(module_id) or not can_access_lesson_module(module_id): return false
+	if lesson_completed(module_id, index) or diagnostic_route(module_id).route != "full": return true
+	# Preserve the next available lesson for ordinary sequential learning.
+	return index <= next_lesson_index(module_id)
+
+func can_take_checkpoint(module_id: String) -> bool:
+	if not can_access_lesson_module(module_id): return false
+	for index: int in diagnostic_route(module_id).required_lessons:
+		if not lesson_completed(module_id, index): return false
+	return true
+
+func learning_route_summary(module_id: String) -> String:
+	var route: Dictionary = diagnostic_route(module_id)
+	if route.route == "cleared": return "Cleared by pretest. All lessons are optional." + (" The next learning module is available." if module_id != "mod_05" else " You have reached the final learning module.")
+	if route.route == "targeted":
+		var numbers: PackedStringArray = []
+		for index: int in route.required_lessons: numbers.append(str(index + 1))
+		return "Your required lessons: %s. Complete their quizzes and simulations, then pass the checkpoint." % ", ".join(numbers)
+	return "Complete all six lessons, their quizzes and simulations, then pass the checkpoint."
 
 
 func has_lesson_post_quiz(module_id: String) -> bool:
@@ -559,10 +647,10 @@ func has_lesson_post_quiz(module_id: String) -> bool:
 func record_lesson_quiz_answer(module_id: String, lesson_index: int, question_id: String, correct: bool, params: Dictionary = {}) -> bool:
 	if Router.is_tutorial or module_id not in LessonCatalog.module_ids() or question_id.is_empty():
 		return false
-	if lesson_index < 0 or lesson_index >= LessonCatalog.lesson_count(module_id) or lesson_index != get_lesson_progress(module_id) or not can_access_lesson_module(module_id):
+	if not can_access_lesson(module_id, lesson_index) or lesson_completed(module_id, lesson_index):
 		return false
 	var responses: Dictionary = lesson_quiz_responses.get(module_id, {})
-	if responses.has(question_id):
+	if responses.has(question_id) or practice_responses.has(question_id):
 		return false
 	responses[question_id] = correct
 	lesson_quiz_responses[module_id] = responses
@@ -578,12 +666,43 @@ func can_access_lesson_module(module_id: String) -> bool:
 	var ids: Array[String] = LessonCatalog.module_ids()
 	var index: int = ids.find(module_id)
 	# Keep previously-started archives accessible without inventing quiz passes.
-	return index >= 0 and (index == 0 or get_lesson_progress(module_id) > 0 or has_lesson_post_quiz(ids[index - 1]))
+	return index >= 0 and (index == 0 or get_lesson_progress(module_id) > 0 or pretest_baselines.has(module_id) or module_academically_cleared(ids[index - 1]))
+
+func save_mini_session(module_id: String, index: int, session: Dictionary) -> void:
+	if Router.is_tutorial or not can_access_lesson(module_id,index): return
+	var key: String = "%s:%d" % [module_id,index]
+	var copy: Dictionary = session.duplicate(true)
+	copy["updated_at"] = int(Time.get_unix_time_from_system() * 1000)
+	lesson_quiz_sessions[key] = copy
+	_save_progress()
+
+func _merge_mini_sessions(cloud_raw: Variant, local_raw: Variant) -> Dictionary:
+	var merged: Dictionary = {}
+	for source: Variant in [cloud_raw,local_raw]:
+		if not source is Dictionary: continue
+		for key: String in source:
+			if not source[key] is Dictionary: continue
+			var incoming: Dictionary = source[key]
+			var existing: Dictionary = merged.get(key,{})
+			var newer: bool = _variant_int(incoming.get("updated_at",0)) > _variant_int(existing.get("updated_at",0))
+			if not existing.is_empty() and not str(incoming.get("attempt_id", "")).is_empty() and incoming.get("attempt_id") == existing.get("attempt_id"):
+				var incoming_answers: Variant = incoming.get("responses",[])
+				var existing_answers: Variant = existing.get("responses",[])
+				var incoming_count: int = incoming_answers.size() if incoming_answers is Array else 0
+				var existing_count: int = existing_answers.size() if existing_answers is Array else 0
+				# A later sync of an older draft must not erase submitted answers.
+				if incoming_count != existing_count:
+					newer = incoming_count > existing_count
+				elif incoming.get("closed",false) != existing.get("closed",false):
+					newer = incoming.get("closed",false) == true
+			if existing.is_empty() or newer:
+				merged[key] = incoming.duplicate(true)
+	return merged
 
 func record_practice_answer(question: Dictionary, correct: bool, selection: Dictionary) -> bool:
 	var id: String = str(question.get("id", ""))
 	var module_id: String = str(question.get("module_id", ""))
-	if Router.is_tutorial or id.is_empty() or practice_responses.has(id) or not can_access_lesson_module(module_id): return false
+	if Router.is_tutorial or id.is_empty() or practice_responses.has(id) or (lesson_quiz_responses.get(module_id, {}) as Dictionary).has(id) or not can_access_lesson_module(module_id): return false
 	var authored: bool = false
 	for item: Dictionary in ContentDB.get_module_questions(module_id):
 		if str(item.get("id", "")) == id:
@@ -610,11 +729,13 @@ func record_practice_answer(question: Dictionary, correct: bool, selection: Dict
 func record_lesson_post_quiz(module_id: String, score: int, answered: int, responses: Array[Dictionary] = []) -> bool:
 	if module_id not in LessonCatalog.module_ids() or answered != 25 or score < 0 or score > answered:
 		return false
-	if get_lesson_progress(module_id) < LessonCatalog.lesson_count(module_id):
+	if not can_take_checkpoint(module_id):
 		return false
 	var evidence: Dictionary = {"attempt_id":learning_id(), "instrument":"lesson-checkpoint-v1", "correct":score, "answered":answered, "total":25}
 	if not responses.is_empty():
 		evidence["responses"] = responses.duplicate(true)
+	# Keep the existing transport kind; the instrument identifies this as an
+	# adaptive lesson checkpoint, never an independent research post-assessment.
 	record_learning_event("posttest", module_id, evidence)
 	if score > int(lesson_post_quiz_scores.get(module_id, 0)):
 		lesson_post_quiz_scores[module_id] = score
@@ -622,15 +743,18 @@ func record_lesson_post_quiz(module_id: String, score: int, answered: int, respo
 	return has_lesson_post_quiz(module_id)
 
 
-func complete_lesson_unit(module_id: String, total: int, all_module_ids: Array[String]) -> void:
+func complete_lesson_unit(module_id: String, total: int, all_module_ids: Array[String], lesson_index: int = -1) -> void:
 	if module_id.is_empty():
 		return
 	var clamped_total: int = maxi(1, total)
-	var done: int = get_lesson_progress(module_id)
-	if done >= clamped_total:
+	var index: int = next_lesson_index(module_id) if lesson_index < 0 else lesson_index
+	if not can_access_lesson(module_id, index) or lesson_completed(module_id, index):
 		return
-	done += 1
-	lesson_progress[module_id] = done
+	lesson_completions["%s:%d" % [module_id,index]] = true
+	var prefix: int = 0
+	while prefix < clamped_total and lesson_completed(module_id, prefix): prefix += 1
+	lesson_progress[module_id] = prefix
+	var done: int = get_lesson_progress(module_id)
 	grant_intel_bonus(module_id)
 	if done >= clamped_total:
 		complete_lesson(module_id)
@@ -659,7 +783,7 @@ func _all_modules_complete(all_module_ids: Array[String]) -> bool:
 	return true
 
 
-func reset_to_defaults() -> void:
+func reset_to_defaults(notify_handler: bool = true) -> void:
 	mission_progress.clear()
 	pretest_baselines.clear()
 	remediation_state = {"sessions": []}
@@ -669,13 +793,23 @@ func reset_to_defaults() -> void:
 	credits = 0
 	pvp_tokens = 0
 	selected_avatar_id = Avatars.DEFAULT_ID
+	selected_frame_id = ""
+	selected_badge_id = ""
+	appearance_updated_at_ms = 0
 	avatar_changed.emit()
+	handler_appearance = "original"
+	handler_appearance_updated_at_ms = 0
+	handler_choice_pending = false
+	if notify_handler:
+		handler_appearance_changed.emit()
 	locked_stages.clear()
 	cleared_stages.clear()
 	completed_lessons.clear()
 	lesson_progress.clear()
+	lesson_completions.clear()
 	lesson_post_quiz_scores.clear()
 	lesson_quiz_responses.clear()
+	lesson_quiz_sessions.clear()
 	practice_responses.clear()
 	purchased_items.clear()
 	unlocked_skills.clear()
@@ -694,6 +828,9 @@ func reset_to_defaults() -> void:
 	perk_loadout = []
 	perk_attempts = []
 	chapter_replay_progress = {}
+	story_reward_claims.clear()
+	_story_reward_basis.clear()
+	_story_reward_cloud_receipt = ""
 	chapter_replays = {}
 	has_intel_bonus = false
 	intel_bonus_module = ""
@@ -931,8 +1068,8 @@ func store_items() -> Array[Dictionary]:
 		if int(avatar.price) == 0:
 			continue
 		items.append({"id": avatar.id, "name": avatar.name, "price": avatar.price,
-			"category": "PROFILES", "art": "avatar", "color": "4FE0D4",
-			"description": "Unlock this profile picture. Choose it from your profile after purchase."})
+			"category": "PROFILES", "slot": "avatar", "art": "avatar", "color": "4FE0D4",
+			"description": "Wear this avatar on your profile and dashboard."})
 	return items
 
 
@@ -951,9 +1088,81 @@ func select_avatar(id: String) -> bool:
 	if selected_avatar_id == id:
 		return true
 	selected_avatar_id = id
+	_note_appearance_change()
 	_save_progress()
 	avatar_changed.emit()
 	return true
+
+
+## The avatar, frame and badge are independent cosmetic slots.
+func current_cosmetic_id(slot: String) -> String:
+	if slot == "avatar":
+		return current_avatar_id()
+	var id: String = ""
+	match slot:
+		"frame":
+			id = selected_frame_id
+		"badge":
+			id = selected_badge_id
+		_:
+			return ""
+	var item: Dictionary = store_item(id)
+	return id if owns_store_item(id) and str(item.get("slot", "")) == slot else ""
+
+
+func is_store_item_equipped(id: String) -> bool:
+	var item: Dictionary = store_item(id)
+	return not item.is_empty() and current_cosmetic_id(str(item.slot)) == id
+
+
+func equip_store_item(id: String) -> bool:
+	var item: Dictionary = store_item(id)
+	if item.is_empty() or not owns_store_item(id):
+		return false
+	var slot: String = str(item.slot)
+	if slot == "avatar":
+		return select_avatar(id)
+	if is_store_item_equipped(id):
+		return true
+	match slot:
+		"frame":
+			selected_frame_id = id
+		"badge":
+			selected_badge_id = id
+		_:
+			return false
+	_note_appearance_change()
+	_save_progress()
+	avatar_changed.emit()
+	return true
+
+
+func remove_store_item(id: String) -> bool:
+	if not is_store_item_equipped(id):
+		return false
+	var slot: String = str(store_item(id).slot)
+	match slot:
+		"frame":
+			selected_frame_id = ""
+		"badge":
+			selected_badge_id = ""
+		_:
+			return false
+	_note_appearance_change()
+	_save_progress()
+	avatar_changed.emit()
+	return true
+
+
+func _appearance_time(data: Dictionary) -> int:
+	var raw: Variant = data.get("appearance_updated_at_ms", 0)
+	if (raw is int or raw is float) and is_finite(float(raw)) and float(raw) >= 0 and float(raw) < 9007199254740991.0:
+		return int(raw)
+	return 0
+
+
+func _note_appearance_change() -> void:
+	appearance_updated_at_ms = maxi(appearance_updated_at_ms + 1, int(Time.get_unix_time_from_system() * 1000.0))
 
 
 func purchase_store_item(item_id: String, price: int = -1) -> bool:
@@ -998,7 +1207,7 @@ func has_completed_lesson(lesson_id: String) -> bool:
 
 
 func is_module_deploy_unlocked(module_id: String) -> bool:
-	return deployment_lesson_count(module_id) >= 1
+	return lesson_cleared(module_id, 0) and can_access_lesson_module(module_id)
 
 
 func deployment_lesson_count(module_id: String) -> int:
@@ -1026,6 +1235,22 @@ func needs_tutorial() -> bool:
 	return not tutorial_complete and not tutorial_skipped
 
 
+func set_handler_appearance(value: String) -> bool:
+	if value not in ["original", "male", "female"]:
+		return false
+	handler_appearance = value
+	handler_choice_pending = false
+	handler_appearance_updated_at_ms = maxi(handler_appearance_updated_at_ms + 1, int(Time.get_unix_time_from_system() * 1000.0))
+	_save_progress()
+	handler_appearance_changed.emit()
+	return true
+
+
+func _offer_handler_after_tutorial() -> void:
+	if needs_tutorial() and handler_appearance_updated_at_ms == 0:
+		handler_choice_pending = true
+
+
 func needs_opening() -> bool:
 	# Existing accounts retain their onboarding choice; no forced migration.
 	return needs_tutorial() and str(onboarding_state.get("tutorial_status", "")) not in ["completed", "skipped"]
@@ -1033,6 +1258,8 @@ func needs_opening() -> bool:
 
 func save_onboarding(state: Dictionary, outcome: String = "") -> void:
 	onboarding_state = state.duplicate(true)
+	if outcome in ["completed", "skipped"]:
+		_offer_handler_after_tutorial()
 	if outcome == "completed":
 		tutorial_complete = true
 		tutorial_skipped = false
@@ -1045,6 +1272,7 @@ func save_onboarding(state: Dictionary, outcome: String = "") -> void:
 func skip_tutorial() -> void:
 	if tutorial_complete or tutorial_skipped:
 		return
+	_offer_handler_after_tutorial()
 	tutorial_skipped = true
 	_save_progress()
 
@@ -1052,6 +1280,7 @@ func skip_tutorial() -> void:
 func mark_tutorial_complete() -> void:
 	if tutorial_complete:
 		return
+	_offer_handler_after_tutorial()
 	tutorial_complete = true
 	tutorial_skipped = false
 	_save_progress()
@@ -1389,13 +1618,21 @@ func get_save_data() -> Dictionary:
 		"credits": credits,
 		"pvp_tokens": pvp_tokens,
 		"selected_avatar_id": current_avatar_id(),
+		"selected_frame_id": current_cosmetic_id("frame"),
+		"selected_badge_id": current_cosmetic_id("badge"),
+		"appearance_updated_at_ms": appearance_updated_at_ms,
+		"handler_appearance": handler_appearance,
+		"handler_appearance_updated_at_ms": handler_appearance_updated_at_ms,
+		"handler_choice_pending": handler_choice_pending,
 		"unlocked_towers": unlocked_towers.duplicate(),
 		"unlocked_skills": unlocked_skills.duplicate(),
 		"tech_ranks": tech_ranks.duplicate(true),
 		"has_stateful_inspection": has_stateful_inspection,
 		"lesson_progress": lesson_progress.duplicate(true),
+		"lesson_completions": lesson_completions.duplicate(true),
 		"lesson_post_quiz_scores": lesson_post_quiz_scores.duplicate(true),
 		"lesson_quiz_responses": lesson_quiz_responses.duplicate(true),
+		"lesson_quiz_sessions": lesson_quiz_sessions.duplicate(true),
 		"practice_responses": practice_responses.duplicate(true),
 		"purchased_items": purchased_items.duplicate(),
 		"module_1_complete": module_1_complete,
@@ -1404,6 +1641,9 @@ func get_save_data() -> Dictionary:
 		"tutorial_skipped": tutorial_skipped,
 		"onboarding_state": onboarding_state.duplicate(true),
 		"chapter_progress": chapter_progress.duplicate(true),
+		"story_reward_claims": story_reward_claims.duplicate(),
+		"story_reward_basis": _story_reward_basis.duplicate(),
+		"story_reward_cloud_receipt": _story_reward_cloud_receipt,
 		"owned_perks": owned_perks.duplicate(),
 		"perk_loadout": perk_loadout.duplicate(),
 		"perk_attempts": perk_attempts.duplicate(true),
@@ -1431,7 +1671,10 @@ func get_save_data() -> Dictionary:
 
 func apply_save_data(data: Dictionary) -> void:
 	# A snapshot replaces account state; absent legacy keys must not retain it.
-	reset_to_defaults()
+	reset_to_defaults(false)
+	story_reward_claims = _clean_story_claims(data.get("story_reward_claims", {}))
+	_story_reward_basis = _clean_story_claims(data.get("story_reward_basis", {}))
+	_story_reward_cloud_receipt = str(data.get("story_reward_cloud_receipt", "")).left(64)
 	var saved_missions: Variant = data.get("mission_progress", {})
 	if saved_missions is Dictionary:
 		mission_progress = saved_missions.duplicate(true)
@@ -1445,8 +1688,17 @@ func apply_save_data(data: Dictionary) -> void:
 			var total: Variant = baseline.get("total")
 			if (correct is int or correct is float) and (total is int or total is float):
 				if is_finite(float(correct)) and is_finite(float(total)) and float(total) > 0 and float(total) <= 100 and float(correct) >= 0 and float(correct) <= float(total) and float(correct) == floorf(float(correct)) and float(total) == floorf(float(total)):
-					pretest_baselines[module_id] = {"correct": int(correct), "total": int(total)}
+					var restored: Dictionary = {"correct":int(correct), "total":int(total)}
+					if baseline.get("route_version", 0) == PretestBank.ROUTE_VERSION and baseline.get("missed_ids") is Array:
+						restored.merge({"route_version":PretestBank.ROUTE_VERSION, "missed_ids":baseline.missed_ids.duplicate()})
+					pretest_baselines[module_id] = PretestBank.route_baseline(module_id, restored)
 	_restore_learning_evidence(data.get("learning_evidence", {}))
+	var completed_units: Variant = data.get("lesson_completions", {})
+	if completed_units is Dictionary:
+		for module_id: String in LessonCatalog.module_ids():
+			for index: int in LessonCatalog.lesson_count(module_id):
+				var key: String = "%s:%d" % [module_id,index]
+				if completed_units.get(key, false) == true: lesson_completions[key] = true
 	var practice: Variant = data.get("practice_responses", {})
 	if practice is Dictionary:
 		for module_id: String in LessonCatalog.module_ids():
@@ -1476,6 +1728,13 @@ func apply_save_data(data: Dictionary) -> void:
 			var score: Variant = checkpoints.get(module_id, 0)
 			if score is int or score is float:
 				lesson_post_quiz_scores[module_id] = clampi(int(score), 0, 25)
+	var mini_sessions: Variant = data.get("lesson_quiz_sessions", {})
+	if mini_sessions is Dictionary:
+		for module_id: String in LessonCatalog.module_ids():
+			for index: int in LessonCatalog.lesson_count(module_id):
+				var key: String = "%s:%d" % [module_id,index]
+				var session: Variant = mini_sessions.get(key)
+				if session is Dictionary: lesson_quiz_sessions[key] = session.duplicate(true)
 	var mini_responses: Variant = data.get("lesson_quiz_responses", {})
 	if mini_responses is Dictionary:
 		for module_id: String in LessonCatalog.module_ids():
@@ -1556,7 +1815,18 @@ func apply_save_data(data: Dictionary) -> void:
 	var avatar_raw: Variant = data.get("selected_avatar_id", Avatars.DEFAULT_ID)
 	selected_avatar_id = str(avatar_raw) if typeof(avatar_raw) == TYPE_STRING else Avatars.DEFAULT_ID
 	selected_avatar_id = current_avatar_id()
+	var frame_raw: Variant = data.get("selected_frame_id", "")
+	var badge_raw: Variant = data.get("selected_badge_id", "")
+	selected_frame_id = frame_raw if frame_raw is String else ""
+	selected_badge_id = badge_raw if badge_raw is String else ""
+	selected_frame_id = current_cosmetic_id("frame")
+	selected_badge_id = current_cosmetic_id("badge")
+	appearance_updated_at_ms = _appearance_time(data)
 	avatar_changed.emit()
+	var handler_raw: String = str(data.get("handler_appearance", "original"))
+	handler_appearance = handler_raw if handler_raw in ["original", "male", "female"] else "original"
+	handler_appearance_updated_at_ms = maxi(0, _variant_int(data.get("handler_appearance_updated_at_ms", 0)))
+	handler_choice_pending = data.get("handler_choice_pending", false) == true and handler_appearance_updated_at_ms == 0
 
 	if data.has("unlocked_towers") and typeof(data["unlocked_towers"]) == TYPE_ARRAY:
 		var saved_towers: Array = data["unlocked_towers"] as Array
@@ -1760,6 +2030,8 @@ func apply_save_data(data: Dictionary) -> void:
 		cleared_stages[stage_progress_key("mod_01", 10)] = true
 	_restore_cloud_reconcile_state(data)
 	_normalize_mastery_keys()
+	# Portrait listeners must see the restored tutorial flags as well.
+	handler_appearance_changed.emit()
 	progress_changed.emit()
 
 
@@ -1849,10 +2121,28 @@ func reconcile_cloud_snapshot(cloud: Dictionary) -> void:
 func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_known: bool, basis_credits: int, basis_tokens: int, evidence_basis_known: bool, evidence_basis_responses: int, evidence_basis_sessions: int, evidence_basis_topics: Dictionary) -> Dictionary:
 	var merged: Dictionary = cloud.duplicate(true)
 	merged["lesson_progress"] = _max_int_dict(cloud.get("lesson_progress", {}), local.get("lesson_progress", {}))
+	merged["lesson_completions"] = _union_dict_keys(cloud.get("lesson_completions", {}), local.get("lesson_completions", {}))
 	merged["lesson_post_quiz_scores"] = _max_int_dict(cloud.get("lesson_post_quiz_scores", {}), local.get("lesson_post_quiz_scores", {}))
 	merged["max_stage_cleared_by_module"] = _max_int_dict(cloud.get("max_stage_cleared_by_module", {}), local.get("max_stage_cleared_by_module", {}))
 	merged["mock_max_stage_cleared"] = maxi(_variant_int(cloud.get("mock_max_stage_cleared", 0)), _variant_int(local.get("mock_max_stage_cleared", 0)))
 	var merged_credits: int = _combine_wallet(_variant_int(cloud.get("credits", 0)), _variant_int(local.get("credits", 0)), basis_known, basis_credits)
+	var cloud_claims: Dictionary = _clean_story_claims(cloud.get("story_reward_claims", {}))
+	var local_claims: Dictionary = _clean_story_claims(local.get("story_reward_claims", {}))
+	var claims: Dictionary = _union_dict_keys(cloud_claims, local_claims)
+	var cloud_receipt: String = JSON.stringify([_variant_int(cloud.get("credits", 0)),cloud_claims]).sha256_text()
+	if not claims.is_empty():
+		# Reconcile the rest of the wallet separately, then add each fixed award
+		# once. Signed residuals preserve credits already spent on other items.
+		var cloud_other: int = _variant_int(cloud.get("credits", 0)) - _story_claim_value(cloud_claims)
+		var local_other: int = _variant_int(local.get("credits", 0)) - _story_claim_value(local_claims)
+		var basis_other: int = basis_credits - _story_claim_value(_clean_story_claims(local.get("story_reward_basis", {})))
+		var merged_other: int = local_other + maxi(0, cloud_other - basis_other) if basis_known else maxi(cloud_other, local_other)
+		merged_credits = maxi(0, merged_other + _story_claim_value(claims))
+		if str(local.get("story_reward_cloud_receipt", "")) == cloud_receipt:
+			merged_credits = _variant_int(local.get("credits", 0))
+	merged["story_reward_claims"] = claims
+	merged["story_reward_basis"] = claims.duplicate()
+	merged["story_reward_cloud_receipt"] = cloud_receipt
 	var merged_tokens: int = _combine_wallet(_variant_int(cloud.get("pvp_tokens", 0)), _variant_int(local.get("pvp_tokens", 0)), basis_known, basis_tokens)
 	merged["credits"] = merged_credits
 	merged["pvp_tokens"] = merged_tokens
@@ -1864,14 +2154,30 @@ func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_kno
 	merged["unlocked_towers"] = _union_strings(cloud.get("unlocked_towers", []), local.get("unlocked_towers", []), ["base"])
 	merged["unlocked_skills"] = _union_strings(cloud.get("unlocked_skills", []), local.get("unlocked_skills", []))
 	merged["purchased_items"] = _union_strings(cloud.get("purchased_items", []), local.get("purchased_items", []))
+	# A removal is a real appearance choice too. The newest full look wins.
+	var handler_source: Dictionary = local if _variant_int(local.get("handler_appearance_updated_at_ms",0)) > _variant_int(cloud.get("handler_appearance_updated_at_ms",0)) else cloud
+	merged["handler_appearance"] = handler_source.get("handler_appearance", "original")
+	merged["handler_appearance_updated_at_ms"] = _variant_int(handler_source.get("handler_appearance_updated_at_ms",0))
+	merged["handler_choice_pending"] = int(merged.handler_appearance_updated_at_ms) == 0 and (local.get("handler_choice_pending", false) == true or cloud.get("handler_choice_pending", false) == true)
+	if _appearance_time(local) > _appearance_time(cloud):
+		for key: String in ["selected_avatar_id", "selected_frame_id", "selected_badge_id", "appearance_updated_at_ms"]:
+			if local.has(key):
+				merged[key] = local[key]
 	merged["owned_perks"] = _union_strings(cloud.get("owned_perks", []), local.get("owned_perks", []), ["recap"])
 	merged["seen_module_intros"] = _union_strings(cloud.get("seen_module_intros", []), local.get("seen_module_intros", []))
 	merged["locked_stages"] = _union_dict_keys(cloud.get("locked_stages", {}), local.get("locked_stages", {}))
 	merged["pretest_baselines"] = _union_missing_keys(cloud.get("pretest_baselines", {}), local.get("pretest_baselines", {}))
 	merged["practice_responses"] = _union_missing_keys(cloud.get("practice_responses", {}), local.get("practice_responses", {}))
 	merged["lesson_quiz_responses"] = _union_quiz_responses(cloud.get("lesson_quiz_responses", {}), local.get("lesson_quiz_responses", {}))
+	merged["lesson_quiz_sessions"] = _merge_mini_sessions(cloud.get("lesson_quiz_sessions", {}), local.get("lesson_quiz_sessions", {}))
 	merged["mission_progress"] = _union_missing_keys(cloud.get("mission_progress", {}), local.get("mission_progress", {}))
 	merged["chapter_progress"] = _union_missing_keys(cloud.get("chapter_progress", {}), local.get("chapter_progress", {}))
+	var cloud_survey: Dictionary = (cloud.get("chapter_progress", {}) as Dictionary).get(SurveyChapter.ID, {})
+	var local_survey: Dictionary = (local.get("chapter_progress", {}) as Dictionary).get(SurveyChapter.ID, {})
+	if not cloud_survey.is_empty() or not local_survey.is_empty():
+		# Preserve the original completed exhibit; active attempts merge errors.
+		merged.chapter_progress[SurveyChapter.ID] = SurveyChapter.clean(cloud_survey) if cloud_survey.get("completed", false) else SurveyChapter.merge_attempt(cloud_survey, local_survey)
+	merged["chapter_replay_progress"] = SurveyChapter.merge_attempt(cloud.get("chapter_replay_progress", {}), local.get("chapter_replay_progress", {}))
 	merged["learning_events"] = _union_events(cloud.get("learning_events", []), local.get("learning_events", []))
 	var merged_evidence: Dictionary = _merge_evidence(cloud.get("learning_evidence", {}), local.get("learning_evidence", {}), evidence_basis_known, evidence_basis_responses, evidence_basis_sessions, evidence_basis_topics)
 	merged["learning_evidence"] = merged_evidence

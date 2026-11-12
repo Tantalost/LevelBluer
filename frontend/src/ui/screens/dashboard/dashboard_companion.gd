@@ -1,6 +1,6 @@
 @tool
 extends Control
-## Reusable, non-modal handler. Existing Cloudinary expressions; no new portrait files.
+## Reusable, non-modal Handler; account-selected Cloudinary expressions.
 const PIXEL_FONT = preload("res://assets/fonts/PressStart2P-Regular.ttf")
 const BODY_FONT = preload("res://assets/fonts/DigitalDisco.ttf")
 const INK := Color("18252b")
@@ -12,25 +12,25 @@ signal dialogue_started
 const GREETING_LINES: Array[int] = [0, 1, 3, 18]
 var _greeting_index: int = 0
 const LINES: Array[String] = [
-	"Good to see you, Commander. The outpost is quiet. Ready for your next deployment?",
+	"Good to see you. Ready to investigate the next message together?",
 	"A little preparation goes a long way. Visit Lessons before tackling a new threat.",
-	"Keep your towers close enough to support each other. A clear firing lane makes all the difference.",
+	"In a simulation, inspect the request, verify it through a trusted source, then choose your response.",
 	"The Codex keeps your intel in one place. Knowing the enemy is half the defense.",
-	"Don't get comfortable just because the graph looks green. Quiet networks still get probed.",
-	"One phisherman looks harmless. Give it a minute and you have a swarm on the lane.",
+	"Your mastery graph helps choose practice. Keep checking the evidence, even when you feel confident.",
+	"One changed letter can turn a familiar web address into a different website. Take a closer look.",
 	"Yes. People still click mystery links on a locked-down terminal. Every shift.",
 	"I'm not convinced we have closed every hole. Double-check the Codex before you deploy.",
-	"Ransomware on the core would freeze this whole outpost. That thought still gets to me.",
-	"Watching a leak and not being able to stop it... I do not enjoy that part of the job.",
-	"We lose good operators who skip the basics. I wish that were not still true.",
-	"I still replay the last breach we missed. Do not make me write that report again.",
+	"That urgent message wants you to panic. Pause and contact the real person through a known channel.",
+	"Sharing a password can put more than one account at risk. A legitimate helper does not need your password.",
+	"A wrong answer can be frustrating. Read the explanation and try the verification step again.",
+	"Being tricked can hurt. Ask for help quickly; blaming yourself will not secure the account.",
 	"I, uh, misread a ping last week. We are not discussing that one.",
 	"...You did not hear that from me. Anyway. Back to the mission.",
-	"Ha. Remember the 'harmless' attachment that took down a lab? Funny. Until it isn't.",
+	"Ha! A free coffee would be nice. Giving away a password for one? That is an expensive coffee.",
 	"Social engineering still works because people want to help. That never sits right.",
-	"If they are coming for this network, we hit first. Place your nodes. Hold the line.",
-	"Commander—ransomware on the core is not a drill. Contain it. Now.",
-	"Even a good commander needs a breather. I'll keep watch while you take a moment.",
+	"Ready for the hearing? Match your evidence to the claim. Confidence alone cannot prove it.",
+	"Stop! Never read out a one-time code to an unexpected caller. Hang up and verify independently.",
+	"You can take a breather. Your saved lesson progress will be here when you return.",
 ]
 const LINE_EXPR: Array[String] = [
 	"npc_smile",
@@ -78,6 +78,7 @@ func _ready() -> void:
 		push_error("Handler LINES and LINE_EXPR must stay the same length.")
 	if not Engine.is_editor_hint():
 		AssetManager.sync_finished.connect(_on_assets_ready)
+		PlayerManager.handler_appearance_changed.connect(_on_handler_changed)
 		_refresh_portrait(IDLE_EXPR)
 	set_process(not Engine.is_editor_hint())
 
@@ -273,10 +274,16 @@ func _typing_expression(char_count: int) -> String:
 	return spoken
 
 
+func _on_handler_changed() -> void:
+	var expression: String = _expression if not _expression.is_empty() else IDLE_EXPR
+	_expression = ""
+	_refresh_portrait(expression)
+
+
 func _refresh_portrait(asset_id: String) -> void:
 	if Engine.is_editor_hint() or _expression == asset_id:
 		return
-	var texture: Texture2D = AssetManager.get_texture(asset_id)
+	var texture: Texture2D = AssetManager.get_handler_texture(asset_id, PlayerManager.handler_appearance)
 	if texture == null and asset_id != IDLE_EXPR:
 		texture = AssetManager.get_texture(IDLE_EXPR)
 	if texture == null and asset_id != "npc_smile":

@@ -25,12 +25,16 @@ static func mount(target: Control) -> Control:
 	target.resized.connect(effect._on_target_resized)
 	return effect
 
-func show_result(correct: bool) -> void:
+func show_result(correct: bool, animate: bool = true) -> void:
 	reset()
 	_ink = SUCCESS if correct else ERROR
 	_active = true
 	_wash = 0.10
 	_origin = _target.position
+	if not animate:
+		_wash = 0.025
+		queue_redraw()
+		return
 	_tween = create_tween()
 	if not correct:
 		_moving = true

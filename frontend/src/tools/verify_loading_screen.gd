@@ -93,7 +93,7 @@ func _navigate(destination: StringName) -> void:
 		await capture("before_%dx%d" % [dimensions.x, dimensions.y])
 	screen.hold_stage = "session"
 	await until_stage("session")
-	check(screen._target == 90.0 and screen._ready_art.modulate.a == 0.0, "Successful assets do not finish pending account work")
+	check(screen._target == 90.0 and screen._stage == "session", "Successful assets do not finish pending account work")
 	screen.hold_stage = ""
 	await until_stage("ready")
 	check(screen._progress.value == 100.0 and screen.destinations.is_empty(), "Ready eyecatch precedes navigation")
@@ -101,7 +101,7 @@ func _navigate(destination: StringName) -> void:
 	check(screen.offline_reads == 1, "Offline readiness is read once, only when ready")
 	await create_timer(0.4).timeout
 	await capture("after_844x390")
-	check(screen._ready_art.modulate.a == 1.0 and not screen._sweep.visible, "Separate ready art fully replaces loading art")
+	check(screen._background.texture != null and not screen._sweep.visible, "Story art stays visible through ready")
 	await until_stage("done")
 	check(screen.destinations == [&"dashboard"], "Signed-in boot routes once after ready hold")
 	# Retry must reset visual progress, reject double clicks and never reveal ready on error.
@@ -109,7 +109,7 @@ func _navigate(destination: StringName) -> void:
 	screen.assets_ok = false
 	screen.on_enter({})
 	await until_stage("error")
-	check(screen._retry.visible and not screen._retry.disabled and screen._ready_art.modulate.a == 0.0, "Missing required assets offer Retry without success art")
+	check(screen._retry.visible and not screen._retry.disabled and screen._stage == "error", "Missing required assets offer Retry")
 	await settle()
 	check(root.get_visible_rect().encloses(screen._retry.get_global_rect()), "Retry stays reachable on mobile landscape")
 	check(screen.offline_reads == 1 and not screen._status.text.begins_with("Ready to Play"), "Failed assets never show offline readiness")

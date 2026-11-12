@@ -94,6 +94,7 @@ func choose(id: String) -> void:
 		return
 	selected_id = id
 	_preview.show_avatar(id)
+	_preview.show_cosmetics(PlayerManager.current_cosmetic_id("frame"), PlayerManager.current_cosmetic_id("badge"))
 	_name.text = str(avatar.name)
 	var available: bool = PlayerManager.can_use_avatar(id)
 	_state.text = ("EQUIPPED" if id == PlayerManager.current_avatar_id() else ("FREE" if int(avatar.price) == 0 else "OWNED")) if available else "LOCKED / %d PVP TOKENS" % int(avatar.price)

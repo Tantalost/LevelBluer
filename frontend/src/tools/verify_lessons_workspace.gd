@@ -101,7 +101,10 @@ func capture(name: String) -> void:
 
 func _run() -> void:
 	root.get_node("SettingsService").text_speed = "instant"
-	var player: Node = load("res://src/autoload/player_manager.gd").new()
+	var fixture: GDScript = GDScript.new()
+	fixture.source_code = "extends \"res://src/autoload/player_manager.gd\"\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\tpass\nfunc update_mastery(_skill: String, _correct: bool, _params: Dictionary = {}, _official: bool = true) -> void:\n\tpass\n"
+	check(fixture.reload() == OK,"Isolated fixture compiles")
+	var player: Node = fixture.new()
 	player.lesson_progress = {}
 	var catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")
 	var study = load("res://src/ui/screens/intel/lesson_study_content.gd")
@@ -233,11 +236,22 @@ func _run() -> void:
 					await settle()
 					check(not sim._passed, "Visiting apps never completes the lesson")
 					if index == 3:
+						if app == "File Sandbox":
+							var attachment: Button = sim._pc.body.find_child("InspectAttachmentFile", true, false)
+							attachment.pressed.emit()
+							check(sim._file_selected and not sim._passed, "File properties open without execution or credit")
+							sim._act("unsafe")
+							check(sim._pc._overlay.visible and sim._pc._alert_body.text.contains("FINE_NOTICE.PDF.exe"), "Sandbox warning identifies the attempted file")
+							await capture("lesson_terminal_file_warning")
+							sim._pc._overlay.hide()
 						await capture("pc_lesson_4_" + app.replace(" ", "_"))
 				sim._pc.hide_window(true)
 				check(sim._pc.home.visible and sim._pc.active_app.is_empty(), "Close returns to desktop")
 			else:
 				check(not sim._pc_mode, "Other modules retain their existing simulations")
+				check(sim._pc.home.visible and sim._pc.case_app == content.domain.app, "Case desktop presents the module's app")
+				sim._pc.shortcuts[0].pressed.emit()
+				check(sim._pc.window.visible and sim._opened and not sim._inspected, "Opening a case is separate from inspection")
 			sim._act("report")
 			check(not screen._simulation_passed, "Guessing report is blocked")
 			sim._act("open")
@@ -262,6 +276,7 @@ func _run() -> void:
 			check(player.get_lesson_progress(id) == index, "No topic progress written before finish")
 			count += 1
 	player.lesson_progress.clear()
+	player.lesson_quiz_sessions.clear()
 	screen._load_module("mod_01", true)
 	screen._open_lesson()
 	await settle()
@@ -316,7 +331,7 @@ func _run() -> void:
 			await settle()
 			check(root.get_visible_rect().encloses(desktop._pc.shortcuts[5].get_global_rect()), "All desktop apps fit the phone")
 			for shortcut: Button in desktop._pc.shortcuts:
-				var caption: Label = shortcut.get_child(1) as Label
+				var caption: Label = shortcut.find_children("*", "Label", true, false)[0] as Label
 				check(shortcut.get_global_rect().encloses(caption.get_global_rect()), "Desktop caption fits: " + caption.text)
 			await capture("pc_home_phone")
 			desktop._open_app("Inbox")

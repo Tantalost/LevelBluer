@@ -63,6 +63,7 @@ func _ready() -> void:
 		_tap_catch.gui_input.connect(_on_catch_gui)
 	if not AssetManager.sync_finished.is_connected(_on_assets_ready):
 		AssetManager.sync_finished.connect(_on_assets_ready)
+	PlayerManager.handler_appearance_changed.connect(_refresh_handler)
 	set_process(false)
 
 
@@ -520,8 +521,13 @@ func _set_expression(asset_id: String) -> void:
 	_expr_id = asset_id
 	if _face_art == null or not is_instance_valid(_face_art):
 		return
-	AssetManager.bind_texture(_face_art, asset_id)
+	var appearance: String = "original" if PlayerManager.needs_tutorial() else PlayerManager.handler_appearance
+	_face_art.texture = AssetManager.get_handler_texture(asset_id, appearance)
 	_face_art.visible = _portrait_allowed and _face_art.texture != null
+
+
+func _refresh_handler() -> void:
+	_set_expression(_expr_id if not _expr_id.is_empty() else EXPR_CALM)
 
 
 func _alive() -> bool:
