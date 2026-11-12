@@ -16,7 +16,7 @@ func _run() -> void:
 	var signed_in: bool = auth._signed_in
 	var participant: String = auth._participant_code
 	var memory_script: GDScript = GDScript.new()
-	memory_script.source_code = "extends \"res://src/autoload/player_manager.gd\"\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\tpass\n"
+	memory_script.source_code = "extends \"res://src/autoload/player_manager.gd\"\nvar mastery_updates: int = 0\nfunc _ready() -> void:\n\tpass\nfunc _save_progress() -> void:\n\tpass\nfunc update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {}, persist: bool = true) -> void:\n\tmastery_updates += 1\n\tsuper.update_mastery(skill_id, is_correct, params, false)\n"
 	check(memory_script.reload() == OK, "Memory-only player fixture compiles")
 	var player: Node = memory_script.new()
 	auth._signed_in = false
@@ -43,12 +43,81 @@ func _run() -> void:
 	player.record_learning_event("mastery", "mod_01", {"mastery":0.2})
 	player.reset_to_defaults()
 	check(player.learning_events.is_empty(), "Account reset clears the in-memory queue")
+	_test_checkpoint_classification(player)
 	_test_account_readiness(auth, player)
 	auth._signed_in = signed_in
 	auth._participant_code = participant
 	player.free()
 	print("LEARNING_RECORDS_CHECKS failures=" + str(failures))
 	quit(0 if failures == 0 else 1)
+
+
+func _test_checkpoint_classification(player: Node) -> void:
+	var catalog: GDScript = load("res://src/ui/screens/intel/lesson_catalog.gd")
+	player.lesson_progress["mod_01"] = catalog.lesson_count("mod_01")
+	var responses: Array[Dictionary] = [{"question_id": "checkpoint-item", "prompt": "Keep the code?", "options": ["No"], "selected_answer": "No", "correct_answer": "No", "correct": false}]
+	var mastery_before: Dictionary = player.mastery_matrix.duplicate(true)
+	check(not player.record_lesson_post_quiz("mod_01", 10, 25, responses), "10/25 stays unpassed")
+	check(player.mastery_matrix == mastery_before and player.mastery_updates == 0, "Checkpoint snapshot does not apply another BKT update")
+	var failed: Dictionary = player.learning_events[0]
+	check(str(failed.kind) == "posttest" and str(failed.instrument) == "lesson-checkpoint-v1" and str(failed.assessment_role) == "formative" and failed.passed == false and int(failed.correct) == 10, "10/25 is a submitted formative failure")
+	var first_attempt: String = str(failed.attempt_id)
+	check(not player.record_lesson_post_quiz("mod_01", 10, 25), "A repeated failure remains recorded")
+	check(player.learning_events.size() == 2 and str(player.learning_events[1].attempt_id) != first_attempt and str(player.learning_events[1].event_id) != str(failed.event_id) and player.learning_events[1].passed == false, "Repeated attempts keep separate identifiers")
+	check(player.record_lesson_post_quiz("mod_01", 20, 25) and player.learning_events[2].passed == true and str(player.learning_events[2].assessment_role) == "formative", "20/25 is formative and passed")
+	check(player.record_lesson_post_quiz("mod_01", 25, 25) and player.learning_events[3].passed == true and int(player.learning_events[3].correct) == 25, "25/25 is formative and passed")
+	player.record_learning_event("mastery", "mod_01", {"mastery": 0.2})
+	player.record_learning_event("pretest", "mod_01", {"answers": [{"id": "sample", "answer": false}]})
+	var snapshot: Dictionary = JSON.parse_string(JSON.stringify(player.get_save_data())) as Dictionary
+	player.apply_save_data(snapshot)
+	var reloaded: Dictionary = player.learning_events[0]
+	check(str(reloaded.assessment_role) == "formative" and reloaded.passed == false and str(reloaded.responses[0].question_id) == "checkpoint-item" and str(reloaded.attempt_id) == first_attempt, "Formative metadata and answers survive the local queue")
+	var mastery_event: Dictionary = {}
+	var pretest_event: Dictionary = {}
+	for event: Dictionary in player.learning_events:
+		if str(event.get("kind", "")) == "mastery":
+			mastery_event = event
+		elif str(event.get("kind", "")) == "pretest":
+			pretest_event = event
+	check(not mastery_event.is_empty() and not mastery_event.has("assessment_role") and not mastery_event.has("passed"), "Mastery events keep their classification")
+	check(str(pretest_event.get("kind", "")) == "pretest" and not pretest_event.has("assessment_role") and not pretest_event.has("passed"), "Official pretest events keep their classification")
+	var queued: int = player.learning_events.size()
+	var updates: int = player.mastery_updates
+	var quiz: Control = load("res://src/ui/screens/intel/lesson_post_quiz.gd").new()
+	quiz.account = player
+	var host: Control = Control.new()
+	host.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_child(host)
+	var ui: GDScript = load("res://src/ui/screens/intel/study_ui.gd")
+	ui.shell(host, "MODULE CHECKPOINT", Callable()).layout.add_child(quiz)
+	quiz.setup("mod_01")
+	quiz.begin()
+	check(quiz.review and quiz.answered == 0 and not quiz.question.is_empty(), "A passed checkpoint opens in review")
+	_answer_checkpoint(quiz, true)
+	check(quiz.resolved and quiz.answered == 1, "Review can submit an answer")
+	quiz.answered = 24
+	quiz.resolved = false
+	_answer_checkpoint(quiz, true)
+	check(quiz.answered == 25 and player.learning_events.size() == queued and player.mastery_updates == updates, "Review after passing creates no assessment event or BKT update")
+	host.queue_free()
+
+
+func _answer_checkpoint(quiz: Control, correct: bool) -> void:
+	var Quiz = preload("res://src/gameplay/quiz_content.gd")
+	if Quiz.is_multi(quiz.question):
+		if correct and quiz.question.get("correct_indices", []).is_empty():
+			quiz._pick_none()
+		for i: int in quiz._choices.size():
+			if int(quiz._choices[i].value) in Quiz._int_list(quiz.question.get("correct_indices", [])):
+				quiz._pick(i)
+		if not correct and quiz._selection.is_empty():
+			quiz._pick(0)
+	else:
+		for i: int in quiz._choices.size():
+			if Quiz.grade(quiz.question, quiz._choices[i].value) == correct:
+				quiz._pick(i)
+				break
+	quiz.submit()
 
 
 func _test_account_readiness(auth: Node, fixture: Node) -> void:
@@ -102,6 +171,33 @@ func _test_account_readiness(auth: Node, fixture: Node) -> void:
 	dashboard._refresh_at_risk()
 	check(not dashboard._at_risk.visible, "Even old evidence cannot surface the alert during unfinished onboarding")
 	account.tutorial_complete = true
+	account.mastery_matrix["phishing"] = 0.40
+	dashboard._refresh_at_risk()
+	check(account.learning_support_eligible() and is_equal_approx(auth.average_mastery(), 0.40) and not dashboard._at_risk.visible, "Assessed average of exactly 0.40 shows no low-mastery banner")
+	account.mastery_matrix["phishing"] = 0.25
+	var saved_evidence: Dictionary = account.learning_evidence.duplicate(true)
+	var clock: int = int(Time.get_unix_time_from_system())
+	for ancient: int in [1, 1500000000]:
+		account._restore_learning_evidence({"topics": {"phishing": 10}, "responses": 10, "sessions": 2, "first_at": ancient, "last_at": clock - 60})
+		dashboard._refresh_at_risk()
+		check(not account.learning_evidence.has("first_at") and account.has_graded_evidence("phishing") and int(account.learning_evidence.responses) == 10 and int(account.learning_evidence.sessions) == 2, "Pre-2020 first_at %d is ignored; graded evidence is kept" % ancient)
+		check(not account.learning_support_eligible(clock) and not dashboard._at_risk.visible, "Pre-2020 first_at %d cannot satisfy the 72-hour rule or show the banner" % ancient)
+	account.apply_save_data(JSON.parse_string(JSON.stringify(account.get_save_data())) as Dictionary)
+	check(account.has_graded_evidence("phishing") and not account.learning_evidence.has("first_at"), "Evidence without a valid first_at survives save reload without gaining one")
+	account.mastery_matrix["phishing"] = 0.25
+	var future: int = clock + 365 * 86400
+	account._restore_learning_evidence({"topics": {"phishing": 10}, "responses": 10, "sessions": 2, "first_at": future, "last_at": future})
+	check(not account.learning_evidence.has("first_at") and not account.learning_evidence.has("last_at") and account.has_graded_evidence("phishing"), "Far-future first_at and last_at are ignored; graded evidence is kept")
+	account._record_graded_response("phishing", clock)
+	check(int(account.learning_evidence.get("first_at", 0)) == clock, "The next real graded response starts the support clock after a rejected first_at")
+	check(account.learning_support_eligible(clock + 72 * 3600), "A rejected far-future timestamp does not block later legitimate eligibility")
+	account._restore_learning_evidence({"topics": {"phishing": 10}, "responses": 10, "sessions": 2, "first_at": clock - 72 * 3600, "last_at": clock - 3600})
+	check(account.learning_support_eligible(clock), "A valid first_at exactly 72 hours earlier keeps eligibility with 10 responses and 2 sessions")
+	account._restore_learning_evidence({"topics": {"phishing": 10}, "responses": 10, "sessions": 2, "first_at": clock - 72 * 3600, "last_at": future})
+	check(int(account.learning_evidence.get("first_at", 0)) == clock - 72 * 3600 and int(account.learning_evidence.get("last_at", 0)) != future, "A far-future last_at is ignored while a valid first_at is kept")
+	account._restore_learning_evidence({"topics": {"phishing": 10}, "responses": 10, "sessions": 2, "first_at": clock - 5 * 60, "last_at": clock + 5 * 60})
+	check(int(account.learning_evidence.get("first_at", 0)) == clock - 5 * 60 and int(account.learning_evidence.get("last_at", 0)) == clock + 5 * 60, "Timestamps within the 10-minute clock skew remain valid")
+	account.learning_evidence = saved_evidence
 	dashboard.free()
 	var snapshot: Dictionary = account.get_save_data()
 	fixture.apply_save_data(JSON.parse_string(JSON.stringify(snapshot)) as Dictionary)
@@ -112,7 +208,7 @@ func _test_account_readiness(auth: Node, fixture: Node) -> void:
 	fixture._restore_learning_evidence({"topics": {"phishing": "bad"}, "sessions": "bad"})
 	check(fixture.learning_evidence.is_empty(), "Malformed evidence fails closed")
 	account._restore_learning_evidence({"topics": {"pretexting": 2}})
-	check(account.learning_evidence.is_empty(), "Topic counts without first_at are rejected by the loader")
+	check(account.has_graded_evidence("pretexting") and not account.learning_evidence.has("first_at") and not account.learning_support_eligible(first + 72 * 3600), "Topic counts without first_at stay evidence but cannot start the support clock")
 	account.apply_save_data({
 		"mastery_matrix": {"phishing": 0.10, "pretexting": 0.10},
 		"learning_evidence": {

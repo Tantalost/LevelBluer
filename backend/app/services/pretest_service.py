@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+import logging
 
 from app.data.pretest_questions import (
     MODULE_1_ID,
@@ -15,16 +15,21 @@ from app.schemas.pretest import (
     PretestQuestionPayload,
     PretestSubmitResponse,
 )
-from app.services.auth_service import _supabase_error
+from app.services.auth_service import _supabase_error, ensure_student_access
 from app.services.bkt_service import (
     MASTERY_COLUMNS,
-    TOPICS,
     average_pl,
+    gameplay_skill,
     initial_pl,
     update_pl_diagnostic,
 )
+from app.services.database_diagnostics import is_lock_timeout, log_operational_event, safe_database_error
 from app.supabase_client import supabase
 from fastapi import HTTPException, status
+
+logger = logging.getLogger(__name__)
+
+PRETEST_RETRY_DETAIL = "Pre-test results could not be saved right now. Your answers are kept; try again."
 
 
 def _fetch_student(student_id: str) -> dict:
@@ -45,13 +50,6 @@ def _unknown_module() -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail="Unknown module_id",
-    )
-
-
-def _is_missing_column(exc: Exception, column: str) -> bool:
-    text = str(exc).lower()
-    return column.lower() in text and (
-        "column" in text or "schema cache" in text or "pgrst204" in text
     )
 
 
@@ -87,9 +85,9 @@ def _save_payload(student_id: str, strict: bool = False) -> dict:
 
 
 def module_pretests_map(row: dict, student_id: str | None = None, strict: bool = False) -> dict[str, bool]:
-    completed = parse_module_pretests(row.get("module_pretests"))
-    if completed:
-        return completed
+    """Official flags. An empty column is authoritative; the save is only for a missing column."""
+    if "module_pretests" in row:
+        return parse_module_pretests(row.get("module_pretests"))
     sid = student_id or str(row.get("id") or "")
     if not sid:
         return {}
@@ -104,52 +102,12 @@ def completed_ids_for_student(row: dict, student_id: str | None = None) -> list[
     return completed_module_ids(module_pretests_map(row, student_id))
 
 
-def _write_save_module_pretests(student_id: str, payload: dict, completed: dict[str, bool]) -> None:
-    """Write flags into a payload that was read successfully; failures propagate."""
-    blob = dict(payload)
-    blob["module_pretests"] = completed
-    try:
-        response = supabase.table("player_saves").upsert(
-            {
-                "student_id": student_id,
-                "payload": blob,
-                "updated_at": datetime.now(UTC).isoformat(),
-            }
-        ).execute()
-    except Exception as exc:
-        raise _supabase_error(exc, "player_saves.upsert") from exc
-    if getattr(response, "error", None):
-        raise _supabase_error(RuntimeError("player_saves.upsert"), "player_saves.upsert")
-
-
-def _restore_save_payload(student_id: str, payload: dict) -> None:
-    """Undo the legacy flag write after the mastery write failed, so the retry is accepted.
-
-    Best effort: if this also fails the flag stays, and the retry is answered as already
-    completed. Mastery is then never applied twice; only this attempt's server-side
-    diagnostic is missing until the client's progress sync uploads its local mastery.
-    """
-    try:
-        table = supabase.table("player_saves")
-        if payload:
-            table.upsert(
-                {
-                    "student_id": student_id,
-                    "payload": payload,
-                    "updated_at": datetime.now(UTC).isoformat(),
-                }
-            ).execute()
-        else:
-            table.delete().eq("student_id", student_id).execute()
-    except Exception as exc:
-        _supabase_error(exc, "player_saves.restore")
-
-
 def list_pretest_questions(student_id: str, module_id: str) -> PretestQuestionsResponse:
     bank = questions_for_module(module_id)
     if not bank:
         raise _unknown_module()
     student = _fetch_student(student_id)
+    ensure_student_access(student)
     completed = completed_ids_for_student(student, student_id)
     return PretestQuestionsResponse(
         alreadyCompleted=module_id in completed,
@@ -164,6 +122,53 @@ def _is_correct(question: dict, submitted: bool | int | str) -> bool:
     return is_correct(question, submitted)
 
 
+def _finite_probability(value: object) -> float | None:
+    """A usable posterior. Zero, missing, and non-numeric values are not evidence."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    if number != number or number <= 0.0 or number > 1.0:
+        return None
+    return number
+
+
+def assessed_topic_status(
+    student: dict,
+    topic: str,
+    posterior: object,
+    evidence: dict | None = None,
+) -> str | None:
+    """Educational label for topics that have assessment evidence.
+
+    Evidence is the same save-blob rule as progress sync: graded topic
+    counts, pre-test baselines, lesson quizzes, checkpoint scores, practice,
+    and offline BKT steps. A mastery column or bkt_records row is not proof.
+    The pretest being submitted counts for its own topic before that evidence
+    is written. A 0.10 with that evidence stays in the average. A 0.10
+    without it is only the starting prior. The cut stays 0.40. No usable
+    evidenced posterior means no label is invented. The result is returned to
+    callers and is not written to students.status.
+    """
+    from app.services.progress_service import _assessed_skills
+
+    payload = evidence if isinstance(evidence, dict) else {}
+    evidenced = _assessed_skills(payload)
+    assessed: dict[str, float] = {}
+    current = _finite_probability(posterior)
+    if current is not None:
+        assessed[topic] = current
+    for name, column in MASTERY_COLUMNS.items():
+        if name == topic or gameplay_skill(name) not in evidenced:
+            continue
+        stored = _finite_probability(student.get(column))
+        if stored is not None:
+            assessed[name] = stored
+    if not assessed:
+        return None
+    average = average_pl(assessed)
+    return "At Risk" if average < 0.40 else "On Track"
+
+
 def submit_pretest(
     student_id: str,
     module_id: str,
@@ -175,7 +180,17 @@ def submit_pretest(
         raise _unknown_module()
 
     student = _fetch_student(student_id)
-    completed = module_pretests_map(student, student_id, strict=True)
+    ensure_student_access(student)
+    # The column is authoritative whenever the row includes it, including {}.
+    # A save-blob flag cannot block or invent completion on that schema.
+    # The blob is consulted only for a legacy row that has no column key.
+    column_present = "module_pretests" in student
+    stored_progress: dict = {}
+    if column_present:
+        completed = parse_module_pretests(student.get("module_pretests"))
+    else:
+        stored_progress = _save_payload(student_id, strict=True)
+        completed = parse_module_pretests(stored_progress.get("module_pretests"))
     if completed.get(module_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -190,82 +205,55 @@ def submit_pretest(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Submit an answer for every pre-test question",
         )
-
-    mastery = {
-        name: initial_pl(float(student.get(column) or 0))
-        for name, column in MASTERY_COLUMNS.items()
-    }
+    # Status needs the save after the retry check. A failed read aborts
+    # before any write; it is not an empty evidence record. No rows still is.
+    if column_present:
+        stored_progress = _save_payload(student_id, strict=True)
 
     correct_count = 0
     for item in answers:
-        question = by_id[item.id]
-        is_correct = _is_correct(question, item.answer)
-        if is_correct:
+        if _is_correct(by_id[item.id], item.answer):
             correct_count += 1
-        item_topic = question["topic"]
-        if item_topic == topic:
-            mastery[topic] = round(update_pl_diagnostic(mastery[topic], is_correct), 4)
-
     total = len(bank)
     pre_score = int(round((correct_count / total) * 100)) if total else 0
-    avg = average_pl(mastery)
 
-    completed[module_id] = True
-    completed_ids = completed_module_ids(completed)
-
-    update_payload: dict = {
-        "status": "At Risk" if avg < 0.40 else "On Track",
-        MASTERY_COLUMNS[topic]: mastery[topic],
-        "module_pretests": completed,
-    }
-    if module_id == MODULE_1_ID:
-        update_payload["pre"] = pre_score
-
-    legacy_payload: dict | None = None
-    try:
-        # Compare-and-set: of two simultaneous submissions, only the first matches the row.
-        response = (
-            supabase.table("students")
-            .update(update_payload)
-            .eq("id", student_id)
-            .not_.contains("module_pretests", {module_id: True})
-            .execute()
+    # A practice sync can commit between the read above and the write. The write
+    # then reports prior_changed, and the same answers are graded once more from
+    # the committed prior. The diagnostic itself is unchanged.
+    for attempt in range(2):
+        mastery = _grade_diagnostic(student, topic, answers, by_id)
+        outcome = _record_pretest_result(
+            student_id,
+            module_id,
+            mastery[topic],
+            pre_score if module_id == MODULE_1_ID else None,
+            student.get(MASTERY_COLUMNS[topic]),
         )
-    except Exception as exc:
-        if not _is_missing_column(exc, "module_pretests"):
-            raise _supabase_error(exc) from exc
-        # Legacy schema: the flag and mastery are separate writes. The flag goes first so a
-        # client retry after a partial failure is rejected as already completed instead of
-        # applying the diagnostic again to mastery this attempt already stored.
-        legacy_payload = _save_payload(student_id, strict=True)
-        _write_save_module_pretests(student_id, legacy_payload, completed)
-        fallback = {k: v for k, v in update_payload.items() if k != "module_pretests"}
-        try:
-            response = (
-                supabase.table("students")
-                .update(fallback)
-                .eq("id", student_id)
-                .execute()
+        result = outcome.get("status")
+        if result == "ok":
+            break
+        if result == "already_completed":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Pre-test already completed",
             )
-        except Exception as retry_exc:
-            _restore_save_payload(student_id, legacy_payload)
-            raise _supabase_error(retry_exc) from retry_exc
+        if result != "prior_changed":
+            raise _supabase_error(RuntimeError("levelblue_record_pretest_result returned an unexpected result"))
+        if attempt == 1:
+            logger.warning("pretest: prior changed twice student_id=%s module=%s", student_id, module_id)
+            _log_pretest_write_failure(status.HTTP_503_SERVICE_UNAVAILABLE)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=PRETEST_RETRY_DETAIL,
+            )
+        student = _fetch_student(student_id)
+        ensure_student_access(student)
 
-    if getattr(response, "error", None):
-        if legacy_payload is not None:
-            _restore_save_payload(student_id, legacy_payload)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to save pre-test results",
-        )
-    if legacy_payload is None and not (response.data or []):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Pre-test already completed",
-        )
-
-    _upsert_bkt_records(student_id, {topic: mastery[topic]})
-
+    completed_ids = completed_module_ids({str(module): True for module in outcome.get("completed_modules") or []})
+    # averagePl stays the five-topic response figure, including unassessed
+    # priors used to start the diagnostic. At Risk / On Track stays a
+    # calculated label. It is not stored in the administrative status column.
+    avg = average_pl(mastery)
     stored_pre = pre_score if module_id == MODULE_1_ID else int(student.get("pre") or 0)
     return PretestSubmitResponse(
         pre=stored_pre,
@@ -279,20 +267,67 @@ def submit_pretest(
     )
 
 
-def _upsert_bkt_records(student_id: str, mastery: dict[str, float]) -> None:
-    rows = [
-        {
-            "student_id": student_id,
-            "topic": topic,
-            "probability_known": p_l,
-        }
-        for topic, p_l in mastery.items()
-        if topic in TOPICS
-    ]
-    if not rows:
-        return
+
+def _grade_diagnostic(student: dict, topic: str, answers: list[PretestAnswerPayload], by_id: dict) -> dict[str, float]:
+    mastery = {
+        name: initial_pl(float(student.get(column) or 0))
+        for name, column in MASTERY_COLUMNS.items()
+    }
+    for item in answers:
+        question = by_id[item.id]
+        if question["topic"] == topic:
+            mastery[topic] = round(update_pl_diagnostic(mastery[topic], _is_correct(question, item.answer)), 4)
+    return mastery
+
+
+def _record_pretest_result(
+    student_id: str,
+    module_id: str,
+    probability: float,
+    pre_score: int | None,
+    expected_prior: object,
+) -> dict:
+    """Completion flag, mastery column, Module 1 score and BKT row in one transaction."""
+    params = {
+        "p_student": student_id,
+        "p_module": module_id,
+        "p_mastery": probability,
+        "p_pre": pre_score,
+        "p_expected_prior": expected_prior,
+    }
     try:
-        supabase.table("bkt_records").upsert(rows, on_conflict="student_id,topic").execute()
-    except Exception:
-        # Table/constraint may not exist in every environment; student columns are source of truth.
-        pass
+        response = supabase.rpc("levelblue_record_pretest_result", params).execute()
+    except Exception as exc:
+        if is_lock_timeout(exc):
+            logger.warning("pretest: result write lock timeout student_id=%s", student_id)
+            log_operational_event(
+                "sync-failure",
+                "Pre-test result waited too long for the student record; the phone keeps the answers pending.",
+                "mastery-lock-timeout",
+                "/api/pretest/submit",
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=PRETEST_RETRY_DETAIL) from exc
+        error = _supabase_error(exc, "levelblue_record_pretest_result")
+        _log_pretest_write_failure(error.status_code)
+        raise error from exc
+    data = getattr(response, "data", None)
+    if isinstance(data, list) and len(data) == 1:
+        data = data[0]
+    if not isinstance(data, dict):
+        raise _supabase_error(RuntimeError("levelblue_record_pretest_result returned no result"))
+    if data.get("status") == "restricted":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This student account is inactive")
+    if data.get("status") == "not_found":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found")
+    return data
+
+
+def _log_pretest_write_failure(http_status: int) -> None:
+    log_operational_event(
+        "sync-failure",
+        "An official pre-test result was not saved; the phone keeps the answers pending.",
+        "pretest-write-failed",
+        "/api/pretest/submit",
+        http_status,
+    )

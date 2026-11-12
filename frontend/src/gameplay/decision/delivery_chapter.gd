@@ -24,15 +24,15 @@ const KNOWN_URL: String = "https://parcel.example"
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"parcel", "sender":"Parcel Update", "address":"Unknown SMS sender", "subject":"Delivery failed / ₱18 redelivery", "body":"Delivery failed. Pay ₱18 to reschedule today.", "phrase":"Track delivery: https://go-parcel.example/r/8K2. No matching order reference supplied.", "suspicious":true}]
 const STORY: Array[Dictionary] = [
-	{"who":"Amani","face":4,"bg":"event_room_day","cast":["amani"],"caption":"After John's hearing. The club prepares for its next event.","line":"Twenty name tags. Zero tape. Somehow I'm managing a club event and a national supply crisis."},
-	{"who":"Dan · Off-screen","face":0,"bg":"event_room_day","cast":["amani"],"line":"Did you try tracking the tape?"},
-	{"who":"Amani","face":1,"bg":"event_room_day","cast":["amani"],"line":"I am tracking the tape. The tape is apparently having a better lunch break than us."},
-	{"who":"Amani","face":3,"bg":"event_room_day","cast":["amani"],"line":"Wait. A delivery update.","mail":true},
-	{"who":"Amani","face":0,"bg":"event_room_day","cast":["amani"],"line":"Eighteen pesos? Fine. That's cheaper than walking to the depot."},
+	{"who":"Amani","face":4,"voice":"v1794284691/levelblue/voice/mod_02/ch_01/amani_01.mp3","bg":"event_room_day","cast":["amani"],"caption":"After John's hearing. The club prepares for its next event.","line":"Twenty name tags. Zero tape. Somehow I'm managing a club event and a national supply crisis."},
+	{"who":"Dan · Off-screen","face":0,"voice":"v1794318055/levelblue/voice/mod_02/ch_01/dan_01.mp3","bg":"event_room_day","cast":["amani"],"line":"Did you try tracking the tape?"},
+	{"who":"Amani","face":1,"voice":"v1794287766/levelblue/voice/mod_02/ch_01/amani_02.mp3","bg":"event_room_day","cast":["amani"],"line":"I am tracking the tape. The tape is apparently having a better lunch break than us."},
+	{"who":"Amani","face":3,"voice":"v1794287799/levelblue/voice/mod_02/ch_01/amani_03.mp3","bg":"event_room_day","cast":["amani"],"line":"Wait. A delivery update.","mail":true},
+	{"who":"Amani","face":0,"voice":"v1794288053/levelblue/voice/mod_02/ch_01/amani_04.mp3","bg":"event_room_day","cast":["amani"],"line":"Eighteen pesos? Fine. That's cheaper than walking to the depot."},
 	{"who":"John","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"Maybe. What does the order you already have say?"},
-	{"who":"Amani","face":2,"bg":"event_room_day","cast":["amani","john"],"line":"You're asking me to check my delivery in two places?"},
+	{"who":"Amani","face":2,"voice":"v1794288215/levelblue/voice/mod_02/ch_01/amani_05.mp3","bg":"event_room_day","cast":["amani","john"],"line":"You're asking me to check my delivery in two places?"},
 	{"who":"John","face":0,"bg":"event_room_day","cast":["amani","john"],"line":"Start with the place you used before this message arrived."},
-	{"who":"Amani","face":4,"bg":"event_room_day","cast":["amani"],"line":"Alright. I'll keep the message here and open my order separately."}
+	{"who":"Amani","face":4,"voice":"v1794288246/levelblue/voice/mod_02/ch_01/amani_06.mp3","bg":"event_room_day","cast":["amani"],"line":"Alright. I'll keep the message here and open my order separately."}
 ]
 const EVIDENCE: String = "01 · SMS asks for an unexplained ₱18 payment.\n02 · Its short link leads to parcel-redelivery.example/pay.\n03 · The independently opened order is paid, out for delivery, with no redelivery fee.\n\nA short link or HTTPS alone does not settle trust. Compare the request with information obtained independently."
 const SEAL_LINE: String = "My parcel isn't asking for eighteen pesos. Someone else is."

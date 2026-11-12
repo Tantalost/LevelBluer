@@ -490,6 +490,26 @@ func verify_personalized_practice() -> void:
 		check(Catalog.practice_recommendation(first,slot).id == "mod_01","Four slots prioritize the current weakest assessed topic")
 	check(Catalog.practice_recommendation(first,4).id == "mod_02","Fifth slot retains broader review")
 	check(Catalog.practice_recommendation(first).id != "mod_03","Locked unassessed defaults never outrank actual evidence")
+	var legacy: Node = fixture.new()
+	legacy.lesson_progress = {"mod_01":3,"mod_02":2}
+	check(Catalog.practice_recommendation(legacy).is_empty(),"Legacy lesson progress without graded evidence gets no 0.10 practice recommendation")
+	legacy.pretest_baselines = {"mod_02":{"correct":9,"total":15}}
+	legacy.mastery_matrix = {"smishing":.6}
+	check(Catalog.practice_recommendation(legacy).id == "mod_02","An unevidenced 0.10 module never outranks an assessed topic")
+	var assessed_prior: Node = fixture.new()
+	assessed_prior.lesson_quiz_responses = {"mod_01":{"mod01_q1":false}}
+	var genuine: Dictionary = Catalog.practice_recommendation(assessed_prior)
+	check(genuine.get("id","") == "mod_01" and is_equal_approx(float(genuine.get("mastery",-1.0)),.1),"A genuinely assessed 0.10 remains eligible for practice")
+	var tied: Node = fixture.new()
+	tied.lesson_progress = {"mod_01":6,"mod_02":6,"mod_03":6}
+	tied.pretest_baselines = {"mod_01":{"correct":5,"total":15},"mod_02":{"correct":5,"total":15},"mod_03":{"correct":12,"total":15}}
+	tied.mastery_matrix = {"phishing":.3,"smishing":.3,"vishing":.7}
+	tied.practice_responses = {"p1":{"module_id":"mod_01","skill":"phishing"},"p2":{"module_id":"mod_01","skill":"phishing"}}
+	check(Catalog.practice_recommendation(tied).id == "mod_02","Equal mastery breaks ties by fewer practice attempts")
+	check(Catalog.practice_recommendation(tied,4).id == "mod_03","Every fifth slot still offers broader review")
+	tied.mastery_matrix.phishing = .2
+	check(Catalog.practice_recommendation(tied).id == "mod_01","Lower assessed mastery still outranks fewer attempts")
+	for spare: Node in [legacy,assessed_prior,tied]: spare.free()
 	var host: Control = load("res://src/ui/screens/intel/lesson_player_screen.tscn").instantiate()
 	host.account = first
 	root.add_child(host)

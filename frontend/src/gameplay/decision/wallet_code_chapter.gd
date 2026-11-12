@@ -24,13 +24,13 @@ const REQUEST: String = "The delivery payment triggered a verification error. Re
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"wallet", "sender":"Delivery Support", "address":"Unknown SMS sender", "subject":"Cancellation request", "body":REQUEST, "phrase":"Reply with the code to cancel it.", "suspicious":true}]
 const STORY: Array[Dictionary] = [
-	{"who":"Amani","face":3,"bg":"event_room_day","cast":["amani"],"caption":"Same clubroom. A few minutes after the delivery message.","line":"A wallet code? Now there's another text.","mail":true},
-	{"who":"Amani","face":2,"bg":"event_room_day","cast":["amani"],"line":"I didn't even pay. Why is my wallet involved?"},
+	{"who":"Amani","face":3,"voice":"v1794289027/levelblue/voice/mod_02/ch_02/amani_01.mp3","bg":"event_room_day","cast":["amani"],"caption":"Same clubroom. A few minutes after the delivery message.","line":"A wallet code? Now there's another text.","mail":true},
+	{"who":"Amani","face":2,"voice":"v1794289696/levelblue/voice/mod_02/ch_02/amani_02.mp3","bg":"event_room_day","cast":["amani"],"line":"I didn't even pay. Why is my wallet involved?"},
 	{"who":"John","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"What does the wallet say the code will do?"},
-	{"who":"Amani","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"Authorize a new device."},
+	{"who":"Amani","face":4,"voice":"v1794290078/levelblue/voice/mod_02/ch_02/amani_03.mp3","bg":"event_room_day","cast":["amani","john"],"line":"Authorize a new device."},
 	{"who":"John","face":0,"bg":"event_room_day","cast":["amani","john"],"line":"And what does this person say it will do?"},
-	{"who":"Amani","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"Cancel one. That's the opposite instruction wearing a customer-service voice."},
-	{"who":"Amani","face":5,"bg":"event_room_day","cast":["amani"],"line":"The message wants me to stay here. I'm opening the wallet myself."}
+	{"who":"Amani","face":4,"voice":"v1794290108/levelblue/voice/mod_02/ch_02/amani_04.mp3","bg":"event_room_day","cast":["amani","john"],"line":"Cancel one. That's the opposite instruction wearing a customer-service voice."},
+	{"who":"Amani","face":5,"voice":"v1794290353/levelblue/voice/mod_02/ch_02/amani_05.mp3","bg":"event_room_day","cast":["amani"],"line":"The message wants me to stay here. I'm opening the wallet myself."}
 ]
 const EVIDENCE: String = "01 · The genuine wallet alert authorizes a new device.\n02 · The separate sender claims the same code will cancel an attempt.\n03 · Amani opens the wallet independently and rejects and reports the unfamiliar device request.\n\nA genuine alert does not authenticate a separate sender. Nobody has been identified by these messages."
 const SEAL_LINE: String = "A real security code. A false reason to share it."

@@ -25,6 +25,8 @@ const MAX_MASTERY: float = 0.99
 const MAX_WRONG_DROP: float = 0.10
 const AT_RISK_MASTERY: float = 0.40
 const PROFICIENT_MASTERY: float = 0.70
+const LESSON_CHECKPOINT_QUESTIONS: int = 25
+const LESSON_CHECKPOINT_PASS: int = 20
 const ALL_MODULES_LESSON := "mod1_all"
 const _OFFICIAL_SKILLS: PackedStringArray = [
 	"phishing",
@@ -292,8 +294,20 @@ func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true
 	chapter_progress[chapter_id] = valid
 	if bool(valid["completed"]) and not (chapter_id == SurveyChapter.ID and valid.get("star_tracking", false)):
 		credits += int(valid["reward"])
+		_record_chapter_completion(chapter_id, valid)
 	if persist:
 		SaveService.save_game(true, not bool(valid["completed"]))
+
+## Promotion evidence: one event per first completion. Legacy completions are never backfilled.
+func _record_chapter_completion(chapter_id: String, state: Dictionary) -> void:
+	if RegEx.create_from_string("^mod_0[1-5]_ch_0[1-5]$").search(chapter_id) == null: return
+	var run: Dictionary = state.get("perk_run", {})
+	var fields: Dictionary = {"chapter":int(chapter_id.substr(10)), "chapter_id":chapter_id, "assist_status":StoryPerks.status(run, bool(state.get("hint_used", false)))}
+	var attempt: String = str(run.get("id", ""))
+	# The server rejects the whole batch on a malformed id, so only well-formed run ids are linked.
+	if RegEx.create_from_string("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$").search(attempt) != null:
+		fields["attempt_id"] = attempt
+	record_learning_event("chapter", chapter_id.left(6), fields, false)
 var has_intel_bonus: bool = false
 var intel_bonus_module: String = ""
 var _session_hydrated: bool = false
@@ -309,6 +323,11 @@ var _cloud_baseline: String = ""
 ## cloud prior after a later successful read so neither history is replaced.
 var _unconfirmed_bkt_log: Array[Dictionary] = []
 var _bkt_step_seq: int = 0
+## Folded official pretest posterior that a stale cloud snapshot must not replace.
+## Cleared once a fetched snapshot already shows that same value.
+var _official_mastery_hold: Dictionary = {}
+## Bumped when an official pretest result replaces the local diagnostic.
+var _pretest_sync_generation: int = 0
 ## True when this file recorded an explicit upload decision. A downloaded
 ## snapshot stays false until the player changes it.
 var _cloud_upload_pinned: bool = false
@@ -331,6 +350,9 @@ var _evidence_basis_topics: Dictionary = {}
 var learning_evidence: Dictionary = {}
 const SUPPORT_GRACE_SECONDS: int = 72 * 60 * 60
 const LEARNING_SESSION_IDLE_SECONDS: int = 30 * 60
+# Same learning-time rule as the backend: 2020-01-01 UTC or later, at most 10 minutes ahead.
+const EARLIEST_LEARNING_TIME: int = 1577836800
+const LEARNING_TIME_FUTURE_SKEW: int = 10 * 60
 const TRACE_MODULE_IDS: PackedStringArray = ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]
 var trace_seen_by_module: Dictionary = {}
 var trace_missed_by_module: Dictionary = {}
@@ -494,7 +516,7 @@ func cloud_baseline_unconfirmed() -> bool:
 ## Offline play that must be merged with a later cloud snapshot. A mastery
 ## mirror from the official BKT pull is not local progress.
 func needs_cloud_reconcile() -> bool:
-	return has_unconfirmed_local_writes() or _pending_cloud_merge
+	return has_unconfirmed_local_writes() or _pending_cloud_merge or not _official_mastery_hold.is_empty()
 
 
 func has_unconfirmed_local_writes() -> bool:
@@ -641,7 +663,7 @@ func learning_route_summary(module_id: String) -> String:
 
 
 func has_lesson_post_quiz(module_id: String) -> bool:
-	return int(lesson_post_quiz_scores.get(module_id, 0)) >= 20
+	return int(lesson_post_quiz_scores.get(module_id, 0)) >= LESSON_CHECKPOINT_PASS
 
 
 func record_lesson_quiz_answer(module_id: String, lesson_index: int, question_id: String, correct: bool, params: Dictionary = {}) -> bool:
@@ -727,11 +749,21 @@ func record_practice_answer(question: Dictionary, correct: bool, selection: Dict
 
 
 func record_lesson_post_quiz(module_id: String, score: int, answered: int, responses: Array[Dictionary] = []) -> bool:
-	if module_id not in LessonCatalog.module_ids() or answered != 25 or score < 0 or score > answered:
+	if module_id not in LessonCatalog.module_ids() or answered != LESSON_CHECKPOINT_QUESTIONS or score < 0 or score > answered:
 		return false
 	if not can_take_checkpoint(module_id):
 		return false
-	var evidence: Dictionary = {"attempt_id":learning_id(), "instrument":"lesson-checkpoint-v1", "correct":score, "answered":answered, "total":25}
+	# completed is applied by the server when the full attempt is accepted.
+	# passed is the 20-of-25 checkpoint rule and is separate from submission.
+	var evidence: Dictionary = {
+		"attempt_id": learning_id(),
+		"instrument": "lesson-checkpoint-v1",
+		"correct": score,
+		"answered": answered,
+		"total": LESSON_CHECKPOINT_QUESTIONS,
+		"assessment_role": "formative",
+		"passed": score >= LESSON_CHECKPOINT_PASS,
+	}
 	if not responses.is_empty():
 		evidence["responses"] = responses.duplicate(true)
 	# Keep the existing transport kind; the instrument identifies this as an
@@ -843,6 +875,8 @@ func reset_to_defaults(notify_handler: bool = true) -> void:
 	}
 	_cloud_baseline = ""
 	_unconfirmed_bkt_log.clear()
+	_official_mastery_hold.clear()
+	_pretest_sync_generation = 0
 	_cloud_upload_pinned = false
 	_local_upload_ready = false
 	_pending_cloud_merge = false
@@ -1476,6 +1510,10 @@ func update_mastery(skill_id: String, is_correct: bool, params: Dictionary = {},
 			"posterior": float(mastery_matrix[key]),
 		})
 	var new_mastery: float = float(mastery_matrix[key])
+	# The official-pretest hold is the posterior a later download must match.
+	# A practice or quiz answer after that grade moves the hold with it.
+	if _official_mastery_hold.has(key):
+		_official_mastery_hold[key] = new_mastery
 	_record_graded_response(key, int(Time.get_unix_time_from_system()))
 	record_learning_event("mastery", str(LEARNING_MODULES.get(key, "")), {"mastery":new_mastery}, false)
 	print(
@@ -1528,7 +1566,9 @@ func seed_from_official_mastery(only_skill: String = "", record_unconfirmed: boo
 		if value <= 0.0:
 			continue
 		apply_official_mastery(skill_id, value)
-		if record_unconfirmed and _cloud_baseline == "unconfirmed":
+		# The pending official pretest must be able to tell this diagnostic
+		# from later answers whether or not a cloud snapshot is already known.
+		if record_unconfirmed:
 			var seeded: float = float(mastery_matrix[skill_id])
 			_unconfirmed_bkt_log.append({
 				"op": "seed",
@@ -1541,6 +1581,85 @@ func seed_from_official_mastery(only_skill: String = "", record_unconfirmed: boo
 		print("[BKT] seeded %s from official P(L)=%.3f" % [skill_id, value])
 	if changed:
 		SaveService.save_game()
+
+
+func pretest_sync_generation() -> int:
+	return _pretest_sync_generation
+
+
+func has_official_mastery_hold() -> bool:
+	return not _official_mastery_hold.is_empty()
+
+
+## The server graded this module. Its posterior replaces the local diagnostic.
+## Unconfirmed answers still in the log, except that diagnostic seed, are
+## replayed on top of the server value.
+func adopt_official_pretest_mastery(skill_id: String, official_mastery: float) -> void:
+	var skill: String = skill_id.strip_edges().to_lower()
+	if skill.is_empty() or skill not in _OFFICIAL_SKILLS or not is_finite(official_mastery):
+		return
+	_pretest_sync_generation += 1
+	var replay: Array[Dictionary] = []
+	var kept: Array[Dictionary] = []
+	for step: Dictionary in _unconfirmed_bkt_log:
+		var step_skill: String = str(step.get("skill", "")).strip_edges().to_lower()
+		if step_skill != skill or str(step.get("op", "")) == "seed":
+			if step_skill != skill:
+				kept.append(step)
+			continue
+		replay.append(step)
+	_unconfirmed_bkt_log = kept
+	apply_official_mastery(skill, official_mastery)
+	for step: Dictionary in replay:
+		var prior: float = _apply_mastery_step(
+			skill,
+			bool(step.get("correct", false)),
+			float(step.get("p_g", P_GUESS)),
+			float(step.get("p_s", P_SLIP)),
+			float(step.get("p_t", P_TRANSIT)),
+		)
+		step["prior"] = prior
+		step["posterior"] = float(mastery_matrix[skill])
+		_unconfirmed_bkt_log.append(step)
+	_official_mastery_hold[skill] = float(mastery_matrix[skill])
+
+
+func absorb_reflected_pretest_hold(cloud_mastery: Variant) -> void:
+	if _official_mastery_hold.is_empty():
+		return
+	var cloud: Dictionary = cloud_mastery if cloud_mastery is Dictionary else {}
+	var still: Dictionary = {}
+	for skill_id: Variant in _official_mastery_hold.keys():
+		var skill: String = str(skill_id)
+		var current: float = float(mastery_matrix[skill]) if mastery_matrix.has(skill) else float(_official_mastery_hold[skill_id])
+		# A snapshot of the original pretest posterior does not cover a later answer.
+		if cloud.has(skill) and is_equal_approx(float(cloud[skill]), current) and _held_steps_match(skill, current):
+			_drop_bkt_steps_for(skill)
+			continue
+		still[skill] = current
+	_official_mastery_hold = still
+
+
+func _held_steps_match(skill: String, current: float) -> bool:
+	var last: float = current
+	var found: bool = false
+	for step: Dictionary in _unconfirmed_bkt_log:
+		if str(step.get("skill", "")).strip_edges().to_lower() != skill:
+			continue
+		if str(step.get("op", "")) == "seed":
+			continue
+		found = true
+		last = float(step.get("posterior", step.get("value", current)))
+	return not found or is_equal_approx(last, current)
+
+
+func _drop_bkt_steps_for(skill: String) -> void:
+	var kept: Array[Dictionary] = []
+	for step: Dictionary in _unconfirmed_bkt_log:
+		if str(step.get("skill", "")).strip_edges().to_lower() == skill:
+			continue
+		kept.append(step)
+	_unconfirmed_bkt_log = kept
 
 
 func pull_official_bkt() -> void:
@@ -1661,6 +1780,7 @@ func get_save_data() -> Dictionary:
 		"evidence_basis_sessions": _evidence_basis_sessions,
 		"evidence_basis_topics": _evidence_basis_topics.duplicate(true),
 		"unconfirmed_bkt_log": _copy_bkt_log(),
+		"official_mastery_hold": _official_mastery_hold.duplicate(true),
 		"trace_seen_by_module": trace_seen_by_module.duplicate(true),
 		"trace_missed_by_module": trace_missed_by_module.duplicate(true),
 		"decision_stage_state": decision_stage_state.duplicate(true),
@@ -2038,6 +2158,7 @@ func apply_save_data(data: Dictionary) -> void:
 func _restore_cloud_reconcile_state(data: Dictionary) -> void:
 	_cloud_baseline = ""
 	_unconfirmed_bkt_log.clear()
+	_official_mastery_hold = {}
 	_cloud_upload_pinned = false
 	_local_upload_ready = false
 	_verified_upload = false
@@ -2058,6 +2179,13 @@ func _restore_cloud_reconcile_state(data: Dictionary) -> void:
 		for step: Variant in log_raw:
 			if step is Dictionary:
 				_unconfirmed_bkt_log.append((step as Dictionary).duplicate(true))
+	var hold_raw: Variant = data.get("official_mastery_hold", {})
+	if hold_raw is Dictionary:
+		for hold_id: Variant in (hold_raw as Dictionary).keys():
+			var hold_skill: String = str(hold_id).strip_edges().to_lower()
+			var hold_value: Variant = (hold_raw as Dictionary)[hold_id]
+			if hold_skill in _OFFICIAL_SKILLS and (hold_value is int or hold_value is float) and is_finite(float(hold_value)):
+				_official_mastery_hold[hold_skill] = float(hold_value)
 	if data.has("cloud_upload_ready"):
 		_cloud_upload_pinned = true
 		_pending_cloud_merge = bool(data["cloud_upload_ready"])
@@ -2086,6 +2214,8 @@ func _copy_bkt_log() -> Array:
 ## Cloud history stays in place. Offline answers are applied on top of it,
 ## and every other field keeps both sides when they touched different data.
 func reconcile_cloud_snapshot(cloud: Dictionary) -> void:
+	absorb_reflected_pretest_hold(cloud.get("mastery_matrix", {}))
+	var held_mastery: Dictionary = _official_mastery_hold.duplicate(true)
 	var local: Dictionary = get_save_data()
 	var log: Array[Dictionary] = []
 	for step: Dictionary in _unconfirmed_bkt_log:
@@ -2105,6 +2235,7 @@ func reconcile_cloud_snapshot(cloud: Dictionary) -> void:
 		persisted_log.append(step.duplicate(true))
 	merged["unconfirmed_bkt_log"] = persisted_log
 	apply_save_data(merged)
+	_official_mastery_hold = held_mastery
 	_replay_bkt_log(log, cloud.get("pretest_baselines", {}))
 	_cloud_baseline = "known"
 	_pending_cloud_merge = false
@@ -2236,6 +2367,8 @@ func _merge_mastery(cloud_raw: Variant, local_raw: Variant, cloud_lessons_raw: V
 	var local: Dictionary = local_raw
 	for key: Variant in local.keys():
 		var skill: String = str(key)
+		if _official_mastery_hold.has(skill):
+			continue
 		if logged.has(skill):
 			continue
 		var local_value: float = float(local[key])
@@ -2248,6 +2381,10 @@ func _merge_mastery(cloud_raw: Variant, local_raw: Variant, cloud_lessons_raw: V
 		var local_lesson: int = _variant_int(local_lessons.get(module_id, 0))
 		if not merged.has(skill) or local_lesson > cloud_lesson:
 			merged[skill] = local_value
+	for held_id: Variant in _official_mastery_hold.keys():
+		var held_skill: String = str(held_id)
+		if mastery_matrix.has(held_skill):
+			merged[held_skill] = float(mastery_matrix[held_skill])
 	return merged
 
 
@@ -2274,7 +2411,7 @@ func _replay_bkt_log(log: Array[Dictionary], cloud_baselines: Variant) -> void:
 	var seen_updates: Dictionary = {}
 	for step: Dictionary in log:
 		var skill: String = str(step.get("skill", "")).strip_edges()
-		if skill.is_empty():
+		if skill.is_empty() or _official_mastery_hold.has(skill):
 			continue
 		if str(step.get("op", "")) == "seed":
 			if int(skip_counts.get(skill, 0)) > 0:
@@ -2340,6 +2477,11 @@ func _reflected_bkt_prefix(log: Array[Dictionary]) -> Dictionary:
 	var skip_counts: Dictionary = {}
 	for skill_id: Variant in grouped.keys():
 		var skill: String = str(skill_id)
+		# A held topic still has the local posterior, not the cloud snapshot.
+		# Matching that posterior is not proof the cloud has received the step.
+		if _official_mastery_hold.has(skill):
+			skip_counts[skill] = 0
+			continue
 		var steps: Array = grouped[skill]
 		var current: float = _mastery_of(skill)
 		var skip: int = 0
@@ -2611,11 +2753,20 @@ func has_graded_evidence(skill_id: String) -> bool:
 	return int(topics.get(skill_id.to_lower(), 0)) > 0
 
 
+func has_assessment_evidence(skill_id: String) -> bool:
+	return _skill_has_assessment(skill_id)
+
+
+func _plausible_learning_time(value: int) -> bool:
+	return value >= EARLIEST_LEARNING_TIME \
+		and value <= int(Time.get_unix_time_from_system()) + LEARNING_TIME_FUTURE_SKEW
+
+
 func _record_graded_response(skill_id: String, now: int) -> void:
 	if not AuthService.is_signed_in() or Router.is_tutorial or skill_id not in _OFFICIAL_SKILLS:
 		return
 	var previous: int = int(learning_evidence.get("last_at", 0))
-	if previous <= 0:
+	if int(learning_evidence.get("first_at", 0)) <= 0:
 		learning_evidence["first_at"] = now
 	if previous <= 0 or now - previous >= LEARNING_SESSION_IDLE_SECONDS:
 		learning_evidence["sessions"] = int(learning_evidence.get("sessions", 0)) + 1
@@ -2631,7 +2782,7 @@ func learning_support_eligible(now: int = -1) -> bool:
 		return false
 	var first: int = int(learning_evidence.get("first_at", 0))
 	var clock: int = int(Time.get_unix_time_from_system()) if now < 0 else now
-	return first > 0 and clock - first >= SUPPORT_GRACE_SECONDS \
+	return _plausible_learning_time(first) and clock - first >= SUPPORT_GRACE_SECONDS \
 		and int(learning_evidence.get("responses", 0)) >= 10 \
 		and int(learning_evidence.get("sessions", 0)) >= 2
 
@@ -2652,15 +2803,27 @@ func _restore_learning_evidence(raw: Variant) -> void:
 			if safe_count > 0:
 				clean_topics[skill] = safe_count
 				responses += safe_count
-	for key: String in ["first_at", "last_at", "sessions"]:
-		var value: Variant = raw.get(key, 0)
-		if not (value is int or value is float) or not is_finite(float(value)):
-			return
-	if responses <= 0 or int(raw.get("first_at", 0)) <= 0:
+	var sessions: Variant = raw.get("sessions", 0)
+	if not (sessions is int or sessions is float) or not is_finite(float(sessions)):
+		return
+	if responses <= 0:
 		return
 	learning_evidence = {"topics": clean_topics, "responses": responses,
-		"first_at": int(raw.first_at), "last_at": maxi(int(raw.first_at), int(raw.get("last_at", 0))),
-		"sessions": clampi(int(raw.get("sessions", 0)), 1, responses)}
+		"sessions": clampi(int(sessions), 1, responses)}
+	# An implausible time is dropped, never repaired; the topic counts stay valid evidence.
+	var first: int = _restored_learning_time(raw.get("first_at", 0))
+	var last: int = _restored_learning_time(raw.get("last_at", 0))
+	if first > 0:
+		learning_evidence["first_at"] = first
+		learning_evidence["last_at"] = maxi(first, last)
+	elif last > 0:
+		learning_evidence["last_at"] = last
+
+
+func _restored_learning_time(value: Variant) -> int:
+	if not (value is int or value is float) or not is_finite(float(value)):
+		return 0
+	return int(value) if _plausible_learning_time(int(value)) else 0
 
 
 func _sanitize_tech_ranks() -> void:

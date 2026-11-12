@@ -55,6 +55,42 @@ class AuthSessionTests(unittest.TestCase):
         self.assertNotIn("PRIVATE", " ".join(logs.output))
         self.assertNotIn("private@example.com", " ".join(logs.output))
 
+    def test_restricted_login_does_not_issue_a_token_or_reveal_the_state(self) -> None:
+        student = {
+            "id": "stu-1",
+            "email": "learner@school.test",
+            "password": "stored-hash",
+            "status": "Inactive",
+            "session_version": 3,
+        }
+        with (
+            patch.object(auth_service, "_fetch_student_by_email", return_value=dict(student)),
+            patch.object(auth_service, "_verify_password", return_value=False),
+            patch.object(auth_service, "_create_token") as token,
+        ):
+            with self.assertRaises(HTTPException) as failure:
+                auth_service.login_student("learner@school.test", "wrong-password")
+        self.assertEqual(failure.exception.status_code, 401)
+        self.assertEqual(failure.exception.detail, "Invalid email or password")
+        token.assert_not_called()
+        for label in ("Inactive", "Archived"):
+            matched = dict(student, status=label)
+            with (
+                patch.object(auth_service, "_fetch_student_by_email", return_value=matched),
+                patch.object(auth_service, "_verify_password", return_value=True),
+                patch.object(auth_service, "_create_token") as token,
+            ):
+                with self.assertRaises(HTTPException) as failure:
+                    auth_service.login_student("learner@school.test", "correct-password")
+            self.assertEqual(failure.exception.status_code, 403)
+            self.assertEqual(failure.exception.detail, "This student account is inactive")
+            self.assertNotIn("Archived", failure.exception.detail)
+            self.assertNotIn("learner@school.test", failure.exception.detail)
+            token.assert_not_called()
+        auth_service.ensure_student_access({"status": "Suspended"})
+        auth_service.ensure_student_access({"status": "Needs Review"})
+        auth_service.ensure_student_access({"status": "At Risk"})
+
     def test_rating_recovery_uses_same_sanitized_diagnostics(self) -> None:
         from app.services.pvp_rating import RatingQueue
         def unavailable(*_args):

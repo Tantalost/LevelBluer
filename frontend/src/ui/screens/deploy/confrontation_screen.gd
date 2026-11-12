@@ -4,6 +4,7 @@ var Case: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const W: GDScript = preload("res://src/ui/screens/deploy/confrontation_widgets.gd")
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
+const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
 @export_group("Evidence command animation")
 ## Order: anticipation, terminal entrance, typing, confirmation, return.
 @export var command_durations: PackedFloat32Array = [.25,.40,.80,.45,.70]
@@ -59,6 +60,11 @@ var _arrival_cue: int = -1
 var _command_fx: W.CommandAnimation
 var _pending_command: String = ""
 var _pending_weak: String = ""
+var _story_voice: VoicePlayer = VoicePlayer.new()
+var _story_cue: String = ""
+var _dialogue_voices: Dictionary = {}
+var _dialogue_sources: PackedInt32Array = []
+var _feedback_voice: bool = false
 
 func _ready() -> void:
 	var background: ColorRect = ColorRect.new()
@@ -78,6 +84,7 @@ func _ready() -> void:
 	add_child(_result_audio)
 	_result_audio.finished.connect(func() -> void: AudioManager.set_story_duck(self,1.0))
 	SettingsService.settings_changed.connect(_sync_result_audio)
+	add_child(_story_voice)
 
 func on_enter(args: Dictionary) -> void:
 	var definition: GDScript = PlayerManager.story_definition(str(args.get("chapter_id","mod_01_ch_05")))
@@ -85,6 +92,7 @@ func on_enter(args: Dictionary) -> void:
 		_active = false
 		return
 	Case = definition
+	_stop_voice()
 	_case_context = Case.hearing_context(PlayerManager.chapter_progress) if Case.has_method("hearing_context") else {}
 	_suspect_selected = ""
 	_dialogue_text = ""
@@ -117,6 +125,8 @@ func on_exit() -> void:
 	_save()
 	_cancel_command()
 	_active = false
+	# Keeps the cue, so returning from Settings resumes the text without restarting its line.
+	_story_voice.clear_clip()
 	AudioManager.stop_dialogue_blips(self)
 	AudioManager.release_opening_audio(self)
 	_result_audio.stop()
@@ -137,6 +147,7 @@ func _session_changed(_value: bool) -> void:
 	if _owner != AuthService.participant_code() or _signed != AuthService.is_signed_in():
 		_cancel_command()
 		_active = false
+		_stop_voice()
 		AudioManager.release_opening_audio(self)
 		if is_instance_valid(_result_audio): _result_audio.stop()
 		AudioManager.set_story_duck(self,1.0)
@@ -147,9 +158,11 @@ func _notification(what: int) -> void:
 		_backgrounded = true
 		_save()
 		AudioManager.pause_opening_audio(self,true)
+		_suspend_voice()
 	elif what in [NOTIFICATION_APPLICATION_RESUMED,NOTIFICATION_APPLICATION_FOCUS_IN]:
 		_backgrounded = false
 		AudioManager.pause_opening_audio(self,is_instance_valid(_overlay) or _held)
+		_suspend_voice()
 	if is_instance_valid(_result_audio): _sync_result_audio()
 
 func _sync_result_audio() -> void:
@@ -219,10 +232,10 @@ func _build() -> void:
 		"debate": _debate()
 		"rebuttal": _rebuttal()
 		"final": _final_blow()
-		"admission": _story(Case.ADMISSION[int(state.admission_step)],_next_admission,_text("resolution_art","story_bg_john_bed_night"))
+		"admission": _story(Case.ADMISSION[int(state.admission_step)],_next_admission,_text("resolution_art","story_bg_john_bed_night"),false,_case_voices("ADMISSION_VOICE",int(state.admission_step)))
 		"comic": _comic()
 		"animatic": _animatic()
-		"aftermath": _story(Case.AFTERMATH[int(state.aftermath_step)],_next_aftermath,"opening_collector_meeting_v2" if state.aftermath_step >= int(Case.PRESENTATION.get("cutaway_step",999)) else _text("aftermath_art","opening_collector_meeting_v2"))
+		"aftermath": _story(Case.AFTERMATH[int(state.aftermath_step)],_next_aftermath,"opening_collector_meeting_v2" if state.aftermath_step >= int(Case.PRESENTATION.get("cutaway_step",999)) else _text("aftermath_art","opening_collector_meeting_v2"),false,_case_voices("AFTERMATH_VOICE",int(state.aftermath_step)))
 		"lights": _lights()
 		"done": _results()
 
@@ -439,12 +452,25 @@ func _update_statement() -> void:
 	_stage.reflecting = _reflecting
 	if _reflecting:
 		_stage.show_statement(_text("protagonist","John"),"Something doesn't fit. I should compare that claim with the evidence.","",_armed,_held)
+		_statement_voice()
 		return
 	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
 	var speaker: String = str(round_data.get("speaker","Jobert")) if _voice == 3 else str(round_data.voices[_voice].who)
 	var text: String = str(round_data.claim) if _voice == 3 else str(round_data.voices[_voice].text)
 	_stage.show_statement(speaker,text,str(round_data.weak) if _voice == 3 else "",_armed,_held)
-	AudioManager.play_dialogue_reaction(speaker,"neutral",self)
+	_statement_voice()
+	if not _story_voice.pending_or_playing(): AudioManager.play_dialogue_reaction(speaker,"neutral",self)
+
+## Statements wait for the round title; a held or rebuilt statement keeps its cue.
+func _statement_voice() -> void:
+	if _reflecting or _round_intro > 0:
+		_cue_voice("debate","")
+		return
+	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
+	_cue_voice(_statement_cue(),str(round_data.get("claim_voice","")) if _voice == 3 else str(round_data.voices[_voice].get("voice","")))
+
+func _statement_cue() -> String:
+	return "debate:%d:%d" % [int(state.round),_voice]
 
 func _repeat_discussion() -> void:
 	if not _interactive() or is_instance_valid(_command_fx) or state.phase != "debate" or not _reflecting or _held: return
@@ -457,6 +483,7 @@ func _toggle_hold() -> void:
 	if not _interactive() or is_instance_valid(_command_fx) or state.phase != "debate": return
 	_held = not _held
 	AudioManager.pause_opening_audio(self,_held)
+	_suspend_voice()
 	_update_statement()
 
 func _fire(evidence: String, weak_point: String) -> void:
@@ -501,6 +528,10 @@ func _resolve_fire(evidence: String, weak_point: String) -> void:
 		var content: VBoxContainer = _modal("CREDIBILITY −10" if state.credibility > 0 else "REGROUP / ROUND RESTART")
 		var scroll: VBoxContainer = UI.scroll_column(content)
 		scroll.add_child(W.copy(str(round_data.get("speaker","Jobert"))+": "+str(round_data.smug),_u,W.ORANGE,21))
+		# Keyed by the mistake count, so each wrong record plays its retort exactly once.
+		_feedback_voice = true
+		_cue_voice("smug:%d:%d" % [index,int(state.mistakes)],str(round_data.get("smug_voice","")))
+		_suspend_voice()
 		scroll.add_child(W.copy(str(_exhibit(evidence).detail),_u))
 		if state.auto_hints.has(index): scroll.add_child(W.copy("HINT / "+str(round_data.hint)+" The matching record is highlighted.",_u,W.CYAN))
 		content.add_child(W.button("RESTART THIS ROUND" if state.credibility == 0 else "TRY ANOTHER RECORD",_retry,_u,true))
@@ -520,7 +551,11 @@ func _retry() -> void:
 
 func _rebuttal() -> void:
 	var round_data: Dictionary = Case.ROUNDS[int(state.round)]
-	_story("CLAIM REFUTED / +15\n"+str(round_data.result)+"\nFLASHBACK / "+str(round_data.flash),_start_round,str(round_data.art),true)
+	# Story line 0 is the banner, so result line N is story line N+1; unmapped speakers stay text-only.
+	var voices: Dictionary = {1:str(round_data.get("result_voice",""))}
+	var later: Dictionary = round_data.get("result_voices",{})
+	for line: int in later: voices[line+1] = str(later[line])
+	_story("CLAIM REFUTED / +15\n"+str(round_data.result)+"\nFLASHBACK / "+str(round_data.flash),_start_round,str(round_data.art),true,voices)
 	if _elapsed < 2.2:
 		(_body.get_child(0) as Control).hide()
 		_rebuttal_fx = W.RebuttalImpact.new()
@@ -579,7 +614,7 @@ func _match_typo() -> void:
 	AudioManager.play_sfx("ui_success")
 	_change("admission")
 
-func _story(text: String, next: Callable, artwork: String, gray: bool = false) -> void:
+func _story(text: String, next: Callable, artwork: String, gray: bool = false, voices: Dictionary = {}) -> void:
 	var column: VBoxContainer = _column()
 	if state.phase == "aftermath" and artwork == "opening_collector_meeting_v2" and (not bool(Case.PRESENTATION.get("disconnect",true)) or _module_index() == 4):
 		var lights: W.MeetingLights = _meeting_lights()
@@ -602,8 +637,10 @@ func _story(text: String, next: Callable, artwork: String, gray: bool = false) -
 	if _dialogue_text != text:
 		_dialogue_text = text
 		_dialogue_lines = _sentences(text)
+		_dialogue_sources = _sentence_sources(text)
 		_dialogue_line = 0
 		_letters = 0
+	_dialogue_voices = voices
 	_set_line()
 	column.add_child(W.button("REVEAL / CONTINUE",_advance_dialogue,_u,true))
 
@@ -620,10 +657,43 @@ func _sentences(text: String) -> PackedStringArray:
 		result.append((speaker if start > 0 else "")+line.substr(start))
 	return result
 
+## The authored line each of _sentences(text) came from, so one recording spans its sentences.
+func _sentence_sources(text: String) -> PackedInt32Array:
+	var result: PackedInt32Array = []
+	var boundary: RegEx = RegEx.new()
+	boundary.compile("(?<=[.!?])\\s+(?=[A-Z])")
+	var lines: PackedStringArray = text.split("\n",false)
+	for index: int in lines.size():
+		for _sentence: int in boundary.search_all(lines[index]).size()+1: result.append(index)
+	return result
+
 func _set_line() -> void:
 	if not is_instance_valid(_dialogue): return
 	_dialogue.text = _dialogue_lines[_dialogue_line]
 	_dialogue.visible_characters = -1 if SettingsService.text_speed == "instant" else int(_letters)
+	var source: int = _dialogue_sources[_dialogue_line] if _dialogue_line < _dialogue_sources.size() else -1
+	_cue_voice("%s:%d:%d" % [state.phase,_dialogue_text.hash(),source],str(_dialogue_voices.get(source,"")))
+
+## Starts a recording once per authored line; an unvoiced line silences the previous speaker.
+func _cue_voice(key: String, path: String) -> void:
+	if key == _story_cue: return
+	_story_cue = key
+	if path.is_empty(): _story_voice.clear_clip()
+	else: _story_voice.play_clip(path)
+
+func _stop_voice() -> void:
+	_feedback_voice = false
+	_story_cue = ""
+	_story_voice.clear_clip()
+
+func _suspend_voice() -> void:
+	_story_voice.suspend_clip(_held or _backgrounded or (is_instance_valid(_overlay) and not _feedback_voice))
+
+## A step's entry is a path for its first line, or {line: path} when only one speaker in a mixed step is voiced.
+func _case_voices(table: String, index: int) -> Dictionary:
+	var voices: Variant = Case.get(table)
+	var entry: Variant = voices.get(index,"") if voices is Dictionary else ""
+	return (entry as Dictionary).duplicate() if entry is Dictionary else {0:str(entry)}
 
 func _advance_dialogue() -> void:
 	if not _interactive() or not is_instance_valid(_dialogue): return
@@ -688,7 +758,7 @@ func _play_animatic() -> void:
 
 func _animatic() -> void:
 	var frame: Dictionary = Case.frame(Case.COMIC_ORDER[int(state.animatic_step)])
-	_story(str(frame.narration),_next_panel,str(frame.art),int(state.animatic_step)<4)
+	_story(str(frame.narration),_next_panel,str(frame.art),int(state.animatic_step)<4,{0:str(frame.get("voice",""))})
 	_title.text = "CLOSING ARGUMENT / %d OF 6" % (int(state.animatic_step)+1)
 
 func _next_panel() -> void:
@@ -929,6 +999,7 @@ func _modal(title: String, compact: bool = false) -> VBoxContainer:
 	_overlay.add_theme_stylebox_override("panel",UI.box(W.PANEL,W.CYAN,ceili(14*_u)))
 	add_child(_overlay)
 	_sync_result_audio()
+	_suspend_voice()
 	var content: VBoxContainer = UI.column(_overlay,ceili(10*_u))
 	if not title.is_empty(): content.add_child(W.copy(title,_u,W.CYAN,22))
 	return content
@@ -942,8 +1013,14 @@ func _close_overlay() -> void:
 		remove_child(_shade)
 		_shade.queue_free()
 	_shade = null
+	if _feedback_voice:
+		# Dismissing the retort is a skip; the claim behind it keeps its cue and is not replayed.
+		_feedback_voice = false
+		_story_voice.clear_clip()
+		_story_cue = _statement_cue()
 	if _active: AudioManager.pause_opening_audio(self,_held or _backgrounded)
 	_sync_result_audio()
+	_suspend_voice()
 
 func _message(title: String, text: String) -> void:
 	var content: VBoxContainer = _modal(title)
@@ -974,6 +1051,7 @@ func _leave() -> void:
 
 func _change(phase: String) -> void:
 	if phase != "debate": _cancel_command()
+	_stop_voice()
 	state.phase = phase
 	_elapsed = 0
 	_dialogue_text = ""
@@ -1007,6 +1085,7 @@ func _process(delta: float) -> void:
 		if _round_intro > 0:
 			_round_intro = maxf(0,_round_intro-delta)
 			_elapsed = 0
+			if _round_intro == 0: _statement_voice()
 			return
 		if _reflecting or (_armed.is_empty() and _voice == 0):
 			_elapsed = 0
@@ -1014,7 +1093,8 @@ func _process(delta: float) -> void:
 		if int(state.credibility) == 0:
 			_retry()
 			return
-		if _elapsed >= (8.0 if _voice == 3 else 4.0):
+		# A loading or playing recording holds the statement; a failed request releases it.
+		if _elapsed >= (8.0 if _voice == 3 else 4.0) and not _story_voice.pending_or_playing():
 			_elapsed = 0
 			if _voice == 3: _reflecting = true
 			else: _voice += 1
@@ -1047,7 +1127,7 @@ func _process(delta: float) -> void:
 	if is_instance_valid(_dialogue) and _dialogue.visible_characters >= 0:
 		_letters += delta*32*SettingsService.text_speed_multiplier()
 		_dialogue.visible_characters = int(_letters)
-		AudioManager.play_dialogue_blip(_dialogue.text.get_slice(":",0),"neutral",int(_letters),self)
+		if not _story_voice.pending_or_playing(): AudioManager.play_dialogue_blip(_dialogue.text.get_slice(":",0),"neutral",int(_letters),self)
 		if _letters >= _dialogue.text.length():
 			_dialogue.visible_characters = -1
 			AudioManager.stop_dialogue_blips(self)

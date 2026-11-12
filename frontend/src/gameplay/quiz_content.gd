@@ -211,15 +211,31 @@ static func explanation(current_question: Dictionary, is_correct: bool, picked: 
 		note = str(current_question.get("incorrect_feedback", "")).strip_edges()
 		var type_id: String = str(current_question.get("type_id", ""))
 		if type_id == "consequence_choice" and typeof(picked) == TYPE_INT:
-			if int(picked) == 0:
-				note = str(current_question.get("click_debrief", note)).strip_edges()
-			elif int(picked) == 1:
-				note = str(current_question.get("ignore_debrief", note)).strip_edges()
+			note = _consequence_debrief(current_question, int(picked), note)
 	if note.is_empty():
 		note = str(current_question.get("explanation", "")).strip_edges()
 	if note.is_empty():
 		note = "SECURE" if is_correct else "MISS"
 	return note
+
+# Authored debriefs are keyed by outcome, not option position; the positional
+# 0=click / 1=ignore convention only holds when the safe answer is option 2.
+static func _consequence_debrief(current_question: Dictionary, picked: int, fallback: String) -> String:
+	var mapping: Variant = current_question.get("debrief_for_option", null)
+	var key: String = ""
+	if mapping is Dictionary:
+		key = str((mapping as Dictionary).get(str(picked), ""))
+	elif int(current_question.get("answer_index", -1)) == 2:
+		key = "click_debrief" if picked == 0 else ("ignore_debrief" if picked == 1 else "")
+	if not key.is_empty():
+		var debrief: String = str(current_question.get(key, "")).strip_edges()
+		if not debrief.is_empty():
+			return debrief
+	var choices: Array = current_question.get("options", []) as Array
+	var answer: int = int(current_question.get("answer_index", -1))
+	if answer >= 0 and answer < choices.size():
+		return "Safer choice: %s." % str(choices[answer]).strip_edges().trim_suffix(".")
+	return fallback
 
 static func is_multi(q: Dictionary) -> bool:
 	return q.get("delivery", "") == "multi_select" or q.get("type_id", "") == "tap_trap_lines"

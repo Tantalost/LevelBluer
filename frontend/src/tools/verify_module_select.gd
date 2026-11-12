@@ -39,7 +39,7 @@ func _run() -> void:
 	if "--sync-chapter-covers" in OS.get_cmdline_user_args():
 		for entry: Dictionary in assets._school_story_catalog():
 			if str(entry.asset_id) in ["story_chapter3_cover", "story_chapter4_cover"]:
-				check(await assets._sync_entry(entry), "Hosted chapter cover downloads: " + str(entry.asset_id))
+				check((await assets._sync_entry(entry)) not in ["missing", "deferred", "failed"], "Hosted chapter cover downloads: " + str(entry.asset_id))
 				assets._textures.erase(str(entry.asset_id))
 				check(assets.get_texture(str(entry.asset_id)) != null, "Cover reloads from disk cache")
 	var player := root.get_node("PlayerManager")
@@ -244,7 +244,7 @@ func check_intro(player: Node, auth: Node) -> void:
 	if "--download-art" in OS.get_cmdline_user_args():
 		for entry: Dictionary in assets._ui_catalog():
 			if str(entry.asset_id) in ["module1_email_tricks_title_v1", "opening_five_victims_john_v4"]:
-				check(await assets._download_and_store(entry), "New cinematic art downloads and caches")
+				check((await assets._download_and_store(entry)) in ["downloaded", "local"], "New cinematic art downloads and caches")
 	var settings: Node = root.get_node("SettingsService")
 	var previous_motion: bool = settings.reduced_motion
 	var previous_speed: String = settings.text_speed

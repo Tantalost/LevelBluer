@@ -260,18 +260,22 @@ func _apply_asset_snapshot(snapshot: Dictionary) -> void:
 	var count: int = clampi(done, 0, total)
 	_set_target(ASSET_START + (ASSET_END - ASSET_START) * float(count) / float(total))
 	var label: String = str(snapshot.get("label", ""))
-	_status.text = "Checking: " + label
+	var downloading: bool = bool(snapshot.get("downloading", false))
+	_status.text = ("Downloading: " if downloading else "Checking: ") + label
 	_status.tooltip_text = label
 	_detail.text = "ASSETS CHECKED  %d / %d" % [count, total]
+	var downloads: int = int(snapshot.get("downloads", 0))
+	if downloads > 0:
+		_detail.text += "  /  DOWNLOADS  %d" % downloads
 	var received: int = int(snapshot.get("received", 0))
 	var bytes_total: int = int(snapshot.get("bytes_total", 0))
-	if bool(snapshot.get("downloading", false)):
+	if downloading:
 		_detail.text += "  /  " + String.humanize_size(received)
 		if bytes_total > 0:
 			_detail.text += " of " + String.humanize_size(bytes_total)
 		else:
 			_detail.text += " received"
-	# Counts are checks, not successful downloads; readiness is validated afterward.
+	# Checked counts include local cache hits; DOWNLOADS counts network requests only.
 
 func _show_error() -> void:
 	_stage = "error"

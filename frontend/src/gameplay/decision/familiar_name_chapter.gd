@@ -25,13 +25,13 @@ const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"identity","sender":"Amani · New number","address":"Unfamiliar contact","subject":"Copied identity / payment request","body":REQUEST,"phrase":REQUEST,"suspicious":true}]
 const STORY: Array[Dictionary] = [
  {"who":"John","face":4,"bg":"club_corridor_afternoon","cast":["amani","john"],"caption":"Outside the clubroom. Later that afternoon.","line":"Did you tell Dan the parcel needs another payment?"},
- {"who":"Amani","face":1,"bg":"club_corridor_afternoon","cast":["amani","john"],"line":"I told Dan to find tape. That's the only transaction I've authorized."},
+ {"who":"Amani","face":1,"voice":"v1794290919/levelblue/voice/mod_02/ch_03/amani_01.mp3","bg":"club_corridor_afternoon","cast":["amani","john"],"line":"I told Dan to find tape. That's the only transaction I've authorized."},
  {"who":"John","face":4,"bg":"club_corridor_afternoon","cast":["amani","john"],"line":"He forwarded this to me.","mail":true},
- {"who":"Amani","face":3,"bg":"club_corridor_afternoon","cast":["amani","john"],"line":"That's my photo. And my phone has no signal. Did they get into it?"},
+ {"who":"Amani","face":3,"voice":"v1794290957/levelblue/voice/mod_02/ch_03/amani_02.mp3","bg":"club_corridor_afternoon","cast":["amani","john"],"line":"That's my photo. And my phone has no signal. Did they get into it?"},
  {"who":"John","face":0,"bg":"club_corridor_afternoon","cast":["amani","john"],"line":"Let's check what we actually know before we decide that."},
- {"who":"Amani","face":4,"bg":"club_corridor_afternoon","cast":["amani"],"line":"School Wi-Fi connected. My usual chat still opens. Let's compare it with that new contact."},
- {"who":"Dan · Off-screen","face":0,"bg":"club_corridor_afternoon","cast":["amani"],"line":"I knew the delivery was today too. I posted the reminder."},
- {"who":"Amani","face":1,"bg":"club_corridor_afternoon","cast":["amani"],"line":"So knowing the delivery day isn't exactly a secret handshake."},
+ {"who":"Amani","face":4,"voice":"v1794291470/levelblue/voice/mod_02/ch_03/amani_03.mp3","bg":"club_corridor_afternoon","cast":["amani"],"line":"School Wi-Fi connected. My usual chat still opens. Let's compare it with that new contact."},
+ {"who":"Dan · Off-screen","face":0,"voice":"v1794318131/levelblue/voice/mod_02/ch_03/dan_01.mp3","bg":"club_corridor_afternoon","cast":["amani"],"line":"I knew the delivery was today too. I posted the reminder."},
+ {"who":"Amani","face":1,"voice":"v1794292156/levelblue/voice/mod_02/ch_03/amani_04.mp3","bg":"club_corridor_afternoon","cast":["amani"],"line":"So knowing the delivery day isn't exactly a secret handshake."},
  {"who":"John","face":0,"bg":"club_corridor_afternoon","cast":["amani","john"],"line":"And a copied name doesn't tell us who is behind the account."}
 ]
 const EVIDENCE: String = "01 · The photo and delivery detail were visible in the public event post.\n02 · The payment request comes from a different contact, not Amani's established conversation.\n03 · Amani denies the request and warns the club through its established chat over Wi-Fi.\n\nThe loss of cellular signal is observed; its cause is unknown. Neither that observation nor Dan's knowledge identifies the sender."

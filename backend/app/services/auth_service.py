@@ -23,6 +23,21 @@ logger = logging.getLogger(__name__)
 
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_DAYS = 365
+# Administrative lifecycle only. Mastery labels such as At Risk are not account states.
+RESTRICTED_ACCOUNT_STATUSES = frozenset({"inactive", "archived"})
+
+
+def ensure_student_access(student: dict) -> None:
+    """Reject a restricted student account after the caller has already authenticated it.
+
+    Inactive and Archived share one message so the response does not reveal which
+    administrative state is stored. Wrong passwords stay on the login 401 path.
+    """
+    if str(student.get("status", "")).strip().lower() in RESTRICTED_ACCOUNT_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This student account is inactive",
+        )
 
 
 def _supabase_error(exc: Exception, operation: str = "database_request") -> HTTPException:
@@ -39,9 +54,10 @@ def _supabase_error(exc: Exception, operation: str = "database_request") -> HTTP
 
 
 def _completed_module_ids(row: dict) -> list[str]:
-    completed = parse_module_pretests(row.get("module_pretests"))
-    if completed:
-        return completed_module_ids(completed)
+    # Same authority as pretest submission: a present column, even {}, wins.
+    # The save blob is only the record for a legacy row with no column key.
+    if "module_pretests" in row:
+        return completed_module_ids(parse_module_pretests(row.get("module_pretests")))
     student_id = str(row.get("id") or "")
     if not student_id:
         return []
@@ -192,6 +208,8 @@ def login_student(email: str, password: str) -> LoginResponse:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    # Password matched. A restricted account still receives no token and is not reactivated.
+    ensure_student_access(student)
 
     token = _create_token(str(student["id"]), int(student.get("session_version") or 0))
     if isinstance(token, bytes):

@@ -15,6 +15,129 @@ func answer_mini(screen: Control, correct: bool) -> void:
 				break
 	screen._check_quiz()
 
+const SUCCESS_OPENER: String = "(?m)(^\\s*|[.!?]\\s+)(Correct|Right|Exactly|Yes)\\b"
+# Wrong options whose authored debriefs describe neither outcome; content review pending.
+const UNMATCHED_DEBRIEFS: Dictionary = {"mod01_cc_02": [2], "mod02_cc_02": [2], "mod05_cc_07": [0]}
+
+func success_wording(text: String) -> bool:
+	var pattern: RegEx = RegEx.create_from_string(SUCCESS_OPENER)
+	return pattern.search(text.replace("Correct response:", "")) != null
+
+func test_consequence_feedback() -> void:
+	var quiz = load("res://src/gameplay/quiz_content.gd")
+	var total: int = 0
+	var wrong_options: int = 0
+	for module_id: String in ["mod_01", "mod_02", "mod_03", "mod_04", "mod_05"]:
+		for raw: Dictionary in root.get_node("ContentDB").get_module_questions(module_id):
+			if str(raw.get("type_id", "")) != "consequence_choice":
+				continue
+			total += 1
+			var id: String = str(raw.id)
+			var answer: int = int(raw.answer_index)
+			var mapping: Dictionary = raw.get("debrief_for_option", {}) as Dictionary
+			check(not mapping.is_empty() and not mapping.has(str(answer)), "Explicit debrief mapping excludes the safe answer: " + id)
+			check(quiz.explanation(raw, true, answer) == "SECURE", "Correct consequence feedback unchanged: " + id)
+			if answer == 2:
+				check(mapping == {"0": "click_debrief", "1": "ignore_debrief"}, "Positional convention holds when the safe answer is last: " + id)
+			for option: int in (raw.options as Array).size():
+				if option == answer:
+					continue
+				wrong_options += 1
+				var note: String = quiz.explanation(raw, false, option)
+				check(not note.is_empty() and note != "MISS" and note != "SECURE", "Wrong consequence option has feedback: %s/%d" % [id, option])
+				if mapping.has(str(option)):
+					var key: String = str(mapping[str(option)])
+					check(key in ["click_debrief", "ignore_debrief"] and note == str(raw[key]).strip_edges(), "Mapped debrief shown: %s/%d" % [id, option])
+				else:
+					check(option in (UNMATCHED_DEBRIEFS.get(id, []) as Array), "Only reviewed options lack a debrief: %s/%d" % [id, option])
+					check(note == "Safer choice: %s." % str(raw.options[answer]).trim_suffix("."), "Unmatched option names the safe choice: %s/%d" % [id, option])
+			if id == "mod03_cc_02":
+				check(quiz.explanation(raw, false, 1) == str(raw.click_debrief) and quiz.explanation(raw, false, 2) == str(raw.ignore_debrief), "mod03_cc_02 pairs each wrong option with its own outcome")
+			if id == "mod04_cc_05":
+				check(quiz.explanation(raw, false, 1) == str(raw.ignore_debrief) and quiz.explanation(raw, false, 2) == str(raw.click_debrief), "mod04_cc_05 pairs each wrong option with its own outcome")
+			var unmapped: Dictionary = raw.duplicate(true)
+			unmapped.erase("debrief_for_option")
+			if answer == 2:
+				check(quiz.explanation(unmapped, false, 0) == str(raw.click_debrief).strip_edges(), "Positional fallback kept for last-position answers: " + id)
+			else:
+				check(quiz.explanation(unmapped, false, 1 if answer == 0 else 0).begins_with("Safer choice: "), "No positional guess when the safe answer moved: " + id)
+	check(total == 50 and wrong_options == 100, "All 50 consequence questions and 100 wrong options checked")
+
+func test_mini_feedback_contract() -> void:
+	var catalog = load("res://src/ui/screens/intel/lesson_catalog.gd")
+	var study = load("res://src/ui/screens/intel/lesson_study_content.gd")
+	var trust_items: int = 0
+	for module_id: String in catalog.module_ids():
+		var bank: Dictionary = {}
+		for raw: Dictionary in root.get_node("ContentDB").get_module_questions(module_id):
+			bank[str(raw.id)] = raw
+		for index: int in catalog.lesson_count(module_id):
+			var mini: Array[Dictionary] = study.mini_quiz(module_id, index)
+			var lesson: Dictionary = study.build(module_id, index)
+			check(mini.size() == study.MINI_COUNT and str(mini[0].feedback) == str(lesson.feedback), "Lesson-authored feedback preserved: %s/%d" % [module_id, index])
+			for item: Dictionary in mini:
+				check(item.module_id == module_id and item.has("bkt") and item.correct.size() >= 1, "Mini item keeps key, module and BKT: " + str(item.id))
+				var wrong: String = study.quiz_feedback(item, false)
+				var right: String = study.quiz_feedback(item, true)
+				check(not success_wording(wrong), "Wrong answer has no success wording: %s -> %s" % [item.id, wrong])
+				check(not right.is_empty(), "Correct answer keeps feedback: " + str(item.id))
+				if bank.has(item.id):
+					var raw: Dictionary = bank[item.id]
+					var neutral: String = str(raw.get("explanation", "")).strip_edges()
+					if not neutral.is_empty():
+						check(right == neutral and wrong == neutral, "Neutral explanation used for both results: " + str(item.id))
+					if str(raw.type_id) == "trust_verdict":
+						trust_items += 1
+	check(trust_items == 15, "All 15 mini-quiz trust verdict items checked (%d)" % trust_items)
+	check(study.MINI_COUNT == 5 and study.MINI_PASS == 3, "Mini quiz stays 3/5")
+
+func test_mini_feedback_flow() -> void:
+	var verdict_explanation: String = ""
+	for raw: Dictionary in root.get_node("ContentDB").get_module_questions("mod_01"):
+		if str(raw.id) == "mod01_tv_03":
+			verdict_explanation = str(raw.get("explanation", "")).strip_edges()
+	check(not verdict_explanation.is_empty(), "mod01_tv_03 has a neutral explanation")
+	var learner: Node = load("res://src/autoload/player_manager.gd").new()
+	learner.lesson_progress = {"mod_01": 3}
+	var lesson: Control = load("res://src/ui/screens/intel/lesson_player_screen.tscn").instantiate()
+	lesson.account = learner
+	root.add_child(lesson)
+	lesson._load_module("mod_01")
+	lesson._select_topic(3)
+	lesson._open_lesson()
+	for page: int in 3:
+		lesson._on_continue()
+	await settle()
+	check(lesson._phase == 1 and str(lesson._quiz_items[1].id) == "mod01_tv_03", "Mod 1 lesson 4 asks a trust verdict second")
+	answer_mini(lesson, true)
+	lesson._on_continue()
+	answer_mini(lesson, false)
+	check(lesson._status_label.text.begins_with("Not quite.") and not success_wording(lesson._status_label.text), "Wrong trust verdict shows no success wording: " + lesson._status_label.text)
+	for remaining: int in 3:
+		lesson._on_continue()
+		answer_mini(lesson, remaining == 2)
+	check(lesson._quiz_finished and not lesson._quiz_passed and lesson._quiz_score == 2, "2/5 still fails the mini quiz")
+	var cards: String = ""
+	for node: Node in lesson._content.find_children("*", "Label", true, false):
+		cards += (node as Label).text + "\n"
+	check(cards.contains("REVISIT QUESTION 2") and not success_wording(cards), "Revisit cards show no success wording")
+	var responses: String = var_to_str(learner.lesson_quiz_responses)
+	var mastery: String = var_to_str(learner.mastery_matrix)
+	var steps: int = learner._unconfirmed_bkt_log.size()
+	check((learner.lesson_quiz_responses.get("mod_01", {}) as Dictionary).size() == 5 and steps == 5, "One BKT step per first response (responses=%d steps=%d)" % [(learner.lesson_quiz_responses.get("mod_01", {}) as Dictionary).size(), steps])
+	lesson._on_continue()
+	for question: int in 5:
+		if question > 0:
+			lesson._on_continue()
+		answer_mini(lesson, true)
+		if question == 1:
+			check(lesson._status_label.text.begins_with("Correct.") and lesson._status_label.text.contains(verdict_explanation), "Correct trust verdict keeps its explanation")
+	check(lesson._quiz_passed, "Retry can pass")
+	check(var_to_str(learner.lesson_quiz_responses) == responses and var_to_str(learner.mastery_matrix) == mastery and learner._unconfirmed_bkt_log.size() == steps, "Retry adds no BKT update or evidence")
+	lesson.queue_free()
+	await process_frame
+	learner.free()
+
 func record_investigation_pass() -> void:
 	investigation_passes += 1
 
@@ -375,6 +498,9 @@ func _run() -> void:
 	await capture("lessons_picker_compact")
 	picker.queue_free()
 	await process_frame
+	test_consequence_feedback()
+	test_mini_feedback_contract()
+	await test_mini_feedback_flow()
 	player.free()
 	print("[LESSONS WORKSPACE] topics=%d failures=%d" % [count, failures])
 	quit(0 if failures == 0 else 1)

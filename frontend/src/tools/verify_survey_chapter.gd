@@ -3,6 +3,8 @@ const Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd
 var failures: int = 0
 var screen: Control
 var fixture_focus: bool = true
+var finished: bool = false
+var restore_save: Callable = Callable()
 
 func _process(_delta: float) -> bool:
 	# Desktop users may work in another window during rendered verification.
@@ -13,6 +15,14 @@ func _process(_delta: float) -> bool:
 	return false
 
 func _initialize() -> void:
+	# A script error aborts _run before quit(); end the process with a clear failure instead.
+	create_timer(120.0).timeout.connect(func() -> void:
+		if finished: return
+		finished = true
+		push_error("FAIL: Chapter 1 verification timed out after 120 s (failures so far: %d)" % failures)
+		if is_instance_valid(screen): screen.queue_free()
+		if restore_save.is_valid(): restore_save.call()
+		quit(2))
 	_run.call_deferred()
 
 func check(ok: bool, message: String) -> void:
@@ -61,6 +71,7 @@ func _run() -> void:
 	var auth: Node = root.get_node("AuthService")
 	var settings: Node = root.get_node("SettingsService")
 	var original: Dictionary = player.get_save_data()
+	restore_save = func() -> void: player.apply_save_data(original)
 	auth._signed_in = false
 	settings.text_speed = "instant"
 	settings.reduced_motion = true
@@ -79,14 +90,29 @@ func _run() -> void:
 		if not asset_id.begins_with("chapter1_") and asset_id != "story_bg_john_desk_night": continue
 		var download: bool = "--download-art" in OS.get_cmdline_user_args() or ("--download-night" in OS.get_cmdline_user_args() and asset_id == "story_bg_john_desk_night")
 		if download:
-			check(await assets._download_and_store(entry), "Chapter art downloads into cache: " + asset_id)
+			check((await assets._download_and_store(entry)) in ["downloaded", "local"], "Chapter art downloads into cache: " + asset_id)
 			check(assets._is_cache_current(asset_id, entry.cloudinary_url, entry.version, entry.local_path), "Downloaded chapter art uses current Cloudinary URL: " + asset_id)
 		check(assets.get_texture(asset_id) != null, "Missing cached chapter art: " + asset_id + ". Run once with -- --download-art.")
 	if failures > 0:
+		finished = true
 		player.apply_save_data(original)
 		quit(1)
 		return
 	screen = load("res://src/ui/screens/deploy/survey_chapter_screen.tscn").instantiate()
+	# Voice cues are recorded, never downloaded, so voice is never pending and the chat cue
+	# does not depend on the network or this machine's sound settings. Voice timing is
+	# covered by verify_story_voice.gd.
+	var voice_stub: GDScript = GDScript.new()
+	voice_stub.source_code = """extends "res://src/gameplay/decision/story_voice_player.gd"
+var played: Array[String] = []
+func play_clip(path: String) -> void:
+	clear_clip()
+	if not path.is_empty(): played.append(path)
+"""
+	check(voice_stub.reload() == OK, "Voice stand-in compiles against the production voice player")
+	var production_voice: Node = screen._voice
+	screen._voice = voice_stub.new()
+	production_voice.free()
 	root.add_child(screen)
 	screen.on_enter({"test":true})
 	await settle()
@@ -572,4 +598,6 @@ func _run() -> void:
 	await settle()
 	player.apply_save_data(original)
 	print("Chapter 1 verification: %d failures" % failures)
+	if finished: return
+	finished = true
 	quit(1 if failures else 0)

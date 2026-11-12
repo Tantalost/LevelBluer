@@ -1423,6 +1423,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "That click would hand a lookalike site your password.",
 							"ignore_debrief": "Ignoring avoids the trap, but verifying through official channels is better.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1445,6 +1446,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "Opening that attachment could run a malicious program on your device.",
 							"ignore_debrief": "Deleting alone is fine, but confirming through the real library site closes the loop.",
+							"debrief_for_option": {"0": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1467,6 +1469,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Replying with your password hands your account straight to whoever sent this.",
 							"ignore_debrief": "Doing nothing leaves the phishing attempt unreported for other students.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1489,6 +1492,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Entering your PIN on that page would give an attacker direct access to your account.",
 							"ignore_debrief": "Warning friends is good, but reporting through proper channels helps stop the campaign.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1511,6 +1515,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Entering credentials on that lookalike domain sends them straight to an attacker.",
 							"ignore_debrief": "Changing your password on the same fake link doesn't help — it still exposes your new password.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1533,6 +1538,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Signing in there would send your school password to an unrelated outside site.",
 							"ignore_debrief": "If the folder really is needed, checking through the official portal solves it safely instead of just ignoring the issue.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1555,6 +1561,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Logging in through that link would send your credentials to an unrelated domain.",
 							"ignore_debrief": "You can still vote safely by using the real, known voting page instead of skipping it.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1577,6 +1584,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Sending your ID and birthdate by reply hands over data that can be used for identity theft.",
 							"ignore_debrief": "Deleting alone works, but checking the organization's real site confirms whether any real grant exists.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1599,6 +1607,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Uploading your ID and password there gives an attacker both your identity documents and account access.",
 							"ignore_debrief": "If there's ever doubt about a real hold, a direct phone call confirms it safely — ignoring alone doesn't resolve that.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -1621,6 +1630,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Sending your bank account number to an unverified domain risks direct financial theft.",
 							"ignore_debrief": "If a real scholarship is involved, the financial aid office can confirm it — silently doing nothing leaves that unresolved.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3169,6 +3179,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Replying would give away a one-time code.",
 							"ignore_debrief": "Ignoring avoids the reply, but independently checking the real app is safer.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3191,6 +3202,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "Opening the link risks credential theft.",
 							"ignore_debrief": "Deleting the suspicious text and verifying through the known store is the safest response.",
+							"debrief_for_option": {"0": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3213,6 +3225,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "The supplied domain could harvest credentials or payment data.",
 							"ignore_debrief": "Ignoring avoids the link, but checking the official app resolves whether there is a real charge.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3235,6 +3248,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "The text controls the payment destination.",
 							"ignore_debrief": "Independent verification avoids both the scam and the risk of missing a real issue.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3257,6 +3271,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "The compound domain can steal campus credentials.",
 							"ignore_debrief": "The correct response is to bypass the text link and use the real portal.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3279,6 +3294,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Urgency plus a new number can be impersonation.",
 							"ignore_debrief": "Independent contact verifies the request without relying on the suspicious message.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3301,6 +3317,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Small fees are often used because victims may pay without thinking.",
 							"ignore_debrief": "Official tracking can confirm the parcel without using the attacker's link.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3323,6 +3340,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "The real domain is wallet-check.info, and entering an OTP could hand over account access.",
 							"ignore_debrief": "Independent app verification is safer than trusting a familiar string inside a deceptive domain.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3345,6 +3363,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Attackers can use real-looking details to lower suspicion.",
 							"ignore_debrief": "The official app separates a real transaction from a malicious text.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -3367,6 +3386,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "The supplied contact and OTP request keep you inside the attacker's channel.",
 							"ignore_debrief": "Using a pre-existing trusted contact method breaks the smishing chain.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -4914,6 +4934,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Reading the code could approve the attacker's transfer.",
 							"ignore_debrief": "Simply staying connected keeps the attacker in control; independent callback is safer.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -4936,6 +4957,7 @@
 							"answer_index": 0.0,
 							"click_debrief": "Giving the code would hand a secret to an unverified caller.",
 							"ignore_debrief": "Asking for more facts still lets the caller control the verification; use the official directory.",
+							"debrief_for_option": {"1": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -4958,6 +4980,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "The code may authorize the attacker's login.",
 							"ignore_debrief": "A ticket number does not replace independent verification.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -4980,6 +5003,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "Waiting gives the attacker more time after the code may have been used.",
 							"ignore_debrief": "Calling the suspicious number again returns control to the attacker; contact the real bank.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -5002,6 +5026,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "A spoken approval can also be the attacker's goal.",
 							"ignore_debrief": "Staying on the line still prevents independent verification.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -5024,6 +5049,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Sending money tests nothing safely.",
 							"ignore_debrief": "Facts can be known or guessed; a known contact channel is stronger verification.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -5046,6 +5072,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "Caller ID can be spoofed, so the displayed number is not independent proof.",
 							"ignore_debrief": "Checking while remaining connected still lets the caller control the interaction; end it first.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -5068,6 +5095,7 @@
 							"answer_index": 2.0,
 							"click_debrief": "Accurate details can be stolen or obtained elsewhere and do not make the OTP request safe.",
 							"ignore_debrief": "An employee ID is still supplied by the caller; verify independently.",
+							"debrief_for_option": {"0": "click_debrief", "1": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -5090,6 +5118,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "A spoken approval under pressure is not safe just because the caller knows facts.",
 							"ignore_debrief": "A follow-up message from the same unverified source does not replace independent verification.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -5112,6 +5141,7 @@
 							"answer_index": 1.0,
 							"click_debrief": "Calm delivery does not make a one-time-code request safe.",
 							"ignore_debrief": "Partial codes are still sensitive and the core issue is the unverified caller.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6643,6 +6673,7 @@
 							"answer_index": 1,
 							"click_debrief": "Opening the door would give an unverified person access to restricted keys/storage.",
 							"ignore_debrief": "Verification prevents the stranger from using your access.",
+							"debrief_for_option": {"0": "click_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6665,6 +6696,7 @@
 							"answer_index": 1,
 							"click_debrief": "Any access to the laptop based only on the visitor's story could expose student information.",
 							"ignore_debrief": "Waiting restores the missing authority and keeps you from crossing a staff-data boundary.",
+							"debrief_for_option": {"0": "click_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6687,6 +6719,7 @@
 							"answer_index": 1,
 							"click_debrief": "Approving on the stranger's device could send money to an account you do not control.",
 							"ignore_debrief": "The payment can wait for authorization through the real process.",
+							"debrief_for_option": {"0": "click_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6709,6 +6742,7 @@
 							"answer_index": 1,
 							"click_debrief": "Opening restricted storage would complete the attacker's unusual-favor step.",
 							"ignore_debrief": "The deadline does not replace authorization.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6731,6 +6765,7 @@
 							"answer_index": 0,
 							"click_debrief": "Borrowing your badge would unnecessarily transfer access control.",
 							"ignore_debrief": "A visible, independently verified request with their own access is normal.",
+							"debrief_for_option": {"1": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6753,6 +6788,7 @@
 							"answer_index": 1,
 							"click_debrief": "More facts from the same visitor remain inside the pretext.",
 							"ignore_debrief": "Independent authorization is stronger than accurate details supplied by the requester.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6775,6 +6811,7 @@
 							"answer_index": 1,
 							"click_debrief": "Holding an ID does not create authorization for restricted access.",
 							"ignore_debrief": "A small favor still bypasses access control when authorization is missing.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6797,6 +6834,7 @@
 							"answer_index": 1,
 							"click_debrief": "Another student's presence does not turn an unauthorized action into an authorized one.",
 							"ignore_debrief": "Props do not authorize the specific request.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6819,6 +6857,7 @@
 							"answer_index": 1,
 							"click_debrief": "Reducing the amount of data does not fix missing authorization.",
 							"ignore_debrief": "True details increase credibility but do not grant access rights.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -6841,6 +6880,7 @@
 							"answer_index": 1,
 							"click_debrief": "Verifying after access is too late; the boundary has already been crossed.",
 							"ignore_debrief": "When the story blocks verification, verification becomes more important.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8374,6 +8414,7 @@
 							"answer_index": 1,
 							"click_debrief": "Even a quick browse requires mounting the unknown device.",
 							"ignore_debrief": "Turning it in avoids executing anything from unknown media.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8396,6 +8437,7 @@
 							"answer_index": 1,
 							"click_debrief": "Using anyone's campus account still gives the booth credentials.",
 							"ignore_debrief": "No prize is worth surrendering campus credentials to an unknown device.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8418,6 +8460,7 @@
 							"answer_index": 0,
 							"click_debrief": "Replacing a controlled device with unknown media reintroduces the risk.",
 							"ignore_debrief": "A known, controlled loan is the safe contrast taught in Module 5.",
+							"debrief_for_option": {"1": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8440,6 +8483,7 @@
 							"answer_index": 1,
 							"click_debrief": "Testing the QR on another person does not make the destination trustworthy.",
 							"ignore_debrief": "Independent verification avoids both the anonymous destination and credential request.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8462,6 +8506,7 @@
 							"answer_index": 1,
 							"click_debrief": "Downloading the attacker-controlled executable still creates unnecessary risk.",
 							"ignore_debrief": "Trusted-source acquisition removes the lure-controlled installer.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8484,6 +8529,7 @@
 							"answer_index": 1,
 							"click_debrief": "The drive can execute or exploit a device even when the device is not online.",
 							"ignore_debrief": "The consequence lesson's whole win is refusing to mount the mystery drive.",
+							"debrief_for_option": {"0": "click_debrief", "2": "ignore_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8506,6 +8552,7 @@
 							"answer_index": 1,
 							"click_debrief": "A renamed malicious file is still untrusted code.",
 							"ignore_debrief": "Changing the source, not the filename, is what makes the action safer.",
+							"debrief_for_option": {"2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8528,6 +8575,7 @@
 							"answer_index": 1,
 							"click_debrief": "Copying or exploring can spread or deepen the compromise.",
 							"ignore_debrief": "After unexpected execution, continuing to interact can worsen exposure; report the incident.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8550,6 +8598,7 @@
 							"answer_index": 1,
 							"click_debrief": "Offline inspection still mounts unknown media and can execute local malware.",
 							"ignore_debrief": "Convincing placement and branding may be part of the bait.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,
@@ -8572,6 +8621,7 @@
 							"answer_index": 1,
 							"click_debrief": "Changing devices does not make the credential trade safe.",
 							"ignore_debrief": "A real low-cost reward can still be used to steal higher-value credentials or install software.",
+							"debrief_for_option": {"0": "ignore_debrief", "2": "click_debrief"},
 							"bkt": {
 								"p_g": 0.2,
 								"p_s": 0.1,

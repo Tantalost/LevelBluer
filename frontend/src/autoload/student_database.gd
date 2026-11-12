@@ -13,9 +13,9 @@ CREATE TABLE IF NOT EXISTS students (
 	post INTEGER DEFAULT 0,
 	sessions INTEGER DEFAULT 0,
 	points INTEGER DEFAULT 0,
-	last_active TEXT DEFAULT 'Just now',
+	last_active TEXT DEFAULT '',
 	technical INTEGER DEFAULT 0,
-	status TEXT DEFAULT 'Needs Review' CHECK (status IN ('On Track', 'Needs Review', 'At Risk')),
+	status TEXT DEFAULT 'Needs Review' CHECK (status IN ('On Track', 'Needs Review', 'At Risk', 'Inactive', 'Archived')),
 	mastery_phishing REAL DEFAULT 0,
 	mastery_smishing REAL DEFAULT 0,
 	mastery_vishing REAL DEFAULT 0,
@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS students (
 
 var _db: SQLite
 var _ready_ok: bool = false
+var _accounts_ready: bool = false
 
 
 func _ready() -> void:
@@ -73,6 +74,7 @@ func _ready() -> void:
 	_ensure_column("needs_cloud_sync", "INTEGER DEFAULT 0")
 	_ensure_column("module_pretests", "TEXT DEFAULT ''")
 	_ensure_column("pending_pretest_submits", "TEXT DEFAULT ''")
+	_ensure_account_statuses()
 	_ready_ok = true
 
 
@@ -95,7 +97,7 @@ func load_signed_in_student() -> Dictionary:
 	var row: Variant = rows[0]
 	if typeof(row) != TYPE_DICTIONARY:
 		return {}
-	return row
+	return _present_account(row)
 
 
 func load_student(student_id: String) -> Dictionary:
@@ -109,12 +111,13 @@ func load_student(student_id: String) -> Dictionary:
 	var row: Variant = rows[0]
 	if typeof(row) != TYPE_DICTIONARY:
 		return {}
-	return row
+	return _present_account(row)
 
 
 func upsert_student(row: Dictionary) -> bool:
 	if not is_available():
 		return false
+	_ensure_account_statuses()
 	var student_id := str(row.get("id", "")).strip_edges()
 	if student_id.is_empty():
 		return false
@@ -186,9 +189,9 @@ ON CONFLICT(id) DO UPDATE SET
 		int(row.get("post", 0)),
 		int(row.get("sessions", 0)),
 		int(row.get("points", 0)),
-		str(row.get("last_active", "Just now")),
+		activity_timestamp(row.get("last_active", "")),
 		1 if bool(row.get("technical", false)) else 0,
-		_clamp_status(str(row.get("status", "Needs Review"))),
+		account_status(row.get("status", ""), "Needs Review"),
 		float(row.get("mastery_phishing", 0.0)),
 		float(row.get("mastery_smishing", 0.0)),
 		float(row.get("mastery_vishing", 0.0)),
@@ -277,12 +280,97 @@ func _ensure_column(column_name: String, declaration: String) -> void:
 		push_warning("StudentDatabase: add column %s failed. %s" % [column_name, _db.error_message])
 
 
-static func _clamp_status(status: String) -> String:
-	match status:
-		"On Track", "Needs Review", "At Risk":
-			return status
+static func account_status(value: Variant, fallback: String = "Needs Review") -> String:
+	var text := str(value).strip_edges()
+	if text.is_empty():
+		return fallback if not fallback.is_empty() else "Needs Review"
+	match text:
+		"On Track", "Needs Review", "At Risk", "Inactive", "Archived":
+			return text
+	match text.to_lower():
+		"inactive":
+			return "Inactive"
+		"archived":
+			return "Archived"
 		_:
 			return "Needs Review"
+
+
+static func activity_timestamp(value: Variant) -> String:
+	var text := str(value).strip_edges()
+	if text.is_empty() or text.to_lower() == "just now":
+		return ""
+	return text
+
+
+func _present_account(row: Dictionary) -> Dictionary:
+	var presented := row.duplicate()
+	presented["status"] = account_status(presented.get("status", ""), "Needs Review")
+	presented["last_active"] = activity_timestamp(presented.get("last_active", ""))
+	return presented
+
+
+func _ensure_account_statuses() -> void:
+	if _accounts_ready or _db == null:
+		return
+	if not _db.query("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'students';"):
+		push_warning("StudentDatabase: could not read the account table.")
+		return
+	var rows: Array = _db.query_result
+	if rows.is_empty() or typeof(rows[0]) != TYPE_DICTIONARY:
+		return
+	var info: Dictionary = rows[0]
+	var ddl := str(info.get("sql", info.get("SQL", "")))
+	if ddl.contains("'Inactive'") and ddl.contains("'Archived'"):
+		_accounts_ready = true
+		return
+	if not _replace_account_table():
+		push_warning("StudentDatabase: administrative statuses could not be stored.")
+		return
+	_accounts_ready = true
+
+
+func _replace_account_table() -> bool:
+	if not _db.query("BEGIN IMMEDIATE;"):
+		return false
+	if not _db.query("DROP TABLE IF EXISTS students_r7;"):
+		_db.query("ROLLBACK;")
+		return false
+	var create_sql := CREATE_STUDENTS_SQL.replace("IF NOT EXISTS students", "students_r7")
+	if not _db.query(create_sql):
+		_db.query("ROLLBACK;")
+		return false
+	var copy_sql := """
+INSERT INTO students_r7 (
+	id, name, section, pre, post, sessions, points, last_active, technical, status,
+	mastery_phishing, mastery_smishing, mastery_vishing, mastery_pretexting, mastery_baiting,
+	created_at, updated_at, threat_points, upgrade_materials, highest_unlocked_stage,
+	tower_level, glade_level, forge_level, intervention_status, requires_password_change,
+	email, first_name, last_name, middle_initial, auth_token, signed_in, pre_test_completed,
+	module_pretests, pending_pretest_submits, pending_password_change, display_name, needs_cloud_sync
+)
+SELECT
+	id, name, section, pre, post, sessions, points,
+	CASE WHEN last_active IS NULL OR lower(trim(last_active)) = 'just now' THEN '' ELSE last_active END,
+	technical, status,
+	mastery_phishing, mastery_smishing, mastery_vishing, mastery_pretexting, mastery_baiting,
+	created_at, updated_at, threat_points, upgrade_materials, highest_unlocked_stage,
+	tower_level, glade_level, forge_level, intervention_status, requires_password_change,
+	email, first_name, last_name, middle_initial, auth_token, signed_in, pre_test_completed,
+	module_pretests, pending_pretest_submits, pending_password_change, display_name, needs_cloud_sync
+FROM students;
+"""
+	if not _db.query(copy_sql):
+		_db.query("ROLLBACK;")
+		return false
+	if not _db.query("DROP TABLE students;"):
+		_db.query("ROLLBACK;")
+		return false
+	if not _db.query("ALTER TABLE students_r7 RENAME TO students;"):
+		_db.query("ROLLBACK;")
+		push_warning("StudentDatabase: account table rename was rolled back.")
+		return false
+	return _db.query("COMMIT;")
 
 
 static func _clamp_intervention(status: String) -> String:

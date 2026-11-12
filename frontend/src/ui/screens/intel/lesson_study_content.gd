@@ -87,100 +87,34 @@ static func mini_pool(module_id: String, index: int) -> Array[Dictionary]:
 	var assignments: Array = MINI_POOLS.get(module_id, [])
 	if index < 0 or index >= assignments.size(): return []
 	var bank: Dictionary = {}
-	for raw: Dictionary in ContentDB.get_module_questions(module_id): bank[str(raw.id)] = raw
-	var result: Array[Dictionary] = []
-	var seen: Dictionary = {}
-	for category: int in 3:
-		for suffix: String in str(assignments[index][category]).split(" ", false):
-			var id: String = module_id.replace("_", "") + "_" + suffix
-			if not bank.has(id) or seen.has(id): return []
-			seen[id] = true
-			var raw: Dictionary = bank[id]
-			var row: Dictionary = {"id":id, "module_id":module_id, "category":category, "difficulty":raw.get("difficulty","medium"), "question":Quiz._format_prompt(raw), "quiz_scenario":Quiz._format_scenario(raw), "options":[], "correct":[], "multi":false, "feedback":Quiz.explanation(raw,true,null), "bkt":raw.get("bkt",{})}
-			if row.question == "Phishing or legitimate?":
-				row.question = "Is this request suspicious or legitimate?"
-			if not str(raw.get("explanation", "")).strip_edges().is_empty():
-				row.feedback = str(raw.explanation)
-			if raw.get("type_id","") == "consequence_choice":
-				row.feedback = str(raw.get("ignore_debrief", ""))
-			for choice: Dictionary in Quiz.options(raw):
-				if Quiz.grade(raw,choice.value): row.correct.append(row.options.size())
-				row.options.append("Suspicious / attack" if choice.text == "Phishing" else str(choice.text))
-			if row.correct.size() != 1 or row.options.size() < 2 or str(row.question).is_empty() or str(row.feedback).is_empty(): return []
-			result.append(row)
-	return result if result.size() >= 20 else []
-
-static func select_mini(pool: Array[Dictionary], seen: Array, previous: Array, preferred: String) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	for category: int in 3:
-		var candidates: Array[Dictionary] = []
-		for row: Dictionary in pool:
-			if int(row.category) == category: candidates.append(row)
-		candidates.shuffle()
-		candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-			var ac: int = (100 if a.id in seen else 0) + (10 if a.id in previous else 0) + (0 if a.difficulty == preferred else 1)
-			var bc: int = (100 if b.id in seen else 0) + (10 if b.id in previous else 0) + (0 if b.difficulty == preferred else 1)
-			return ac < bc)
-		var count: int = 1 if category == 2 else 2
-		if candidates.size() < count: return []
-		for i: int in count: result.append(candidates[i].duplicate(true))
-	result.shuffle()
+	for raw: Dictionary in ContentDB.get_module_questions(module_id):
+		bank[str(raw.get("id", ""))] = raw
+	for suffix: String in sets[index]:
+		var id: String = module_id.replace("_", "") + "_" + suffix
+		if not bank.has(id):
+			return [] # Fail closed: never shorten the assessment silently.
+		var raw: Dictionary = bank[id]
+		var choices: Array[Dictionary] = Quiz.options(raw)
+		var row: Dictionary = {"id": id, "module_id": module_id, "question": Quiz._format_prompt(raw), "quiz_scenario": Quiz._format_scenario(raw), "options": [], "correct": [], "multi": false, "feedback": Quiz.explanation(raw, true, null), "bkt": raw.get("bkt", {})}
+		var neutral: String = str(raw.get("explanation", "")).strip_edges()
+		if not neutral.is_empty():
+			row.feedback = neutral
+		else:
+			# Bank correct_feedback may open with "Correct", so wrong answers need their own text.
+			row["feedback_incorrect"] = str(raw.get("incorrect_feedback", "")).strip_edges()
+		for choice: Dictionary in choices:
+			if Quiz.grade(raw, choice.value):
+				row.correct.append(row.options.size())
+			row.options.append("Suspicious / attack" if choice.text == "Phishing" else str(choice.text))
+		if row.correct.size() != 1 or row.options.size() < 2 or str(row.question).is_empty():
+			return []
+		result.append(row)
 	return result
 
-static func mini_quiz(module_id: String, index: int) -> Array[Dictionary]:
-	return select_mini(mini_pool(module_id,index), [], [], "medium")
-
-static func new_mini_session(pool: Array[Dictionary], previous: Dictionary, preferred: String) -> Dictionary:
-	if pool.size() < 20: return {}
-	var seen: Array[String] = []
-	var last: Array[String] = []
-	var previous_seen: Array = previous.get("seen",[]) if previous.get("seen",[]) is Array else []
-	var previous_ids: Array = previous.get("ids",[]) if previous.get("ids",[]) is Array else []
-	for row: Dictionary in pool:
-		if row.id in previous_seen: seen.append(str(row.id))
-		if row.id in previous_ids: last.append(str(row.id))
-	if seen.size() == pool.size(): seen.clear()
-	var selected: Array[Dictionary] = select_mini(pool,seen,last,preferred)
-	if selected.size() != MINI_COUNT: return {}
-	var result: Dictionary = {"version":1, "attempt_id":Crypto.new().generate_random_bytes(16).hex_encode(), "ids":[], "orders":[], "responses":[], "seen":seen, "read_passed":false, "reviewing_answer":false, "closed":false}
-	for row: Dictionary in selected:
-		result.ids.append(str(row.id))
-		if row.id not in seen: seen.append(str(row.id))
-		var order: Array[int] = []
-		for i: int in row.options.size(): order.append(i)
-		order.shuffle()
-		result.orders.append(order)
-	return result
-
-static func restore_mini_items(pool: Array[Dictionary], session: Dictionary) -> Array[Dictionary]:
-	if session.get("version",0) != 1 or not session.get("ids") is Array or not session.get("orders") is Array: return []
-	if session.ids.size() != MINI_COUNT or session.orders.size() != MINI_COUNT: return []
-	var result: Array[Dictionary] = []
-	var used: Array[String] = []
-	var categories: Array[int] = [0,0,0]
-	for i: int in MINI_COUNT:
-		var found: Dictionary = {}
-		for row: Dictionary in pool:
-			if row.id == session.ids[i]: found = row.duplicate(true)
-		if found.is_empty() or str(found.id) in used: return []
-		used.append(str(found.id))
-		var order: Variant = session.orders[i]
-		if not order is Array or order.size() != found.options.size(): return []
-		var options: Array[String] = []
-		var correct: Array[int] = []
-		var indices: Array[int] = []
-		for value: Variant in order:
-			if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floorf(float(value)): return []
-			var index: int = int(value)
-			if index < 0 or index >= found.options.size() or index in indices: return []
-			indices.append(index)
-			if index in found.correct: correct.append(options.size())
-			options.append(str(found.options[index]))
-		found.options = options
-		found.correct = correct
-		categories[int(found.category)] += 1
-		result.append(found)
-	return result if categories == [2,2,1] else []
+static func quiz_feedback(item: Dictionary, is_correct: bool) -> String:
+	if not is_correct and item.has("feedback_incorrect"):
+		return str(item.feedback_incorrect)
+	return str(item.get("feedback", ""))
 
 const DOMAIN := {
 	"phishing": {"term": "Phishing", "definition": "Phishing is a deceptive message that impersonates a trusted sender to steal information or make you open an unsafe link or file.", "rule": "Check the full sender address and destination. Verify through a known site; never reply with a password or one-time code.", "app": "Mail", "inspect": "Inspect sender and request", "verify": "Open trusted contact directory", "action": "Report phishing", "unsafe": "Open link / attachment"},

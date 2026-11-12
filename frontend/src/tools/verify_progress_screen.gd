@@ -82,6 +82,36 @@ func check_same_evidence_as_sync() -> void:
 	check(bool(mastery_row("vishing").get("assessed", false)), "Other evidence remains after practice is cleared")
 	fresh()
 
+func check_missing_cached_mastery() -> void:
+	# A completed pre-test does not turn a missing or unusable cache into 0%.
+	fresh()
+	auth._completed_module_ids = ["mod_01"]
+	auth._mastery = {"Phishing": 0}
+	var row: Dictionary = mastery_row("phishing")
+	check(not bool(row.get("assessed", false)), "Completed pre-test with cached mastery 0 stays unassessed")
+	check(Data.mastery_status(float(row.get("value", 0.0)), bool(row.get("assessed", false))) == "Not assessed", "Cached zero is not labeled Needs practice")
+	check(not bool(mastery_row("smishing").get("assessed", false)), "Other topics stay unassessed when only one pre-test flag is set")
+	auth._mastery = {"Phishing": 0.10}
+	row = mastery_row("phishing")
+	check(bool(row.get("assessed", false)) and is_equal_approx(float(row.get("value", 0.0)), 0.10), "Completed pre-test keeps an assessed 0.10")
+	check(Data.mastery_status(0.10, true) == "Needs practice", "Assessed 0.10 stays below the 0.40 band")
+	auth._mastery = {}
+	check(not bool(mastery_row("phishing").get("assessed", false)), "Missing cached mastery stays unassessed")
+	auth._mastery = {"Phishing": "bad"}
+	check(not bool(mastery_row("phishing").get("assessed", false)), "Invalid cached mastery stays unassessed")
+	auth._mastery = {"Phishing": NAN}
+	check(not bool(mastery_row("phishing").get("assessed", false)), "Non-finite cached mastery stays unassessed")
+	auth._mastery = {"Phishing": INF}
+	check(not bool(mastery_row("phishing").get("assessed", false)), "Infinite cached mastery stays unassessed")
+	auth._completed_module_ids = []
+	auth._mastery = {"Smishing": 0.10}
+	check(not bool(mastery_row("smishing").get("assessed", false)), "Unassessed topic stays Not assessed")
+	auth._mastery = {"Phishing": 0.40, "Smishing": 0.3999}
+	var state: Dictionary = Data.snapshot()
+	check(str(state.mastery[0].status) == "Developing", "Snapshot 0.40 boundary is Developing")
+	check(str(state.mastery[1].status) == "Needs practice", "Snapshot just below 0.40 is Needs practice")
+	fresh()
+
 func fingerprint() -> String:
 	return JSON.stringify([auth._mastery, auth._completed_module_ids, auth._bkt_queue, auth._points,
 		player.mastery_matrix, player.cleared_stages, player.lesson_progress, player.completed_lessons,
@@ -108,6 +138,7 @@ func _run() -> void:
 	check(Data.mastery_status(0.7, true) == "Proficient", "70% boundary")
 	check(Data.mastery_status(0, false) == "Not assessed", "Missing mastery label")
 	check_same_evidence_as_sync()
+	check_missing_cached_mastery()
 	var before := fingerprint()
 	var screen: Control = load("res://src/ui/screens/progress/progress_screen.tscn").instantiate()
 	root.add_child(screen)

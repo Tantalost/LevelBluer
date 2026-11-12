@@ -27,14 +27,14 @@ const CARRIER_REPLY: String = "A wallet authorization code is not a mobile-servi
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"recovery","sender":"Recovery Desk","address":"Unverified SMS sender","subject":"Recovery pressure / supplied contact","body":REQUEST,"phrase":"Use the number supplied in this warning and give the wallet code.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Amani","face":2,"bg":"event_room_day","cast":["amani"],"caption":"Back in the clubroom. After classes.","line":"Another text. This one says it can fix my signal.","mail":true},
- {"who":"Amani","face":1,"bg":"event_room_day","cast":["amani","john"],"line":"They've gone from delivering tape to repairing my entire life."},
+ {"who":"Amani","face":2,"voice":"v1794293063/levelblue/voice/mod_02/ch_04/amani_01.mp3","bg":"event_room_day","cast":["amani"],"caption":"Back in the clubroom. After classes.","line":"Another text. This one says it can fix my signal.","mail":true},
+ {"who":"Amani","face":1,"voice":"v1794293404/levelblue/voice/mod_02/ch_04/amani_02.mp3","bg":"event_room_day","cast":["amani","john"],"line":"They've gone from delivering tape to repairing my entire life."},
  {"who":"John","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"Which service issued that code?"},
- {"who":"Amani","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"The wallet. Not my mobile provider."},
- {"who":"Sir Rham · Off-screen","face":0,"bg":"event_room_day","cast":["amani"],"line":"Use the contact details you already trust. Don't let the message choose who confirms its own story."},
- {"who":"Amani","face":4,"bg":"event_room_day","cast":["amani","john"],"line":"So calling the number in the warning would still leave me inside their instructions."},
+ {"who":"Amani","face":4,"voice":"v1794293714/levelblue/voice/mod_02/ch_04/amani_03.mp3","bg":"event_room_day","cast":["amani","john"],"line":"The wallet. Not my mobile provider."},
+ {"who":"Sir Rham · Off-screen","face":0,"voice":"v1794320278/levelblue/voice/mod_02/ch_04/sir_rham_01.mp3","bg":"event_room_day","cast":["amani"],"line":"Use the contact details you already trust. Don't let the message choose who confirms its own story."},
+ {"who":"Amani","face":4,"voice":"v1794293920/levelblue/voice/mod_02/ch_04/amani_04.mp3","bg":"event_room_day","cast":["amani","john"],"line":"So calling the number in the warning would still leave me inside their instructions."},
  {"who":"John","face":0,"bg":"event_room_day","cast":["amani","john"],"line":"Exactly."},
- {"who":"Amani","face":5,"bg":"event_room_day","cast":["amani"],"line":"I'm keeping the messages. Then I'll open support myself, over school Wi-Fi."}
+ {"who":"Amani","face":5,"voice":"v1794294193/levelblue/voice/mod_02/ch_04/amani_05.mp3","bg":"event_room_day","cast":["amani"],"line":"I'm keeping the messages. Then I'll open support myself, over school Wi-Fi."}
 ]
 const EVIDENCE: String = "01 · Delivery, wallet code, copied identity, then recovery pressure: the pretext changes across services.\n02 · The warning supplies its own verification contact.\n03 · Independent wallet support says to keep the device code private; carrier help has not diagnosed the signal loss.\n\nThe saved messages are attached to the wallet support case. No code was shared and the sender remains unidentified."
 const SEAL_LINE: String = "Their deadline doesn't get to choose who I trust."

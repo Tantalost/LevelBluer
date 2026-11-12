@@ -134,7 +134,7 @@ func _run() -> void:
 	if "--sync-hearing-assets" in OS.get_cmdline_user_args():
 		for entry: Dictionary in assets._gameplay_catalog():
 			if str(entry.asset_id) in hearing_ids:
-				check(await assets._sync_entry(entry),"Cloudinary hearing asset downloads: "+str(entry.asset_id))
+				check((await assets._sync_entry(entry)) not in ["missing", "deferred", "failed"],"Cloudinary hearing asset downloads: "+str(entry.asset_id))
 		for id: String in hearing_ids:
 			assets._textures.erase(id)
 			check(assets.get_texture(id) != null,"Hearing texture reloads from disk cache: "+id)
