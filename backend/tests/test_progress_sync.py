@@ -512,10 +512,10 @@ class ProgressSyncFailureTest(unittest.TestCase):
     def test_restricted_or_missing_student_at_write_time_is_not_a_conflict(self):
         for outcome, code in (("restricted", status.HTTP_403_FORBIDDEN), ("not_found", status.HTTP_404_NOT_FOUND)):
             with self.subTest(outcome=outcome):
-        fake = FakeSupabase()
+                fake = FakeSupabase()
                 with patch(f"{__name__}._emulate_write_mastery", return_value={"status": outcome}):
                     with self.assertRaises(HTTPException) as ctx:
-        self._run(fake)
+                        self._run(fake)
                 self.assertEqual(ctx.exception.status_code, code)
                 self.assertEqual(len(_mastery_writes(fake)), 1)
                 self.assertNotIn("player_saves", fake.upserts)
@@ -1430,7 +1430,7 @@ class AssessedTopicPretestStatusTest(unittest.TestCase):
             patch("app.services.pretest_service._fetch_student",
                   side_effect=lambda _sid: dict(before)),
         ):
-        with self.assertRaises(HTTPException) as ctx:
+            with self.assertRaises(HTTPException) as ctx:
                 submit_pretest("stu-1", "mod_01", self._answers())
         self.assertEqual(ctx.exception.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(ctx.exception.detail, "Pre-test already completed")
@@ -1737,6 +1737,30 @@ class PretestBaselineSparseSyncTest(unittest.TestCase):
         fake = StatefulSupabase()
         fake.save_rows = [{"payload": copy.deepcopy(self.STORED)}]
         return fake
+
+    def test_targeted_diagnostic_survives_sync_and_stale_clients(self):
+        fake = self._with_history()
+        baseline = {"correct": 14, "total": 15, "route_version": 1, "missed_ids": [3]}
+        fake.save_rows[0]["payload"]["pretest_baselines"] = {"mod_01": baseline}
+        self._sync(fake, ProgressSyncRequest(pretest_baselines={"mod_01": {"correct": 14, "total": 15}}))
+        self.assertEqual(fake.save_rows[0]["payload"]["pretest_baselines"]["mod_01"], baseline)
+        self._sync(fake, ProgressSyncRequest(pretest_baselines={"mod_01": {**baseline, "missed_ids": [2]}}))
+        self.assertEqual(fake.save_rows[0]["payload"]["pretest_baselines"]["mod_01"], baseline)
+
+    def test_matching_local_evidence_repairs_score_only_baseline(self):
+        fake = self._with_history()
+        fake.save_rows[0]["payload"]["pretest_baselines"] = {"mod_01": {"correct": 14, "total": 15}}
+        baseline = {"correct": 14, "total": 15, "route_version": 1, "missed_ids": [3]}
+        self._sync(fake, ProgressSyncRequest(pretest_baselines={"mod_01": baseline}))
+        self.assertEqual(fake.save_rows[0]["payload"]["pretest_baselines"]["mod_01"], baseline)
+        self._sync(fake, ProgressSyncRequest(pretest_baselines={"mod_01": {"correct": 15, "total": 15, "route_version": 1, "missed_ids": []}}))
+        self.assertEqual(fake.save_rows[0]["payload"]["pretest_baselines"]["mod_01"], baseline)
+
+    def test_invalid_route_details_do_not_grant_targeted_clearance(self):
+        from app.services.progress_service import _valid_pretest_baseline
+        for missed in ([0], [16], [True], ["3"], [3.5], [], [3, 3], None):
+            with self.subTest(missed=missed):
+                self.assertEqual(_valid_pretest_baseline({"correct": 14, "total": 15, "route_version": 1, "missed_ids": missed}), {"correct": 14, "total": 15})
 
     def _assert_lesson_history(self, stored: dict) -> None:
         self.assertEqual(stored["lesson_progress"], {"mod_01": 6})

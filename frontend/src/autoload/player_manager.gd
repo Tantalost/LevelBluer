@@ -2299,7 +2299,7 @@ func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_kno
 	merged["owned_perks"] = _union_strings(cloud.get("owned_perks", []), local.get("owned_perks", []), ["recap"])
 	merged["seen_module_intros"] = _union_strings(cloud.get("seen_module_intros", []), local.get("seen_module_intros", []))
 	merged["locked_stages"] = _union_dict_keys(cloud.get("locked_stages", {}), local.get("locked_stages", {}))
-	merged["pretest_baselines"] = _union_missing_keys(cloud.get("pretest_baselines", {}), local.get("pretest_baselines", {}))
+	merged["pretest_baselines"] = PretestBank.merge_baselines(cloud.get("pretest_baselines", {}), local.get("pretest_baselines", {}))
 	merged["practice_responses"] = _union_missing_keys(cloud.get("practice_responses", {}), local.get("practice_responses", {}))
 	merged["lesson_quiz_responses"] = _union_quiz_responses(cloud.get("lesson_quiz_responses", {}), local.get("lesson_quiz_responses", {}))
 	merged["lesson_quiz_sessions"] = _merge_mini_sessions(cloud.get("lesson_quiz_sessions", {}), local.get("lesson_quiz_sessions", {}))

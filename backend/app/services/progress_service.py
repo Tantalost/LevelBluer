@@ -663,7 +663,7 @@ def _merge_practice_responses(blob: dict, stored: dict, provided: set[str]) -> N
 
 
 def _valid_pretest_baseline(value: object) -> dict | None:
-    """Return the stored correct/total pair, or None when it is not a baseline."""
+    """Preserve validated diagnostic evidence; routing is derived by the app."""
     if not isinstance(value, dict):
         return None
     correct_raw = _finite_number(value.get("correct"))
@@ -676,7 +676,15 @@ def _valid_pretest_baseline(value: object) -> dict | None:
         return None
     if total <= 0 or total > 100 or correct < 0 or correct > total:
         return None
-    return {"correct": correct, "total": total}
+    baseline = {"correct": correct, "total": total}
+    missed = value.get("missed_ids")
+    if (total == 15 and type(value.get("route_version")) is int
+            and value["route_version"] == 1 and isinstance(missed, list)
+            and len(missed) == total - correct
+            and all(type(item) is int and 1 <= item <= total for item in missed)
+            and len(set(missed)) == len(missed)):
+        baseline.update(route_version=1, missed_ids=sorted(missed))
+    return baseline
 
 
 def _merge_pretest_baselines(blob: dict, stored: dict, provided: set[str]) -> None:
@@ -692,11 +700,18 @@ def _merge_pretest_baselines(blob: dict, stored: dict, provided: set[str]) -> No
             merged[module] = baseline
     for module_id, value in incoming.items():
         module = str(module_id).strip()
-        if module not in official or module in merged:
+        if module not in official:
             continue
         baseline = _valid_pretest_baseline(value)
         if baseline is not None:
-            merged[module] = baseline
+            previous = merged.get(module)
+            if previous is None:
+                merged[module] = baseline
+            elif ("missed_ids" not in previous and "missed_ids" in baseline
+                  and previous["correct"] == baseline["correct"]
+                  and previous["total"] == baseline["total"]):
+                # Repair a score-only sync without replacing the first score.
+                merged[module] = baseline
     if merged or "pretest_baselines" in provided:
         blob["pretest_baselines"] = merged
 

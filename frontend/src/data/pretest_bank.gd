@@ -67,6 +67,26 @@ static func route_baseline(module_id: String, baseline: Dictionary) -> Dictionar
 		result["required_lessons"] = required
 	return result
 
+## Keep the first score; only fill missing item evidence from a matching result.
+static func merge_baselines(primary: Dictionary, secondary: Dictionary) -> Dictionary:
+	var merged: Dictionary = primary.duplicate(true)
+	for module_id: String in secondary:
+		if not LESSON_MAP.has(module_id) or not secondary[module_id] is Dictionary:
+			continue
+		if not merged.has(module_id):
+			merged[module_id] = secondary[module_id].duplicate(true)
+			continue
+		if not merged[module_id] is Dictionary:
+			continue
+		var first: Dictionary = route_baseline(module_id, merged[module_id])
+		var other: Dictionary = route_baseline(module_id, secondary[module_id])
+		if first.get("correct", -1) != other.get("correct", -2) or first.get("total", -1) != other.get("total", -2):
+			continue
+		if first.route == "full" and other.route == "targeted":
+			merged[module_id] = other
+	return merged
+
+
 static var _banks: Dictionary = {}
 static var _loaded: bool = false
 

@@ -213,6 +213,9 @@ func _on_fetch_completed(
 		save_game()
 		_finish_fetch(true)
 		return
+	# An older server may return only the score. Retain this account's matching
+	# missed-item evidence rather than turning a targeted route into six lessons.
+	save_dict["pretest_baselines"] = PretestBank.merge_baselines(save_dict.get("pretest_baselines", {}), PlayerManager.pretest_baselines)
 	PlayerManager.apply_save_data(save_dict)
 	PlayerManager.note_downloaded_cloud_baseline()
 	save_game(false)
