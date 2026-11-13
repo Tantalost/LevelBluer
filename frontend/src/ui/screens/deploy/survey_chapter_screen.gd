@@ -428,7 +428,7 @@ func on_enter(args: Dictionary) -> void:
 	replay = bool(args.get("replay", false))
 	var chapter_id: String = str(args.get("chapter_id", "mod_01_ch_01"))
 	Chapter = PlayerManager.story_definition(chapter_id)
-	if Chapter == null or (chapter_id != "mod_01_ch_01" and not PlayerManager.story_unlocked(chapter_id)):
+	if Chapter == null or not PlayerManager.story_unlocked(chapter_id):
 		_active = false
 		hide()
 		return
@@ -449,6 +449,10 @@ func on_enter(args: Dictionary) -> void:
 		_phone.view_changed.connect(_refresh_app_shortcuts)
 		_phone.story_art_changed.connect(_story_art_changed)
 	state = PlayerManager.begin_story_attempt(chapter_id, replay, not _testing)
+	if state.is_empty():
+		_active = false
+		hide()
+		return
 	_active = true
 	_paused = false
 	_menu.hide()

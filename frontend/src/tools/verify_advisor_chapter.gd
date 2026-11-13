@@ -2,11 +2,35 @@ extends SceneTree
 const Case: GDScript = preload("res://src/gameplay/decision/advisor_chapter.gd")
 const Survey: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
+const TIMEOUT_SEC: float = 240.0
+const LABEL: String = "ADVISOR_CHAPTER_CHECKS"
 var failures: int = 0
 var screen: Control
+var finished: bool = false
+var script_errors: ScriptErrors = ScriptErrors.new()
+
+## Runtime script errors abort only the failing call, so they are counted as failures explicitly.
+class ScriptErrors extends Logger:
+	var count: int = 0
+	func _log_error(_function: String, _file: String, _line: int, _code: String, _rationale: String, _editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type == ERROR_TYPE_SCRIPT: count += 1
 
 func _initialize() -> void:
+	OS.add_logger(script_errors)
+	create_timer(TIMEOUT_SEC).timeout.connect(func() -> void:
+		if finished: return
+		failures += 1
+		push_error("Verifier did not finish within %d s" % int(TIMEOUT_SEC))
+		_finish())
 	_run.call_deferred()
+
+func _finish() -> void:
+	if finished: return
+	finished = true
+	OS.remove_logger(script_errors)
+	check(script_errors.count == 0, "No script errors during the run (%d)" % script_errors.count)
+	print(LABEL + " failures=" + str(failures))
+	quit(1 if failures else 0)
 
 func _process(_delta: float) -> bool:
 	if is_instance_valid(screen) and screen.is_node_ready():
@@ -18,6 +42,8 @@ func check(value: bool, message: String) -> void:
 	if not value:
 		failures += 1
 		push_error(message)
+	else:
+		print("PASS: " + message)
 
 func settle() -> void:
 	for index: int in 12: await process_frame
@@ -55,6 +81,8 @@ func _run() -> void:
 	first.completed = true
 	player.save_survey_chapter(first, false)
 	var first_record: String = JSON.stringify(player.chapter_progress[Survey.ID])
+	check(not player.story_unlocked(Case.ID), "Chapter 2 stays locked until Lesson 2 is cleared")
+	player.lesson_progress = {"mod_01":2}
 	check(player.story_unlocked(Case.ID), "Chapter 1 unlocks Chapter 2")
 	check(not player.story_unlocked("mod_01_ch_03"), "Chapter 3 remains unavailable")
 	player.owned_perks = Perks.ids(["recap","perspective","reference"])
@@ -279,5 +307,4 @@ func _run() -> void:
 	screen.queue_free()
 	await settle()
 	player.apply_save_data(original)
-	print("ADVISOR_CHAPTER_CHECKS failures=" + str(failures))
-	quit(1 if failures else 0)
+	_finish()

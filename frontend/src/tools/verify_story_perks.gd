@@ -1,13 +1,23 @@
 extends SceneTree
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
+## A GDScript runtime error aborts _run() without quitting; the watchdog turns that into a failure.
+const TIMEOUT_MSEC: int = 180000
 var failures: int = 0
 var chapter_screen: Control
+var _started_msec: int = 0
 
 func _initialize() -> void:
+	_started_msec = Time.get_ticks_msec()
 	_run.call_deferred()
 
 func _process(_delta: float) -> bool:
+	if Time.get_ticks_msec() - _started_msec > TIMEOUT_MSEC:
+		failures += 1
+		push_error("Verifier did not finish (aborted by a script error or stalled)")
+		print("STORY_PERKS_CHECKS failures=" + str(failures))
+		quit(1)
+		return true
 	if is_instance_valid(chapter_screen) and chapter_screen.is_node_ready():
 		chapter_screen._backgrounded = false
 		chapter_screen._apply_pause()
@@ -82,8 +92,14 @@ func _run() -> void:
 	var completed: Dictionary = evidence(resumed)
 	var before: int = player.credits
 	player.save_story_attempt(completed, false, false)
+	var full_clear: int = Chapter.BASE_REWARD + Chapter.STAR_IDS.size() * Chapter.STAR_CREDITS
+	check(full_clear == 175 and player.story_stars(Chapter.ID).size() == 3 and player.credits == before + full_clear, "First clear pays 100 plus three 25-credit stars (175)")
+	check(int(player.chapter_progress[Chapter.ID].reward) == Chapter.BASE_REWARD, "Assisted clear records base reward without clean bonus")
 	player.save_story_attempt(completed, false, false)
-	check(player.credits == before + 100, "Assisted clear awards base once, without clean bonus")
+	player.save_chapter(completed, Chapter.ID, false)
+	player.apply_save_data(JSON.parse_string(JSON.stringify(player.get_save_data())) as Dictionary)
+	player.save_story_attempt(completed, false, false)
+	check(player.credits == before + full_clear and player.story_stars(Chapter.ID).size() == 3, "Repeated saves and reload never re-award clear or stars")
 	check(player.perk_attempts.size() == 1 and player.perk_attempts[0].assist_status == "assisted", "Attempt ledger records assistance")
 	var original_clear: String = JSON.stringify(player.chapter_progress)
 	var replay_state: Dictionary = player.begin_survey_attempt(true, false)
@@ -93,7 +109,7 @@ func _run() -> void:
 	player.save_story_attempt(replay_state, true, false)
 	check(player.begin_survey_attempt(true, false).perk_run.uses.reference == 1, "Replay reload cannot refund assistance")
 	player.save_story_attempt(evidence(replay_state), true, false)
-	check(JSON.stringify(player.chapter_progress) == original_clear and player.credits == before + 100, "Replay never overwrites clear or awards coins")
+	check(JSON.stringify(player.chapter_progress) == original_clear and player.credits == before + full_clear, "Replay never overwrites clear or awards coins")
 	check(player.perk_attempts.size() == 2, "Replay remains in attempt ledger")
 	check(Perks.status(Chapter.clean({}).perk_run) == "unknown", "Historical missing tracking is unknown")
 	check(JSON.stringify([player.tech_ranks, player.unlocked_towers, player.mastery_matrix, player.learning_evidence]) == legacy, "Perks never modify tower ranks or assessment evidence")
@@ -105,9 +121,14 @@ func _run() -> void:
 	player.apply_save_data(player.get_save_data())
 	check(player.perk_attempts[0].assist_status == "assisted", "Legacy hint evidence survives ledger reload")
 	player.apply_save_data({})
-	var unused: Dictionary = evidence(player.begin_survey_attempt(false, false))
+	player.lesson_progress = {"mod_01":1}
+	var unused_start: Dictionary = player.begin_survey_attempt(false, false)
+	check(not unused_start.is_empty(), "Chapter 1 is unlocked after a fresh save with lesson 1 cleared")
+	var unused_before: int = player.credits
+	var unused: Dictionary = evidence(unused_start)
 	player.save_story_attempt(unused, false, false)
-	check(player.chapter_progress[Chapter.ID].reward == 125 and player.perk_attempts[0].assist_status == "unassisted", "Unassisted clear retains clean bonus and tracking")
+	check(int(player.chapter_progress[Chapter.ID].reward) == Chapter.BASE_REWARD and player.credits == unused_before + full_clear, "Unassisted clear pays the same 175 maximum; stars replace the clean bonus")
+	check(player.perk_attempts[0].assist_status == "unassisted" and int(player.perk_attempts[0].coins_awarded) == full_clear, "Unassisted tracking and ledger coins are recorded")
 	player.apply_save_data({})
 	player.credits = 400
 	player.lesson_progress = {"mod_01":1}
@@ -130,9 +151,16 @@ func _run() -> void:
 	screen._action()
 	check("perspective" in player.perk_loadout, "UI equip action works")
 	player.equip_perk("recap", false)
-	player.begin_survey_attempt(false, false)
+	var locked_attempt: Dictionary = player.begin_survey_attempt(false, false)
+	var locked_loadout: Array = locked_attempt.perk_run.loadout.duplicate()
+	var next_loadout: Array = player.perk_loadout.duplicate()
 	screen._refresh()
-	check(not screen._checkpoint().is_empty() and screen._notice.text.contains("locked"), "Resume screen locks the attempt loadout")
+	check(not screen._checkpoint().is_empty() and screen._launch.text == "CONTINUE", "Resume screen offers CONTINUE for the in-progress attempt")
+	screen._selected = "perspective"
+	screen._action()
+	screen._unequip("recap")
+	var resumed_lock: Dictionary = player.begin_survey_attempt(false, false)
+	check(player.perk_loadout == next_loadout and resumed_lock.perk_run.id == locked_attempt.perk_run.id and resumed_lock.perk_run.loadout == locked_loadout, "Resume screen locks the attempt loadout")
 	screen.on_exit()
 	screen.queue_free()
 	await settle()

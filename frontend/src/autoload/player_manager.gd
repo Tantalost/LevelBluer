@@ -293,6 +293,7 @@ func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true
 	if chapter_id == SurveyChapter.ID: _settle_survey_stars(valid, false, previous)
 	chapter_progress[chapter_id] = valid
 	if bool(valid["completed"]):
+		# Star-tracked Survey credits are settled by _settle_survey_stars.
 		if not (chapter_id == SurveyChapter.ID and valid.get("star_tracking", false)):
 			credits += int(valid["reward"])
 		_record_chapter_completion(chapter_id, valid)

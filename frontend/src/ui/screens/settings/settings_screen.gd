@@ -1,6 +1,7 @@
 extends BaseScreen
 ## Fixed account actions around a scrollable, themed settings workspace.
 const UI: Script = preload("res://src/ui/screens/intel/study_ui.gd")
+const VoicePack = preload("res://src/gameplay/decision/voice_pack.gd")
 
 @onready var _safe: MarginContainer = $SafeAreaContainer
 @onready var _back_button: Button = %BackButton
@@ -39,12 +40,20 @@ var _reduced_motion_toggle: CheckButton
 var _timer_assist_select: OptionButton
 var _text_speed_select: OptionButton
 var _feedback_button: Button
+var _voice_pack: VoicePack
+var _voice_status: Label
+var _voice_progress: Label
+var _voice_download: Button
+var _voice_cancel: Button
+var _voice_result: String = ""
+const VOICE_SCAN_BUDGET_USEC: int = 4000
 
 
 func _ready() -> void:
 	_load_font()
 	_build_music_volume()
 	_build_dialogue_toggle()
+	_build_voice_pack()
 	_build_accessibility_controls()
 	var settings_content: VBoxContainer = $SafeAreaContainer/ScreenLayout/ScrollContainer/ContentVBox
 	var handler_button: Button = UI.button("HANDLER APPEARANCE", func() -> void:
@@ -84,6 +93,7 @@ func on_enter(_args: Dictionary) -> void:
 	_apply_scale()
 	_load_ui_from_service()
 	_update_localized_text()
+	_refresh_voice_pack()
 
 
 func _load_font() -> void:
@@ -137,6 +147,99 @@ func _build_dialogue_toggle() -> void:
 		SettingsService.dialogue_blips_enabled = enabled
 		SettingsService.save_settings()
 	)
+
+func _build_voice_pack() -> void:
+	var section: VBoxContainer = %SecAudio.get_parent() as VBoxContainer
+	var panel: PanelContainer = UI.panel(section)
+	panel.name = "OfflineVoicesPanel"
+	var column: VBoxContainer = UI.column(panel, 12)
+	column.add_child(UI.label("Offline voices", 28))
+	var note: Label = UI.label("Download story voice-overs while online so they play without a connection. Nothing downloads until you tap. Wi-Fi recommended.", 24, UI.MUTED)
+	note.name = "OfflineVoicesSub"
+	column.add_child(note)
+	_voice_status = UI.label("", 24, UI.MUTED)
+	_voice_status.name = "VoiceReadinessSub"
+	column.add_child(_voice_status)
+	_voice_progress = UI.label("", 24)
+	_voice_progress.name = "VoiceProgressLabel"
+	column.add_child(_voice_progress)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	column.add_child(row)
+	_voice_download = UI.button("DOWNLOAD VOICES FOR OFFLINE USE", func() -> void: _voice_pack.start())
+	_voice_download.name = "DownloadVoicesButton"
+	_voice_download.size_flags_horizontal = SIZE_EXPAND_FILL
+	row.add_child(_voice_download)
+	_voice_cancel = UI.button("CANCEL", func() -> void: _voice_pack.cancel())
+	_voice_cancel.name = "CancelVoicesButton"
+	row.add_child(_voice_cancel)
+	set_process(false)
+	_voice_pack = VoicePack.shared() as VoicePack
+	_voice_pack.progress_changed.connect(_on_voice_progress)
+	_voice_pack.finished.connect(_on_voice_finished)
+
+func _on_voice_progress(_done: int, _total: int) -> void:
+	_refresh_voice_pack()
+
+func _on_voice_finished(failed: int, cancelled: bool) -> void:
+	var progress: Vector2i = _voice_pack.progress()
+	if cancelled:
+		_voice_result = "Download paused at %d/%d. Saved clips stay on this device; tap download to continue." % [progress.x, progress.y]
+	elif failed > 0:
+		_voice_result = "%d clip%s could not download. Check your connection and retry; story audio still streams when online." % [failed, "" if failed == 1 else "s"]
+	else:
+		_voice_result = "All voices are ready for offline use."
+	_refresh_voice_pack()
+
+## Verifies previously saved clips a few milliseconds per frame so opening Settings never stalls.
+func _process(_delta: float) -> void:
+	if VoicePack.scan(VOICE_SCAN_BUDGET_USEC):
+		set_process(false)
+	_refresh_voice_pack()
+
+## Readiness counts only clips whose cached file decodes; failed, missing or unchecked clips are not ready.
+func _refresh_voice_pack() -> void:
+	if not is_instance_valid(_voice_status):
+		return
+	var checking: int = VoicePack.unchecked().size()
+	if checking > 0 and not is_processing():
+		set_process(true)
+	var report: Dictionary[String, Dictionary] = VoicePack.readiness()
+	var lines: PackedStringArray = []
+	for name: String in report:
+		if name == "All":
+			continue
+		var entry: Dictionary = report[name]
+		if int(entry.total) == 0:
+			lines.append("%s: no voice-overs yet" % name)
+			continue
+		var line: String = "%s: %d/%d ready%s" % [name, entry.ready, entry.total, " · offline" if entry.ready == entry.total else ""]
+		if name != VoicePack.OPENING_GROUP:
+			line += " (%s)" % VoicePack.coverage_note(name)
+		lines.append(line)
+	var all: Dictionary = report["All"]
+	lines.append("%d/%d unique clips on this device · %.1f MB" % [all.ready, all.total, float(all.bytes) / 1048576.0])
+	_voice_status.text = "\n".join(lines)
+	var complete: bool = int(all.ready) == int(all.total)
+	_voice_download.visible = not _voice_pack.running
+	_voice_download.disabled = complete or checking > 0
+	_voice_download.text = "VOICES READY OFFLINE" if complete else ("RETRY FAILED DOWNLOADS" if not _voice_pack.failed.is_empty() else "DOWNLOAD VOICES FOR OFFLINE USE")
+	_voice_cancel.visible = _voice_pack.running
+	if _voice_pack.running:
+		_voice_progress.text = "Downloading %d/%d…" % [_voice_pack.progress().x, _voice_pack.progress().y]
+	elif checking > 0:
+		_voice_progress.text = "Checking saved voices… %d left" % checking
+	elif not _voice_result.is_empty():
+		_voice_progress.text = _voice_result
+	else:
+		_voice_progress.text = "" if complete else "%d clips still need a download." % (int(all.total) - int(all.ready))
+
+func _exit_tree() -> void:
+	if _voice_pack != null:
+		if _voice_pack.progress_changed.is_connected(_on_voice_progress):
+			_voice_pack.progress_changed.disconnect(_on_voice_progress)
+		if _voice_pack.finished.is_connected(_on_voice_finished):
+			_voice_pack.finished.disconnect(_on_voice_finished)
 
 
 func _build_accessibility_controls() -> void:
