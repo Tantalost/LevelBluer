@@ -3,11 +3,35 @@ const Case: GDScript = preload("res://src/gameplay/decision/payout_chapter.gd")
 const Survey: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Advisor: GDScript = preload("res://src/gameplay/decision/advisor_chapter.gd")
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
+const TIMEOUT_SEC: float = 240.0
+const LABEL: String = "PAYOUT_CHAPTER_CHECKS"
 var failures: int = 0
 var screen: Control
+var finished: bool = false
+var script_errors: ScriptErrors = ScriptErrors.new()
+
+## Runtime script errors abort only the failing call, so they are counted as failures explicitly.
+class ScriptErrors extends Logger:
+	var count: int = 0
+	func _log_error(_function: String, _file: String, _line: int, _code: String, _rationale: String, _editor_notify: bool, error_type: int, _script_backtraces: Array[ScriptBacktrace]) -> void:
+		if error_type == ERROR_TYPE_SCRIPT: count += 1
 
 func _initialize() -> void:
+	OS.add_logger(script_errors)
+	create_timer(TIMEOUT_SEC).timeout.connect(func() -> void:
+		if finished: return
+		failures += 1
+		push_error("Verifier did not finish within %d s" % int(TIMEOUT_SEC))
+		_finish())
 	_run.call_deferred()
+
+func _finish() -> void:
+	if finished: return
+	finished = true
+	OS.remove_logger(script_errors)
+	check(script_errors.count == 0, "No script errors during the run (%d)" % script_errors.count)
+	print(LABEL + " failures=" + str(failures))
+	quit(1 if failures else 0)
 
 func _process(_delta: float) -> bool:
 	if is_instance_valid(screen) and screen.is_node_ready():
@@ -19,6 +43,8 @@ func check(value: bool, message: String) -> void:
 	if not value:
 		failures += 1
 		push_error(message)
+	else:
+		print("PASS: " + message)
 
 func settle() -> void:
 	for index: int in 12: await process_frame
@@ -34,7 +60,7 @@ func _run() -> void:
 	var original: Dictionary = player.get_save_data()
 	root.get_node("AuthService")._signed_in = false
 	player.reset_to_defaults()
-	player.lesson_progress = {"mod_01":1}
+	player.lesson_progress = {"mod_01":2}
 	root.get_node("SettingsService").text_speed = "instant"
 	root.get_node("SettingsService").reduced_motion = true
 	check(player.begin_story_attempt(Case.ID, false, false).is_empty(), "Chapter 3 is gated before prior exhibits")
@@ -54,6 +80,9 @@ func _run() -> void:
 	second.sealed = true
 	second.completed = true
 	player.save_chapter(second, Advisor.ID, false)
+	check(bool(player.chapter_progress.get(Advisor.ID, {}).get("completed", false)), "Chapter 2 completes with Lesson 2 cleared")
+	check(not player.story_unlocked(Case.ID), "Chapter 3 stays locked until Lesson 3 is cleared")
+	player.lesson_progress = {"mod_01":3}
 	check(player.story_unlocked(Case.ID), "Chapter 2 unlocks The Payout")
 	check(not Case.clean({"sealed":true,"completed":true,"phase":"done"}).completed, "Malformed saves cannot fabricate completion")
 	player.owned_perks = Perks.ids(["recap","perspective"])
@@ -201,6 +230,8 @@ func _run() -> void:
 	check(screen.state.completed and player.credits == credits + 125, "Unassisted clear grants reward once")
 	screen._save()
 	check(player.credits == credits + 125, "Repeated save does not duplicate reward")
+	check(not player.story_unlocked("mod_01_ch_04"), "The Prize stays locked until Lesson 4 is cleared")
+	player.lesson_progress = {"mod_01":4}
 	check(player.story_unlocked("mod_01_ch_04"), "The Payout unlocks The Prize")
 	check(not player.story_unlocked("mod_01_ch_05"), "Chapter 5 remains unavailable")
 	var replay: Dictionary = player.begin_story_attempt(Case.ID, true, false)
@@ -215,5 +246,4 @@ func _run() -> void:
 	screen.queue_free()
 	await settle()
 	player.apply_save_data(original)
-	print("PAYOUT_CHAPTER_CHECKS failures=" + str(failures))
-	quit(1 if failures else 0)
+	_finish()
