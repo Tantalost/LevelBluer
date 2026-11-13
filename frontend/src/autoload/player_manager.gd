@@ -292,8 +292,9 @@ func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true
 	var valid: Dictionary = definition.clean(snapshot)
 	if chapter_id == SurveyChapter.ID: _settle_survey_stars(valid, false, previous)
 	chapter_progress[chapter_id] = valid
-	if bool(valid["completed"]) and not (chapter_id == SurveyChapter.ID and valid.get("star_tracking", false)):
-		credits += int(valid["reward"])
+	if bool(valid["completed"]):
+		if not (chapter_id == SurveyChapter.ID and valid.get("star_tracking", false)):
+			credits += int(valid["reward"])
 		_record_chapter_completion(chapter_id, valid)
 	if persist:
 		SaveService.save_game(true, not bool(valid["completed"]))

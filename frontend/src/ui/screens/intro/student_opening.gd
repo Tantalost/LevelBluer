@@ -11,9 +11,34 @@ const CARD: Color = Color("102040")
 const CYAN: Color = Color("4FE0D4")
 const TEXT: Color = Color("F3ECD6")
 
-## Explicit resource dependencies keep the user's labelled recordings in exports.
+## Versioned Cloudinary recordings keep original voice files out of exports.
 ## The existing opening screen owns playback; no account state or new manager.
 const VOICE_CLIPS: Dictionary[String, String] = {
+	"OPEN_V2_02_John_WhatsHappening": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_02_John_WhatsHappening.mp3",
+	"OPEN_V2_01_John_Huh": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_01_John_Huh.mp3",
+	"OPEN_V2_04_Amani_Identity": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_04_Amani_Identity.mp3",
+	"OPEN_V2_03_John_Disbelief": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_03_John_Disbelief.mp3",
+	"OPEN_V2_06_Rham_Coordinator": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_06_Rham_Coordinator.mp3",
+	"TUT_V2_01_John_Buzz": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_01_John_Buzz.mp3",
+	"OPEN_V2_05_Liza_Trust": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_05_Liza_Trust.mp3",
+	"OPEN_V2_07_Mika_Install": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_07_Mika_Install.mp3",
+	"TUT_V2_04_John_Waiting": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526416/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_04_John_Waiting.mp3",
+	"TUT_V2_03_John_Claim": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526416/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_03_John_Claim.mp3",
+	"TUT_V2_02_John_OpenMail": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526415/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_02_John_OpenMail.mp3",
+	"TUT_V2_05_John_BadEnd": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526416/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_05_John_BadEnd.mp3",
+	"TUT_V2_06_John_TryAgain": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526419/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_06_John_TryAgain.mp3",
+	"TUT_V2_10_John_Report": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526419/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_10_John_Report.mp3",
+	"TUT_V2_09_John_Sender": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526420/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_09_John_Sender.mp3",
+	"TUT_V2_07_John_Delete": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526419/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_07_John_Delete.mp3",
+	"TUT_V2_11_John_Domain": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526422/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_11_John_Domain.mp3",
+	"TUT_V2_13_John_Attachment": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526423/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_13_John_Attachment.mp3",
+	"TUT_V2_15_John_Review": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526423/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_15_John_Review.mp3",
+	"TUT_V2_12_John_Clues": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526422/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_12_John_Clues.mp3",
+	"TUT_V2_16_John_FixDomain": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526425/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_16_John_FixDomain.mp3",
+	"TUT_V2_18_John_FixAttachment": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526425/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_18_John_FixAttachment.mp3",
+	"TUT_V2_17_John_FixClues": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526425/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_17_John_FixClues.mp3",
+	"TUT_V2_19_John_FixResponse": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526426/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_19_John_FixResponse.mp3",
+	"CLOSING_MUSIC": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794511552/levelblue/opening_v2/20261112/mysterious_54s_review.mp3",
 	"GROUP_LAUGH": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978786/VillainLaugh_group.wav",
 	"INTRO_01": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978784/INTRO_01_Waking_up_John.mp3",
 	"INTRO_02": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1793978785/INTRO_02_Reaching_for_the_phone_John.mp3",
@@ -53,12 +78,27 @@ const VOICE_CLIPS: Dictionary[String, String] = {
 	"TUT_13": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026258/TUT_13_Preparing_the_exhibit_John.mp3",
 	"TUT_14": "https://res.cloudinary.com/nfd5bhkz/video/upload/v1794026260/TUT_14_Success_John.mp3",
 }
+const VOICE_TEXT: Dictionary[String, String] = {
+	"OPEN_V2_01_John_Huh": "Huh?",
+	"OPEN_V2_02_John_WhatsHappening": "What's happening?!",
+	"OPEN_V2_03_John_Disbelief": "No, no, no… this can't be happening!",
+	"OPEN_V2_04_Amani_Identity": "That's my name… but I didn't send those messages.",
+	"OPEN_V2_05_Liza_Trust": "They said they were helping me…",
+	"OPEN_V2_06_Rham_Coordinator": "That wasn't our coordinator.",
+	"OPEN_V2_07_Mika_Install": "This wasn't supposed to install anything.",
+	"TUT_V2_01_John_Buzz": "My phone is buzzing.",
+	"TUT_V2_02_John_OpenMail": "I unlock it and open Mail.",
+	"TUT_V2_03_John_Claim": "The page wants my account password. Why would anyone need that to give me a prize?",
+	"TUT_V2_05_John_BadEnd": "I submitted a password to a fake prize page. That could put my account at risk.",
+	"TUT_V2_06_John_TryAgain": "Reading the email wasn't what put my account at risk. Submitting the password was. I should have verified the request first. Let's try again.",
+	"TUT_V2_10_John_Report": "I'll build the report from what I found."
+}
 const TUTORIAL_VOICES: Dictionary = {
-	"wake":["TUT_01"], "inbox":["TUT_02"], "choice":["TUT_03","TUT_04"],
+	"wake":["TUT_01"], "inbox":["TUT_V2_01_John_Buzz"], "choice":["TUT_03","TUT_04"],
 	"inspect_intro":["TUT_05","TUT_06"], "inspect":["TUT_07"],
 	"next_issue":["TUT_08","TUT_08.1"], "sender":["TUT_09"], "notes":["TUT_11"],
-	"capture":["TUT_12"], "submit":["TUT_13"], "sealed":["TUT_14"],
-	"claim":["BRANCH_01"], "failure":["BRANCH_02"], "safe":["BRANCH_03"],
+	"capture":["TUT_12"], "submit":["TUT_V2_10_John_Report"], "sealed":["TUT_14"],
+	"claim":["TUT_V2_03_John_Claim"], "failure":["TUT_V2_05_John_BadEnd", "TUT_V2_06_John_TryAgain"], "safe":["BRANCH_03"],
 	"closing":["END_01"], "summary":["END_02"]
 }
 var _voice_cache: Dictionary[String, AudioStream] = {}
@@ -68,6 +108,17 @@ var _voice_queue: Array[String] = []
 var _voice_id: String = ""
 var _caption_voice_started: bool = false
 var _group_laugh_started: bool = false
+var _closing_loading: bool = false
+var _closing_load_time: float = 0.0
+var _closing_cue: int = -1
+var _closing_audio_started: bool = false
+const CLOSING_ART: Array[String] = ["opening_v2_john", "opening_v2_amani", "opening_v2_liza", "opening_v2_rham", "opening_v2_mika"]
+const CLOSING_VOICES: Array[String] = ["OPEN_V2_01_John_Huh", "OPEN_V2_02_John_WhatsHappening", "GROUP_LAUGH", "OPEN_V2_03_John_Disbelief", "OPEN_V2_04_Amani_Identity", "OPEN_V2_05_Liza_Trust", "OPEN_V2_06_Rham_Coordinator", "OPEN_V2_07_Mika_Install"]
+const CLOSING_CUES: Array[float] = [0.0, 1.5, 4.0, 12.0, 18.0, 24.0, 30.0, 36.0, 42.0, 47.0, 50.0]
+const CLOSING_TYPE_SECONDS: float = 2.0
+const TAKEOVER_SETTLE_SECONDS: float = 2.4
+const MEETING_FADE_SECONDS: float = 2.5
+const LAUGH_CAPTION_STAGGER: float = 0.95
 
 class Eyelids extends Control:
 	var aperture: float = 1.0:
@@ -91,6 +142,8 @@ class HiddenFigure extends Control:
 
 class CinematicEffects extends Control:
 	## Presentation-only layers; timeline values come from the owning screen.
+	const PANEL_STAGGER: float = 0.75
+	const PANEL_REVEAL_SECONDS: float = 1.0
 	var mode: String = ""
 	var time: float = 0.0
 	var reduced: bool = false
@@ -98,11 +151,31 @@ class CinematicEffects extends Control:
 	var fast_panels: Array[int] = []
 	var panel_edges: PackedFloat32Array = [0.0, 0.2177, 0.407, 0.597, 0.785, 1.0]
 	var art_rect: Rect2
+	var victims: Array[Texture2D] = []
 	func _radial(at: Vector2, radius: float, ink: Color) -> void:
 		for ring: int in range(20, 0, -1):
 			draw_circle(at, radius * ring / 20.0, Color(ink, ink.a / 10.0))
 	func _draw() -> void:
 		match mode:
+			"closing_v2":
+				if time >= 42.0:
+					draw_rect(Rect2(Vector2.ZERO, size), Color("050B18"))
+					for i: int in victims.size():
+						var target: Rect2 = Rect2(size.x * i / 5.0, 0, size.x / 5.0, size.y)
+						var progress: float = 1.0 if reduced else smoothstep(0.0, PANEL_REVEAL_SECONDS, time - 42.0 - i * PANEL_STAGGER)
+						if progress <= 0.0:
+							continue
+						var revealed: Rect2 = Rect2(target.position, Vector2(target.size.x * progress, target.size.y))
+						var tex: Texture2D = victims[i]
+						if tex == null:
+							draw_rect(revealed, Color("102040"))
+							continue
+						var crop_size: Vector2 = target.size / maxf(target.size.x / tex.get_width(), target.size.y / tex.get_height())
+						var focus: float = [0.68, 0.68, 0.54, 0.43, 0.32][i]
+						var origin: Vector2 = Vector2(clampf(tex.get_width() * focus - crop_size.x * 0.5, 0.0, tex.get_width() - crop_size.x), 0.0)
+						# Crop the reveal rather than compressing the portrait into a growing panel.
+						draw_texture_rect_region(tex, revealed, Rect2(origin, Vector2(crop_size.x * progress, crop_size.y)), Color(1, 1, 1, progress))
+						draw_line(target.position, target.position + Vector2(0, size.y), Color(0.02, 0.04, 0.09, progress), 3.0)
 			"takeover":
 				var origin: Vector2 = art_rect.position + art_rect.size * Vector2(0.50, 0.52)
 				if time >= 0.6 and time < 1.8:
@@ -325,6 +398,10 @@ func on_enter(args: Dictionary) -> void:
 	state = PlayerManager.onboarding_state.duplicate(true) if not replay else {}
 	var old_version: int = int(state.get("version", 1))
 	_migrate_art_sequence(state)
+	if old_version < 7:
+		state["intro_index"] = mini(int(state.get("intro_index", 0)), 5)
+		for cursor: Dictionary in state.get("history", []):
+			cursor["intro_index"] = mini(int(cursor.get("intro_index", 0)), 5)
 	if old_version < 5 and not state.is_empty():
 		# Old click-to-save evidence does not satisfy the hands-on activities.
 		state["step"] = "wake"
@@ -642,6 +719,8 @@ func _next_voice() -> void:
 		_stop_voice()
 		return
 	_voice_id = _voice_queue.pop_front()
+	if VOICE_TEXT.has(_voice_id) and part == "tutorial":
+		_show_voice_caption(_voice_id)
 	if _voice_cache.has(_voice_id):
 		_start_voice_stream(_voice_cache[_voice_id])
 	else:
@@ -690,7 +769,12 @@ func _voice_path(id: String) -> String:
 
 func _start_voice_stream(stream: AudioStream) -> void:
 	var offset: float = 0.0
-	if _cinematic_active and _voice_id in ["GROUP_LAUGH", "INTRO_09"]:
+	if _cinematic_active and _cinematic_mode == "closing_v2" and _voice_id in CLOSING_VOICES:
+		offset = maxf(0.0, _cinematic_time - CLOSING_CUES[CLOSING_VOICES.find(_voice_id)])
+		if offset >= stream.get_length():
+			_next_voice()
+			return
+	elif _cinematic_active and _voice_id in ["GROUP_LAUGH", "INTRO_09"]:
 		var cue_time: float = 0.9 if _voice_id == "GROUP_LAUGH" else 1.2
 		offset = maxf(0.0, _cinematic_time - cue_time)
 		if offset >= stream.get_length():
@@ -731,6 +815,20 @@ func _practice_voice(id: String, source: Control) -> void:
 	_play_voice([id])
 
 
+func _show_voice_caption(id: String) -> void:
+	if step == "failure" and is_instance_valid(_thought_label):
+		_thought_label.text = VOICE_TEXT[id]
+		return
+	if _typing != null and _typing.is_valid():
+		_typing.kill()
+	_typing = null
+	_typed_labels.clear()
+	UI.clear(_dialogue_copy)
+	_dialogue_copy.add_child(UI.label(VOICE_TEXT[id], 28, TEXT))
+	_dialogue_ready = true
+	_update_advance_prompt()
+
+
 func _narrate(title: String, body: String, speaker: String = "") -> void:
 	var caption: String = title if speaker.is_empty() else speaker + "  /  " + title
 	_speaker_label.text = caption
@@ -759,6 +857,10 @@ func _refresh_art(_success: bool) -> void:
 	_scene_art.texture = AssetManager.get_texture(_art_id)
 	if is_instance_valid(_effects):
 		_effects.texture = _scene_art.texture
+		if _cinematic_mode == "closing_v2":
+			_effects.victims.clear()
+			for id: String in CLOSING_ART:
+				_effects.victims.append(AssetManager.get_texture(id))
 		_effects.queue_redraw()
 	var descriptions: Dictionary[String, String] = {
 		"opening_john_room_wake_v1": "Morning light fills John's room.",
@@ -766,7 +868,12 @@ func _refresh_art(_success: bool) -> void:
 		"opening_john_claim_prize_v1": "John taps Claim Prize before checking the offer.",
 		"opening_john_got_you_v1": "The phone turns red. Got You.",
 		"opening_collector_meeting_v2": "Four masked scammers. Four lights. An empty chair in shadow.",
-		"opening_five_victims_john_v4": "Five people. Five traps. Shock, confusion, tears, anger and sadness."
+		"opening_five_victims_john_v4": "Five people. Five traps. Shock, confusion, tears, anger and sadness.",
+		"opening_v2_john": "John stares at his phone in disbelief after the prize trap.",
+		"opening_v2_amani": "Amani has no phone signal. Messages appear under her identity.",
+		"opening_v2_liza": "Liza sees a wallet security alert during the supposed support call.",
+		"opening_v2_rham": "Sir Rham discovers the supposed school coordinator was false.",
+		"opening_v2_mika": "Mika's event-file offer asks to install something unexpected."
 	}
 	_art_fallback.text = descriptions.get(_art_id, "Opening scene") + "\n\nScene art unavailable. Connect and reload to download it."
 	_art_fallback.visible = _scene_art.texture == null
@@ -873,7 +980,10 @@ func _position_advance() -> void:
 func _render_intro() -> void:
 	var beat: Dictionary = _intro()[intro_index] as Dictionary
 	var visual: String = str(beat.get("visual", "phone"))
-	if visual in ["takeover", "meeting", "montage", "closing"]:
+	if visual == "closing_v2":
+		_advance_action = advance
+		_prepare_closing()
+	elif visual in ["takeover", "meeting", "montage", "closing"]:
 		_advance_action = advance
 		_start_cinematic(beat)
 	else:
@@ -988,6 +1098,121 @@ func _build_cinematic_layer() -> void:
 	_cinematic.hide()
 
 
+func _prepare_closing() -> void:
+	_cinematic_active = true
+	_cinematic_busy = true
+	_cinematic_mode = "closing_v2"
+	_cinematic_duration = 54.0
+	_cinematic_time = 0.0
+	_closing_loading = true
+	_closing_load_time = 0.0
+	_closing_cue = -1
+	_cinematic.show()
+	_dialogue.hide()
+	_show_room("opening_john_claim_prize_v1")
+	_stop_motion()
+	_closing_caption.text = "Preparing the scene…"
+	_closing_caption.offset_top = 0.0
+	_closing_caption.visible_characters = -1
+	_closing_caption.modulate.a = 1.0
+	_black_fade.modulate.a = 0.45
+	_effects.mode = "closing_v2"
+	_effects.time = 0.0
+	_effects.victims.clear()
+	for id: String in CLOSING_ART:
+		_effects.victims.append(AssetManager.get_texture(id))
+	_effects.show()
+	for id: String in CLOSING_VOICES:
+		_fetch_voice(id)
+	_fetch_voice("CLOSING_MUSIC")
+
+
+func _begin_closing() -> void:
+	if _leaving or not _closing_loading:
+		return
+	_closing_loading = false
+	AudioManager.cut_opening_audio(self)
+	if _voice_cache.has("CLOSING_MUSIC"):
+		_closing_audio_started = true
+		AudioManager.play_opening_music(self, _voice_cache["CLOSING_MUSIC"])
+	_closing_frame(0.0)
+	_cinematic_tween = create_tween()
+	_cinematic_tween.tween_method(_cinematic_frame, 0.0, _cinematic_duration, _cinematic_duration)
+	_cinematic_tween.tween_callback(_finish_cinematic_visual)
+
+
+func _closing_frame(time: float) -> void:
+	_effects.reduced = SettingsService.reduced_motion
+	var cue: int = 0
+	for i: int in CLOSING_CUES.size():
+		if time >= CLOSING_CUES[i]:
+			cue = i
+	if cue != _closing_cue:
+		_closing_cue = cue
+		_stop_voice()
+		_scene_art.show()
+		_closing_caption.text = ""
+		_closing_caption.visible_characters = -1
+		for laugh: Label in _laugh_captions:
+			laugh.hide()
+		if cue < CLOSING_VOICES.size():
+			var voice_id: String = CLOSING_VOICES[cue]
+			_closing_caption.text = VOICE_TEXT.get(voice_id, "")
+			# A missed download stays caption-only; never start half a spoken line late.
+			if _voice_cache.has(voice_id):
+				_play_voice([voice_id])
+		if cue == 0:
+			_set_art("opening_john_claim_prize_v1")
+		elif cue == 1:
+			_set_art("opening_john_got_you_v1")
+		elif cue == 2:
+			_set_art("opening_collector_meeting_v2")
+			_position_laugh_captions()
+		elif cue >= 3 and cue <= 7:
+			_set_art(CLOSING_ART[cue - 3])
+		else:
+			_scene_art.hide()
+			_art_fallback.hide()
+			if cue == 9:
+				_closing_caption.text = "And this is how it began…"
+			elif cue == 10:
+				_closing_caption.text = "Never Trust, always verify."
+	_effects.time = time
+	_effects.queue_redraw()
+	_closing_caption.modulate.a = 1.0
+	_closing_caption.offset_top = size.y * 0.65 if cue < 8 else 0.0
+	_closing_caption.offset_bottom = -22.0
+	_closing_caption.visible_characters = -1
+	if cue >= 9 and not SettingsService.reduced_motion and SettingsService.text_speed != "instant":
+		var typed: float = clampf((time - CLOSING_CUES[cue]) / CLOSING_TYPE_SECONDS, 0.0, 1.0)
+		_closing_caption.visible_characters = int(_closing_caption.text.length() * typed)
+	_black_fade.modulate.a = 0.5 if cue >= 9 else 0.0
+	_red_wash.modulate.a = 0.0
+	_scene_art.scale = Vector2.ONE
+	_scene_art.position = Vector2.ZERO
+	if cue <= 1:
+		# One sustained red surge around the phone reveal, without flashing.
+		var surge: float = smoothstep(0.2, CLOSING_CUES[1], time) * (1.0 - smoothstep(CLOSING_CUES[1], TAKEOVER_SETTLE_SECONDS, time))
+		_red_wash.modulate.a = surge * (0.28 if SettingsService.reduced_motion else 0.65)
+		if not SettingsService.reduced_motion:
+			_scene_art.pivot_offset = size * 0.5
+			_scene_art.scale = Vector2.ONE * (1.0 + surge * 0.04)
+			_scene_art.position = Vector2(sin(time * 43.0), cos(time * 37.0)) * minf(size.y * 0.012, 8.0) * surge
+	elif cue == 2:
+		var meeting_time: float = time - CLOSING_CUES[2]
+		_black_fade.modulate.a = 0.0 if SettingsService.reduced_motion else 1.0 - smoothstep(0.0, MEETING_FADE_SECONDS, meeting_time)
+		_position_laugh_captions()
+		for i: int in 4:
+			var laugh: Label = _laugh_captions[i]
+			var appearance: float = smoothstep(0.0, 0.5, meeting_time - 0.65 - i * LAUGH_CAPTION_STAGGER)
+			laugh.visible = appearance > 0.0
+			laugh.modulate.a = 1.0 if SettingsService.reduced_motion else appearance
+			laugh.scale = Vector2.ONE if SettingsService.reduced_motion else Vector2.ONE * lerpf(0.92, 1.0, appearance)
+	if not SettingsService.reduced_motion and cue >= 3 and cue <= 7:
+		_scene_art.pivot_offset = size * 0.5
+		_scene_art.scale = Vector2.ONE * lerpf(1.0, 1.035, clampf((time - CLOSING_CUES[cue]) / 6.0, 0.0, 1.0))
+
+
 func _start_cinematic(beat: Dictionary) -> void:
 	_cinematic_active = true
 	_cinematic_busy = true
@@ -1031,6 +1256,9 @@ func _start_cinematic(beat: Dictionary) -> void:
 
 func _cinematic_frame(time: float) -> void:
 	_cinematic_time = time
+	if _cinematic_mode == "closing_v2":
+		_closing_frame(time)
+		return
 	_effects.time = time
 	_effects.reduced = SettingsService.reduced_motion
 	var reduced: bool = SettingsService.reduced_motion
@@ -1082,7 +1310,16 @@ func _cinematic_frame(time: float) -> void:
 	_effects.queue_redraw()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if _closing_loading and not _leaving and not _menu.visible and not _cinematic_focus_lost and not _cinematic_app_paused:
+		_closing_load_time += delta
+		var ready: bool = _voice_cache.has("CLOSING_MUSIC")
+		for id: String in CLOSING_VOICES:
+			ready = ready and _voice_cache.has(id)
+		for id: String in CLOSING_ART:
+			ready = ready and AssetManager.get_texture(id) != null
+		if ready or _closing_load_time >= 8.0:
+			_begin_closing()
 	if _glitch_until >= 0 and Engine.get_process_frames() >= _glitch_until:
 		_scene_art.material = null
 		_glitch_until = -1
@@ -1132,6 +1369,11 @@ func _finish_cinematic_visual() -> void:
 
 
 func _stop_cinematic() -> void:
+	if _cinematic_mode == "closing_v2":
+		AudioManager.cut_opening_audio(self)
+	_closing_loading = false
+	_closing_cue = -1
+	_closing_audio_started = false
 	if _cinematic_tween != null and _cinematic_tween.is_valid():
 		_cinematic_tween.kill()
 	_cinematic_tween = null
@@ -1183,11 +1425,20 @@ func _practice_phone(mode: String) -> void:
 	_phone_view.thought_requested.connect(_practice_thought.bind(_phone_view))
 	_phone_view.voice_requested.connect(_practice_voice.bind(_phone_view))
 	_phone_view.message_read.connect(_practice_message_read.bind(_phone_view))
+	_phone_view.phone_unlocked.connect(_practice_unlocked.bind(_phone_view))
 	_phone_view.open_phone()
 	if mode == "notes":
 		_phone_view.show_notes_home()
 	elif mode != "read":
 		_phone_view.show_open_message()
+	if mode == "read" and step == "inbox":
+		_fetch_voice("TUT_V2_02_John_OpenMail")
+
+
+func _practice_unlocked(source: Control) -> void:
+	if source != _phone_view or part != "tutorial" or step != "inbox" or _leaving or _menu.visible:
+		return
+	_play_voice(["TUT_V2_02_John_OpenMail"])
 
 
 func _practice_message_read(source: Control) -> void:
@@ -1294,9 +1545,20 @@ func _render_tutorial() -> void:
 		"claim", "inspect", "sender", "notes", "capture", "submit": _practice_phone(step)
 		"safe": _practice_phone("deleted")
 		"failure":
-			_set_art("opening_john_got_you_v1")
+			_art_id = ""
+			_scene_art.hide()
+			_art_fallback.hide()
+			AudioManager.cut_opening_audio(self)
+			var ending: VBoxContainer = _overlay_column(true, false, true)
+			_overlay_label(ending, "BAD END", false, Color("FF5C5C"))
+			_overlay_label(ending, "GOT YOU", true, Color("FF5C5C"))
+			_thought_label = _overlay_label(ending, str(copy["text"]))
+			_thought_label.name = "BadEndExplanation"
+			var again: Button = _overlay_button(ending, _text("retry"), retry)
+			again.name = "BadEndRetry"
+			again.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			again.custom_minimum_size.x = 220.0
 			AudioManager.play_sfx("ui_error")
-			_add_button(_footer, "retry", retry, true)
 		"sealed":
 			AudioManager.play_sfx("ui_success")
 			_advance_action = func() -> void: go("closing")
@@ -1327,7 +1589,7 @@ func _clear_practice_layer() -> void:
 	_dialogue.z_index = 0
 
 
-func _overlay_column(blur: bool = true, event: bool = false) -> VBoxContainer:
+func _overlay_column(blur: bool = true, event: bool = false, blackout: bool = false) -> VBoxContainer:
 	_clear_practice_layer()
 	_event_layout = event
 	_practice_layer = Control.new()
@@ -1339,10 +1601,10 @@ func _overlay_column(blur: bool = true, event: bool = false) -> VBoxContainer:
 		_dialogue.hide()
 		if is_instance_valid(_phone_view): _phone_view.set_locked(true)
 		var shade: ColorRect = ColorRect.new()
-		shade.color = Color(0.02, 0.04, 0.09, 0.82)
+		shade.color = Color.BLACK if blackout else Color(0.02, 0.04, 0.09, 0.82)
 		_practice_layer.add_child(shade)
 		shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		if not SettingsService.reduced_motion:
+		if not blackout and not SettingsService.reduced_motion:
 			var shader: Shader = Shader.new()
 			shader.code = "shader_type canvas_item; uniform sampler2D scene_tex : hint_screen_texture, filter_linear_mipmap; void fragment(){ vec3 c = textureLod(scene_tex, SCREEN_UV, 2.5).rgb; COLOR = vec4(mix(c, vec3(0.02,0.04,0.09),0.65),1.0); }"
 			var material: ShaderMaterial = ShaderMaterial.new()
@@ -1390,13 +1652,13 @@ func _overlay_column(blur: bool = true, event: bool = false) -> VBoxContainer:
 	panel.name = "PracticeOverlayCard"
 	panel.custom_minimum_size.x = size.x * (0.65 if blur else 0.43)
 	var style: StyleBoxFlat = UI.box(PANEL if blur else Color("F3ECD6"), Color("FFB648") if blur else CYAN, 20)
-	if event:
+	if event or blackout:
 		style.bg_color = Color.TRANSPARENT
 		style.border_color = Color.TRANSPARENT
 		style.shadow_size = 0
 		style.set_content_margin_all(0)
 	style.set_corner_radius_all(18 if not blur else 8)
-	style.set_border_width_all(2)
+	style.set_border_width_all(0 if blackout else 2)
 	panel.add_theme_stylebox_override("panel", style)
 	if not blur:
 		var tail_host: Control = Control.new()
@@ -2069,6 +2331,8 @@ func _stop_motion() -> void:
 
 
 func _settings_changed() -> void:
+	if _cinematic_mode == "closing_v2" and _closing_audio_started:
+		AudioManager.play_opening_music(self, _voice_cache["CLOSING_MUSIC"], _cinematic_time)
 	if is_instance_valid(_celebration):
 		_celebration.reduced = SettingsService.reduced_motion
 		_celebration.queue_redraw()

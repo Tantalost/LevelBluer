@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "room_art": "opening_john_room_wake_v1",
   "after_intro": "tutorial",
   "cast": {
@@ -7,8 +7,8 @@
     "collector": "The Collector",
     "amani": "Amani",
     "liza": "Liza",
-    "staff": "[Staff member — name pending]",
-    "classmate": "[Classmate — name pending]"
+    "staff": "Sir Rham",
+    "classmate": "Mika"
   },
   "message": {
     "channel": "email",
@@ -27,16 +27,13 @@
     {"id": "prize", "title": "A new email", "speaker": "player", "text": "I unlock my phone. A message from Prize Desk is waiting for me.", "visual": "phone"},
     {"id": "tap", "title": "One tempting promise", "speaker": "player", "text": "I open the message. It asks me to follow a link and confirm my account password to claim the prize.", "visual": "phone", "opened": true},
     {"id": "claim", "title": "What if it is real?", "speaker": "player", "text": "A million pesos. For a moment, I imagine it. Before checking who sent the offer, I tap Claim Prize.", "visual": "room", "art_path": "opening_john_claim_prize_v1"},
-    {"id": "hit", "visual": "takeover", "art_path": "opening_john_claim_prize_v1", "reveal_art": "opening_john_got_you_v1"},
-    {"id": "collector", "visual": "meeting", "art_path": "opening_collector_meeting_v2"},
-    {"id": "victims", "visual": "montage", "art_path": "opening_five_victims_john_v4"},
-    {"id": "turn", "visual": "closing", "caption": "And this is how it began…", "art_path": "opening_five_victims_john_v4"}
+    {"id": "closing_v2", "visual": "closing_v2", "art_path": "opening_john_claim_prize_v1"}
   ],
   "panels": {
     "amani": {"character": "amani", "emotion": "Confused", "caption": "Her phone has no signal. Her friends receive messages that appear to be hers. Someone is using the trust attached to her identity.", "art_path": "res://assets/story/comic_panel_amani_placeholder.svg"},
-    "liza": {"character": "liza", "emotion": "Crying", "caption": "A familiar voice asked for a payment. It went to the wrong account. The attacker used a voice she had reason to recognize.", "art_path": "res://assets/story/comic_panel_liza_placeholder.svg"},
-    "staff": {"character": "staff", "emotion": "Angry", "caption": "Her name approved a request for a confidential student list. She never approved it. The attacker borrowed her authority.", "art_path": "res://assets/story/comic_panel_staff_placeholder.svg"},
-    "classmate": {"character": "classmate", "emotion": "Sad", "caption": "A free offer led to lost account access. The attacker turned something appealing into a request for something private.", "art_path": "res://assets/story/comic_panel_classmate_placeholder.svg"}
+    "liza": {"character": "liza", "emotion": "Worried", "caption": "They said they were helping me…", "art_path": "opening_v2_liza"},
+    "staff": {"character": "staff", "emotion": "Doubt", "caption": "That wasn't our coordinator.", "art_path": "opening_v2_rham"},
+    "classmate": {"character": "classmate", "emotion": "Surprised", "caption": "This wasn't supposed to install anything.", "art_path": "opening_v2_mika"}
   },
   "clues": [
     {"id": "sender", "title": "Who sent it?", "value": "Prize Desk • awards@prize-claim.example", "note": "The display name sounds official, but this address does not independently establish who is offering a prize."},
@@ -46,18 +43,18 @@
   ],
   "tutorial": {
     "wake": {"title": "That morning, again", "text": "That message again. A million pesos… but why would they choose me? This time, I can stop and look."},
-    "inbox": {"title": "One unread message", "text": "My phone is buzzing. I unlock it and open Mail. Reading an email is not the same as trusting its link."},
+    "inbox": {"title": "One unread message", "text": "My phone is buzzing."},
     "choice": {"title": "Before I act", "text": "The offer sounds tempting. Do I claim it, delete it, or find out what this message is really asking for?"},
     "inspect_intro": {"title": "A closer look", "text": "Before I do anything, I'll look at what this message is asking me to believe—and what it wants me to do."},
     "next_issue": {"title": "One more thing", "text": "I've noticed the promises and the pressure. Now I'll check who actually sent this message."},
     "sender": {"title": "Who is behind the name?", "text": "Prize Desk sounds official, but a name is easy to copy. I will open the sender's full address."},
     "notes": {"title": "A note to remember", "text": "I'll open Notepad and record the sender's domain. If I forget it, I can go back to Mail and check."},
-    "claim": {"title": "A prize with a price", "text": "The page wants my account password. Why would anyone need that to give me a prize? No real password belongs here."},
-    "failure": {"title": "The secret was the target", "text": "In this imagined ending, I gave the fake page a password. That could let an attacker access my account. Opening the email alone did not cause it. The deception was theirs; I can rewind and choose differently."},
+    "claim": {"title": "A prize with a price", "text": "The page wants my account password. Why would anyone need that to give me a prize?"},
+    "failure": {"title": "The secret was the target", "text": "I submitted a password to a fake prize page. That could put my account at risk."},
     "safe": {"title": "No prize, no risk taken", "text": "I deleted the request without sharing anything. That was a safe choice. But what did I miss? I can revisit a practice copy and investigate—or leave for now."},
     "inspect": {"title": "Look closer", "text": "What is the offer, why the rush, and what secret do they want? I will mark the clues and read the full sender address."},
     "capture": {"title": "Keep the context", "text": "Drag the frame; its blue corner resizes. Keep the sender, subject and request together. TOOLS offers tap controls and Capture."},
-    "submit": {"title": "Build the exhibit", "text": "The message, the sender's domain, and my warning signs belong together. This is the practice desk: sending here stays inside the game."},
+    "submit": {"title": "Build the exhibit", "text": "I'll build the report from what I found."},
     "sealed": {"title": "Practice exhibit sealed", "text": "I kept my password private and preserved the evidence. I know what made this request unsafe—not just which button to press."},
     "closing": {"title": "A different morning", "text": "If only John had thought of this before…"},
     "summary": {"title": "TUTORIAL COMPLETE", "text": "You examined a request, recorded its sender, captured the context and sealed a practice exhibit. Your next story is still ahead. This tutorial awards no coins or mastery."}

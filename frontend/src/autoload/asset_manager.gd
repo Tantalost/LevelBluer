@@ -542,6 +542,13 @@ func _map_environment_catalog() -> Array[Dictionary]:
 
 func _ui_catalog() -> Array[Dictionary]:
 	return [
+		_catalog_entry("opening_v2_john", "Opening / john", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511459/levelblue/opening_v2/20261112/john_distress_v1.png"),
+		_catalog_entry("opening_v2_amani", "Opening / amani", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511470/levelblue/opening_v2/20261112/amani_identity_v2.png"),
+		_catalog_entry("opening_v2_liza", "Opening / liza", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511484/levelblue/opening_v2/20261112/liza_security_v1.png"),
+		_catalog_entry("opening_v2_rham", "Opening / rham", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511498/levelblue/opening_v2/20261112/rham_coordinator_v1.png"),
+		_catalog_entry("opening_v2_mika", "Opening / mika", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511509/levelblue/opening_v2/20261112/mika_event_file_v1.png"),
+		_catalog_entry("opening_v2_waiting", "Opening / waiting", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511519/levelblue/opening_v2/20261112/john_waiting_v1.png"),
+		_catalog_entry("opening_v2_delete", "Opening / delete", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511529/levelblue/opening_v2/20261112/john_delete_v1.png"),
 		_catalog_entry("module1_email_tricks_title_v1", "Module 1 / Email Tricks cinematic title", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792510294/module1_email_tricks_john_personal_v1.png"),
 		_catalog_entry("opening_john_got_you_v1", "Opening / john got you", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_got_you_v1.png"),
 		_catalog_entry("opening_john_reaching_phone_v1", "Opening / john reaching phone", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_reaching_phone_v1.png"),

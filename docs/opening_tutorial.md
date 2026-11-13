@@ -1,5 +1,172 @@
 # Opening and phone tutorial — implementation handoff
 
+## Intro, tutorial and event music redesign — 13 November 2026
+
+**Active work: supplied voice integration and synchronized intro review.** Following media review, the user supplied 24 recordings and requested their integration. Seven intro reactions and six compatible tutorial recordings are connected; eleven recordings are hosted and reserved for their matching branch/report interactions. This does not close the wider event-music milestone or implement the later interactive tutorial/report milestones. Dated entries below are historical where superseded by this section.
+
+### Supplied recordings integrated — 13 November 2026
+
+All 24 original recordings are hosted in Cloudinary under `levelblue/opening_v2/20261113/voice/Intro` and `/Tutorial`. No recording was sent to ElevenLabs or another transcription provider. Caption wording was checked locally; the shortened report introduction uses only the words supplied. Original and Godot-downloaded bytes matched SHA-256 before the bundled files and import sidecars were moved to the ignored local working archive.
+
+The intentionally omitted OPEN_V2_08/09, TUT_V2_08 and TUT_V2_14 remain text-only when their corresponding scenes are used. No replacement voices were generated. Reserved recordings must not play directions for interactions that do not yet exist: the current Delete and sender screens retain their compatible existing narration until milestone 3 replaces those interactions.
+
+| Recording | Duration | Connected now / reserved |
+| --- | --- | --- |
+| [OPEN_V2_01_John_Huh](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_01_John_Huh.mp3) | 0.99 s | Connected |
+| [OPEN_V2_02_John_WhatsHappening](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_02_John_WhatsHappening.mp3) | 1.49 s | Connected |
+| [OPEN_V2_03_John_Disbelief](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_03_John_Disbelief.mp3) | 3.87 s | Connected |
+| [OPEN_V2_04_Amani_Identity](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526410/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_04_Amani_Identity.mp3) | 3.79 s | Connected |
+| [OPEN_V2_05_Liza_Trust](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_05_Liza_Trust.mp3) | 2.85 s | Connected |
+| [OPEN_V2_06_Rham_Coordinator](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_06_Rham_Coordinator.mp3) | 2.19 s | Connected |
+| [OPEN_V2_07_Mika_Install](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Intro/OPEN_V2_07_Mika_Install.mp3) | 3.16 s | Connected |
+| [TUT_V2_01_John_Buzz](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526413/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_01_John_Buzz.mp3) | 2.12 s | Connected |
+| [TUT_V2_02_John_OpenMail](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526415/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_02_John_OpenMail.mp3) | 2.85 s | Connected |
+| [TUT_V2_03_John_Claim](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526416/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_03_John_Claim.mp3) | 5.64 s | Connected |
+| [TUT_V2_04_John_Waiting](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526416/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_04_John_Waiting.mp3) | 1.88 s | Reserved for matching branch/report step |
+| [TUT_V2_05_John_BadEnd](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526416/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_05_John_BadEnd.mp3) | 5.96 s | Connected |
+| [TUT_V2_06_John_TryAgain](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526419/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_06_John_TryAgain.mp3) | 10.76 s | Connected |
+| [TUT_V2_07_John_Delete](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526419/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_07_John_Delete.mp3) | 10.92 s | Reserved for matching branch/report step |
+| [TUT_V2_09_John_Sender](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526420/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_09_John_Sender.mp3) | 9.40 s | Reserved for matching branch/report step |
+| [TUT_V2_10_John_Report](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526419/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_10_John_Report.mp3) | 2.77 s | Connected |
+| [TUT_V2_11_John_Domain](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526422/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_11_John_Domain.mp3) | 5.25 s | Reserved for matching branch/report step |
+| [TUT_V2_12_John_Clues](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526422/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_12_John_Clues.mp3) | 5.33 s | Reserved for matching branch/report step |
+| [TUT_V2_13_John_Attachment](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526423/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_13_John_Attachment.mp3) | 4.75 s | Reserved for matching branch/report step |
+| [TUT_V2_15_John_Review](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526423/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_15_John_Review.mp3) | 3.08 s | Reserved for matching branch/report step |
+| [TUT_V2_16_John_FixDomain](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526425/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_16_John_FixDomain.mp3) | 6.53 s | Reserved for matching branch/report step |
+| [TUT_V2_17_John_FixClues](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526425/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_17_John_FixClues.mp3) | 6.35 s | Reserved for matching branch/report step |
+| [TUT_V2_18_John_FixAttachment](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526425/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_18_John_FixAttachment.mp3) | 5.07 s | Reserved for matching branch/report step |
+| [TUT_V2_19_John_FixResponse](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794526426/levelblue/opening_v2/20261113/voice/Tutorial/TUT_V2_19_John_FixResponse.mp3) | 5.80 s | Reserved for matching branch/report step |
+
+The closing sequence has one 54-second timeline: Huh at 0 s; phone takeover at 1.5 s; group laughter at 4 s; John/Amani/Liza/Sir Rham/Mika at 12/18/24/30/36 s; all five at 42 s; “And this is how it began…” at 47 s; “Never Trust, always verify.” at 50 s through the musical ending. Recordings play at their natural speed. The 54-second music edit includes its two-second entrance fade; dialogue and laughter lower the existing BGM bus to 28% of its selected volume. The existing two-deck manager owns playback and pause, with no additional manager.
+
+The tutorial now plays “My phone is buzzing” before unlock and “I unlock it and open Mail” on the phone's unlock signal. Reading the message remains necessary before advancing. The old combined recording and its removed sentence do not play. Claim, consequence/explanation, and report introduction use the new recordings. No keyboard, branch outcome, report-grading, reward or BKT rules change in this integration slice.
+
+All required closing media are prefetched before the timeline starts. After an eight-second unsuccessful preparation, readable captions and scene descriptions keep onboarding usable; Skip remains available and replay can fetch missing media again. Late image synchronization refreshes the montage. Old intro cursors/history are clamped to the replacement closing sequence under snapshot version 7; completed accounts remain completed.
+
+Validation: 24 hosted recordings passed real Godot download/decode/play/pause/end checks. The integration fixture passed 76 checks, including cue/art selection, menu pause, simulated app background/resume, mute/unmute position, offline fallback, skip, and unchanged account/mastery/reward data in replay. The existing tutorial practice regression passed with zero failures. Rendered inspection covered 844×390 and 720×360; all five faces and the long victim caption remain visible. Physical-device speaker balance, actual Android lifecycle behavior and user listening approval remain pending. Verification scripts, media originals and rendering artifacts remain ignored and outside export/commit scope.
+
+Android review build: `builds/android/levelblue-mobile-voice-test-2026-11-13.apk` (73,618,226 bytes; SHA-256 `7672391f1349dd745eaf23b398eed44a1ca14718946be54cc58035fa4383a716`). Godot export, APK v2/v3 signatures, 16 KB alignment and packaged v7 intro checks passed. No supplied voice originals, developer checks or media working files are bundled. Install over the previous LEVELBLUE Dev build to retain local progress. Device installation is not yet verified.
+
+### Intro presentation follow-up
+
+The five-character montage now reveals left to right between 42 and 46 seconds. Each portrait uses a one-second eased crop/fade with a 0.75-second stagger, keeping faces at their original proportions. Both closing captions type over two seconds at their existing 47/50-second cues, leaving reading time before the 54-second musical ending. These effects use the existing timeline, so Menu/background pause and Skip affect them together with the score. Reduced Motion shows complete panels and captions immediately; Instant Text also bypasses typing. The intro score gain is now 0.85, with existing dialogue/laughter ducking retained.
+
+The Huh-to-Got-You transition now builds a single red wash and bounded camera shake before the 1.5-second reveal, settling by 2.4 seconds. Image overscan keeps shaking from exposing empty edges. At 4 seconds the masked group starts behind black and fades in over 2.5 seconds. Four HAHAHAHA captions enter successively, beginning 0.65 seconds into the group shot with a 0.95-second stagger. Existing group laughter, victim cues and the 54-second ending remain on the same timeline. Reduced Motion uses a restrained stationary red wash and immediate group image, with stationary sequential captions.
+
+The expanded integration check passes 102 checks, including rendered partial/full reveals, typing boundaries, takeover shake/red wash, staged laughter, pause and accessibility preferences. Screenshots were inspected at 844×390. The APK linked above predates this presentation follow-up and the music-gain adjustment; it has not been rebuilt for these changes.
+
+### Tutorial Bad End presentation correction
+
+The current Claim failure state now uses the existing practice overlay with an opaque black backdrop, red BAD END / GOT YOU titles, centered narration beneath them and a centered Try Again action. The full-screen phone artwork and bottom dialogue strip are hidden, so neither obscures the ending. The two supplied consequence recordings update the explanation in place. Calm music stops on entry; Try Again uses the existing decision route and cleanup. This is a presentation correction, not completion of the later fictional keyboard or illustrated branch sequences.
+
+The current integration suite passes 108 checks. Bad End was rendered at 720×360 and 844×390, including the longer second recording's caption; narration/button bounds, non-overlap, black backdrop and actual retry-button routing passed. The previously shared APK has not been rebuilt for this correction.
+
+### Recording instructions
+
+Record each numbered row as a separate file named exactly as the ID, with an MP3 or WAV extension. Directions are performance notes, not spoken words. Use the established character voices, dry speech without background music or added effects, and a short quiet margin at each end. Preserve natural pauses; do not accelerate lines to fit guessed durations. Cloudinary links are welcome. User recordings replace revised narration; no generated character voices are requested.
+
+John is a believable Filipino senior-high student: conversational, not an announcer. Amani's disbelief is quiet and personal; Liza's realization is vulnerable; Sir Rham sounds like a restrained adult teacher; Mika is startled and puzzled. The narrator is measured and ominous without shouting.
+
+### Intro recording sheet
+
+Retain the current opening through Claim Prize and the existing four-voice group laugh. The original recording brief follows; the supplied-recording manifest below records intentional omissions and current cue timing.
+
+| File ID | Speaker / delivery | Exact words |
+| --- | --- | --- |
+| OPEN_V2_01_John_Huh | John; short, involuntary confusion, a small intake of breath | Huh? |
+| OPEN_V2_02_John_WhatsHappening | John; confusion suddenly becomes alarm | What's happening?! |
+| OPEN_V2_03_John_Disbelief | John; breath catches, denial builds; do not yell the entire line | No, no, no… this can't be happening! |
+| OPEN_V2_04_Amani_Identity | Amani; disbelieving, stress “I didn't” | That's my name… but I didn't send those messages. |
+| OPEN_V2_05_Liza_Trust | Liza; hurt realization, quieter at the end | They said they were helping me… |
+| OPEN_V2_06_Rham_Coordinator | Sir Rham; low, controlled realization; a short pause before “wasn't” | That wasn't our coordinator. |
+| OPEN_V2_07_Mika_Install | Mika; startled, questioning what she sees, not confirming an installation | This wasn't supposed to install anything. |
+| OPEN_V2_08_Narrator_Began | Narrator; slow, foreboding transition | And this is how it began… |
+| OPEN_V2_09_Narrator_Verify | Narrator; deliberate, firm, with a beat after “Trust” | Never Trust, always verify. |
+
+“Huh?” cuts the calm mood immediately and starts the suspense fade. The phone takeover accompanies the second reaction. The masked-group image/laughter follows, with music ducked. Each victim then gets a separate illustration and line in table order. Compose the five new victims together in the existing cinematic layer afterward; do not reuse an old montage with different cast members. The user omitted the two closing narrator recordings; these captions remain text-only against the preserved musical ending. No mastermind identity, confirmed stolen balance, successful malware installation, or new victim outcome is invented.
+
+### Tutorial recording sheet
+
+All rows below are John unless marked Narrator. These recordings are separate so input gates and review pauses never cut a sentence in half. The decision's existing TUT_03/TUT_04 recordings remain; no duplicate “What should I do?” recording is needed.
+
+| File ID | Delivery / trigger | Exact words |
+| --- | --- | --- |
+| TUT_V2_01_John_Buzz | Curious, waking; buzz and phone motion, then wait for unlock | My phone is buzzing. |
+| TUT_V2_02_John_OpenMail | Casual, after the player unlocks; then wait for Mail | I unlock it and open Mail. |
+| TUT_V2_03_John_Claim | Temptation mixed with doubt; replaces BRANCH_01 | The page wants my account password. Why would anyone need that to give me a prize? |
+| TUT_V2_04_John_Waiting | Hopeful, leaning in, a small excited breath | Any second now… |
+| TUT_V2_05_John_BadEnd | Regret and realization, not self-blame; after “Bad END” | I submitted a password to a fake prize page. That could put my account at risk. |
+| TUT_V2_06_John_TryAgain | Calm explanation, recovering resolve | Reading the email wasn't what put my account at risk. Submitting the password was. I should have verified the request first. Let's try again. |
+| TUT_V2_07_John_Delete | Decisive, then curious; replaces BRANCH_03 | I deleted the request without sharing anything. That was a safe choice. But what did I miss? I can finish here, or try again and investigate. |
+| TUT_V2_08_Narrator_DeleteComplete | Narrator; warm, concise completion, only for Delete | Tutorial complete. You avoided the unsafe request. You can return to practice investigating and reporting it. Your next story is still ahead. |
+| TUT_V2_09_John_Sender | Focused curiosity; before sender inspection | Prize Desk sounds official, but a name is easy to copy. I'll hold the sender to see the full address. I can also tap Sender Details. |
+| TUT_V2_10_John_Report | Purposeful; actual supplied recording after the existing screenshot activity | I'll build the report from what I found. |
+| TUT_V2_11_John_Domain | Thinking aloud, not a lecture | First, the sender's domain. I'll type the part after the at sign. |
+| TUT_V2_12_John_Clues | Focused, deliberate | I'll match the message excerpts to reward, urgency, and password request. |
+| TUT_V2_13_John_Attachment | Matter-of-fact | I'll attach the capture that keeps the sender, subject, and request together. |
+| TUT_V2_14_John_Response | Firm, thoughtful | Finally, I'll choose a response that protects my account and reports the suspicious request. |
+| TUT_V2_15_John_Review | Calm anticipation; once on Send Evidence | Let's check the report, one section at a time. |
+| TUT_V2_16_John_FixDomain | Reflective, only for an incorrect or missing domain | That isn't the sender's domain. I need the part after the at sign, not the whole email address. |
+| TUT_V2_17_John_FixClues | Reflective, only for incorrect or missing clue placements | These clues don't all match their headings yet. I'll compare each excerpt with the message. |
+| TUT_V2_18_John_FixAttachment | Practical, only for an incorrect or missing attachment | I need the message capture that shows the sender, subject, and request together. |
+| TUT_V2_19_John_FixResponse | Resolute, only for an incorrect or missing response | I should keep my password private and report the request through a trusted school channel. |
+
+Reuse OPEN_V2_03 for the distressed-John tutorial image. Keep correct-section confirmation as short UI text, not four repetitive new voiceovers. Keep existing TUT_14 for the sealed investigation result and END_01/END_02 only for the completed investigation route. Deletion completion must not play narration claiming an investigation/report occurred.
+
+### Existing recording disposition
+
+- Keep INTRO_01–INTRO_05, GROUP_LAUGH, TUT_01, TUT_03–TUT_08.1, TUT_10–TUT_12, TUT_14, CLUE/CAPTURE/NOTE/HINT feedback and investigation END_01/END_02 when their corresponding interactions/words remain unchanged.
+- INTRO_09 is no longer queued in the intro. OPEN_V2_08/09 were intentionally omitted; show the closing captions without substitute narration.
+- Replace TUT_02 with two action-gated clips. Removed “Reading an email is not the same as trusting its link” must not survive in the audio.
+- Replace BRANCH_01/02/03, TUT_09 and TUT_13 with their corresponding new clips above. Do not trim dialogue by guessed timestamps.
+- The existing sender-details wording and all retained clips still require a final word-for-word check when connected to revised scenes. If a retained clip no longer matches, replace it or make a clean verified edit rather than play obsolete directions.
+- The practice indicator belongs outside dialogue. The fictional keyboard entry is never narrated as a real password. No actual typed password content is saved or transmitted.
+
+### Artwork and music review
+
+Seven new landscape illustrations preserve the established character references: John in his morning bedroom; Amani in the school courtyard; Liza by a rainy covered courtyard; Sir Rham in the faculty workroom; Mika backstage at the school event. John's waiting and deleting images preserve his bedroom, clothes and morning light. The distressed image is reused, not regenerated, for the Claim consequence.
+
+Four original 60-second instrumental drafts cover investigation, decision suspense, friendly PvP competition and reflective aftermath. A separate two-second phone buzz is available. Existing suitable calm/success cues remain.
+
+The supplied mysterious.mp3 is about 152 seconds. The **54-second review edit uses source 01:38 through its end**, with a two-second opening fade and no end truncation, time stretch, or added ending fade. This is an audition cut, not a final voice-synchronized cinematic. Its source metadata identifies an OFF Original Soundtrack recording; it is user-supplied, not one of the four newly generated tracks. Keep its provenance distinct.
+
+After receiving recordings, set exact cue times from the real delivery. Budget approximately 0–5 seconds for John's reactions/takeover, 5–12 for the existing laugh, 12–41 for the five victim reactions, 41–47 for their combined reveal, and 47–54 for the closing lines. These ranges are editorial placeholders, not enforced deadlines for speech. If needed, recut within the approved 45–60 seconds while preserving the ending. The final music source and runtime fade must have one owner; do not apply a second two-second fade to an already faded review cut.
+
+### Milestone boundaries and acceptance
+
+1. **Current:** script, seven illustrations, music and hosted-media review. User reviews the package and supplies recordings.
+2. **After confirmation:** extend the existing two-deck AudioManager with owner-scoped moods; the existing opening screen owns one synchronized closing timeline, ducking, prefetch/fallback, pause/background/skip and reduced motion. No extra manager.
+3. **After review:** action-gated phone opening, fictional keyboard entry, Claim/Delete endings and accessible sender inspection. Reuse tutorial phone signals and opening navigation ownership.
+4. **After review:** four editable report sections and sequential correction. Keep screenshot framing. Local-only arbitrary drafts; cloud saves canonical accepted fields and correction metadata. Domain normalization trims outer whitespace, lowercases and removes a trailing period; it never accepts an email address or lookalike domain.
+
+Tutorial completion stays separate from completed investigation. These choices and retries award no BKT evidence, academic progression, coins or stars. Physical-device keyboards, touch/safe areas, suspension and cloud/offline restoration are later implementation acceptance checks, not closed by asset preparation.
+
+
+
+
+### Hosted media manifest
+
+Delivery URLs below were downloaded directly in an isolated Godot 4.7.2 review project. All seven PNGs decoded and rendered at 844×390; all seven MP3s advanced, paused and played through their ending. This verifies media compatibility, not integrated scene timing or a physical-device listening test. Subjective soundtrack and artwork approval remain with the user.
+
+| Asset | Delivery | Size / duration |
+| --- | --- | --- |
+| John — prize-trap disbelief | [john_distress_v1](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511459/levelblue/opening_v2/20261112/john_distress_v1.png) | 1672 × 941 |
+| Amani — messages under her identity | [amani_identity_v2](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511470/levelblue/opening_v2/20261112/amani_identity_v2.png) | 1672 × 941 |
+| Liza — call and conflicting alert | [liza_security_v1](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511484/levelblue/opening_v2/20261112/liza_security_v1.png) | 1672 × 941 |
+| Sir Rham — false coordinator | [rham_coordinator_v1](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511498/levelblue/opening_v2/20261112/rham_coordinator_v1.png) | 1672 × 941 |
+| Mika — unexpected installation request | [mika_event_file_v1](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511509/levelblue/opening_v2/20261112/mika_event_file_v1.png) | 1672 × 941 |
+| John — waiting for the prize | [john_waiting_v1](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511519/levelblue/opening_v2/20261112/john_waiting_v1.png) | 1672 × 941 |
+| John — deleting the message | [john_delete_v1](https://res.cloudinary.com/nfd5bhkz/image/upload/v1794511529/levelblue/opening_v2/20261112/john_delete_v1.png) | 1672 × 941 |
+| Supplied mysterious — preserved original | [mysterious_original](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794511544/levelblue/opening_v2/20261112/mysterious_original.mp3) | 152.03 s |
+| Mysterious — 54-second review cut | [mysterious_54s_review](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794511552/levelblue/opening_v2/20261112/mysterious_54s_review.mp3) | 54.05 s |
+| Investigation — original instrumental | [mystery](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794487561/levelblue/opening_v2/20261112/mystery_v1.mp3) | 60.02 s |
+| Decisions — original instrumental | [suspense](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794487562/levelblue/opening_v2/20261112/suspense_v1.mp3) | 60.02 s |
+| PvP — original instrumental | [pvp](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794487564/levelblue/opening_v2/20261112/pvp_v1.mp3) | 60.02 s |
+| Aftermath — original instrumental | [sadness](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794487565/levelblue/opening_v2/20261112/sadness_v1.mp3) | 60.02 s |
+| Phone buzz — original effect | [phone_buzz](https://res.cloudinary.com/nfd5bhkz/video/upload/v1794487567/levelblue/opening_v2/20261112/phone_buzz_v1.mp3) | 2.04 s |
+
+Local interactive review: `frontend/.godot/opening_media/review/index.html` displays the hosted artwork and gives each track Play/Pause/Seek controls. The review project, downloaded files, credentials and verification scripts are ignored and excluded from export/commit scope. The supplied bundled mysterious.mp3 was archived to the ignored working directory only after its hosted copy passed Godot playback checks. No production scene, save or BKT changes are included in this preparation gate.
+
 ## Cloudinary voice delivery
 
 The solo opening and tutorial fetch 38 playable recordings from versioned Cloudinary URLs. The meeting uses the premixed group laugh. The single-person laugh is archived in Cloudinary. Clips stay in memory for the current opening screen, including replay, and no voice files are written to phone storage. An unavailable recording is skipped so the player can continue with the captions. The following dated entries describe the original integration.

@@ -3,6 +3,7 @@ extends Node
 const BGM_PATH: String = "res://assets/audio/bgm/"
 const SFX_PATH: String = "res://assets/audio/sfx/"
 const MUSIC_GAIN: float = 0.7
+const OPENING_MUSIC_GAIN: float = 0.85
 const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition", "ui_notification", "ui_success", "ui_error", "loading_ready", "debate_start", "debate_hit", "debate_counter", "command_open", "command_snap", "command_type", "command_ready", "command_send"]
 
 @onready var bgm_player: AudioStreamPlayer = $BGMPlayer
@@ -38,6 +39,7 @@ var _opening_owner: WeakRef
 var _opening_morning: bool = false
 var _opening_paused: bool = false
 var _opening_score: bool = false
+var _opening_music: AudioStream
 var _hearing_decision: bool = false
 var _hearing_debate: bool = false
 var hub_track: AudioStream
@@ -152,6 +154,7 @@ func _on_screen_changed(screen_id: StringName) -> void:
 	_screen_id = screen_id
 	if screen_id not in [&"opening", &"confrontation"]:
 		_opening_owner = null
+		_opening_music = null
 		_opening_morning = false
 		_opening_paused = false
 	# Router may replace Dashboard and push a child in one operation. Use its final route.
@@ -180,7 +183,7 @@ func _select_music() -> void:
 			_stop_effects()
 		&"gameplay", &"pvp_battle", &"pvp_online": play_bgm(null)
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
-		&"opening": play_bgm(_tracks.get("morning") if _opening_morning else null)
+		&"opening": play_bgm(_opening_music if _opening_music != null else _tracks.get("morning") if _opening_morning else null)
 		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex", &"module_intro", &"survey_chapter": play_bgm(_tracks.get("study"))
 		&"confrontation": play_bgm(_tracks.get("hearing_debate" if _hearing_debate else "hearing_decision" if _hearing_decision else "pvp"))
 		&"login", &"password_change": play_bgm(hub_track)
@@ -451,10 +454,29 @@ func cut_opening_audio(source: Control) -> void:
 	if _opening_owner == null or _opening_owner.get_ref() != source:
 		return
 	_opening_morning = false
+	_opening_music = null
 	_desired_bgm = null
 	_kill_bgm_tween()
 	_stop_music()
 	_stop_effects()
+
+
+## A continuous hosted score reuses the existing deck and opening pause owner.
+func play_opening_music(source: Control, stream: AudioStream, at: float = 0.0) -> void:
+	if _opening_owner == null or _opening_owner.get_ref() != source or stream == null:
+		return
+	_opening_music = stream
+	_desired_bgm = stream
+	if not SettingsService.music_enabled:
+		return
+	_kill_bgm_tween()
+	_stop_music()
+	bgm_player = _decks[0]
+	bgm_player.stream = stream
+	bgm_player.volume_linear = OPENING_MUSIC_GAIN
+	if at < stream.get_length():
+		bgm_player.play(at)
+	bgm_player.stream_paused = _music_paused()
 
 
 func set_opening_morning(source: Control, morning: bool) -> void:
@@ -488,6 +510,7 @@ func release_opening_audio(source: Control) -> void:
 	pause_opening_audio(source, false)
 	stop_dialogue_blips(source)
 	_opening_owner = null
+	_opening_music = null
 	_opening_morning = false
 	if _screen_id == &"opening":
 		play_bgm(null)

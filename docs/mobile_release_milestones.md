@@ -1164,7 +1164,7 @@ The user chose **Also convert bot to CTF**, replacing the proposed visual-only u
 Local verification covers both roles, inspection gates, wrong/stale commands, bot capture, timeout, replay, exit pause and cleanup. All 12 role/side/stage evidence snapshots were compared with the Python online implementation. Phone renders at 720×360 and 844×390 show Home, evidence and the final result. The bot check and shared online-screen regression passed with zero failures. Developer checks remain local and excluded from commits. Practice remains offline, unranked and separate from BKT, research assessments and the store wallet. Installed-phone acceptance remains open.
 # Adviser update gates — diagnostic learning routes (11 November 2026)
 
-Approved sequence: (1) diagnostic routes and chapter access, (2) twenty-question lesson pools and retry rotation, (3) Handler appearance and expression artwork, (4) engagement and rewards. Each gate is verified before the next begins. Gates 1–3 are locally implemented. On 12 November the user requested revising Gate 4 around story completion, chapter objectives and three-star achievements; the detailed proposal below awaits sign-off. Installed-phone and live synchronization acceptance remain open.
+Approved sequence: (1) diagnostic routes and chapter access, (2) twenty-question lesson pools and retry rotation, (3) Handler appearance and expression artwork, (4) engagement and rewards. Each gate is verified before the next begins. Gates 1–3 are locally implemented. On 12 November the user approved independent chapter-objective stars. Gate 4 is implemented locally for Module 1 Chapter 1 and awaits user review before rollout. Installed-phone and live synchronization acceptance remain open.
 
 ## Gate 1 implementation and acceptance
 
@@ -1211,52 +1211,61 @@ Art production used image generation with the approved base references: retain t
 
 Validation: Godot import passed; **149 Handler checks passed**, including 36 expression regions, unavailable art, first completion/skip, pending-choice restart, legacy accounts, selection of the original, JSON restoration, cloud merge, account switching, visible companion refresh, shared Settings controls, tutorial replay and mobile touch targets. Rendered picker views were inspected at 1280×720, 844×390 and 390×844; the tutorial completion portrait was reviewed at 844×390. Existing dashboard and current tutorial-practice replay suites passed; diagnostic routing passed 314 checks and mini-quiz rotation passed 2,337 checks. These are local checks, not a claim of installed-phone or live two-device acceptance. No student progress was written during these checks. Gate 4 rewards and timed replay have not begun.
 
-## Gate 4 revised proposal — story achievements and learning support
+## Gate 4 — independent story objectives (approved first slice)
 
-**Status: proposed, not implemented.** The user rejected the earlier control-strip/timed-replay layout and asked for incentives to finish the story, careful decisions, help after mistakes, and three stars with chapter-specific objectives. This proposal prioritizes the existing 25 chapters. Timed replay is deferred. The earlier lesson-credit and academic-badge proposals are not silently implemented or discarded; reconsider them after this story-focused gate rather than mixing both reward systems in one change.
+**Status: Module 1 Chapter 1 implemented and locally verified; user review precedes rollout.** This replaces the earlier completion-star/perfect-run proposal. Timed replay, lesson rewards and module badges are outside this first slice. Other chapters retain their existing rules until their objectives are mapped and reviewed.
 
-### Player experience
+### Approved player experience
 
-1. Before a chapter, show three short, spoiler-free objectives inside the existing preparation screen. One star is for completing the chapter; a second is for a named investigation challenge; a third is for completing the chapter without an incorrect evaluated decision. Goals must describe what the player controls, never scripted mistakes made by John or other characters.
-2. During play, retain the existing evidence, terminal, phone and hearing interactions. A mistaken submission explains the relevant clue and consequence, offers a free contextual hint, and allows another attempt. Browsing, opening evidence, replaying dialogue, taking time and asking for help are not mistakes. Do not award stars for speed.
-3. At completion, the existing result screen reveals earned stars, names the achieved objectives, explains any unfinished objective, and shows first-clear credits separately from newly earned star bonuses. Give Continue the primary action; Replay to improve is secondary. Reduced motion displays the same results immediately.
-4. Chapter selection shows the best star result and the next improvement target. Finishing a chapter is sufficient for its chronological requirement, subject to existing academic prerequisites. Three stars must never become a gate to the next chapter or ending.
-5. Completing all five chapters earns a story-completion cosmetic badge for that module regardless of star total. Use existing badge ownership and Equip/Remove controls. This signifies story completion, not measured knowledge or BKT mastery.
+Each star is a distinct, optional challenge. Finishing alone awards no star. Players may earn different stars on different completed replays; collected stars never disappear. Mistakes affect only the relevant objective for that run. Three stars never block progression, and existing academic prerequisites still apply.
 
-### Proposed star rules and examples
+For Module 1 Chapter 1:
 
-| Star | Rule | Purpose |
+| Objective | Requirement |
+| --- | --- |
+| Accurate sorting | Sort all six messages without an incorrect submission. |
+| Spot the manipulation | Mark all three suspicious requests without an incorrect selection. |
+| Preserve the evidence | Capture each exhibit correctly on its first submission. |
+
+Preparation shows the objectives, chapter selection shows collected stars and a remaining target, and results show collected objectives and this attempt's reward. Players can select ordinary message text or the suspicious request in the highlighting activity; selecting an incorrect passage explains the error and allows correction. Scripted story mistakes never affect objectives.
+
+The first actual clear retains 100 Solo credits. Each newly earned star awards 25 credits once, replacing the old clean bonus for tracked attempts. A replay can award only previously missing bonuses. Stars settle on chapter completion, not on abandoning an attempt. Original evidence and first-attempt records remain intact.
+
+### Help and saved progress
+
+- Reviewing evidence and general guidance remain available without losing stars. An answer-revealing hint warns first and requires confirmation; confirming forfeits only the current objective for that run. Previously collected stars remain earned. Assistance is recorded separately.
+- Resume preserves failed objectives. Same-attempt cloud snapshots combine recorded objective failures; distinct attempts retain separate histories. Account saves hold collected objectives and fixed reward claims through the existing save path.
+- Reconciliation counts each reward claim once, including repeated stale responses after spending. Installed-device and live two-device synchronization still require release acceptance.
+- Legacy completions keep their credits and completion. They receive no invented challenge history; a new replay can earn stars. Tracked chapter completion continues to record the existing analytics event exactly once.
+- Stars do not update BKT, academic scores, checkpoint thresholds or independent research assessments.
+
+### Reused structure
+
+The existing preparation screen, phone interactions, chapter controller, result containers and chapter-selection rows own the presentation. Existing evidence/save signals carry objective outcomes. PlayerManager owns rewards and account restoration. No additional manager, save service or generated media was introduced.
+
+### Verification and next gate
+
+Local validation: 77 star/reward/hint/restore/analytics checks pass; the full Chapter 1 walkthrough passes with zero failures. Rendered preparation and results were inspected at 844×390. Diagnostic routing passes 314 checks and mini-quiz rotation passes 2,337 checks. The current merged project had lost quiz pool/selection/session functions; these were restored from commit `7cc6ee6`, retaining the newer feedback helper and incorrect-answer feedback.
+
+Developer checks and rendered artifacts remain local and are not staged. Physical-phone safe areas, suspension and live account synchronization are still release checks, not claimed as completed here.
+
+Next: user reviews Chapter 1's goals, help warning, results and replay behavior. Only after confirmation, extend this pattern with meaningful chapter-specific objectives to the remaining chapters, followed by the separately reviewed module-badge work.
+
+## Opening, tutorial and event music redesign — Milestone 1 review (13 November 2026)
+
+The user approved four sequential milestones, with a review before each next milestone. This work temporarily takes priority over extending chapter stars. The full recording sheet, asset manifest and exact flow are in [opening_tutorial.md](opening_tutorial.md#intro-tutorial-and-event-music-redesign--13-november-2026).
+
+| Gate | Scope | Current state |
 | --- | --- | --- |
-| 1 — Case closed | Finish the chapter's existing investigation/resolution | Recognize persistence and progress even after mistakes |
-| 2 — Chapter challenge | Meet one chapter-specific quality objective shown before play | Encourage attention to the particular social-engineering skill |
-| 3 — Careful decisions | Complete the chapter with no incorrect evaluated submissions in that run | Reward careful reading and checking rather than guessing |
+| 1 | Script, seven illustrations, four instrumental tracks, phone buzz and a 45–60-second mysterious edit preserving its ending | Prepared for user review. Seven illustrations, four 60-second instrumentals, a two-second buzz, the preserved supplied original and a 54-second review edit are hosted on Cloudinary. Recording sheet has nine intro clips and nineteen tutorial clips. The user subsequently supplied 24 originals; all are hosted and verified. Four optional recordings were intentionally omitted. |
+| 2 | Owner-scoped event music in the existing two-deck manager; one synchronized intro timeline | Intro voice integration is ready for review: continuous 54-second closing timeline, seven reaction recordings, five new victim images and text-only ending captions. Wider mood-context routing remains pending; this is not full gate acceptance. |
+| 3 | Action-gated phone opening; Claim/Delete endings; incorrect-clue feedback and accessible sender inspection | Full branch redesign awaits gate 2 review. The compatible new tutorial narration and unlock-triggered Mail line are connected. |
+| 4 | Editable four-section report, submission, sequential corrections and compatible saved recovery | Not started. Requires gate 3 review. |
 
-Examples for review, not finalized content mappings:
+Local media acceptance: all 14 hosted assets downloaded in Godot 4.7.2; seven images decoded/rendered at 844×390 and seven audio streams passed advancing playback, pause and ending checks. The hosted supplied original matches the local original's SHA-256. The original was then moved out of bundled assets into the ignored working archive. Review files, media working files and verification scripts remain ignored. No generated media is added to Git.
 
-- Module 1, Chapter 1: classify all six messages correctly on their first submissions for the chapter challenge. Capturing evidence and finishing still earns completion even if sorting needed correction.
-- Module 1, Chapter 2: identify the deceptive sender-domain difference on the first submitted comparison. Do not reveal the actual differing character in the pre-chapter objective.
-- Chapter 5 hearings: complete the closing reconstruction correctly on its first check for the chapter challenge. Evidence-command errors and reconstruction errors count toward the careful-decisions star; scripted dialogue and cinematics do not. Existing credibility recovery and hints stay available.
+The playable media review is at local `frontend/.godot/opening_media/review/index.html`: artwork gallery plus audio play/pause/seek. This is a media review, not a shipped intro/tutorial implementation. Music transitions, dialogue ducking, final cue synchronization, input gates and physical-device acceptance remain open in their respective gates.
 
-Author and verify the objective for every chapter against its actual interaction before enabling stars there. A required action that all finishers necessarily complete is not a meaningful additional challenge. Record objective-specific events where current aggregate mistake counters cannot establish first-submission accuracy. Never infer missing attempt history from a finished save.
+Compatibility contract: tutorial choices are ungraded; general onboarding completion does not imply investigation/report completion. No mastery, stars, credits, independent assessment results or academic access are changed. Reuse the opening controller, tutorial phone, existing audio manager and account save; no new runtime manager. Do not start the next gate until the user confirms review.
 
-### Help, recovery and rewards
-
-- Free contextual hints, recaps and reference material remain available throughout story learning. Using them does not remove stars or credits. Preserve assisted/unassisted activity records independently. The existing story clean-work reward currently excludes assisted attempts; replace that rule as part of this gate and update its explanatory copy. Existing paid support ownership must be preserved when making support free.
-- Keep each chapter's existing base first-clear reward. Proposed additional reward: 25 Solo credits for first earning the second star, and another 25 for first earning the third. This replaces the old clean-work bonus; it must not stack with it. Final values require sign-off.
-- A later replay may improve the saved best result and grant only a newly earned bonus. A worse replay never removes previous stars. Save the best completed run, not a synthetic three-star result assembled from unrelated attempts. Replays never rewrite the original evidence or first-attempt research/activity records.
-- Resume preserves mistakes and objective attempts. Closing the app must not reset a failed challenge. Completed legacy chapters keep completion and existing credits; detailed stars require sufficient recorded evidence or a fresh replay. Account restoration and reconciliation must merge reward claims without paying twice or subtracting legitimately spent credits.
-- No currency loss, paid retry, energy limit, or forced restart after learning mistakes. Do not award BKT credit for chapter stars, repeated story play, hints, or cosmetic achievements. Graded quizzes, checkpoints and independent research assessments keep their own rules.
-
-### Reused nodes and signal ownership
-
-- Extend the current chapter preparation/result containers and chapter selection rows with objective and star displays. Chapter controllers report evaluated actions through their existing save path; shared hearing mechanics remain unchanged.
-- PlayerManager's existing story attempts, chapter saves and wallet own best results and one-time reward claims. Extend the current cosmetic catalog and portrait badge display for earned module badges; do not introduce another rewards manager or save service.
-- Reuse existing success sounds and reveal animations, with reduced-motion treatment. Keep support controls within the current story interface, with large touch targets and readable objective text.
-
-### Implementation order and acceptance
-
-1. Confirm star/reward/help policy and map objectives for all 25 chapters. Audit paid-support migration and old reward records first.
-2. Implement save rules and a complete Module 1 Chapter 1 flow as the first visual/behavioral check: preparation → mistake/help/retry → results → replay improvement → chapter selection.
-3. Extend the shared chapter interactions and all five hearings using chapter-specific objectives. Verify that progress, original evidence and story continuity survive.
-4. Add module-completion badges and final result polish through existing cosmetic controls.
-5. Verify clean runs, mistakes, assisted runs, partial/resumed attempts, replay improvement, legacy saves, account switching, duplicate/stale synchronization, reward spending, badge equipping, reduced motion and phone layouts. Keep developer checks local and out of commits. Physical-device and live synchronization acceptance remain explicit release gates.
+Voice integration follow-up (13 November 2026): 24 supplied originals passed hosted playback and byte-integrity checks; thirteen are connected now, eleven reserved for their matching future interactions. The 76-check integration fixture and existing tutorial practice regression pass. Originals/import sidecars are archived outside bundled assets. No external transcription provider received recordings. See the current supplied-recording manifest in opening_tutorial.md for URLs, durations, omissions, timing and pending physical-device acceptance. This follow-up does not claim milestones 3–4 complete.

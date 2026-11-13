@@ -5,6 +5,7 @@ signal evidence_changed(snapshot: Dictionary)
 signal photo_taken(preview: Texture2D)
 signal thought_requested(text: String, flags_complete: bool)
 signal voice_requested(id: String)
+signal phone_unlocked
 
 const INK: Color = Color("101623")
 var mode: String = "read"
@@ -32,6 +33,13 @@ var _password_submit: Button
 var _keyboard: GridContainer
 var _notepad_open: bool = false
 var _item_preview: bool = false
+
+func _unlock() -> void:
+	var was_unlocked: bool = _unlocked
+	super._unlock()
+	if _unlocked and not was_unlocked:
+		phone_unlocked.emit()
+
 
 func show_item_preview() -> void:
 	# Static, non-interactive prop: finish the reveal before locking its tweens.
