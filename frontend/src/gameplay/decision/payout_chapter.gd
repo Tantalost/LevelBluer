@@ -12,9 +12,9 @@ const DISPLAY_URL: String = "https://pocketwallet.example/verify"
 const SHORT_URL: String = "https://short.example/payout"
 const DESTINATION: String = "http://pocket-wallet-verify.example/login"
 const TASKS: Dictionary = {
-	"reveal":{"title":"01 / Read the destination", "tip":"Hold the link to reveal its destination. Compare both addresses.", "line":"Read the destination. Not the promise.", "field":"revealed", "total":1, "next":"expand"},
-	"expand":{"title":"02 / Follow the short link", "tip":"Drag the short link into Expand Link, or tap it then tap the box.", "line":"What is this little link hiding?", "field":"expanded", "total":1, "next":"flaws"},
-	"flaws":{"title":"03 / Inspect the login page", "tip":"Find three clues, then review the address and connection before saving.", "line":"I saw the logo. I didn't look at the address.", "field":"hotspots", "total":5, "next":"seal"}
+	"reveal":{"title":"01 / Read the destination", "tip":"Hold the link to reveal its destination. Compare both addresses.", "line":"Read the destination. Not the promise.", "voice":"v1794708965/levelblue/voice/mod_01/ch_03/M01_CH03_35_John.mp3", "field":"revealed", "total":1, "next":"expand"},
+	"expand":{"title":"02 / Follow the short link", "tip":"Drag the short link into Expand Link, or tap it then tap the box.", "line":"What is this little link hiding?", "voice":"v1794708965/levelblue/voice/mod_01/ch_03/M01_CH03_36_John.mp3", "field":"expanded", "total":1, "next":"flaws"},
+	"flaws":{"title":"03 / Inspect the login page", "tip":"Find three clues, then review the address and connection before saving.", "line":"I saw the logo. I didn't look at the address.", "voice":"v1794708966/levelblue/voice/mod_01/ch_03/M01_CH03_37_John.mp3", "field":"hotspots", "total":5, "next":"seal"}
 }
 const CLUES: Dictionary = {
 	"domain":"This domain does not match pocketwallet.example, the wallet's known address.",
@@ -25,8 +25,11 @@ const CLUES: Dictionary = {
 }
 const EVIDENCE: String = "3 evidence bundles\n\n01 · Displayed link and actual address do not match\n02 · A shortened link conceals the destination\n03 · The login page uses an odd domain and HTTP\n\nThe missing secure indicator supports the HTTP finding. Branding and spelling are supporting clues.\n\nEric's request and Mika's whispering are context, not proof of who sent the email."
 const SEAL_LINE: String = "I saw the logo.\nI didn't look at the address.\nNow I can show where the link really leads."
+const SEAL_VOICE: String = "v1794708967/levelblue/voice/mod_01/ch_03/M01_CH03_38_John.mp3"
 const SLEEP_LINE: String = "I should tell Jobert what I found."
+const SLEEP_VOICE: String = "v1794708967/levelblue/voice/mod_01/ch_03/M01_CH03_39_John.mp3"
 const END_CAPTION: String = "Eric needed money. Mika knew he was asking.\nBut that didn't tell me who sent the email.\nSomeone promised me a payout.\nSomeone else knew exactly when to call.\nFor now, I knew who I trusted."
+const END_VOICE: String = "v1794708968/levelblue/voice/mod_01/ch_03/M01_CH03_40_John.mp3"
 const SLEEP_CHAT: Array[Dictionary] = [
 	{"who":"John","face":0,"text":"The address was wrong. The short link hid it."},
 	{"who":"John","face":1,"text":"And that login page had more problems than my first project."},
@@ -36,6 +39,49 @@ const SLEEP_CHAT: Array[Dictionary] = [
 	{"who":"John","face":1,"text":"Next time, you're getting the screenshot first."},
 	{"who":"Eric","face":0,"channel":"Eric","text":"Any update on the money?"}
 ]
+# Subtitle page starts measured from the original recordings; playback keeps its natural pace.
+const VOICE_TIMINGS: Dictionary = {
+	"M01_CH03_01_John.mp3": [0.0],
+	"M01_CH03_02_John.mp3": [0.0, 2.28, 3.96],
+	"M01_CH03_03_John.mp3": [0.0, 2.72],
+	"M01_CH03_04_John.mp3": [0.0],
+	"M01_CH03_05_John.mp3": [0.0, 2.7],
+	"M01_CH03_06_John.mp3": [0.0],
+	"M01_CH03_07_Mika.mp3": [0.0],
+	"M01_CH03_08_Eric.mp3": [0.0, 1.98],
+	"M01_CH03_09_John.mp3": [0.0],
+	"M01_CH03_10_Mika.mp3": [0.0],
+	"M01_CH03_11_John.mp3": [0.0, 2.72],
+	"M01_CH03_12_Eric.mp3": [0.0],
+	"M01_CH03_13_John.mp3": [0.0],
+	"M01_CH03_14_John.mp3": [0.0, 2.08],
+	"M01_CH03_15_John.mp3": [0.0, 1.02, 4.3],
+	"M01_CH03_16_John.mp3": [0.0, 2.6],
+	"M01_CH03_17_John.mp3": [0.0, 1.68],
+	"M01_CH03_18_Jobert.mp3": [0.0, 1.14],
+	"M01_CH03_19_John.mp3": [0.0, 1.88],
+	"M01_CH03_20_Jobert.mp3": [0.0, 2.4],
+	"M01_CH03_21_John.mp3": [0.0],
+	"M01_CH03_22_Jobert.mp3": [0.0],
+	"M01_CH03_23_John.mp3": [0.0, 1.9],
+	"M01_CH03_24_Jobert.mp3": [0.0, 1.24],
+	"M01_CH03_25_John.mp3": [0.0],
+	"M01_CH03_26_Jobert.mp3": [0.0],
+	"M01_CH03_27_John.mp3": [0.0],
+	"M01_CH03_28_Jobert.mp3": [0.0],
+	"M01_CH03_29_John.mp3": [0.0],
+	"M01_CH03_30_Jobert.mp3": [0.0, 2.4, 5.1],
+	"M01_CH03_31_John.mp3": [0.0],
+	"M01_CH03_32_Jobert.mp3": [0.0],
+	"M01_CH03_33_John.mp3": [0.0],
+	"M01_CH03_34_John.mp3": [0.0, 2.82],
+	"M01_CH03_35_John.mp3": [0.0, 2.26],
+	"M01_CH03_36_John.mp3": [0.0],
+	"M01_CH03_37_John.mp3": [0.0, 2.28],
+	"M01_CH03_38_John.mp3": [0.0, 2.24, 4.12],
+	"M01_CH03_39_John.mp3": [0.0],
+	"M01_CH03_40_John.mp3": [0.0, 2.16, 4.26, 7.62, 9.96, 13.6],
+}
 const MESSAGES: Array[Dictionary] = [{"id":"payout", "sender":"Survey Rewards", "address":"rewards@survey-release.example", "subject":"Your survey payout is ready", "body":"Hi John,\n\nYour survey reward is ready for release.\n\nVerify your e-wallet account using the link below to receive your payout.\n\nComplete verification today to avoid a payment delay.", "signature":"Survey Rewards Team", "phrase":"Verify your e-wallet", "suspicious":true}]
 const CHAT_MESSAGES: Array[Dictionary] = []
 const ERIC_CHAT: Array[Dictionary] = [
@@ -60,40 +106,40 @@ const NIGHT_CHAT: Array[Dictionary] = [
 	{"who":"John","face":1,"text":"Fine. You win."}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John","face":2,"bg":"hallway_day","cast":["john"],"caption":"The next afternoon.\nSome messages arrive exactly when you want to believe them.","line":"If that's another assignment, I'm turning this phone into a calculator."},
-	{"who":"John","face":1,"bg":"hallway_day","cast":["john"],"line":"Oh.\nFinally. An email that pays me instead of assigning homework.","mail":true,"event":"notification"},
-	{"who":"John","face":4,"bg":"hallway_day","cast":["john"],"line":"I did finish their survey.\nMaybe this one's actually good news.","mail":true,"event":"email"},
-	{"who":"John","face":1,"bg":"hallway_day","cast":["john"],"line":"That was fast.","chat":true,"contact":"Eric","messages":ERIC_CHAT},
-	{"who":"John","face":4,"bg":"hallway_day","cast":["john"],"line":"He remembered the survey.\nGuess he really needs the money."},
-	{"who":"John","face":4,"bg":"hallway_day","cast":["john","eric"],"caption":"Outside the club room.\nMika leans toward Eric, just beyond the doorway.","line":"Their voices are low."},
-	{"who":"Mika · Off-screen","face":0,"bg":"hallway_day","cast":["john","eric"],"line":"Did you ask him?"},
-	{"who":"Eric","face":2,"bg":"hallway_day","cast":["john","eric"],"line":"Yeah. Not yet."},
-	{"who":"John","face":1,"bg":"hallway_day","cast":["john","eric"],"line":"Should I knock, or is the secret meeting over?"},
-	{"who":"Mika · Off-screen","face":0,"bg":"hallway_day","cast":["john","eric"],"line":"We're outside the door."},
-	{"who":"John","face":1,"bg":"hallway_day","cast":["john","eric"],"line":"Advanced security. Nobody suspects the hallway."},
-	{"who":"Eric","face":1,"bg":"hallway_day","cast":["john","eric"],"line":"Heading home?"},
-	{"who":"John","face":0,"bg":"hallway_day","cast":["john","eric"],"line":"Soon."},
-	{"who":"John","face":4,"bg":"hallway_day","cast":["john"],"line":"Probably about the money.\nProbably."},
-	{"who":"John","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"caption":"Early evening. At home.","line":"Right. Let's collect this before someone else borrows it.\nActually…","chat":true,"contact":"Jobert","messages":CHECK_CHAT},
-	{"who":"John","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"line":"He's probably busy.\nI'll just take a look.","mail":true,"event":"open_link"},
-	{"who":"John","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Okay. I know this screen.","mail":true,"event":"interrupt"},
-	{"who":"Jobert · Phone","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"John. Have you opened that payout link?"},
-	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Yeah. I'm just—"},
-	{"who":"Jobert · Phone","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Don't enter anything else.\nSend me a screenshot."},
-	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"You called like my phone was about to explode."},
-	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Did you submit anything?"},
-	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"No.\nI started typing my username."},
-	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Okay. Stop there."},
-	{"who":"John","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Sent.","mail":true,"event":"screenshot"},
-	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Don't use that page."},
-	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"But it has the wallet logo."},
-	{"who":"Jobert · Phone","face":4,"bg":"john_desk_night","time":"night","cast":["john"],"line":"The logo isn't the address."},
-	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"line":"So the money…"},
-	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"line":"We don't know that it's real.\nOpen the wallet through its own app if you want to check. Not through that email."},
-	{"who":"John","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Good thing you called."},
-	{"who":"Jobert · Phone","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"line":"Good thing you messaged."},
-	{"who":"John","face":4,"bg":"john_bed_night","time":"night","caption":"I was one tap away.\nAnd I hadn't even checked where the tap would take me.","line":"Let's keep the screenshot.","chat":true,"contact":"Jobert","messages":NIGHT_CHAT},
-	{"who":"John","face":4,"bg":"john_bed_night","time":"night","line":"The sender had a story.\nLet's see if the link tells the same one."}
+	{"who":"John","face":2,"bg":"hallway_day","cast":["john"],"caption":"The next afternoon.\nSome messages arrive exactly when you want to believe them.","voice":"v1794708945/levelblue/voice/mod_01/ch_03/M01_CH03_01_John.mp3", "line":"If that's another assignment, I'm turning this phone into a calculator."},
+	{"who":"John","face":1,"bg":"hallway_day","cast":["john"],"voice":"v1794708945/levelblue/voice/mod_01/ch_03/M01_CH03_02_John.mp3", "line":"Oh.\nFinally. An email that pays me instead of assigning homework.","mail":true,"event":"notification"},
+	{"who":"John","face":4,"bg":"hallway_day","cast":["john"],"voice":"v1794708945/levelblue/voice/mod_01/ch_03/M01_CH03_03_John.mp3", "line":"I did finish their survey.\nMaybe this one's actually good news.","mail":true,"event":"email"},
+	{"who":"John","face":1,"bg":"hallway_day","cast":["john"],"voice":"v1794708945/levelblue/voice/mod_01/ch_03/M01_CH03_04_John.mp3", "line":"And that was fast.","chat":true,"contact":"Eric","messages":ERIC_CHAT},
+	{"who":"John","face":4,"bg":"hallway_day","cast":["john"],"voice":"v1794708948/levelblue/voice/mod_01/ch_03/M01_CH03_05_John.mp3", "line":"He remembered the survey.\nI guess he really needs the money."},
+	{"who":"John","face":4,"bg":"hallway_day","cast":["john","eric"],"caption":"Outside the club room.\nMika leans toward Eric, just beyond the doorway.","voice":"v1794708948/levelblue/voice/mod_01/ch_03/M01_CH03_06_John.mp3", "line":"Their voices are low."},
+	{"who":"Mika · Off-screen","face":0,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708948/levelblue/voice/mod_01/ch_03/M01_CH03_07_Mika.mp3", "line":"Did you ask him?"},
+	{"who":"Eric","face":2,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708948/levelblue/voice/mod_01/ch_03/M01_CH03_08_Eric.mp3", "line":"Yeah. Not yet."},
+	{"who":"John","face":1,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708950/levelblue/voice/mod_01/ch_03/M01_CH03_09_John.mp3", "line":"Should I knock, or is the secret meeting over?"},
+	{"who":"Mika · Off-screen","face":0,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708950/levelblue/voice/mod_01/ch_03/M01_CH03_10_Mika.mp3", "line":"We're outside the door."},
+	{"who":"John","face":1,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708951/levelblue/voice/mod_01/ch_03/M01_CH03_11_John.mp3", "line":"Advanced security. Nobody suspects the hallway."},
+	{"who":"Eric","face":1,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708951/levelblue/voice/mod_01/ch_03/M01_CH03_12_Eric.mp3", "line":"Heading home?"},
+	{"who":"John","face":0,"bg":"hallway_day","cast":["john","eric"],"voice":"v1794708952/levelblue/voice/mod_01/ch_03/M01_CH03_13_John.mp3", "line":"Soon."},
+	{"who":"John","face":4,"bg":"hallway_day","cast":["john"],"voice":"v1794708952/levelblue/voice/mod_01/ch_03/M01_CH03_14_John.mp3", "line":"Probably about the money.\nProbably."},
+	{"who":"John","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"caption":"Early evening. At home.","voice":"v1794708953/levelblue/voice/mod_01/ch_03/M01_CH03_15_John.mp3", "line":"Right. Let's collect this before someone else borrows it.\nActually…","chat":true,"contact":"Jobert","messages":CHECK_CHAT},
+	{"who":"John","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708954/levelblue/voice/mod_01/ch_03/M01_CH03_16_John.mp3", "line":"He's probably busy.\nI'll just take a look.","mail":true,"event":"open_link"},
+	{"who":"John","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708954/levelblue/voice/mod_01/ch_03/M01_CH03_17_John.mp3", "line":"Okay. I know this screen.","mail":true,"event":"interrupt"},
+	{"who":"Jobert · Phone","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708955/levelblue/voice/mod_01/ch_03/M01_CH03_18_Jobert.mp3", "line":"John. Have you opened that payout link?"},
+	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708955/levelblue/voice/mod_01/ch_03/M01_CH03_19_John.mp3", "line":"Yeah. I'm just—"},
+	{"who":"Jobert · Phone","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708956/levelblue/voice/mod_01/ch_03/M01_CH03_20_Jobert.mp3", "line":"Don't enter anything else.\nSend me a screenshot."},
+	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708957/levelblue/voice/mod_01/ch_03/M01_CH03_21_John.mp3", "line":"You called like my phone was about to explode."},
+	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708957/levelblue/voice/mod_01/ch_03/M01_CH03_22_Jobert.mp3", "line":"Did you submit anything?"},
+	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708958/levelblue/voice/mod_01/ch_03/M01_CH03_23_John.mp3", "line":"No.\nI started typing my username."},
+	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708959/levelblue/voice/mod_01/ch_03/M01_CH03_24_Jobert.mp3", "line":"Okay. Stop there."},
+	{"who":"John","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708959/levelblue/voice/mod_01/ch_03/M01_CH03_25_John.mp3", "line":"Sent.","mail":true,"event":"screenshot"},
+	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708959/levelblue/voice/mod_01/ch_03/M01_CH03_26_Jobert.mp3", "line":"Don't use that page."},
+	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708960/levelblue/voice/mod_01/ch_03/M01_CH03_27_John.mp3", "line":"But it has the wallet logo."},
+	{"who":"Jobert · Phone","face":4,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708961/levelblue/voice/mod_01/ch_03/M01_CH03_28_Jobert.mp3", "line":"The logo isn't the address."},
+	{"who":"John","face":2,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708961/levelblue/voice/mod_01/ch_03/M01_CH03_29_John.mp3", "line":"So the money…"},
+	{"who":"Jobert · Phone","face":0,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708962/levelblue/voice/mod_01/ch_03/M01_CH03_30_Jobert.mp3", "line":"We don't know that it's real.\nOpen the wallet through its own app if you want to check. Not through that email."},
+	{"who":"John","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708963/levelblue/voice/mod_01/ch_03/M01_CH03_31_John.mp3", "line":"Good thing you called."},
+	{"who":"Jobert · Phone","face":1,"bg":"john_desk_night","time":"night","cast":["john"],"voice":"v1794708963/levelblue/voice/mod_01/ch_03/M01_CH03_32_Jobert.mp3", "line":"Good thing you messaged."},
+	{"who":"John","face":4,"bg":"john_bed_night","time":"night","caption":"I was one tap away.\nAnd I hadn't even checked where the tap would take me.","voice":"v1794708964/levelblue/voice/mod_01/ch_03/M01_CH03_33_John.mp3", "line":"Let's keep the screenshot.","chat":true,"contact":"Jobert","messages":NIGHT_CHAT},
+	{"who":"John","face":4,"bg":"john_bed_night","time":"night","voice":"v1794708964/levelblue/voice/mod_01/ch_03/M01_CH03_34_John.mp3", "line":"The sender had a story.\nLet's see if the link tells the same one."}
 ]
 
 static func fresh() -> Dictionary:

@@ -89,7 +89,8 @@ func feedback_geometry() -> void:
 	check(screen._elapsed == elapsed,"Feedback pauses the debate while the player reads")
 
 func seed_chapters(player: Node) -> void:
-	player.lesson_progress = {"mod_01":1}
+	player.lesson_progress = {"mod_01":6}
+	player.lesson_post_quiz_scores = {"mod_01":20}
 	var first: Dictionary = Survey.fresh()
 	for message: Dictionary in Survey.MESSAGES:
 		first.read.append(message.id)
@@ -146,6 +147,8 @@ func _run() -> void:
 	var settings: Node = root.get_node("SettingsService")
 	var speed: String = settings.text_speed
 	var gentle: bool = settings.reduced_motion
+	var sound: bool = settings.sound_enabled
+	settings.sound_enabled = false # Recordings have a separate hosted-playback check.
 	settings.text_speed = "instant"
 	settings.reduced_motion = true
 	player.reset_to_defaults()
@@ -437,9 +440,15 @@ func _run() -> void:
 	for index: int in Case.AFTERMATH.size(): screen._next_aftermath()
 	screen._finish()
 	check(not screen.state.completed,"Lights finish gates completion")
-	screen._process(3.1)
+	screen._process(6.3)
 	await settle()
 	await capture("lights_844")
+	screen._process(3.1)
+	check(screen.state.ending_step == 1,"Lights continue into masked dialogue")
+	for line: int in Case.ENDING.size():
+		screen._process(float(Case.ENDING[line].duration)+1.0)
+	check(screen.state.ending_step == 10,"All nine masked lines precede sealing")
+	screen._process(3.1)
 	var balance: int = player.credits
 	screen._finish()
 	check(screen.state.completed and player.credits == balance+100,"Assisted hearing awards base coins")
@@ -595,6 +604,7 @@ func _run() -> void:
 	auth._signed_in = signed
 	settings.text_speed = speed
 	settings.reduced_motion = gentle
+	settings.sound_enabled = sound
 	audio._kill_bgm_tween()
 	audio._stop_music()
 	audio._stop_effects()

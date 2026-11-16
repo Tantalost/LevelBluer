@@ -954,13 +954,25 @@ class MeetingLights extends Control:
 	var gentle: bool = false
 	var inactive_connections: int = 1
 	var disconnect: bool = true
+	var asset_id: String = "opening_collector_meeting_v2"
+	var left_disconnect: bool = false
+	var disconnect_at: float = 5.0
+	var black_at: float = 8.0
 	func _draw() -> void:
-		var texture: Texture2D = AssetManager.get_texture("opening_collector_meeting_v2")
+		var texture: Texture2D = AssetManager.get_texture(asset_id)
+		if texture == null: texture = AssetManager.get_texture("opening_collector_meeting_v2")
 		if texture == null: return
 		var factor: float = minf(size.x/texture.get_width(),size.y/texture.get_height())
 		var dimensions: Vector2 = texture.get_size()*factor
 		var bounds: Rect2 = Rect2((size-dimensions)*.5,dimensions)
 		draw_texture_rect(texture,bounds,false)
+		if left_disconnect:
+			# Four separately lit quarters; extinguish only the far-left connection.
+			var dark: float = (1.0 if elapsed >= disconnect_at else 0.0) if gentle else smoothstep(disconnect_at,disconnect_at+1.2,elapsed)
+			draw_rect(Rect2(bounds.position,Vector2(dimensions.x*.25,dimensions.y)),Color(0,0,0,dark))
+			var fade: float = (1.0 if elapsed >= black_at else 0.0) if gentle else smoothstep(black_at,black_at+1.0,elapsed)
+			draw_rect(bounds,Color(0,0,0,fade))
+			return
 		if disconnect and not gentle and elapsed > .3 and elapsed < 1.2:
 			draw_rect(bounds,Color(0,0,0,.12+.12*sin(elapsed*14)))
 		var dim: float = .92 if not disconnect or gentle else clampf((elapsed-1.2)/1.8,0,.92)

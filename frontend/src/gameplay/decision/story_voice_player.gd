@@ -12,6 +12,7 @@ var _waiting: Callable = Callable()
 var _cache: Dictionary[String, AudioStream] = {}
 var _suspended: bool = false
 var _ducking: bool = false
+var _start_position: float = 0.0
 
 func _ready() -> void:
 	bus = &"SFX"
@@ -121,9 +122,14 @@ static func store_download(path: String, body: PackedByteArray) -> AudioStream:
 
 func _play_stream(clip: AudioStream) -> void:
 	stream = clip
-	play()
+	play(minf(_start_position, maxf(0.0, clip.get_length() - .01)))
 	stream_paused = _suspended
 	_update_mix()
+
+## Also applies to a pending download, so a quick Continue cannot play an older page.
+func seek_clip(position: float) -> void:
+	_start_position = maxf(0.0, position)
+	if _request == null and has_stream_playback(): seek(_start_position)
 
 func audible() -> bool:
 	return SettingsService.sound_enabled and SettingsService.sfx_volume > 0 and SettingsService.master_volume > 0
@@ -146,6 +152,7 @@ func _update_mix() -> void:
 ## Detaches from the shared download; it still completes and caches for the next request.
 func clear_clip() -> void:
 	stop()
+	_start_position = 0.0
 	stream_paused = false
 	_update_mix()
 	if _request != null:

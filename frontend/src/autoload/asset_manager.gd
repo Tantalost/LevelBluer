@@ -552,6 +552,7 @@ func _ui_catalog() -> Array[Dictionary]:
 		_catalog_entry("module1_email_tricks_title_v1", "Module 1 / Email Tricks cinematic title", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792510294/module1_email_tricks_john_personal_v1.png"),
 		_catalog_entry("opening_john_got_you_v1", "Opening / john got you", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_got_you_v1.png"),
 		_catalog_entry("opening_john_reaching_phone_v1", "Opening / john reaching phone", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_reaching_phone_v1.png"),
+		_catalog_entry("module1_masked_laughter_v1", "Module 1 / masked laughter ending", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1794718793/levelblue/story/module1/chapter5/masked_laughter_v1.png"),
 		_catalog_entry("opening_collector_meeting_v2", "Opening / four lights meeting", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792338328/collector_meeting_v2.png"),
 		_catalog_entry("opening_john_room_wake_v1", "Opening / john room wake", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_room_wake_v1.png"),
 		_catalog_entry("opening_john_claim_prize_v1", "Opening / john claim prize", "image", "https://res.cloudinary.com/nfd5bhkz/image/upload/v1792317115/john_claim_prize_v1.png"),

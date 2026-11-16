@@ -15,6 +15,131 @@ const FEEDBACK_VOICES: Dictionary[String, String] = {
 	DOMAIN_SAVED: "v1794044475/M01_CH01_24_John.mp3",
 	CAPTURE_SAVED: "v1794044472/M01_CH01_26_John.mp3",
 }
+## Each spoken page waits for Continue before its next recorded sentence.
+const VOICE_WAIT_FOR_CONTINUE: bool = true
+const VOICE_TIMINGS: Dictionary = {
+  "M01_CH01_02_John.mp3": [
+    0.0,
+    3.82,
+    6.08
+  ],
+  "M01_CH01_03_Eric.mp3": [
+    0.0,
+    1.42,
+    4.18
+  ],
+  "M01_CH01_04_John.mp3": [
+    0.0,
+    2.94,
+    5.38
+  ],
+  "M01_CH01_05_Eric.mp3": [
+    0.0,
+    2.6,
+    3.7
+  ],
+  "M01_CH01_06_John.mp3": [
+    0.0,
+    3.22,
+    6.06
+  ],
+  "M01_CH01_11_Eric.mp3": [
+    0.0,
+    1.28,
+    2.98,
+    4.54
+  ],
+  "M01_CH01_12_John.mp3": [
+    0.0,
+    1.38
+  ],
+  "M01_CH01_13_Eric.mp3": [
+    0.0,
+    0.92,
+    2.88
+  ],
+  "M01_CH01_14_John.mp3": [
+    0.0,
+    2.26,
+    4.84
+  ],
+  "M01_CH01_15_Jobert.mp3": [
+    0.0,
+    2.68,
+    4.24
+  ],
+  "M01_CH01_16_John.mp3": [
+    0.0,
+    1.22,
+    3.08,
+    4.64
+  ],
+  "M01_CH01_17_John.mp3": [
+    0.0,
+    2.56,
+    4.22,
+    6.48
+  ],
+  "M01_CH01_19_John.mp3": [
+    0.0,
+    5.22,
+    8.86
+  ],
+  "M01_CH01_22A_John.mp3": [
+    0.0,
+    4.56
+  ],
+  "M01_CH01_22B_John.mp3": [
+    0.0,
+    4.92
+  ],
+  "M01_CH01_22C_John.mp3": [
+    0.0,
+    2.54,
+    5.38
+  ],
+  "M01_CH01_20_John.mp3": [
+    0.0,
+    2.4
+  ],
+  "M01_CH01_21_John.mp3": [
+    0.0
+  ],
+  "M01_CH01_23_John.mp3": [
+    0.0,
+    3.14
+  ],
+  "M01_CH01_25_John.mp3": [
+    0.0,
+    2.4
+  ],
+  "M01_CH01_18A_John.mp3": [
+    0.0,
+    3.44
+  ],
+  "M01_CH01_18B_John.mp3": [
+    0.0,
+    3.52
+  ],
+  "M01_CH01_24_John.mp3": [
+    0.0,
+    3.14,
+    5.32
+  ],
+  "M01_CH01_26_John.mp3": [
+    0.0
+  ],
+  "M01_CH01_27_John.mp3": [
+    0.0,
+    3.24
+  ],
+  "M01_CH01_28_John.mp3": [
+    0.0,
+    2.64,
+    5.32,
+    8.5
+  ]
+}
 const TASKS: Dictionary = {
 	"sort":{"title":"01 / Sort the inbox", "voice":"v1794044485/M01_CH01_20_John.mp3", "tip":"Open a message, then drag or tap to sort.", "line":"Six messages. Which ones deserve another look?", "field":"sorted", "total":6, "next":"highlight"},
 	"highlight":{"title":"02 / Read between the lines", "voice":"v1794044484/M01_CH01_21_John.mp3", "tip":"Tap the request that feels wrong.", "line":"Something about these requests feels off.", "field":"flags", "total":3, "next":"notes"},

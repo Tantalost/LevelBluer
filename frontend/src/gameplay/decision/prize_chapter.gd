@@ -13,9 +13,9 @@ const CLEAN_BONUS: int = 25
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const FIRST_PHASE: String = "timeline"
 const TASKS: Dictionary = {
-	"timeline":{"title":"01 / Reconstruct the morning", "tip":"Place all four records from earliest to latest. Read the timestamps, not the order of the cards.", "line":"Pause the moment. Reconstruct what happened.", "field":"timeline_checked", "total":1, "next":"board"},
-	"board":{"title":"02 / Connect the pattern", "tip":"Connect coffee to the group message, the repeated typo to the earlier email, and the ten-second gap to the matching last seen.", "line":"A connection is not the same as a confession.", "field":"connections", "total":3, "next":"case_note"},
-	"case_note":{"title":"03 / Record the gap", "tip":"1. Count the minutes: 08:12 → 08:13 → 08:14. That is 2 minutes. Type 2 in the first box, not 08:14.\n2. The earlier event was the survey confirmation reply. Type survey confirmation reply in the second box.", "line":"Write what the records show. Not who I suspect.", "field":"notes", "total":1, "next":"seal"}
+	"timeline":{"title":"01 / Reconstruct the morning", "tip":"Place all four records from earliest to latest. Read the timestamps, not the order of the cards.", "line":"Pause the moment. Reconstruct what happened.", "voice":"v1794711277/levelblue/voice/mod_01/ch_04/M01_CH04_10_John.mp3", "field":"timeline_checked", "total":1, "next":"board"},
+	"board":{"title":"02 / Connect the pattern", "tip":"Connect coffee to the group message, the repeated typo to the earlier email, and the ten-second gap to the matching last seen.", "line":"A connection is not the same as a confession.", "voice":"v1794711278/levelblue/voice/mod_01/ch_04/M01_CH04_11_John.mp3", "field":"connections", "total":3, "next":"case_note"},
+	"case_note":{"title":"03 / Record the gap", "tip":"1. Count the minutes: 08:12 → 08:13 → 08:14. That is 2 minutes. Type 2 in the first box, not 08:14.\n2. The earlier event was the survey confirmation reply. Type survey confirmation reply in the second box.", "line":"Write what the records show. Not who I suspect.", "voice":"v1794711278/levelblue/voice/mod_01/ch_04/M01_CH04_12_John.mp3", "field":"notes", "total":1, "next":"seal"}
 }
 const TIMELINE: Array[Dictionary] = [
 	{"id":"survey","time":"08:12:00","label":"Survey confirmation reply received"},
@@ -41,8 +41,27 @@ const PAIRS: Dictionary = {
 }
 const EVIDENCE: String = "3 evidence bundles\n\n01 · The coffee reference repeats John's group message, visible to everyone\n02 · The prize email arrived 2 minutes after the survey confirmation and 10 seconds after Jobert's recorded last seen\n03 · 'Recieve' repeats the Chapter 1 survey email\n\nEric's last seen is also close: 15 seconds earlier. Presence status and a shared typo do not establish authorship."
 const SEAL_LINE: String = "These records connect the messages.\nThey do not tell me who was behind the screen.\nSave the exhibit before returning to that morning."
+const SEAL_VOICE: String = "v1794711280/levelblue/voice/mod_01/ch_04/M01_CH04_13_John.mp3"
 const SLEEP_LINE: String = "Back to that morning.\nJobert would know what to do.\nHe still hasn't replied.\nI just need something to go right today."
+const SLEEP_VOICE: String = "v1794711280/levelblue/voice/mod_01/ch_04/M01_CH04_14_John.mp3"
 const END_CAPTION: String = "This time, nobody called.\nTo be continued in Chapter 5."
+# Subtitle page starts measured from the original recordings; playback keeps its natural pace.
+const VOICE_TIMINGS: Dictionary = {
+	"M01_CH04_01_John.mp3": [0.0, 2.26],
+	"M01_CH04_02_John.mp3": [0.0, 3.02, 5.56],
+	"M01_CH04_03_John.mp3": [0.0, 2.14, 3.42],
+	"M01_CH04_04_John.mp3": [0.0, 2.32, 4.56, 5.38],
+	"M01_CH04_05_John.mp3": [0.0],
+	"M01_CH04_06_John.mp3": [0.0, 1.46],
+	"M01_CH04_07_John.mp3": [0.0, 1.5, 3.42, 5.12],
+	"M01_CH04_08_John.mp3": [0.0, 1.06, 2.48, 4.82],
+	"M01_CH04_09_John.mp3": [0.0, 2.88],
+	"M01_CH04_10_John.mp3": [0.0, 2.34],
+	"M01_CH04_11_John.mp3": [0.0],
+	"M01_CH04_12_John.mp3": [0.0, 2.74],
+	"M01_CH04_13_John.mp3": [0.0, 3.06, 7.22],
+	"M01_CH04_14_John.mp3": [0.0, 2.82, 4.44, 7.8],
+}
 const MESSAGES: Array[Dictionary] = [{"id":"prize","sender":"Prize Desk","address":"awards@prize-claim.example","subject":"You won ₱1,000,000","body":"Congratulations, John!\n\nYour address was selected for ₱1,000,000.\nStill missing your coffee, John?\n\nClaim within 10 minutes.\nFollow the link and confirm your account password to recieve your prize.","phrase":"Claim within 10 minutes. Confirm your account password.","suspicious":true}]
 const CHAT_MESSAGES: Array[Dictionary] = []
 const PRIVATE_CHAT: Array[Dictionary] = [
@@ -51,15 +70,15 @@ const PRIVATE_CHAT: Array[Dictionary] = [
 	{"who":"John","face":2,"text":"Jobert?"}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John","face":2,"bg":"intro_morning","caption":"That morning.\nThe room. The message. The button.","line":"Five more minutes.\nPlease."},
-	{"who":"John","face":2,"bg":"intro_morning","art":"opening_john_reaching_phone_v1","line":"No payout.\nNo breakfast.\nEven my phone has more energy than me.","mail":true,"event":"notification"},
-	{"who":"John","face":1,"bg":"intro_morning","line":"A million pesos?\nOkay. I'm awake.","mail":true,"event":"email"},
-	{"who":"John","face":4,"bg":"intro_morning","line":"Still missing my coffee?\nThat's unfairly specific.\nWait.\nHow do they know about the coffee?"},
-	{"who":"John","face":2,"bg":"intro_morning","line":"Jobert will know.","chat":true,"messages":PRIVATE_CHAT,"contact":"Jobert"},
-	{"who":"John","face":2,"bg":"intro_morning","line":"Offline.\nYou picked a really bad time to disappear."},
-	{"who":"John","face":4,"bg":"intro_morning","line":"Right. I did say it here.\nEveryone could see it.\nBut that doesn't explain who copied it.","mail":true,"event":"coffee"},
-	{"who":"John","face":4,"bg":"intro_morning","line":"Recieve.\nAgain.\nAnd these times…\nHold on."},
-	{"who":"John","face":4,"bg":"intro_morning","caption":"Before the tap.\nPause the memory. Follow the records.","line":"The morning hasn't moved on.\nWe're reconstructing the evidence."}
+	{"who":"John","face":2,"bg":"intro_morning","caption":"That morning.\nThe room. The message. The button.","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_01_John.mp3", "line":"Five more minutes.\nPlease."},
+	{"who":"John","face":2,"bg":"intro_morning","art":"opening_john_reaching_phone_v1","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_02_John.mp3", "line":"No payout.\nNo breakfast.\nEven my phone has more energy than me.","mail":true,"event":"notification"},
+	{"who":"John","face":1,"bg":"intro_morning","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_03_John.mp3", "line":"A million pesos?\nOkay. I'm awake.","mail":true,"event":"email"},
+	{"who":"John","face":4,"bg":"intro_morning","voice":"v1794711273/levelblue/voice/mod_01/ch_04/M01_CH04_04_John.mp3", "line":"Still missing my coffee?\nThat's unfairly specific.\nWait.\nHow do they know about the coffee?"},
+	{"who":"John","face":2,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_05_John.mp3", "line":"Jobert will know.","chat":true,"messages":PRIVATE_CHAT,"contact":"Jobert"},
+	{"who":"John","face":2,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_06_John.mp3", "line":"Offline.\nYou picked a really bad time to disappear."},
+	{"who":"John","face":4,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_07_John.mp3", "line":"Right. I did say it here.\nEveryone could see it.\nBut that doesn't explain who copied it.","mail":true,"event":"coffee"},
+	{"who":"John","face":4,"bg":"intro_morning","voice":"v1794711276/levelblue/voice/mod_01/ch_04/M01_CH04_08_John.mp3", "line":"Recieve.\nAgain.\nAnd these times…\nHold on."},
+	{"who":"John","face":4,"bg":"intro_morning","caption":"Before the tap.\nPause the memory. Follow the records.","voice":"v1794711277/levelblue/voice/mod_01/ch_04/M01_CH04_09_John.mp3", "line":"The morning hasn't moved on.\nWe're reconstructing the evidence."}
 ]
 
 static func fresh() -> Dictionary:

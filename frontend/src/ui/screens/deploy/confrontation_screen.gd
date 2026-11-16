@@ -4,7 +4,7 @@ var Case: GDScript = preload("res://src/gameplay/decision/confrontation_chapter.
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const W: GDScript = preload("res://src/ui/screens/deploy/confrontation_widgets.gd")
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
-const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
+const VoicePlayer: GDScript = preload("res://src/gameplay/decision/story_voice_player.gd")
 @export_group("Evidence command animation")
 ## Order: anticipation, terminal entrance, typing, confirmation, return.
 @export var command_durations: PackedFloat32Array = [.25,.40,.80,.45,.70]
@@ -65,13 +65,17 @@ var _story_cue: String = ""
 var _dialogue_voices: Dictionary = {}
 var _dialogue_sources: PackedInt32Array = []
 var _feedback_voice: bool = false
+var _background: ColorRect
+var _voice_page_times: PackedFloat32Array = []
+var _voice_page_start: int = 0
+var _ending_caption: Label
 
 func _ready() -> void:
-	var background: ColorRect = ColorRect.new()
-	background.color = W.BG
-	background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	background.mouse_filter = MOUSE_FILTER_IGNORE
-	add_child(background)
+	_background = ColorRect.new()
+	_background.color = W.BG
+	_background.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	_background.mouse_filter = MOUSE_FILTER_IGNORE
+	add_child(_background)
 	_safe = SafeAreaContainer.new()
 	_safe.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	add_child(_safe)
@@ -93,6 +97,7 @@ func on_enter(args: Dictionary) -> void:
 		return
 	Case = definition
 	_stop_voice()
+	_prefetch_ending()
 	_case_context = Case.hearing_context(PlayerManager.chapter_progress) if Case.has_method("hearing_context") else {}
 	_suspect_selected = ""
 	_dialogue_text = ""
@@ -125,8 +130,9 @@ func on_exit() -> void:
 	_save()
 	_cancel_command()
 	_active = false
-	# Keeps the cue, so returning from Settings resumes the text without restarting its line.
-	_story_voice.clear_clip()
+	_stop_voice()
+	# The current saved cutaway step replays on return; completed steps stay completed.
+	if not state.is_empty() and state.phase == "lights" and _has_ending(): _elapsed = 0
 	AudioManager.stop_dialogue_blips(self)
 	AudioManager.release_opening_audio(self)
 	_result_audio.stop()
@@ -193,6 +199,8 @@ func _build() -> void:
 	_rebuttal_fx = null
 	_chat_text = null
 	_stage = null
+	_ending_caption = null
+	_background.color = Color.BLACK if state.get("phase","") == "lights" and _has_ending() else W.BG
 	_layout = UI.column(_safe,ceili(8*_u))
 	var header: HBoxContainer = HBoxContainer.new()
 	header.add_theme_constant_override("separation",ceili(10*_u))
@@ -224,6 +232,7 @@ func _build() -> void:
 		return
 	_credit.text = "CREDIBILITY / %d" % int(state.credibility)
 	_bar.value = int(state.credibility)
+	credibility.visible = state.phase != "lights" or not _has_ending()
 	AudioManager.set_hearing_decision(self,state.phase == "suspect",state.phase in ["debate","rebuttal"])
 	match str(state.phase):
 		"prep": _prep()
@@ -673,17 +682,36 @@ func _set_line() -> void:
 	_dialogue.visible_characters = -1 if SettingsService.text_speed == "instant" else int(_letters)
 	var source: int = _dialogue_sources[_dialogue_line] if _dialogue_line < _dialogue_sources.size() else -1
 	_cue_voice("%s:%d:%d" % [state.phase,_dialogue_text.hash(),source],str(_dialogue_voices.get(source,"")))
+	_voice_page_start = _dialogue_sources.find(source)
 
 ## Starts a recording once per authored line; an unvoiced line silences the previous speaker.
 func _cue_voice(key: String, path: String) -> void:
 	if key == _story_cue: return
 	_story_cue = key
+	_voice_page_times.clear()
+	var timings: Variant = Case.get("VOICE_TIMINGS")
+	if timings is Dictionary:
+		for time: Variant in timings.get(path.get_file(),[]): _voice_page_times.append(float(time))
 	if path.is_empty(): _story_voice.clear_clip()
 	else: _story_voice.play_clip(path)
+	_suspend_voice()
+
+## A recording spans its sentence pages without restarting. Manual taps opt out for this cue.
+func _sync_voice_page() -> void:
+	if not _interactive() or not is_instance_valid(_dialogue) or _voice_page_times.is_empty() or not _story_voice.playing or _story_voice.stream_paused: return
+	var page: int = 0
+	for index: int in _voice_page_times.size():
+		if _story_voice.get_playback_position() >= _voice_page_times[index]: page = index
+	page += _voice_page_start
+	if page > _dialogue_line and page < _dialogue_lines.size() and _dialogue_sources[page] == _dialogue_sources[_dialogue_line]:
+		_dialogue_line = page
+		_letters = 0
+		_set_line()
 
 func _stop_voice() -> void:
 	_feedback_voice = false
 	_story_cue = ""
+	_voice_page_times.clear()
 	_story_voice.clear_clip()
 
 func _suspend_voice() -> void:
@@ -697,6 +725,7 @@ func _case_voices(table: String, index: int) -> Dictionary:
 
 func _advance_dialogue() -> void:
 	if not _interactive() or not is_instance_valid(_dialogue): return
+	_voice_page_times.clear()
 	if _dialogue.visible_characters >= 0 and _dialogue.visible_characters < _dialogue.text.length():
 		_letters = _dialogue.text.length()
 		_dialogue.visible_characters = -1
@@ -795,6 +824,9 @@ func _meeting_lights() -> W.MeetingLights:
 	return image
 
 func _lights() -> void:
+	if _has_ending():
+		_cutaway()
+		return
 	var column: VBoxContainer = _column()
 	var image: W.MeetingLights = _meeting_lights()
 	column.add_child(image)
@@ -807,6 +839,8 @@ func _lights() -> void:
 
 func _finish() -> void:
 	if not _interactive() or state.phase != "lights" or _elapsed < 3.0: return
+	if _has_ending() and (int(state.ending_step) != _ending_lines().size()+1 or _elapsed < float(Case.PRESENTATION.get("ending_seal_seconds",3.0))): return
+	_stop_voice()
 	state.lights_done = true
 	state.completed = true
 	state = Case.clean(state)
@@ -819,6 +853,115 @@ func _finish() -> void:
 		_sync_result_audio()
 		AudioManager.set_story_duck(self,.22)
 		_result_audio.play()
+
+func _has_ending() -> bool:
+	return Case.get("ENDING") is Array
+
+func _ending_lines() -> Array:
+	var lines: Variant = Case.get("ENDING")
+	return lines if lines is Array else []
+
+func _prefetch_ending() -> void:
+	if not _has_ending() or not _story_voice.audible(): return
+	var paths: Array[String] = [str(Case.get("ENDING_LAUGH"))]
+	for line: Dictionary in _ending_lines(): paths.append(str(line.voice))
+	for path: String in paths:
+		if not path.is_empty() and VoicePlayer.cached_stream(path) == null: VoicePlayer.download(path)
+
+## Reuses the existing lights phase and voice channel; only the step is persisted.
+func _cutaway() -> void:
+	_title.text = "ELSEWHERE"
+	var column: VBoxContainer = _column()
+	var step: int = int(state.ending_step)
+	var lines: Array = _ending_lines()
+	if step == 0:
+		var image: W.MeetingLights = _meeting_lights()
+		image.asset_id = _text("ending_art","opening_collector_meeting_v2")
+		image.left_disconnect = true
+		image.disconnect_at = float(Case.PRESENTATION.get("ending_disconnect_at",5.0))
+		image.black_at = float(Case.PRESENTATION.get("ending_black_at",8.0))
+		# Let the cinematic use the whole safe area behind the menu, not a small story card.
+		image.mouse_filter = MOUSE_FILTER_IGNORE
+		_safe.add_child(image)
+		_safe.move_child(image,0)
+		_stage = image
+		var spacer: Control = Control.new()
+		spacer.size_flags_vertical = SIZE_EXPAND_FILL
+		column.add_child(spacer)
+		_ending_caption = W.copy("Four figures laugh. Four lights remain.",_u,W.CREAM,19)
+		_ending_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_ending_caption.visible = AssetManager.get_texture(image.asset_id) == null
+		column.add_child(_ending_caption)
+		_cue_voice("ending:laughter",str(Case.get("ENDING_LAUGH")))
+	elif step <= lines.size():
+		var line: Dictionary = lines[step-1]
+		var center: CenterContainer = CenterContainer.new()
+		center.size_flags_vertical = SIZE_EXPAND_FILL
+		column.add_child(center)
+		var margin: MarginContainer = MarginContainer.new()
+		margin.size_flags_horizontal = SIZE_EXPAND_FILL
+		center.add_child(margin)
+		var words: VBoxContainer = UI.column(margin,ceili(20*_u))
+		var tint: Color = [W.CYAN,W.ORANGE,W.CREAM][(step-1)%3]
+		var speaker: Label = W.copy(str(line.speaker),_u,tint,17)
+		speaker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		words.add_child(speaker)
+		_ending_caption = W.copy(str(line.text),_u,W.CREAM,27)
+		_ending_caption.custom_minimum_size.x = maxf(240*_u,size.x*.72)
+		_ending_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		words.add_child(_ending_caption)
+		_cue_voice("ending:%d" % step,str(line.voice))
+	else:
+		_title.text = "CASE RECORD"
+		_ending_caption = W.copy("EXHIBIT SEALED",_u,W.CYAN,40)
+		_ending_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_ending_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_ending_caption.size_flags_vertical = SIZE_EXPAND_FILL
+		column.add_child(_ending_caption)
+		_cue_voice("ending:sealed","")
+	var next: Button = W.button("VIEW RESULTS" if step > lines.size() else "CONTINUE",_finish if step > lines.size() else _next_cutaway,_u,true)
+	next.name = "FinishHearing" if step > lines.size() else "ContinueCutaway"
+	column.add_child(next)
+	_update_cutaway(0.0)
+
+func _next_cutaway() -> void:
+	if not _interactive() or state.phase != "lights" or not _has_ending() or int(state.ending_step) > _ending_lines().size(): return
+	if int(state.ending_step) == 0 and _elapsed < float(Case.PRESENTATION.get("ending_finish_at",9.0)): return
+	if int(state.ending_step) > 0 and _elapsed < .35: return
+	_stop_voice()
+	state.ending_step += 1
+	_elapsed = 0
+	_letters = 0
+	_save()
+	_build()
+
+func _update_cutaway(delta: float) -> void:
+	# Network loading holds the current step, bounded by the voice player's request timeout.
+	if _story_voice._request != null and _story_voice.audible(): _elapsed = maxf(0,_elapsed-delta)
+	var step: int = int(state.ending_step)
+	var lines: Array = _ending_lines()
+	var next: Button = find_child("ContinueCutaway",true,false) as Button
+	if step == 0:
+		if _stage is W.MeetingLights:
+			_stage.elapsed = _elapsed
+			_stage.queue_redraw()
+		if is_instance_valid(_ending_caption):
+			_ending_caption.text = "The far-left light goes dark. Three remain." if _elapsed >= float(Case.PRESENTATION.get("ending_disconnect_at",5.0))+1.0 else "Four figures laugh. Four lights remain."
+		var done: bool = _elapsed >= float(Case.PRESENTATION.get("ending_finish_at",9.0))
+		if next != null:
+			next.disabled = not done
+			next.visible = done
+		if done and not _story_voice.pending_or_playing(): _next_cutaway()
+	elif step <= lines.size():
+		if next != null: next.disabled = _elapsed < .35
+		if is_instance_valid(_ending_caption):
+			_ending_caption.visible_characters = -1 if SettingsService.reduced_motion or SettingsService.text_speed == "instant" else int(_elapsed*32)
+		if _elapsed >= maxf(float(lines[step-1].duration)+.7, str(lines[step-1].text).length()/20.0) and not _story_voice.pending_or_playing(): _next_cutaway()
+	else:
+		if is_instance_valid(_ending_caption):
+			_ending_caption.visible_characters = -1 if SettingsService.reduced_motion else int(maxf(0,_elapsed-.25)*9.0)
+		var finish: Button = find_child("FinishHearing",true,false) as Button
+		if finish != null: finish.disabled = _elapsed < float(Case.PRESENTATION.get("ending_seal_seconds",3.0))
 
 func _results() -> void:
 	_title.text = _text("result_title","CASE CLOSED")
@@ -1100,6 +1243,9 @@ func _process(delta: float) -> void:
 			else: _voice += 1
 			_update_statement()
 	elif state.phase == "lights":
+		if _has_ending():
+			_update_cutaway(delta)
+			return
 		if _stage is W.MeetingLights:
 			_stage.elapsed = _elapsed
 			_stage.queue_redraw()
@@ -1124,6 +1270,7 @@ func _process(delta: float) -> void:
 			_stage.queue_redraw()
 		var heading: Label = find_child("CompletionHeading",true,false) as Label
 		if heading != null: heading.modulate.a = 1.0 if SettingsService.reduced_motion else smoothstep(0,.7,_elapsed)
+	_sync_voice_page()
 	if is_instance_valid(_dialogue) and _dialogue.visible_characters >= 0:
 		_letters += delta*32*SettingsService.text_speed_multiplier()
 		_dialogue.visible_characters = int(_letters)

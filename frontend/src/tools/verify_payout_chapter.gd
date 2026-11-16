@@ -63,6 +63,8 @@ func _run() -> void:
 	player.lesson_progress = {"mod_01":2}
 	root.get_node("SettingsService").text_speed = "instant"
 	root.get_node("SettingsService").reduced_motion = true
+	# This fixture fast-forwards interactions; hosted narration is checked separately.
+	root.get_node("SettingsService").sound_enabled = false
 	check(player.begin_story_attempt(Case.ID, false, false).is_empty(), "Chapter 3 is gated before prior exhibits")
 	var first: Dictionary = Survey.fresh()
 	for entry: Dictionary in Survey.MESSAGES:

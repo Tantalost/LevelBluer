@@ -9,6 +9,17 @@ const MUTED := Color("a0b7bb")
 const TEAL := Color("85d9c3")
 const GOLD := Color("e5c88a")
 
+class ObjectiveStar extends Control:
+	var earned: bool = false
+	func _draw() -> void:
+		var points: PackedVector2Array = []
+		var radius: float = minf(size.x, size.y) * 0.46
+		for index: int in 10:
+			points.append(size * 0.5 + Vector2.from_angle(-PI / 2 + index * PI / 5) * radius * (1.0 if index % 2 == 0 else 0.44))
+		draw_colored_polygon(points, Color("FFB648") if earned else Color("173058"))
+		points.append(points[0])
+		draw_polyline(points, Color("F3ECD6") if earned else Color("4FE0D4"), 2)
+
 class JournalCheck extends Control:
 	var complete: bool = false
 	func _draw() -> void:

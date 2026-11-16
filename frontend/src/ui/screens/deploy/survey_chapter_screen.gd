@@ -4,6 +4,9 @@ const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 const VoicePlayer = preload("res://src/gameplay/decision/story_voice_player.gd")
 var _voice: VoicePlayer = VoicePlayer.new()
 var _line_voice: String = ""
+var _voice_page_times: Array[float] = []
+var _voice_page_offset: int = 0
+var _voice_waiting_for_continue: bool = false
 var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Phone: GDScript = preload("res://src/gameplay/decision/survey_phone.gd")
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
@@ -539,7 +542,7 @@ func _render() -> void:
 	elif phase == "sleep":
 		_set_line(Chapter.SLEEP_LINE, str(Chapter.SLEEP_VOICE) if Chapter.get("SLEEP_VOICE") is String else "")
 	elif phase == "closing":
-		_set_line(Chapter.END_CAPTION)
+		_set_line(Chapter.END_CAPTION, str(Chapter.get("END_VOICE")) if Chapter.get("END_VOICE") is String else "")
 	else:
 		_show_results()
 	_load_art()
@@ -621,17 +624,6 @@ func _show_results() -> void:
 			AudioManager.set_story_duck(self, 0.22)
 			_result_audio.play()
 
-class ObjectiveStar extends Control:
-	var earned: bool = false
-	func _draw() -> void:
-		var points: PackedVector2Array = []
-		var radius: float = minf(size.x, size.y) * 0.46
-		for index: int in 10:
-			points.append(size * 0.5 + Vector2.from_angle(-PI / 2 + index * PI / 5) * radius * (1.0 if index % 2 == 0 else 0.44))
-		draw_colored_polygon(points, Color("FFB648") if earned else Color("173058"))
-		points.append(points[0])
-		draw_polyline(points, Color("F3ECD6") if earned else Color("4FE0D4"), 2)
-
 func _build_star_results() -> void:
 	_star_result_scroll = ScrollContainer.new()
 	_star_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -647,7 +639,7 @@ func _build_star_results() -> void:
 		var row: HBoxContainer = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 12)
 		body.add_child(row)
-		var star: ObjectiveStar = ObjectiveStar.new()
+		var star: UI.ObjectiveStar = UI.ObjectiveStar.new()
 		star.earned = id in earned
 		star.custom_minimum_size = Vector2(32,32) / physical
 		star.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -680,7 +672,14 @@ func _next_chapter() -> void:
 
 func _set_line(text: String, voice: String = "") -> void:
 	_voice.clear_clip()
+	_voice_waiting_for_continue = false
+	_voice.suspend_clip(not _can_act())
 	_line_voice = voice
+	_voice_page_times.clear()
+	var timings: Variant = Chapter.get("VOICE_TIMINGS")
+	if timings is Dictionary:
+		for time: Variant in timings.get(voice.get_file(), []):
+			_voice_page_times.append(float(time))
 	# Presentation pages leave authored beat IDs (and existing saves) unchanged.
 	_sentences.clear()
 	_sentence = 0
@@ -694,6 +693,7 @@ func _set_line(text: String, voice: String = "") -> void:
 	var tail: String = text.substr(start).strip_edges()
 	if not tail.is_empty(): _sentences.append(tail)
 	if _sentences.is_empty(): _sentences.append("")
+	_voice_page_offset = maxi(0, _sentences.size() - _voice_page_times.size())
 	_show_sentence()
 
 func _show_sentence() -> void:
@@ -711,6 +711,10 @@ func _show_sentence() -> void:
 	_heading.modulate.a = 0.0 if caption else 1.0
 	_dialogue.visible = not caption
 	if caption:
+		# Opening time cards stay silent; an explicitly voiced ending starts here.
+		if state.get("phase") == "closing" and not _line_voice.is_empty():
+			_voice.play_clip(_line_voice)
+			_line_voice = ""
 		_speaker.text = ""
 		_perk_button.hide()
 		_cast_stage.hide()
@@ -724,6 +728,11 @@ func _show_sentence() -> void:
 	if not _line_voice.is_empty():
 		_voice.play_clip(_line_voice)
 		_line_voice = ""
+	if _manual_voice_pages():
+		_voice_waiting_for_continue = false
+		var page: int = _sentence - _voice_page_offset
+		if page >= 0 and page < _voice_page_times.size(): _voice.seek_clip(_voice_page_times[page])
+		_voice.suspend_clip(not _can_act())
 	if was_caption:
 		_perk_button.visible = not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
 		_speaker.text = str(Chapter.STORY[int(state["beat"])]["who"])
@@ -731,7 +740,7 @@ func _show_sentence() -> void:
 		_load_art()
 	elif state.phase == "day" and (Chapter.STORY[int(state.beat)].has("sentence_faces") or Chapter.STORY[int(state.beat)].has("approach_art")):
 		_load_art()
-	if SettingsService.text_speed != "instant":
+	if SettingsService.text_speed != "instant" and (_voice_page_times.is_empty() or _manual_voice_pages()):
 		_line.visible_characters = 0
 		_typing = create_tween()
 		_typing.tween_property(_line, "visible_characters", text.length(), text.length() / (32.0 * SettingsService.text_speed_multiplier()))
@@ -773,12 +782,36 @@ func _update_advance() -> void:
 			_chat_cue = 0.85
 
 func _process(delta: float) -> void:
+	_sync_voice_page()
 	if _chat_cue < 0.0 or not _can_act() or _voice.pending_or_playing(): return
 	_chat_cue -= delta
 	if _chat_cue <= 0.0:
 		_chat_cue = -1.0
 		_chat_started = true
 		_open_chat(_seq)
+
+func _sync_voice_page() -> void:
+	if _voice_page_times.is_empty() or not _can_act() or not _voice.playing or _voice.stream_paused:
+		return
+	var position: float = _voice.get_playback_position()
+	if _manual_voice_pages():
+		var next: int = _sentence - _voice_page_offset + 1
+		if next > 0 and next < _voice_page_times.size() and position >= maxf(0.0, _voice_page_times[next] - .06):
+			_voice_waiting_for_continue = true
+			_voice.suspend_clip(true)
+			_voice.seek_clip(_voice_page_times[next])
+			if _approach_audio != null: _approach_audio.stream_paused = true
+		return
+	var page: int = 0
+	for index: int in _voice_page_times.size():
+		if position >= _voice_page_times[index]: page = index
+	page = mini(page + _voice_page_offset, _sentences.size() - 1)
+	if page > _sentence:
+		_sentence = page
+		_show_sentence()
+
+func _manual_voice_pages() -> bool:
+	return Chapter.get("VOICE_WAIT_FOR_CONTINUE") == true
 
 func _is_chat_beat() -> bool:
 	if state.get("phase") == "sleep" and Chapter.get("SLEEP_CHAT") is Array: return true
@@ -806,6 +839,9 @@ func _advance() -> void:
 		_update_advance()
 		return
 	if _sentence < _sentences.size() - 1:
+		# Explicit page taps retain the existing manual-reading behavior for this cue.
+		if not _manual_voice_pages() and (not _is_caption_sentence() or state.get("phase") == "closing"):
+			_voice_page_times.clear()
 		_sentence += 1
 		_show_sentence()
 		return
@@ -1065,7 +1101,7 @@ func _load_art() -> void:
 		if not _approach_audio.has_stream_playback():
 			_approach_audio.stream = load(beat.approach_sfx) as AudioStream
 			_approach_audio.play()
-			_approach_audio.stream_paused = not _can_act()
+		_approach_audio.stream_paused = not _can_act() or _voice_waiting_for_continue
 	elif _approach_audio != null:
 		_approach_audio.stop()
 	var person: String = str(beat["who"]).to_lower() if phase == "day" else _protagonist()
@@ -1349,9 +1385,9 @@ func _toggle_menu() -> void:
 
 func _apply_pause() -> void:
 	var locked: bool = not _can_act()
-	_voice.suspend_clip(locked)
+	_voice.suspend_clip(locked or _voice_waiting_for_continue)
 	if _approach_audio != null and _approach_audio.has_stream_playback():
-		_approach_audio.stream_paused = locked
+		_approach_audio.stream_paused = locked or _voice_waiting_for_continue
 	_perk_button.disabled = locked or _sending
 	if _result_tween != null and _result_tween.is_valid():
 		if locked: _result_tween.pause()

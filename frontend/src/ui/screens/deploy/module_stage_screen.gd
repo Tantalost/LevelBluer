@@ -480,24 +480,36 @@ func _build_chapters() -> void:
 		copy.size_flags_vertical = SIZE_SHRINK_CENTER
 		copy.size_flags_horizontal = SIZE_EXPAND_FILL
 		copy.add_child(UI.label(caption, maxi(_font, ceili(21 / physical)), UI.TEXT))
-		if id == "mod_01_ch_01":
-			var earned: Array[String] = PlayerManager.story_stars(id)
-			var focus: String = "ALL OBJECTIVES EARNED"
-			var definition: GDScript = PlayerManager.story_definition(id)
-			for objective: String in definition.STAR_IDS:
-				if objective not in earned:
-					focus = str(definition.STAR_GOALS[objective]).get_slice(" / ", 0)
-					break
-			copy.add_child(UI.label("%d/3 STARS / %s" % [earned.size(), focus], ceili(14 / physical), UI.GOLD))
 		if not completed:
 			copy.add_child(UI.label(status, maxi(_font - 3, ceili(14 / physical)), ACCENTS[0] if index == 0 else UI.MUTED))
+		var trailing: VBoxContainer = UI.column(content, ceili(5 / physical))
+		trailing.mouse_filter = MOUSE_FILTER_IGNORE
+		trailing.size_flags_vertical = SIZE_SHRINK_CENTER
+		if id == "mod_01_ch_01":
+			var earned: Array[String] = PlayerManager.story_stars(id)
+			var definition: GDScript = PlayerManager.story_definition(id)
+			var stars: HBoxContainer = HBoxContainer.new()
+			stars.name = "ChapterStars"
+			stars.mouse_filter = MOUSE_FILTER_IGNORE
+			stars.size_flags_horizontal = SIZE_SHRINK_END
+			stars.add_theme_constant_override("separation", ceili(3 / physical))
+			trailing.add_child(stars)
+			row.accessibility_name += " %d of 3 stars earned." % earned.size()
+			for objective: String in definition.STAR_IDS:
+				var star: UI.ObjectiveStar = UI.ObjectiveStar.new()
+				star.earned = objective in earned
+				star.custom_minimum_size = Vector2(24,24) / physical
+				star.mouse_filter = MOUSE_FILTER_IGNORE
+				star.accessibility_name = str(definition.STAR_GOALS[objective]).get_slice(" / ",0) + (". Earned." if star.earned else ". Not earned.")
+				stars.add_child(star)
 		if completed:
 			var badge: Label = UI.label("COMPLETED", ceili(14 / physical), COMPLETED_INK)
 			badge.name = "CompletionBadge"
 			badge.autowrap_mode = TextServer.AUTOWRAP_OFF
 			badge.size_flags_vertical = SIZE_SHRINK_CENTER
-			badge.add_theme_stylebox_override("normal", UI.box(Color("0e271b"), Color("5b936a"), ceili(8 / physical)))
-			content.add_child(badge)
+			badge.size_flags_horizontal = SIZE_SHRINK_END
+			badge.add_theme_stylebox_override("normal", UI.box(Color("0e271b"), Color("5b936a"), ceili((5 if id == "mod_01_ch_01" else 8) / physical)))
+			trailing.add_child(badge)
 		if not unlocked:
 			var lock: IntelPixelIcon = IntelPixelIcon.new()
 			lock.kind = IntelPixelIcon.Kind.LOCK
@@ -505,7 +517,8 @@ func _build_chapters() -> void:
 			lock.custom_minimum_size = Vector2(20,20) / physical
 			lock.size_flags_vertical = SIZE_SHRINK_CENTER
 			lock.mouse_filter = MOUSE_FILTER_IGNORE
-			content.add_child(lock)
+			lock.size_flags_horizontal = SIZE_SHRINK_END
+			trailing.add_child(lock)
 	UI.clear(_detail)
 	_chapter_preview = ChapterPreview.new()
 	_chapter_preview.chapter = _selected + 1

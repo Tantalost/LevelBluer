@@ -9,44 +9,81 @@ const CLEAN_BONUS: int = 25
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
 const FIRST_PHASE: String = "compare"
 const TASKS: Dictionary = {
-	"compare":{"title":"01 / Spot the differences", "tip":"Compare sender, wording and signature.", "line":"Same name. Different details.", "field":"flags", "total":3, "next":"report"},
-	"report":{"title":"02 / Report to IT", "tip":"Retype the sender domain. The reference stays visible.", "line":"One character nearly fooled me.", "field":"domains", "total":1, "next":"headers"},
-	"headers":{"title":"03 / Follow the reply", "tip":"Drag labels onto fields, or tap a label then a field.", "line":"Where would my answer actually go?", "field":"headers", "total":3, "next":"seal"}
+	"compare":{"title":"01 / Spot the differences", "tip":"Compare sender, wording and signature.", "line":"Same name. Different details.", "voice":"v1794556879/levelblue/voice/mod_01/ch_02/M01_CH02_26_John.mp3", "field":"flags", "total":3, "next":"report"},
+	"report":{"title":"02 / Report to IT", "tip":"Retype the sender domain. The reference stays visible.", "line":"One character nearly fooled me.", "voice":"v1794556880/levelblue/voice/mod_01/ch_02/M01_CH02_27_John.mp3", "field":"domains", "total":1, "next":"headers"},
+	"headers":{"title":"03 / Follow the reply", "tip":"Drag labels onto fields, or tap a label then a field.", "line":"Where would my answer actually go?", "voice":"v1794556881/levelblue/voice/mod_01/ch_02/M01_CH02_28_John.mp3", "field":"headers", "total":3, "next":"seal"}
 }
 const EVIDENCE: String = "3 evidence bundles\n\n01 · Lookalike sender domain\n02 · Reply-To differs from From\n03 · Urgency, generic wording and familiar club format\n\nDan knows the format. That is context, not proof that he sent this."
 const SEAL_LINE: String = "I need more than a bad feeling. Now I can show exactly what changed."
+const SEAL_VOICE: String = "v1794556882/levelblue/voice/mod_01/ch_02/M01_CH02_29_John.mp3"
 const SLEEP_LINE: String = "The sender. The reply address. The message itself.\nSaved.\nTomorrow, I'll ask Sir Rham myself."
+const SLEEP_VOICE: String = "v1794556882/levelblue/voice/mod_01/ch_02/M01_CH02_30_John.mp3"
 const END_CAPTION: String = "I caught this one.\nI thought that meant I was getting better."
+const END_VOICE: String = "v1794556883/levelblue/voice/mod_01/ch_02/M01_CH02_31_John.mp3"
+# Subtitle page starts measured from the original recordings; playback keeps its natural pace.
+const VOICE_TIMINGS: Dictionary = {
+	"M01_CH02_01_John.mp3": [0.0, 1.76],
+	"M01_CH02_02_John.mp3": [0.0, 4.02],
+	"M01_CH02_03_John.mp3": [0.0, 1.98, 7.28, 7.8, 8.32],
+	"M01_CH02_04_John.mp3": [0.0, 1.5, 4.86, 7.1],
+	"M01_CH02_05_Jobert.mp3": [0.0],
+	"M01_CH02_06_John.mp3": [0.0],
+	"M01_CH02_07_Jobert.mp3": [0.0],
+	"M01_CH02_08_John.mp3": [0.0],
+	"M01_CH02_09_John.mp3": [0.0],
+	"M01_CH02_10_Jobert.mp3": [0.0],
+	"M01_CH02_11_John.mp3": [0.0, 1.98],
+	"M01_CH02_12_Jobert.mp3": [0.0],
+	"M01_CH02_13_John.mp3": [0.0],
+	"M01_CH02_14_Jobert.mp3": [0.0, 3.1],
+	"M01_CH02_15_John.mp3": [0.0, 2.98],
+	"M01_CH02_16_Jobert.mp3": [0.0],
+	"M01_CH02_17_John.mp3": [0.0, 2.98],
+	"M01_CH02_18_Jobert.mp3": [0.0, 1.34],
+	"M01_CH02_19_John.mp3": [0.0],
+	"M01_CH02_20_Jobert.mp3": [0.0, 2.32],
+	"M01_CH02_21.mp3": [0.0, 3.14],
+	"M01_CH02_22_John.mp3": [0.0, 2.78, 4.78],
+	"M01_CH02_23_John.mp3": [0.0, 2.74, 5.88],
+	"M01_CH02_24_John.mp3": [0.0, 2.72, 5.46, 6.44],
+	"M01_CH02_25_John.mp3": [0.0, 2.66, 5.64, 7.98, 10.26, 13.26],
+	"M01_CH02_26_John.mp3": [0.0, 2.06],
+	"M01_CH02_27_John.mp3": [0.0],
+	"M01_CH02_28_John.mp3": [0.0],
+	"M01_CH02_29_John.mp3": [0.0, 2.9],
+	"M01_CH02_30_John.mp3": [0.0, 1.58, 3.24, 5.06, 6.32],
+	"M01_CH02_31_John.mp3": [0.0, 2.3],
+}
 const MESSAGES: Array[Dictionary] = [
 	{"id":"real", "sender":"Sir Rham", "address":"sir.rham@school.example", "reply":"sir.rham@school.example", "subject":"[CLUB UPDATE] Friday Meeting Reminder", "body":"Hi, everyone,\n\nOur meeting starts at 3 PM in the clubroom. Bring your project notes.\n\nPlease leave the chairs in their usual arrangement this time.", "signature":"Sir Rham\nClub Advisor", "phrase":"Known earlier email · Confirmed meeting details", "suspicious":false},
 	{"id":"fake", "sender":"Sir Rham — Club Advisor", "address":"sir.rham@schoo1.example", "reply":"club.records@member-support.example", "subject":"[CLUB UPDATE] Member Details Confirmation", "body":"Dear Club Member,\n\nWe are updating club records. Confirm your full name, section, mobile number, and home address by replying within 24 hours.\n\nMembers who do not respond may be removed from the active list.", "signature":"Regards,\nClub Administration", "phrase":"A familiar club format does not establish who sent this message.", "suspicious":true}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john"], "caption":"Four days before everything went wrong.", "line":"Made it before the bell.\nNo running.\nNo excuses."},
-	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john"], "caption":"This time, the message had a familiar name.", "line":"I should stop celebrating so early.\nClub records?", "mail":true, "email":"fake", "notification":true},
-	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john"], "line":"Removed?\nI finally arrive on time, and now I might not even be a member.\nName.\nSection.\nNumber…", "mail":true, "email":"fake", "draft":true},
-	{"who":"John", "face":4, "bg":"hallway_day", "cast":["john"], "line":"Wait.\nDidn't we already fill this out?\nJobert said to ask if I wasn't sure.\nOne message won't hurt.", "chat":true, "chat_id":"private"},
-	{"who":"Jobert", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "line":"Open his email about last week's meeting."},
-	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "line":"The one telling us not to move the chairs?"},
-	{"who":"Jobert", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "line":"After Eric built a throne?"},
-	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "line":"It was a very unstable throne.", "mail":true, "email":"real"},
-	{"who":"John", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "line":"Same name."},
-	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "line":"Now compare the part after the @."},
-	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john","jobert"], "line":"School…\nThat's a one."},
-	{"who":"Jobert", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "line":"Not an L."},
-	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john","jobert"], "line":"I nearly sent my home address to a typo."},
-	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "line":"An address that looks like his.\nWe still need to check the rest."},
-	{"who":"John", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "line":"The real one sounds like him.\nEspecially the chairs."},
-	{"who":"Jobert", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "line":"And this one?"},
-	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john","jobert"], "line":"Dear Club Member.\nSuddenly I don't even have a name."},
-	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "line":"Keep both emails.\nAnd leave that reply unsent."},
-	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "line":"You just saved me from introducing myself to a stranger."},
-	{"who":"Jobert", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "line":"You stopped and asked.\nThat part was you."},
-	{"who":"John", "face":0, "bg":"clubroom", "cast":["john"], "line":"Later, I'm the first one back in the clubroom.\nMaybe someone else got that email.", "chat":true, "chat_id":"club"},
-	{"who":"John", "face":6, "sentence_faces":[6,1,0], "bg":"clubroom", "cast":["john"], "line":"I laughed.\nIt was a joke.\nSo why did I read it twice?"},
-	{"who":"John", "face":2, "bg":"john_bed_night", "time":"night", "line":"The draft is still here.\nMy name, halfway typed.\nI'm deleting the draft, not the email.", "mail":true, "email":"fake", "draft":true},
-	{"who":"John", "face":2, "bg":"john_bed_night", "time":"night", "line":"Jobert caught the address.\nBut something else is bothering me.\nHold on.\nThat isn't the address it came from.", "mail":true, "email":"fake", "reply_preview":true},
-	{"who":"John", "face":2, "bg":"john_bed_night", "time":"night", "line":"It wears Sir Rham's name.\nUses our club's format.\nThen sends my answer somewhere else.\nDan said the format was easy.\nThat doesn't mean he sent it.\nI need more than a bad feeling."}
+	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john"], "caption":"Four days before everything went wrong.", "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_01_John.mp3", "line":"Whew! Made it before the bell."},
+	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john"], "caption":"This time, the message had a familiar name.", "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_02_John.mp3", "line":"I should stop celebrating so early.\nClub records?", "mail":true, "email":"fake", "notification":true},
+	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john"], "voice":"v1794556865/levelblue/voice/mod_01/ch_02/M01_CH02_03_John.mp3", "line":"Removed?\nI finally arrive on time, and now I might not even be a member.\nName.\nSection.\nNumber…", "mail":true, "email":"fake", "draft":true},
+	{"who":"John", "face":4, "bg":"hallway_day", "cast":["john"], "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_04_John.mp3", "line":"Wait.\nDidn't we already fill this out?\nJobert said to ask if I wasn't sure.\nOne message won't hurt.", "chat":true, "chat_id":"private"},
+	{"who":"Jobert", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556863/levelblue/voice/mod_01/ch_02/M01_CH02_05_Jobert.mp3", "line":"Open his email about last week's meeting."},
+	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556864/levelblue/voice/mod_01/ch_02/M01_CH02_06_John.mp3", "line":"The one telling us not to move the chairs?"},
+	{"who":"Jobert", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556864/levelblue/voice/mod_01/ch_02/M01_CH02_07_Jobert.mp3", "line":"After Eric built a throne?"},
+	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556866/levelblue/voice/mod_01/ch_02/M01_CH02_08_John.mp3", "line":"It was a very unstable throne.", "mail":true, "email":"real"},
+	{"who":"John", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556866/levelblue/voice/mod_01/ch_02/M01_CH02_09_John.mp3", "line":"Same name."},
+	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556867/levelblue/voice/mod_01/ch_02/M01_CH02_10_Jobert.mp3", "line":"Now compare the part after the @."},
+	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556867/levelblue/voice/mod_01/ch_02/M01_CH02_11_John.mp3", "line":"School…\nThat's a one."},
+	{"who":"Jobert", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556869/levelblue/voice/mod_01/ch_02/M01_CH02_12_Jobert.mp3", "line":"Not an L."},
+	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556869/levelblue/voice/mod_01/ch_02/M01_CH02_13_John.mp3", "line":"I nearly sent my home address to a typo."},
+	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556871/levelblue/voice/mod_01/ch_02/M01_CH02_14_Jobert.mp3", "line":"An address that looks like his.\nWe still need to check the rest."},
+	{"who":"John", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556870/levelblue/voice/mod_01/ch_02/M01_CH02_15_John.mp3", "line":"The real one sounds like him.\nEspecially the chairs."},
+	{"who":"Jobert", "face":0, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556871/levelblue/voice/mod_01/ch_02/M01_CH02_16_Jobert.mp3", "line":"And this one?"},
+	{"who":"John", "face":2, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556872/levelblue/voice/mod_01/ch_02/M01_CH02_17_John.mp3", "line":"Dear Club Member.\nSuddenly I don't even have a name."},
+	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556873/levelblue/voice/mod_01/ch_02/M01_CH02_18_Jobert.mp3", "line":"Keep both emails.\nAnd leave that reply unsent."},
+	{"who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556873/levelblue/voice/mod_01/ch_02/M01_CH02_19_John.mp3", "line":"You just saved me from introducing myself to a stranger."},
+	{"who":"Jobert", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556874/levelblue/voice/mod_01/ch_02/M01_CH02_20_Jobert.mp3", "line":"You stopped and asked.\nThat part was you."},
+	{"who":"John", "face":0, "bg":"clubroom", "cast":["john"], "voice":"v1794556876/levelblue/voice/mod_01/ch_02/M01_CH02_21.mp3", "line":"I'm the first one back in the clubroom.\nMaybe someone else got that email.", "chat":true, "chat_id":"club"},
+	{"who":"John", "face":6, "sentence_faces":[6,1,0], "bg":"clubroom", "cast":["john"], "voice":"v1794556877/levelblue/voice/mod_01/ch_02/M01_CH02_22_John.mp3", "line":"I laughed.\nIt was a joke.\nSo why did I read it twice?"},
+	{"who":"John", "face":2, "bg":"john_bed_night", "time":"night", "voice":"v1794556877/levelblue/voice/mod_01/ch_02/M01_CH02_23_John.mp3", "line":"The draft is still here.\nMy name, halfway typed.\nI'm deleting the draft, not the email.", "mail":true, "email":"fake", "draft":true},
+	{"who":"John", "face":2, "bg":"john_bed_night", "time":"night", "voice":"v1794556878/levelblue/voice/mod_01/ch_02/M01_CH02_24_John.mp3", "line":"Jobert caught the address.\nBut something else is bothering me.\nHold on.\nThat isn't the address it came from.", "mail":true, "email":"fake", "reply_preview":true},
+	{"who":"John", "face":2, "bg":"john_bed_night", "time":"night", "voice":"v1794556879/levelblue/voice/mod_01/ch_02/M01_CH02_25_John.mp3", "line":"It wears Sir Rham's name.\nUses our club's format.\nThen sends my answer somewhere else.\nDan said the format was easy.\nThat doesn't mean he sent it.\nI need more than a bad feeling."}
 ]
 const PRIVATE_CHAT: Array[Dictionary] = [
 	{"who":"John","face":0,"text":"Did Sir Rham ask you to confirm your club details?"},
