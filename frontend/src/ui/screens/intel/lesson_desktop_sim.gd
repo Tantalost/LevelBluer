@@ -36,22 +36,33 @@ var _file_selected: bool = false
 var _started: bool = false
 var _briefing: PanelContainer
 var _start_button: Button
+enum BriefingPhase { TITLE, TRANSMISSION, READY }
+@export var title_slide_seconds: float = 0.65
+@export var title_hold_seconds: float = 0.7
+@export var title_close_seconds: float = 0.45
+@export var briefing_characters_per_second: float = 65.0
+var _briefing_phase: BriefingPhase = BriefingPhase.TITLE
+var _intro_elapsed: float = 0.0
+var _intro: Control
+var _intro_title: Label
+var _intro_begin: Label
+var _brief_lines: Array[Label] = []
+var _brief_line: int = 0
+var _brief_cursor: float = 0.0
+var _activity_paused: bool = false
+var _app_paused: bool = false
 
 func setup(data: Dictionary) -> void:
 	_data = data
 	_investigation = str(data.get("simulation_id", "")) == "sender_cross_check"
 	_pc_mode = str(data.get("module_id", "")) == "mod_01" or _investigation
-	if _pc_mode:
-		if data.has("simulation_briefing"):
-			_show_briefing()
-		else:
-			_start_simulation()
-		return
-	_started = true
+	_show_briefing()
+
+func _setup_case() -> void:
 	size_flags_vertical = SIZE_EXPAND_FILL
 	_pc = PC.new()
-	_pc.case_app = str(data.domain.app)
-	_pc.case_title = str(data.title)
+	_pc.case_app = str(_data.domain.app)
+	_pc.case_title = str(_data.title)
 	_pc.case_kind = ({"Messages": IntelPixelIcon.Kind.CHAT, "Calls": IntelPixelIcon.Kind.PHONE, "Service Desk": IntelPixelIcon.Kind.BADGE, "Device Security": IntelPixelIcon.Kind.LOCK}.get(_pc.case_app, IntelPixelIcon.Kind.TERMINAL)) as IntelPixelIcon.Kind
 	add_child(_pc)
 	_task = _pc.status
@@ -62,7 +73,36 @@ func setup(data: Dictionary) -> void:
 
 func _show_briefing() -> void:
 	size_flags_vertical = SIZE_EXPAND_FILL
-	var brief: Dictionary = _data.simulation_briefing
+	var brief: Dictionary = _data.get("simulation_briefing", {
+		"title":str(_data.title), "hook":str(_data.scenario),
+		"mission":"%s. %s. Then choose how to respond." % [_data.domain.inspect, _data.domain.verify],
+		"why":str(_data.rule), "icon":IntelPixelIcon.Kind.TERMINAL,
+	})
+	_intro = Control.new()
+	_intro.name = "SimulationIntro"
+	_intro.custom_minimum_size.y = 240
+	_intro.size_flags_vertical = SIZE_EXPAND_FILL
+	add_child(_intro)
+	_intro_title = UI.label("SIMULATION", 44, CYAN)
+	_intro_begin = UI.label("BEGIN", 60, UI.TEXT)
+	for label: Label in [_intro_title, _intro_begin]:
+		label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		_intro.add_child(label)
+		label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.mouse_filter = MOUSE_FILTER_IGNORE
+	_intro_title.anchor_top = .18
+	_intro_title.anchor_bottom = .5
+	_intro_begin.anchor_top = .5
+	_intro_begin.anchor_bottom = .85
+	for label: Label in [_intro_title, _intro_begin]:
+		label.offset_top = 0.0
+		label.offset_bottom = 0.0
+	_intro_begin.modulate.a = 0.0
+	_intro.resized.connect(func() -> void:
+		if _briefing_phase == BriefingPhase.TITLE: _update_intro(0.0)
+	)
 	_briefing = UI.panel(self, Color("#0A1730"))
 	_briefing.name = "MissionBriefing"
 	_briefing.size_flags_vertical = SIZE_EXPAND_FILL
@@ -81,9 +121,9 @@ func _show_briefing() -> void:
 	var titles: VBoxContainer = UI.column(heading, 6)
 	titles.size_flags_horizontal = SIZE_EXPAND_FILL
 	titles.add_child(UI.label("MISSION BRIEF / %02d" % (int(_data.lesson_index) + 1), 24, CYAN))
-	titles.add_child(UI.label(str(brief.title), 34))
-	content.add_child(UI.label(str(brief.hook), 28, Color("#F3ECD6")))
-	var cards: HBoxContainer = HBoxContainer.new()
+	_brief_text(titles, str(brief.title), 34)
+	_brief_text(content, str(brief.hook), 28)
+	var cards: VBoxContainer = VBoxContainer.new()
 	cards.add_theme_constant_override("separation", 18)
 	content.add_child(cards)
 	for section: String in ["mission", "why"]:
@@ -91,24 +131,93 @@ func _show_briefing() -> void:
 		panel.size_flags_horizontal = SIZE_EXPAND_FILL
 		var column: VBoxContainer = UI.column(panel, 10)
 		column.add_child(UI.label("YOUR MISSION" if section == "mission" else "WHY IT MATTERS", 26, CYAN))
-		column.add_child(UI.label(str(brief[section]), 28))
+		_brief_text(column, str(brief[section]), 28)
 	content.add_child(UI.label("Practice PC only. No real links, files or passwords. Take your time.", 24, UI.MUTED))
 	_start_button = UI.button("LET'S INVESTIGATE", _start_simulation, true)
 	_start_button.name = "StartSimulation"
 	_start_button.custom_minimum_size.y = 64
 	layout.add_child(_start_button) # Pinned below the scroll area on short landscape screens.
-	_start_button.grab_focus.call_deferred()
+	_start_button.hide()
+	_start_button.disabled = true
+	_briefing.hide()
+	_update_intro(0.0)
 	_readability_changed.call_deferred()
 
+func _brief_text(parent: Node, text: String, font_size: int) -> void:
+	var label: Label = UI.label(text, font_size)
+	label.visible_characters = 0
+	parent.add_child(label)
+	_brief_lines.append(label)
+
+func set_activity_paused(paused: bool) -> void:
+	_activity_paused = paused
+
+func _notification(what: int) -> void:
+	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT]: _app_paused = true
+	elif what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]: _app_paused = false
+
+func _process(delta: float) -> void:
+	if _started or _activity_paused or _app_paused or not is_visible_in_tree(): return
+	_update_intro(delta)
+
+func _update_intro(delta: float) -> void:
+	if _briefing_phase == BriefingPhase.TITLE:
+		_intro_elapsed += delta
+		var slide: float = maxf(.05, title_slide_seconds)
+		var close_at: float = slide * 2.0 + maxf(0.0, title_hold_seconds)
+		var close_time: float = maxf(.05, title_close_seconds)
+		var title_x: float = 0.0
+		var begin_x: float = 0.0
+		if SettingsService.reduced_motion:
+			_intro_begin.modulate.a = 1.0
+		else:
+			title_x = -_intro.size.x * (1.0 - ease(clampf(_intro_elapsed / slide, 0.0, 1.0), .25))
+			begin_x = _intro.size.x * (1.0 - ease(clampf((_intro_elapsed - slide) / slide, 0.0, 1.0), .25))
+			_intro_begin.modulate.a = clampf((_intro_elapsed - slide) / slide, 0.0, 1.0)
+			_intro.pivot_offset = _intro.size * .5
+			_intro.scale.y = 1.0 - smoothstep(close_at, close_at + close_time, _intro_elapsed)
+		_intro_title.offset_left = title_x
+		_intro_title.offset_right = title_x
+		_intro_begin.offset_left = begin_x
+		_intro_begin.offset_right = begin_x
+		if _intro_elapsed >= (.6 if SettingsService.reduced_motion else close_at + close_time):
+			_intro.hide()
+			_briefing.show()
+			_briefing_phase = BriefingPhase.TRANSMISSION
+			AudioManager.play_sfx("ui_notification")
+			_readability_changed.call_deferred()
+	if _briefing_phase != BriefingPhase.TRANSMISSION: return
+	if SettingsService.reduced_motion or SettingsService.text_speed == "instant":
+		for label: Label in _brief_lines: label.visible_characters = -1
+		_brief_line = _brief_lines.size()
+	elif _brief_line < _brief_lines.size():
+		_brief_cursor += delta * maxf(1.0, briefing_characters_per_second) * SettingsService.text_speed_multiplier()
+		var label: Label = _brief_lines[_brief_line]
+		label.visible_characters = mini(int(_brief_cursor), label.text.length())
+		if label.visible_characters >= label.text.length():
+			_brief_line += 1
+			_brief_cursor = 0.0
+	if _brief_line >= _brief_lines.size():
+		_briefing_phase = BriefingPhase.READY
+		_start_button.disabled = false
+		_start_button.show()
+		_readability_changed.call_deferred()
+
 func _start_simulation() -> void:
-	if _started or not _pc_mode:
+	if _started or _briefing_phase != BriefingPhase.READY or _activity_paused or _app_paused:
 		return
 	_started = true
 	if is_instance_valid(_briefing):
 		remove_child(_briefing)
 		_briefing.queue_free() # The start button may still be emitting pressed.
-	_setup_pc()
-	_pc.shortcuts[0].grab_focus.call_deferred()
+	if is_instance_valid(_intro):
+		remove_child(_intro)
+		_intro.queue_free()
+	if _pc_mode:
+		_setup_pc()
+		_pc.shortcuts[0].grab_focus.call_deferred()
+	else:
+		_setup_case()
 
 func _show_window() -> void:
 	UI.clear(_window)
@@ -137,7 +246,7 @@ func _show_window() -> void:
 	_readability_changed()
 
 func _act(action: String) -> void:
-	if _passed and action != "open" or (_pc_mode and not _started):
+	if _passed and action != "open" or not _started:
 		return
 	if _pc_mode and action == "open":
 		_open_app("Inbox")

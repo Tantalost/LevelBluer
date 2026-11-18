@@ -16,7 +16,6 @@ const FEEDBACK_VOICES: Dictionary[String, String] = {
 	CAPTURE_SAVED: "v1794044472/M01_CH01_26_John.mp3",
 }
 ## Each spoken page waits for Continue before its next recorded sentence.
-const VOICE_WAIT_FOR_CONTINUE: bool = true
 const VOICE_TIMINGS: Dictionary = {
   "M01_CH01_02_John.mp3": [
     0.0,

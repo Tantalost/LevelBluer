@@ -4,6 +4,14 @@ const BGM_PATH: String = "res://assets/audio/bgm/"
 const SFX_PATH: String = "res://assets/audio/sfx/"
 const MUSIC_GAIN: float = 0.7
 const OPENING_MUSIC_GAIN: float = 0.85
+const HostedAudio: GDScript = preload("res://src/gameplay/decision/story_voice_player.gd")
+const LEARNING_TRACKS: Dictionary[String, String] = {
+	"lesson_focus":"v1794816696/levelblue/audio/lessons/focused_learning_v1.mp3",
+	"lesson_simulation":"v1794816708/levelblue/audio/lessons/terminal_investigation_v1.mp3",
+}
+var _learning_requests: Dictionary[String, bool] = {}
+var _learning_retry_after: Dictionary[String, int] = {}
+var _lesson_simulation_owner: WeakRef
 const SOUND_IDS: PackedStringArray = ["ui_click", "ui_confirm", "ui_transition", "ui_notification", "ui_success", "ui_error", "loading_ready", "debate_start", "debate_hit", "debate_counter", "command_open", "command_snap", "command_type", "command_ready", "command_send"]
 
 @onready var bgm_player: AudioStreamPlayer = $BGMPlayer
@@ -175,6 +183,7 @@ func _on_dashboard_mode(mode: StringName) -> void:
 		_select_music()
 
 func _select_music() -> void:
+	if _screen_id in [&"lessons", &"lesson_player"]: _load_learning_tracks()
 	match _screen_id:
 		&"intro":
 			_desired_bgm = null
@@ -184,10 +193,44 @@ func _select_music() -> void:
 		&"gameplay", &"pvp_battle", &"pvp_online": play_bgm(null)
 		&"splash", &"asset_loading": play_bgm(_tracks.get("loading"))
 		&"opening": play_bgm(_opening_music if _opening_music != null else _tracks.get("morning") if _opening_morning else null)
-		&"lessons", &"lesson_player", &"school_content", &"pretest", &"codex", &"module_intro", &"survey_chapter": play_bgm(_tracks.get("study"))
+		&"lessons", &"lesson_player":
+			var simulation: bool = _screen_id == &"lesson_player" and _lesson_simulation_owner != null and is_instance_valid(_lesson_simulation_owner.get_ref())
+			play_bgm(_tracks.get("lesson_simulation" if simulation else "lesson_focus", _tracks.get("hearing_decision" if simulation else "study")), 1.5)
+		&"school_content", &"pretest", &"codex", &"module_intro", &"survey_chapter": play_bgm(_tracks.get("study"))
 		&"confrontation": play_bgm(_tracks.get("hearing_debate" if _hearing_debate else "hearing_decision" if _hearing_decision else "pvp"))
 		&"login", &"password_change": play_bgm(hub_track)
 		_: play_bgm(_tracks.get("pvp" if _dashboard_mode == &"PVP" else "hub"))
+
+func set_lesson_simulation(source: Control, active: bool) -> void:
+	if active:
+		_lesson_simulation_owner = weakref(source)
+	elif _lesson_simulation_owner != null and _lesson_simulation_owner.get_ref() == source:
+		_lesson_simulation_owner = null
+	if _screen_id == &"lesson_player": _select_music()
+
+func _load_learning_tracks() -> void:
+	for key: String in LEARNING_TRACKS:
+		if _tracks.has(key) or _learning_requests.has(key) or Time.get_ticks_msec() < _learning_retry_after.get(key,0): continue
+		var path: String = LEARNING_TRACKS[key]
+		var cached: AudioStream = HostedAudio.cached_stream(path)
+		if cached is AudioStreamMP3:
+			cached.loop = true
+			_tracks[key] = cached
+		else:
+			_learning_requests[key] = true
+			var request: HTTPRequest = HostedAudio.download(path,12.0)
+			request.request_completed.connect(_learning_track_ready.bind(key,path),CONNECT_ONE_SHOT)
+
+func _learning_track_ready(result: int, status: int, _headers: PackedStringArray, body: PackedByteArray, key: String, path: String) -> void:
+	_learning_requests.erase(key)
+	_learning_retry_after[key] = Time.get_ticks_msec() + 30000
+	if result != HTTPRequest.RESULT_SUCCESS or status != 200: return
+	var clip: AudioStream = HostedAudio.cached_stream(path)
+	if clip == null: clip = HostedAudio.decode(path,body)
+	if clip is AudioStreamMP3:
+		clip.loop = true
+		_tracks[key] = clip
+		if _screen_id in [&"lessons", &"lesson_player"]: _select_music()
 
 func set_hearing_decision(source: Control, active: bool, debating: bool = false) -> void:
 	if not is_instance_valid(source) or not source.is_visible_in_tree(): return
@@ -221,7 +264,8 @@ func play_bgm(stream: AudioStream, crossfade_time: float = 0.65) -> void:
 	_bgm_tween.finished.connect(func() -> void: _bgm_tween = null)
 	_bgm_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	for deck: AudioStreamPlayer in _decks:
-		_bgm_tween.tween_property(deck, "volume_linear", MUSIC_GAIN if deck == target else 0.0, duration)
+		var gain: float = 0.38 if stream != null and (stream == _tracks.get("lesson_focus") or stream == _tracks.get("lesson_simulation")) else MUSIC_GAIN
+		_bgm_tween.tween_property(deck, "volume_linear", gain if deck == target else 0.0, duration)
 		if deck != target:
 			_bgm_tween.tween_callback(deck.stop).set_delay(duration)
 	if _music_paused():

@@ -47,6 +47,8 @@ var _phase_label: Label
 var _progress_label: Label
 var _status_label: Label
 var _submit_button: Button
+var _review_lesson_button: Button
+var _reviewing_failed_quiz: bool = false
 var _close_button: Button
 var _quiz_buttons: Array[Button] = []
 var _simulation: Control
@@ -133,6 +135,10 @@ func _ready() -> void:
 	_status_label.size_flags_horizontal = SIZE_EXPAND_FILL
 	_status_scroll.add_child(_status_label)
 	_status_scroll.hide()
+	_review_lesson_button = UI.button("REVIEW LESSON", _review_failed_lesson)
+	_review_lesson_button.name = "ReviewFailedLesson"
+	_review_lesson_button.hide()
+	right_column.add_child(_review_lesson_button)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 16)
 	right_column.add_child(actions)
@@ -163,6 +169,8 @@ func _owner_valid() -> bool:
 func _session_changed(_signed_in: bool) -> void:
 	if _owner_valid(): return
 	_session_expired = true
+	AudioManager.set_lesson_simulation(self,false)
+	if is_instance_valid(_simulation): _simulation.set_activity_paused(true)
 	_pause_walkthrough()
 	_pending_entry.clear()
 	_submit_button.disabled = true
@@ -226,6 +234,8 @@ func on_resume() -> void:
 	if not _owner_valid():
 		Router.request_back()
 		return
+	if is_instance_valid(_simulation): _simulation.set_activity_paused(false)
+	_sync_lesson_music()
 	if not _pending_entry.is_empty():
 		var args := _pending_entry.duplicate()
 		_pending_entry = {}
@@ -247,6 +257,7 @@ func _load_module(module_id: String, review: bool = false, tutorial: bool = fals
 	_start_lesson()
 
 func _start_lesson() -> void:
+	_reviewing_failed_quiz = false
 	_busy = false
 	_quiz_passed = false
 	_simulation_passed = false
@@ -275,6 +286,7 @@ func _refresh_roadmap() -> void:
 	_fit_readability.call_deferred()
 
 func _show_roadmap() -> void:
+	AudioManager.set_lesson_simulation(self,false)
 	_finish_reading_reveal()
 	_post_active = false
 	if is_instance_valid(_post_quiz):
@@ -295,6 +307,7 @@ func _open_lesson() -> void:
 	_in_lesson = true
 	_panes.hide()
 	_workspace.show()
+	_sync_lesson_music()
 	_header_title.text = str(_data.title).to_upper()
 	_close_button.text = "BACK"
 	if _phase == Phase.DEFINITION:
@@ -402,6 +415,7 @@ func _set_phase(phase: Phase) -> void:
 	if phase == Phase.COMPLETE and (not _quiz_passed or not _simulation_passed):
 		return
 	_phase = phase
+	_sync_lesson_music()
 	_finish_reading_reveal()
 	_reading_blocks.clear()
 	_answer_effect.reset()
@@ -414,8 +428,11 @@ func _set_phase(phase: Phase) -> void:
 	_status_scroll.scroll_vertical = 0
 	_status_label.add_theme_color_override("font_color", UI.GOLD)
 	_submit_button.disabled = false
+	_submit_button.show()
+	_review_lesson_button.visible = _phase == Phase.QUIZ and _quiz_finished and not _quiz_passed
 	(_content.get_parent() as ScrollContainer).scroll_vertical = 0
 	_phase_label.text = ["LEARN / %d OF 3" % (_reading_page + 1), "CHECK YOUR UNDERSTANDING", "PUT IT INTO PRACTICE", "TOPIC COMPLETE"][_phase]
+	_phase_label.visible = _phase != Phase.SIMULATION
 	_page_back.visible = _phase == Phase.DEFINITION and _reading_page > 0
 	_reading_progress.visible = _phase in [Phase.DEFINITION, Phase.QUIZ]
 	_reading_progress.max_value = 3
@@ -424,7 +441,7 @@ func _set_phase(phase: Phase) -> void:
 	match _phase:
 		Phase.DEFINITION:
 			_build_reading_page()
-			_submit_button.text = "START MINI QUIZ  >" if _reading_page == 2 else "CONTINUE  >"
+			_submit_button.text = ("RETURN TO QUIZ RESULT" if _reviewing_failed_quiz else "START MINI QUIZ  >") if _reading_page == 2 else "CONTINUE  >"
 		Phase.QUIZ:
 			_build_mini_quiz()
 		Phase.SIMULATION:
@@ -435,12 +452,13 @@ func _set_phase(phase: Phase) -> void:
 			_simulation.passed.connect(_on_simulation_passed)
 			_submit_button.text = "COMPLETE THE SIMULATION"
 			_submit_button.disabled = true
+			_submit_button.hide()
 		Phase.COMPLETE:
 			_content.add_child(UI.label("SAFE RESPONSE CONFIRMED", 23, UI.TEAL, true))
 			_content.add_child(UI.label(str(_data.summary), 28))
 			_content.add_child(UI.label("You identified the threat and handled the request in a safe training environment.", 26, UI.MUTED))
 			_submit_button.text = "FINISH TOPIC  >"
-	if _phase == Phase.QUIZ:
+	if _phase == Phase.QUIZ and not _quiz_finished:
 		_content.add_child(UI.button("Review lesson", func() -> void:
 			_reading_page = 0
 			_set_phase(Phase.DEFINITION)
@@ -448,6 +466,15 @@ func _set_phase(phase: Phase) -> void:
 	_fit_readability.call_deferred()
 	if _phase == Phase.DEFINITION and _in_lesson:
 		_start_reading_reveal()
+
+func _sync_lesson_music() -> void:
+	AudioManager.set_lesson_simulation(self,_owner_valid() and _in_lesson and not _post_active and _phase == Phase.SIMULATION)
+
+func _review_failed_lesson() -> void:
+	if not _owner_valid() or _busy or _phase != Phase.QUIZ or not _quiz_finished or _quiz_passed: return
+	_reviewing_failed_quiz = true
+	_reading_page = 0
+	_set_phase(Phase.DEFINITION)
 
 func _build_reading_page() -> void:
 	match _reading_page:
@@ -905,6 +932,7 @@ func _check_quiz() -> void:
 func _on_simulation_passed() -> void:
 	if not _owner_valid() or _phase != Phase.SIMULATION or not _quiz_passed:
 		return
+	_submit_button.show()
 	AudioManager.play_sfx("ui_success")
 	_simulation_passed = true
 	_submit_button.disabled = false
@@ -927,6 +955,7 @@ func _on_continue() -> void:
 			else:
 				_read_passed = true
 				_save_mini_session()
+				_reviewing_failed_quiz = false
 				_set_phase(Phase.QUIZ)
 		Phase.QUIZ:
 			if _quiz_passed:
@@ -1123,6 +1152,8 @@ func _show_tutorial_lesson_done() -> void:
 		_tutorial_overlay.show_lesson_done()
 
 func on_exit() -> void:
+	AudioManager.set_lesson_simulation(self,false)
+	if is_instance_valid(_simulation): _simulation.set_activity_paused(true)
 	_pause_walkthrough()
 	_finish_reading_reveal()
 	_answer_effect.reset()
@@ -1133,6 +1164,7 @@ func _open_post_quiz() -> void:
 	if _remediation_stage > 0 or Router.is_tutorial or _post_active or not account.can_take_checkpoint(_module_id):
 		return
 	_post_active = true
+	AudioManager.set_lesson_simulation(self,false)
 	_in_lesson = true
 	_panes.hide()
 	_start_button.hide()

@@ -693,6 +693,17 @@ func _set_line(text: String, voice: String = "") -> void:
 	var tail: String = text.substr(start).strip_edges()
 	if not tail.is_empty(): _sentences.append(tail)
 	if _sentences.is_empty(): _sentences.append("")
+	# Without measured cuts, keep the complete spoken line visible together.
+	# Silent opening captions still require Continue before narration begins.
+	if not voice.is_empty() and _voice_page_times.is_empty():
+		var caption_pages: int = 0
+		if state.get("phase") == "day":
+			var caption_text: String = str(Chapter.STORY[int(state.get("beat", 0))].get("caption", "")).strip_edges()
+			if not caption_text.is_empty(): caption_pages = boundary.search_all(caption_text).size() + 1
+		if caption_pages < _sentences.size():
+			var spoken: String = " ".join(_sentences.slice(caption_pages))
+			_sentences.resize(caption_pages)
+			_sentences.append(spoken)
 	_voice_page_offset = maxi(0, _sentences.size() - _voice_page_times.size())
 	_show_sentence()
 
@@ -715,6 +726,7 @@ func _show_sentence() -> void:
 		if state.get("phase") == "closing" and not _line_voice.is_empty():
 			_voice.play_clip(_line_voice)
 			_line_voice = ""
+		if state.get("phase") == "closing": _resume_voice_page()
 		_speaker.text = ""
 		_perk_button.hide()
 		_cast_stage.hide()
@@ -728,11 +740,7 @@ func _show_sentence() -> void:
 	if not _line_voice.is_empty():
 		_voice.play_clip(_line_voice)
 		_line_voice = ""
-	if _manual_voice_pages():
-		_voice_waiting_for_continue = false
-		var page: int = _sentence - _voice_page_offset
-		if page >= 0 and page < _voice_page_times.size(): _voice.seek_clip(_voice_page_times[page])
-		_voice.suspend_clip(not _can_act())
+	_resume_voice_page()
 	if was_caption:
 		_perk_button.visible = not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
 		_speaker.text = str(Chapter.STORY[int(state["beat"])]["who"])
@@ -740,7 +748,7 @@ func _show_sentence() -> void:
 		_load_art()
 	elif state.phase == "day" and (Chapter.STORY[int(state.beat)].has("sentence_faces") or Chapter.STORY[int(state.beat)].has("approach_art")):
 		_load_art()
-	if SettingsService.text_speed != "instant" and (_voice_page_times.is_empty() or _manual_voice_pages()):
+	if SettingsService.text_speed != "instant":
 		_line.visible_characters = 0
 		_typing = create_tween()
 		_typing.tween_property(_line, "visible_characters", text.length(), text.length() / (32.0 * SettingsService.text_speed_multiplier()))
@@ -794,24 +802,18 @@ func _sync_voice_page() -> void:
 	if _voice_page_times.is_empty() or not _can_act() or not _voice.playing or _voice.stream_paused:
 		return
 	var position: float = _voice.get_playback_position()
-	if _manual_voice_pages():
-		var next: int = _sentence - _voice_page_offset + 1
-		if next > 0 and next < _voice_page_times.size() and position >= maxf(0.0, _voice_page_times[next] - .06):
-			_voice_waiting_for_continue = true
-			_voice.suspend_clip(true)
-			_voice.seek_clip(_voice_page_times[next])
-			if _approach_audio != null: _approach_audio.stream_paused = true
-		return
-	var page: int = 0
-	for index: int in _voice_page_times.size():
-		if position >= _voice_page_times[index]: page = index
-	page = mini(page + _voice_page_offset, _sentences.size() - 1)
-	if page > _sentence:
-		_sentence = page
-		_show_sentence()
+	var next: int = _sentence - _voice_page_offset + 1
+	if next > 0 and next < _voice_page_times.size() and position >= maxf(0.0, _voice_page_times[next] - .06):
+		_voice_waiting_for_continue = true
+		_voice.suspend_clip(true)
+		_voice.seek_clip(_voice_page_times[next])
+		if _approach_audio != null: _approach_audio.stream_paused = true
 
-func _manual_voice_pages() -> bool:
-	return Chapter.get("VOICE_WAIT_FOR_CONTINUE") == true
+func _resume_voice_page() -> void:
+	_voice_waiting_for_continue = false
+	var page: int = _sentence - _voice_page_offset
+	if page >= 0 and page < _voice_page_times.size(): _voice.seek_clip(_voice_page_times[page])
+	_voice.suspend_clip(not _can_act())
 
 func _is_chat_beat() -> bool:
 	if state.get("phase") == "sleep" and Chapter.get("SLEEP_CHAT") is Array: return true
@@ -839,9 +841,6 @@ func _advance() -> void:
 		_update_advance()
 		return
 	if _sentence < _sentences.size() - 1:
-		# Explicit page taps retain the existing manual-reading behavior for this cue.
-		if not _manual_voice_pages() and (not _is_caption_sentence() or state.get("phase") == "closing"):
-			_voice_page_times.clear()
 		_sentence += 1
 		_show_sentence()
 		return

@@ -82,15 +82,16 @@ func _run() -> void:
 	# Intermediate routes coalesce and equal tracks do not restart.
 	audio._on_screen_changed(&"dashboard")
 	audio._on_screen_changed(&"lesson_player")
-	await wait(0.8)
-	check(audio.bgm_player.stream == audio._tracks.study and music_voices() == 1, "Final route wins without stacked music")
-	var position: float = audio.bgm_player.get_playback_position()
+	await wait(1.7)
+	check(audio.bgm_player.stream == audio._tracks.lesson_focus and music_voices() == 1, "Final route wins without stacked music")
 	audio._on_screen_changed(&"codex")
-	await wait()
-	check(audio.bgm_player.get_playback_position() >= position, "Shared study loop does not restart")
+	await wait(.8)
+	check(audio.bgm_player.stream == audio._tracks.study, "Codex retains its original study music")
+	var position: float = audio.bgm_player.get_playback_position()
 	audio._on_screen_changed(&"module_intro")
 	await wait()
 	check(audio.bgm_player.stream == audio._tracks.study and music_voices() == 1, "Module prologue uses restrained study music")
+	check(audio.bgm_player.get_playback_position() >= position, "Shared study loop does not restart")
 	# Rapid target changes must cancel old fade callbacks and stop the unused deck.
 	audio.play_bgm(audio._tracks.hub, 0.2)
 	await wait(0.05)
@@ -112,7 +113,7 @@ func _run() -> void:
 	settings.music_enabled = true
 	audio._apply_buses()
 	await wait(0.8)
-	check(audio.bgm_player.stream == audio._tracks.study and music_voices() == 1, "Unmute uses latest screen's track")
+	check(audio.bgm_player.stream == audio._tracks.lesson_focus and music_voices() == 1, "Unmute uses latest screen's track")
 	settings.music_volume = 25
 	audio._apply_buses()
 	check(is_equal_approx(db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("BGM"))), 0.25), "Independent music volume uses the BGM bus")

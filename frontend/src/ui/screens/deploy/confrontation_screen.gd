@@ -68,6 +68,8 @@ var _feedback_voice: bool = false
 var _background: ColorRect
 var _voice_page_times: PackedFloat32Array = []
 var _voice_page_start: int = 0
+var _voice_waiting_for_continue: bool = false
+var _voiced_dialogue_page: int = -1
 var _ending_caption: Label
 
 func _ready() -> void:
@@ -647,6 +649,18 @@ func _story(text: String, next: Callable, artwork: String, gray: bool = false, v
 		_dialogue_text = text
 		_dialogue_lines = _sentences(text)
 		_dialogue_sources = _sentence_sources(text)
+		# A recording without measured sentence cuts stays on one readable page.
+		var timings: Variant = Case.get("VOICE_TIMINGS")
+		var lines: PackedStringArray = text.split("\n",false)
+		for source: int in range(lines.size()-1,-1,-1):
+			var path: String = str(voices.get(source,""))
+			if path.is_empty() or (timings is Dictionary and not timings.get(path.get_file(),[]).is_empty()): continue
+			var first: int = _dialogue_sources.find(source)
+			for index: int in range(_dialogue_sources.size()-1,first,-1):
+				if _dialogue_sources[index] == source:
+					_dialogue_sources.remove_at(index)
+					_dialogue_lines.remove_at(index)
+			_dialogue_lines[first] = lines[source]
 		_dialogue_line = 0
 		_letters = 0
 	_dialogue_voices = voices
@@ -683,11 +697,19 @@ func _set_line() -> void:
 	var source: int = _dialogue_sources[_dialogue_line] if _dialogue_line < _dialogue_sources.size() else -1
 	_cue_voice("%s:%d:%d" % [state.phase,_dialogue_text.hash(),source],str(_dialogue_voices.get(source,"")))
 	_voice_page_start = _dialogue_sources.find(source)
+	if _voiced_dialogue_page != _dialogue_line:
+		_voiced_dialogue_page = _dialogue_line
+		_voice_waiting_for_continue = false
+		var page: int = _dialogue_line - _voice_page_start
+		if page >= 0 and page < _voice_page_times.size(): _story_voice.seek_clip(_voice_page_times[page])
+		_suspend_voice()
 
 ## Starts a recording once per authored line; an unvoiced line silences the previous speaker.
 func _cue_voice(key: String, path: String) -> void:
 	if key == _story_cue: return
 	_story_cue = key
+	_voice_waiting_for_continue = false
+	_voiced_dialogue_page = -1
 	_voice_page_times.clear()
 	var timings: Variant = Case.get("VOICE_TIMINGS")
 	if timings is Dictionary:
@@ -696,26 +718,25 @@ func _cue_voice(key: String, path: String) -> void:
 	else: _story_voice.play_clip(path)
 	_suspend_voice()
 
-## A recording spans its sentence pages without restarting. Manual taps opt out for this cue.
+## Hold at the next measured sentence until Continue reveals that page.
 func _sync_voice_page() -> void:
 	if not _interactive() or not is_instance_valid(_dialogue) or _voice_page_times.is_empty() or not _story_voice.playing or _story_voice.stream_paused: return
-	var page: int = 0
-	for index: int in _voice_page_times.size():
-		if _story_voice.get_playback_position() >= _voice_page_times[index]: page = index
-	page += _voice_page_start
-	if page > _dialogue_line and page < _dialogue_lines.size() and _dialogue_sources[page] == _dialogue_sources[_dialogue_line]:
-		_dialogue_line = page
-		_letters = 0
-		_set_line()
+	var next: int = _dialogue_line - _voice_page_start + 1
+	if next > 0 and next < _voice_page_times.size() and _story_voice.get_playback_position() >= maxf(0.0,_voice_page_times[next]-.06):
+		_voice_waiting_for_continue = true
+		_story_voice.suspend_clip(true)
+		_story_voice.seek_clip(_voice_page_times[next])
 
 func _stop_voice() -> void:
 	_feedback_voice = false
 	_story_cue = ""
+	_voice_waiting_for_continue = false
+	_voiced_dialogue_page = -1
 	_voice_page_times.clear()
 	_story_voice.clear_clip()
 
 func _suspend_voice() -> void:
-	_story_voice.suspend_clip(_held or _backgrounded or (is_instance_valid(_overlay) and not _feedback_voice))
+	_story_voice.suspend_clip(_voice_waiting_for_continue or _held or _backgrounded or (is_instance_valid(_overlay) and not _feedback_voice))
 
 ## A step's entry is a path for its first line, or {line: path} when only one speaker in a mixed step is voiced.
 func _case_voices(table: String, index: int) -> Dictionary:
@@ -725,7 +746,6 @@ func _case_voices(table: String, index: int) -> Dictionary:
 
 func _advance_dialogue() -> void:
 	if not _interactive() or not is_instance_valid(_dialogue): return
-	_voice_page_times.clear()
 	if _dialogue.visible_characters >= 0 and _dialogue.visible_characters < _dialogue.text.length():
 		_letters = _dialogue.text.length()
 		_dialogue.visible_characters = -1
