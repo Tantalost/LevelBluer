@@ -2,7 +2,6 @@ extends BaseScreen
 const UI: GDScript = preload("res://src/ui/screens/intel/study_ui.gd")
 const Data: GDScript = preload("res://src/ui/screens/progress/progress_data.gd")
 const Radar: GDScript = preload("res://src/ui/screens/progress/mastery_radar.gd")
-const Badge: GDScript = preload("res://src/ui/screens/progress/rank_badge.gd")
 const GOOD: Color = Color("33D17A")
 const WARN: Color = Color("FFB648")
 var _tab: String = "Overview"
@@ -169,18 +168,6 @@ func _build_overview() -> void:
 	_summary(summaries, "CHECKPOINTS", "%d / %d" % [_snapshot.checkpoint_done, _snapshot.checkpoint_total], "Module checkpoints passed", float(_snapshot.checkpoint_done), float(_snapshot.checkpoint_total), _open_journey.bind("Checkpoints"))
 	_summary(summaries, "BKT ESTIMATE", "%d%%" % roundi(float(_snapshot.average) * 100) if _snapshot.assessed > 0 else "NOT ASSESSED", "Average across %d assessed topics" % _snapshot.assessed, float(_snapshot.average), 1, _select_tab.bind("Mastery"))
 	_body.add_child(_label("BKT estimates, checkpoint scores and completion measure different things. They are not research pre/post-test results or proof of learning gains.", UI.MUTED))
-	var rank: VBoxContainer = _panel(_body)
-	var hero: HBoxContainer = _row(rank)
-	var badge: Control = Badge.new()
-	badge.rank_index = int(_snapshot.rank_index)
-	hero.add_child(badge)
-	var info: VBoxContainer = UI.column(hero, 10)
-	info.size_flags_horizontal = SIZE_EXPAND_FILL
-	info.add_child(_label("CURRENT RANK", UI.GOLD))
-	info.add_child(_label(str(_snapshot.rank), UI.TEXT, _font + 14))
-	info.add_child(_label("%d total rank points" % _snapshot.points, UI.MUTED))
-	_bar(info, float(_snapshot.rank_value), float(_snapshot.rank_span))
-	info.add_child(_label("Maximum rank reached" if _snapshot.max_rank else "%d / %d points this rank  |  %d to next rank" % [_snapshot.rank_value, _snapshot.rank_span, maxi(0, int(_snapshot.next_points) - int(_snapshot.points))], UI.TEAL))
 
 func _open_next() -> void:
 	if not _active or _owner != AuthService.participant_code() or _signed_in != AuthService.is_signed_in(): return

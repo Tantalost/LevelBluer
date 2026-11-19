@@ -26,13 +26,13 @@ const TASKS: Dictionary = {
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"endorsement","sender":"Event Recovery Desk","address":"Separate offer conversation","subject":"Everyone already has it","body":OFFER+"\nCropped quote: "+QUOTE+" — Amani","phrase":"The supplied crop removes the banner context.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"Late morning. Covered sign-painting shelter.","line":"The signs are drying. The helper is still closed. For once, my phone is doing less work than my paintbrush."},
- {"who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"Event Recovery Desk again. Now they're saying Amani tried the pack.","mail":true},
- {"who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"I'll ask her in our existing club chat. I already have that conversation."},
+ {"mood":"calm", "who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"Late morning. Covered sign-painting shelter.","line":"The signs are drying. The helper is still closed. For once, my phone is doing less work than my paintbrush."},
+ {"mood":"suspense", "who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"Event Recovery Desk again. Now they're saying Amani tried the pack.","mail":true},
+ {"mood":"mystery", "who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"I'll ask her in our existing club chat. I already have that conversation."},
  {"who":"Amani","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","amani"],"line":"That was about Mika's hand-painted banner. Look one message up."},
  {"who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","amani"],"line":"They kept your sentence and cut away what you were replying to?"},
  {"who":"Amani","face":0,"bg":NIGHT_BACKGROUND,"cast":["mika","amani"],"line":"I tried following the arrow from the gate. I didn't try their download."},
- {"who":"Liza","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","liza"],"line":"Can you warn us without sending us the thing?"},
+ {"mood":"resolve", "who":"Liza","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","liza"],"line":"Can you warn us without sending us the thing?"},
  {"who":"Mika","face":5,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"Yes. First I'll keep the crop beside the original. The missing message matters."}
 ]
 const SEAL_LINE: String = "Crop and original saved with their sources. Club warned. No package forwarded."

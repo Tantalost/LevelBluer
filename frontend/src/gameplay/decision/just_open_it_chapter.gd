@@ -28,12 +28,12 @@ const PARTS: Dictionary = {
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"desk","sender":"Student Design Desk","address":"Established club chat / pinned contact","subject":"Re: Did you send the event pack?","body":REPLY,"phrase":"The independent supplier denies sending the helper.","suspicious":false},{"id":"helper","sender":"Event Recovery Desk","address":"Separate offer conversation","subject":"Just open the preview","body":INSTRUCTION,"phrase":"The supplied attachment requests installation.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"The next morning. School print and design studio.","line":"Table six is drying. Table nine is also drying, because I painted one card upside down."},
- {"who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"There's a reply to the question I sent last night. Same pinned design-desk conversation.","mail":true},
+ {"mood":"calm", "who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"The next morning. School print and design studio.","line":"Table six is drying. Table nine is also drying, because I painted one card upside down."},
+ {"mood":"mystery", "who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"There's a reply to the question I sent last night. Same pinned design-desk conversation.","mail":true},
  {"who":"John","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"So the signs are in the club folder. Where did the helper come from?"},
- {"who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"The other conversation. Event Recovery Desk sent a poster thumbnail and instructions to install a preview helper."},
+ {"mood":"suspense", "who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"The other conversation. Event Recovery Desk sent a poster thumbnail and instructions to install a preview helper."},
  {"who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"I asked to see a poster. Why am I being asked to install anything?"},
- {"who":"John","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"Can you see the file details without opening it?"},
+ {"mood":"mystery", "who":"John","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"Can you see the file details without opening it?"},
  {"who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"Right here in the message. Let's read the details first."}
 ]
 const SEAL_LINE: String = "Desk reply saved. Package closed. Installation setting unchanged."

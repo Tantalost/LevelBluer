@@ -301,7 +301,7 @@ func _render_message() -> void:
 	sender_card.name = "SenderCard"
 	sender_card.add_theme_stylebox_override("panel", UI.box(Color("f0e5d6"), Color("ddcdbb"), 8))
 	var sender: VBoxContainer = UI.column(sender_card, 8)
-	for text: String in ["FROM · " + str(_message.get("sender", "")), "To: me  ·  Today, 07:00"]:
+	for text: String in ["FROM · " + str(_message.get("sender", "")), "To: me  ·  " + str(_message.get("received", "Today, 07:00"))]:
 		var metadata: Label = UI.label(text, 22, Color("544650"))
 		metadata.set_meta("opening_mail_metadata", true)
 		sender.add_child(metadata)

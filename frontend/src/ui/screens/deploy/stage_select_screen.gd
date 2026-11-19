@@ -121,7 +121,7 @@ func _refresh() -> void:
 		button.autowrap_mode = TextServer.AUTOWRAP_OFF
 		button.custom_minimum_size.x = maxf(120, button.text.length() * _font * 0.7 + 24)
 	_title.add_theme_font_size_override("font_size", maxi(20, ceili(12 / scale_y)))
-	_profile.text = "%s  /  %s" % [AuthService.display_name().to_upper(), AuthService.rank_title()]
+	_profile.text = AuthService.display_name().to_upper()
 	_wallet.text = "THREAT  %d    |    CREDITS  %d" % [PlayerManager.pvp_tokens, maxi(0, PlayerManager.credits)]
 	_wallet.add_theme_font_size_override("font_size", _font)
 	_rebuild_cards()

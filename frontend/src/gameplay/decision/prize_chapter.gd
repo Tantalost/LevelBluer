@@ -70,15 +70,15 @@ const PRIVATE_CHAT: Array[Dictionary] = [
 	{"who":"John","face":2,"text":"Jobert?"}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John","face":2,"bg":"intro_morning","caption":"That morning.\nThe room. The message. The button.","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_01_John.mp3", "line":"Five more minutes.\nPlease."},
-	{"who":"John","face":2,"bg":"intro_morning","art":"opening_john_reaching_phone_v1","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_02_John.mp3", "line":"No payout.\nNo breakfast.\nEven my phone has more energy than me.","mail":true,"event":"notification"},
-	{"who":"John","face":1,"bg":"intro_morning","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_03_John.mp3", "line":"A million pesos?\nOkay. I'm awake.","mail":true,"event":"email"},
-	{"who":"John","face":4,"bg":"intro_morning","voice":"v1794711273/levelblue/voice/mod_01/ch_04/M01_CH04_04_John.mp3", "line":"Still missing my coffee?\nThat's unfairly specific.\nWait.\nHow do they know about the coffee?"},
-	{"who":"John","face":2,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_05_John.mp3", "line":"Jobert will know.","chat":true,"messages":PRIVATE_CHAT,"contact":"Jobert"},
-	{"who":"John","face":2,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_06_John.mp3", "line":"Offline.\nYou picked a really bad time to disappear."},
-	{"who":"John","face":4,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_07_John.mp3", "line":"Right. I did say it here.\nEveryone could see it.\nBut that doesn't explain who copied it.","mail":true,"event":"coffee"},
-	{"who":"John","face":4,"bg":"intro_morning","voice":"v1794711276/levelblue/voice/mod_01/ch_04/M01_CH04_08_John.mp3", "line":"Recieve.\nAgain.\nAnd these times…\nHold on."},
-	{"who":"John","face":4,"bg":"intro_morning","caption":"Before the tap.\nPause the memory. Follow the records.","voice":"v1794711277/levelblue/voice/mod_01/ch_04/M01_CH04_09_John.mp3", "line":"The morning hasn't moved on.\nWe're reconstructing the evidence."}
+	{"mood":"calm", "thought":true, "who":"John","face":2,"bg":"intro_morning","caption":"That morning.\nThe room. The message. The button.","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_01_John.mp3", "line":"Five more minutes.\nPlease."},
+	{"thought":true, "who":"John","face":2,"bg":"intro_morning","art":"opening_john_reaching_phone_v1","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_02_John.mp3", "line":"No payout.\nNo breakfast.\nEven my phone has more energy than me.","mail":true,"event":"notification"},
+	{"mood":"mystery", "thought":true, "who":"John","face":1,"bg":"intro_morning","voice":"v1794711272/levelblue/voice/mod_01/ch_04/M01_CH04_03_John.mp3", "line":"A million pesos?\nOkay. I'm awake.","mail":true,"event":"email"},
+	{"mood":"suspense", "thought":true, "who":"John","face":4,"bg":"intro_morning","voice":"v1794711273/levelblue/voice/mod_01/ch_04/M01_CH04_04_John.mp3", "line":"Still missing my coffee?\nThat's unfairly specific.\nWait.\nHow do they know about the coffee?"},
+	{"thought":true, "who":"John","face":2,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_05_John.mp3", "line":"Jobert will know.","chat":true,"messages":PRIVATE_CHAT,"contact":"Jobert"},
+	{"thought":true, "who":"John","face":2,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_06_John.mp3", "line":"Offline.\nYou picked a really bad time to disappear."},
+	{"mood":"mystery", "thought":true, "who":"John","face":4,"bg":"intro_morning","voice":"v1794711275/levelblue/voice/mod_01/ch_04/M01_CH04_07_John.mp3", "line":"Right. I did say it here.\nEveryone could see it.\nBut that doesn't explain who copied it.","mail":true,"event":"coffee"},
+	{"thought":true, "who":"John","face":4,"bg":"intro_morning","voice":"v1794711276/levelblue/voice/mod_01/ch_04/M01_CH04_08_John.mp3", "line":"Recieve.\nAgain.\nAnd these times…\nHold on."},
+	{"thought":true, "who":"John","face":4,"bg":"intro_morning","caption":"Before the tap.\nPause the memory. Follow the records.","voice":"v1794711277/levelblue/voice/mod_01/ch_04/M01_CH04_09_John.mp3", "line":"The morning hasn't moved on.\nWe're reconstructing the evidence."}
 ]
 
 static func fresh() -> Dictionary:

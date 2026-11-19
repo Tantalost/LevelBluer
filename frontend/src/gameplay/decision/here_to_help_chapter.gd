@@ -29,10 +29,10 @@ const CLAIMS: Array[Dictionary] = [
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"appointment","sender":"Incident Response Coordinator (unverified)","address":"Incoming school-related message","subject":"School incident follow-up","body":"Good morning, Sir Rham. I am the incident-response coordinator assigned to your club's case. Your 10:30 consultation has been approved. Please acknowledge so I can prepare the protective follow-up.","phrase":"A plausible role still needs independent verification.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Sir Rham","face":1,"bg":"mod4_faculty_workroom_v1","cast":["sir rham"],"caption":"The next school morning, after Liza's hearing. The faculty workroom.","line":"I finally made coffee. Naturally, the paperwork arrived first."},
+ {"mood":"calm", "who":"Sir Rham","face":1,"bg":"mod4_faculty_workroom_v1","cast":["sir rham"],"caption":"The next school morning, after Liza's hearing. The faculty workroom.","line":"I finally made coffee. Naturally, the paperwork arrived first."},
  {"who":"John","face":1,"bg":"mod4_faculty_workroom_v1","cast":["sir rham","john"],"line":"At least nobody promised to pay you for drinking it."},
  {"who":"Sir Rham","face":1,"bg":"mod4_faculty_workroom_v1","cast":["sir rham","john"],"line":"Progress. We're learning."},
- {"who":"Sir Rham","face":4,"bg":"mod4_faculty_workroom_v1","cast":["sir rham"],"line":"An appointment notification. School incident follow-up?","mail":true},
+ {"mood":"mystery", "who":"Sir Rham","face":4,"bg":"mod4_faculty_workroom_v1","cast":["sir rham"],"line":"An appointment notification. School incident follow-up?","mail":true},
  {"who":"Sir Rham","face":0,"bg":"mod4_faculty_workroom_v1","cast":["sir rham","john"],"line":"They know about the club incidents. A follow-up would make sense."},
  {"who":"John","face":4,"bg":"mod4_faculty_workroom_v1","cast":["sir rham","john"],"line":"Did the office arrange it, or does the message say the office arranged it?"},
  {"who":"Sir Rham","face":4,"bg":"mod4_faculty_workroom_v1","cast":["sir rham","john"],"line":"Fair question. I'll check the schedule I already use."},

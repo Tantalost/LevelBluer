@@ -255,8 +255,8 @@ func _refresh_all() -> void:
 	_title.add_theme_font_size_override("font_size", maxi(20, ceili(12 / scale_y)))
 	_profile.custom_minimum_size = Vector2(260, maxf(_touch, _font * 2 + 24))
 	_profile_name.text = AuthService.display_name().to_upper()
-	_profile_rank.text = AuthService.rank_title().to_upper()
-	_profile.tooltip_text = "%s / %s — Open profile" % [AuthService.display_name(), AuthService.rank_title()]
+	_profile_rank.hide()
+	_profile.tooltip_text = "%s — Open profile" % AuthService.display_name()
 	_profile_name.add_theme_font_size_override("font_size", _font)
 	_profile_rank.add_theme_font_size_override("font_size", _font - 4)
 	_wallet.text = "THREAT   %d\nCREDITS  %d" % [PlayerManager.pvp_tokens, maxi(0, PlayerManager.credits)]

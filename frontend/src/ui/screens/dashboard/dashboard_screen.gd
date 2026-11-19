@@ -242,7 +242,7 @@ func _refresh_data() -> void:
 	_refresh_wallet()
 	_current_stage = AuthService.current_stage()
 	_player_name.text = AuthService.display_name().to_upper()
-	_rank.text = AuthService.rank_title().to_upper()
+	_rank.hide()
 	_deploy_button.title = "DEPLOY"
 	_deploy_button.subtitle = ""
 	_lessons_button.title = "LESSONS"

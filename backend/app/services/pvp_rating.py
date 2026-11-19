@@ -3,7 +3,8 @@
 The points calculation, locking, idempotency and chronological ordering live in the SQL function
 ``levelblue_apply_pvp_rating`` (migrations/pvp_ratings.sql), which reads the stored authoritative
 ``pvp_matches`` row; this module only decides *when* to call it and maps points to ranks.
-Rank is always derived from points here and never stored. Separate from BKT/mastery/tokens.
+Rank unlocks after five rated matches, then is derived from points and never stored.
+Separate from BKT/mastery/tokens.
 
 Durability: a match is queued for rating only after its history row is stored. Jobs pending in memory
 are lost on restart, but ``recover()`` re-finds every rated-eligible match without rating events
@@ -32,6 +33,7 @@ from app.services.database_diagnostics import safe_database_error
 logger = logging.getLogger(__name__)
 
 INITIAL_POINTS = 1000
+CALIBRATION_MATCHES = 5
 RANKS: tuple[tuple[str, int], ...] = (
     ("Bronze", 0),
     ("Silver", 900),
@@ -74,16 +76,20 @@ def standing(row: dict[str, Any] | None) -> dict[str, Any]:
     """The /me/rank payload. A student with no rated match yet reads as a new player."""
     row = row or {}
     points = int(row.get("points", INITIAL_POINTS))
+    matches = int(row.get("rated_matches", 0))
+    calibrated = matches >= CALIBRATION_MATCHES
     index = rank_index(points)
-    following = RANKS[index + 1] if index + 1 < len(RANKS) else None
+    following = RANKS[index + 1] if calibrated and index + 1 < len(RANKS) else None
     return {
         "points": points,
-        "rank": RANKS[index][0],
-        "current_threshold": RANKS[index][1],
+        "rank": RANKS[index][0] if calibrated else "Uncalibrated",
+        "calibration_required": CALIBRATION_MATCHES,
+        "calibration_completed": min(matches, CALIBRATION_MATCHES),
+        "current_threshold": RANKS[index][1] if calibrated else None,
         "next_rank": following[0] if following else None,
         "next_threshold": following[1] if following else None,
         "points_to_next_rank": following[1] - points if following else None,
-        "rated_matches": int(row.get("rated_matches", 0)),
+        "rated_matches": matches,
         "wins": int(row.get("wins", 0)),
         "losses": int(row.get("losses", 0)),
         "draws": int(row.get("draws", 0)),
@@ -108,12 +114,29 @@ def match_rating(student_id: str, match_id: str) -> dict[str, Any]:
         raise RatingUnavailable from exc
     if not rows:
         return {"status": "pending"}
+    # The first five ledger events identify placement even when an old result is
+    # reopened later. Use the rating writer's match order, not current account totals.
+    try:
+        placements = (supabase.table("pvp_rating_events")
+                      .select("match_id,pvp_matches!inner(finished_at)")
+                      .eq("student_id", student_id)
+                      .order("pvp_matches(finished_at)").order("match_id")
+                      .limit(CALIBRATION_MATCHES).execute().data or [])
+    except Exception as exc:
+        raise RatingUnavailable from exc
+    ordinal = next((i + 1 for i, event in enumerate(placements)
+                    if str(event["match_id"]) == match_id), CALIBRATION_MATCHES + 1)
+    if ordinal > CALIBRATION_MATCHES and len(placements) < CALIBRATION_MATCHES:
+        raise RatingUnavailable("Incomplete calibration history")
     row = rows[0]
+    after = standing({"points": row["points_after"], "rated_matches": ordinal})
+    before = standing({"points": row["points_before"], "rated_matches": ordinal - 1})
     return {"status": "applied", "match_id": match_id, **row,
-            "current_threshold": standing({"points": row["points_after"]})["current_threshold"],
-            "next_threshold": standing({"points": row["points_after"]})["next_threshold"],
-            "rank_before": rank_for(int(row["points_before"])),
-            "rank_after": rank_for(int(row["points_after"]))}
+            "calibration_required": CALIBRATION_MATCHES,
+            "calibration_completed": after["calibration_completed"],
+            "current_threshold": after["current_threshold"],
+            "next_threshold": after["next_threshold"],
+            "rank_before": before["rank"], "rank_after": after["rank"]}
 
 
 # ---- database calls -----------------------------------------------------------------------

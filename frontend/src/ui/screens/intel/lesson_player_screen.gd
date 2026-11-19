@@ -215,7 +215,7 @@ func on_enter(args: Dictionary) -> void:
 		if not account.can_access_lesson_module(module_id):
 			Router.request_back()
 			return
-		if not completed and not AuthService.has_module_pretest(module_id):
+		if not completed and not AuthService.has_module_pretest(module_id) and not AuthService.has_demo_access():
 			_pending_entry = args.duplicate()
 			_pending_entry["module_id"] = module_id
 			Router.push(&"pretest", {"module_id": module_id})

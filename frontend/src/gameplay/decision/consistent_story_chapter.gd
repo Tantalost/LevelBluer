@@ -29,15 +29,15 @@ const SCHOOL_NOTICE: String = "EXISTING SCHOOL SHORTCUT / OFFICE NOTICE\nInterna
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"sources","sender":"Incident Response Coordinator (unverified)","address":"Same incoming conversation","subject":"Profile, email and invitation","body":"Here are my profile, email and meeting invitation. You can see that everything agrees. Please prepare the club contact list for the protective follow-up.","phrase":"Three supplied records can repeat one unverified story.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Sir Rham","face":0,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"caption":"Late morning. The administration reception alcove, while waiting to ask the office about the appointment.","line":"I chose the school directory. While I wait to speak with the office, our helpful stranger has sent a whole introduction pack."},
- {"who":"John","face":1,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"Does it come with a table of contents?"},
+ {"mood":"mystery", "who":"Sir Rham","face":0,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"caption":"Late morning. The administration reception alcove, while waiting to ask the office about the appointment.","line":"I chose the school directory. While I wait to speak with the office, our helpful stranger has sent a whole introduction pack."},
+ {"mood":"calm", "who":"John","face":1,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"Does it come with a table of contents?"},
  {"who":"Sir Rham","face":1,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"Three attachments. More organized than my lesson folders. That is a very low bar."},
- {"who":"Sir Rham","face":4,"bg":"mod4_admin_reception_v1","cast":["sir rham"],"line":"A profile, an email copy and an invitation. Let's open the new message.","mail":true},
+ {"mood":"mystery", "who":"Sir Rham","face":4,"bg":"mod4_admin_reception_v1","cast":["sir rham"],"line":"A profile, an email copy and an invitation. Let's open the new message.","mail":true},
  {"who":"Sir Rham","face":0,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"Three matching documents. That looks reassuring."},
  {"who":"John","face":4,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"Three documents—or one person telling the same story three times?"},
  {"who":"Sir Rham","face":3,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"Consistency is useful. Independence is the missing part."},
- {"who":"Sir Rham","face":2,"bg":"mod4_admin_reception_v1","cast":["sir rham"],"line":"Now they want student names, sections and contact numbers. That is more than confirming a meeting."},
- {"who":"Sir Rham","face":4,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"The usual school noticeboard has an update: our internal event meeting moved to eleven. That explains a schedule correction. It says nothing about this coordinator."},
+ {"mood":"suspense", "who":"Sir Rham","face":2,"bg":"mod4_admin_reception_v1","cast":["sir rham"],"line":"Now they want student names, sections and contact numbers. That is more than confirming a meeting."},
+ {"mood":"mystery", "who":"Sir Rham","face":4,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"The usual school noticeboard has an update: our internal event meeting moved to eleven. That explains a schedule correction. It says nothing about this coordinator."},
  {"who":"John","face":0,"bg":"mod4_admin_reception_v1","cast":["sir rham","john"],"line":"So the staff member correcting the schedule isn't evidence of a scam."},
  {"who":"Sir Rham","face":5,"bg":"mod4_admin_reception_v1","cast":["sir rham"],"line":"Right. I'll keep the request and its sources together. The list stays private while I verify the role and permission."}
 ]

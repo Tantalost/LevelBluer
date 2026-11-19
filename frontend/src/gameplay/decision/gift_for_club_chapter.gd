@@ -22,13 +22,13 @@ const PLAN: String = "CLUB EVENT CHAT / PINNED MATERIALS PLAN\nPosters, signs an
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"gift","sender":"Event Recovery Desk","address":"Separate incoming conversation","subject":"Your event materials are ready","body":"You've had enough disruptions. Here's a complete event pack: posters, arrows, room signs and table numbers. Our desk prepared it for your club. For confirmation, reply to our verification desk here.","phrase":"A useful offer still needs a source check.","suspicious":true}]
 const STORY: Array[Dictionary] = [
- {"who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"Auditorium wings, early evening. A few minutes after the hearing.","line":"There. One arrow pointing at the auditorium instead of the broom closet."},
+ {"mood":"calm", "who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"Auditorium wings, early evening. A few minutes after the hearing.","line":"There. One arrow pointing at the auditorium instead of the broom closet."},
  {"who":"John","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"The broom closet thanks you. What was that message during the hearing?"},
- {"who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"It's still unread. Let me see what they offered.","mail":true},
+ {"mood":"mystery", "who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"It's still unread. Let me see what they offered.","mail":true},
  {"who":"Mika","face":0,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"They even have table numbers. That would give us our whole evening back."},
  {"who":"John","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"Did we order table numbers from them?"},
- {"who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"I wished for them quite loudly. I don't think that counts."},
- {"who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"We pinned the materials plan in our club chat. I'll compare it with the offer before I touch the pack."}
+ {"mood":"calm", "who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","john"],"line":"I wished for them quite loudly. I don't think that counts."},
+ {"mood":"mystery", "who":"Mika","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika"],"line":"We pinned the materials plan in our club chat. I'll compare it with the offer before I touch the pack."}
 ]
 const SEAL_LINE: String = "Offer preserved. Pack unopened. Design desk contacted."
 const EVIDENCE: String = "The offer promises finished event materials. The sender claims to have prepared them for the club.\nThe club's own pinned plan names the Student Design Desk and established club folder.\nMika saved the offer and asked the pinned contact to confirm. The reply is pending."

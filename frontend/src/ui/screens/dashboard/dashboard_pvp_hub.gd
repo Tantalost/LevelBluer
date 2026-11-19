@@ -393,13 +393,21 @@ func _draw_profile() -> void:
 		draw_string(FONT,Vector2(x,y+108),"Connect to load your stats.",HORIZONTAL_ALIGNMENT_LEFT,width,17,EDGE.lightened(.3))
 		return
 	draw_string(FONT,Vector2(x,y+75),str(_standing.get("rank","")).to_upper(),HORIZONTAL_ALIGNMENT_LEFT,width,30,AMBER)
-	draw_string(FONT,Vector2(x,y+98),"%d PVP POINTS" % int(_standing.get("points",0)),HORIZONTAL_ALIGNMENT_LEFT,width,21,Color("#ffe192"))
+	var required: int = int(_standing.get("calibration_required",5))
+	var completed: int = int(_standing.get("calibration_completed",0))
+	var calibrating: bool = completed < required
+	var points_line: String = "%d / %d RANKED MATCHES" % [completed,required] if calibrating else "%d PVP POINTS" % int(_standing.get("points",0))
+	draw_string(FONT,Vector2(x,y+98),points_line,HORIZONTAL_ALIGNMENT_LEFT,width,21,Color("#ffe192"))
 	draw_string(FONT,Vector2(x,y+126),"W %d   L %d   D %d" % [int(_standing.get("wins",0)),int(_standing.get("losses",0)),int(_standing.get("draws",0))],HORIZONTAL_ALIGNMENT_LEFT,width,21,AMBER)
 	var next: Variant = _standing.get("next_threshold")
-	var base: float = float(_standing.get("current_threshold",0))
-	var ratio: float = 1.0 if next == null else clampf((float(_standing.get("points",0))-base)/maxf(1,float(next)-base),0,1)
+	var ratio: float = float(completed)/required
+	if not calibrating:
+		var base: float = float(_standing.get("current_threshold",0))
+		ratio = 1.0 if next == null else clampf((float(_standing.get("points",0))-base)/maxf(1,float(next)-base),0,1)
 	for cell: int in 24:
 		draw_rect(Rect2(x+cell*width/24,y+139,width/24-2,8), AMBER if float(cell)/24 < ratio else Color("#493514"))
 	var next_line: String = "MAX RANK" if next == null else "%d TO %s" % [int(_standing.get("points_to_next_rank",0)),str(_standing.get("next_rank","")).to_upper()]
+	if calibrating:
+		next_line = "%d MORE TO REVEAL RANK" % (required-completed)
 	draw_string(FONT,Vector2(x,y+167),next_line,HORIZONTAL_ALIGNMENT_LEFT,width,18,AMBER)
 	draw_string(FONT,Vector2(x,rect.end.y-8),"%d MATCHES / %s" % [int(_standing.get("rated_matches",0)),"SYNCED" if _standing_fresh else "CACHED"],HORIZONTAL_ALIGNMENT_LEFT,width,16,EDGE.lightened(.3))

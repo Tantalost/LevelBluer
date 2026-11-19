@@ -3,9 +3,8 @@ extends BaseScreen
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
 const Data = preload("res://src/ui/screens/progress/progress_data.gd")
 const Briefing = preload("res://src/ui/screens/profile/profile_briefing.gd")
-const Badge = preload("res://src/ui/screens/progress/rank_badge.gd")
 const AvatarPicker = preload("res://src/ui/screens/profile/avatar_picker.gd")
-## PvP card uses the multiplayer blues so it never reads as part of the teal/gold campaign rank.
+## PvP is the only ranked activity; learning progress stays separate.
 const PVP_BORDER := Color("4f8cff")
 const PVP_FILL := Color("102040")
 const PVP_TITLE := Color("8ff0e6")
@@ -185,16 +184,9 @@ func _build_identity() -> void:
 	avatar.offset_top = 6
 	avatar.offset_bottom = -6
 	AssetManager.bind_texture(avatar, "ui_pfp")
-	var badge := Badge.new()
-	badge.rank_index = int(_snapshot.rank_index)
-	portrait_row.add_child(badge)
 	card.add_child(_label(AuthService.display_name().to_upper(), UI.TEXT, 10))
 	card.add_child(_label("Tap your portrait to change it", UI.TEAL, -2))
-	card.add_child(_label(str(_snapshot.rank), UI.GOLD, 2))
 	card.add_child(_label("SIGNED IN" if AuthService.is_signed_in() else "LOCAL PROFILE", UI.TEAL, -2))
-	card.add_child(_label("%d RANK POINTS" % _snapshot.points, UI.TEXT, 2))
-	_bar(card, _snapshot.rank_value, _snapshot.rank_span)
-	card.add_child(_label("Maximum rank / Commander" if _snapshot.max_rank else "%d points to %s" % [maxi(0, int(_snapshot.next_points) - int(_snapshot.points)), AuthService.RANKS[mini(int(_snapshot.rank_index) + 1, AuthService.RANKS.size() - 1)]], UI.MUTED))
 	_build_pvp_standing()
 	_details_button = _button(("HIDE" if _details_open else "VIEW") + " PERSONAL RECORD", _toggle_details)
 	_identity.add_child(_details_button)
@@ -215,7 +207,7 @@ func _build_identity() -> void:
 		_details_content.add_child(_label("Post-test / No confirmed result", UI.MUTED))
 	_details_content.add_child(_label("Account records are separate from mastery estimates and stage completion.", UI.MUTED, -2))
 
-## Multiplayer standing, shown exactly as the backend reports it; separate from campaign rank points.
+## Multiplayer standing and calibration come from the existing rated-match record.
 func _build_pvp_standing() -> void:
 	var card := _panel(_identity, PVP_BORDER, PVP_FILL)
 	card.get_parent().name = "PvpStandingCard"
@@ -228,6 +220,27 @@ func _build_pvp_standing() -> void:
 	var rank: Label = _label(str(standing.get("rank", "")).to_upper(), PVP_RANK, 12)
 	rank.name = "PvpRank"
 	card.add_child(rank)
+	var required: int = int(standing.get("calibration_required", 5))
+	var completed: int = int(standing.get("calibration_completed", 0))
+	if completed < required:
+		card.add_child(_label("%d / %d RANKED MATCHES" % [completed, required], PVP_TITLE))
+		var calibration: ProgressBar = _bar(card, completed, required, PVP_BAR)
+		calibration.name = "PvpCalibration"
+		card.add_child(_label("Finish %d more ranked %s to reveal your rank." % [required - completed, "match" if required - completed == 1 else "matches"], UI.MUTED))
+		card.add_child(_label("Bot practice and private rooms do not count.", UI.MUTED, -2))
+	else:
+		_build_pvp_rank_progress(card, standing)
+	var matches: int = _whole(standing.get("rated_matches"))
+	var wins: int = _whole(standing.get("wins"))
+	var losses: int = _whole(standing.get("losses"))
+	var draws: int = _whole(standing.get("draws"))
+	card.add_child(_label("%s RATED %s" % [_grouped(matches), "MATCH" if matches == 1 else "MATCHES"], UI.MUTED, -2))
+	var tally: String = "%s %s / %s %s" % [_grouped(wins), "WIN" if wins == 1 else "WINS", _grouped(losses), "LOSS" if losses == 1 else "LOSSES"]
+	if draws > 0:
+		tally += " / %s %s" % [_grouped(draws), "DRAW" if draws == 1 else "DRAWS"]
+	card.add_child(_label(tally, UI.MUTED, -2))
+
+func _build_pvp_rank_progress(card: VBoxContainer, standing: Dictionary) -> void:
 	var points: int = _whole(standing.get("points"))
 	card.add_child(_label("%s PVP POINTS" % _grouped(points), UI.TEXT, 2))
 	var next_rank: Variant = standing.get("next_rank")
@@ -242,15 +255,6 @@ func _build_pvp_standing() -> void:
 			var span: int = _whole(ceiling) - _whole(floor_points)
 			var progress: ProgressBar = _bar(card, clampi(points - _whole(floor_points), 0, span), span, PVP_BAR)
 			progress.name = "PvpProgress"
-	var matches: int = _whole(standing.get("rated_matches"))
-	var wins: int = _whole(standing.get("wins"))
-	var losses: int = _whole(standing.get("losses"))
-	var draws: int = _whole(standing.get("draws"))
-	card.add_child(_label("%s RATED %s" % [_grouped(matches), "MATCH" if matches == 1 else "MATCHES"], UI.MUTED, -2))
-	var tally := "%s %s / %s %s" % [_grouped(wins), "WIN" if wins == 1 else "WINS", _grouped(losses), "LOSS" if losses == 1 else "LOSSES"]
-	if draws > 0:
-		tally += " / %s %s" % [_grouped(draws), "DRAW" if draws == 1 else "DRAWS"]
-	card.add_child(_label(tally, UI.MUTED, -2))
 
 static func _is_number(value: Variant) -> bool:
 	return typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT

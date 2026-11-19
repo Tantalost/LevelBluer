@@ -145,7 +145,7 @@ func play_clip(path: String) -> void:
 	check(screen.state.beat == 0 and screen._sentence == 1, "Real pointer advances one sentence, not the entire beat")
 	check(screen._line.text == "And here I was, late again.", "Only the current sentence appears")
 	check(not screen._caption_black.visible and screen._dialogue.visible and not screen._cast_stage.visible and screen._bg.texture == assets.get_texture(Chapter.STORY[0].approach_art), "The first voiced sentence shows the running illustration without a second John")
-	check(screen._speaker.text == "John", "John speaks only the following arrival line")
+	check(screen._speaker.text == "John · Thinking", "John thinks the following arrival line")
 	await capture("arrival_after_caption")
 	screen._advance()
 	check(screen._bg.texture == assets.get_texture(Chapter.STORY[0].approach_art), "John is still running as he urges himself on")
@@ -232,6 +232,8 @@ func play_clip(path: String) -> void:
 	for entry: Dictionary in Chapter.MESSAGES:
 		screen._phone._select(entry.id)
 		screen._phone.acknowledge()
+		if bool(entry.suspicious):
+			for duration: float in [1.6,0.6,1.0]: screen._phone._tick_reply(duration)
 	screen._phone._finish_phase()
 	finish_beat()
 	await settle()

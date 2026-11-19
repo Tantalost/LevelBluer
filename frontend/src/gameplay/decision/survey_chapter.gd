@@ -181,19 +181,19 @@ const MESSAGES: Array[Dictionary] = [
 	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "voice":"v1794044478/M01_CH01_22C_John.mp3", "thought":"'Recieve' could just be bad grammar. But my birth date AND my home address? They haven't even explained why they need them."}
 ]
 const STORY: Array[Dictionary] = [
-	{"who":"John", "face":2, "voice":"v1794044509/M01_CH01_02_John.mp3", "bg":"school_gate_morning", "approach_art":"chapter1_john_rushing", "approach_sfx":"res://assets/audio/sfx/john_running_pavement.wav", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
+	{"mood":"calm", "thought":true, "who":"John", "face":2, "voice":"v1794044509/M01_CH01_02_John.mp3", "bg":"school_gate_morning", "approach_art":"chapter1_john_rushing", "approach_sfx":"res://assets/audio/sfx/john_running_pavement.wav", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
 	{"who":"Eric", "face":1, "voice":"v1794044508/M01_CH01_03_Eric.mp3", "bg":"hallway_day", "line":"John! You look like you ran the whole way. No coffee today?"},
 	{"who":"John", "face":2, "voice":"v1794044507/M01_CH01_04_John.mp3", "bg":"hallway_day", "line":"No coffee. No spare money either. Please tell me the meeting hasn't started."},
 	{"who":"Eric", "face":1, "voice":"v1794044505/M01_CH01_05_Eric.mp3", "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
-	{"who":"John", "face":0, "voice":"v1794044504/M01_CH01_06_John.mp3", "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
-	{"who":"Eric", "face":1, "voice":"v1794044502/M01_CH01_11_Eric.mp3", "bg":"clubroom", "line":"We're back. That survey gig I mentioned? Easy work. I know the client personally."},
+	{"thought":true, "who":"John", "face":0, "voice":"v1794044504/M01_CH01_06_John.mp3", "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
+	{"mood":"mystery", "who":"Eric", "face":1, "voice":"v1794044502/M01_CH01_11_Eric.mp3", "bg":"clubroom", "line":"We're back. That survey gig I mentioned? Easy work. I know the client personally."},
 	{"who":"John", "face":4, "voice":"v1794044500/M01_CH01_12_John.mp3", "bg":"clubroom", "line":"Really? What's their name?"},
 	{"who":"Eric", "face":2, "voice":"v1794044499/M01_CH01_13_Eric.mp3", "bg":"clubroom", "line":"Uh… I'll send you the contact. They handle everything by email."},
-	{"who":"John", "face":0, "voice":"v1794044497/M01_CH01_14_John.mp3", "bg":"clubroom", "line":"Why did he look away? Maybe I'm overthinking it. I could really use that money."},
-	{"who":"Jobert", "face":2, "voice":"v1794044496/M01_CH01_15_Jobert.mp3", "bg":"clubroom", "line":"Careful with random surveys, John. Ask me if you're unsure. We can check who's behind it."},
+	{"thought":true, "who":"John", "face":0, "voice":"v1794044497/M01_CH01_14_John.mp3", "bg":"clubroom", "line":"Why did he look away? Maybe I'm overthinking it. I could really use that money."},
+	{"mood":"calm", "who":"Jobert", "face":2, "voice":"v1794044496/M01_CH01_15_Jobert.mp3", "bg":"clubroom", "line":"Careful with random surveys, John. Ask me if you're unsure. We can check who's behind it."},
 	{"who":"John", "face":1, "voice":"v1794044495/M01_CH01_16_John.mp3", "bg":"clubroom", "line":"Thanks. I'll take a look first. It's just a survey… right?"},
-	{"who":"John", "face":0, "voice":"v1794044492/M01_CH01_17_John.mp3", "bg":"classroom_sunset", "mail":true, "line":"Six new messages already? Some from school. Some about the survey. I'd better answer before I lose the job."},
-	{"who":"John", "face":2, "voice":"v1794044487/M01_CH01_19_John.mp3", "bg":"john_desk_night", "time":"night", "line":"That night, I open my inbox again. Three messages keep bothering me. Maybe I should have looked closer."}
+	{"mood":"mystery", "thought":true, "who":"John", "face":0, "voice":"v1794044492/M01_CH01_17_John.mp3", "bg":"classroom_sunset", "mail":true, "line":"Six new messages already? Some from school. Some about the survey. I'd better answer before I lose the job."},
+	{"thought":true, "who":"John", "face":2, "voice":"v1794044487/M01_CH01_19_John.mp3", "bg":"john_desk_night", "time":"night", "line":"That night, I open my inbox again. Three messages keep bothering me. Maybe I should have looked closer."}
 ]
 const CHAT_MESSAGES: Array[Dictionary] = [
 	{"who":"John", "face":0, "text":"I miss coffee. I need a side gig before my wallet gives up."},

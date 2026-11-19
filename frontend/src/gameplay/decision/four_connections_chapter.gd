@@ -38,14 +38,14 @@ const EARLIER: Array[Dictionary] = [
 const CHAT_MESSAGES: Array[Dictionary] = []
 const MESSAGES: Array[Dictionary] = [{"id":"connections","sender":"School Support","address":"Existing directory / School Office / support case","subject":"Delivery review available","body":REPORT,"phrase":"Two corroborated delivery links; directing account withheld.","suspicious":false}]
 const STORY: Array[Dictionary] = [
- {"who":"Mika","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"Afternoon. Student services incident desk.","line":"My warning is in the club chat. The pack is still closed. Sir Rham asked me to bring the preserved messages."},
+ {"mood":"mystery", "who":"Mika","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika"],"caption":"Afternoon. Student services incident desk.","line":"My warning is in the club chat. The pack is still closed. Sir Rham asked me to bring the preserved messages."},
  {"who":"Sir Rham","face":4,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"I opened our support case through the School Office in the existing directory. A delivery review has arrived.","mail":true},
  {"who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"Two references. The coordinator request, then the gift offer. They checked the deliveries?"},
  {"who":"Sir Rham","face":3,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"The report corroborates that connection. We still need to compare its excerpts with our originals."},
- {"who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"And the directing account is withheld. So we have a link, but not the answer to who's directing it."},
- {"who":"Sir Rham","face":0,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"Exactly. Keep John's, Amani's and Liza's findings separate. Similar tricks don't fill a missing account field."},
+ {"mood":"suspense", "who":"Mika","face":2,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"And the directing account is withheld. So we have a link, but not the answer to who's directing it."},
+ {"mood":"mystery", "who":"Sir Rham","face":0,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"Exactly. Keep John's, Amani's and Liza's findings separate. Similar tricks don't fill a missing account field."},
  {"who":"Mika","face":1,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"For once, an empty box is telling us something useful: don't guess."},
- {"who":"Sir Rham","face":5,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"Save what we can support. We'll bring the unanswered question to the hearing."}
+ {"mood":"resolve", "who":"Sir Rham","face":5,"bg":NIGHT_BACKGROUND,"cast":["mika","sir rham"],"line":"Save what we can support. We'll bring the unanswered question to the hearing."}
 ]
 const SEAL_LINE: String = "Independent report and both originals paired. Directing account still withheld."
 const EVIDENCE: String = "The report came through the established school directory, School Office and support case.\nService references DL-041 and DL-052 match the preserved contact-list request and event-pack offer. The service corroborates a connection between these two deliveries.\nThe directing account remains withheld pending verification. Earlier case outcomes stay separate; this report alone does not attribute the wider campaign."

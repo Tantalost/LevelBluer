@@ -63,21 +63,45 @@ class MatchRewardReadTest(unittest.TestCase):
         query.select.return_value = query
         query.eq.return_value = query
         query.limit.return_value = query
-        query.execute.return_value.data = [{"points_before": 1190, "points_after": 1206, "points_delta": 16}]
+        query.order.return_value = query
+        query.execute.side_effect = [
+            types.SimpleNamespace(data=[{"points_before": 1190, "points_after": 1206, "points_delta": 16}]),
+            types.SimpleNamespace(data=[{"match_id": str(i)} for i in range(5)]),
+        ]
         with patch.object(pvp_rating, "supabase", db):
             result = pvp_rating.match_rating("student-a", "match-a")
-        db.table.assert_called_once_with("pvp_rating_events")
+        self.assertTrue(all(call.args == ("pvp_rating_events",) for call in db.table.call_args_list))
         self.assertEqual(query.eq.call_args_list[0].args, ("student_id", "student-a"))
         self.assertEqual(query.eq.call_args_list[1].args, ("match_id", "match-a"))
         self.assertEqual(result["points_delta"], 16)
         self.assertEqual(result["rank_before"], "Silver")
         self.assertEqual(result["rank_after"], "Gold")
+        self.assertEqual(query.order.call_args_list[0].args, ("pvp_matches(finished_at)",))
+        self.assertEqual(query.order.call_args_list[1].args, ("match_id",))
+        query.execute.side_effect = None
         query.execute.return_value.data = []
         with patch.object(pvp_rating, "supabase", db):
             self.assertEqual(pvp_rating.match_rating("student-a", "match-a"), {"status": "pending"})
         query.execute.side_effect = RuntimeError("offline")
         with patch.object(pvp_rating, "supabase", db), self.assertRaises(pvp_rating.RatingUnavailable):
             pvp_rating.match_rating("student-a", "match-a")
+
+    def test_placement_history_and_fifth_loss_reveal(self):
+        db = MagicMock()
+        query = db.table.return_value
+        for name in ("select", "eq", "limit", "order"):
+            getattr(query, name).return_value = query
+        for ordinal in range(1, 7):
+            query.execute.side_effect = [
+                types.SimpleNamespace(data=[{"points_before": 905, "points_after": 889, "points_delta": -16}]),
+                types.SimpleNamespace(data=[{"match_id": str(i)} for i in range(1, 6)]),
+            ]
+            with patch.object(pvp_rating, "supabase", db):
+                result = pvp_rating.match_rating("student-a", str(ordinal))
+            self.assertEqual(result["rank_before"], "Uncalibrated" if ordinal <= 5 else "Silver")
+            self.assertEqual(result["rank_after"], "Uncalibrated" if ordinal < 5 else "Bronze")
+            self.assertEqual(result["calibration_completed"], min(ordinal, 5))
+            self.assertEqual(result["current_threshold"], None if ordinal < 5 else 0)
 
 
 class FakeRatingDb:
@@ -162,21 +186,31 @@ class RankTest(unittest.TestCase):
         for points, rank in cases.items():
             self.assertEqual(rank_for(points), rank, points)
 
-    def test_new_player_is_1000_silver(self):
-        self.assertEqual(standing(None), {"points": 1000, "rank": "Silver", "current_threshold": 900, "next_rank": "Gold", "next_threshold": 1200,
-                                          "points_to_next_rank": 200, "rated_matches": 0, "wins": 0, "losses": 0, "draws": 0})
+    def test_new_player_is_uncalibrated(self):
+        self.assertEqual(standing(None), {"points": 1000, "rank": "Uncalibrated", "current_threshold": None, "next_rank": None, "next_threshold": None,
+                                          "calibration_required": 5, "calibration_completed": 0,
+                                          "points_to_next_rank": None, "rated_matches": 0, "wins": 0, "losses": 0, "draws": 0})
         self.assertIn("initial_points integer     not null default 1000", MIGRATION.read_text(encoding="utf-8"))
+
+    def test_calibration_boundary_preserves_points_and_tallies(self):
+        for matches in range(7):
+            for points in (800, 1000, 1200, 2700):
+                result = standing({"points": points, "rated_matches": matches, "wins": matches})
+                self.assertEqual(result["rank"], "Uncalibrated" if matches < 5 else rank_for(points))
+                self.assertEqual(result["points"], points)
+                self.assertEqual(result["wins"], matches)
+                self.assertEqual(result["calibration_completed"], min(matches, 5))
 
     def test_standing_payload_and_grandmaster(self):
         self.assertEqual(standing({"points": 1048, "rated_matches": 18, "wins": 11, "losses": 7, "draws": 0}),
                          {"points": 1048, "rank": "Silver", "current_threshold": 900, "next_rank": "Gold", "next_threshold": 1200, "points_to_next_rank": 152,
-                          "rated_matches": 18, "wins": 11, "losses": 7, "draws": 0})
+                          "rated_matches": 18, "wins": 11, "losses": 7, "draws": 0, "calibration_required": 5, "calibration_completed": 5})
         top = standing({"points": 2846, "rated_matches": 90, "wins": 70, "losses": 20, "draws": 0})
         self.assertEqual((top["rank"], top["next_rank"], top["next_threshold"], top["points_to_next_rank"]), ("Grandmaster", None, None, None))
 
     def test_current_threshold_brackets_points(self):
         for points in (0, 899, 900, 1048, 1199, 1200, 2099, 2100, 2699, 2700, 5000):
-            row = standing({"points": points})
+            row = standing({"points": points, "rated_matches": 5})
             self.assertLessEqual(row["current_threshold"], points)
             if row["next_threshold"] is not None:
                 self.assertLess(points, row["next_threshold"])
@@ -559,7 +593,7 @@ class RankApiTest(unittest.TestCase):
         self.rows[me] = {"points": 2846, "rated_matches": 90, "wins": 70, "losses": 20, "draws": 0}
         body = self.client.get("/api/pvp/me/rank", headers=auth(me)).json()
         self.assertEqual(body, {"points": 2846, "rank": "Grandmaster", "current_threshold": 2700, "next_rank": None, "next_threshold": None, "points_to_next_rank": None,
-                                "rated_matches": 90, "wins": 70, "losses": 20, "draws": 0})
+                                "rated_matches": 90, "wins": 70, "losses": 20, "draws": 0, "calibration_required": 5, "calibration_completed": 5})
         self.assertEqual(set(self.db.tables), {"pvp_ratings"})
 
     def test_cannot_read_another_students_standing(self):

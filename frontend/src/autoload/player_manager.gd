@@ -149,6 +149,7 @@ func story_access_reason(id: String) -> String:
 	var ids: PackedStringArray = authored_story_ids()
 	var position: int = ids.find(id)
 	if position < 0: return "IN DEVELOPMENT"
+	if AuthService.has_demo_access(): return ""
 	if not (chapter_progress.get(id, {}) as Dictionary).is_empty(): return ""
 	if position > 0 and not bool(chapter_progress.get(ids[position - 1], {}).get("completed", false)):
 		return "FINISH PREVIOUS STORY CHAPTER"
@@ -632,6 +633,7 @@ func lesson_cleared(module_id: String, index: int) -> bool:
 
 func lesson_status(module_id: String, index: int) -> String:
 	if lesson_completed(module_id, index): return "Completed"
+	if AuthService.has_demo_access(): return "Available (demo)"
 	if diagnostic_route(module_id).route == "cleared": return "Cleared by pretest"
 	return "Required" if index in diagnostic_route(module_id).required_lessons else "Optional"
 
@@ -644,17 +646,20 @@ func next_lesson_index(module_id: String) -> int:
 
 func can_access_lesson(module_id: String, index: int) -> bool:
 	if index < 0 or index >= LessonCatalog.lesson_count(module_id) or not can_access_lesson_module(module_id): return false
+	if AuthService.has_demo_access(): return true
 	if lesson_completed(module_id, index) or diagnostic_route(module_id).route != "full": return true
 	# Preserve the next available lesson for ordinary sequential learning.
 	return index <= next_lesson_index(module_id)
 
 func can_take_checkpoint(module_id: String) -> bool:
 	if not can_access_lesson_module(module_id): return false
+	if AuthService.has_demo_access(): return true
 	for index: int in diagnostic_route(module_id).required_lessons:
 		if not lesson_completed(module_id, index): return false
 	return true
 
 func learning_route_summary(module_id: String) -> String:
+	if AuthService.has_demo_access(): return "Demo access: all lessons are available. Access does not count as completion or mastery."
 	var route: Dictionary = diagnostic_route(module_id)
 	if route.route == "cleared": return "Cleared by pretest. All lessons are optional." + (" The next learning module is available." if module_id != "mod_05" else " You have reached the final learning module.")
 	if route.route == "targeted":
@@ -689,6 +694,7 @@ func record_lesson_quiz_answer(module_id: String, lesson_index: int, question_id
 func can_access_lesson_module(module_id: String) -> bool:
 	var ids: Array[String] = LessonCatalog.module_ids()
 	var index: int = ids.find(module_id)
+	if AuthService.has_demo_access(): return index >= 0
 	# Keep previously-started archives accessible without inventing quiz passes.
 	return index >= 0 and (index == 0 or get_lesson_progress(module_id) > 0 or pretest_baselines.has(module_id) or module_academically_cleared(ids[index - 1]))
 
@@ -1243,6 +1249,7 @@ func has_completed_lesson(lesson_id: String) -> bool:
 
 
 func is_module_deploy_unlocked(module_id: String) -> bool:
+	if AuthService.has_demo_access(): return module_id in LessonCatalog.module_ids()
 	return lesson_cleared(module_id, 0) and can_access_lesson_module(module_id)
 
 
@@ -1268,6 +1275,7 @@ func mark_module_intro_seen(module_id: String) -> void:
 
 
 func needs_tutorial() -> bool:
+	if AuthService.has_demo_access(): return false
 	return not tutorial_complete and not tutorial_skipped
 
 

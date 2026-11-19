@@ -622,11 +622,11 @@ func _rating_received(result: int, status: int, _headers: PackedStringArray, bod
 
 
 static func _valid_rating(record: Dictionary) -> bool:
-	for key: String in ["points_before", "points_after", "points_delta"]:
+	for key: String in ["points_before", "points_after", "points_delta", "calibration_required", "calibration_completed"]:
 		var value: Variant = record.get(key)
 		if not (value is int or value is float) or not is_finite(float(value)) or float(value) != floor(float(value)):
 			return false
-	return int(record["points_before"]) >= 0 and int(record["points_after"]) >= 0 and int(record["points_after"]) - int(record["points_before"]) == int(record["points_delta"]) and record.get("rank_before") is String and record.get("rank_after") is String
+	return int(record["calibration_required"]) > 0 and int(record["calibration_completed"]) >= 0 and int(record["calibration_completed"]) <= int(record["calibration_required"]) and int(record["points_before"]) >= 0 and int(record["points_after"]) >= 0 and int(record["points_after"]) - int(record["points_before"]) == int(record["points_delta"]) and record.get("rank_before") is String and record.get("rank_after") is String
 
 
 func _match_live() -> bool:
@@ -868,8 +868,16 @@ func _animate_rating(record: Dictionary) -> void:
 	var before: int = int(record.points_before)
 	var after: int = int(record.points_after)
 	var change: int = int(record.points_delta)
+	if int(record.calibration_completed) < int(record.calibration_required):
+		if _reward_tween != null: _reward_tween.kill()
+		_rating_line = "UNCALIBRATED"
+		_rating_detail = "%d / %d RANKED MATCHES / %d MORE TO REVEAL RANK" % [int(record.calibration_completed), int(record.calibration_required), int(record.calibration_required)-int(record.calibration_completed)]
+		return
 	_rating_detail = "%s / %s%d PVP POINTS" % [str(record.rank_after).to_upper(), "+" if change >= 0 else "", change]
-	if change > 0 and record.rank_before != record.rank_after:
+	if str(record.rank_before) == "Uncalibrated":
+		_rating_detail = "RANK CALIBRATED / " + _rating_detail
+		AudioManager.play_sfx("loading_ready")
+	elif change > 0 and record.rank_before != record.rank_after:
 		_rating_detail = "RANK UP / " + _rating_detail
 		AudioManager.play_sfx("loading_ready")
 	if _reward_tween != null: _reward_tween.kill()

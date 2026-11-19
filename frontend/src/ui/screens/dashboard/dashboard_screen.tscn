@@ -380,7 +380,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.5529412, 0.7882353, 0.7411765, 1)
 theme_override_fonts/font = ExtResource("5_4pcyk")
 theme_override_font_sizes/font_size = 8
-text = "RECRUIT I"
+visible = false
 horizontal_alignment = 1
 
 [node name="AvatarBox" type="PanelContainer" parent="HeaderBand/HeaderLayer/ProfileButton/ProfileRow" unique_id=937298647]

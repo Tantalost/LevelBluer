@@ -19,6 +19,9 @@ enum Result {
 const DEFAULT_API_BASE := "http://127.0.0.1:8000"
 const SESSION_PATH := "user://session.dat"
 const REQUEST_TIMEOUT_SEC := 25.0
+## Provisioned demonstration student. This is an access exception, not earned progress.
+## Match the authenticated immutable ID, never a changeable name/email or save flag.
+const DEMO_STUDENT_ID: String = "2ba45e28-fdd8-4a3b-889e-e74c25b58a56"
 const RANK_STEP := 500
 const RANKS: PackedStringArray = ["RECRUIT I", "RECRUIT II", "OPERATIVE I", "OPERATIVE II", "SPECIALIST", "ELITE I", "ELITE II", "COMMANDER"]
 
@@ -70,6 +73,9 @@ func _ready() -> void:
 
 func is_signed_in() -> bool:
 	return _signed_in
+
+func has_demo_access() -> bool:
+	return _signed_in and not _token.is_empty() and _participant_code == DEMO_STUDENT_ID
 
 
 func start_background_refresh() -> void:
@@ -541,7 +547,19 @@ func refresh_profile() -> bool:
 func pvp_standing() -> Dictionary:
 	if _participant_code.is_empty() or _pvp_standing_account != _participant_code:
 		return {}
-	return _pvp_standing.duplicate()
+	var standing: Dictionary = _pvp_standing.duplicate()
+	if standing.is_empty():
+		return standing
+	# Also protect clients connected to a backend that has not yet been updated.
+	var required: int = maxi(1, int(standing.get("calibration_required", 5)))
+	var completed: int = clampi(int(standing.get("rated_matches", 0)), 0, required)
+	standing["calibration_required"] = required
+	standing["calibration_completed"] = completed
+	if completed < required:
+		standing["rank"] = "Uncalibrated"
+		for key: String in ["current_threshold", "next_rank", "next_threshold", "points_to_next_rank"]:
+			standing[key] = null
+	return standing
 
 
 func fetch_pvp_standing() -> bool:

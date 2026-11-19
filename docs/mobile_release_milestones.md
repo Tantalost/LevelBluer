@@ -1282,3 +1282,14 @@ Approved scope: John recording 45 ends the hearing aftermath. Four anonymous mas
 - Validation: 254 hosted-media, byte-integrity, subtitle, cutaway, pause, restoration and layout checks passed; the full Chapter 5 hearing/reward regression passed with zero failures. Godot rendered the artwork, three-person state, masked dialogue and seal at phone-size viewports, including 667×375, 844×390 and 932×430. Originals and import sidecars were archived under ignored `.godot/ch5_voice/originals` after verification, keeping them out of Git and mobile exports. Developer checks remain local; no commit or APK rebuild was made.
 
 Ready for playable review. Physical Android/iOS playback, suspension and live cross-device account synchronization remain device acceptance checks; local/editor verification does not close those release gates.
+
+
+## Story presentation update (18 November 2026)
+
+Approved and implemented: the existing Module 1 Chapter 1 star-objectives page is now a mission briefing with chapter artwork, earned/missing star goals, first-earn rewards and a fixed Start/Continue/Replay action. This presentation update does not add star rules to other chapters.
+
+All five modules have authored music cues across their intros, chapters and shared hearing phases. The existing two-deck audio manager reuses hosted mystery, suspense and sadness tracks plus existing calm, resolution and debate music, with 1.5-second transitions and existing voice ducking. Owner-scoped pause and exit handling preserve narration/Continue behavior.
+
+Module 1 Chapters 1–4 explicitly mark John's internal dialogue. Background and other-character textures soften while John, dialogue and evidence stay sharp; painted scenes use a focal region without a duplicate portrait. Reduced Motion applies the focus immediately. The effect is removed outside thought scenes.
+
+Validation: rendered objectives at 844x390 and 667x375, thought-focus screenshots, hosted soundtrack playback, pause/resume, reward regression and chapter narration/Continue regression. Physical-phone frame-rate and listening acceptance remain pending; no APK rebuilt by this update. Local verification scripts and screenshots remain excluded from commits.

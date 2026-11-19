@@ -563,6 +563,8 @@ func _select(index: int, animate: bool = true, open_detail: bool = true) -> void
 		_baseline.text = "STARTING KNOWLEDGE / %d of %d correct (%d%%)\nYour initial pre-test result, not your current BKT mastery." % [baseline.correct, baseline.total, roundi(100.0 * float(baseline.correct) / float(baseline.total))]
 	elif AuthService.has_module_pretest(id):
 		_baseline.text = "STARTING KNOWLEDGE / Starting result unavailable.\nYour completed pre-test and learning progress are unchanged."
+	elif AuthService.has_demo_access():
+		_baseline.text = "DEMO ACCESS / Pretest optional. No diagnostic score recorded."
 	_description.text = str(_modules[index].desc) + "."
 	_description.text += "\n" + account.learning_route_summary(id)
 	_progress_text.text = "%d%% COMPLETE  /  %d OF 6 LESSONS" % [roundi(ratio * 100), done]
@@ -685,7 +687,7 @@ func _is_unlocked(index: int) -> bool:
 	return index >= 0 and index < _modules.size() and account.can_access_lesson_module(_module_id(index))
 
 func _needs_pretest(index: int) -> bool:
-	return _is_unlocked(index) and not _is_complete(index) and not AuthService.has_module_pretest(_module_id(index))
+	return _is_unlocked(index) and not _is_complete(index) and not AuthService.has_module_pretest(_module_id(index)) and not AuthService.has_demo_access()
 
 func _open_checkpoint(index: int) -> void:
 	if _is_unlocked(index) and account.can_take_checkpoint(_module_id(index)):

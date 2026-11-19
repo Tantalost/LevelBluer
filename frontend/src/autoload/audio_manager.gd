@@ -9,6 +9,15 @@ const LEARNING_TRACKS: Dictionary[String, String] = {
 	"lesson_focus":"v1794816696/levelblue/audio/lessons/focused_learning_v1.mp3",
 	"lesson_simulation":"v1794816708/levelblue/audio/lessons/terminal_investigation_v1.mp3",
 }
+const STORY_TRACKS: Dictionary[String, String] = {
+	"story_mystery":"v1794487561/levelblue/opening_v2/20261112/mystery_v1.mp3",
+	"story_suspense":"v1794487562/levelblue/opening_v2/20261112/suspense_v1.mp3",
+	"story_sadness":"v1794487565/levelblue/opening_v2/20261112/sadness_v1.mp3",
+}
+const STORY_MOODS: Dictionary[String, String] = {"calm":"morning", "mystery":"story_mystery", "suspense":"story_suspense", "sadness":"story_sadness", "resolve":"hub", "debate":"hearing_debate"}
+var _story_music_owner: WeakRef
+var _story_mood: String = "calm"
+var _story_music_paused: bool = false
 var _learning_requests: Dictionary[String, bool] = {}
 var _learning_retry_after: Dictionary[String, int] = {}
 var _lesson_simulation_owner: WeakRef
@@ -160,6 +169,9 @@ func _next_sfx_player() -> AudioStreamPlayer:
 func _on_screen_changed(screen_id: StringName) -> void:
 	stop_dialogue_blips()
 	_screen_id = screen_id
+	if screen_id not in [&"module_intro", &"survey_chapter", &"confrontation"]:
+		_story_music_owner = null
+		_story_music_paused = false
 	if screen_id not in [&"opening", &"confrontation"]:
 		_opening_owner = null
 		_opening_music = null
@@ -184,6 +196,14 @@ func _on_dashboard_mode(mode: StringName) -> void:
 
 func _select_music() -> void:
 	if _screen_id in [&"lessons", &"lesson_player"]: _load_learning_tracks()
+	if _screen_id in [&"module_intro", &"survey_chapter", &"confrontation"]:
+		_load_learning_tracks(true)
+		var source: Control = _story_music_owner.get_ref() as Control if _story_music_owner != null else null
+		if source != null and source.is_visible_in_tree():
+			var key: String = STORY_MOODS.get(_story_mood, "morning")
+			var fallback: String = "hearing_decision" if _story_mood in ["mystery", "suspense"] else "study" if _story_mood == "sadness" else "morning"
+			play_bgm(_tracks.get(key, _tracks.get(fallback)), 1.5)
+			return
 	match _screen_id:
 		&"intro":
 			_desired_bgm = null
@@ -208,10 +228,35 @@ func set_lesson_simulation(source: Control, active: bool) -> void:
 		_lesson_simulation_owner = null
 	if _screen_id == &"lesson_player": _select_music()
 
-func _load_learning_tracks() -> void:
-	for key: String in LEARNING_TRACKS:
+func set_story_mood(source: Control, mood: String) -> void:
+	if not is_instance_valid(source) or not source.is_visible_in_tree() or not STORY_MOODS.has(mood): return
+	if _story_music_owner == null or _story_music_owner.get_ref() != source:
+		_story_music_paused = false
+	_story_music_owner = weakref(source)
+	_story_mood = mood
+	_select_music()
+
+func pause_story_music(source: Control, paused: bool) -> void:
+	if _story_music_owner == null or _story_music_owner.get_ref() != source: return
+	_story_music_paused = paused
+	for deck: AudioStreamPlayer in _decks: deck.stream_paused = _music_paused()
+	if _bgm_tween != null and _bgm_tween.is_valid():
+		if _music_paused(): _bgm_tween.pause()
+		else: _bgm_tween.play()
+
+func release_story_music(source: Control) -> void:
+	if _story_music_owner == null or _story_music_owner.get_ref() != source: return
+	_story_music_owner = null
+	_story_music_paused = false
+	# Router selects the next screen's music; never let this owner pause it.
+	for deck: AudioStreamPlayer in _decks: deck.stream_paused = _music_paused()
+	if _bgm_tween != null and _bgm_tween.is_valid() and not _music_paused(): _bgm_tween.play()
+
+func _load_learning_tracks(story: bool = false) -> void:
+	var sources: Dictionary[String, String] = STORY_TRACKS if story else LEARNING_TRACKS
+	for key: String in sources:
 		if _tracks.has(key) or _learning_requests.has(key) or Time.get_ticks_msec() < _learning_retry_after.get(key,0): continue
-		var path: String = LEARNING_TRACKS[key]
+		var path: String = sources[key]
 		var cached: AudioStream = HostedAudio.cached_stream(path)
 		if cached is AudioStreamMP3:
 			cached.loop = true
@@ -230,7 +275,7 @@ func _learning_track_ready(result: int, status: int, _headers: PackedStringArray
 	if clip is AudioStreamMP3:
 		clip.loop = true
 		_tracks[key] = clip
-		if _screen_id in [&"lessons", &"lesson_player"]: _select_music()
+		if _screen_id in [&"lessons", &"lesson_player", &"module_intro", &"survey_chapter", &"confrontation"]: _select_music()
 
 func set_hearing_decision(source: Control, active: bool, debating: bool = false) -> void:
 	if not is_instance_valid(source) or not source.is_visible_in_tree(): return
@@ -264,7 +309,7 @@ func play_bgm(stream: AudioStream, crossfade_time: float = 0.65) -> void:
 	_bgm_tween.finished.connect(func() -> void: _bgm_tween = null)
 	_bgm_tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	for deck: AudioStreamPlayer in _decks:
-		var gain: float = 0.38 if stream != null and (stream == _tracks.get("lesson_focus") or stream == _tracks.get("lesson_simulation")) else MUSIC_GAIN
+		var gain: float = 0.38 if stream != null and (stream == _tracks.get("lesson_focus") or stream == _tracks.get("lesson_simulation")) else 0.50 if _screen_id in [&"module_intro", &"survey_chapter", &"confrontation"] else MUSIC_GAIN
 		_bgm_tween.tween_property(deck, "volume_linear", gain if deck == target else 0.0, duration)
 		if deck != target:
 			_bgm_tween.tween_callback(deck.stop).set_delay(duration)
@@ -561,7 +606,8 @@ func release_opening_audio(source: Control) -> void:
 
 
 func _music_paused() -> bool:
-	return _suspended() or (_screen_id in [&"opening", &"confrontation"] and _opening_paused)
+	var story: Control = _story_music_owner.get_ref() as Control if _story_music_owner != null else null
+	return _suspended() or (story != null and story.is_visible_in_tree() and _story_music_paused) or (_screen_id in [&"opening", &"confrontation"] and _opening_paused)
 
 
 func _synthesize_robot_laugh() -> AudioStreamWAV:

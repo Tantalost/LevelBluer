@@ -26,6 +26,20 @@ var _testing: bool = false
 var _owner: String = ""
 var _signed_owner: bool = false
 var _bg: TextureRect
+var _display_art: String = ""
+var _thought_override: bool = false
+var _thought_target: bool = false
+var _thought_amount: float = 0.0
+var _thought_tween: Tween
+var _background_focus: ShaderMaterial
+var _cast_focus: ShaderMaterial
+# Source-image coordinates keep the painted John sharp without duplicating him.
+const PAINTED_FOCUS: Dictionary[String, Vector4] = {
+	"story_bg_john_desk_night":Vector4(0.34,0.45,0.24,0.38),
+	"story_bg_john_bed_night":Vector4(0.33,0.49,0.29,0.32),
+	"chapter1_john_rushing":Vector4(0.43,0.48,0.31,0.56),
+	"opening_john_reaching_phone_v1":Vector4(0.42,0.77,0.45,0.26),
+}
 var _story_art_override: String = ""
 var _portrait: TextureRect
 var _cast_stage: Control
@@ -48,6 +62,8 @@ var _speaker: Label
 var _line: RichTextLabel
 var _advance_button: Button
 var _caption_black: ColorRect
+var _memory_overlay: ColorRect
+var _flashback: bool = false
 var _caption: Label
 var _caption_next: Button
 var _menu: PanelContainer
@@ -231,6 +247,7 @@ func _ready() -> void:
 	_bg.mouse_filter = MOUSE_FILTER_IGNORE
 	_bg.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	add_child(_bg)
+	_setup_thought_focus()
 	_caption_black = ColorRect.new()
 	_caption_black.color = Color.BLACK
 	_caption_black.mouse_filter = MOUSE_FILTER_IGNORE
@@ -255,6 +272,9 @@ func _ready() -> void:
 		actor.mouse_filter = MOUSE_FILTER_IGNORE
 		_cast_stage.add_child(actor)
 		_cast[person] = actor
+		if person != "john":
+			actor.material = _cast_focus
+			actor.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_portrait = _cast["john"]
 	_phone = Phone.new()
 	_area.add_child(_phone)
@@ -306,6 +326,22 @@ func _ready() -> void:
 	_advance_button.tooltip_text = "Reveal this sentence / next sentence"
 	_advance_button.accessibility_name = "Continue dialogue"
 	row.add_child(_advance_button)
+	_memory_overlay = ColorRect.new()
+	_memory_overlay.name = "FlashbackGray"
+	_memory_overlay.mouse_filter = MOUSE_FILTER_STOP
+	var memory_shader: Shader = Shader.new()
+	memory_shader.code = """shader_type canvas_item;
+		uniform sampler2D scene : hint_screen_texture, repeat_disable, filter_linear;
+		void fragment() {
+			vec3 source = texture(scene, SCREEN_UV).rgb;
+			float gray = dot(source, vec3(0.299, 0.587, 0.114));
+			COLOR = vec4(vec3(gray * 0.42 + 0.06), 1.0);
+		}"""
+	var memory_material: ShaderMaterial = ShaderMaterial.new()
+	memory_material.shader = memory_shader
+	_memory_overlay.material = memory_material
+	_memory_overlay.hide()
+	_area.add_child(_memory_overlay)
 	_caption = UI.label("", 44, Color("F3ECD6"))
 	_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -466,6 +502,7 @@ func on_enter(args: Dictionary) -> void:
 
 func _render() -> void:
 	_seq += 1
+	_thought_override = false
 	_story_art_override = ""
 	_stop_tweens()
 	_results.hide()
@@ -710,17 +747,20 @@ func _set_line(text: String, voice: String = "") -> void:
 func _show_sentence() -> void:
 	if _typing != null and _typing.is_valid(): _typing.kill()
 	var text: String = _sentences[_sentence]
+	_flashback = Chapter.ID == "mod_01_ch_01" and _thought_override and text.begins_with("At the time, it felt like")
+	_memory_overlay.visible = _flashback
 	_line.text = text
 	_line.scroll_to_line(0)
 	_line.visible_characters = -1
 	var was_caption: bool = _caption_black.visible
 	var caption: bool = _is_caption_sentence()
 	_caption_black.visible = caption
-	_caption.visible = caption
-	_caption_next.visible = caption
+	_caption.visible = caption or _flashback
+	_caption_next.visible = caption or _flashback
+	_caption_next.accessibility_name = "Continue to the next scene" if _flashback and _phone.phase_ready() else "Return to inbox" if _flashback else "Continue"
 	# Preserve the header spacer so Menu stays at the upper-right corner.
 	_heading.modulate.a = 0.0 if caption else 1.0
-	_dialogue.visible = not caption
+	_dialogue.visible = not caption and not _flashback
 	if caption:
 		# Opening time cards stay silent; an explicitly voiced ending starts here.
 		if state.get("phase") == "closing" and not _line_voice.is_empty():
@@ -736,11 +776,23 @@ func _show_sentence() -> void:
 		_typing.tween_property(_caption, "modulate:a", 1.0, 0.2 if SettingsService.reduced_motion else 0.65)
 		_typing.finished.connect(func() -> void: _typing = null)
 		_update_advance()
+		_update_story_presentation()
 		return
 	if not _line_voice.is_empty():
 		_voice.play_clip(_line_voice)
 		_line_voice = ""
 	_resume_voice_page()
+	if _flashback:
+		_caption.text = text
+		_caption.modulate.a = 1.0 if SettingsService.reduced_motion else 0.0
+		if not SettingsService.reduced_motion:
+			_typing = create_tween()
+			_typing.tween_property(_caption,"modulate:a",1.0,0.4)
+			_typing.finished.connect(func() -> void: _typing = null)
+		_layout()
+		_apply_pause()
+		return
+	_phone.set_locked(not _can_act() or _sending)
 	if was_caption:
 		_perk_button.visible = not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
 		_speaker.text = str(Chapter.STORY[int(state["beat"])]["who"])
@@ -756,6 +808,7 @@ func _show_sentence() -> void:
 			_typing = null
 			_update_advance())
 	_update_advance()
+	_update_story_presentation()
 
 func _is_caption_sentence() -> bool:
 	if state.get("phase") == "closing": return true
@@ -835,6 +888,15 @@ func _chat_focus(person: String, pose: int) -> void:
 func _advance() -> void:
 	if not _can_act() or _sending:
 		return
+	if _flashback:
+		if not _phone.phase_ready():
+			_set_line("%d of %d messages read — check the remaining messages in the inbox." % [(state.get("read",[]) as Array).size(),Chapter.MESSAGES.size()])
+			_apply_pause()
+			return
+		# A completed inbox must advance through the normal saved-beat transition,
+		# not restart the afternoon narration and require another round of taps.
+		_flashback = false
+		_memory_overlay.hide()
 	if _line.visible_characters >= 0 and _line.visible_characters < _line.text.length():
 		if _typing != null and _typing.is_valid(): _typing.kill()
 		_line.visible_characters = -1
@@ -896,6 +958,7 @@ func _thought(text: String) -> void:
 		_phone.show_feedback(text)
 		return
 	_speaker.text = _protagonist().capitalize() + " · Thinking"
+	_thought_override = true
 	var clip: String = ""
 	if Chapter.ID == "mod_01_ch_01":
 		clip = Chapter.FEEDBACK_VOICES.get(text, "")
@@ -904,6 +967,7 @@ func _thought(text: String) -> void:
 				clip = str(entry.voice)
 				break
 	_set_line(text, clip)
+	_update_story_presentation()
 
 func _phase_finished() -> void:
 	if not _can_act() or not _phone.phase_ready(): return
@@ -1091,6 +1155,7 @@ func _load_art() -> void:
 	var show_approach: bool = phase == "day" and beat.has("approach_art") and not _is_caption_sentence() and _sentence < _sentences.size() - 1
 	var approach: Texture2D = AssetManager.get_texture(str(beat.approach_art)) if show_approach else null
 	_bg.texture = approach if approach != null else AssetManager.get_texture(background_id)
+	_display_art = str(beat.approach_art) if approach != null else background_id
 	if _active and show_approach and beat.has("approach_sfx"):
 		if _approach_audio == null:
 			_approach_audio = AudioStreamPlayer.new()
@@ -1137,6 +1202,80 @@ func _load_art() -> void:
 			_focus.tween_property(_cast[id], "modulate", light, 0.22)
 	if SettingsService.reduced_motion: _focus.kill()
 	_layout()
+	_update_story_presentation()
+
+func _setup_thought_focus() -> void:
+	var shader: Shader = Shader.new()
+	shader.code = """shader_type canvas_item;
+		uniform float strength = 0.0;
+		uniform vec4 focus_area = vec4(0.0);
+		varying vec4 tint;
+		void vertex() { tint = COLOR; }
+		void fragment() {
+			vec4 original = texture(TEXTURE, UV);
+			vec2 step_uv = TEXTURE_PIXEL_SIZE * 2.0 * strength;
+			vec4 soft = vec4(0.0);
+			// Compact Gaussian kernel; linear filtering prevents doubled pixel edges.
+			for (int x = -2; x <= 2; x++) {
+				float wx = x == 0 ? 6.0 : (abs(x) == 1 ? 4.0 : 1.0);
+				for (int y = -2; y <= 2; y++) {
+					float wy = y == 0 ? 6.0 : (abs(y) == 1 ? 4.0 : 1.0);
+					soft += texture(TEXTURE,UV+vec2(float(x),float(y))*step_uv) * wx * wy / 256.0;
+				}
+			}
+			float outside = 1.0;
+			if (focus_area.z > 0.0) {
+				outside = smoothstep(0.85,1.2,length((UV-focus_area.xy)/focus_area.zw));
+			}
+			float amount = strength * outside;
+			COLOR = mix(original, vec4(soft.rgb * 0.84,soft.a),amount) * tint;
+		}"""
+	_background_focus = ShaderMaterial.new()
+	_background_focus.shader = shader
+	_bg.material = _background_focus
+	_bg.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_cast_focus = ShaderMaterial.new()
+	_cast_focus.shader = shader
+
+func _story_mood() -> String:
+	var phase: String = str(state.get("phase","day"))
+	if phase in ["done","seal"]: return "resolve"
+	if phase in ["sleep","closing"]: return "mystery"
+	if phase != "day": return "mystery"
+	# Reading backwards restores the authored passage after a save/resume.
+	for index: int in range(int(state.get("beat",0)), -1, -1):
+		var beat: Dictionary = Chapter.STORY[index]
+		if beat.has("mood"): return str(beat.mood)
+	return "calm"
+
+func _update_story_presentation() -> void:
+	if state.is_empty() or not is_instance_valid(_background_focus): return
+	if _active:
+		AudioManager.set_story_mood(self, _story_mood())
+	var beat: Dictionary = Chapter.STORY[int(state.get("beat",0))]
+	var phase: String = str(state.get("phase","day"))
+	var internal: bool = _thought_override or (phase == "day" and bool(beat.get("thought",false))) or (phase != "day" and _protagonist() == "john" and (Chapter.TASKS.has(phase) or phase in ["seal","sleep"]))
+	var focused: bool = _active and internal and _protagonist() == "john" and not _is_caption_sentence() and phase != "done" and not _revealing
+	if focused: _speaker.text = "John · Thinking"
+	_background_focus.set_shader_parameter("focus_area", PAINTED_FOCUS.get(_display_art,Vector4.ZERO))
+	if focused == _thought_target and not SettingsService.reduced_motion: return
+	_thought_target = focused
+	if _thought_tween != null and _thought_tween.is_valid(): _thought_tween.kill()
+	if SettingsService.reduced_motion:
+		_set_thought_amount(1.0 if focused else 0.0)
+	else:
+		_thought_tween = create_tween()
+		_thought_tween.tween_method(_set_thought_amount, _thought_amount, 1.0 if focused else 0.0, 0.35).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		_thought_tween.finished.connect(func() -> void: _thought_tween = null)
+
+func _set_thought_amount(value: float) -> void:
+	_thought_amount = value
+	_background_focus.set_shader_parameter("strength", value)
+	_cast_focus.set_shader_parameter("strength", value)
+	# No extra texture samples during ordinary dialogue or after leaving the scene.
+	_bg.material = _background_focus if value > 0.001 else null
+	for person: String in _cast:
+		_cast[person].material = _cast_focus if value > 0.001 and person != "john" else null
 
 func _actor_texture(person: String, face: int) -> Texture2D:
 	if person == "john" and face == 6:
@@ -1265,6 +1404,9 @@ func _layout() -> void:
 	_caption.add_theme_font_size_override("font_size", ceili(clampf(w * physical * 0.035, 28, 44) / physical))
 	_caption.size = Vector2(w * 0.80, h * 0.30)
 	_caption.position = Vector2(w * 0.10, h * 0.35)
+	_memory_overlay.position = -_area.global_position
+	_memory_overlay.size = get_viewport_rect().size
+	if _flashback: _dialogue.hide()
 	_caption_next.custom_minimum_size = Vector2.ONE * touch
 	_caption_next.size = Vector2.ONE * touch
 	_caption_next.position = Vector2((w - touch) * 0.5, h * 0.72)
@@ -1384,6 +1526,7 @@ func _toggle_menu() -> void:
 
 func _apply_pause() -> void:
 	var locked: bool = not _can_act()
+	AudioManager.pause_story_music(self, not _can_present())
 	_voice.suspend_clip(locked or _voice_waiting_for_continue)
 	if _approach_audio != null and _approach_audio.has_stream_playback():
 		_approach_audio.stream_paused = locked or _voice_waiting_for_continue
@@ -1403,8 +1546,8 @@ func _apply_pause() -> void:
 			if _can_present(): _reveal_tween.play()
 			else: _reveal_tween.pause()
 	_refresh_app_shortcuts()
-	_phone.set_locked(locked or _sending)
-	for tween: Tween in [_typing,_motion,_focus]:
+	_phone.set_locked(locked or _sending or _flashback)
+	for tween: Tween in [_typing,_motion,_focus,_thought_tween]:
 		if tween != null and tween.is_valid():
 			if locked: tween.pause()
 			else: tween.play()
@@ -1454,6 +1597,7 @@ func consume_back() -> bool:
 
 func _session_changed(_signed_in: bool) -> void:
 	if _owner != AuthService.participant_code() or _signed_owner != AuthService.is_signed_in():
+		AudioManager.release_story_music(self)
 		_active = false
 		_stop_tweens()
 		_phone.stop()
@@ -1482,6 +1626,10 @@ func _stop_tweens() -> void:
 	_motion = null
 
 func on_exit() -> void:
+	AudioManager.release_story_music(self)
+	if _thought_tween != null and _thought_tween.is_valid(): _thought_tween.kill()
+	_set_thought_amount(0.0)
+	_thought_target = false
 	_resume_reveal = _revealing
 	_resume_chat = _chat_started and _phone.visible and _is_chat_beat()
 	_active = false
@@ -1511,4 +1659,6 @@ func on_resume() -> void:
 	_render()
 
 func _exit_tree() -> void:
+	AudioManager.release_story_music(self)
+	if _thought_tween != null and _thought_tween.is_valid(): _thought_tween.kill()
 	_stop_tweens()

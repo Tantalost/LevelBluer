@@ -15,6 +15,8 @@ const BEATS: Array[Dictionary] = [
 	{"visual": "resolve", "voice": "v1794044376/M01_INTRO_08_John.mp3.mp3", "line": "I need to figure out what went wrong."},
 	{"visual": "caption", "line": "5 days before the disaster", "hold": 2.6},
 ]
+const INTRO_MOODS: Array[Dictionary] = [{0:"sadness",3:"mystery",7:"resolve"},{0:"suspense",2:"mystery"},{0:"suspense",2:"sadness",3:"mystery"},{0:"sadness",2:"mystery"},{0:"calm",2:"mystery",4:"calm"}]
+
 const AMANI_BEATS: Array[Dictionary] = [
 	{"visual":"sms", "line":"My name. My photo. But I didn't send those messages."},
 	{"visual":"sms", "line":"My phone had no signal. Everyone else was hearing from someone who looked like me."},
@@ -273,6 +275,7 @@ func _show_beat(start_voice: bool = true) -> void:
 	_subtitle.hide()
 	_start_button.hide()
 	var beat: Dictionary = _beats()[_index]
+	_sync_story_music()
 	_waiting_for_voice = false
 	if start_voice:
 		_voice.play_clip(str(beat.get("voice", "")))
@@ -404,6 +407,7 @@ func _next_beat() -> void:
 		_show_title()
 
 func _show_title() -> void:
+	AudioManager.set_story_mood(self,"mystery")
 	_voice.clear_clip()
 	_waiting_for_voice = false
 	_stop_tweens()
@@ -586,7 +590,15 @@ func _notification(what: int) -> void:
 	if is_node_ready():
 		_apply_pause()
 
+func _sync_story_music() -> void:
+	var cues: Dictionary = INTRO_MOODS[clampi(_module_index,0,4)]
+	for index: int in range(_index,-1,-1):
+		if cues.has(index):
+			AudioManager.set_story_mood(self,str(cues[index]))
+			return
+
 func _apply_pause() -> void:
+	AudioManager.pause_story_music(self,_focus_lost or _app_paused or not _active)
 	_voice.suspend_clip(_focus_lost or _app_paused or not _active)
 	for tween: Tween in [_typing, _motion]:
 		if tween != null and tween.is_valid():
@@ -603,6 +615,7 @@ func _stop_tweens() -> void:
 	_motion = null
 
 func on_exit() -> void:
+	AudioManager.release_story_music(self)
 	_voice.clear_clip()
 	_waiting_for_voice = false
 	_active = false
@@ -613,6 +626,8 @@ func on_exit() -> void:
 func on_resume() -> void:
 	_active = true
 	visible = true
+	if _ending: AudioManager.set_story_mood(self,"mystery")
+	else: _sync_story_music()
 	if not _ending:
 		if str(_beats()[_index]["visual"]) == "caption":
 			_show_beat()
@@ -625,4 +640,5 @@ func on_resume() -> void:
 	_apply_pause()
 
 func _exit_tree() -> void:
+	AudioManager.release_story_music(self)
 	_stop_tweens()

@@ -90,6 +90,7 @@ func _refresh() -> void:
 	if not _active or not is_inside_tree(): return
 	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
 	var font: int = maxi(24, ceili(16 / physical))
+	_launch.size_flags_horizontal = SIZE_SHRINK_BEGIN
 	_launch.custom_minimum_size.x = 220 / physical
 	var checkpoint: Dictionary = _checkpoint()
 	var frozen: bool = not checkpoint.is_empty()
@@ -144,25 +145,71 @@ func _refresh() -> void:
 func _build_star_objectives(frozen: bool, physical: float) -> void:
 	var chapter: GDScript = PlayerManager.story_definition(_chapter_id)
 	var earned: Array[String] = PlayerManager.story_stars(_chapter_id)
-	_title.text = "THE SURVEY / STAR OBJECTIVES"
-	_notice.text = "%d/3 STARS / Earn missing stars on any completed replay. Each pays 25 credits once." % earned.size()
-	_notice.add_theme_font_size_override("font_size", ceili(16 / physical))
+	# Scale with the available mobile viewport, while retaining readable minima.
+	var unit: float = clampf(get_viewport_rect().size.y * physical / 390.0, 1.0, 1.65) / physical
+	var font: int = ceili(20 * unit)
+	_title.text = "OBJECTIVES"
+	_title.add_theme_font_size_override("font_size",ceili(24 * unit))
+	_notice.text = "MODULE 01 / CHAPTER %02d   ·   %d / 3 STARS" % [int(chapter.NUMBER), earned.size()]
+	_notice.add_theme_font_size_override("font_size", ceili(16 * unit))
+	_coins.add_theme_font_size_override("font_size",ceili(20 * unit))
 	_cards.show()
 	_network.hide()
 	_slots.hide()
-	var column: VBoxContainer = UI.scroll_column(_cards)
-	column.size_flags_horizontal = SIZE_EXPAND_FILL
+	var preview: VBoxContainer = UI.column(_cards, 10)
+	preview.name = "ChapterPreview"
+	preview.size_flags_horizontal = SIZE_EXPAND_FILL
+	preview.size_flags_stretch_ratio = 0.30
+	var artwork: TextureRect = TextureRect.new()
+	artwork.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	artwork.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	artwork.size_flags_vertical = SIZE_EXPAND_FILL
+	artwork.custom_minimum_size.y = 90 / physical
+	artwork.mouse_filter = MOUSE_FILTER_IGNORE
+	preview.add_child(artwork)
+	AssetManager.bind_texture(artwork, "story_bg_john_desk_night")
+	preview.add_child(UI.label(str(chapter.TITLE).to_upper(), ceili(22 * unit), UI.TEXT))
+	var stars: HBoxContainer = HBoxContainer.new()
+	stars.add_theme_constant_override("separation", ceili(8 / physical))
+	preview.add_child(stars)
 	for id: String in chapter.STAR_IDS:
-		var card: PanelContainer = UI.panel(column, Color("153B37") if id in earned else UI.PANEL)
-		var body: VBoxContainer = UI.column(card, 8)
-		body.add_child(UI.label("EARNED" if id in earned else "OBJECTIVE / +25 CREDITS", ceili(16 / physical), UI.GOLD))
-		body.add_child(UI.label(str(chapter.STAR_GOALS[id]), ceili(19 / physical)))
-	column.add_child(UI.label("Finish to continue, even with no stars. Mistakes affect only that objective. Revealing a solution hint forfeits its objective for this run; general instructions and reviewing evidence do not.", ceili(17 / physical), UI.MUTED))
+		var star: UI.ObjectiveStar = UI.ObjectiveStar.new()
+		star.earned = id in earned
+		star.custom_minimum_size = Vector2.ONE * 32 * unit
+		star.accessibility_name = str(chapter.STAR_GOALS[id]).get_slice(" / ",0) + (". Earned." if star.earned else ". Not earned.")
+		stars.add_child(star)
+	var column: VBoxContainer = UI.scroll_column(_cards)
+	column.get_parent().size_flags_stretch_ratio = 0.70
+	column.add_theme_constant_override("separation", ceili(12 * unit))
+	for id: String in chapter.STAR_IDS:
+		var won: bool = id in earned
+		var card: PanelContainer = UI.panel(column, Color("153B37") if won else UI.PANEL)
+		card.add_theme_stylebox_override("panel", UI.box(Color("153B37") if won else UI.PANEL, UI.GOLD if won else Color("173058"), ceili(14 * unit)))
+		var row: HBoxContainer = HBoxContainer.new()
+		row.add_theme_constant_override("separation", ceili(14 * unit))
+		card.add_child(row)
+		var star: UI.ObjectiveStar = UI.ObjectiveStar.new()
+		star.earned = won
+		star.custom_minimum_size = Vector2.ONE * 32 * unit
+		star.size_flags_vertical = SIZE_SHRINK_BEGIN
+		row.add_child(star)
+		var body: VBoxContainer = UI.column(row, 6)
+		body.size_flags_horizontal = SIZE_EXPAND_FILL
+		var goal: String = str(chapter.STAR_GOALS[id])
+		body.add_child(UI.label(goal.get_slice(" / ",0).to_upper(), ceili(24 * unit), UI.TEXT))
+		body.add_child(UI.label(goal.get_slice(" / ",1), font, UI.MUTED))
+		body.add_child(UI.label("STAR EARNED" if won else "+%d CREDITS · FIRST EARN" % int(chapter.STAR_CREDITS), ceili(16 * unit), UI.GOLD if won else UI.TEAL))
+	column.add_child(UI.label("Finish the chapter to progress. Replay for missing stars.", font, UI.TEAL))
+	column.add_child(UI.label("A mistake or solution hint affects only its objective this run. Earned stars stay yours.", ceili(16 * unit), UI.MUTED))
 	_launch.show()
 	_launch.text = "CONTINUE" if frozen else "REPLAY" if _replay else "START"
 	_launch.disabled = not PlayerManager.story_unlocked(_chapter_id)
-	_launch.custom_minimum_size.y = 48 / physical
-	_launch.add_theme_font_size_override("font_size", ceili(18 / physical))
+	_launch.size_flags_horizontal = SIZE_EXPAND_FILL
+	_launch.custom_minimum_size.y = 52 * unit
+	_launch.add_theme_font_size_override("font_size", ceili(24 * unit))
+	for button: Node in find_children("*", "Button", true, false):
+		(button as Button).custom_minimum_size.y = maxf(64, 52 * unit)
+		(button as Button).add_theme_font_size_override("font_size",ceili(20 * unit))
 
 func _orbit(id: String, equipped: Array[String], physical: float) -> Button:
 	var node: Button = Orbit.new()

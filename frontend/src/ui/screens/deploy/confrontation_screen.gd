@@ -129,6 +129,7 @@ func _save() -> void:
 	if _valid(): PlayerManager.save_story_attempt(state,_replay,not _testing,Case.ID)
 
 func on_exit() -> void:
+	AudioManager.release_story_music(self)
 	_save()
 	_cancel_command()
 	_active = false
@@ -157,6 +158,7 @@ func _session_changed(_value: bool) -> void:
 		_active = false
 		_stop_voice()
 		AudioManager.release_opening_audio(self)
+		AudioManager.release_story_music(self)
 		if is_instance_valid(_result_audio): _result_audio.stop()
 		AudioManager.set_story_duck(self,1.0)
 		hide()
@@ -166,10 +168,12 @@ func _notification(what: int) -> void:
 		_backgrounded = true
 		_save()
 		AudioManager.pause_opening_audio(self,true)
+		AudioManager.pause_story_music(self,true)
 		_suspend_voice()
 	elif what in [NOTIFICATION_APPLICATION_RESUMED,NOTIFICATION_APPLICATION_FOCUS_IN]:
 		_backgrounded = false
 		AudioManager.pause_opening_audio(self,is_instance_valid(_overlay) or _held)
+		AudioManager.pause_story_music(self,is_instance_valid(_overlay) or _held)
 		_suspend_voice()
 	if is_instance_valid(_result_audio): _sync_result_audio()
 
@@ -235,7 +239,7 @@ func _build() -> void:
 	_credit.text = "CREDIBILITY / %d" % int(state.credibility)
 	_bar.value = int(state.credibility)
 	credibility.visible = state.phase != "lights" or not _has_ending()
-	AudioManager.set_hearing_decision(self,state.phase == "suspect",state.phase in ["debate","rebuttal"])
+	_sync_story_music()
 	match str(state.phase):
 		"prep": _prep()
 		"suspect": _suspects()
@@ -494,6 +498,7 @@ func _toggle_hold() -> void:
 	if not _interactive() or is_instance_valid(_command_fx) or state.phase != "debate": return
 	_held = not _held
 	AudioManager.pause_opening_audio(self,_held)
+	AudioManager.pause_story_music(self,_held)
 	_suspend_voice()
 	_update_statement()
 
@@ -1136,6 +1141,7 @@ func _cancel_command() -> void:
 func _modal(title: String, compact: bool = false) -> VBoxContainer:
 	_close_overlay()
 	AudioManager.pause_opening_audio(self,true)
+	AudioManager.pause_story_music(self,true)
 	_shade = ColorRect.new()
 	_shade.color = Color(0,0,0,.78)
 	_shade.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
@@ -1181,7 +1187,9 @@ func _close_overlay() -> void:
 		_feedback_voice = false
 		_story_voice.clear_clip()
 		_story_cue = _statement_cue()
-	if _active: AudioManager.pause_opening_audio(self,_held or _backgrounded)
+	if _active:
+		AudioManager.pause_opening_audio(self,_held or _backgrounded)
+		AudioManager.pause_story_music(self,_held or _backgrounded)
 	_sync_result_audio()
 	_suspend_voice()
 
@@ -1211,6 +1219,18 @@ func _leave() -> void:
 	if not _active or _backgrounded: return
 	_save()
 	if not _testing: Router.replace(&"module_stages",{"module_index":_module_index(),"chapters":true})
+
+func _sync_story_music() -> void:
+	var mood: String = "mystery"
+	match str(state.get("phase","prep")):
+		"intro","final","rebuttal","lights": mood = "suspense"
+		"debate": mood = "debate"
+		"admission": mood = "sadness"
+		"animatic": mood = "mystery" if int(state.animatic_step) < 4 else "resolve"
+		"aftermath": mood = "suspense" if int(state.aftermath_step) >= int(Case.PRESENTATION.get("cutaway_step",999)) else "resolve"
+		"done": mood = "resolve"
+	AudioManager.set_story_mood(self,mood)
+	AudioManager.pause_story_music(self,_backgrounded or _held or is_instance_valid(_overlay))
 
 func _change(phase: String) -> void:
 	if phase != "debate": _cancel_command()

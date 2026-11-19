@@ -36,17 +36,57 @@ var _chat_status: Label
 var _chat_footer: VBoxContainer
 var _chat_draft: RichTextLabel
 var _chat_send: Button
+const MAIL_ARRIVAL_INTERVAL: float = 0.65
+const MAIL_POP_DURATION: float = 0.22
+var _mail_arrivals: bool = false
+var _mail_elapsed: float = 0.0
+var _mail_cards: Array[Button] = []
+var _mail_scroll_pending: bool = false
+const REPLY_TYPE_SECONDS: float = 1.6
+const REPLY_SEND_SECONDS: float = 0.6
+const REPLY_SENT_SECONDS: float = 1.0
+var _reply_stage: String = ""
+var _reply_elapsed: float = 0.0
+var _reply_draft: Label
+var _reply_status: Label
 
 func _ready() -> void:
 	super._ready()
 	# Bubble wrapping settles during container layout, after _render returns.
 	_content.resized.connect(_scroll_chat)
+	_content.resized.connect(_scroll_reply)
 	_content.get_parent().resized.connect(_resize_camera)
 
 func _process(delta: float) -> void:
 	_tick_chat(delta)
+	_tick_mail_arrivals(delta)
+	_tick_reply(delta)
 	if is_instance_valid(_copy_button) and is_instance_valid(_sender):
 		_copy_button.disabled = _locked or not _sender.has_selection()
+
+func _tick_mail_arrivals(delta: float) -> void:
+	if not _mail_arrivals or _locked or not is_visible_in_tree() or _app != "mail" or not selected.is_empty(): return
+	if _mail_scroll_pending:
+		_mail_scroll_pending = false
+		for index: int in range(_mail_cards.size()-1,-1,-1):
+			if is_instance_valid(_mail_cards[index]) and _mail_cards[index].visible:
+				(_content.get_parent() as ScrollContainer).ensure_control_visible(_mail_cards[index])
+				break
+	_mail_elapsed = minf(_mail_elapsed + delta, Chapter.MESSAGES.size() * MAIL_ARRIVAL_INTERVAL + MAIL_POP_DURATION)
+	for index: int in _mail_cards.size():
+		var card: Button = _mail_cards[index]
+		if not is_instance_valid(card): continue
+		var age: float = _mail_elapsed - (index + 1) * MAIL_ARRIVAL_INTERVAL
+		if age < -0.00001: continue
+		if not card.visible:
+			card.show()
+			_mail_scroll_pending = true
+			AudioManager.play_sfx("ui_notification")
+		var progress: float = 1.0 if _reduced_motion() else clampf(age / MAIL_POP_DURATION,0.0,1.0)
+		var eased: float = 1.0 - pow(1.0-progress,3.0)
+		card.modulate.a = eased
+		card.pivot_offset = card.size * 0.5
+		card.scale = Vector2.ONE * lerpf(0.96,1.0,eased)
 
 func _tick_chat(delta: float) -> void:
 	# No detached timers: pause, home screen and scene exit stop the clock.
@@ -150,6 +190,29 @@ class MessageCard extends Button:
 		set_drag_preview(preview)
 		return {"survey_card":message_id}
 
+class ReplyButton extends Button:
+	func _draw() -> void:
+		var unit: float = minf(size.x,size.y) / 32.0
+		var origin: Vector2 = (size - Vector2.ONE * 24.0 * unit) * 0.5
+		var points: PackedVector2Array = []
+		for point: Vector2 in [Vector2(3,10),Vector2(10,3),Vector2(10,7),Vector2(15,7),Vector2(19,9),Vector2(21,13),Vector2(21,20),Vector2(17,16),Vector2(14,14),Vector2(10,14),Vector2(10,18)]:
+			points.append(origin + point * unit)
+		draw_colored_polygon(points,Color("918b83") if disabled else Color("365b63"))
+
+func _reply_action() -> void:
+	var button: ReplyButton = ReplyButton.new()
+	button.name = "ReplyAction"
+	button.accessibility_name = "Reply to this email as John"
+	button.tooltip_text = "Reply"
+	button.size_flags_horizontal = SIZE_SHRINK_BEGIN
+	button.set_meta("reply_icon",true)
+	button.add_theme_stylebox_override("normal",StyleBoxEmpty.new())
+	for style: String in ["pressed","hover","focus"]:
+		button.add_theme_stylebox_override(style,UI.box(Color("dcefe2"),Color("85c5d5"),4))
+	button.pressed.connect(acknowledge)
+	button.resized.connect(button.queue_redraw)
+	_content.add_child(button)
+
 class SortBin extends Button:
 	signal card_dropped(id: String)
 	func _can_drop_data(_at: Vector2, data: Variant) -> bool:
@@ -158,6 +221,9 @@ class SortBin extends Button:
 		card_dropped.emit(str(data["survey_card"]))
 
 func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
+	if not _reply_stage.is_empty() and next_mode == mode and snapshot.get("beat",-1) == state.get("beat",-2): return
+	_reply_stage = ""
+	var arrival_time: float = _mail_elapsed if _mail_arrivals and next_mode == mode and snapshot.get("beat",-1) == state.get("beat",-2) else 0.0
 	chat_entries.assign(Chapter.CHAT_MESSAGES)
 	if Chapter.STORY[int(snapshot.beat)].has("messages"):
 		chat_entries.assign(Chapter.STORY[int(snapshot.beat)].messages)
@@ -179,6 +245,9 @@ func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
 	_chat_stage = "draft" if mode == "chat" else "stopped"
 	_chat_elapsed = 0.0
 	state = snapshot.duplicate(true)
+	_mail_arrivals = Chapter.ID == "mod_01_ch_01" and mode == "read" and str(state.get("phase","")) == "day" and (state.get("read",[]) as Array).is_empty()
+	_mail_elapsed = arrival_time
+	_mail_scroll_pending = false
 	selected = ""
 	note_app = false
 	configure({"embedded":true})
@@ -194,6 +263,8 @@ func _render() -> void:
 	if not is_instance_valid(_content):
 		return
 	_camera = null
+	_mail_cards.clear()
+	_mail_scroll_pending = false
 	_remember_note()
 	_domain = null
 	_sender = null
@@ -258,11 +329,18 @@ func _build_inbox() -> void:
 		var caption: String = ("✓ " if done else "") + str(entry["sender"]) + "\n" + str(entry["subject"])
 		var card: Button = _action(caption, _select.bind(id))
 		card.name = "Message_" + id
+		# Reuse the opening's warm, raised notification surface and pixel font.
+		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		card.accessibility_name = caption
+		for style: String in ["normal","hover","pressed"]:
+			card.add_theme_stylebox_override(style, _raised_style(Color("fff3db") if style == "normal" else Color("f0e5d6"),Color("85c5d5"),6))
+		_mail_cards.append(card)
+		card.visible = not _mail_arrivals or _mail_elapsed >= _mail_cards.size() * MAIL_ARRIVAL_INTERVAL
 	if phase_ready():
 		_action("CONTINUE →", _finish_phase)
 
 func _select(id: String) -> void:
-	if _locked or _taking or Chapter.message(id).is_empty():
+	if _locked or _taking or not _reply_stage.is_empty() or Chapter.message(id).is_empty():
 		return
 	selected = id
 	_render()
@@ -271,6 +349,20 @@ func _build_message() -> void:
 	var entry: Dictionary = Chapter.message(selected)
 	if mode == "capture":
 		_build_camera(entry)
+		return
+	if mode == "read":
+		# The opening already owns the email reader presentation; keep one renderer.
+		_message = entry.duplicate(true)
+		_message.sender = str(entry.sender) + "\n" + str(entry.address)
+		_message.received = "Today, 15:08"
+		_message.body = str(entry.body) + ("\n\n" + str(entry.phrase) if entry.has("phrase") else "")
+		super._render_message()
+		if not _reply_stage.is_empty():
+			_build_reply(entry)
+			return
+		if bool(entry.suspicious): _reply_action()
+		else: _action("MARK READ", acknowledge)
+		_action("INBOX", _inbox)
 		return
 	var header: PanelContainer = UI.panel(_content, Color("e9efed"))
 	header.name = "MessageHeader"
@@ -385,8 +477,59 @@ func _remember_note() -> void:
 		_drafts[_note_id] = _domain.text
 
 func acknowledge() -> void:
-	if _locked or mode != "read" or selected.is_empty():
+	if _locked or mode != "read" or selected.is_empty() or not _reply_stage.is_empty():
 		return
+	var entry: Dictionary = Chapter.message(selected)
+	if bool(entry["suspicious"]) and Chapter.ID == Survey.ID:
+		_reply_stage = "typing"
+		_reply_elapsed = 0.0
+		_render()
+		return
+	_complete_read()
+
+func _build_reply(entry: Dictionary) -> void:
+	var panel: PanelContainer = UI.panel(_content,Color("f0e5d6"))
+	panel.name = "ReplyComposer"
+	panel.add_theme_stylebox_override("panel",UI.box(Color("f0e5d6"),Color("85c5d5"),12))
+	var body: VBoxContainer = UI.column(panel,10)
+	body.add_child(UI.label("JOHN / REPLY",22,INK))
+	var recipient: Label = UI.label("To: " + str(entry.address),22,Color("544650"))
+	recipient.set_meta("opening_mail_metadata",true)
+	body.add_child(recipient)
+	_reply_draft = UI.label({"survey":"I'm ready to start the survey job.","urgent":"Here is my contact number.\n[John's phone number]","profile":"Here are my details.\n[John's birth date]\n[John's home address]"}.get(selected,"Here are the requested details."),24,INK)
+	_reply_draft.visible_characters = 0
+	body.add_child(_reply_draft)
+	_reply_status = UI.label("John is typing…",22,Color("544650"))
+	_reply_status.set_meta("opening_mail_metadata",true)
+	body.add_child(_reply_status)
+	# Keep the composer in view after the scroll container has laid out its text.
+	_scroll_reply.call_deferred()
+
+func _scroll_reply() -> void:
+	if not _reply_stage.is_empty() and is_instance_valid(_reply_status) and _reply_status.is_inside_tree():
+		(_content.get_parent() as ScrollContainer).ensure_control_visible(_reply_status)
+
+func _tick_reply(delta: float) -> void:
+	if _reply_stage.is_empty() or _locked or not is_visible_in_tree() or _app != "mail": return
+	_reply_elapsed += delta
+	if _reply_stage == "typing":
+		_reply_draft.visible_characters = -1 if _reduced_motion() else int(_reply_draft.text.length() * clampf(_reply_elapsed / REPLY_TYPE_SECONDS,0.0,1.0))
+		if _reply_elapsed >= REPLY_TYPE_SECONDS:
+			_reply_draft.visible_characters = -1
+			_reply_stage = "sending"
+			_reply_elapsed = 0.0
+			_reply_status.text = "Sending…"
+	elif _reply_stage == "sending" and _reply_elapsed >= REPLY_SEND_SECONDS:
+		_reply_stage = "sent"
+		_reply_elapsed = 0.0
+		_reply_status.text = "✓ Reply sent"
+		_reply_status.add_theme_color_override("font_color",Color("24634b"))
+		AudioManager.play_sfx("ui_confirm")
+	elif _reply_stage == "sent" and _reply_elapsed >= REPLY_SENT_SECONDS:
+		_reply_stage = ""
+		_complete_read()
+
+func _complete_read() -> void:
 	var entry: Dictionary = Chapter.message(selected)
 	_add("read", selected)
 	thought_requested.emit(Survey.REPLIED if bool(entry["suspicious"]) else Survey.EXPECTED)
@@ -568,6 +711,7 @@ func _add(field: String, id: String) -> void:
 		evidence_changed.emit(state.duplicate(true))
 
 func phase_ready() -> bool:
+	if not _reply_stage.is_empty(): return false
 	if mode == "chat": return _chat_stage == "done"
 	var field: String = {"read":"read", "sort":"sorted", "highlight":"flags", "notes":"domains", "capture":"captures"}.get(mode, "")
 	return not field.is_empty() and (state.get(field, []) as Array).size() == (6 if mode in ["read", "sort"] else 3)
@@ -577,13 +721,13 @@ func _finish_phase() -> void:
 		phase_finished.emit()
 
 func _inbox() -> void:
-	if _locked:
+	if _locked or not _reply_stage.is_empty():
 		return
 	selected = ""
 	_render()
 
 func _close_app() -> void:
-	if _locked or _taking:
+	if _locked or _taking or not _reply_stage.is_empty():
 		return
 	if mode == "chat" and phase_ready():
 		_finish_phase()
@@ -600,6 +744,7 @@ func _refresh() -> void:
 	_nav.visible = true
 	if mode in ["notes", "capture"]: _nav.visible = false
 	_close.text = "× CLOSE" if _app == "mail" else ("OPEN CHAT" if mode == "chat" else "OPEN MAIL")
+	_close.disabled = _locked or not _reply_stage.is_empty()
 	if mode == "chat" and phase_ready(): _close.text = "CONTINUE →"
 	if is_instance_valid(_chat_send): _chat_send.disabled = _locked or _chat_stage != "send"
 	for node: Node in _content.find_children("*", "Button", true, false):
@@ -620,6 +765,8 @@ func _metrics() -> void:
 		(node as Label).add_theme_font_size_override("font_size", maxi(26, ceili(22 / physical)))
 		if mode == "chat": (node as Label).add_theme_font_size_override("font_size", maxi(22, ceili(18 / physical)))
 		if node.has_meta("mail_metadata"): (node as Label).add_theme_font_size_override("font_size", maxi(22, ceili(17 / physical)))
+		if node.has_meta("opening_mail_metadata"): (node as Label).add_theme_font_size_override("font_size", maxi(22, ceili(16 / physical)))
+		if node.has_meta("opening_subject"): (node as Label).add_theme_font_size_override("font_size", maxi(28, ceili(24 / physical)))
 		if node.has_meta("mail_subject"): (node as Label).add_theme_font_size_override("font_size", maxi(28, ceili(22 / physical)))
 		if node.has_meta("sender_address"):
 			var address: Label = node as Label
@@ -649,6 +796,13 @@ func _metrics() -> void:
 		_chat_draft.custom_minimum_size.y = 78 / physical
 		_chat_send.custom_minimum_size = Vector2.ONE * maxf(48, 48 / physical)
 		_chat_send.add_theme_font_size_override("font_size", maxi(22, ceili(18 / physical)))
+	for card: Button in _mail_cards:
+		if is_instance_valid(card):
+			card.custom_minimum_size.y = 72 / physical
+			card.add_theme_font_size_override("font_size",maxi(22,ceili(18 / physical)))
+	for node: Node in _content.find_children("*", "Button", true, false):
+		if node.has_meta("reply_icon"):
+			(node as Button).custom_minimum_size = Vector2.ONE * 52 / physical
 
 func set_locked(value: bool) -> void:
 	super.set_locked(value)
@@ -714,6 +868,12 @@ func _resize_camera() -> void:
 	_camera._layout_sheet()
 
 func stop() -> void:
+	_reply_stage = ""
+	_reply_draft = null
+	_reply_status = null
+	_mail_arrivals = false
+	_mail_cards.clear()
+	_mail_scroll_pending = false
 	_clipboard = ""
 	_capture_serial += 1
 	if is_instance_valid(_capture_view): _capture_view.queue_free()
