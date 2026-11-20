@@ -14,11 +14,15 @@ enum Result {
 	NETWORK_ERROR,
 	MUST_CHANGE_PASSWORD,
 	UNKNOWN,
+	TIMEOUT,
+	SERVICE_UNAVAILABLE,
 }
 
 const DEFAULT_API_BASE := "http://127.0.0.1:8000"
 const SESSION_PATH := "user://session.dat"
 const REQUEST_TIMEOUT_SEC := 25.0
+## A sleeping hosted service may need longer for the first login only.
+const LOGIN_TIMEOUT_SEC: float = 90.0
 ## Provisioned demonstration student. This is an access exception, not earned progress.
 ## Match the authenticated immutable ID, never a changeable name/email or save flag.
 const DEMO_STUDENT_ID: String = "2ba45e28-fdd8-4a3b-889e-e74c25b58a56"
@@ -40,6 +44,8 @@ var _flushing_pretest: bool = false
 var _http: HTTPRequest
 var _bkt_http: HTTPRequest
 var _request_seq: int = 0
+var _last_request_result: int = HTTPRequest.RESULT_SUCCESS
+var _last_response_code: int = 0
 var _bkt_queue: Array[Dictionary] = []
 var _bkt_busy: bool = false
 var _user: Dictionary = {}
@@ -352,6 +358,10 @@ func sign_in(email: String, password: String) -> Result:
 	var body := {"email": email.strip_edges().to_lower(), "password": password}
 	var parsed: Variant = await _request_json("/api/auth/login", HTTPClient.METHOD_POST, body)
 	if parsed == null:
+		if _last_request_result == HTTPRequest.RESULT_TIMEOUT:
+			return Result.TIMEOUT
+		if _last_response_code >= 500:
+			return Result.SERVICE_UNAVAILABLE
 		return Result.NETWORK_ERROR
 
 	if typeof(parsed) != TYPE_DICTIONARY:
@@ -366,7 +376,7 @@ func sign_in(email: String, password: String) -> Result:
 	_apply_user_profile(user)
 
 	if _token.is_empty() or _participant_code.is_empty():
-		push_warning("AuthService login response missing token or user id: %s" % JSON.stringify(parsed))
+		push_warning("AuthService login response missing token or user id")
 		return Result.UNKNOWN
 
 	if bool(parsed.get("mustChangePassword", false)):
@@ -715,6 +725,8 @@ func _request_json(
 ) -> Variant:
 	_request_seq += 1
 	var seq := _request_seq
+	_last_request_result = HTTPRequest.RESULT_SUCCESS
+	_last_response_code = 0
 	var url := "%s%s" % [_api_base().trim_suffix("/"), path]
 	var headers := PackedStringArray([
 		"Content-Type: application/json",
@@ -730,6 +742,7 @@ func _request_json(
 			return null
 
 	var json_body := JSON.stringify(body) if method != HTTPClient.METHOD_GET else ""
+	_http.timeout = LOGIN_TIMEOUT_SEC if path == "/api/auth/login" else REQUEST_TIMEOUT_SEC
 	var err := _http.request(url, headers, method, json_body)
 	if err == ERR_BUSY:
 		_http.cancel_request()
@@ -747,6 +760,8 @@ func _request_json(
 	var result_code: int = completed[0]
 	var response_code: int = completed[1]
 	var response_body: PackedByteArray = completed[3]
+	_last_request_result = result_code
+	_last_response_code = response_code
 
 	if result_code != HTTPRequest.RESULT_SUCCESS:
 		push_warning("AuthService network error: HTTPRequest result %s" % result_code)

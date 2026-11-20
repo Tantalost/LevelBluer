@@ -1293,3 +1293,51 @@ All five modules have authored music cues across their intros, chapters and shar
 Module 1 Chapters 1–4 explicitly mark John's internal dialogue. Background and other-character textures soften while John, dialogue and evidence stay sharp; painted scenes use a focal region without a duplicate portrait. Reduced Motion applies the focus immediately. The effect is removed outside thought scenes.
 
 Validation: rendered objectives at 844x390 and 667x375, thought-focus screenshots, hosted soundtrack playback, pause/resume, reward regression and chapter narration/Continue regression. Physical-phone frame-rate and listening acceptance remain pending; no APK rebuilt by this update. Local verification scripts and screenshots remain excluded from commits.
+
+## Progress audit — 20 November 2026
+
+This review supersedes the 6 November completion estimate. It audits the current source at `0899263`, existing implementation evidence and fresh local checks. No gameplay, account records, hosted service or deployment was changed in this review. The separate staff application and installed-phone journeys were not inspected.
+
+**Planning estimate: approximately 80% toward the tested, deployable whole-system target, with a 75–85% uncertainty range.** This is an engineering judgment, not a measured completion rate or a prediction of time remaining. Using the earlier release weights gives approximately 77%, rounded to avoid false precision. The estimate counts working implementation while retaining substantial weight for integration and release acceptance. Approved enhancement backlogs below remain explicit; implemented chapters do not imply that every later enhancement has shipped.
+
+| Area | Estimate | Weight | Current evidence and remaining gap |
+| --- | --- | --- | --- |
+| Story / Deploy | 90% | 20% | All five modules and 25 chapter definitions, module intros, shared hearing finales and the campaign ending are implemented. Module 1 supplied voices, scene music, thought focus, email arrival/reply effects and recent Continue fixes are integrated. Full campaign playthrough on installed phones remains open. Independent objective stars currently cover only Module 1 Chapter 1. |
+| Lessons | 90% | 10% | Thirty lessons, mini quizzes, simulations, failed-quiz lesson review and dramatic mission briefings are implemented. Twenty-item pools provide 600 lesson-question placements, with five-item attempts, choice shuffling and saved rotation. Placements reuse suitable existing questions; they are not 600 distinct authored questions. All 30 simulation flows pass the current lesson check. Content/editorial and physical-device acceptance remain. Module 1 Lessons 1–6 have a recording sheet; only the existing Lesson 1 walkthrough narration is confirmed here. |
+| BKT and adaptive practice | 85% | 15% | Bayesian updates, weaker assessed-topic recommendations, difficulty selection, diagnostic routes, canonical-question deduplication and offline persistence exist. Fresh route, rotation and offline checks pass. Parameters remain configured, not trained on student data; mastery tracks five broad threat topics. Demonstrate the learning-to-hosted-progress path on real accounts/devices before acceptance. |
+| Codex | 90% | 5% | Library presentation and discovery-gated campaign records are implemented. Full campaign discovery/replay and phone readability acceptance remain; this audit did not rerun the entire Codex suite. |
+| Student Progress | 85% | 5% | Uses shared chapter access rules, individual lesson records, mastery and checkpoint data. The old later-module "Chapter 0" guidance is no longer used. Two old assertions still expect five authored chapters instead of 25. Reconcile validation and prove displayed values against restored hosted records. |
+| PvP | 80% | 10% | Online and bot Capture the Flag, CRT workspace/results, room flows and five-rated-match calibration are implemented. Bot, mocked online-session, calibration and focused backend checks pass. Updated hosted schema/backend compatibility, two-phone capture/reconnect/results and fairness/readability acceptance remain unverified here. |
+| Store | 75% | 6% | Gallery, confirmation, ownership and equip/remove for avatars, frames and badges exist. Source inspection found no PvP settlement awarding `pvp_tokens`/Threat; a fresh student therefore lacks the intended earn-to-buy loop. The current Store fixture timed out without a final result, so this audit does not claim a fresh Store pass. |
+| Profile | 90% | 4% | Equipped appearance and PvP standing are implemented; the dedicated rank check passes. Older Profile checks report 18 failures involving asset expectations, removed campaign rank, old standing contracts and five-chapter completion fixtures. Resolve these contracts and check any remaining genuine defects before acceptance. |
+| Accounts / backend | 85% | 5% | Sign-in, per-account saves and sync exist; 114 backend progress-sync tests pass. Demo student login was verified in the preceding task and its 154 access checks pass again. Installed-device restart, token expiry, reconnect and account switching still need integrated acceptance. Local baseline-sync fixes are not proof of deployed behavior or recovery of previously lost item details. |
+| Staff monitoring / support | Unverified | 5% reserved | Mobile integration exists, but this workspace audit cannot verify the separate teacher/head application, role boundaries or completed support actions. No completion credit is assigned to this dependency; it is not a claim that the web application is unimplemented. |
+| Mobile release / deployment | 45% | 15% | Latest APK found in `builds/android` is the 13 November voice-test development build, approximately 73.6 MB. It predates later chapter voices, presentation fixes, rank changes and demo access. A current export, target-phone journeys, hosted compatibility and release handover remain. |
+
+### Approved updates still unfinished
+
+- **Chapter objectives:** one of 25 chapters has independent, replayable star objectives and once-only bonuses. The remaining 24 need meaningful objective mappings and reviewed rollout. Module-completion badges are still a separate pending scope. Do not resurrect the superseded timed-replay/lesson-reward proposal without review.
+- **Tutorial interaction redesign:** intro media, supplied voices and several presentation changes are integrated. However, `tutorial_phone.gd` still uses a "Tap to type password" button with scripted typing, and submission still packages preassembled attachments. Real typing that advances only a fictional value, the complete revised Claim/Delete flows, accessible long-press sender inspection and the four-section editable/correctable report are not all implemented. The complete approved redesign remains open.
+- **Store earning:** settle the intended Threat reward through the existing match/wallet path, with once-only awards and account synchronization, before claiming an earn → buy → equip loop. Solo credits and PvP rating remain separate currencies/records.
+- **Voices and polish:** Module 1 story recordings are integrated, with documented intentional text-only lines. This audit did not find corresponding Module 2–5 chapter voiceover integrations. Further recordings are content work, not a prerequisite for claiming text-supported learning works.
+- **Release proof:** do not infer two-device synchronization, real phone touch/keyboard behavior, Cloudinary failure recovery, performance or teacher support acceptance from local tests.
+
+### Fresh checks and limits
+
+Passed locally: diagnostic routing **389 checks**; mini-quiz rotation/resume/deduplication **2,337**; current lesson refresh **182** (including all 30 simulations); Chapter 1 stars **77**; demo access **154**; BKT offline persistence; bot CTF; mocked online session; and current rank calibration. Focused backend suites passed **165 tests**: flag flow 5, ratings 35, progress sync 114, diagnostic BKT 4 and single-update behavior 7. Restricted-runner backend timeouts disappeared on the approved unrestricted local rerun; these remain fixture-based checks, not hosted match verification.
+
+The older lesson-workspace fixture attempted to start before the new briefing was ready and then dereferenced a missing workspace. Its run timed out; the current lesson-refresh fixture correctly waits for the intro and passes. Progress has two obsolete chapter-count assertions. Profile has 18 unresolved assertion failures as described above. Store timed out after 45 seconds without a completion result. No tests were deleted or altered to hide these results. A broad backend PvP discovery run did not finish and was stopped; only the completed focused suites are counted as passing.
+
+Logs are local and ignored under `frontend/.godot/audit_20261120/`. No developer verification files or generated artifacts are included in this documentation change.
+
+### Recommended next milestone — stabilize the integrated mobile build
+
+The original 19 November target in this plan has passed; this audit does not silently assign a replacement deadline. Prioritize a release-candidate review over further broad visual redesigns:
+
+1. Reconcile obsolete verification contracts and diagnose the Store timeout; fix any actual gameplay defects exposed by the corrected checks.
+2. Verify a normal student's diagnostic → required lesson → quiz → simulation → checkpoint → story unlock → Progress path, including retry, suspension, account switching and save restoration. Use the demo account for presentation, not for proving normal academic locks.
+3. Confirm the hosted backend/schema matches the client, export a current APK, and complete the same journey plus CTF on two phones. Record defects and actual device results.
+4. Close the agreed tutorial, star/reward and Store-earning backlog as reviewed slices; rebuild and regress each accepted slice. A core rehearsal does not remove these items from scope.
+5. Complete staff monitoring/support acceptance and document the independent research assessment arrangements separately from gameplay diagnostics and checkpoints.
+
+This section is a status review and proposed work order, not authorization to start another implementation milestone.

@@ -4,9 +4,12 @@ LOGIN_TAGLINE,"Defend the city\nSpot the scam","Depensa ang lungsod\nTukuyin ang
 LOGIN_EMAIL_LABEL,Email,Email
 LOGIN_PASSWORD_LABEL,Password,Password
 LOGIN_BUSY,Signing in...,Nagsa-sign in...
+LOGIN_BUSY_SLOW,The server is taking longer than usual. Please wait.,Mas matagal ang tugon ng server ngayon. Pakihintay.
 LOGIN_ERR_EMPTY,Enter your email and password.,Ilagay ang iyong email at password.
 LOGIN_ERR_INVALID,That email or password is not correct.,Mali ang email o password.
-LOGIN_ERR_NETWORK,No connection. Check your network and try again.,Walang koneksyon. Subukan ulit.
+LOGIN_ERR_NETWORK,Could not reach the server. Check your connection and try again.,Hindi maabot ang server. Suriin ang koneksyon at subukan ulit.
+LOGIN_ERR_TIMEOUT,The server took too long to respond. Please try again.,Masyadong matagal ang tugon ng server. Pakisubukan ulit.
+LOGIN_ERR_SERVER,The server is temporarily unavailable. Please try again shortly.,Pansamantalang hindi available ang server. Subukan ulit mamaya.
 LOGIN_ERR_UNKNOWN,Something went wrong. Try again.,May nangyaring mali. Subukan ulit.
 PWD_TITLE,Secure your account,I-secure ang iyong account
 PWD_SUBTITLE,Update Temporary Password,I-update ang Pansamantalang Password

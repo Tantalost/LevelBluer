@@ -6,6 +6,64 @@ const Field = preload("res://src/ui/screens/intel/codex_field_data.gd")
 const Specimen = preload("res://src/ui/screens/intel/codex_specimen.gd")
 const GOOD := Color("88e5a2")
 const BAD := Color("ff9295")
+## The card stays a real Button; only its artwork is softened off-selection.
+class LibraryCover extends Button:
+	var kind: StringName = &"characters"
+	var accent: Color = Color("4FE0D4")
+	var selected: bool = false
+	func _ready() -> void:
+		for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+			add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		focus_entered.connect(queue_redraw)
+		focus_exited.connect(queue_redraw)
+	func _draw() -> void:
+		var rect: Rect2 = Rect2(Vector2.ZERO,size)
+		var frame: StyleBoxFlat = StyleBoxFlat.new()
+		frame.bg_color = Color("0A1730")
+		frame.border_color = Color("4FE0D4") if selected else accent.darkened(.35)
+		frame.set_border_width_all(2 if selected else 1)
+		frame.set_corner_radius_all(9)
+		frame.shadow_color = Color(0.15,.85,.75,.25) if selected else Color(0,0,0,.65)
+		frame.shadow_size = 15 if selected else 8
+		frame.shadow_offset = Vector2(0,5)
+		draw_style_box(frame,rect)
+		draw_rect(rect.grow(-7),Color(accent,.5),false,1)
+		for corner: Vector2 in [Vector2(12,12),Vector2(size.x-12,12),Vector2(12,size.y-12),size-Vector2(12,12)]:
+			draw_circle(corner,2,accent)
+		draw_line(Vector2(14,size.y*.68),Vector2(size.x-14,size.y*.68),Color(accent,.65),1)
+		if has_focus(): draw_rect(rect.grow(-3),Color("F3ECD6"),false,2)
+
+const CARD_ART_SHADER: String = """shader_type canvas_item;
+uniform float softness = 0.0;
+uniform float brightness = 1.0;
+void fragment() {
+	vec2 d = TEXTURE_PIXEL_SIZE * softness;
+	vec4 c = texture(TEXTURE, UV) * 0.25;
+	c += texture(TEXTURE, clamp(UV+vec2(d.x,0.0),vec2(0.0),vec2(1.0))) * 0.125;
+	c += texture(TEXTURE, clamp(UV-vec2(d.x,0.0),vec2(0.0),vec2(1.0))) * 0.125;
+	c += texture(TEXTURE, clamp(UV+vec2(0.0,d.y),vec2(0.0),vec2(1.0))) * 0.125;
+	c += texture(TEXTURE, clamp(UV-vec2(0.0,d.y),vec2(0.0),vec2(1.0))) * 0.125;
+	c += texture(TEXTURE, clamp(UV+d,vec2(0.0),vec2(1.0))) * 0.0625;
+	c += texture(TEXTURE, clamp(UV-d,vec2(0.0),vec2(1.0))) * 0.0625;
+	c += texture(TEXTURE, clamp(UV+vec2(d.x,-d.y),vec2(0.0),vec2(1.0))) * 0.0625;
+	c += texture(TEXTURE, clamp(UV+vec2(-d.x,d.y),vec2(0.0),vec2(1.0))) * 0.0625;
+	COLOR *= vec4(c.rgb * brightness,c.a);
+}"""
+
+func _soft_button(button: Button, selected: bool = false, tab: bool = false) -> void:
+	for state: String in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var lit: bool = selected or state in ["hover", "pressed", "focus"]
+		var style: StyleBoxFlat = UI.box(Color("153B37") if lit else Color("0A1730"), Color("4FE0D4") if lit else Color("34566C"), 12)
+		style.set_corner_radius_all(22)
+		if tab:
+			style.corner_radius_bottom_left = 3
+			style.corner_radius_bottom_right = 3
+		style.shadow_size = 0
+		button.add_theme_stylebox_override(state,style)
+	button.add_theme_color_override("font_color",Color("8FF0E6") if selected else Color("F3ECD6"))
+	button.add_theme_color_override("font_hover_color",Color("F3ECD6"))
+	button.add_theme_color_override("font_pressed_color",Color("F3ECD6"))
+
 var _tab: StringName = &"units"
 var _current_unit_id := ""
 var _focus_skill := ""
@@ -38,6 +96,7 @@ var _section: StringName = &"characters"
 var _section_buttons: Dictionary[StringName, Button] = {}
 var _archive_scroll: ScrollContainer
 var _archive_body: VBoxContainer
+var _evidence_grid: GridContainer
 var _character_grid: GridContainer
 var _character_buttons: Dictionary[String, Button] = {}
 var _selected_character: String = ""
@@ -47,8 +106,13 @@ var _catalog_hint: Label
 var _expanded: Dictionary[String, bool] = {}
 var _chapter: int = 1
 var _chapter_buttons: Array[Button] = []
+var _module_row: BoxContainer
+var _module_picker: OptionButton
 var _library_home: bool = true
-var _library_grid: GridContainer
+var _library_grid: Control
+var _selected_collection: StringName = &"characters"
+var _library_open: Button
+var _card_selection_ms: int = 0
 var _sections: HBoxContainer
 var _archive_search: LineEdit
 var _archive_query: String = ""
@@ -64,6 +128,7 @@ func _ready() -> void:
 	var school_button: Button = UI.button("School Content", func() -> void: Router.push(&"school_content"))
 	school_button.custom_minimum_size.x = 200
 	shell.title.get_parent().add_child(school_button)
+	_soft_button(school_button, false, true)
 	var strip := HBoxContainer.new()
 	layout.add_child(strip)
 	strip.hide()
@@ -82,7 +147,7 @@ func _ready() -> void:
 	_sections.add_theme_constant_override("separation", 8)
 	layout.add_child(_sections)
 	for section: StringName in [&"characters", &"evidence", &"combat"]:
-		var section_button: Button = UI.button({&"characters":"Characters", &"evidence":"Evidence", &"combat":"Combat Intel"}[section], _set_section.bind(section))
+		var section_button: Button = UI.button({&"characters":"Characters", &"evidence":"Evidence", &"combat":"Field Guide"}[section], _set_section.bind(section))
 		section_button.size_flags_horizontal = SIZE_EXPAND_FILL
 		_sections.add_child(section_button)
 		_section_buttons[section] = section_button
@@ -167,10 +232,14 @@ func on_enter(args: Dictionary) -> void:
 	else: load_topic(skill_id)
 
 func on_resume() -> void:
+	_archive_body.modulate.a = 1.0
+	_detail.modulate.a = 1.0
 	_refresh_resources()
 	_refresh_archive()
 
 func _set_section(section: StringName) -> void:
+	if _entry_tween != null: _entry_tween.kill()
+	_archive_body.modulate.a = 1.0
 	if section not in [&"characters", &"evidence", &"combat"]: return
 	_library_home = false
 	_selected_record = ""
@@ -185,19 +254,23 @@ func _set_section(section: StringName) -> void:
 	_archive_scroll.visible = section != &"combat"
 	_banner.visible = section == &"combat" and not _focus_skill.is_empty()
 	for key: StringName in _section_buttons:
-		UI.style_button(_section_buttons[key], key == section)
+		_soft_button(_section_buttons[key], key == section, true)
 	if section != &"combat":
 		_selected_character = ""
 		_refresh_archive()
 		_archive_scroll.scroll_vertical = 0
+		_animate_archive()
 	_layout()
 
 func _archive_session_changed(_signed_in: bool) -> void:
 	_selected_character = ""
 	_chapter = 1
+	_selected_collection = &"characters"
 	_show_library()
 
 func _show_library() -> void:
+	if _entry_tween != null: _entry_tween.kill()
+	_archive_body.modulate.a = 1.0
 	_library_home = true
 	_focus_skill = ""
 	_selected_character = ""
@@ -223,11 +296,14 @@ func _matches_archive(text: String) -> bool:
 	return _archive_query.is_empty() or text.to_lower().contains(_archive_query)
 
 func _build_library() -> void:
-	_archive_body.add_child(UI.label("YOUR FIELD LIBRARY", 30, Color("F3ECD6"), true))
-	_archive_body.add_child(UI.label("Meet the people. Revisit the clues. Understand the threats.", 22, Color("8FF0E6")))
-	_library_grid = GridContainer.new()
-	_library_grid.add_theme_constant_override("h_separation", 16)
-	_library_grid.add_theme_constant_override("v_separation", 16)
+	var header: HBoxContainer = HBoxContainer.new()
+	_archive_body.add_child(header)
+	var title: Label = UI.label("THE FIELD LIBRARY", 24, Color("F3ECD6"), true)
+	title.size_flags_horizontal = SIZE_EXPAND_FILL
+	header.add_child(title)
+	_library_grid = Control.new()
+	_library_grid.size_flags_horizontal = SIZE_EXPAND_FILL
+	_library_grid.resized.connect(_position_library_cards.bind(false))
 	_archive_body.add_child(_library_grid)
 	var found: int = 0
 	var total: int = 0
@@ -241,25 +317,167 @@ func _build_library() -> void:
 		if _chapter_available(number):
 			for id: String in Field.character_ids(snapshot):
 				if id not in people: people.append(id)
-	var collections: Array[Dictionary] = [
-		{"id":&"characters", "number":"01", "title":"Characters", "copy":"People, relationships and what you have learned about them.", "count":"%d files available" % people.size(), "preview":"John / Eric / Jobert"},
-		{"id":&"evidence", "number":"02", "title":"Evidence", "copy":"Messages, suspicious details and the sources behind each observation.", "count":"%d / %d discovered" % [found, total], "preview":"Emails / Links / Timelines"},
-		{"id":&"combat", "number":"03", "title":"Combat Intel", "copy":"Explore defenders and threats, then read their real-world notes.", "count":"%d reference entries" % (Field.ids(&"units").size() + Field.ids(&"enemies").size()), "preview":"Defenders / Threats / Tactics"}
+	var entries: Array[Dictionary] = [
+		{"id":&"characters","title":"Characters","count":"%d people" % people.size(),"accent":Color("4FE0D4")},
+		{"id":&"evidence","title":"Evidence","count":"%d / %d found" % [found,total],"accent":Color("FFB648")},
+		{"id":&"combat","title":"Field Guide","count":"%d references" % (Field.ids(&"units").size()+Field.ids(&"enemies").size()),"accent":Color("94B9EA")}
 	]
-	for item: Dictionary in collections:
-		var card: Button = _library_card(_library_grid, str(item.number) + " / COLLECTION", str(item.title), str(item.copy), str(item.count), _set_section.bind(item.id))
-		card.accessibility_name = "Open " + str(item.title) + ". " + str(item.count)
-		_library_buttons[item.id] = card
-		var content: VBoxContainer = card.get_child(0) as VBoxContainer
-		content.add_child(UI.label(str(item.preview), 18, Color("8FF0E6")))
-	_archive_body.add_child(UI.label("STORY ARCHIVE / MODULE 01", 18, Color("8FF0E6")))
-	_archive_body.add_child(UI.label("New records appear as you investigate. Return here whenever you want to review a discovery.", 22, UI.MUTED))
+	for entry: Dictionary in entries:
+		var card: LibraryCover = LibraryCover.new()
+		card.kind = entry.id
+		card.accent = entry.accent
+		card.size_flags_horizontal = SIZE_EXPAND_FILL
+		card.accessibility_name = "Open %s. %s" % [entry.title,entry.count]
+		card.set_meta("collection_count",str(entry.count))
+		card.pressed.connect(_select_library_card.bind(entry.id))
+		_library_grid.add_child(card)
+		_library_buttons[entry.id] = card
+		var art: TextureRect = TextureRect.new()
+		art.name = "CoverArt"
+		art.mouse_filter = MOUSE_FILTER_IGNORE
+		art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		art.texture = AssetManager.get_texture({&"characters":"chapter1_john",&"evidence":"story_bg_john_desk_night",&"combat":"story_bg_mod3_library_research_v1"}[entry.id])
+		if entry.id == &"characters" and art.texture != null:
+			var face: AtlasTexture = AtlasTexture.new()
+			face.atlas = art.texture
+			face.region = Rect2(30,0,450,512)
+			face.filter_clip = true
+			art.texture = face
+		var shader: Shader = Shader.new()
+		shader.code = CARD_ART_SHADER
+		var material: ShaderMaterial = ShaderMaterial.new()
+		material.shader = shader
+		art.material = material
+		card.add_child(art)
+		art.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		art.anchor_bottom = .67
+		art.offset_left = 10
+		art.offset_right = -10
+		art.offset_top = 10
+		art.offset_bottom = 0
+		if art.texture == null:
+			var fallback: Label = UI.label("FILE %02d" % (entries.find(entry)+1),24,entry.accent)
+			fallback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			fallback.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			art.add_child(fallback)
+			fallback.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		# A translucent paper label sits above the illustration, outside its blur.
+		var tag: Label = UI.label("%02d / COLLECTION" % (entries.find(entry)+1),14,Color("F3ECD6"))
+		tag.name = "CoverTag"
+		card.add_child(tag)
+		tag.set_anchors_and_offsets_preset(PRESET_TOP_WIDE)
+		tag.offset_left = 18
+		tag.offset_top = 18
+		var heading: Label = UI.label(str(entry.title),28,Color("F3ECD6"))
+		heading.name = "CoverTitle"
+		heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		card.add_child(heading)
+		heading.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		heading.anchor_top = .70
+		heading.anchor_bottom = .84
+		heading.offset_left = 10
+		heading.offset_right = -10
+		var count: Label = UI.label(str(entry.count),20,entry.accent)
+		count.name = "CoverCount"
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		card.add_child(count)
+		count.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+		count.anchor_top = .87
+		count.anchor_bottom = .97
+		count.offset_left = 10
+		count.offset_right = -10
+	var action_row: CenterContainer = CenterContainer.new()
+	_archive_body.add_child(action_row)
+	_library_open = UI.button("",_open_selected_collection,true)
+	_soft_button(_library_open,true)
+	action_row.add_child(_library_open)
+	_position_library_cards.call_deferred(false)
+
+func _open_selected_collection() -> void:
+	if _library_home: _set_section(_selected_collection)
+
+func _select_library_card(id: StringName) -> void:
+	if not _library_home or not _library_buttons.has(id): return
+	if id == _selected_collection:
+		if Time.get_ticks_msec() - _card_selection_ms >= 300: _open_selected_collection()
+		return
+	_selected_collection = id
+	_card_selection_ms = Time.get_ticks_msec()
+	_position_library_cards(true)
+
+func _position_library_cards(animate: bool) -> void:
+	if not _library_home or not is_instance_valid(_library_grid) or not is_instance_valid(_library_open): return
+	if _library_grid.size.x <= 0 or _library_grid.size.y < 100: return
+	if _entry_tween != null: _entry_tween.kill()
+	var physical: float = maxf(.25,get_viewport().get_final_transform().get_scale().x)
+	var height: float = _library_grid.size.y - 24 / physical
+	var width: float = minf(height*.85, _library_grid.size.x*.43)
+	var spacing: float = minf(width*.90, (_library_grid.size.x-width)/2.0-12/physical)
+	var order: Array[StringName] = [&"characters",&"evidence",&"combat"]
+	var selected_index: int = order.find(_selected_collection)
+	var moving: bool = animate and not SettingsService.reduced_motion
+	if moving: _entry_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	for index: int in order.size():
+		var card: LibraryCover = _library_buttons[order[index]]
+		var selected: bool = index == selected_index
+		var side: int = 0 if selected else (-1 if index == (selected_index+2)%3 else 1)
+		card.selected = selected
+		card.custom_minimum_size = Vector2.ZERO
+		card.size = Vector2(width,height)
+		card.pivot_offset = card.size*.5
+		var target: Vector2 = Vector2((_library_grid.size.x-width)*.5+side*spacing,12/physical+(0 if selected else 9/physical))
+		var target_scale: Vector2 = Vector2.ONE*(1.0 if selected else .87)
+		card.z_index = 3 if selected else 1
+		card.accessibility_name = ("Open " if selected else "Select ") + {&"characters":"Characters",&"evidence":"Evidence",&"combat":"Field Guide"}[order[index]] + ". " + str(card.get_meta("collection_count",""))
+		var art: TextureRect = card.get_node("CoverArt")
+		var material: ShaderMaterial = art.material as ShaderMaterial
+		var blur: float = 0.0 if selected or SettingsService.reduced_motion else 5.0
+		var light: float = 1.0 if selected else .55
+		if moving:
+			_entry_tween.tween_property(card,"position",target,.28)
+			_entry_tween.tween_property(card,"scale",target_scale,.28)
+			_entry_tween.tween_property(material,"shader_parameter/softness",blur,.28)
+			_entry_tween.tween_property(material,"shader_parameter/brightness",light,.28)
+		else:
+			card.position = target
+			card.scale = target_scale
+			material.set_shader_parameter("softness",blur)
+			material.set_shader_parameter("brightness",light)
+		var title: Label = card.get_node("CoverTitle")
+		var count: Label = card.get_node("CoverCount")
+		var narrow_side: bool = side != 0 and size.x * physical < 600
+		title.add_theme_font_size_override("font_size",ceili((16 if narrow_side else 20)/physical))
+		title.anchor_left = 0
+		title.anchor_right = 1
+		title.offset_left = 10
+		title.offset_right = -10
+		if narrow_side:
+			var exposed: float = maxf(65/physical,(spacing-width*.065)/.87-16)
+			if side < 0:
+				title.anchor_right = 0
+				title.offset_right = exposed
+			else:
+				title.anchor_left = 1
+				title.offset_left = -exposed
+		count.visible = not narrow_side
+		(card.get_node("CoverCount") as Label).add_theme_font_size_override("font_size",ceili(15/physical))
+		(card.get_node("CoverTag") as Label).add_theme_font_size_override("font_size",ceili(10/physical))
+		card.queue_redraw()
+	# Child order, not just drawing order, makes the front card own overlapping taps.
+	_library_grid.move_child(_library_buttons[_selected_collection],_library_grid.get_child_count()-1)
+	_library_open.text = "OPEN " + {&"characters":"CHARACTERS",&"evidence":"EVIDENCE",&"combat":"FIELD GUIDE"}[_selected_collection]
+	_library_open.custom_minimum_size = Vector2(210,48)/physical
 
 func _library_card(parent: Control, eyebrow: String, title: String, copy: String, footer: String, callback: Callable) -> Button:
 	var card: Button = UI.button("", callback)
 	card.size_flags_horizontal = SIZE_EXPAND_FILL
-	var style: StyleBoxFlat = UI.journal_box(Color("102040"), Color("173058"), 18)
-	style.border_width_left = 5
+	var style: StyleBoxFlat = UI.journal_box(Color("0A1730"), Color("34566C"), 18)
+	style.border_width_left = 4
+	style.set_corner_radius_all(16)
+	style.corner_radius_top_right = 36
+	style.corner_detail = 5
 	card.add_theme_stylebox_override("normal", style)
 	card.add_theme_stylebox_override("hover", UI.journal_box(Color("153B37"), Color("4FE0D4"), 18))
 	parent.add_child(card)
@@ -270,7 +488,7 @@ func _library_card(parent: Control, eyebrow: String, title: String, copy: String
 	heading.set_meta("library_heading", true)
 	content.add_child(heading)
 	content.add_child(UI.label(copy, 22, Color("F3ECD6")))
-	content.add_child(UI.label(footer + "  >", 18, Color("8FF0E6")))
+	content.add_child(UI.label(footer, 18, Color("8FF0E6")))
 	# Button is not a Container: place its non-interactive contents and size it to fit.
 	content.set_anchors_and_offsets_preset(PRESET_TOP_WIDE)
 	content.offset_left = 22
@@ -290,16 +508,26 @@ func _archive_art_ready(_success: bool) -> void:
 
 func _refresh_archive() -> void:
 	if not is_instance_valid(_archive_body): return
+	if _entry_tween != null: _entry_tween.kill()
+	_archive_body.modulate.a = 1.0
 	var definition: GDScript = Field.chapter_definition(_chapter)
 	_story_snapshot = Field.story_snapshot(PlayerManager.story_checkpoint(definition.ID, false), _chapter)
 	var scroll_position: int = _archive_scroll.scroll_vertical
+	# Search scrolls with the archive so it cannot crowd the records on small phones.
+	if _archive_search.get_parent() != null:
+		_archive_search.get_parent().remove_child(_archive_search)
 	UI.clear(_archive_body)
+	_archive_body.add_child(_archive_search)
 	_character_buttons.clear()
 	_chapter_buttons.clear()
 	_library_buttons.clear()
 	_record_buttons.clear()
+	_module_row = null
+	_module_picker = null
 	_character_grid = null
+	_evidence_grid = null
 	_library_grid = null
+	_library_open = null
 	_archive_search.visible = not _library_home and _section != &"combat" and _selected_character.is_empty() and _selected_record.is_empty()
 	if _library_home:
 		_build_library()
@@ -315,19 +543,27 @@ func _refresh_archive() -> void:
 		_layout()
 		_archive_scroll.set_deferred("scroll_vertical", scroll_position)
 		return
-	var module_row: HBoxContainer = HBoxContainer.new()
-	module_row.add_theme_constant_override("separation", 12)
-	_archive_body.add_child(module_row)
-	for first_chapter: int in [1,6]:
-		var module_button: Button = UI.button("MODULE %d" % (1 if first_chapter == 1 else 2), _select_chapter.bind(first_chapter), (_chapter <= 5) == (first_chapter == 1))
-		module_button.disabled = not _chapter_available(first_chapter)
-		module_button.size_flags_horizontal = SIZE_EXPAND_FILL
-		module_row.add_child(module_button)
+	_module_row = BoxContainer.new()
+	_module_row.add_theme_constant_override("separation",12)
+	_archive_body.add_child(_module_row)
+	_module_picker = OptionButton.new()
+	_module_picker.add_theme_font_override("font",UI.FONT)
+	_module_picker.add_theme_font_size_override("font_size",24)
+	_module_picker.accessibility_name = "Choose story module"
+	for first_chapter: int in range(1, Field.CHAPTERS.size() + 1, 5):
+		var index: int = (first_chapter-1)/5
+		_module_picker.add_item("Module %d" % (index+1),first_chapter)
+		_module_picker.set_item_disabled(index,not _chapter_available(first_chapter))
+	_module_picker.select((_chapter-1)/5)
+	_module_picker.item_selected.connect(func(index: int) -> void: _select_chapter(_module_picker.get_item_id(index)))
+	_soft_button(_module_picker)
+	_module_row.add_child(_module_picker)
 	var chapter_row: HBoxContainer = HBoxContainer.new()
+	chapter_row.size_flags_horizontal = SIZE_EXPAND_FILL
 	chapter_row.add_theme_constant_override("separation", 8)
-	_archive_body.add_child(chapter_row)
+	_module_row.add_child(chapter_row)
 	for number: int in range(1, Field.CHAPTERS.size() + 1):
-		if (number <= 5) != (_chapter <= 5): continue
+		if (number-1)/5 != (_chapter-1)/5: continue
 		var chapter: GDScript = Field.chapter_definition(number)
 		var button: Button = UI.button("CH %02d" % chapter.NUMBER, _select_chapter.bind(number), number == _chapter)
 		button.size_flags_horizontal = SIZE_EXPAND_FILL
@@ -335,6 +571,7 @@ func _refresh_archive() -> void:
 		button.accessibility_name = "%s: %s. %s" % [Field.chapter_label(number), chapter.TITLE, "Available" if not button.disabled else "Continue the story to unlock"]
 		chapter_row.add_child(button)
 		_chapter_buttons.append(button)
+		_soft_button(button, number == _chapter)
 	var discovery: Dictionary = Field.discovery_progress(_story_snapshot)
 	var collection_heading: Label = UI.label("%s / %d of %d discovered" % [definition.TITLE, discovery.found, discovery.total], 22, Color("8FF0E6"))
 	collection_heading.name = "CollectionSummary"
@@ -350,7 +587,7 @@ func _refresh_archive() -> void:
 			var card: Button = UI.button("", _open_character.bind(id))
 			card.accessibility_name = "Open " + str(data.name) + " character file"
 			card.size_flags_horizontal = SIZE_EXPAND_FILL
-			card.add_theme_stylebox_override("normal", UI.box(Color("102040"), Color("173058"), 12))
+			_soft_button(card, false, true)
 			_character_grid.add_child(card)
 			_character_buttons[id] = card
 			var column: VBoxContainer = UI.column(card, 6)
@@ -358,21 +595,25 @@ func _refresh_archive() -> void:
 			column.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 			column.offset_left = 12
 			column.offset_right = -12
-			column.offset_top = 12
+			column.offset_top = 20
 			column.offset_bottom = -12
 			column.add_child(_character_portrait(id))
 			var progress: Dictionary = Field.discovery_progress(_story_snapshot, id)
-			for copy: String in [str(data.name), str(data.role), "%d / %d discovered  >" % [progress.found, progress.total]]:
+			for copy: String in [str(data.name), str(data.role), "%d / %d discovered" % [progress.found, progress.total]]:
 				var label: Label = UI.label(copy, 24 if copy == data.name else 18, Color("F3ECD6") if copy == data.name else Color("8FF0E6"))
 				label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 				column.add_child(label)
 		if _character_buttons.is_empty(): _empty_search()
 	else:
+		_evidence_grid = GridContainer.new()
+		_evidence_grid.add_theme_constant_override("h_separation",16)
+		_evidence_grid.add_theme_constant_override("v_separation",16)
+		_archive_body.add_child(_evidence_grid)
 		var hidden: int = 0
 		for observation: Dictionary in Field.observations(_story_snapshot):
 			if observation.discovered:
 				if _matches_archive(str(observation.title) + " " + str(observation.text) + " " + str(observation.source)):
-					_observation_card(observation, _archive_body)
+					_observation_card(observation, _evidence_grid)
 			else: hidden += 1
 		if _record_buttons.is_empty() and not _archive_query.is_empty(): _empty_search()
 		_undiscovered(_archive_body, hidden)
@@ -421,11 +662,21 @@ func _character_portrait(id: String) -> Control:
 		frame.add_child(offline)
 	return frame
 
+func _animate_archive() -> void:
+	if _entry_tween != null: _entry_tween.kill()
+	_archive_body.modulate.a = 1.0
+	_detail.modulate.a = 1.0
+	if not SettingsService.reduced_motion:
+		_archive_body.modulate.a = .35
+		_entry_tween = create_tween()
+		_entry_tween.tween_property(_archive_body,"modulate:a",1.0,.18)
+
 func _open_character(id: String) -> void:
 	if id not in Field.character_ids(_story_snapshot): return
 	_expanded.clear()
 	_selected_character = id
 	_refresh_archive()
+	_animate_archive()
 	_archive_scroll.set_deferred("scroll_vertical", 0)
 
 func _build_character_profile() -> void:
@@ -440,15 +691,14 @@ func _build_character_profile() -> void:
 	identity.add_child(UI.label(str(data.name).to_upper(), 26, Color("F3ECD6")))
 	identity.add_child(UI.label(str(data.role), 20, Color("8FF0E6")))
 	var summary: String = str(data.behavior if not (data.interactions as Array).is_empty() else data.background).get_slice(". ", 0)
-	identity.add_child(UI.label(summary if summary.ends_with(".") else summary + ".", 20, Color("F3ECD6")))
+
 	_discovery_meter(_archive_body, _selected_character)
 	var page: VBoxContainer = _reading_panel()
-	page.add_child(UI.label("BACKGROUND", 18, Color("101623")))
-	page.add_child(UI.label(str(data.background), 26, Color("101623")))
-	page.add_child(UI.label("OBSERVED BEHAVIOR", 18, Color("101623")))
-	page.add_child(UI.label(str(data.behavior), 26, Color("101623")))
-	page.add_child(UI.label("RELATIONSHIPS", 18, Color("101623")))
-	page.add_child(UI.label(str(data.relationship), 26, Color("101623")))
+	page.add_child(UI.label("THE PERSON BEHIND THE NAME", 18, Color("101623")))
+	page.add_child(UI.label(summary if summary.ends_with(".") else summary + ".", 26, Color("101623")))
+	for entry: Array in [["Background",str(data.background),"background"],["Observations",str(data.behavior),"behavior"],["Relationships",str(data.relationship),"relationships"]]:
+		var body: VBoxContainer = _foldout(_archive_body, str(entry[0]), str(entry[2]))
+		body.add_child(UI.label(str(entry[1]),26,Color("F3ECD6")))
 	var discoveries: VBoxContainer = _foldout(_archive_body, "Discoveries / %d recorded" % data.interactions.size(), "discoveries")
 	for observation: Dictionary in data.interactions: _observation_card(observation, discoveries)
 	var progress: Dictionary = Field.discovery_progress(_story_snapshot, _selected_character)
@@ -482,6 +732,7 @@ func _foldout(parent: Control, title: String, key: String, color: Color = Color(
 	toggle.accessibility_name = title + (", expanded" if toggle.button_pressed else ", collapsed")
 	toggle.add_theme_color_override("font_color", color)
 	column.add_child(toggle)
+	_soft_button(toggle)
 	var body: VBoxContainer = UI.column(column, 8)
 	body.name = "Details_" + key
 	body.visible = toggle.button_pressed
@@ -503,8 +754,8 @@ func _observation_card(observation: Dictionary, parent: Control) -> void:
 	var status: String = str(observation.status)
 	var color: Color = Color("33D17A") if status == "Known" else (Color("FFB648") if status == "Unverified" else UI.MUTED)
 	var preview: String = str(observation.text).get_slice(". ", 0)
-	if preview.length() > 115: preview = preview.left(112) + "…"
-	var card: Button = _library_card(parent, status.to_upper(), str(observation.title), preview, str(observation.source), _open_record.bind(str(observation.id)))
+	if preview.length() > 85: preview = preview.left(82) + "…"
+	var card: Button = _library_card(parent, status.to_upper(), str(observation.title), preview, "Open finding", _open_record.bind(str(observation.id)))
 	card.name = "Record_" + str(observation.id)
 	card.accessibility_name = str(observation.title) + ". " + status + ". Open record."
 	(card.get_child(0).get_child(0) as Label).add_theme_color_override("font_color", color)
@@ -520,13 +771,17 @@ func _open_record(id: String) -> void:
 		_record_origin = _selected_character
 		_selected_record = id
 		_refresh_archive()
+		_animate_archive()
 		_archive_scroll.set_deferred("scroll_vertical", 0)
 		return
 
 func _reading_panel() -> VBoxContainer:
 	var panel: PanelContainer = UI.panel(_archive_body, Color("F3ECD6"))
 	panel.name = "ReadingPage"
-	panel.add_theme_stylebox_override("panel", UI.journal_box(Color("F3ECD6"), Color("173058"), 24))
+	var paper: StyleBoxFlat = UI.box(Color("F3ECD6"),Color("B7AE96"),24)
+	paper.set_corner_radius_all(16)
+	paper.corner_radius_top_right = 36
+	panel.add_theme_stylebox_override("panel", paper)
 	return UI.column(panel, 20)
 
 func _build_record_page() -> void:
@@ -588,7 +843,7 @@ func _set_tab(tab: StringName) -> void:
 	for button in [_units_tab, _enemies_tab]:
 		var selected: bool = (button == _units_tab) == (tab == &"units")
 		button.add_theme_stylebox_override("normal", UI.box(UI.TEAL if selected else UI.BG, UI.TEAL if selected else Color("3b626a"), 10))
-		button.add_theme_color_override("font_color", UI.BG if selected else UI.TEXT)
+		_soft_button(button,selected)
 	_rebuild_list()
 
 func _rebuild_list() -> void:
@@ -673,7 +928,7 @@ func _show_unit(id: String) -> void:
 		button.add_theme_stylebox_override("normal", UI.journal_box(Color("234039") if selected else UI.PANEL, UI.TEAL if selected else Color("3b626a"), 10))
 		button.add_theme_stylebox_override("hover", UI.journal_box(Color("#153B37"), UI.TEAL, 10))
 		button.add_theme_stylebox_override("pressed", UI.journal_box(Color("#153B37"), UI.GOLD, 10))
-		button.add_theme_color_override("font_color", UI.TEAL if selected else UI.TEXT)
+		_soft_button(button,selected,true)
 	var data := Field.entry(_tab, id)
 	var accent := UI.TEAL if _tab == &"units" else UI.GOLD
 	var heading := HBoxContainer.new()
@@ -685,8 +940,9 @@ func _show_unit(id: String) -> void:
 	identity.size_flags_horizontal = SIZE_EXPAND_FILL
 	identity.add_child(UI.label("%s / #%03d" % ["DEFENDER" if _tab == &"units" else "THREAT", Field.ids(_tab).find(id) + 1], 16, accent, true))
 	identity.add_child(UI.label(str(data.name).to_upper(), 32))
-	identity.add_child(UI.label(str(data.type) + "  /  " + str(data.subtitle), 23, accent))
+	identity.add_child(UI.label(str(data.type), 23, accent))
 	var rotate: Button = UI.button("ROTATE VIEW", _rotate_preview)
+	_soft_button(rotate)
 	rotate.disabled = _tab == &"enemies" and id == "basic"
 	if rotate.disabled:
 		rotate.text = "ROUND PROFILE"
@@ -710,12 +966,15 @@ func _show_unit(id: String) -> void:
 		note = "Damage values are incoming tower damage multipliers. Slow values are movement-speed reduction, not damage resistance."
 	_tactics_toggle = UI.button("+ TACTICS / HOW TO USE THIS", _toggle_tactics)
 	_detail.add_child(_tactics_toggle)
+	_soft_button(_tactics_toggle)
 	_tactics_body = UI.label(str(data.tactics) + "\n\n" + note + "\n\nPreview sizes are normalized; rings do not show actual attack range.", 25, UI.MUTED)
 	_tactics_body.hide()
 	_detail.add_child(_tactics_body)
+	_soft_button(_tactics_toggle)
 	_real_toggle = UI.button("+ REAL-WORLD INTEL / " + str(data.real_title).to_upper(), _toggle_real)
 	_real_toggle.add_theme_font_size_override("font_size", 23)
 	_detail.add_child(_real_toggle)
+	_soft_button(_real_toggle)
 	_real_body = UI.column(_detail)
 	_real_body.hide()
 	_real_body.add_child(UI.label("BEYOND THE BATTLEFIELD", 14, UI.GOLD, true))
@@ -726,16 +985,18 @@ func _show_unit(id: String) -> void:
 		source.add_theme_font_size_override("font_size", 21)
 		source.tooltip_text = "Opens the reference in your browser. Requires internet."
 		_real_body.add_child(source)
+		_soft_button(source)
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 12)
 	_detail.add_child(nav)
 	var previous := UI.button("PREVIOUS", _step.bind(-1))
-	var next := UI.button("NEXT ENTRY >", _step.bind(1))
+	var next: Button = UI.button("NEXT ENTRY", _step.bind(1))
 	previous.disabled = _visible_ids.find(id) <= 0
 	next.disabled = _visible_ids.find(id) >= _visible_ids.size() - 1
 	for button in [previous, next]:
 		button.size_flags_horizontal = SIZE_EXPAND_FILL
 		nav.add_child(button)
+		_soft_button(button)
 	_layout()
 	if _entry_tween != null:
 		_entry_tween.kill()
@@ -753,6 +1014,11 @@ func _toggle_tactics() -> void:
 	_tactics_body.visible = not _tactics_body.visible
 	_tactics_toggle.text = ("- " if _tactics_body.visible else "+ ") + "TACTICS / HOW TO USE THIS"
 
+func _stat_style() -> StyleBoxFlat:
+	var style: StyleBoxFlat = UI.box(Color("102040"),Color("34566C"),14)
+	style.set_corner_radius_all(20)
+	return style
+
 func _add_stats(stats: Dictionary) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
@@ -765,7 +1031,7 @@ func _add_stats(stats: Dictionary) -> void:
 	for pair in values:
 		var panel := UI.panel(row, UI.BG)
 		panel.size_flags_horizontal = SIZE_EXPAND_FILL
-		panel.add_theme_stylebox_override("panel", UI.box(UI.BG, Color("29424b"), 10))
+		panel.add_theme_stylebox_override("panel", _stat_style())
 		var col := UI.column(panel, 6)
 		col.add_child(UI.label(pair[0], 17, UI.MUTED))
 		col.add_child(UI.label(pair[1], 28))
@@ -820,7 +1086,7 @@ func _select_matchup(index: int) -> void:
 		_matchup_detail.text += " / Slows movement, not health."
 	_matchup_detail.add_theme_color_override("font_color", ink)
 	for number: int in _matchup_buttons.size():
-		_matchup_buttons[number].add_theme_stylebox_override("normal", UI.journal_box(Color("#153B37") if number == index else UI.BG, ink if number == index else Color("#34566C"), 10))
+		_soft_button(_matchup_buttons[number],number == index)
 
 func _layout() -> void:
 	if not is_instance_valid(_detail_panel):
@@ -838,14 +1104,20 @@ func _layout() -> void:
 		if heading.has_meta("library_heading"):
 			(heading as Label).add_theme_font_size_override("font_size", maxi(30, ceili(22 / physical)))
 	if _library_home:
-		if is_instance_valid(_library_grid): _library_grid.columns = 3 if size.x * physical >= 600 else 1
+		if is_instance_valid(_library_grid):
+			_library_grid.custom_minimum_size.y = minf(maxf(210,size.y*physical-170), minf(520,size.x*physical*.85))/physical
+			_position_library_cards(false)
 	elif _section != &"combat":
+		if is_instance_valid(_module_row):
+			_module_row.vertical = size.x * physical < 600
+			_module_picker.custom_minimum_size = Vector2(112,48)/physical
+		if is_instance_valid(_evidence_grid): _evidence_grid.columns = 2 if size.x * physical >= 600 else 1
 		if is_instance_valid(_character_grid):
 			_character_grid.columns = 3 if size.x * physical >= 600 else 1
 		for card: Button in _character_buttons.values():
 			card.custom_minimum_size.y = (202 if short_screen else 266) / physical
 		for node: Node in _archive_body.find_children("*", "PanelContainer", true, false):
-			if node.has_meta("character_portrait"):
+			if node.has_meta("character_portrait") and not node.has_meta("cover_portrait"):
 				(node as Control).custom_minimum_size = (Vector2(80, 92) if not _selected_character.is_empty() else Vector2(128, 112 if short_screen else 140)) / physical
 	if is_instance_valid(_preview):
 		_preview.custom_minimum_size = Vector2(maxf(180, 80 / physical), maxf(164, 80 / physical))

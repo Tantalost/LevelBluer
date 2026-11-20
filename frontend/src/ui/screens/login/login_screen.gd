@@ -22,6 +22,12 @@ var _busy: bool = false
 var _recovery_mode: bool = false
 var _recovery_sent: bool = false
 var _recovery_cooldown_until: int = 0
+var _login_started_ms: int = 0
+
+
+func _process(_delta: float) -> void:
+	if _busy and not _recovery_mode and Time.get_ticks_msec() - _login_started_ms >= 8000:
+		_intro.text = tr("LOGIN_BUSY_SLOW")
 
 
 func _ready() -> void:
@@ -134,13 +140,20 @@ func _attempt_login() -> void:
 		AuthService.Result.INVALID_CREDENTIALS:
 			_show_error("LOGIN_ERR_INVALID")
 		AuthService.Result.NETWORK_ERROR:
-			_show_error("LOGIN_ERR_NETWORK")
+			_show_error("LOGIN_ERR_NETWORK", false)
+		AuthService.Result.TIMEOUT:
+			_show_error("LOGIN_ERR_TIMEOUT", false)
+		AuthService.Result.SERVICE_UNAVAILABLE:
+			_show_error("LOGIN_ERR_SERVER", false)
 		_:
 			_show_error("LOGIN_ERR_UNKNOWN")
 
 
 func _set_busy(busy: bool) -> void:
 	_busy = busy
+	if not _recovery_mode:
+		_login_started_ms = Time.get_ticks_msec() if busy else 0
+		_intro.text = tr("LOGIN_BUSY" if busy else "LOGIN_INTRO")
 	_submit.visible = not busy
 	_busy_spinner.visible = busy
 	_email.editable = not busy
@@ -158,10 +171,11 @@ func _refresh_submit_label() -> void:
 	_submit.visible = not _recovery_sent
 
 
-func _show_error(key: String) -> void:
+func _show_error(key: String, clear_password: bool = true) -> void:
 	_error.text = tr(key)
 	_error_panel.visible = true
-	_password.text = ""
+	if clear_password:
+		_password.text = ""
 	if _recovery_mode:
 		_email.grab_focus()
 	else:

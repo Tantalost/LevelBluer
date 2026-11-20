@@ -48,6 +48,30 @@ func verify_archive(screen: Control, player: Node) -> void:
 	check(screen._library_home and screen._library_buttons.size() == 3, "Codex opens its library index")
 	await settle()
 	await capture("codex_library_home")
+	var settings: Node = root.get_node("SettingsService")
+	var saved_motion: bool = settings.reduced_motion
+	settings.reduced_motion = false
+	for selected: StringName in [&"evidence",&"combat",&"characters"]:
+		await tap(screen._library_buttons[selected])
+		check(screen._library_home and screen._selected_collection == selected,"Side-card tap selects without opening")
+		await create_timer(.32).timeout
+		for key: StringName in screen._library_buttons:
+			var cover: Button = screen._library_buttons[key]
+			var art: TextureRect = cover.get_node("CoverArt")
+			check(is_zero_approx(float(art.material.get_shader_parameter("softness"))) == (key == selected),"Only side artwork is blurred")
+			check(cover.get_node("CoverTitle").material == null,"Titles never receive blur")
+		check(screen._library_grid.get_child(screen._library_grid.get_child_count()-1) == screen._library_buttons[selected],"Front card owns overlapping taps")
+		await capture("codex_layered_"+str(selected))
+	screen._select_library_card(&"evidence")
+	screen._select_library_card(&"evidence")
+	check(screen._library_home,"Rapid duplicate tap cannot accidentally open a newly selected card")
+	settings.reduced_motion = true
+	screen._position_library_cards(false)
+	for card: Button in screen._library_buttons.values():
+		check(is_zero_approx(float(card.get_node("CoverArt").material.get_shader_parameter("softness"))),"Reduced Motion has no blur")
+	screen._select_library_card(&"characters")
+	while Time.get_ticks_msec() - screen._card_selection_ms < 350: await process_frame
+	settings.reduced_motion = saved_motion
 	await tap(screen._library_buttons[&"characters"])
 	check(not screen._library_home and screen._character_buttons.size() == 3, "Library card opens character collection")
 	var fresh: Dictionary = Field.story_snapshot({})
@@ -146,13 +170,14 @@ func verify_archive(screen: Control, player: Node) -> void:
 	check((page.get_child(0).get_child(2) as Label).text.contains(str(Field.observations(complete)[3].source)), "Reading page retains the original source")
 	await capture("codex_evidence_expanded")
 	check(not screen.can_go_back() and screen._selected_record.is_empty(), "Evidence Back returns to the collection")
-	for dimensions: Vector2i in [Vector2i(844,390), Vector2i(720,360), Vector2i(390,844)]:
+	for dimensions: Vector2i in [Vector2i(844,390), Vector2i(667,375), Vector2i(720,360), Vector2i(390,844)]:
 		root.size = dimensions
 		screen._show_library()
 		await settle()
 		await capture("codex_library_%d" % dimensions.x)
 		for card: Button in screen._library_buttons.values():
 			check(card.get_global_rect().end.x <= root.get_visible_rect().end.x, "Library cards fit phone width")
+		check(root.get_visible_rect().encloses(screen._library_open.get_global_rect()),"Open action fits mobile viewport")
 		screen._set_section(&"characters")
 		await settle()
 		check(root.get_visible_rect().encloses(screen._archive_scroll.get_global_rect()), "Archive viewport fits mobile screen")
@@ -218,11 +243,22 @@ func completed_archive(number: int) -> Dictionary:
 			state.comic_order = chapter.COMIC_ORDER.duplicate()
 			state.animatic_step = 5
 			state.aftermath_step = chapter.AFTERMATH.size() - 1
+			state.ending_step = chapter.ENDING.size() + 1
 	return Field.story_snapshot(state, number)
 
 func verify_later_archives(screen: Control, player: Node) -> void:
 	var original: Dictionary = player.chapter_progress.duplicate(true)
 	var original_replays: Dictionary = player.chapter_replays.duplicate(true)
+	for first: int in [1,6,11,16,21]:
+		var definition: GDScript = Field.chapter_definition(first)
+		player.chapter_progress[definition.ID] = definition.fresh()
+		screen._select_chapter(first)
+		screen._set_section(&"evidence")
+		check(screen._module_picker.item_count == 5,"All five module choices are present")
+		check(screen._chapter == first and screen._chapter_buttons.size() == 5,"Every module has exactly five chapter filters: %d" % first)
+		check(screen._chapter_buttons[0].accessibility_name.contains("Module %d" % ((first-1)/5+1)),"Chapter selector identifies its own module")
+	player.chapter_progress = original.duplicate(true)
+
 	player.chapter_progress = {}
 	screen._archive_session_changed(false)
 	screen._select_chapter(5)
@@ -259,6 +295,7 @@ func verify_later_archives(screen: Control, player: Node) -> void:
 		root.size = Vector2i(844,390)
 		await settle()
 		await capture("codex_chapter%d_evidence" % number)
+		check(screen._module_picker.get_global_rect().end.y <= screen._chapter_buttons[0].get_global_rect().end.y + 1,"Landscape filters share one row")
 		for button: Button in screen._chapter_buttons:
 			check(button.size.y * root.get_final_transform().get_scale().y >= 47.5, "Chapter selector remains touch-sized")
 			check(button.get_global_rect().end.x <= root.get_visible_rect().end.x, "Chapter selector stays within the viewport")
