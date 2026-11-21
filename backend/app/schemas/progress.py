@@ -23,3 +23,4 @@ class ProgressSyncRequest(BaseModel):
 class ProgressSyncResponse(BaseModel):
     ok: bool = True
     acknowledged_events: list[str] = Field(default_factory=list)
+    story_paid: dict = Field(default_factory=dict)

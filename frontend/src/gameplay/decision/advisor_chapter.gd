@@ -1,6 +1,17 @@
 extends RefCounted
+const Rewards: GDScript = preload("res://src/gameplay/decision/story_rewards.gd")
+## Contact content stays outside the reusable phone view. No invented numbers.
+const CONTACTS: Array[Dictionary] = [
+	{"id":"dan", "title":"Dan", "body":"Saved contact: Dan", "portrait":"chapter1_dan"},
+	{"id":"eric", "title":"Eric", "body":"Saved contact: Eric", "portrait":"chapter1_eric"},
+	{"id":"jobert", "title":"Jobert", "body":"Saved contact: Jobert", "portrait":"chapter1_jobert", "action":"message"},
+	{"id":"sir_rham", "title":"Sir Rham", "body":"Saved contact: Sir Rham", "portrait":"story_rham_poses"}
+]
 ## Authored case data and validation, independent of presentation and persistence.
 const ID: String = "mod_01_ch_02"
+const STAR_GOALS: Dictionary = Rewards.GOALS[ID]
+const STAR_IDS: Array[String] = ["compare", "report", "headers"]
+const STAR_CREDITS: int = 25
 const NUMBER: int = 2
 const TITLE: String = "The Advisor Email"
 const NIGHT_BACKGROUND: String = "john_bed_night"
@@ -116,7 +127,7 @@ const CHAT_MESSAGES: Array[Dictionary] = [
 ]
 
 static func fresh() -> Dictionary:
-	return {"version":1,"beat":0,"phase":"day","read":[],"sorted":[],"flags":[],"domains":[],"captures":[],"headers":[],"report_draft":"","mistakes":0,"hint_used":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"perk_run":{}}
+	return {"performance_version":1,"star_tracking":true,"star_blocked":[],"hotspot_order":[],"version":1,"beat":0,"phase":"day","read":[],"sorted":[],"flags":[],"domains":[],"captures":[],"headers":[],"report_draft":"","mistakes":0,"hint_used":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"perk_run":{}}
 
 static func message(id: String) -> Dictionary:
 	for entry: Dictionary in MESSAGES:
@@ -156,6 +167,9 @@ static func clean(raw: Dictionary) -> Dictionary:
 		state.next_chapter_unlocked = true
 		state.reward = BASE_REWARD + (CLEAN_BONUS if Perks.status(state.perk_run, state.hint_used) != "assisted" and state.mistakes == 0 else 0)
 	elif state.phase in ["sleep","closing","done"] and not state.sealed: state.phase = "seal"
+	Rewards.track(state, raw, ID)
+	if state.completed and state.performance_version == 1:
+		state.reward = Rewards.base(ID, state)
 	return state
 
 static func domain_matches(answer: String, _id: String = "fake") -> bool:

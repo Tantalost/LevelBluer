@@ -169,16 +169,95 @@ var perk_loadout: Array[String] = []
 var perk_attempts: Array[Dictionary] = []
 var chapter_replay_progress: Dictionary = {}
 ## Fixed, one-time story awards. Objective claims also represent earned stars.
+const StoryRewards: GDScript = preload("res://src/gameplay/decision/story_rewards.gd")
+var story_performance: Dictionary = {}
+var story_paid: Dictionary = {}
+var _story_paid_basis: Dictionary = {}
+var _story_other_cloud_basis: Variant = null
+var story_economy_version: int = 2
 var story_reward_claims: Dictionary = {}
 var _story_reward_basis: Dictionary = {}
 var _story_reward_cloud_receipt: String = ""
 
 func story_stars(chapter_id: String) -> Array[String]:
 	var result: Array[String] = []
-	if chapter_id == SurveyChapter.ID:
-		for id: String in SurveyChapter.STAR_IDS:
-			if story_reward_claims.has(chapter_id + ":" + id): result.append(id)
+	var entry: Dictionary = story_performance.get(chapter_id, {})
+	for id: String in StoryRewards.ids(chapter_id):
+		if entry.get("objectives", {}).has(id) or story_reward_claims.has(chapter_id + ":" + id): result.append(id)
 	return result
+
+func _settle_story_rewards(chapter_id: String, valid: Dictionary) -> void:
+	if chapter_id not in StoryRewards.IDS or not valid.get("completed", false): return
+	var entry: Dictionary = story_performance.get(chapter_id, {"completion":{}, "objectives":{}})
+	var candidate: Dictionary = StoryRewards.proof(valid)
+	if entry.completion.is_empty() or StoryRewards.base(chapter_id, valid) > StoryRewards.base(chapter_id, entry.completion): entry.completion = candidate
+	for id: String in StoryRewards.earned(chapter_id, valid):
+		if not entry.objectives.has(id): entry.objectives[id] = candidate
+	story_performance[chapter_id] = entry
+	if not AuthService.is_signed_in():
+		var before: int = StoryRewards.total(story_paid)
+		story_paid = StoryRewards.join_paid(story_paid, story_entitlements())
+		credits += StoryRewards.total(story_paid) - before
+
+func story_entitlements() -> Dictionary:
+	var result: Dictionary = story_paid.duplicate(true)
+	for chapter: String in story_performance:
+		if chapter not in StoryRewards.IDS: continue
+		var entry: Dictionary = story_performance[chapter]
+		var paid: Dictionary = result.get(chapter, {"base":0, "stars":0, "unknown":false})
+		if paid.unknown: continue
+		paid.base = maxi(paid.base, StoryRewards.base(chapter, entry.get("completion", {})))
+		paid.stars = maxi(paid.stars, mini(75, story_stars(chapter).size() * 25))
+		result[chapter] = paid
+	return result
+
+func story_reward_summary(chapter: String) -> String:
+	var due: Dictionary = story_entitlements().get(chapter, {"base":0, "stars":0})
+	var paid: Dictionary = story_paid.get(chapter, {"base":0, "stars":0})
+	var pending: int = maxi(0, due.base + due.stars - paid.base - paid.stars)
+	return "Completion / report: %d CR · Objectives: %d CR\nConfirmed: %d CR · Pending sync: %d CR" % [due.base, due.stars, paid.base + paid.stars, pending]
+
+func accept_story_receipt(receipt: Dictionary, uploaded_other: Variant = null) -> void:
+	var before: int = StoryRewards.total(story_paid)
+	story_paid = StoryRewards.join_paid(story_paid, receipt)
+	var gain: int = StoryRewards.total(story_paid) - before
+	credits += gain
+	if _wallet_basis_known:
+		_wallet_basis_credits += gain
+		_story_paid_basis = StoryRewards.join_paid(_story_paid_basis, receipt)
+	# Remember the acknowledged request, not the current wallet: the player
+	# may have spent or earned more while that request was in flight.
+	if (uploaded_other is int or uploaded_other is float) and is_finite(float(uploaded_other)):
+		_story_other_cloud_basis = int(uploaded_other)
+	progress_changed.emit()
+
+func _migrate_story_rewards(data: Dictionary) -> void:
+	story_paid = StoryRewards.clean_paid(data.get("story_paid", {}))
+	_story_paid_basis = StoryRewards.clean_paid(data.get("story_paid_basis", data.get("story_paid", {})))
+	var residual: Variant = data.get("story_other_cloud_basis")
+	_story_other_cloud_basis = int(residual) if (residual is int or residual is float) and is_finite(float(residual)) else null
+	story_performance = {}
+	var claims: Variant = data.get("story_performance", {})
+	if claims is Dictionary:
+		for chapter: String in StoryRewards.IDS:
+			if not claims.get(chapter) is Dictionary: continue
+			var entry: Dictionary = claims[chapter]
+			var cleaned: Dictionary = {"completion":{}, "objectives":{}}
+			if entry.get("completion") is Dictionary: cleaned.completion = StoryRewards.proof(entry.completion)
+			if entry.get("objectives") is Dictionary:
+				for id: String in StoryRewards.ids(chapter):
+					if entry.objectives.get(id) is Dictionary: cleaned.objectives[id] = StoryRewards.proof(entry.objectives[id])
+			story_performance[chapter] = cleaned
+	if data.get("story_economy_version", 0) == 2: return
+	var chapters: Dictionary = data.get("chapter_progress", {}) if data.get("chapter_progress") is Dictionary else {}
+	for chapter: String in StoryRewards.IDS:
+		var state: Dictionary = chapters.get(chapter, {})
+		if not state.get("completed", false): continue
+		var old_reward: int = StoryRewards.number(state.get("reward", 0), 125)
+		var bonus: int = StoryRewards.number(state.get("star_bonus_awarded", 0), 75)
+		if chapter == StoryRewards.IDS[0]: bonus = maxi(bonus, story_stars(chapter).size() * 25)
+		story_paid[chapter] = {"base":100, "stars":maxi(bonus, maxi(0, old_reward - 100)), "unknown":old_reward not in [100,125]}
+	story_economy_version = 2
 
 func _clean_story_claims(raw: Variant) -> Dictionary:
 	var result: Dictionary = {}
@@ -194,21 +273,6 @@ func _story_claim_value(claims: Dictionary) -> int:
 		total += SurveyChapter.BASE_REWARD if key.ends_with(":clear") else SurveyChapter.STAR_CREDITS
 	return total
 
-func _settle_survey_stars(valid: Dictionary, replaying: bool, previous: Dictionary) -> void:
-	if not valid.completed or not valid.star_tracking: return
-	var earned: Array[String] = SurveyChapter.earned_stars(valid)
-	var new_bonus: int = 0
-	for id: String in earned:
-		var key: String = SurveyChapter.ID + ":" + id
-		if not story_reward_claims.has(key):
-			story_reward_claims[key] = true
-			new_bonus += SurveyChapter.STAR_CREDITS
-	credits += new_bonus
-	valid.star_bonus_awarded = int(previous.get("star_bonus_awarded", 0)) if previous.get("completed", false) else new_bonus
-	var clear_key: String = SurveyChapter.ID + ":clear"
-	if not replaying and not previous.get("completed", false) and not story_reward_claims.has(clear_key):
-		story_reward_claims[clear_key] = true
-		credits += SurveyChapter.BASE_REWARD
 
 func purchase_perk(id: String, persist: bool = true) -> bool:
 	if id not in StoryPerks.IDS or id in owned_perks: return false
@@ -246,15 +310,18 @@ func begin_story_attempt(chapter_id: String, is_replay: bool, persist: bool = tr
 func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = true, chapter_id: String = "mod_01_ch_01") -> void:
 	var definition: GDScript = story_definition(chapter_id)
 	if definition == null or not story_unlocked(chapter_id): return
+	var credits_before: int = credits
 	var valid: Dictionary = definition.clean(snapshot)
+	var prior_attempt: Dictionary = story_checkpoint(chapter_id, is_replay)
+	if chapter_id in StoryRewards.IDS and prior_attempt.get("perk_run", {}).get("id", "") == valid.get("perk_run", {}).get("id", ""):
+		for objective: String in prior_attempt.get("star_blocked", []): StoryRewards.block(valid, chapter_id, objective)
+	_settle_story_rewards(chapter_id, valid)
 	if chapter_id == SurveyChapter.ID:
 		var previous: Dictionary = story_checkpoint(chapter_id, is_replay)
 		# A resumed attempt cannot clear its own failed objectives.
 		if previous.get("perk_run", {}).get("id", "") == valid.get("perk_run", {}).get("id", ""):
 			for id: String in previous.get("star_blocked", []): SurveyChapter.block_star(valid, id)
-		if is_replay:
-			_settle_survey_stars(valid, true, previous)
-		else:
+		if not is_replay:
 			save_chapter(valid, chapter_id, false)
 			valid = (chapter_progress.get(chapter_id, valid) as Dictionary).duplicate(true)
 	var run: Dictionary = valid.get("perk_run", {})
@@ -265,7 +332,10 @@ func save_story_attempt(snapshot: Dictionary, is_replay: bool, persist: bool = t
 		if run.completed and float(run.finished_at) == 0.0: run.finished_at = Time.get_unix_time_from_system()
 		run["assist_status"] = StoryPerks.status(run, valid.hint_used)
 		run["mistakes"] = valid.mistakes
-		run["coins_awarded"] = (int(valid.reward) if valid.completed and not is_replay else 0) + int(valid.get("star_bonus_awarded", 0))
+		run["coins_awarded"] = maxi(0, credits - credits_before) if chapter_id in StoryRewards.IDS else (int(valid.reward) if valid.completed and not is_replay else 0)
+		if chapter_id in StoryRewards.IDS:
+			run["reward_entitlement"] = story_entitlements().get(chapter_id, {}).duplicate(true)
+			run["reward_pending"] = AuthService.is_signed_in()
 		var found: bool = false
 		for index: int in perk_attempts.size():
 			if perk_attempts[index].id == run.id:
@@ -291,11 +361,11 @@ func save_chapter(snapshot: Dictionary, chapter_id: String, persist: bool = true
 	if bool(previous.get("completed", false)):
 		return # Replays never replace the original exhibit or award twice.
 	var valid: Dictionary = definition.clean(snapshot)
-	if chapter_id == SurveyChapter.ID: _settle_survey_stars(valid, false, previous)
+	_settle_story_rewards(chapter_id, valid)
 	chapter_progress[chapter_id] = valid
 	if bool(valid["completed"]):
-		# Star-tracked Survey credits are settled by _settle_survey_stars.
-		if not (chapter_id == SurveyChapter.ID and valid.get("star_tracking", false)):
+		# Module 1 uses the confirmed entitlement ledger above.
+		if chapter_id not in StoryRewards.IDS:
 			credits += int(valid["reward"])
 		_record_chapter_completion(chapter_id, valid)
 	if persist:
@@ -569,6 +639,8 @@ func note_downloaded_cloud_baseline() -> void:
 	_wallet_basis_credits = credits
 	_wallet_basis_tokens = pvp_tokens
 	_story_reward_basis = story_reward_claims.duplicate()
+	_story_paid_basis = story_paid.duplicate(true)
+	_story_other_cloud_basis = credits - StoryRewards.total(story_paid)
 	_note_evidence_basis()
 	_cloud_upload_pinned = true
 
@@ -869,6 +941,11 @@ func reset_to_defaults(notify_handler: bool = true) -> void:
 	perk_attempts = []
 	chapter_replay_progress = {}
 	story_reward_claims.clear()
+	story_performance.clear()
+	story_paid.clear()
+	_story_paid_basis.clear()
+	_story_other_cloud_basis = null
+	story_economy_version = 2
 	_story_reward_basis.clear()
 	_story_reward_cloud_receipt = ""
 	chapter_replays = {}
@@ -1770,6 +1847,11 @@ func get_save_data() -> Dictionary:
 		"tutorial_skipped": tutorial_skipped,
 		"onboarding_state": onboarding_state.duplicate(true),
 		"chapter_progress": chapter_progress.duplicate(true),
+		"story_economy_version": 2,
+		"story_performance": story_performance.duplicate(true),
+		"story_paid": story_paid.duplicate(true),
+		"story_paid_basis": _story_paid_basis.duplicate(true),
+		"story_other_cloud_basis": _story_other_cloud_basis,
 		"story_reward_claims": story_reward_claims.duplicate(),
 		"story_reward_basis": _story_reward_basis.duplicate(),
 		"story_reward_cloud_receipt": _story_reward_cloud_receipt,
@@ -1803,6 +1885,7 @@ func apply_save_data(data: Dictionary) -> void:
 	# A snapshot replaces account state; absent legacy keys must not retain it.
 	reset_to_defaults(false)
 	story_reward_claims = _clean_story_claims(data.get("story_reward_claims", {}))
+	_migrate_story_rewards(data)
 	_story_reward_basis = _clean_story_claims(data.get("story_reward_basis", {}))
 	_story_reward_cloud_receipt = str(data.get("story_reward_cloud_receipt", "")).left(64)
 	var saved_missions: Variant = data.get("mission_progress", {})
@@ -2285,6 +2368,31 @@ func _merge_unconfirmed_progress(cloud: Dictionary, local: Dictionary, basis_kno
 	merged["story_reward_basis"] = claims.duplicate()
 	merged["story_reward_cloud_receipt"] = cloud_receipt
 	var merged_tokens: int = _combine_wallet(_variant_int(cloud.get("pvp_tokens", 0)), _variant_int(local.get("pvp_tokens", 0)), basis_known, basis_tokens)
+	if cloud.get("story_economy_version", 0) == 2 or local.get("story_economy_version", 0) == 2:
+		var local_paid: Dictionary = StoryRewards.clean_paid(local.get("story_paid", {}))
+		var cloud_paid: Dictionary = StoryRewards.clean_paid(cloud.get("story_paid", {}))
+		var paid: Dictionary = StoryRewards.join_paid(local_paid, cloud_paid)
+		# Apply the existing non-story wallet policy to signed residuals, then
+		# add the confirmed story entitlement once, never as two offline deltas.
+		var local_other: int = _variant_int(local.get("credits", 0)) - StoryRewards.total(local_paid)
+		var cloud_other: int = _variant_int(cloud.get("credits", 0)) - StoryRewards.total(cloud_paid)
+		var basis_other: int = basis_credits - StoryRewards.total(StoryRewards.clean_paid(local.get("story_paid_basis", local_paid)))
+		if local.get("story_other_cloud_basis") is int or local.get("story_other_cloud_basis") is float: basis_other = _variant_int(local.story_other_cloud_basis)
+		var merged_other: int = local_other + maxi(0, cloud_other - basis_other) if basis_known else maxi(local_other, cloud_other)
+		merged_credits = maxi(0, merged_other + StoryRewards.total(paid))
+		merged["story_paid"] = paid
+		merged["story_paid_basis"] = paid.duplicate(true)
+		merged["story_other_cloud_basis"] = cloud_other
+		merged["story_economy_version"] = 2
+		var performance: Dictionary = (local.get("story_performance", {}) as Dictionary).duplicate(true)
+		for chapter: String in (cloud.get("story_performance", {}) as Dictionary):
+			var entry: Dictionary = cloud.story_performance[chapter]
+			if not performance.has(chapter): performance[chapter] = entry.duplicate(true)
+			else:
+				if StoryRewards.base(chapter, entry.get("completion", {})) > StoryRewards.base(chapter, performance[chapter].get("completion", {})): performance[chapter].completion = entry.completion
+				for objective: String in entry.get("objectives", {}):
+					if not performance[chapter].objectives.has(objective): performance[chapter].objectives[objective] = entry.objectives[objective]
+		merged["story_performance"] = performance
 	merged["credits"] = merged_credits
 	merged["pvp_tokens"] = merged_tokens
 	merged["wallet_basis_known"] = true

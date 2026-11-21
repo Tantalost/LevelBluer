@@ -141,6 +141,9 @@ func _run() -> void:
 			check(assets.get_texture(id) != null,"Hearing texture reloads from disk cache: "+id)
 	var player: Node = root.get_node("PlayerManager")
 	var original: Dictionary = player.get_save_data()
+	player.story_performance = {}
+	player.story_paid = {}
+	player.story_reward_claims = {}
 	var auth: Node = root.get_node("AuthService")
 	var signed: bool = auth._signed_in
 	auth._signed_in = false
@@ -199,10 +202,10 @@ func _run() -> void:
 	await capture("suspect_selected_720")
 	screen.find_child("ConfirmSuspect",true,false).pressed.emit()
 	var audio: Node = root.get_node("AudioManager")
-	check(audio._hearing_decision and audio._tracks.has("hearing_decision"),"Decision phase selects its original tension score")
+	check(audio._story_mood == "mystery","Decision phase selects its owner-scoped investigation mood")
 	audio._on_screen_changed(&"confrontation")
 	await settle()
-	check(audio._desired_bgm == audio._tracks["hearing_decision"],"Decision music is routed to the BGM deck")
+	check(audio._story_mood == "mystery" and audio._desired_bgm != null,"Story decision mood remains routed to the BGM deck")
 	screen._menu()
 	check(audio.bgm_player.stream_paused,"Decision score pauses with the menu")
 	screen._close_overlay()
@@ -468,7 +471,7 @@ func _run() -> void:
 	clean.mistakes = 0
 	clean.comic_errors = 0
 	clean.perk_run = Perks.new_run("clean-check",Perks.ids([]),false,true,Case.ID)
-	check(Case.clean(clean).reward == 125,"Unassisted clean hearing earns bonus")
+	check(Case.clean(clean).reward == 100,"Completion amount is separate from stars")
 	var saved: Dictionary = player.get_save_data()
 	player.reset_to_defaults()
 	player.apply_save_data(saved)
@@ -519,7 +522,9 @@ func _run() -> void:
 	var replay_clear: Dictionary = clean.duplicate(true)
 	replay_clear.perk_run = screen.state.perk_run.duplicate(true)
 	player.save_story_attempt(replay_clear,true,false,Case.ID)
-	check(player.credits == replay_balance,"Replay clear never awards duplicate coins")
+	check(player.credits == replay_balance + 25,"Replay earns only its newly completed reconstruction star")
+	player.save_story_attempt(replay_clear,true,false,Case.ID)
+	check(player.credits == replay_balance + 25,"Repeated replay claim pays no duplicate")
 	# Return to a saved active round for responsive layout and retry checks.
 	screen.state = Case.fresh()
 	screen.state.briefed = true

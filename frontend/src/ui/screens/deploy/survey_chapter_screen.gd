@@ -11,6 +11,9 @@ var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 const Phone: GDScript = preload("res://src/gameplay/decision/survey_phone.gd")
 const Practice: GDScript = preload("res://src/gameplay/decision/tutorial_phone.gd")
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
+const ReportView: GDScript = preload("res://src/ui/components/investigation_report.gd")
+const ReportRules: GDScript = preload("res://src/gameplay/decision/investigation_report_rules.gd")
+var _report: Control
 var _perk_panel: PanelContainer
 var _perk_body: VBoxContainer
 var _perk_button: Button
@@ -429,6 +432,7 @@ func _ready() -> void:
 	AssetManager.sync_finished.connect(_art_ready)
 	SettingsService.settings_changed.connect(_settings_changed)
 	AuthService.session_changed.connect(_session_changed)
+	PlayerManager.progress_changed.connect(_refresh_reward_receipt)
 
 func _menu_button(caption: String, callback: Callable) -> Button:
 	var button: Button = _button(caption, callback)
@@ -512,6 +516,10 @@ func _render() -> void:
 	_heading.modulate.a = 1.0
 	_perk_button.visible = str(state.get("phase", "day")) != "done" and not (state.get("perk_run", {}).get("loadout", []) as Array).is_empty()
 	UI.clear(_journal_body)
+	if is_instance_valid(_report):
+		_report.get_parent().remove_child(_report)
+		_report.queue_free()
+	_report = null
 	_seal = null
 	_phone.stop()
 	_phone.hide()
@@ -567,6 +575,13 @@ func _render() -> void:
 		_phone.configure_chapter(phase, state)
 		_set_line(str(Chapter.TASKS[phase].line), str(Chapter.TASKS[phase].get("voice", "")))
 	elif phase == "seal":
+		if Chapter.ID == "mod_01_ch_01":
+			_build_report()
+			_load_art()
+			_layout()
+			_layout.call_deferred()
+			_apply_pause()
+			return
 		_journal.show()
 		_journal_body.add_child(UI.label("EXHIBIT %02d / %s" % [Chapter.NUMBER, Chapter.TITLE.to_upper()], 28, Color("4FE0D4")))
 		_journal_body.add_child(UI.label(Chapter.EVIDENCE, 24))
@@ -621,7 +636,7 @@ func _review_capture(id: String) -> void:
 	(_journal_body.get_parent() as ScrollContainer).ensure_control_visible.call_deferred(panel)
 
 func _show_results() -> void:
-	_results.star_mode = Chapter.ID == "mod_01_ch_01"
+	_results.star_mode = Chapter.ID in PlayerManager.StoryRewards.IDS
 	if is_instance_valid(_star_result_scroll):
 		_results.remove_child(_star_result_scroll)
 		_star_result_scroll.queue_free()
@@ -639,7 +654,7 @@ func _show_results() -> void:
 	_heading.text = ""
 	_results.award = 0 if replay else int(state["reward"])
 	if _results.star_mode:
-		_results.award += int(state.get("star_bonus_awarded", 0))
+		_results.award = 0 # Confirmed/pending amounts are shown explicitly below.
 		_build_star_results()
 		next_button.add_theme_stylebox_override("normal", UI.box(Color("2E6BFF"), UI.TEAL, 12))
 		(_result_actions.get_child(1) as Button).add_theme_stylebox_override("normal", UI.box(Color("0A1730"), UI.TEAL, 12))
@@ -661,6 +676,13 @@ func _show_results() -> void:
 			AudioManager.set_story_duck(self, 0.22)
 			_result_audio.play()
 
+func _refresh_reward_receipt() -> void:
+	if not _active or state.get("phase", "") != "done" or _owner != AuthService.participant_code() or _signed_owner != AuthService.is_signed_in(): return
+	var label: Label = find_child("StoryRewardSummary", true, false) as Label
+	if is_instance_valid(label): label.text = PlayerManager.story_reward_summary(Chapter.ID)
+	_results.balance = PlayerManager.credits
+	_results.queue_redraw()
+
 func _build_star_results() -> void:
 	_star_result_scroll = ScrollContainer.new()
 	_star_result_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -669,8 +691,9 @@ func _build_star_results() -> void:
 	body.size_flags_horizontal = SIZE_EXPAND_FILL
 	var physical: float = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
 	body.add_child(UI.label("CHAPTER COMPLETE / YOUR OBJECTIVES", ceili(20 / physical), UI.TEAL))
-	var base: int = 0 if replay else int(state.reward)
-	body.add_child(UI.label("+%d credits  /  %d completion + %d star bonus" % [_results.award, base, int(state.get("star_bonus_awarded", 0))], ceili(17 / physical), UI.GOLD))
+	var reward_summary: Label = UI.label(PlayerManager.story_reward_summary(Chapter.ID), ceili(17 / physical), UI.GOLD)
+	reward_summary.name = "StoryRewardSummary"
+	body.add_child(reward_summary)
 	var earned: Array[String] = PlayerManager.story_stars(Chapter.ID)
 	for id: String in Chapter.STAR_IDS:
 		var row: HBoxContainer = HBoxContainer.new()
@@ -933,6 +956,8 @@ func _advance() -> void:
 
 func _evidence_changed(snapshot: Dictionary) -> void:
 	if not _can_act(): return
+	for field: String in ["star_blocked", "hotspot_order"]:
+		if snapshot.has(field): state[field] = snapshot[field].duplicate()
 	for field: String in ["read", "sorted", "flags", "domains", "captures", "mistakes"]:
 		state[field] = snapshot[field]
 	if Chapter.ID == "mod_01_ch_01":
@@ -995,7 +1020,7 @@ func _open_perks() -> void:
 	_perk_panel.show()
 	UI.clear(_perk_body)
 	_perk_body.add_child(UI.label("CHAPTER LOADOUT / OPTIONAL ASSISTS", 28, UI.TEAL))
-	_perk_body.add_child(UI.label("General guidance and reviewing your evidence do not cost stars. Answer-revealing hints warn you first." if Chapter.ID == "mod_01_ch_01" else "Using a perk removes the clean-work bonus, not the base chapter reward.", 24))
+	_perk_body.add_child(UI.label("General guidance and reviewing your evidence do not cost stars. Answer-revealing hints warn you first." if Chapter.ID in PlayerManager.StoryRewards.IDS else "Using a perk removes the clean-work bonus, not the base chapter reward.", 24))
 	var run: Dictionary = state.get("perk_run", {})
 	for id: String in Perks.ids(run.get("loadout", []), 2):
 		var available: bool = Perks.allowed(run, id, "story_chapter", str(state.phase), state.captures)
@@ -1020,6 +1045,8 @@ func _use_perk(id: String) -> void:
 	var run: Dictionary = state.get("perk_run", {})
 	if not Perks.activate(run, id, "story_chapter", str(state.phase), int(state.beat), state.captures): return
 	# Commit usage before revealing help; closing/reloading cannot refund a use.
+	if id == "perspective" and Chapter.ID in PlayerManager.StoryRewards.IDS and Chapter.ID != "mod_01_ch_01":
+		PlayerManager.StoryRewards.block(state, Chapter.ID, PlayerManager.StoryRewards.hint_objective(Chapter.ID, str(state.phase)))
 	_save()
 	UI.clear(_perk_body)
 	_perk_body.add_child(UI.label(str(Perks.DATA[id].name).to_upper() + " / ASSIST RECORDED", 28, UI.TEAL))
@@ -1074,7 +1101,7 @@ func _recap_text() -> String:
 
 func _hint(confirmed: bool = false) -> void:
 	if not _can_act(): return
-	if Chapter.ID == "mod_01_ch_01" and str(state.phase) in Chapter.STAR_IDS:
+	if Chapter.ID in PlayerManager.StoryRewards.IDS and not PlayerManager.StoryRewards.hint_objective(Chapter.ID, str(state.phase)).is_empty():
 		if not confirmed:
 			_paused = true
 			_menu_backdrop.show()
@@ -1089,7 +1116,7 @@ func _hint(confirmed: bool = false) -> void:
 			_layout()
 			_apply_pause()
 			return
-		Chapter.block_star(state, str(state.phase))
+		PlayerManager.StoryRewards.block(state, Chapter.ID, PlayerManager.StoryRewards.hint_objective(Chapter.ID, str(state.phase)))
 	state["hint_used"] = true
 	var run: Dictionary = state.get("perk_run", {})
 	if not run.is_empty():
@@ -1110,7 +1137,68 @@ func _hint(confirmed: bool = false) -> void:
 		_phone._camera._commit()
 	_thought({"sort":"The three survey messages deserve a closer look. Compare their demands with the school updates you were expecting.", "highlight":"Look for unspecified pay, pressure not to verify, and unexplained requests for personal details. A typo is only supporting context.", "notes":"Read the address after @. Two survey senders use gmail.com; the coordinator uses yahoo.com. That alone does not prove a scam.", "capture":"Include the entire sender, subject and request. Framing assistance is available when a message is open."}.get(str(state["phase"]), "Keep each clue connected to its context."))
 
+func _report_definition() -> Dictionary:
+	var definition: Dictionary = Chapter.report_definition(state)
+	var best: Dictionary = state.get("report", {}).get("best", {})
+	var amount: int = 50 + int(floor(50.0 * int(best.get("score", 0)) / 9.0))
+	var paid: int = int(PlayerManager.story_paid.get(Chapter.ID, {}).get("base", 0))
+	definition["reward_notice"] = "Report completion: %d CR / 100 maximum. Additional on completion: %d CR.\nStars are separate. Signed-in rewards wait for sync confirmation." % [maxi(paid, amount), maxi(0, amount - paid)]
+	return definition
+
+func _build_report() -> void:
+	_dialogue.hide()
+	_portrait.hide()
+	_journal.hide()
+	_report = ReportView.new()
+	_area.add_child(_report)
+	_report.size = _area.size
+	_area.move_child(_report, _header.get_index())
+	_report.draft_changed.connect(_report_draft)
+	_report.submit_requested.connect(_report_submit)
+	_report.continue_requested.connect(_report_continue)
+	_report.retry_requested.connect(_report_retry)
+	_report.configure(_report_definition(), state.get("report", {}), _phone._previews)
+
+func _report_draft(snapshot: Dictionary) -> void:
+	if not _can_act() or state.phase != "seal": return
+	state.report = ReportRules.clean(_report_definition(), snapshot)
+	_save()
+
+func _report_submit() -> void:
+	if not _can_act() or state.phase != "seal" or not Chapter.complete_evidence(state): return
+	state.report = ReportRules.submit(_report_definition(), state.get("report", {}))
+	_save()
+	_report.configure(_report_definition(), state.report, _phone._previews)
+	AudioManager.play_sfx("ui_confirm")
+
+func _report_continue() -> void:
+	if not _can_act() or state.phase != "seal" or state.get("report", {}).get("latest", {}).is_empty(): return
+	state.sealed = true
+	state.phase = "sleep"
+	_save()
+	_render()
+
+func _report_retry() -> void:
+	if not _can_act() or state.phase != "seal": return
+	var original: Dictionary = state.duplicate(true)
+	state = Chapter.fresh()
+	state.read = original.read.duplicate()
+	state.beat = Chapter.STORY.size() - 1
+	state.phase = "sort"
+	state.report = original.get("report", {}).duplicate(true)
+	state.report.view = "board"
+	state.report.draft = {}
+	state.report.revision = int(state.report.get("revision", 0)) + 1
+	var retry_loadout: Array[String] = []
+	state.perk_run = Perks.new_run(PlayerManager.learning_id(), retry_loadout, replay, true, Chapter.ID)
+	_phone._previews.clear()
+	_save()
+	_render()
+
 func _seal_exhibit() -> void:
+	if Chapter.ID == "mod_01_ch_01":
+		_report_continue()
+		return
 	if not _can_act() or _sending or state["phase"] != "seal" or not Chapter.complete_evidence(state): return
 	_sending = true
 	_phone.set_locked(true)
@@ -1239,6 +1327,8 @@ func _setup_thought_focus() -> void:
 
 func _story_mood() -> String:
 	var phase: String = str(state.get("phase","day"))
+	# The shared report is still an investigation, before the chapter reward.
+	if Chapter.ID == "mod_01_ch_01" and phase == "seal": return "mystery"
 	if phase in ["done","seal"]: return "resolve"
 	if phase in ["sleep","closing"]: return "mystery"
 	if phase != "day": return "mystery"
@@ -1376,8 +1466,14 @@ func _layout() -> void:
 	if phase in ["seal", "done"]:
 		_journal.position = Vector2(w * 0.12,top)
 		_journal.size = Vector2(w * 0.76,h - top - (dialogue_height + 16 if phase == "seal" else 6))
+	if is_instance_valid(_report):
+		_report.position = Vector2(0, top)
+		_report.size = Vector2(w, maxf(100, h - top))
+		_dialogue.hide()
+		_portrait.hide()
 	for node: Node in _area.find_children("*", "Button", true, false):
 		var button: Button = node as Button
+		if is_instance_valid(_report) and _report.is_ancestor_of(button): continue
 		button.custom_minimum_size.y = touch
 		button.add_theme_font_size_override("font_size", maxi(20, int(16 / physical)))
 	for node: Node in _header.get_children():
@@ -1526,6 +1622,7 @@ func _toggle_menu() -> void:
 
 func _apply_pause() -> void:
 	var locked: bool = not _can_act()
+	if is_instance_valid(_report): _report.set_locked(locked)
 	AudioManager.pause_story_music(self, not _can_present())
 	_voice.suspend_clip(locked or _voice_waiting_for_continue)
 	if _approach_audio != null and _approach_audio.has_stream_playback():
@@ -1634,6 +1731,7 @@ func on_exit() -> void:
 	_resume_chat = _chat_started and _phone.visible and _is_chat_beat()
 	_active = false
 	_seq += 1
+	if is_instance_valid(_report): _report.set_locked(true)
 	_stop_tweens()
 	_phone.stop()
 	hide()

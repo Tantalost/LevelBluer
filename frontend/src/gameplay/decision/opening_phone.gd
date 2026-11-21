@@ -387,7 +387,7 @@ func _metrics() -> void:
 				(node as Control).add_theme_font_size_override("font_size", 15)
 			if node.has_meta("opening_notification"):
 				(node as Control).custom_minimum_size.y = 48 / physical
-	_close.custom_minimum_size = Vector2(190, maxf(52, 48 / physical))
+	_close.custom_minimum_size = Vector2(maxf(190, 120 / physical), maxf(52, 48 / physical))
 	if is_instance_valid(_dismiss):
 		_dismiss.custom_minimum_size = Vector2.ONE * maxf(72, 48 / physical)
 		_dismiss.add_theme_font_size_override("font_size", ceili(32 / physical))

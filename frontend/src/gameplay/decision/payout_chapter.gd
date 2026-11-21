@@ -1,6 +1,10 @@
 extends RefCounted
+const Rewards: GDScript = preload("res://src/gameplay/decision/story_rewards.gd")
 ## Fictional, offline case. No credential collection or external navigation.
 const ID: String = "mod_01_ch_03"
+const STAR_GOALS: Dictionary = Rewards.GOALS[ID]
+const STAR_IDS: Array[String] = ["links", "thorough", "priority"]
+const STAR_CREDITS: int = 25
 const NUMBER: int = 3
 const TITLE: String = "The Payout"
 const NIGHT_BACKGROUND: String = "john_bed_night"
@@ -143,7 +147,7 @@ const STORY: Array[Dictionary] = [
 ]
 
 static func fresh() -> Dictionary:
-	return {"version":1,"beat":0,"phase":"day","read":[],"sorted":[],"flags":[],"domains":[],"captures":[],"revealed":[],"expanded":[],"hotspots":[],"reviewed":false,"mistakes":0,"hint_used":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"perk_run":{}}
+	return {"performance_version":1,"star_tracking":true,"star_blocked":[],"hotspot_order":[],"version":1,"beat":0,"phase":"day","read":[],"sorted":[],"flags":[],"domains":[],"captures":[],"revealed":[],"expanded":[],"hotspots":[],"reviewed":false,"mistakes":0,"hint_used":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"perk_run":{}}
 
 static func message(id: String) -> Dictionary:
 	return MESSAGES[0] if id == "payout" else {}
@@ -180,4 +184,7 @@ static func clean(raw: Dictionary) -> Dictionary:
 		state.next_chapter_unlocked = true
 		state.reward = BASE_REWARD + (CLEAN_BONUS if Perks.status(state.perk_run, state.hint_used) != "assisted" and state.mistakes == 0 else 0)
 	elif state.phase in ["sleep","closing","done"] and not state.sealed: state.phase = "seal"
+	Rewards.track(state, raw, ID)
+	if state.completed and state.performance_version == 1:
+		state.reward = Rewards.base(ID, state)
 	return state

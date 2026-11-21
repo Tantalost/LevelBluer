@@ -66,6 +66,9 @@ func _run() -> void:
 	var auth: Node = root.get_node("AuthService")
 	var settings: Node = root.get_node("SettingsService")
 	var original: Dictionary = player.get_save_data()
+	player.story_performance = {}
+	player.story_paid = {}
+	player.story_reward_claims = {}
 	auth._signed_in = false
 	player.reset_to_defaults()
 	player.lesson_progress = {"mod_01":1}
@@ -133,8 +136,10 @@ func _run() -> void:
 				screen._phone.set_locked(false)
 				await settle()
 				screen._phone._tick_lead_in(2.0)
-				check((screen._phone._content.get_parent() as ScrollContainer).scroll_vertical > 0, "Contact list scrolls to Jobert")
+				check((screen._phone._content.get_parent() as ScrollContainer).scroll_vertical == 0, "Contacts stay under the player's scroll control")
 				await capture("contacts")
+				screen._phone._contact_button.pressed.emit()
+				check(screen._phone._selected_contact == "jobert" and screen._phone._lead_in == "contacts", "Contact opens details before starting a chat")
 				screen._phone._contact_button.pressed.emit()
 				check(screen._phone._lead_in == "contact_tap", "Jobert selection receives tap feedback")
 				screen._phone._tick_lead_in(0.4)
@@ -301,7 +306,7 @@ func _run() -> void:
 	clean_clear.hint_used = false
 	var empty_loadout: Array[String] = []
 	clean_clear.perk_run = Perks.new_run("clean-case2", empty_loadout, false, true, Case.ID)
-	check(Case.clean(clean_clear).reward == 125, "Unassisted Chapter 2 preserves clean-work bonus")
+	check(Case.clean(clean_clear).reward == 100, "Completion amount is separate from objective stars")
 	check(Survey.clean(clean_clear).perk_run.is_empty(), "Chapter 2 perk records cannot attach to Chapter 1")
 	screen.on_exit()
 	screen.queue_free()

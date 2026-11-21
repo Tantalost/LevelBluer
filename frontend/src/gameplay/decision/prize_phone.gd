@@ -232,6 +232,8 @@ func _place_record(id: String, index: int) -> void:
 func _check_timeline() -> void:
 	if _locked or mode != "timeline" or phase_ready(): return
 	if state.timeline_order != Chapter.ORDER:
+		Chapter.Rewards.block(state, Chapter.ID, "timeline")
+		evidence_changed.emit(state.duplicate(true))
 		_notice_text = "Check the seconds as well as the minutes. All four records must be in order."
 		_render()
 		return
@@ -299,6 +301,7 @@ func _connect_pins(a: String, b: String) -> void:
 	else:
 		if not state.wrong_pairs.has(key):
 			state.wrong_pairs.append(key)
+			Chapter.Rewards.block(state, Chapter.ID, "board")
 			state.mistakes += 1
 			evidence_changed.emit(state.duplicate(true))
 		_notice_text = "That pair does not establish one of the three requested connections. One investigation mistake recorded for this pair; no coins deducted. Eric's last-seen gap is 15 seconds, not 10. Neither status proves authorship."
@@ -357,6 +360,8 @@ func _check_note() -> void:
 	if _locked or mode != "case_note" or phase_ready(): return
 	_save_note("")
 	if not Chapter.note_matches(state.minutes_draft,state.event_draft):
+		Chapter.Rewards.block(state, Chapter.ID, "case_note")
+		evidence_changed.emit(state.duplicate(true))
 		_notice_text = "Try this: 08:12 → 08:13 is 1 minute, then 08:13 → 08:14 is 1 more. Type 2 in the first box and survey confirmation reply in the second. Jobert's last-seen time is a different clue."
 		_render()
 		return

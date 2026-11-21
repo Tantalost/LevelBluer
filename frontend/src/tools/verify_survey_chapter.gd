@@ -78,6 +78,8 @@ func _run() -> void:
 	player.chapter_progress = {}
 	player.lesson_completions = {"mod_01:0":true}
 	player.story_reward_claims = {}
+	player.story_paid = {}
+	player.story_performance = {}
 	player.credits = 50
 	# Normalize the fixture through the existing save loader before fingerprinting.
 	player.apply_save_data(player.get_save_data())
@@ -367,19 +369,31 @@ func play_clip(path: String) -> void:
 	check(screen.state.phase == "seal", "Evidence review gates sealing")
 	await settle()
 	await capture("seal")
-	screen._seal_exhibit()
-	screen._seal_exhibit()
+	check(screen._report.footer.get_global_rect().end.y <= root.get_visible_rect().end.y + 2, "Integrated report footer stays on-screen")
+	screen._report_submit()
+	check(screen.state.report.latest.score == 0, "Empty report earns zero without blocking completion")
+	var report_before_retry: Dictionary = screen.state.duplicate(true)
+	var balance_before_retry: int = player.credits
+	screen._report_retry()
+	check(screen.state.phase == "sort" and screen.state.sorted.is_empty() and screen.state.read.size() == 6, "Retry restarts investigation without repeating daytime mail")
+	check(screen.state.report.first.score == 0 and player.credits == balance_before_retry, "Retry preserves first report without paying credits")
+	check(screen.state.perk_run.id != report_before_retry.perk_run.id, "Retry has distinct attempt ID")
+	screen.state = report_before_retry
+	screen._save()
+	screen._render()
 	screen._toggle_menu()
+	screen._report_continue()
 	await create_timer(0.15).timeout
-	check(screen.state.phase == "seal", "Sealing pauses with menu")
+	check(screen.state.phase == "seal", "Report continuation is blocked by menu")
 	screen._toggle_menu()
+	screen._report_continue()
 	await create_timer(0.2).timeout
-	check(screen.state.phase == "sleep", "Seal animation ends in sleep")
+	check(screen.state.phase == "sleep", "Report continues into the existing closing narration")
 	settings.reduced_motion = false
 	finish_beat()
 	check(screen.state.phase == "done", "Chapter completes")
 	check(screen.state.next_chapter_unlocked, "Next chapter access earned without publishing unfinished content")
-	check(player.credits == 175, "Base reward plus the independently earned clue star")
+	check(player.credits == 125, "Base reward plus the independently earned clue star")
 	check(screen._results.visible and not screen._journal.visible, "Completion uses the dedicated celebration card")
 	check(not screen._result_actions.get_child(0).disabled, "Completed Chapter 1 exposes the authored Chapter 2")
 	check(screen._result_actions.get_child(1).text == "PERKS", "Completion exposes the Perks destination")
@@ -393,11 +407,11 @@ func play_clip(path: String) -> void:
 	screen._toggle_menu()
 	await capture("complete_counting")
 	await create_timer(2.0).timeout
-	check(player.credits == 175, "Visual credit count-up never awards a second payout")
+	check(player.credits == 125, "Visual credit count-up never awards a second payout")
 	if DisplayServer.get_name() != "headless":
-		check(screen._results.shown_award == 125 and screen._results.shown_balance == 175, "Displayed credit and wallet totals match persisted reward")
+		check(screen._results.shown_award == 0 and screen._results.shown_balance == 125, "Displayed credit and wallet totals match persisted reward")
 	screen._save()
-	check(player.credits == 175, "Repeat save cannot award twice")
+	check(player.credits == 125, "Repeat save cannot award twice")
 	check(JSON.stringify([player.onboarding_state,player.mastery_matrix,player.cleared_stages]) == legacy, "Legacy progress and BKT unchanged")
 	await settle()
 	await capture("complete")
@@ -414,17 +428,17 @@ func play_clip(path: String) -> void:
 	check(not screen._result_audio.playing, "Unmute does not replay the completed reward flourish")
 	var stored: Dictionary = player.get_save_data()
 	player.apply_save_data(stored)
-	check(player.chapter_progress[Chapter.ID].completed and player.credits == 175, "Completion survives serialization")
+	check(player.chapter_progress[Chapter.ID].completed and player.credits == 125, "Completion survives serialization")
 	screen._replay()
 	screen._advance()
-	check(player.chapter_progress[Chapter.ID].completed and player.credits == 175, "Replay isolated from original exhibit")
+	check(player.chapter_progress[Chapter.ID].completed and player.credits == 125, "Replay isolated from original exhibit")
 	var bad: Dictionary = Chapter.clean({"phase":"done","sealed":true,"completed":true,"flags":"bad"})
 	check(not bad.completed and bad.phase == "day", "Malformed/incomplete saves repair safely")
 	var clean: Dictionary = stored.chapter_progress[Chapter.ID].duplicate(true)
 	clean.mistakes = 0
-	check(Chapter.clean(clean).reward == 100, "Base reward is separate from objective claims")
+	check(Chapter.clean(clean).reward == 50, "Base reward is separate from objective claims")
 	clean.hint_used = true
-	check(Chapter.clean(clean).reward == 100, "Help never removes the base completion reward")
+	check(Chapter.clean(clean).reward == 50, "Help never removes the base completion reward")
 	player.apply_save_data({})
 	check(player.chapter_progress.is_empty(), "Absent chapter state cannot leak between accounts")
 	player.apply_save_data(stored)

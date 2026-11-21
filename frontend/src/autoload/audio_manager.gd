@@ -14,7 +14,7 @@ const STORY_TRACKS: Dictionary[String, String] = {
 	"story_suspense":"v1794487562/levelblue/opening_v2/20261112/suspense_v1.mp3",
 	"story_sadness":"v1794487565/levelblue/opening_v2/20261112/sadness_v1.mp3",
 }
-const STORY_MOODS: Dictionary[String, String] = {"calm":"morning", "mystery":"story_mystery", "suspense":"story_suspense", "sadness":"story_sadness", "resolve":"hub", "debate":"hearing_debate"}
+const STORY_MOODS: Dictionary[String, String] = {"calm":"morning", "momentum":"lesson_focus", "mystery":"story_mystery", "suspense":"story_suspense", "sadness":"story_sadness", "resolve":"hub", "debate":"hearing_debate"}
 var _story_music_owner: WeakRef
 var _story_mood: String = "calm"
 var _story_music_paused: bool = false
@@ -198,6 +198,8 @@ func _select_music() -> void:
 	if _screen_id in [&"lessons", &"lesson_player"]: _load_learning_tracks()
 	if _screen_id in [&"module_intro", &"survey_chapter", &"confrontation"]:
 		_load_learning_tracks(true)
+		# Reuse the hosted rhythmic instrumental for a hurried school arrival.
+		if _story_mood == "momentum": _load_learning_tracks()
 		var source: Control = _story_music_owner.get_ref() as Control if _story_music_owner != null else null
 		if source != null and source.is_visible_in_tree():
 			var key: String = STORY_MOODS.get(_story_mood, "morning")

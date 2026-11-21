@@ -11,6 +11,7 @@ from app.services.database_diagnostics import is_lock_timeout, log_operational_e
 from app.supabase_client import supabase
 
 from app.services.learning_records import record_learning_events
+from app.services.story_rewards import settle as settle_story_rewards
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,8 @@ def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> Prog
     )
 
     try:
-        stored_progress = fetch_student_progress(student_id) or {}
+        stored_preimage = fetch_student_progress(student_id)
+        stored_progress = stored_preimage or {}
     except ProgressReadError as exc:
         raise _supabase_error(exc) from exc
     if not isinstance(stored_progress, dict):
@@ -199,8 +201,8 @@ def sync_student_progress(student_id: str, payload: ProgressSyncRequest) -> Prog
         stored_progress,
         _skills_retained_from_store(merged_matrix, incoming_matrix, incoming_assessed),
     )
-    _upsert_save_blob(student_id, blob, stored_progress, fresh_student)
-    return ProgressSyncResponse(acknowledged_events=acknowledged)
+    receipt = _upsert_save_blob(student_id, blob, stored_preimage, fresh_student)
+    return ProgressSyncResponse(acknowledged_events=acknowledged, story_paid=receipt)
 
 
 def fetch_student_progress(student_id: str) -> dict | None:
@@ -947,7 +949,7 @@ def _upsert_save_blob(
     payload: dict,
     existing: dict | None = None,
     student: dict | None = None,
-) -> None:
+) -> dict:
     blob = dict(payload)
     # Client module_pretests cannot grant or revoke completion. A present
     # student column, including {}, is copied into the save. A legacy row
@@ -957,7 +959,7 @@ def _upsert_save_blob(
     else:
         if existing is None:
             try:
-                existing = fetch_student_progress(student_id) or {}
+                existing = fetch_student_progress(student_id)
             except ProgressReadError as exc:
                 raise _supabase_error(exc) from exc
         stored_flags = existing.get("module_pretests") if isinstance(existing, dict) else None
@@ -965,16 +967,14 @@ def _upsert_save_blob(
             blob["module_pretests"] = stored_flags
         else:
             blob.pop("module_pretests", None)
-    _required_write(
-        student_id,
-        "player_saves.upsert",
-        lambda: supabase.table("player_saves")
-        .upsert(
-            {
-                "student_id": student_id,
-                "payload": blob,
-                "updated_at": datetime.now(UTC).isoformat(),
-            }
-        )
-        .execute(),
+    blob = settle_story_rewards(blob, existing)
+    response = _required_write(
+        student_id, "player_saves.compare_and_set",
+        lambda: supabase.rpc("levelblue_compare_save", {
+            "p_student_id": student_id, "p_expected": existing,
+            "p_payload": blob,
+        }).execute(),
     )
+    if response.data is not True:
+        raise HTTPException(status_code=409, detail=SYNC_CONFLICT_DETAIL)
+    return blob["story_paid"]

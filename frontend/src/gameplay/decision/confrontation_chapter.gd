@@ -1,6 +1,10 @@
 extends RefCounted
+const Rewards: GDScript = preload("res://src/gameplay/decision/story_rewards.gd")
 ## Authored fictional hearing. Evidence challenges claims; admission resolves identity.
 const ID: String = "mod_01_ch_05"
+const STAR_GOALS: Dictionary = Rewards.GOALS[ID]
+const STAR_IDS: Array[String] = ["evidence", "resolve", "reconstruction"]
+const STAR_CREDITS: int = 25
 const NUMBER: int = 5
 const HEARING: bool = true
 const THEORY_CORRECT: String = "Jobert"
@@ -132,7 +136,7 @@ static func fresh() -> Dictionary:
 static func fresh_hearing(exhibits: Array) -> Dictionary:
 	var captures: Array[String] = []
 	for item: Dictionary in exhibits: captures.append(str(item.id))
-	return {"version":1,"phase":"prep","briefed":false,"theory_done":false,"theory_bonus":false,"suspect_guesses":[],"round":0,"solved":[],"credibility":20,"round_start":20,"round_errors":[0,0,0,0],"auto_hints":[],"restarts":0,"mistakes":0,"hint_used":false,"final_matched":false,"admission_step":0,"admitted":false,"comic_order":["","","","","",""],"comic_checked":false,"comic_errors":0,"animatic_step":0,"animatic_done":false,"aftermath_step":0,"aftermath_done":false,"ending_step":0,"lights_done":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"captures":captures,"perk_run":{}}
+	return {"performance_version":1,"star_tracking":true,"star_blocked":[],"hotspot_order":[],"version":1,"phase":"prep","briefed":false,"theory_done":false,"theory_bonus":false,"suspect_guesses":[],"round":0,"solved":[],"credibility":20,"round_start":20,"round_errors":[0,0,0,0],"auto_hints":[],"restarts":0,"mistakes":0,"hint_used":false,"final_matched":false,"admission_step":0,"admitted":false,"comic_order":["","","","","",""],"comic_checked":false,"comic_errors":0,"animatic_step":0,"animatic_done":false,"aftermath_step":0,"aftermath_done":false,"ending_step":0,"lights_done":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"captures":captures,"perk_run":{}}
 
 static func integer(raw: Dictionary, key: String, fallback: int, ceiling: int) -> int:
 	var value: Variant = raw.get(key,fallback)
@@ -210,6 +214,9 @@ static func clean_hearing(raw: Dictionary, rules: Dictionary) -> Dictionary:
 	if state.completed:
 		state.phase = "done"
 		state.reward = 100 + (25 if state.mistakes == 0 and Perks.status(state.perk_run,state.hint_used) != "assisted" else 0)
+	if str(rules.get("id", ID)) == ID:
+		Rewards.track(state, raw, ID)
+		if state.completed and state.get("performance_version", 0) == 1: state.reward = 100
 	return state
 
 static func _frame_exists(frames: Array, id: String) -> bool:

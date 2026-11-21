@@ -15,7 +15,9 @@ const BEATS: Array[Dictionary] = [
 	{"visual": "resolve", "voice": "v1794044376/M01_INTRO_08_John.mp3.mp3", "line": "I need to figure out what went wrong."},
 	{"visual": "caption", "line": "5 days before the disaster", "hold": 2.6},
 ]
-const INTRO_MOODS: Array[Dictionary] = [{0:"sadness",3:"mystery",7:"resolve"},{0:"suspense",2:"mystery"},{0:"suspense",2:"sadness",3:"mystery"},{0:"sadness",2:"mystery"},{0:"calm",2:"mystery",4:"calm"}]
+# John's decision opens an investigation, not a resolution. Carry the same
+# mystery track through his final line, the time caption and the title reveal.
+const INTRO_MOODS: Array[Dictionary] = [{0:"sadness",3:"mystery"},{0:"suspense",2:"mystery"},{0:"suspense",2:"sadness",3:"mystery"},{0:"sadness",2:"mystery"},{0:"calm",2:"mystery",4:"calm"}]
 
 const AMANI_BEATS: Array[Dictionary] = [
 	{"visual":"sms", "line":"My name. My photo. But I didn't send those messages."},

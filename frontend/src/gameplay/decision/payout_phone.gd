@@ -265,6 +265,8 @@ func _flaw_hunt() -> void:
 
 func _find_clue(id: String) -> void:
 	if _locked or mode != "flaws" or not Chapter.CLUES.has(id): return
+	if not state.has("hotspot_order"): state.hotspot_order = []
+	if id not in state.hotspot_order: state.hotspot_order.append(id)
 	_selected_clue = id
 	_add("hotspots", id)
 	AudioManager.play_sfx("ui_confirm")

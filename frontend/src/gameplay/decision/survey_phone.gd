@@ -6,6 +6,7 @@ signal phase_finished
 signal chat_speaker_changed(person: String, pose: int)
 signal view_changed
 signal story_art_changed(asset_id: String)
+signal mail_finished(id: String)
 var Chapter: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
 var chat_entries: Array[Dictionary] = []
 const Survey: GDScript = preload("res://src/gameplay/decision/survey_chapter.gd")
@@ -76,12 +77,13 @@ func _tick_mail_arrivals(delta: float) -> void:
 	for index: int in _mail_cards.size():
 		var card: Button = _mail_cards[index]
 		if not is_instance_valid(card): continue
-		var age: float = _mail_elapsed - (index + 1) * MAIL_ARRIVAL_INTERVAL
+		var age: float = _mail_elapsed - (int(card.get_meta("arrival_index", index)) + 1) * MAIL_ARRIVAL_INTERVAL
 		if age < -0.00001: continue
 		if not card.visible:
 			card.show()
 			_mail_scroll_pending = true
-			AudioManager.play_sfx("ui_notification")
+			var entry: Dictionary = Chapter.message(str(card.get_meta("message_id", "")))
+			notify_phone({"id":str(entry.get("id", "")), "app":"Mail", "sender":entry.get("sender", ""), "preview":entry.get("subject", ""), "duration":0.8})
 		var progress: float = 1.0 if _reduced_motion() else clampf(age / MAIL_POP_DURATION,0.0,1.0)
 		var eased: float = 1.0 - pow(1.0-progress,3.0)
 		card.modulate.a = eased
@@ -251,6 +253,7 @@ func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
 	selected = ""
 	note_app = false
 	configure({"embedded":true})
+	_notifications.set_scope(Chapter.ID + ":" + str(state.get("perk_run", {}).get("id", "")) + ":" + str(state.get("beat", 0)) + ":" + mode)
 	_alarm_pending = false
 	_unlocked = true
 	_read = true # Never inherit the opening's Prize Desk notification.
@@ -318,30 +321,50 @@ func _action(caption: String, callback: Callable) -> Button:
 	_content.add_child(button)
 	return button
 
+## One policy for every email investigation step. New steps register their saved
+## evidence field here so ordering, appearance and input locking stay together.
+const MAIL_TASKS: Dictionary = {
+	"sort": {"field":"sorted", "pending":"TO SORT", "done":"SORTED"},
+	"highlight": {"field":"flags", "pending":"FIND THE CLUE", "done":"CLUE COLLECTED"},
+	"notes": {"field":"domains", "pending":"CHECK SENDER", "done":"SENDER NOTE SAVED"},
+	"capture": {"field":"captures", "pending":"CAPTURE EVIDENCE", "done":"EVIDENCE CAPTURED"},
+}
+
+func _completed_mail_ids() -> Array:
+	return state.get(str(MAIL_TASKS.get(mode, {}).get("field", "read")), [])
+
+func _mail_task_done(id: String) -> bool:
+	return MAIL_TASKS.has(mode) and id in _completed_mail_ids()
+
 func _build_inbox() -> void:
 	var ids: Array = Chapter.suspicious_ids() if mode in ["highlight", "notes", "capture"] else []
-	for entry: Dictionary in Chapter.MESSAGES:
+	# Reading during the story and completing an investigation task are distinct.
+	var read_ids: Array = _completed_mail_ids()
+	for entry: Dictionary in AppViews.ordered_mail(Chapter.MESSAGES, read_ids):
 		var id: String = str(entry["id"])
 		if not ids.is_empty() and not ids.has(id):
 			continue
-		var field: String = {"read":"read", "sort":"sorted", "highlight":"flags", "notes":"domains", "capture":"captures"}.get(mode, "read")
-		var done: bool = (state.get(field, []) as Array).has(id)
-		var caption: String = ("✓ " if done else "") + str(entry["sender"]) + "\n" + str(entry["subject"])
-		var card: Button = _action(caption, _select.bind(id))
+		var done: bool = read_ids.has(id)
+		var arrival_index: int = Chapter.MESSAGES.find(entry)
+		# Keep the original message number when read entries move below unread mail.
+		var row_entry: Dictionary = entry.duplicate()
+		if mode == "sort":
+			row_entry.sender = ("SORTED · SUSPICIOUS" if bool(entry.suspicious) else "SORTED · LEGIT") if done else "TO SORT · " + str(entry.sender)
+		elif MAIL_TASKS.has(mode):
+			row_entry.sender = str(MAIL_TASKS[mode].done) if done else str(MAIL_TASKS[mode].pending) + " · " + str(entry.sender)
+		var card: Button = AppViews.mail_row(_content, row_entry, done, _select.bind(id), arrival_index + 1)
 		card.name = "Message_" + id
-		# Reuse the opening's warm, raised notification surface and pixel font.
-		card.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		card.accessibility_name = caption
-		for style: String in ["normal","hover","pressed"]:
-			card.add_theme_stylebox_override(style, _raised_style(Color("fff3db") if style == "normal" else Color("f0e5d6"),Color("85c5d5"),6))
+		card.set_meta("arrival_index", arrival_index)
 		_mail_cards.append(card)
-		card.visible = not _mail_arrivals or _mail_elapsed >= _mail_cards.size() * MAIL_ARRIVAL_INTERVAL
+		card.visible = not _mail_arrivals or _mail_elapsed >= (arrival_index + 1) * MAIL_ARRIVAL_INTERVAL
 	if phase_ready():
 		_action("CONTINUE →", _finish_phase)
 
 func _select(id: String) -> void:
 	if _locked or _taking or not _reply_stage.is_empty() or Chapter.message(id).is_empty():
 		return
+	if _mail_task_done(id): return
+	_notifications.dismiss()
 	selected = id
 	_render()
 
@@ -360,8 +383,9 @@ func _build_message() -> void:
 		if not _reply_stage.is_empty():
 			_build_reply(entry)
 			return
-		if bool(entry.suspicious): _reply_action()
-		else: _action("MARK READ", acknowledge)
+		if not state.get("read", []).has(selected):
+			if bool(entry.suspicious): _reply_action()
+			_action("FINISHED READING", acknowledge)
 		_action("INBOX", _inbox)
 		return
 	var header: PanelContainer = UI.panel(_content, Color("e9efed"))
@@ -409,9 +433,7 @@ func _build_message() -> void:
 	var body: VBoxContainer = UI.column(body_panel, 14)
 	if mode == "highlight":
 		body.add_child(UI.label("Select the passage that makes this request suspicious.", 24, INK))
-		body.add_child(UI.button(str(entry["body"]), mark_flag.bind("body")))
-	else:
-		body.add_child(UI.label(str(entry["body"]), 24, INK))
+	body.add_child(UI.label(str(entry["body"]), 24, INK))
 	if entry.has("phrase"):
 		if mode == "highlight":
 			var passage: RichTextLabel = RichTextLabel.new()
@@ -479,6 +501,9 @@ func _remember_note() -> void:
 func acknowledge() -> void:
 	if _locked or mode != "read" or selected.is_empty() or not _reply_stage.is_empty():
 		return
+	if state.get("read", []).has(selected):
+		_inbox()
+		return
 	var entry: Dictionary = Chapter.message(selected)
 	if bool(entry["suspicious"]) and Chapter.ID == Survey.ID:
 		_reply_stage = "typing"
@@ -532,6 +557,7 @@ func _tick_reply(delta: float) -> void:
 func _complete_read() -> void:
 	var entry: Dictionary = Chapter.message(selected)
 	_add("read", selected)
+	mail_finished.emit(selected)
 	thought_requested.emit(Survey.REPLIED if bool(entry["suspicious"]) else Survey.EXPECTED)
 	_inbox()
 
@@ -568,7 +594,8 @@ func mark_flag(candidate: String = "request") -> void:
 		return
 	_add("flags", selected)
 	thought_requested.emit(str(Chapter.message(selected)["thought"]))
-	_render()
+	AudioManager.play_sfx("ui_confirm")
+	_inbox()
 
 func _notes_home() -> void:
 	if _locked:
@@ -713,7 +740,7 @@ func _add(field: String, id: String) -> void:
 func phase_ready() -> bool:
 	if not _reply_stage.is_empty(): return false
 	if mode == "chat": return _chat_stage == "done"
-	var field: String = {"read":"read", "sort":"sorted", "highlight":"flags", "notes":"domains", "capture":"captures"}.get(mode, "")
+	var field: String = "read" if mode == "read" else str(MAIL_TASKS.get(mode, {}).get("field", ""))
 	return not field.is_empty() and (state.get(field, []) as Array).size() == (6 if mode in ["read", "sort"] else 3)
 
 func _finish_phase() -> void:
@@ -749,6 +776,8 @@ func _refresh() -> void:
 	if is_instance_valid(_chat_send): _chat_send.disabled = _locked or _chat_stage != "send"
 	for node: Node in _content.find_children("*", "Button", true, false):
 		(node as Button).disabled = _locked or _taking
+		if node.has_meta("message_id") and _mail_task_done(str(node.get_meta("message_id"))):
+			(node as Button).disabled = true
 	if is_instance_valid(_paste_button): _paste_button.disabled = _locked or _clipboard.is_empty()
 	if is_instance_valid(_copy_button): _copy_button.disabled = _locked or not _sender.has_selection()
 	if is_instance_valid(_camera):
@@ -798,11 +827,17 @@ func _metrics() -> void:
 		_chat_send.add_theme_font_size_override("font_size", maxi(22, ceili(18 / physical)))
 	for card: Button in _mail_cards:
 		if is_instance_valid(card):
-			card.custom_minimum_size.y = 72 / physical
-			card.add_theme_font_size_override("font_size",maxi(22,ceili(18 / physical)))
+			(card as AppViews.AppRow).refresh.call_deferred()
 	for node: Node in _content.find_children("*", "Button", true, false):
 		if node.has_meta("reply_icon"):
 			(node as Button).custom_minimum_size = Vector2.ONE * 52 / physical
+	for node: Node in _content.find_children("*", "Button", true, false):
+		if node is AppViews.AppRow: node.refresh.call_deferred()
+
+func _notification_opened(data: Dictionary) -> void:
+	super._notification_opened(data)
+	if mode == "read" and _app == "mail" and not Chapter.message(str(data.get("id", ""))).is_empty():
+		_select(str(data.id))
 
 func set_locked(value: bool) -> void:
 	super.set_locked(value)

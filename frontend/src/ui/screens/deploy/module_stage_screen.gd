@@ -485,7 +485,7 @@ func _build_chapters() -> void:
 		var trailing: VBoxContainer = UI.column(content, ceili(5 / physical))
 		trailing.mouse_filter = MOUSE_FILTER_IGNORE
 		trailing.size_flags_vertical = SIZE_SHRINK_CENTER
-		if id == "mod_01_ch_01":
+		if id in PlayerManager.StoryRewards.IDS:
 			var earned: Array[String] = PlayerManager.story_stars(id)
 			var definition: GDScript = PlayerManager.story_definition(id)
 			var stars: HBoxContainer = HBoxContainer.new()

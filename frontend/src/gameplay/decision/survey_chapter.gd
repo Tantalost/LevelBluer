@@ -1,4 +1,5 @@
 extends RefCounted
+const Rewards: GDScript = preload("res://src/gameplay/decision/story_rewards.gd")
 ## Authored Chapter 1 content and validation. No scene, account or network access.
 const ID: String = "mod_01_ch_01"
 const NUMBER: int = 1
@@ -172,6 +173,30 @@ static func earned_stars(state: Dictionary) -> Array[String]:
 		if id not in state.get("star_blocked", []): result.append(id)
 	return result
 const Perks: GDScript = preload("res://src/gameplay/decision/story_perks.gd")
+const ReportRules: GDScript = preload("res://src/gameplay/decision/investigation_report_rules.gd")
+
+static func report_definition(state: Dictionary) -> Dictionary:
+	var items: Dictionary = {}
+	var sections: Array[Dictionary] = []
+	var titles: Array[String] = ["Unclear payment offer", "Pressure against verification", "Unnecessary personal details"]
+	var explanations: Array[String] = ["The payment amount and client are unclear. A free mailbox alone does not prove fraud.", "The deadline and instruction not to ask the school discourage independent verification.", "A full birth date and home address are requested without a justified purpose. A typo alone does not prove fraud."]
+	for index: int in suspicious_ids().size():
+		var id: String = suspicious_ids()[index]
+		var source: Dictionary = message(id)
+		var slots: Array[Dictionary] = []
+		for type: String in ["capture", "sender", "excerpt"]:
+			var key: String = id + "_" + type
+			var prerequisite: String = {"capture":"captures", "sender":"domains", "excerpt":"flags"}[type]
+			var text: String = str(source.phrase)
+			if type == "sender": text = str(source.address) + "\nDomain: " + str(source.address).get_slice("@", 1)
+			if type == "capture": text = str(source.address) + "\n" + str(source.subject) + "\n\n" + str(source.body) + "\n" + str(source.phrase)
+			items[key] = {"title":str(source.subject), "source":str(source.sender), "type":type, "text":text, "available":id in state.get(prerequisite, []), "capture_id":id if type == "capture" else ""}
+			slots.append({"id":key, "label":{"capture":"Message capture", "sender":"Sender note", "excerpt":"Warning-sign excerpt"}[type], "answer":key})
+		sections.append({"title":titles[index], "explanation":explanations[index], "slots":slots})
+	for id: String in ["club", "library", "receipt"]:
+		var source: Dictionary = message(id)
+		items[id + "_context"] = {"title":str(source.subject), "source":str(source.sender), "type":"excerpt", "text":str(source.body), "available":id in state.get("read", [])}
+	return {"id":"survey_report_v1", "title":"The Survey / Investigation Report", "items":items, "sections":sections}
 const MESSAGES: Array[Dictionary] = [
 	{"id":"club", "sender":"Jobert", "address":"jobert@club.school.example", "subject":"Tomorrow's club meeting", "body":"Meeting at 3 PM in our usual clubroom. The same details are on the club noticeboard. Bring your project notes.", "suspicious":false},
 	{"id":"survey", "sender":"Survey Rewards Team", "address":"survey.rewards@gmail.com", "subject":"Your first survey job", "body":"Thanks for joining!", "suspicious":true, "flag":"pay", "phrase":"Earn big rewards. We will tell you the payment amount after you finish.", "voice":"v1794044482/M01_CH01_22A_John.mp3", "thought":"They want my time, but won't tell me what the job pays. Who is actually hiring me?"},
@@ -181,11 +206,11 @@ const MESSAGES: Array[Dictionary] = [
 	{"id":"profile", "sender":"Survey Profile Desk", "address":"survey.profile@gmail.com", "subject":"Complete your reward profile", "body":"Welcome to the rewards list.", "suspicious":true, "flag":"spelling", "phrase":"To recieve your reward, send your full birth date and home address in your reply.", "voice":"v1794044478/M01_CH01_22C_John.mp3", "thought":"'Recieve' could just be bad grammar. But my birth date AND my home address? They haven't even explained why they need them."}
 ]
 const STORY: Array[Dictionary] = [
-	{"mood":"calm", "thought":true, "who":"John", "face":2, "voice":"v1794044509/M01_CH01_02_John.mp3", "bg":"school_gate_morning", "approach_art":"chapter1_john_rushing", "approach_sfx":"res://assets/audio/sfx/john_running_pavement.wav", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
+	{"mood":"momentum", "thought":true, "who":"John", "face":2, "voice":"v1794044509/M01_CH01_02_John.mp3", "bg":"school_gate_morning", "approach_art":"chapter1_john_rushing", "approach_sfx":"res://assets/audio/sfx/john_running_pavement.wav", "caption":"Five days before everything went wrong.", "line":"And here I was, late again. Come on, John. Just get through the gate before the bell."},
 	{"who":"Eric", "face":1, "voice":"v1794044508/M01_CH01_03_Eric.mp3", "bg":"hallway_day", "line":"John! You look like you ran the whole way. No coffee today?"},
 	{"who":"John", "face":2, "voice":"v1794044507/M01_CH01_04_John.mp3", "bg":"hallway_day", "line":"No coffee. No spare money either. Please tell me the meeting hasn't started."},
-	{"who":"Eric", "face":1, "voice":"v1794044505/M01_CH01_05_Eric.mp3", "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
-	{"thought":true, "who":"John", "face":0, "voice":"v1794044504/M01_CH01_06_John.mp3", "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
+	{"mood":"calm", "who":"Eric", "face":1, "voice":"v1794044505/M01_CH01_05_Eric.mp3", "bg":"clubroom", "line":"Relax, you're fine. Come on. I'll save you a seat."},
+	{"mood":"mystery", "thought":true, "who":"John", "face":0, "voice":"v1794044504/M01_CH01_06_John.mp3", "bg":"clubroom", "chat":true, "line":"Eric and Jobert have stepped outside. Maybe someone in the club knows a side gig. Can't hurt to ask, right?"},
 	{"mood":"mystery", "who":"Eric", "face":1, "voice":"v1794044502/M01_CH01_11_Eric.mp3", "bg":"clubroom", "line":"We're back. That survey gig I mentioned? Easy work. I know the client personally."},
 	{"who":"John", "face":4, "voice":"v1794044500/M01_CH01_12_John.mp3", "bg":"clubroom", "line":"Really? What's their name?"},
 	{"who":"Eric", "face":2, "voice":"v1794044499/M01_CH01_13_Eric.mp3", "bg":"clubroom", "line":"Uh… I'll send you the contact. They handle everything by email."},
@@ -203,7 +228,7 @@ const CHAT_MESSAGES: Array[Dictionary] = [
 ]
 
 static func fresh() -> Dictionary:
-	return {"version":1, "beat":0, "phase":"day", "read":[], "sorted":[], "flags":[], "domains":[], "captures":[], "mistakes":0, "hint_used":false, "sealed":false, "completed":false, "next_chapter_unlocked":false, "reward":0, "star_tracking":true, "star_blocked":[], "star_bonus_awarded":0}
+	return {"performance_version":1,"hotspot_order":[],"version":1, "beat":0, "phase":"day", "read":[], "sorted":[], "flags":[], "domains":[], "captures":[], "mistakes":0, "hint_used":false, "sealed":false, "completed":false, "next_chapter_unlocked":false, "reward":0, "star_tracking":true, "star_blocked":[], "star_bonus_awarded":0}
 
 static func suspicious_ids() -> Array[String]:
 	return ["survey", "urgent", "profile"]
@@ -244,6 +269,7 @@ static func clean(raw: Dictionary) -> Dictionary:
 		if (value is int or value is float) and is_finite(float(value)):
 			state[field] = clampi(int(value), 0, STORY.size() - 1 if field == "beat" else 9999)
 	state["hint_used"] = raw.get("hint_used", false) == true
+	state["report"] = ReportRules.clean(report_definition(state), raw.get("report", {}) if raw.get("report") is Dictionary else {})
 	state["perk_run"] = Perks.clean_run(raw.get("perk_run", {}))
 	if state.perk_run.get("chapter", ID) != ID: state.perk_run = {}
 	var phase: String = str(raw.get("phase", "day"))
@@ -269,6 +295,9 @@ static func clean(raw: Dictionary) -> Dictionary:
 		state["reward"] = BASE_REWARD if state.star_tracking else BASE_REWARD + (CLEAN_BONUS if Perks.status(state["perk_run"], state["hint_used"]) != "assisted" and int(state["mistakes"]) == 0 else 0)
 	elif state["phase"] == "done":
 		state["phase"] = "seal"
+	Rewards.track(state, raw, ID)
+	if state.completed and state.performance_version == 1:
+		state.reward = Rewards.base(ID, state)
 	return state
 
 static func domain_matches(answer: String, id: String) -> bool:
@@ -286,6 +315,7 @@ static func merge_attempt(cloud: Dictionary, local: Dictionary) -> Dictionary:
 	if first_id.is_empty() or first_id != second_id:
 		return second if float(second.perk_run.get("started_at", 0)) > float(first.perk_run.get("started_at", 0)) else first
 	var result: Dictionary = second.duplicate(true)
+	result.report = ReportRules.merge(report_definition(second), first.report, second.report)
 	for field: String in ["read", "sorted", "flags", "domains", "captures", "star_blocked"]:
 		for value: Variant in first[field]:
 			if value not in result[field]: result[field].append(value)

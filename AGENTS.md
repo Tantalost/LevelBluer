@@ -68,6 +68,8 @@ Before writing a large block of code or creating a complex new system (like the 
 
 ## UI Design System
 
+For email investigations, reuse the shared phone and its `MAIL_TASKS` completion policy in `frontend/src/gameplay/decision/survey_phone.gd`. Each activity must use its own saved evidence field (sorting, clues, sender notes, captures). Completed emails move below unfinished ones, retain their original number, show a clear completion label, and remain disabled through pause/resume and save restoration. A later activity may reopen the same email when its own task is unfinished. Ordinary story reading remains revisitable. Register future email activities in this shared policy instead of adding separate per-screen completion fixes.
+
 For simulated computers in lessons and PvP, reuse `frontend/src/ui/components/terminal_workspace.gd`. Register the activity's apps and connect their actions to its controller. Activities with a custom layout can reuse the monitor drawing, scanlines and terminal styles. Keep evidence rules, grading and match state in the activity controller.
 
 | Role | Color Name | Hex Code |

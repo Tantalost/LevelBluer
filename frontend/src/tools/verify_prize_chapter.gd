@@ -59,6 +59,9 @@ func _run() -> void:
 	root.size = Vector2i(1480,720)
 	var player: Node = root.get_node("PlayerManager")
 	var original: Dictionary = player.get_save_data()
+	player.story_performance = {}
+	player.story_paid = {}
+	player.story_reward_claims = {}
 	root.get_node("AuthService")._signed_in = false
 	player.reset_to_defaults()
 	player.lesson_progress = {"mod_01":3}
@@ -258,11 +261,12 @@ func _run() -> void:
 	check(screen.state.claimed and screen.state.mistakes == 1, "Scripted claim preserves evidence and is not a player mistake")
 	for step: int in 50:
 		if not screen.state.completed: screen._advance()
+	check(player.story_stars(Case.ID).is_empty(), "Each intentionally failed chapter objective stays blocked")
 	check(screen.state.completed and player.credits == credits + 100, "Clear awards base reward with recorded investigation mistake")
 	var clean_clear: Dictionary = screen.state.duplicate(true)
 	clean_clear.mistakes = 0
 	clean_clear.wrong_pairs = []
-	check(Case.clean(clean_clear).reward == 125, "Clean unassisted clear retains the bonus")
+	check(Case.clean(clean_clear).reward == 100, "Completion amount is separate from stars")
 	clean_clear.hint_used = true
 	check(Case.clean(clean_clear).reward == 100, "Assisted clear keeps base reward without clean-work bonus")
 	screen._save()

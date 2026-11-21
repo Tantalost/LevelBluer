@@ -8,7 +8,7 @@ var _comparison_field: String = "domain"
 var _lead_in: String = ""
 var _lead_elapsed: float = 0.0
 var _contact_button: Button
-var _notification_card: PanelContainer
+var _selected_contact: String = ""
 
 func _process(delta: float) -> void:
 	super._process(delta)
@@ -21,19 +21,13 @@ func _tick_chat(delta: float) -> void:
 func _tick_lead_in(delta: float) -> void:
 	if _locked or not is_visible_in_tree() or _app != "mail" or _lead_in.is_empty(): return
 	_lead_elapsed += delta
-	if _lead_in == "notification" and is_instance_valid(_notification_card):
-		_notification_card.modulate.a = 1.0 if _reduced_motion() else minf(1.0, _lead_elapsed / 0.3)
-	elif _lead_in == "contacts" and is_instance_valid(_contact_button):
-		var scroll: ScrollContainer = _content.get_parent() as ScrollContainer
-		var target: float = _contact_button.position.y - 60.0
-		var fraction: float = 1.0 if _reduced_motion() else smoothstep(0.0, 1.0, clampf((_lead_elapsed - 0.5) / 1.2, 0.0, 1.0))
-		scroll.scroll_vertical = int(maxf(0.0, target) * fraction)
-	elif _lead_in == "contact_tap" and _lead_elapsed >= 0.35:
+	if _lead_in == "contact_tap" and _lead_elapsed >= 0.35:
 		_lead_in = ""
 		_begin_chat_turn()
 
 func _open_notification() -> void:
 	if _locked or _lead_in != "notification": return
+	_notifications.dismiss()
 	_lead_in = ""
 	AudioManager.play_sfx("ui_click")
 	_render()
@@ -46,6 +40,24 @@ func _select_jobert() -> void:
 	_contact_button.add_theme_stylebox_override("normal", UI.box(Color("8FF0E6"), Color("4FE0D4"), 12))
 	AudioManager.play_sfx("ui_click")
 	_refresh()
+
+func _open_contact(id: String) -> void:
+	if _locked or _lead_in != "contacts": return
+	_selected_contact = id
+	contact_selected.emit(id)
+	_render()
+
+func _contact_list() -> void:
+	if _locked: return
+	_selected_contact = ""
+	_render()
+
+func _notification_opened(data: Dictionary) -> void:
+	if _lead_in == "notification":
+		notification_opened.emit(data)
+		_open_notification()
+	else:
+		super._notification_opened(data)
 
 func _build_chat() -> void:
 	super._build_chat()
@@ -61,12 +73,13 @@ func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
 	_picked_header = ""
 	_lead_elapsed = 0.0
 	_contact_button = null
-	_notification_card = null
+	_selected_contact = ""
 	var beat: Dictionary = Chapter.STORY[int(snapshot.beat)]
 	_lead_in = "notification" if next_mode == "read" and beat.get("notification", false) and not snapshot.read.has("fake") else ""
 	if next_mode == "chat" and beat.get("chat_id", "") == "private": _lead_in = "contacts"
 	super.configure_chapter(next_mode, snapshot)
-	if _lead_in == "notification": AudioManager.play_sfx("ui_notification")
+	if _lead_in == "notification":
+		notify_phone({"id":"advisor_arrival", "app":"Mail", "sender":"Sir Rham — Club Advisor", "preview":"You have an email", "sticky":true})
 
 class HeaderChip extends Button:
 	var field: String = ""
@@ -101,30 +114,34 @@ func _render() -> void:
 	_report_input = null
 	_letter_feedback = null
 	if _lead_in == "notification":
-		_notification_card = UI.panel(_content, Color("e9efed"))
-		var column: VBoxContainer = UI.column(_notification_card, 18)
-		_ink("✉  MAIL · JUST NOW", column)
-		_ink("You have an email", column)
-		_ink("Sir Rham — Club Advisor", column)
+		_ink("New mail")
+		_ink("Tap the notification to open your message.")
 		var open: Button = _action("TAP TO OPEN EMAIL", _open_notification)
 		open.name = "OpenNotification"
-		open.reparent(column)
-		_notification_card.modulate.a = 1.0 if _reduced_motion() else 0.0
 	elif _lead_in in ["contacts", "contact_tap"]:
-		_ink("CONTACTS")
-		_ink("Find Jobert and tap to message him.")
-		for person: String in ["Dan", "Eric", "Jobert", "Sir Rham"]:
-			if person == "Jobert":
-				_contact_button = _action("J  /  JOBERT\nTap to message", _select_jobert)
-				_contact_button.name = "ContactJobert"
-				_contact_button.custom_minimum_size.y = 110
+		_contact_button = null
+		for person: Dictionary in Chapter.CONTACTS:
+			if not _selected_contact.is_empty():
+				if str(person.id) != _selected_contact: continue
+				AppViews.contact_details(_content, person)
+				if person.get("action", "") == "message":
+					_contact_button = _action("MESSAGE JOBERT", _select_jobert)
+					_contact_button.name = "MessageContact"
+				else: _ink("No conversation needed right now.")
+				_action("BACK TO CONTACTS", _contact_list)
 			else:
-				var row: PanelContainer = UI.panel(_content, Color("e9efed"))
-				row.custom_minimum_size.y = 110
-				_ink(person.left(1) + "  /  " + person, row)
-		var space: Control = Control.new()
-		space.custom_minimum_size.y = 180
-		_content.add_child(space)
+				var display: Dictionary = person.duplicate(true)
+				var texture: Texture2D = AssetManager.get_texture(str(person.portrait))
+				if texture != null:
+					var face: AtlasTexture = AtlasTexture.new()
+					face.atlas = texture
+					face.region = Rect2(0, 0, texture.get_width() / 3.0, texture.get_height() / 2.0)
+					face.filter_clip = true
+					display.portrait = face
+				else: display.erase("portrait")
+				var row: Button = AppViews.contact_row(_content, display, _open_contact.bind(str(person.id)))
+				row.name = "Contact" + str(person.title).replace(" ", "")
+				if person.id == "jobert": _contact_button = row
 	else:
 		match mode:
 			"read": _story_mail()
@@ -423,6 +440,7 @@ func _match_header(label: String, target: String) -> void:
 	_render()
 
 func _miss(text: String) -> void:
+	Chapter.Rewards.block(state, Chapter.ID, mode)
 	state.mistakes = int(state.mistakes) + 1
 	evidence_changed.emit(state.duplicate(true))
 	thought_requested.emit(text)

@@ -58,6 +58,9 @@ func _run() -> void:
 	root.size = Vector2i(1480,720)
 	var player: Node = root.get_node("PlayerManager")
 	var original: Dictionary = player.get_save_data()
+	player.story_performance = {}
+	player.story_paid = {}
+	player.story_reward_claims = {}
 	root.get_node("AuthService")._signed_in = false
 	player.reset_to_defaults()
 	player.lesson_progress = {"mod_01":2}
@@ -229,9 +232,9 @@ func _run() -> void:
 	check(screen.state.phase == "closing", "Closing chat Continue reaches the final caption")
 	for step: int in 50:
 		if not screen.state.completed: screen._advance()
-	check(screen.state.completed and player.credits == credits + 125, "Unassisted clear grants reward once")
+	check(screen.state.completed and player.credits == credits + 150, "Unassisted clear grants reward once")
 	screen._save()
-	check(player.credits == credits + 125, "Repeated save does not duplicate reward")
+	check(player.credits == credits + 150, "Repeated save does not duplicate reward")
 	check(not player.story_unlocked("mod_01_ch_04"), "The Prize stays locked until Lesson 4 is cleared")
 	player.lesson_progress = {"mod_01":4}
 	check(player.story_unlocked("mod_01_ch_04"), "The Payout unlocks The Prize")

@@ -322,7 +322,8 @@ func _sync_to_cloud() -> void:
 
 	_sync_in_flight = true
 	_sync_generation = PlayerManager.pretest_sync_generation()
-	_sync_callback = _on_sync_completed.bind(AuthService.participant_code())
+	var uploaded_other: int = int(data.get("credits", 0)) - PlayerManager.StoryRewards.total(data.get("story_paid", {}))
+	_sync_callback = _on_sync_completed.bind(AuthService.participant_code(), uploaded_other)
 	_http_request.request_completed.connect(_sync_callback, CONNECT_ONE_SHOT)
 	var error: Error = _http_request.request(url, headers, HTTPClient.METHOD_POST, json_string)
 	if error != OK:
@@ -339,6 +340,7 @@ func _on_sync_completed(
 	_headers: PackedStringArray,
 	body: PackedByteArray,
 	request_owner: String,
+	uploaded_other: Variant = null,
 ) -> void:
 	if not AuthService.is_signed_in() or request_owner != AuthService.participant_code():
 		return
@@ -351,6 +353,8 @@ func _on_sync_completed(
 		_retry_left = RETRY_SEC
 	elif ok:
 		var response: Variant = JSON.parse_string(body.get_string_from_utf8())
+		if response is Dictionary and response.get("story_paid") is Dictionary:
+			PlayerManager.accept_story_receipt(response.story_paid, uploaded_other)
 		if accepted_generation and response is Dictionary and response.get("acknowledged_events", []) is Array:
 			PlayerManager.acknowledge_learning_events(response.get("acknowledged_events", []))
 		save_game(false)
@@ -365,6 +369,9 @@ func _on_sync_completed(
 		_retry_left = RETRY_SEC
 	else:
 		push_warning("[SaveService] Cloud sync failed. Code: " + str(response_code))
+		if response_code == 409:
+			PlayerManager.note_cloud_fetch_failed()
+			_begin_cloud_fetch.call_deferred()
 		StudentDatabase.mark_needs_sync(AuthService.participant_code())
 		_retry_left = RETRY_SEC
 	cloud_sync_completed.emit(ok)

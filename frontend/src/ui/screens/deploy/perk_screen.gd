@@ -104,7 +104,7 @@ func _refresh() -> void:
 	UI.clear(_network)
 	UI.clear(_slots)
 	_slots.show()
-	if _deploy and _chapter_id == "mod_01_ch_01":
+	if _deploy and _chapter_id in PlayerManager.StoryRewards.IDS:
 		_build_star_objectives(frozen, physical)
 		return
 	for id: String in Perks.IDS:
@@ -167,7 +167,8 @@ func _build_star_objectives(frozen: bool, physical: float) -> void:
 	artwork.custom_minimum_size.y = 90 / physical
 	artwork.mouse_filter = MOUSE_FILTER_IGNORE
 	preview.add_child(artwork)
-	AssetManager.bind_texture(artwork, "story_bg_john_desk_night")
+	var covers: Array[String] = ["story_bg_john_desk_night", "story_chapter2_cover", "story_chapter3_cover", "story_chapter4_cover", "opening_collector_meeting_v2"]
+	AssetManager.bind_texture(artwork, covers[int(chapter.NUMBER) - 1])
 	preview.add_child(UI.label(str(chapter.TITLE).to_upper(), ceili(22 * unit), UI.TEXT))
 	var stars: HBoxContainer = HBoxContainer.new()
 	stars.add_theme_constant_override("separation", ceili(8 / physical))
@@ -198,7 +199,7 @@ func _build_star_objectives(frozen: bool, physical: float) -> void:
 		var goal: String = str(chapter.STAR_GOALS[id])
 		body.add_child(UI.label(goal.get_slice(" / ",0).to_upper(), ceili(24 * unit), UI.TEXT))
 		body.add_child(UI.label(goal.get_slice(" / ",1), font, UI.MUTED))
-		body.add_child(UI.label("STAR EARNED" if won else "+%d CREDITS · FIRST EARN" % int(chapter.STAR_CREDITS), ceili(16 * unit), UI.GOLD if won else UI.TEAL))
+		body.add_child(UI.label("STAR EARNED" if won else "UP TO %d CR · CHAPTER BONUS CAP 75" % int(chapter.STAR_CREDITS), ceili(16 * unit), UI.GOLD if won else UI.TEAL))
 	column.add_child(UI.label("Finish the chapter to progress. Replay for missing stars.", font, UI.TEAL))
 	column.add_child(UI.label("A mistake or solution hint affects only its objective this run. Earned stars stay yours.", ceili(16 * unit), UI.MUTED))
 	_launch.show()

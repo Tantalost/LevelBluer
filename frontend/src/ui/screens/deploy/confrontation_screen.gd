@@ -84,6 +84,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_queue_build)
 	AssetManager.sync_finished.connect(_art_ready)
 	AuthService.session_changed.connect(_session_changed)
+	PlayerManager.progress_changed.connect(_refresh_reward_receipt)
 	_result_audio = AudioStreamPlayer.new()
 	_result_audio.bus = &"Master"
 	_result_audio.stream = preload("res://assets/audio/bgm/chapter_complete.wav")
@@ -535,6 +536,7 @@ func _resolve_fire(evidence: String, weak_point: String) -> void:
 		state.credibility = maxi(0,int(state.credibility)-10)
 		state.mistakes += 1
 		state.round_errors[index] += 1
+		if Case.ID == "mod_01_ch_05": PlayerManager.StoryRewards.block(state, Case.ID, "evidence")
 		if state.round_errors[index] >= 2 and not state.auto_hints.has(index):
 			state.auto_hints.append(index)
 			_mark_hint()
@@ -988,6 +990,14 @@ func _update_cutaway(delta: float) -> void:
 		var finish: Button = find_child("FinishHearing",true,false) as Button
 		if finish != null: finish.disabled = _elapsed < float(Case.PRESENTATION.get("ending_seal_seconds",3.0))
 
+func _refresh_reward_receipt() -> void:
+	if not _valid() or state.get("phase", "") != "done": return
+	var label: Label = find_child("StoryRewardSummary", true, false) as Label
+	if is_instance_valid(label): label.text = PlayerManager.story_reward_summary(Case.ID)
+	if _stage is W.RewardDisplay:
+		_stage.balance = PlayerManager.credits
+		_stage.queue_redraw()
+
 func _results() -> void:
 	_title.text = _text("result_title","CASE CLOSED")
 	var column: VBoxContainer = _column()
@@ -1008,7 +1018,21 @@ func _results() -> void:
 	reward.custom_minimum_size.y = 100*_u
 	scroll.add_child(reward)
 	_stage = reward
-	scroll.add_child(W.copy("Replay / original rewards retained" if _replay else "100 completion + %d clean-work bonus" % maxi(0,int(state.reward)-100),_u))
+	if Case.ID == "mod_01_ch_05":
+		reward.award = 0
+		var summary: Label = W.copy(PlayerManager.story_reward_summary(Case.ID), _u, W.CYAN)
+		summary.name = "StoryRewardSummary"
+		scroll.add_child(summary)
+		for objective: String in Case.STAR_IDS:
+			var row: HBoxContainer = HBoxContainer.new()
+			scroll.add_child(row)
+			var star: UI.ObjectiveStar = UI.ObjectiveStar.new()
+			star.earned = objective in PlayerManager.story_stars(Case.ID)
+			star.custom_minimum_size = Vector2(32, 32) * _u
+			row.add_child(star)
+			row.add_child(W.copy(str(Case.STAR_GOALS[objective]).get_slice(" / ", 0), _u))
+	else:
+		scroll.add_child(W.copy("Replay / original rewards retained" if _replay else "100 completion + %d clean-work bonus" % maxi(0,int(state.reward)-100),_u))
 	scroll.add_child(W.copy("%s clear / Final exhibit saved" % Perks.status(state.perk_run,state.hint_used).capitalize(),_u,W.CYAN))
 	var actions: HBoxContainer = HBoxContainer.new()
 	actions.add_theme_constant_override("separation",ceili(10*_u))
@@ -1044,6 +1068,7 @@ func _choose_perk(id: String) -> void:
 
 func _use_perk(id: String) -> void:
 	if not _interactive() or not Perks.activate(state.perk_run,id,"story_chapter",state.phase,int(state.round),state.captures): return
+	if id == "perspective" and Case.ID == "mod_01_ch_05": PlayerManager.StoryRewards.block(state, Case.ID, PlayerManager.StoryRewards.hint_objective(Case.ID, state.phase))
 	_save()
 	_build()
 	if id == "reference": _evidence(true,true)
@@ -1051,6 +1076,7 @@ func _use_perk(id: String) -> void:
 	else: _message("CASE RECAP",_text("recap","A survey offered money. A copied advisor asked for details. A wallet link hid its destination. A prize reused John's coffee comment. Group access, presence status and repeated spelling do not identify an author by themselves."))
 
 func _mark_hint() -> void:
+	if Case.ID == "mod_01_ch_05": PlayerManager.StoryRewards.block(state, Case.ID, PlayerManager.StoryRewards.hint_objective(Case.ID, state.phase))
 	state.hint_used = true
 	if not state.perk_run.is_empty():
 		state.perk_run.builtin_hints += 1

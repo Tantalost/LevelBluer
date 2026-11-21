@@ -5,8 +5,12 @@ signal message_read
 signal detail_inspected(id: String)
 signal investigation_confirmed
 signal claim_pressed
+signal contact_selected(id: String)
+signal notification_opened(data: Dictionary)
 
 const UI = preload("res://src/ui/screens/intel/study_ui.gd")
+const AppViews: GDScript = preload("res://src/gameplay/decision/phone_app_views.gd")
+var _notifications: AppViews.Notifications
 var guide_text_pixels: float = 16.0
 var _shell: PanelContainer
 var _content: VBoxContainer
@@ -103,7 +107,18 @@ func _ready() -> void:
 		_nav.add_child(button)
 	resized.connect(_queue_metrics)
 	get_viewport().size_changed.connect(_queue_metrics)
+	_notifications = AppViews.Notifications.new()
+	_notifications.phone = self
+	_notifications.shell = _shell
+	add_child(_notifications)
+	_notifications.activated.connect(_notification_opened)
 	hide()
+
+func notify_phone(data: Dictionary) -> void:
+	_notifications.enqueue(data)
+
+func _notification_opened(data: Dictionary) -> void:
+	notification_opened.emit(data)
 
 func _queue_metrics() -> void:
 	_metrics.call_deferred()
@@ -181,6 +196,7 @@ func _reduced_motion() -> bool:
 	return settings != null and bool(settings.get("reduced_motion"))
 
 func stop() -> void:
+	if is_instance_valid(_notifications): _notifications.clear()
 	_stop_pin()
 	if _transition != null and _transition.is_valid():
 		_transition.kill()
@@ -294,16 +310,19 @@ func _render() -> void:
 			elif not _reading:
 				_content.add_child(UI.label("INBOX / " + ("1 UNREAD" if not _read else "1 MESSAGE"), 22, UI.TEAL))
 				var sender: String = str(_message.get("sender", "")).get_slice("<", 0).strip_edges()
-				var message_button: Button = UI.button(sender + "\n" + str(_message.get("subject", "")), _open_message)
-				_content.add_child(message_button)
+				var message_button: Button = AppViews.mail_row(_content, {"subject":_message.get("subject", ""), "sender":sender}, _read, _open_message)
 				_guide_button(message_button, "message")
 			else:
 				_render_message()
 		"contacts", "pages":
 			_content.add_child(UI.label(str(_data.get("contacts_origin", "Saved from the school handbook")) if _app == "contacts" else "Bookmarks saved before this message", 22, UI.MUTED))
 			for card: Dictionary in _data.get(_app, []):
-				var card_button: Button = UI.button(str(card.get("title", "")), _open_card.bind(card))
-				_content.add_child(card_button)
+				var card_button: Button
+				if _app == "contacts":
+					card_button = AppViews.contact_row(_content, card, _open_card.bind(card))
+				else:
+					card_button = UI.button(str(card.get("title", "")), _open_card.bind(card))
+					_content.add_child(card_button)
 				_guide_button(card_button, str(card.get("evidence_id", "")))
 	_refresh()
 	_metrics()
@@ -546,6 +565,7 @@ func _open_card(card: Dictionary) -> void:
 	if _locked or not visible or _app not in ["contacts", "pages"] or card not in _data.get(_app, []):
 		return
 	_card_data = card.duplicate(true)
+	if _app == "contacts": contact_selected.emit(str(card.get("id", card.get("title", ""))))
 	var evidence_id: String = str(card.get("evidence_id", ""))
 	if not evidence_id.is_empty():
 		_inspect(evidence_id)
@@ -553,8 +573,11 @@ func _open_card(card: Dictionary) -> void:
 	_render()
 
 func _render_card() -> void:
-	_content.add_child(UI.label(str(_card_data.get("title", "")), 24, UI.GOLD))
-	_content.add_child(UI.label(str(_card_data.get("body", "")), 22))
+	if _app == "contacts":
+		AppViews.contact_details(_content, _card_data)
+	else:
+		_content.add_child(UI.label(str(_card_data.get("title", "")), 24, UI.GOLD))
+		_content.add_child(UI.label(str(_card_data.get("body", "")), 22))
 	for item: Dictionary in _items:
 		if str(item.get("id", "")) == str(_card_data.get("evidence_id", "")):
 			_render_evidence(item)
