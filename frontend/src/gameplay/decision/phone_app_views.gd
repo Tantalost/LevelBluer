@@ -34,12 +34,26 @@ static func contact_row(parent: Control, data: Dictionary, action: Callable) -> 
 	return row
 
 static func contact_details(parent: Control, data: Dictionary) -> void:
-	var heading: Label = UI.label(str(data.get("title", "Contact")), 28, Color("101623"))
-	parent.add_child(heading)
-	var paper: PanelContainer = UI.panel(parent, Color("fff7ed"))
-	paper.add_theme_stylebox_override("panel", UI.box(Color("fff7ed"), Color("85c5d5"), 14))
-	var body: Label = UI.label(str(data.get("body", "No additional contact information saved.")), 24, Color("101623"))
-	paper.add_child(body)
+	var physical: float = maxf(0.25, parent.get_viewport().get_final_transform().get_scale().y)
+	var identity: PanelContainer = UI.panel(parent, Color("e1eeeb"))
+	identity.add_theme_stylebox_override("panel", UI.box(Color("e1eeeb"),Color("85c5d5"),ceili(14/physical)))
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation",ceili(16/physical))
+	identity.add_child(row)
+	var portrait: Texture2D = data.get("portrait") as Texture2D
+	if portrait != null:
+		var image: TextureRect = TextureRect.new()
+		image.texture = portrait
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		image.custom_minimum_size = Vector2(64,72)/physical
+		row.add_child(image)
+	var labels: VBoxContainer = UI.column(row,ceili(6/physical))
+	labels.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	labels.add_child(UI.label(str(data.get("title", "Contact")),ceili(24/physical),Color("101623")))
+	labels.add_child(UI.label(str(data.get("subtitle", "Saved contact")),ceili(16/physical),Color("365b63")))
+	var body: Label = UI.label(str(data.get("body", "No additional contact information saved.")),ceili(18/physical),Color("101623"))
+	parent.add_child(body)
 
 class AppRow extends Button:
 	var mail_number: int = 0
@@ -77,13 +91,13 @@ class AppRow extends Button:
 	func refresh() -> void:
 		if not is_inside_tree() or is_queued_for_deletion() or not is_instance_valid(heading): return
 		physical = maxf(0.25, get_viewport().get_final_transform().get_scale().y)
-		custom_minimum_size = Vector2(0, 88 / physical)
+		custom_minimum_size = Vector2(0, (76 if contact else 88) / physical)
 		heading.add_theme_font_size_override("font_size", ceili(18 / physical))
 		detail.add_theme_font_size_override("font_size", ceili(14 / physical))
 		var left: float = 64 / physical
-		heading.position = Vector2(left, 10 / physical)
-		heading.size = Vector2(maxf(1, size.x - left - 12 / physical), 42 / physical)
-		detail.position = Vector2(left, 60 / physical)
+		heading.position = Vector2(left, (13 if contact else 10) / physical)
+		heading.size = Vector2(maxf(1, size.x - left - (32 if contact else 12) / physical), (26 if contact else 42) / physical)
+		detail.position = Vector2(left, (44 if contact else 60) / physical)
 		detail.size = Vector2(heading.size.x, 20 / physical)
 		if is_instance_valid(number_label):
 			number_label.add_theme_font_size_override("font_size", ceili(16 / physical))
@@ -101,10 +115,13 @@ class AppRow extends Button:
 		if contact:
 			if portrait != null:
 				var picture: Rect2 = Rect2(tile.position.x + 3 / physical, tile.get_center().y - 24 / physical, 44 / physical, 48 / physical)
-				draw_texture_rect(portrait, picture, false)
+				var extent: Vector2 = portrait.get_size() * minf(picture.size.x / portrait.get_width(), picture.size.y / portrait.get_height())
+				draw_texture_rect(portrait, Rect2(picture.get_center()-extent*0.5,extent), false)
 			else:
 				draw_circle(tile.get_center() + Vector2(0, -10 / physical), 9 / physical, Color("fff7ed"))
 				draw_rect(Rect2(tile.get_center() + Vector2(-15, 3) / physical, Vector2(30, 19) / physical), Color("fff7ed"))
+			var arrow: Vector2 = Vector2(size.x-17/physical,size.y*0.5)
+			draw_polyline(PackedVector2Array([arrow+Vector2(-4,-6)/physical,arrow+Vector2(2,0)/physical,arrow+Vector2(-4,6)/physical]),Color("365b63"),2/physical)
 			return
 		var center: Vector2 = tile.get_center() + Vector2(0, 12 / physical if mail_number > 0 else 0.0)
 		var ink: Color = Color("365b63")

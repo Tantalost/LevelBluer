@@ -2,10 +2,10 @@ extends RefCounted
 const Rewards: GDScript = preload("res://src/gameplay/decision/story_rewards.gd")
 ## Contact content stays outside the reusable phone view. No invented numbers.
 const CONTACTS: Array[Dictionary] = [
-	{"id":"dan", "title":"Dan", "body":"Saved contact: Dan", "portrait":"chapter1_dan"},
-	{"id":"eric", "title":"Eric", "body":"Saved contact: Eric", "portrait":"chapter1_eric"},
-	{"id":"jobert", "title":"Jobert", "body":"Saved contact: Jobert", "portrait":"chapter1_jobert", "action":"message"},
-	{"id":"sir_rham", "title":"Sir Rham", "body":"Saved contact: Sir Rham", "portrait":"story_rham_poses"}
+	{"id":"dan", "subtitle":"Club member", "title":"Dan", "body":"Saved contact: Dan", "portrait":"chapter1_dan"},
+	{"id":"eric", "subtitle":"Classmate / Club member", "title":"Eric", "body":"Saved contact: Eric", "portrait":"chapter1_eric"},
+	{"id":"jobert", "subtitle":"Classmate / Private messages", "title":"Jobert", "body":"Saved contact: Jobert", "portrait":"chapter1_jobert", "action":"message"},
+	{"id":"sir_rham", "subtitle":"School club advisor", "title":"Sir Rham", "body":"Saved contact: Sir Rham", "portrait":"story_rham_poses"}
 ]
 ## Authored case data and validation, independent of presentation and persistence.
 const ID: String = "mod_01_ch_02"
@@ -70,7 +70,7 @@ const MESSAGES: Array[Dictionary] = [
 	{"id":"fake", "sender":"Sir Rham — Club Advisor", "address":"sir.rham@schoo1.example", "reply":"club.records@member-support.example", "subject":"[CLUB UPDATE] Member Details Confirmation", "body":"Dear Club Member,\n\nWe are updating club records. Confirm your full name, section, mobile number, and home address by replying within 24 hours.\n\nMembers who do not respond may be removed from the active list.", "signature":"Regards,\nClub Administration", "phrase":"A familiar club format does not establish who sent this message.", "suspicious":true}
 ]
 const STORY: Array[Dictionary] = [
-	{"mood":"calm", "thought":true, "who":"John", "face":1, "bg":"hallway_day", "cast":["john"], "caption":"Four days before everything went wrong.", "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_01_John.mp3", "line":"Whew! Made it before the bell."},
+	{"mood":"calm", "thought":true, "who":"John", "face":1, "bg":"hallway_day", "cast":["john"], "caption":"Four days before everything went wrong.", "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_01_John.mp3", "portrait_art":"chapter2_john_exhausted", "line":"Whew! Made it before the bell."},
 	{"mood":"mystery", "thought":true, "who":"John", "face":2, "bg":"hallway_day", "cast":["john"], "caption":"This time, the message had a familiar name.", "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_02_John.mp3", "line":"I should stop celebrating so early.\nClub records?", "mail":true, "email":"fake", "notification":true},
 	{"mood":"suspense", "thought":true, "who":"John", "face":2, "bg":"hallway_day", "cast":["john"], "voice":"v1794556865/levelblue/voice/mod_01/ch_02/M01_CH02_03_John.mp3", "line":"Removed?\nI finally arrive on time, and now I might not even be a member.\nName.\nSection.\nNumber…", "mail":true, "email":"fake", "draft":true},
 	{"thought":true, "who":"John", "face":4, "bg":"hallway_day", "cast":["john"], "voice":"v1794556861/levelblue/voice/mod_01/ch_02/M01_CH02_04_John.mp3", "line":"Wait.\nDidn't we already fill this out?\nJobert said to ask if I wasn't sure.\nOne message won't hurt.", "chat":true, "chat_id":"private"},
@@ -90,8 +90,8 @@ const STORY: Array[Dictionary] = [
 	{"who":"Jobert", "face":4, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556873/levelblue/voice/mod_01/ch_02/M01_CH02_18_Jobert.mp3", "line":"Keep both emails.\nAnd leave that reply unsent."},
 	{"mood":"resolve", "who":"John", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556873/levelblue/voice/mod_01/ch_02/M01_CH02_19_John.mp3", "line":"You just saved me from introducing myself to a stranger."},
 	{"who":"Jobert", "face":1, "bg":"hallway_day", "cast":["john","jobert"], "voice":"v1794556874/levelblue/voice/mod_01/ch_02/M01_CH02_20_Jobert.mp3", "line":"You stopped and asked.\nThat part was you."},
-	{"thought":true, "who":"John", "face":0, "bg":"clubroom", "cast":["john"], "voice":"v1794556876/levelblue/voice/mod_01/ch_02/M01_CH02_21.mp3", "line":"I'm the first one back in the clubroom.\nMaybe someone else got that email.", "chat":true, "chat_id":"club"},
-	{"mood":"mystery", "thought":true, "who":"John", "face":6, "sentence_faces":[6,1,0], "bg":"clubroom", "cast":["john"], "voice":"v1794556877/levelblue/voice/mod_01/ch_02/M01_CH02_22_John.mp3", "line":"I laughed.\nIt was a joke.\nSo why did I read it twice?"},
+	{"thought":true, "who":"John", "face":0, "bg":"clubroom", "cast":["john"], "voice":"v1794556876/levelblue/voice/mod_01/ch_02/M01_CH02_21.mp3", "scene_art":"chapter2_empty_clubroom", "scene_art_before_chat":true, "line":"I'm the first one back in the clubroom.\nMaybe someone else got that email.", "chat":true, "chat_id":"club"},
+	{"mood":"mystery", "thought":true, "who":"John", "face":6, "sentence_faces":[6,1,0], "bg":"clubroom", "cast":["john"], "voice":"v1794556877/levelblue/voice/mod_01/ch_02/M01_CH02_22_John.mp3", "transition_after":"Later that night....", "line":"I laughed.\nIt was a joke.\nSo why did I read it twice?"},
 	{"thought":true, "who":"John", "face":2, "bg":"john_bed_night", "time":"night", "voice":"v1794556877/levelblue/voice/mod_01/ch_02/M01_CH02_23_John.mp3", "line":"The draft is still here.\nMy name, halfway typed.\nI'm deleting the draft, not the email.", "mail":true, "email":"fake", "draft":true},
 	{"thought":true, "who":"John", "face":2, "bg":"john_bed_night", "time":"night", "voice":"v1794556878/levelblue/voice/mod_01/ch_02/M01_CH02_24_John.mp3", "line":"Jobert caught the address.\nBut something else is bothering me.\nHold on.\nThat isn't the address it came from.", "mail":true, "email":"fake", "reply_preview":true},
 	{"thought":true, "who":"John", "face":2, "bg":"john_bed_night", "time":"night", "voice":"v1794556879/levelblue/voice/mod_01/ch_02/M01_CH02_25_John.mp3", "line":"It wears Sir Rham's name.\nUses our club's format.\nThen sends my answer somewhere else.\nDan said the format was easy.\nThat doesn't mean he sent it.\nI need more than a bad feeling."}
@@ -127,7 +127,7 @@ const CHAT_MESSAGES: Array[Dictionary] = [
 ]
 
 static func fresh() -> Dictionary:
-	return {"performance_version":1,"star_tracking":true,"star_blocked":[],"hotspot_order":[],"version":1,"beat":0,"phase":"day","read":[],"sorted":[],"flags":[],"domains":[],"captures":[],"headers":[],"report_draft":"","mistakes":0,"hint_used":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"perk_run":{}}
+	return {"performance_version":1,"star_tracking":true,"star_blocked":[],"hotspot_order":[],"version":1,"beat":0,"phase":"day","read":[],"sorted":[],"flags":[],"domains":[],"captures":[],"headers":[],"report_draft":"","comparison_seen":[],"mistakes":0,"hint_used":false,"sealed":false,"completed":false,"next_chapter_unlocked":false,"reward":0,"perk_run":{}}
 
 static func message(id: String) -> Dictionary:
 	for entry: Dictionary in MESSAGES:
@@ -142,7 +142,7 @@ static func complete_evidence(state: Dictionary) -> bool:
 
 static func clean(raw: Dictionary) -> Dictionary:
 	var state: Dictionary = fresh()
-	var valid: Dictionary = {"read":["real","fake"],"captures":["real","fake"],"flags":["domain","wording","signature"],"domains":["fake"],"headers":["From","Reply-To","Subject"]}
+	var valid: Dictionary = {"read":["real","fake"],"captures":["real","fake"],"flags":["domain","wording","signature"],"domains":["fake"],"headers":["From","Reply-To","Subject"],"comparison_seen":["domain","format","wording","signature"]}
 	for field: String in valid:
 		var values: Variant = raw.get(field, [])
 		if values is Array:

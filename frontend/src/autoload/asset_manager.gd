@@ -507,6 +507,8 @@ func _school_story_catalog() -> Array[Dictionary]:
 	catalog.append(_catalog_entry("story_bg_covered_courtyard_rain", "School / Covered courtyard in rain", "image", "%s/v1793411013/levelblue_mod2_art_20261031_covered_courtyard_rain_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_library_research_corner", "School / Library research corner", "image", "%s/v1793411024/levelblue_mod2_art_20261031_library_research_corner_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_bg_faculty_consultation", "School / Faculty consultation room", "image", "%s/v1793411033/levelblue_mod2_art_20261031_faculty_consultation_room_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("chapter2_john_exhausted", "Chapter 2 / Catching his breath", "image", "%s/v1795272502/levelblue/story/mod_01/ch_02/john_exhausted_v1.png" % CLOUD_ROOT))
+	catalog.append(_catalog_entry("chapter2_empty_clubroom", "Chapter 2 / Empty clubroom", "image", "%s/v1795272512/levelblue/story/mod_01/ch_02/john_empty_clubroom_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter2_cover", "Chapter 2 / The Advisor Email", "image", "%s/v1792721173/chapter2_advisor_cover_v1.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter3_cover", "Chapter 3 / The Payout", "image", "%s/v1793086637/chapter3_payout_cover_v2.png" % CLOUD_ROOT))
 	catalog.append(_catalog_entry("story_chapter4_cover", "Chapter 4 / The Prize", "image", "%s/v1793086638/chapter4_prize_cover_v2.png" % CLOUD_ROOT))

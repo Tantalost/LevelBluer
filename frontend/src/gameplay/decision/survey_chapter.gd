@@ -179,6 +179,11 @@ static func report_definition(state: Dictionary) -> Dictionary:
 	var items: Dictionary = {}
 	var sections: Array[Dictionary] = []
 	var titles: Array[String] = ["Unclear payment offer", "Pressure against verification", "Unnecessary personal details"]
+	var statements: Array[String] = [
+		"This offer promises a reward without stating how much John will be paid.",
+		"This request rushes John to reply and discourages him from checking with the school.",
+		"This request asks for John's birth date and home address without explaining why they are needed.",
+	]
 	var explanations: Array[String] = ["The payment amount and client are unclear. A free mailbox alone does not prove fraud.", "The deadline and instruction not to ask the school discourage independent verification.", "A full birth date and home address are requested without a justified purpose. A typo alone does not prove fraud."]
 	for index: int in suspicious_ids().size():
 		var id: String = suspicious_ids()[index]
@@ -191,8 +196,8 @@ static func report_definition(state: Dictionary) -> Dictionary:
 			if type == "sender": text = str(source.address) + "\nDomain: " + str(source.address).get_slice("@", 1)
 			if type == "capture": text = str(source.address) + "\n" + str(source.subject) + "\n\n" + str(source.body) + "\n" + str(source.phrase)
 			items[key] = {"title":str(source.subject), "source":str(source.sender), "type":type, "text":text, "available":id in state.get(prerequisite, []), "capture_id":id if type == "capture" else ""}
-			slots.append({"id":key, "label":{"capture":"Message capture", "sender":"Sender note", "excerpt":"Warning-sign excerpt"}[type], "answer":key})
-		sections.append({"title":titles[index], "explanation":explanations[index], "slots":slots})
+			slots.append({"id":key, "label":{"capture":"Message capture", "sender":"Sender note", "excerpt":"Warning-sign excerpt"}[type], "answer":key, "prompt":{"capture":"The message showing this", "sender":"Who sent that message", "excerpt":"The wording that supports it"}[type]})
+		sections.append({"title":titles[index], "statement":statements[index], "explanation":explanations[index], "slots":slots})
 	for id: String in ["club", "library", "receipt"]:
 		var source: Dictionary = message(id)
 		items[id + "_context"] = {"title":str(source.subject), "source":str(source.sender), "type":"excerpt", "text":str(source.body), "available":id in state.get("read", [])}

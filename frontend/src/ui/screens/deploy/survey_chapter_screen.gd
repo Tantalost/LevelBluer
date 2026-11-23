@@ -25,6 +25,8 @@ var _paused: bool = false
 var _backgrounded: bool = false
 var _suspended: bool = false
 var _sending: bool = false
+var _time_waiting: bool = false
+var _time_transition: bool = false
 var _testing: bool = false
 var _owner: String = ""
 var _signed_owner: bool = false
@@ -511,6 +513,7 @@ func _render() -> void:
 	_stop_tweens()
 	_results.hide()
 	_caption_black.hide()
+	_caption_black.modulate.a = 1.0
 	_caption.hide()
 	_caption_next.hide()
 	_heading.modulate.a = 1.0
@@ -569,6 +572,10 @@ func _render() -> void:
 		summary.name = "EvidenceSummary"
 		summary.size_flags_horizontal = SIZE_EXPAND_FILL
 		task_text.add_child(summary)
+		if Chapter.ID == "mod_01_ch_02":
+			var goal: Label = UI.label(str(Chapter.STAR_GOALS[phase]).get_slice(" / ",1),20,Color("8FF0E6"))
+			goal.name = "LiveStarGoal"
+			task_text.add_child(goal)
 		var hint: Button = _button("Hint", _hint)
 		hint.autowrap_mode = TextServer.AUTOWRAP_OFF
 		progress_row.add_child(hint)
@@ -715,7 +722,12 @@ func _open_upgrades() -> void:
 
 func _evidence_summary() -> String:
 	var task: Dictionary = Chapter.TASKS.get(str(state.phase), {"field":"captures","total":3})
-	return "%d / %d collected" % [state[task.field].size(), int(task.total)]
+	var result: String = "%d / %d collected" % [state[task.field].size(), int(task.total)]
+	if Chapter.ID == "mod_01_ch_02" and Chapter.STAR_GOALS.has(str(state.phase)):
+		var status: String = "STAR AVAILABLE" if not str(state.phase) in state.get("star_blocked",[]) else "RETRY FOR STAR"
+		if status == "STAR AVAILABLE" and state[task.field].size() >= int(task.total): status = "STAR READY AT COMPLETION"
+		result += " · " + status
+	return result
 
 func _next_chapter_id() -> String:
 	var explicit_next: Variant = Chapter.get("NEXT_CHAPTER")
@@ -866,6 +878,9 @@ func _update_advance() -> void:
 			_chat_cue = 0.85
 
 func _process(delta: float) -> void:
+	if _time_waiting and _can_present() and not _voice.pending_or_playing():
+		_begin_time_card()
+	if _time_waiting or _time_transition: return
 	_sync_voice_page()
 	if _chat_cue < 0.0 or not _can_act() or _voice.pending_or_playing(): return
 	_chat_cue -= delta
@@ -932,6 +947,11 @@ func _advance() -> void:
 	if state["phase"] == "day":
 		if _is_chat_beat() and (not _chat_started or not _phone.visible or not _phone.phase_ready()): return
 		if Chapter.STORY[int(state.beat)].get("mail", false) and not _phone.phase_ready(): return
+		if Chapter.STORY[int(state.beat)].has("transition_after"):
+			_time_waiting = true
+			_sending = true
+			_apply_pause()
+			return
 		if int(state["beat"]) < Chapter.STORY.size() - 1:
 			state["beat"] = int(state["beat"]) + 1
 		else:
@@ -954,6 +974,51 @@ func _advance() -> void:
 	_save()
 	_render()
 
+func _begin_time_card() -> void:
+	_time_waiting = false
+	_time_transition = true
+	_voice.clear_clip()
+	if _motion != null and _motion.is_valid(): _motion.kill()
+	_caption_black.modulate.a = 0.0
+	_caption_black.show()
+	_caption.text = str(Chapter.STORY[int(state.beat)].transition_after)
+	_caption.modulate.a = 0.0
+	_caption_next.hide()
+	_motion = create_tween()
+	_motion.tween_interval(0.25)
+	_motion.tween_property(_caption_black,"modulate:a",1.0,0.05 if SettingsService.reduced_motion else 0.55)
+	_motion.tween_callback(func() -> void:
+		for control: Control in [_dialogue,_phone,_cast_stage,_app_shortcuts]: control.hide()
+		_caption.show())
+	_motion.tween_property(_caption,"modulate:a",1.0,0.05 if SettingsService.reduced_motion else 0.35)
+	_motion.tween_interval(1.6)
+	_motion.tween_property(_caption,"modulate:a",0.0,0.05 if SettingsService.reduced_motion else 0.4)
+	_motion.tween_callback(_finish_time_card)
+	_apply_pause()
+
+func _finish_time_card() -> void:
+	if not _can_present(): return
+	state.beat = mini(int(state.beat)+1,Chapter.STORY.size()-1)
+	_save()
+	_render()
+	# The next scene fades up beneath the same overlay, without a second transition owner.
+	_sending = true
+	_time_transition = true
+	_voice.suspend_clip(true)
+	_caption_black.modulate.a = 1.0
+	_caption_black.show()
+	if _motion != null and _motion.is_valid(): _motion.kill()
+	for control: Control in [_dialogue,_phone,_journal]: control.modulate.a = 1.0
+	_motion = create_tween()
+	_motion.tween_property(_caption_black,"modulate:a",0.0,0.05 if SettingsService.reduced_motion else 0.5)
+	_motion.tween_callback(func() -> void:
+		_caption_black.hide()
+		_caption_black.modulate.a = 1.0
+		_time_transition = false
+		_sending = false
+		_apply_pause())
+	_apply_pause()
+
 func _evidence_changed(snapshot: Dictionary) -> void:
 	if not _can_act(): return
 	for field: String in ["star_blocked", "hotspot_order"]:
@@ -965,6 +1030,7 @@ func _evidence_changed(snapshot: Dictionary) -> void:
 	if Chapter.ID == "mod_01_ch_02":
 		state.headers = snapshot.headers
 		state.report_draft = snapshot.report_draft
+		state.comparison_seen = snapshot.get("comparison_seen",[]).duplicate()
 	if Chapter.ID == "mod_01_ch_03":
 		for field: String in ["revealed","expanded","hotspots","reviewed"]: state[field] = snapshot[field]
 	if Chapter.ID == "mod_01_ch_04":
@@ -1242,6 +1308,10 @@ func _load_art() -> void:
 	# The approach illustration covers the first spoken pages; the final page reveals the gate.
 	var show_approach: bool = phase == "day" and beat.has("approach_art") and not _is_caption_sentence() and _sentence < _sentences.size() - 1
 	var approach: Texture2D = AssetManager.get_texture(str(beat.approach_art)) if show_approach else null
+	var scene_art: Texture2D = null
+	if phase == "day" and beat.has("scene_art") and not _is_caption_sentence() and not (beat.get("scene_art_before_chat",false) and _chat_started):
+		scene_art = AssetManager.get_texture(str(beat.scene_art))
+		if scene_art != null: background_id = str(beat.scene_art)
 	_bg.texture = approach if approach != null else AssetManager.get_texture(background_id)
 	_display_art = str(beat.approach_art) if approach != null else background_id
 	if _active and show_approach and beat.has("approach_sfx"):
@@ -1273,10 +1343,13 @@ func _load_art() -> void:
 	# Includes the lead-in and phone home, not only the open chat app.
 	if _is_chat_beat(): present = [_protagonist()]
 	# John is already seated in the night artwork; never overlay a second John.
-	_cast_stage.visible = approach == null and not _is_caption_sentence() and location not in ["john_desk_night", "john_bed_night", "intro_morning"] and phase in ["day", "seal", "sleep"]
+	_cast_stage.visible = approach == null and scene_art == null and not _is_caption_sentence() and location not in ["john_desk_night", "john_bed_night", "intro_morning"] and phase in ["day", "seal", "sleep"]
 	for id: String in _cast:
 		_cast[id].visible = present.has(id)
 		_cast[id].texture = _actor_texture(id, _poses[id])
+		if id == person and phase == "day" and beat.has("portrait_art"):
+			var portrait_art: Texture2D = AssetManager.get_texture(str(beat.portrait_art))
+			if portrait_art != null: _cast[id].texture = portrait_art
 	_portrait = _cast.get(person, _cast[_protagonist()])
 	_cast_stage.move_child(_portrait, _cast_stage.get_child_count() - 1)
 	if _focus != null and _focus.is_valid(): _focus.kill()
@@ -1426,7 +1499,7 @@ func _layout() -> void:
 	var phase: String = str(state.get("phase", "day"))
 	var top: float = touch + 16
 	var investigation: bool = Chapter.TASKS.has(phase)
-	var task_height: float = touch + 20 / physical
+	var task_height: float = touch + (48 if Chapter.ID == "mod_01_ch_02" else 20) / physical
 	var phone_top: float = top + (task_height + 10 if investigation else 0.0)
 	_phone.set_anchors_and_offsets_preset(PRESET_TOP_LEFT)
 	_phone.position = Vector2(w * 0.49, phone_top)
@@ -1441,9 +1514,12 @@ func _layout() -> void:
 	var stage_width: float = w * (0.49 if has_phone else 1.0)
 	var actor_width: float = stage_width * (0.95 if actors.size() == 1 else (0.83 if has_phone else 0.68))
 	var actor_height: float = minf(h - top, actor_width * 550.0 / 608.0)
+	if phase == "day" and Chapter.STORY[int(state.beat)].has("portrait_art"):
+		# Show the hands-on-knees gesture above the dialogue instead of covering it.
+		actor_height = maxf(100,(h - top) * 0.72)
 	for index: int in actors.size():
 		var center: float = stage_width * (float(index + 1) / float(actors.size() + 1))
-		actors[index].position = Vector2(center - actor_width * 0.5, h - actor_height)
+		actors[index].position = Vector2(center - actor_width * 0.5, top if phase == "day" and Chapter.STORY[int(state.beat)].has("portrait_art") else h - actor_height)
 		actors[index].size = Vector2(actor_width, actor_height)
 	var dialogue_height: float = maxf(h * (0.34 if has_phone else 0.27), (185.0 if has_phone else 130.0) / physical)
 	_dialogue.position = Vector2(0,h - dialogue_height)
@@ -1624,7 +1700,7 @@ func _apply_pause() -> void:
 	var locked: bool = not _can_act()
 	if is_instance_valid(_report): _report.set_locked(locked)
 	AudioManager.pause_story_music(self, not _can_present())
-	_voice.suspend_clip(locked or _voice_waiting_for_continue)
+	_voice.suspend_clip(locked or _voice_waiting_for_continue or _time_transition)
 	if _approach_audio != null and _approach_audio.has_stream_playback():
 		_approach_audio.stream_paused = locked or _voice_waiting_for_continue
 	_perk_button.disabled = locked or _sending
@@ -1710,6 +1786,8 @@ func _notification(what: int) -> void:
 	if is_node_ready(): _apply_pause()
 
 func _stop_tweens() -> void:
+	_time_waiting = false
+	_time_transition = false
 	_voice.clear_clip()
 	if _approach_audio != null:
 		_approach_audio.stop()

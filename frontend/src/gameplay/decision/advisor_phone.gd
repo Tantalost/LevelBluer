@@ -9,10 +9,15 @@ var _lead_in: String = ""
 var _lead_elapsed: float = 0.0
 var _contact_button: Button
 var _selected_contact: String = ""
+var _feedback_age: float = 1.0
+var _feedback_label: Label
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	_tick_lead_in(delta)
+	if not _locked and is_visible_in_tree() and is_instance_valid(_feedback_label):
+		_feedback_age = minf(1.0,_feedback_age + delta * 2.5)
+		_feedback_label.modulate.a = 1.0 if _reduced_motion() else lerpf(0.55,1.0,_feedback_age)
 
 func _tick_chat(delta: float) -> void:
 	if not _lead_in.is_empty(): return
@@ -79,7 +84,10 @@ func configure_chapter(next_mode: String, snapshot: Dictionary) -> void:
 	if next_mode == "chat" and beat.get("chat_id", "") == "private": _lead_in = "contacts"
 	super.configure_chapter(next_mode, snapshot)
 	if _lead_in == "notification":
-		notify_phone({"id":"advisor_arrival", "app":"Mail", "sender":"Sir Rham — Club Advisor", "preview":"You have an email", "sticky":true})
+		notify_phone({"id":"advisor_arrival", "app":"Mail", "sender":"Sir Rham — Club Advisor", "preview":str(Chapter.message("fake").subject), "sticky":true})
+	if next_mode == "compare" and _comparison_field not in state.get("comparison_seen",[]):
+		state.comparison_seen.append(_comparison_field)
+		evidence_changed.emit(state.duplicate(true))
 
 class HeaderChip extends Button:
 	var field: String = ""
@@ -123,22 +131,14 @@ func _render() -> void:
 		for person: Dictionary in Chapter.CONTACTS:
 			if not _selected_contact.is_empty():
 				if str(person.id) != _selected_contact: continue
-				AppViews.contact_details(_content, person)
+				AppViews.contact_details(_content, _contact_display(person))
 				if person.get("action", "") == "message":
 					_contact_button = _action("MESSAGE JOBERT", _select_jobert)
 					_contact_button.name = "MessageContact"
 				else: _ink("No conversation needed right now.")
 				_action("BACK TO CONTACTS", _contact_list)
 			else:
-				var display: Dictionary = person.duplicate(true)
-				var texture: Texture2D = AssetManager.get_texture(str(person.portrait))
-				if texture != null:
-					var face: AtlasTexture = AtlasTexture.new()
-					face.atlas = texture
-					face.region = Rect2(0, 0, texture.get_width() / 3.0, texture.get_height() / 2.0)
-					face.filter_clip = true
-					display.portrait = face
-				else: display.erase("portrait")
+				var display: Dictionary = _contact_display(person)
 				var row: Button = AppViews.contact_row(_content, display, _open_contact.bind(str(person.id)))
 				row.name = "Contact" + str(person.title).replace(" ", "")
 				if person.id == "jobert": _contact_button = row
@@ -150,12 +150,26 @@ func _render() -> void:
 			"headers": _headers()
 	if not _notice_text.is_empty() and mode != "report":
 		var notice: Label = _ink(_notice_text)
-		if mode == "compare": notice.add_theme_color_override("font_color", Color("365b63"))
+		notice.name = "InvestigationFeedback"
+		_feedback_label = notice
+		notice.add_theme_color_override("font_color",Color("246844") if _notice_text.begins_with("Evidence saved") or _notice_text.begins_with("MATCHED") else Color("8a3b25"))
 		_content.move_child(notice, 0)
 	_refresh()
 	_metrics()
 	(_content.get_parent() as ScrollContainer).set_deferred("scroll_vertical", 0)
 	view_changed.emit()
+
+func _contact_display(person: Dictionary) -> Dictionary:
+	var display: Dictionary = person.duplicate(true)
+	var texture: Texture2D = AssetManager.get_texture(str(person.portrait))
+	if texture != null:
+		var face: AtlasTexture = AtlasTexture.new()
+		face.atlas = texture
+		face.region = Rect2(0,0,texture.get_width()/3.0,texture.get_height()/2.0 * 0.65)
+		face.filter_clip = true
+		display.portrait = face
+	else: display.erase("portrait")
+	return display
 
 func _ink(text: String, parent: Control = null) -> Label:
 	var label: Label = UI.label(text, 26, INK)
@@ -197,15 +211,19 @@ func _compare() -> void:
 	tabs.add_theme_constant_override("separation", 8)
 	_content.add_child(tabs)
 	for row: Dictionary in rows:
-		var tab: Button = _action(("✓ " if state.flags.has(row.id) else "") + str(row.name), func() -> void:
+		var inspected: bool = row.id in state.get("comparison_seen",[])
+		var tab: Button = _action(("✓ " if state.flags.has(row.id) else "• " if inspected else "○ ") + str(row.name), func() -> void:
 			if not _locked:
 				_comparison_field = str(row.id)
+				if _comparison_field not in state.comparison_seen:
+					state.comparison_seen.append(_comparison_field)
+					evidence_changed.emit(state.duplicate(true))
 				_notice_text = ""
 				_render())
 		tab.name = "CompareTab_" + str(row.id)
 		tab.set_meta("comparison_selected", row.id == _comparison_field)
 		_comparison_button(tab, row.id == _comparison_field, state.flags.has(row.id))
-		tab.accessibility_name = str(row.name) + (", selected" if row.id == _comparison_field else "") + (", collected" if state.flags.has(row.id) else "")
+		tab.accessibility_name = str(row.name) + (", selected" if row.id == _comparison_field else "") + (", collected" if state.flags.has(row.id) else ", inspected" if inspected else ", not inspected")
 		tab.reparent(tabs)
 		tab.size_flags_horizontal = SIZE_EXPAND_FILL
 		tab.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -230,6 +248,8 @@ func _compare() -> void:
 		section.set_meta("compare_pixels", 14)
 		section.add_theme_color_override("font_color", Color("365b63"))
 		var value: Label = _ink(str(chosen[side]), column)
+		if state.flags.has(chosen.id):
+			panel.add_theme_stylebox_override("panel",UI.box(Color("dbe9e1"),Color("33D17A"),20))
 		value.name = "ComparisonValue"
 		value.size_flags_vertical = SIZE_EXPAND_FILL
 		value.set_meta("compare_pixels", 24 if chosen.id == "domain" else 20)
@@ -277,7 +297,8 @@ func _mark_difference(id: String) -> void:
 		_add("captures", "real")
 		_add("captures", "fake")
 	AudioManager.play_sfx("ui_confirm")
-	_notice_text = "Evidence saved. Keep comparing the remaining sections."
+	_feedback_age = 0.0
+	_notice_text = "Evidence saved / " + str({"domain":"Lookalike domain","wording":"Pressure and generic wording","signature":"Changed signature"}[id])
 	_render()
 
 func _report() -> void:
@@ -388,6 +409,7 @@ func _submit_report() -> void:
 		_miss("Enter only the domain after @, not the full email address." if _report_input.text.contains("@") else "Copy the domain exactly, including the lookalike character.")
 		return
 	_add("domains", "fake")
+	AudioManager.play_sfx("ui_confirm")
 	_notice_text = ""
 	_render()
 
@@ -399,11 +421,12 @@ func _headers() -> void:
 	for field: String in ["Subject","Reply-To","From"]:
 		var chip: HeaderChip = HeaderChip.new()
 		chip.field = field
-		chip.text = ("SELECTED / " if _picked_header == field else "") + field
+		chip.text = ("✓ " if state.headers.has(field) else "PLACE / " if _picked_header == field else "") + field
 		chip.custom_minimum_size.y = 64
 		chip.size_flags_horizontal = SIZE_EXPAND_FILL
 		chip.disabled = _locked or state.headers.has(field)
 		_style_header_button(chip)
+		_comparison_button(chip,_picked_header == field,state.headers.has(field))
 		chip.pressed.connect(func() -> void:
 			if not _locked:
 				_picked_header = field
@@ -414,11 +437,12 @@ func _headers() -> void:
 		var target: HeaderTarget = HeaderTarget.new()
 		target.name = "Header_" + field.replace("-", "_")
 		var value: String = str(entry[{"From":"address","Reply-To":"reply","Subject":"subject"}[field]])
-		target.text = (field if state.headers.has(field) else "[ DROP LABEL ]") + ":\n" + value
+		target.text = (field if state.headers.has(field) else "Tap or drop a label") + ":\n" + value
 		target.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		target.custom_minimum_size.y = 80
 		target.disabled = _locked or state.headers.has(field)
 		_style_header_button(target)
+		_comparison_button(target,not _picked_header.is_empty(),state.headers.has(field))
 		target.matched.connect(func(label: String) -> void: _match_header(label, field))
 		target.pressed.connect(func() -> void: _match_header(_picked_header, field))
 		_content.add_child(target)
@@ -435,12 +459,15 @@ func _match_header(label: String, target: String) -> void:
 		_miss("From identifies the displayed sender address. Reply-To sets the reply destination. Subject is the message title.")
 		return
 	_add("headers", target)
+	_feedback_age = 0.0
+	_notice_text = "MATCHED / " + target + " saved"
 	_picked_header = ""
 	AudioManager.play_sfx("ui_confirm")
 	_render()
 
 func _miss(text: String) -> void:
 	Chapter.Rewards.block(state, Chapter.ID, mode)
+	_feedback_age = 0.0
 	state.mistakes = int(state.mistakes) + 1
 	evidence_changed.emit(state.duplicate(true))
 	thought_requested.emit(text)
